@@ -1,0 +1,22 @@
+<?php
+return [
+    'welcome' => 'Welcome to JobberRecruit',
+    'sign_in' => 'Sign In',
+    'register' => 'Create Account',
+    'post_job' => 'Post a Job',
+    'home' => 'Home',
+    'find_jobs' => 'Find Jobs',
+    'employers' => 'Employers',
+    'manage_jobs' => 'Manage Jobs',
+    'company_profile' => 'Company Profile',
+    'candidates' => 'Candidates',
+    'pricing_plans' => 'Pricing Plans',
+    'blog' => 'Blog',
+    'about_us' => 'About Us',
+    'contact' => 'Contact',
+    'faqs' => 'FAQs',
+    'language' => 'Language',
+    'nigeria' => 'Nigeria',
+    'phone' => 'Phone',
+    'country_language' => 'Nigeria (Language)',
+];
