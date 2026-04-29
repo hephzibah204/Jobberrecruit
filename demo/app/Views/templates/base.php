@@ -216,49 +216,141 @@
         <?= $this->renderSection('content'); ?>
     </div>
 
-    <?php if (uri_string() !== 'training'): ?>
+    <?php
+    $currentPath = trim(uri_string(), '/');
+    $firstSegment = service('uri')->getSegment(1) ?? '';
+    $skipSharedCta = $currentPath === 'training' || str_starts_with($currentPath, 'training/');
+
+    $cta = [
+        'title' => 'Join JobberRecruit Today',
+        'description' => 'Whether you’re a job seeker searching for your next career move or an employer looking to hire exceptional talent, JobberRecruit provides the tools and support you need to succeed.',
+        'left_title' => 'Become a Candidate',
+        'left_text' => 'Take the next step in your career with confidence. Create your profile, explore verified job opportunities, and connect with employers actively searching for talent like yours.',
+        'left_href' => base_url('register'),
+        'left_button' => 'Register Now',
+        'left_button_class' => 'btn-primary text-light',
+        'left_image_alt' => 'Candidate',
+        'right_title' => 'Become an Employer',
+        'right_text' => 'Find the right talent faster. Post job openings, access a pool of qualified candidates, and streamline your recruitment process with ease.',
+        'right_href' => base_url('register'),
+        'right_button' => 'Register Now',
+        'right_button_class' => 'btn-light text-primary',
+        'right_image_alt' => 'Employer',
+    ];
+
+    if ($currentPath !== '') {
+        if (in_array($firstSegment, ['jobs', 'job', 'talents'], true)) {
+            $cta = [
+                'title' => 'Move From Browsing To Action',
+                'description' => 'You are already exploring opportunities. Create your profile, apply faster, and stay visible to employers looking for your skills.',
+                'left_title' => 'Create Candidate Profile',
+                'left_text' => 'Save your CV, track applications, and unlock application-aware mock interviews tailored to the jobs you pursue.',
+                'left_href' => base_url('register'),
+                'left_button' => 'Start As Candidate',
+                'left_button_class' => 'btn-primary text-light',
+                'left_image_alt' => 'Candidate',
+                'right_title' => 'Need Better Applicants?',
+                'right_text' => 'Post roles, manage applications, and reach qualified candidates from one recruitment dashboard.',
+                'right_href' => base_url('pricing'),
+                'right_button' => 'View Employer Plans',
+                'right_button_class' => 'btn-light text-primary',
+                'right_image_alt' => 'Employer',
+            ];
+        } elseif (in_array($firstSegment, ['candidate', 'resume-builder', 'cv-builder'], true)) {
+            $cta = [
+                'title' => 'Advance Your Job Search Faster',
+                'description' => 'Keep your profile interview-ready, discover better matches, and turn every application into a stronger opportunity.',
+                'left_title' => 'Practice Smarter',
+                'left_text' => 'Use AI mock interviews, resume tools, and saved application history to prepare with more confidence.',
+                'left_href' => base_url('candidate/career-tools/mock-interview'),
+                'left_button' => 'Start Mock Interview',
+                'left_button_class' => 'btn-primary text-light',
+                'left_image_alt' => 'Mock interview',
+                'right_title' => 'Find More Opportunities',
+                'right_text' => 'Search verified jobs, save relevant openings, and keep your next application aligned with your career goals.',
+                'right_href' => base_url('jobs'),
+                'right_button' => 'Browse Jobs',
+                'right_button_class' => 'btn-light text-primary',
+                'right_image_alt' => 'Jobs',
+            ];
+        } elseif (in_array($firstSegment, ['employer', 'pricing', 'recruitment', 'job-ads'], true)) {
+            $cta = [
+                'title' => 'Hire With More Confidence',
+                'description' => 'Turn interest into qualified applications with flexible hiring tools, employer branding, and faster screening workflows.',
+                'left_title' => 'Post Your Next Role',
+                'left_text' => 'Publish openings, manage applicants, and keep your hiring pipeline moving from one dashboard.',
+                'left_href' => base_url('employer/post-job'),
+                'left_button' => 'Post a Job',
+                'left_button_class' => 'btn-primary text-light',
+                'left_image_alt' => 'Post a job',
+                'right_title' => 'Compare Hiring Plans',
+                'right_text' => 'Choose the pricing option that matches your team size, hiring urgency, and visibility needs.',
+                'right_href' => base_url('pricing'),
+                'right_button' => 'See Pricing',
+                'right_button_class' => 'btn-light text-primary',
+                'right_image_alt' => 'Employer plans',
+            ];
+        } elseif (in_array($firstSegment, ['blog', 'about-us', 'contact-us', 'faqs'], true)) {
+            $cta = [
+                'title' => 'Put The Insights To Work',
+                'description' => 'You have the information. Now take the next practical step, whether that is landing a job or filling a role.',
+                'left_title' => 'Start Your Career Journey',
+                'left_text' => 'Create an account, upload your CV, and begin applying for roles that match your strengths.',
+                'left_href' => base_url('register'),
+                'left_button' => 'Join As Candidate',
+                'left_button_class' => 'btn-primary text-light',
+                'left_image_alt' => 'Candidate',
+                'right_title' => 'Grow Your Team',
+                'right_text' => 'Reach qualified talent and simplify hiring with employer tools built for faster recruitment.',
+                'right_href' => base_url('pricing'),
+                'right_button' => 'Hire With JobberRecruit',
+                'right_button_class' => 'btn-light text-primary',
+                'right_image_alt' => 'Employer',
+            ];
+        }
+    }
+    ?>
+    <?php if (! $skipSharedCta): ?>
         <!-- Call to Action Section -->
         <section class="cta-section py-5">
             <div class="container text-center">
-                <h2 class="fw-semibold mb-3">Join JobberRecruit Today</h2>
+                <h2 class="fw-semibold mb-3"><?= esc($cta['title']) ?></h2>
                 <p class="text-muted mb-4 col-md-8 mx-auto">
-                    Whether you’re a job seeker searching for your next career move or an employer looking to hire exceptional talent, JobberRecruit provides the tools and support you need to succeed.
+                    <?= esc($cta['description']) ?>
                 </p>
                 <div class="row g-4">
-                    <!-- Candidate Card -->
                     <div class="col-12 col-md-6">
                         <div class="become-card candidate-card position-relative text-white">
                             <div class="content pe-md-5">
-                                <h4 class="fw-semibold text-light mb-2">Become a Candidate</h4>
+                                <h4 class="fw-semibold text-light mb-2"><?= esc($cta['left_title']) ?></h4>
                                 <p class="text-light mb-4">
-                                    Take the next step in your career with confidence. Create your profile, explore verified job opportunities, and connect with employers actively searching for talent like yours.
+                                    <?= esc($cta['left_text']) ?>
                                 </p>
-                                <a href="<?= base_url('register') ?>" class="btn flat-btn btn-primary text-light">
-                                    Register Now <i class="bi bi-arrow-right ms-1"></i>
+                                <a href="<?= esc($cta['left_href']) ?>" class="btn flat-btn <?= esc($cta['left_button_class']) ?>">
+                                    <?= esc($cta['left_button']) ?> <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </div>
                             <img
                                 src="<?= base_url('images/hero-banner.png'); ?>"
-                                alt="Candidate"
+                                alt="<?= esc($cta['left_image_alt']) ?>"
                                 class="card-image d-none d-md-block" />
                         </div>
                     </div>
 
-                    <!-- Employer Card -->
                     <div class="col-12 col-md-6">
                         <div class="become-card employer-card position-relative text-white">
                             <div class="content pe-md-5">
-                                <h4 class="fw-semibold mb-2">Become an Employer</h4>
+                                <h4 class="fw-semibold mb-2"><?= esc($cta['right_title']) ?></h4>
                                 <p class="text-light mb-4">
-                                    Find the right talent faster. Post job openings, access a pool of qualified candidates, and streamline your recruitment process with ease.
+                                    <?= esc($cta['right_text']) ?>
                                 </p>
-                                <a href="<?= base_url('register') ?>" class="btn flat-btn btn-light text-primary">
-                                    Register Now <i class="bi bi-arrow-right ms-1"></i>
+                                <a href="<?= esc($cta['right_href']) ?>" class="btn flat-btn <?= esc($cta['right_button_class']) ?>">
+                                    <?= esc($cta['right_button']) ?> <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </div>
                             <img
                                 src="<?= base_url('images/hero-banner.png'); ?>"
-                                alt="Employer"
+                                alt="<?= esc($cta['right_image_alt']) ?>"
                                 class="card-image d-none d-md-block" />
                         </div>
                     </div>
