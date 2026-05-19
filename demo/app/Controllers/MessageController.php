@@ -6,7 +6,6 @@ use App\Models\ConversationModel;
 use App\Models\MessageModel;
 use App\Models\EmployerModel;
 use App\Models\JobSeekerModel;
-use App\Models\CandidateUnlockModel;
 use App\Services\CreditService;
 
 class MessageController extends BaseController
@@ -98,10 +97,12 @@ class MessageController extends BaseController
                 return $this->fail('Employer profile not found');
             }
 
-            $unlockModel = model(CandidateUnlockModel::class);
-            $hasUnlocked = $unlockModel->where('employer_id', $employer->id)
+            $db = \Config\Database::connect();
+            $hasUnlocked = $db->table('candidate_unlocks')
+                ->where('employer_id', $employer->id)
                 ->where('job_seeker_id', $recipientId)
-                ->first();
+                ->get()
+                ->getRow();
 
             if (!$hasUnlocked) {
                 return $this->fail('You must unlock this candidate\'s contact details first');

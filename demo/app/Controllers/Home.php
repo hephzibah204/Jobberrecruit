@@ -278,15 +278,29 @@ class Home extends BaseController
     {
         $stateModel = model(StateModel::class);
         $stateName = str_replace(['-', '_'], ' ', trim($slug));
-        $state = $stateModel
-            ->where('LOWER(name) =', strtolower($stateName), false)
-            ->first();
-        if (!$state) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Location not found: $slug");
+        
+        $state = $stateModel->where('name', $stateName)->first();
+        
+        if (!$state) {
+            $state = $stateModel->like('name', $stateName, 'none')->first();
+        }
 
-        // Force the filter in the request
+        if (!$state) {
+            $allStates = $stateModel->findAll();
+            foreach ($allStates as $s) {
+                if (strtolower($s->name) === strtolower($stateName)) {
+                    $state = $s;
+                    break;
+                }
+            }
+        }
+
+        if (!$state) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Location not found: $slug");
+        }
+
         $_GET['state_id'] = $state->id;
 
-        // Custom SEO Meta
         $customTitle = "Find Verified Jobs in " . esc($state->name) . " — Apply Now | JobberRecruit";
         $customMeta = "Browse and apply for the latest job opportunities in " . esc($state->name) . ". Verified vacancies from top employers in Nigeria.";
 
