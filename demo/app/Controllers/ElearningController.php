@@ -4,8 +4,11 @@ namespace App\Controllers;
 
 use App\Models\CourseModel;
 use App\Models\CourseEnrollmentModel;
+use App\Models\CourseCertificateModel;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class ElearningController extends BaseController
 {
@@ -347,5 +350,123 @@ class ElearningController extends BaseController
         }
 
         return null;
+    }
+
+    /**
+     * Mark course as complete and generate certificate
+     */
+    public function completeCourse($courseId)
+    {
+        if (!auth()->loggedIn()) {
+            return $this->failUnauthorized('Please login');
+        }
+
+        $userId = auth()->id();
+        $course = $this->courseModel->find($courseId);
+
+        if (!$course) {
+            return $this->failNotFound('Course not found');
+        }
+
+        $enrollment = $this->enrollmentModel
+            ->where('course_id', $courseId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$enrollment) {
+            return $this->fail('You are not enrolled in this course');
+        }
+
+        $certModel = model(CourseCertificateModel::class);
+        $existing = $certModel->getCertificateForUser($userId, $courseId);
+        if ($existing) {
+            return $this->respond([
+                'success' => true,
+                'certificate_code' => $existing['certificate_code'],
+                'message' => 'Certificate already issued',
+            ]);
+        }
+
+        $this->enrollmentModel->update($enrollment['id'], [
+            'status' => 'completed',
+            'completed_at' => date('Y-m-d H:i:s'),
+            'progress' => 100,
+        ]);
+
+        $certCode = $certModel->generateCertificateCode();
+        $certId = $certModel->insert([
+            'user_id' => $userId,
+            'course_id' => $courseId,
+            'enrollment_id' => $enrollment['id'],
+            'certificate_code' => $certCode,
+            'issued_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return $this->respond([
+            'success' => true,
+            'certificate_code' => $certCode,
+            'certificate_id' => $certId,
+            'message' => 'Course completed! Certificate generated.',
+        ]);
+    }
+
+    /**
+     * Download certificate as PDF
+     */
+    public function downloadCertificate($certificateId)
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login')->with('error', 'Please login');
+        }
+
+        $userId = auth()->id();
+        $certModel = model(CourseCertificateModel::class);
+        $certificate = $certModel
+            ->where('id', $certificateId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$certificate) {
+            return redirect()->back()->with('error', 'Certificate not found');
+        }
+
+        $course = $this->courseModel->find($certificate['course_id']);
+        $user = auth()->user();
+
+        $html = view('certificates/course_certificate', [
+            'certificate' => $certificate,
+            'course' => $course,
+            'user' => $user,
+        ]);
+
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        $dompdf->stream('certificate-' . $certificate['certificate_code'] . '.pdf', ['Attachment' => true]);
+        exit();
+    }
+
+    /**
+     * View my certificates
+     */
+    public function myCertificates()
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login')->with('error', 'Please login');
+        }
+
+        $certModel = model(CourseCertificateModel::class);
+        $certificates = $certModel->getUserCertificates(auth()->id());
+
+        return view('home/my_certificates', [
+            'title' => 'My Certificates',
+            'certificates' => $certificates,
+        ]);
     }
 }

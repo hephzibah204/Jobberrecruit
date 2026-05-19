@@ -182,6 +182,15 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('candidates/view/(:num)', 'EmployerController::viewCandidate/$1');
     $routes->post('candidates/unlock', 'EmployerController::unlockCandidate');
 
+    // Messaging
+    $routes->get('messages', 'MessageController::inbox');
+    $routes->get('messages/conversation/(:num)', 'MessageController::conversation/$1');
+    $routes->post('messages/send', 'MessageController::send');
+    $routes->post('messages/start', 'MessageController::startConversation');
+
+    // GDPR Data Export
+    $routes->get('settings/export-data', 'EmployerController::exportData');
+
     // Referrals
     $routes->get('referrals', 'ReferralController::index');
 });
@@ -194,6 +203,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('applications/view/(:num)', 'JobSeekerController::viewApplication/$1');
 
     $routes->get('notifications', 'JobSeekerController::notifications');
+    $routes->get('saved-jobs', 'JobSeekerController::savedJobs');
     $routes->post('alerts/save', 'JobSeekerController::saveAlert');
     $routes->post('alerts/delete/(:num)', 'JobSeekerController::deleteAlert/$1');
 
@@ -213,10 +223,24 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->post('resumes/save', 'ResumeController::save');
     $routes->post('resumes/ai/generate-summary', 'ResumeController::generateSummary');
     $routes->post('resumes/ai/improve-description', 'ResumeController::improveDescription');
+    $routes->post('resumes/ai/generate-cover-letter', 'ResumeController::generateCoverLetter');
     $routes->get('resumes/download/(:num)', 'ResumeController::download/$1');
 
     // Referrals
     $routes->get('referrals', 'ReferralController::index');
+
+    // Messaging
+    $routes->get('messages', 'MessageController::inbox');
+    $routes->get('messages/conversation/(:num)', 'MessageController::conversation/$1');
+    $routes->post('messages/send', 'MessageController::send');
+
+    // GDPR Data Export
+    $routes->get('settings/export-data', 'JobSeekerController::exportData');
+
+    // Candidate Subscription
+    $routes->get('subscription/pricing', 'CandidateSubscriptionController::pricing');
+    $routes->post('subscription/checkout', 'CandidateSubscriptionController::checkout');
+    $routes->get('subscription/verify', 'CandidateSubscriptionController::verify');
 
     // AI Career Tools
     $routes->group('career-tools', function ($routes) {
@@ -275,17 +299,13 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('jobs/delete', 'AdminController::deleteJob');
     $routes->get('jobs/view/(:num)', 'AdminController::viewJob/$1');
     $routes->get('jobs/performance/(:num)', 'AdminController::performanceChart/$1');
-    $routes->get('jobs/view/(:num)', 'AdminController::viewJob/$1');
     $routes->post('jobs/approve', 'AdminController::approveJob');
     $routes->post('jobs/reject', 'AdminController::rejectJob');
 
     $routes->get('jobs/edit/(:num)', 'AdminController::editJob/$1');
     $routes->post('jobs/update/(:num)', 'AdminController::updateJob/$1');
 
-    $routes->post('jobs/delete/(:num)', 'AdminController::deleteJob/$1');
-
-    // Performance
-    $routes->post('jobs/update-status/(:num)', 'AdminController::updateStatus/$1');
+    $routes->post('jobs/delete', 'AdminController::deleteJob');
     // Applications
     $routes->get('applications', 'AdminController::applications');
     $routes->get('applications/view/(:num)', 'AdminController::viewApplication/$1');
@@ -319,6 +339,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('plans/delete/(:num)', 'AdminController::deletePlan/$1');
     $routes->post('plans/grant-unlimited-access', 'AdminController::grantUnlimitedAccess');
     $routes->post('plans/revoke-unlimited-access', 'AdminController::revokeUnlimitedAccess');
+    $routes->post('plans/toggle-free-mode', 'AdminController::toggleFreeMode');
 
 
     // Blog
@@ -361,6 +382,9 @@ $routes->get('training/course/(:num)', 'ElearningController::show/$1');
 $routes->get('training/content/(:num)', 'ElearningController::content/$1');
 $routes->get('training/enroll/(:num)', 'ElearningController::enroll');
 $routes->get('training/verify/(:num)', 'ElearningController::verify/$1');
+$routes->post('training/complete/(:num)', 'ElearningController::completeCourse/$1');
+$routes->get('training/certificate/download/(:num)', 'ElearningController::downloadCertificate/$1');
+$routes->get('training/certificates', 'ElearningController::myCertificates');
 
 // Admin Newsletter & Webinar Management
 $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {

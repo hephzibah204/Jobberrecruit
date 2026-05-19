@@ -311,6 +311,39 @@
             $('#experience-container').append(html);
         });
 
+        // Add Education Item (Dynamic)
+        $('.add-education').on('click', function() {
+            $('#education-container .no-items').hide();
+            const html = `
+                <div class="education-item border rounded p-3 mb-3 bg-light-transparent">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <input type="text" name="edu_school[]" class="form-control form-control-sm" placeholder="School / University">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <select name="edu_degree[]" class="form-select form-select-sm">
+                                <option value="">Select Degree</option>
+                                <option value="High School">High School</option>
+                                <option value="Associate">Associate Degree</option>
+                                <option value="Bachelor">Bachelor's Degree</option>
+                                <option value="Master">Master's Degree</option>
+                                <option value="PhD">PhD / Doctorate</option>
+                                <option value="Certificate">Certificate</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" name="edu_field[]" class="form-control form-control-sm" placeholder="Field of Study">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="number" name="edu_year[]" class="form-control form-control-sm" placeholder="Graduation Year" min="1950" max="2030">
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#education-container').append(html);
+        });
+
         // Improve Description with AI
         $(document).on('click', '.improve-desc-ai', function() {
             const textarea = $(this).closest('.col-md-12').find('textarea');

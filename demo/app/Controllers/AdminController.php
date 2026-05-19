@@ -978,7 +978,7 @@ class AdminController extends BaseController
 
         // Get pre-screening answers
         $answerModel = model(\App\Models\ApplicationAnswerModel::class);
-        $answers = $answerModel->select('application_answers.*, job_questions.question, job_questions.type')
+        $answers = $answerModel->select('application_answers.*, job_questions.question_text as question, job_questions.question_type as type, job_questions.options')
             ->join('job_questions', 'job_questions.id = application_answers.question_id')
             ->where('application_answers.application_id', $id)
             ->findAll();
@@ -2365,75 +2365,70 @@ class AdminController extends BaseController
     {
         $planModel = model(PlanModel::class);
 
-        /* -------------------------------------------------
-     * POST - Save Subscription Plan (Only one paid plan)
-     * ------------------------------------------------- */
         if ($this->request->getMethod() === 'POST') {
-            return $this->saveSubscriptionPlan();
-        }
+            $id = $this->request->getPost('id');
+            $name = trim($this->request->getPost('name'));
+            $code = trim($this->request->getPost('code')) ?: strtolower(str_replace(' ', '_', $name));
+            $planType = $this->request->getPost('plan_type') ?: 'employer';
+            $basePrice = (float) ($this->request->getPost('base_price') ?? 0);
+            $monthlyCredits = (int) ($this->request->getPost('monthly_job_credits') ?? 0);
+            $duration = (int) ($this->request->getPost('duration') ?? 30);
 
-        /* -------------------------------------------------
-     * GET - Admin View
-     * ------------------------------------------------- */
-        $subscriptionPlan = $planModel
-            ->where('plan_type', 'subscription')
-            ->first();
-
-        // Fallback if no plan exists yet
-        if (!$subscriptionPlan) {
-            $subscriptionPlan = (object)[
-                'id'            => '',
-                'name'          => 'Business Pro',
-                'code'          => 'business_pro',
-                'base_price'    => 18000.00,
-                'pricing_tiers' => json_encode([
-                    1  => 18000,
-                    3  => 50000,
-                    6  => 90000,
-                    12 => 160000
-                ]),
-                'features'      => json_encode([
-                    'featured'         => true,
-                    'position'         => 'top',
-                    'network_blast'    => true,
-                    'anonymous'        => true,
-                    'url_redirect'     => true,
-                    'trust_badge'      => true,
-                    'priority_support' => true,
-                ])
+            $features = [
+                'featured' => (bool) $this->request->getPost('feat_featured'),
+                'network_blast' => (bool) $this->request->getPost('feat_network_blast'),
+                'anonymous' => (bool) $this->request->getPost('feat_anonymous'),
+                'trust_badge' => (bool) $this->request->getPost('feat_trust_badge'),
+                'priority_support' => (bool) $this->request->getPost('feat_priority_support'),
+                'url_redirect' => (bool) $this->request->getPost('feat_url_redirect'),
+                'ai_resume' => (bool) $this->request->getPost('feat_ai_resume'),
+                'ai_cover_letter' => (bool) $this->request->getPost('feat_ai_cover_letter'),
+                'ai_career_tools' => (bool) $this->request->getPost('feat_ai_career_tools'),
+                'unlimited_applications' => (bool) $this->request->getPost('feat_unlimited_applications'),
+                'candidate_messaging' => (bool) $this->request->getPost('feat_candidate_messaging'),
+                'profile_highlight' => (bool) $this->request->getPost('feat_profile_highlight'),
             ];
+
+            $data = [
+                'name' => $name,
+                'code' => $code,
+                'plan_type' => $planType,
+                'base_price' => $basePrice,
+                'monthly_job_credits' => $monthlyCredits,
+                'features' => json_encode($features),
+                'is_active' => (int) ($this->request->getPost('is_active') ?? 1),
+            ];
+
+            if ($id) {
+                $planModel->update($id, $data);
+            } else {
+                $planModel->insert($data);
+            }
+
+            return redirect()->back()->with('success', 'Plan saved successfully');
         }
 
-        $bundleModel       = model(PlanBundleModel::class);
         $subscriptionModel = model(UserSubscriptionModel::class);
-        $employerModel     = model(EmployerModel::class);
+        $employerModel = model(EmployerModel::class);
+        $bundleModel = model(PlanBundleModel::class);
 
-        $bundles = $bundleModel
-            ->where('is_active', 1)
-            ->orderBy('job_credits', 'ASC')
+        $employerPlans = $planModel->where('plan_type', 'employer')->orderBy('base_price', 'ASC')->findAll();
+        $candidatePlans = $planModel->where('plan_type', 'candidate')->orderBy('base_price', 'ASC')->findAll();
+        $bundles = $bundleModel->where('is_active', 1)->orderBy('job_credits', 'ASC')->findAll();
+
+        $subscriptions = $subscriptionModel
+            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.company_name')
+            ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
+            ->join('employers', 'employers.user_id = user_subscriptions.user_id', 'left')
+            ->orderBy('user_subscriptions.end_date', 'ASC')
             ->findAll();
 
-        $employers = $employerModel->findAll();
-
         $planStats = $subscriptionModel
-            ->select('plans.name, COUNT(user_subscriptions.id) AS total')
+            ->select('plans.name, plans.plan_type, COUNT(user_subscriptions.id) AS total')
             ->join('plans', 'plans.id = user_subscriptions.plan_id')
             ->groupBy('plans.id')
             ->findAll();
 
-        $subscriptions = $subscriptionModel
-            ->select([
-                'user_subscriptions.*',
-                'plans.name AS plan_name',
-                'plans.base_price',
-                'employers.company_name'
-            ])
-            ->join('plans', 'plans.id = user_subscriptions.plan_id')
-            ->join('employers', 'employers.user_id = user_subscriptions.user_id')
-            ->orderBy('user_subscriptions.ends_at', 'ASC')
-            ->findAll();
-
-        // Monthly Revenue
         $db = db_connect();
         $year = date('Y');
         $revenue = $db->table('payments')
@@ -2450,97 +2445,73 @@ class AdminController extends BaseController
 
         $employersWithUnlimited = $employerModel
             ->where('unlimited_access', 1)
-            ->groupStart()
-            ->where('unlimited_until >=', date('Y-m-d H:i:s'))
-            ->orWhere('unlimited_until', null)
-            ->groupEnd()
             ->findAll();
 
+        $allEmployers = $employerModel->findAll();
+
+        $isFreeMode = env('site_free_mode') === 'true';
+
         return view('admin/plans', [
-            'title'            => 'Plans & Subscriptions',
-            'user'             => $this->auth->user(),
-            'admin'            => $this->admin,
-            'subscriptionPlan' => $subscriptionPlan,
-            'bundles'          => $bundles,
-            'employers'        => $employers,
-            'subscriptions'    => $subscriptions,
-            'planStats'        => $planStats,
-            'monthlyRevenue'   => $monthlyRevenue,
-            'employersWithUnlimited' => $employersWithUnlimited
+            'title' => 'Plans & Subscriptions',
+            'user' => $this->auth->user(),
+            'admin' => $this->admin,
+            'employerPlans' => $employerPlans,
+            'candidatePlans' => $candidatePlans,
+            'bundles' => $bundles,
+            'subscriptions' => $subscriptions,
+            'planStats' => $planStats,
+            'monthlyRevenue' => $monthlyRevenue,
+            'employersWithUnlimited' => $employersWithUnlimited,
+            'allEmployers' => $allEmployers,
+            'isFreeMode' => $isFreeMode,
         ]);
     }
 
-    /* -------------------------------------------------
-    * Private Helper: Save the Single Subscription Plan
-    * ------------------------------------------------- */
-    private function saveSubscriptionPlan()
+    public function deletePlan($id)
     {
-        $id         = $this->request->getPost('id');
-        $name       = trim($this->request->getPost('name'));
-        $code       = trim($this->request->getPost('code')) ?: strtolower(str_replace(' ', '-', $name));
-        $basePrice  = (float) $this->request->getPost('base_price');
-
-        // Pricing tiers from form (1, 3, 6, 12 months)
-        $pricingTiers = [
-            1  => (float) ($this->request->getPost('price_1') ?: $basePrice),
-            3  => (float) ($this->request->getPost('price_3') ?: round($basePrice * 2.78)),
-            6  => (float) ($this->request->getPost('price_6') ?: round($basePrice * 5.0)),
-            12 => (float) ($this->request->getPost('price_12') ?: round($basePrice * 8.89)),
-        ];
-
-        $features = json_encode([
-            'featured'         => true,
-            'position'         => 'top',
-            'network_blast'    => true,
-            'anonymous'        => true,
-            'url_redirect'     => true,
-            'trust_badge'      => true,
-            'priority_support' => true,
-        ]);
-
-        $data = [
-            'name'          => $name,
-            'code'          => $code,
-            'plan_type'     => 'subscription',
-            'base_price'    => $basePrice,
-            'pricing_tiers' => json_encode($pricingTiers),
-            'features'      => $features,
-            'is_active'     => 1,
-        ];
-
         $planModel = model(PlanModel::class);
+        $plan = $planModel->find($id);
 
-        if ($id) {
-            $planModel->update($id, $data);
-            $plan = $planModel->find($id);
+        if (!$plan) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Plan not found']);
+        }
+
+        $activeSubs = model(UserSubscriptionModel::class)
+            ->where('plan_id', $id)
+            ->where('is_active', 1)
+            ->countAllResults();
+
+        if ($activeSubs > 0) {
+            return $this->response->setJSON(['success' => false, 'message' => "Cannot delete: {$activeSubs} active subscriptions"]);
+        }
+
+        $planModel->delete($id);
+        return $this->response->setJSON(['success' => true, 'message' => 'Plan deleted']);
+    }
+
+    public function toggleFreeMode()
+    {
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $envFile = ROOTPATH . '.env';
+        if (!is_file($envFile)) {
+            return $this->response->setJSON(['success' => false, 'message' => '.env file not found']);
+        }
+
+        $content = file_get_contents($envFile);
+        $current = env('site_free_mode') === 'true';
+        $newValue = $current ? 'false' : 'true';
+
+        if (preg_match('/^site_free_mode\s*=\s*.+$/m', $content)) {
+            $content = preg_replace('/^site_free_mode\s*=\s*.+$/m', "site_free_mode = \"{$newValue}\"", $content);
         } else {
-            $id   = $planModel->insert($data);
-            $plan = $planModel->find($id);
+            $content .= "\nsite_free_mode = \"{$newValue}\"\n";
         }
 
-        // Optional: Sync with Paystack (you can create 4 separate plans later if needed)
-        if ($plan->base_price > 0) {
-            $paystack = service('paystack');
-            // For now, we sync only the monthly plan as base
-            $response = $paystack->createOrUpdatePlan([
-                'name'        => $plan->name . ' (Monthly)',
-                'price'       => (int)($plan->base_price * 100),
-                'interval'    => 'monthly',
-                'description' => 'Business Pro Monthly Subscription',
-            ], $plan->paystack_plan_code ?? null);
-
-            if (!empty($response['status']) && $response['status'] === true) {
-                $planModel->update($plan->id, [
-                    'paystack_plan_code' => $response['data']['plan_code']
-                ]);
-            }
-        }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Subscription plan saved successfully',
-            'plan'    => $plan
-        ]);
+        file_put_contents($envFile, $content);
+        return $this->response->setJSON(['success' => true, 'message' => "Free mode " . ($newValue === 'true' ? 'enabled' : 'disabled')]);
     }
 
     public function bundles()
@@ -2619,68 +2590,6 @@ class AdminController extends BaseController
             'admin'   => $this->admin,
             'bundles' => $bundles
         ]);
-    }
-
-    public function deletePlan($id)
-    {
-        if (! $this->request->isAJAX()) {
-            return $this->response
-                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
-        }
-
-        $model = new PlanModel();
-        $subModel  = model(UserSubscriptionModel::class);
-        $plan = $model->find($id);
-
-        if (! $plan) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Subscription Plan not found',
-            ]);
-        }
-
-        // Block deletion if active subscriptions exist
-        $activeCount = $subModel
-            ->where('plan_id', $id)
-            ->where('is_active', 1)
-            ->countAllResults();
-
-        if ($activeCount > 0) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Cannot delete plan with active subscriptions',
-            ]);
-        }
-
-        // Delete on Paystack first (if exists)
-        if (! empty($plan->paystack_plan_code)) {
-            $paystack = new PaystackService();
-            $paystack->deletePlan($plan->paystack_plan_code);
-        }
-
-        $model->delete($id);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Subscription Plan deleted successfully',
-        ]);
-    }
-
-    public function changePlan()
-    {
-        $user = $this->auth->user();
-        $planId = $this->request->getPost('plan_id');
-
-        $plan = model(SubscriptionPlanModel::class)->find($planId);
-
-        if (! $plan || $plan->price <= 0) {
-            return redirect()->back()->with('error', 'Invalid plan');
-        }
-
-        // Paystack inline or redirect payment
-        return redirect()->to(
-            site_url("pay/plan/{$plan->id}")
-        );
     }
 
     public function assignPlan()
@@ -3126,7 +3035,7 @@ class AdminController extends BaseController
 
     private function paystackPost($endpoint, $data)
     {
-        $key = getenv("paystack_secret_key");
+        $key = env("paystack_secret_key");
 
         $curl = curl_init();
 

@@ -338,7 +338,7 @@ class JobSeekerController extends BaseController
         // Load candidate industry IDs
         $candidateIndustryIds = (new JobSeekerIndustryModel())
             ->where('job_seeker_id', $candidate->id)
-            ->findColumn('industry_id');
+            ->findColumn('industry_id') ?? [];
 
         return view('candidate/edit_profile', [
             'title' => 'Edit Profile',
@@ -657,6 +657,51 @@ class JobSeekerController extends BaseController
         ]);
     }
 
+    public function savedJobs()
+    {
+        $user = $this->auth->user();
+        $candidateModel = model(JobSeekerModel::class);
+        $savedJobModel = model('App\Models\SavedJobModel');
+        $jobModel = model('App\Models\JobModel');
+
+        $candidate = $candidateModel
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$candidate) {
+            return redirect()->to('candidate/profile/edit')
+                ->with('error', 'Please complete your profile first.');
+        }
+
+        $savedJobIds = $savedJobModel
+            ->where('job_seeker_id', $candidate->id)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $jobIds = array_column($savedJobIds, 'job_id');
+
+        $savedJobs = [];
+        if (!empty($jobIds)) {
+            $savedJobs = $jobModel
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name, employers.logo')
+                ->join('states', 'states.id = jobs.state_id', 'left')
+                ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
+                ->join('industries', 'industries.id = jobs.industry_id', 'left')
+                ->join('employers', 'employers.id = jobs.employer_id', 'left')
+                ->whereIn('jobs.id', $jobIds)
+                ->where('jobs.status', 'open')
+                ->orderBy('jobs.created_at', 'DESC')
+                ->findAll();
+        }
+
+        return view('candidate/saved_jobs', [
+            'title'     => 'Saved Jobs',
+            'user'      => $user,
+            'candidate' => $candidate,
+            'savedJobs' => $savedJobs,
+        ]);
+    }
+
     public function notifications()
     {
         $user = $this->auth->user();
@@ -815,5 +860,52 @@ class JobSeekerController extends BaseController
         $candidate = $candidateModel->where('user_id', $userId)->first();
 
         return $candidate ? $candidate->id : null;
+    }
+
+    /**
+     * GDPR: Export all user data
+     */
+    public function exportData()
+    {
+        $user = $this->auth->user();
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $user->id)->first();
+
+        $data = [
+            'account' => [
+                'email' => $user->email,
+                'username' => $user->username ?? '',
+                'created_at' => $user->created_at ?? '',
+                'last_active' => $user->last_active ?? '',
+            ],
+            'profile' => $candidate ? [
+                'full_name' => $candidate->full_name ?? '',
+                'phone' => $candidate->phone ?? '',
+                'bio' => $candidate->bio ?? '',
+                'skills' => $candidate->skills ?? '',
+                'experience_years' => $candidate->experience_years ?? '',
+                'education_level' => $candidate->education_level ?? '',
+                'job_title' => $candidate->job_title ?? '',
+                'location' => $candidate->location ?? '',
+                'resume' => $candidate->resume ?? '',
+            ] : [],
+            'applications' => model(\App\Models\JobApplicationModel::class)
+                ->where('job_seeker_id', $candidate?->id)
+                ->findAll(),
+            'saved_jobs' => model(\App\Models\SavedJobModel::class)
+                ->where('job_seeker_id', $candidate?->id)
+                ->findAll(),
+            'job_alerts' => model(\App\Models\JobAlertModel::class)
+                ->where('job_seeker_id', $candidate?->id)
+                ->findAll(),
+        ];
+
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $filename = 'jobberrecruit_data_export_' . date('Y-m-d') . '.json';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/json')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($json);
     }
 }

@@ -53,6 +53,16 @@
         </div>
     </div>
 
+    <?php if (isset($hasCACDocument) && !$hasCACDocument): ?>
+        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+            <i data-feather="alert-triangle" class="me-2 flex-shrink-0"></i>
+            <div>
+                <strong>Action Required:</strong> Please upload your CAC certificate to verify your company and enable job posting.
+                <a href="<?= base_url('employer/profile/upload-document') ?>" class="alert-link ms-2">Upload now</a>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="row">
         <!-- Total Jobs Posted -->
         <div class="col-xl-3 col-sm-6 d-flex">

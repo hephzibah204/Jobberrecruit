@@ -676,7 +676,7 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://www.google.com/recaptcha/api.js?render=<?= getenv('recaptcha_site_key'); ?>"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha_site_key'); ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('resetForm');
@@ -852,7 +852,7 @@
 
                 // Get reCAPTCHA token
                 grecaptcha.ready(function() {
-                    grecaptcha.execute('<?= getenv('recaptcha_site_key'); ?>', {
+                    grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
                         action: 'reset_password'
                     }).then(function(token) {
                         document.getElementById('recaptchaToken').value = token;

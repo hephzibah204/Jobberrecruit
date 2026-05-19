@@ -63,10 +63,15 @@
                                     <span class="badge bg-info-transparent"><?= esc($c->availability ?? 'Immediate') ?></span>
                                 </td>
                                 <td class="text-center">
-                                    <a href="<?= base_url('employer/candidates/view/' . $c->id) ?>" 
-                                       class="btn btn-sm btn-primary-light">
-                                        View Profile
-                                    </a>
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <a href="<?= base_url('employer/candidates/view/' . $c->id) ?>" 
+                                           class="btn btn-sm btn-primary-light">
+                                            View Profile
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="startMessage(<?= $c->id ?>)" title="Send Message">
+                                            <i class="ri-message-2-line"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach;

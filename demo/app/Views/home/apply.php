@@ -255,9 +255,14 @@ HTML;
                                 Cover Letter <span class="text-muted">(optional)</span>
                                 <span id="charCount" class="text-muted small float-end">0 / 2000</span>
                             </label>
-                            <textarea name="cover_letter" id="cover_letter" rows="6" class="form-control"
-                                placeholder="Why are you a great fit for this role? Highlight your relevant experience, skills, and enthusiasm for <?= esc($job->title) ?> at <?= esc($job->company_name) ?>."
-                                maxlength="2000"></textarea>
+                            <div class="d-flex gap-2 mb-2">
+                                <textarea name="cover_letter" id="cover_letter" rows="6" class="form-control flex-grow"
+                                    placeholder="Why are you a great fit for this role? Highlight your relevant experience, skills, and enthusiasm for <?= esc($job->title) ?> at <?= esc($job->company_name) ?>."
+                                    maxlength="2000"></textarea>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="ai-cover-letter-btn" <?= !auth()->loggedIn() ? 'disabled title="Login required"' : '' ?>>
+                                <i class="ti ti-sparkles me-1"></i>Generate with AI
+                            </button>
                             <div class="form-text">Tailor your message to the job description. Be concise and professional.</div>
                         </div>
 
@@ -285,13 +290,36 @@ HTML;
                                                 </div>
                                             </div>
 
-                                        <?php elseif ($q->question_type === 'multiple_choice'): ?>
+                                        <?php elseif (in_array($q->question_type, ['select', 'multiple_choice'])): ?>
                                             <select name="answers[<?= $q->id ?>]" class="form-select" <?= $q->is_required ? 'required' : '' ?>>
                                                 <option value="">Select an option</option>
-                                                <?php foreach (explode(',', $q->options ?? '') as $option): ?>
+                                                <?php 
+                                                    $opts = !empty($q->options) ? $q->options : ($q->options ?? '');
+                                                    foreach (explode(',', $opts) as $option): 
+                                                ?>
                                                     <option value="<?= trim(esc($option)) ?>"><?= trim(esc($option)) ?></option>
                                                 <?php endforeach; ?>
                                             </select>
+
+                                        <?php elseif (in_array($q->question_type, ['radio'])): ?>
+                                            <div class="d-flex flex-column gap-2">
+                                                <?php foreach (explode(',', $q->options ?? '') as $option): ?>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="answers[<?= $q->id ?>]" value="<?= trim(esc($option)) ?>" id="q-<?= $q->id ?>-<?= md5(trim($option)) ?>" <?= $q->is_required ? 'required' : '' ?>>
+                                                        <label class="form-check-label" for="q-<?= $q->id ?>-<?= md5(trim($option)) ?>"><?= trim(esc($option)) ?></label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+
+                                        <?php elseif ($q->question_type === 'checkbox'): ?>
+                                            <div class="d-flex flex-column gap-2">
+                                                <?php foreach (explode(',', $q->options ?? '') as $option): ?>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="answers[<?= $q->id ?>][]" value="<?= trim(esc($option)) ?>" id="q-<?= $q->id ?>-<?= md5(trim($option)) ?>">
+                                                        <label class="form-check-label" for="q-<?= $q->id ?>-<?= md5(trim($option)) ?>"><?= trim(esc($option)) ?></label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
 
                                         <?php else: ?>
                                             <textarea name="answers[<?= $q->id ?>]" class="form-control" rows="2" placeholder="Your answer..." <?= $q->is_required ? 'required' : '' ?>></textarea>
@@ -856,6 +884,48 @@ HTML;
                 });
             }
         });
+
+        // AI Cover Letter Generator
+        const aiCoverBtn = document.getElementById('ai-cover-letter-btn');
+        if (aiCoverBtn) {
+            aiCoverBtn.addEventListener('click', async function() {
+                const btn = this;
+                const textarea = document.getElementById('cover_letter');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ti ti-loader-2 ti-spin me-1"></i>Generating...';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('job_title', '<?= addslashes($job->title) ?>');
+                    formData.append('company_name', '<?= addslashes($job->company_name ?? '') ?>');
+                    formData.append('job_description', '<?= addslashes(substr($job->description ?? '', 0, 2000)) ?>');
+                    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+                    const response = await fetch('<?= base_url("candidate/resumes/ai/generate-cover-letter") ?>', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.status === 'success' || response.ok) {
+                        textarea.value = data.cover_letter || data.data?.cover_letter || '';
+                        textarea.dispatchEvent(new Event('input'));
+                        toastr.success('Cover letter generated!');
+                    } else {
+                        toastr.error(data.message || 'Generation failed');
+                    }
+                } catch (err) {
+                    toastr.error('AI generation failed. Please try again.');
+                    console.error(err);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+        }
     });
 </script>
 

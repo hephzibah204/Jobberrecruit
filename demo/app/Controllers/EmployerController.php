@@ -51,8 +51,8 @@ class EmployerController extends BaseController
         $this->userModel = model(ModelsUserModel::class);
         $this->session = \Config\Services::session();
 
-        $this->paystackSecret = getenv('paystack_secret_key');
-        $this->paystackCallback = getenv('paystack_callback_url') ?: base_url('pricing/verify');
+        $this->paystackSecret = env('paystack_secret_key');
+        $this->paystackCallback = env('paystack_callback_url') ?: base_url('pricing/verify');
     }
 
     /**
@@ -122,20 +122,13 @@ class EmployerController extends BaseController
         }
 
         // =============================================
-        // 🔹 ENFORCE DOCUMENT UPLOAD (CAC Certificate)
+        // 🔹 CHECK CAC DOCUMENT STATUS (non-blocking)
         // =============================================
-        // Check if employer has uploaded CAC document
         $hasCACDocument = $this->hasUploadedCACDocument($employer->id);
-
-        if (!$hasCACDocument) {
-            return redirect()->to('employer/upload-document')
-                ->with('error', 'Please upload your CAC certificate to continue accessing the dashboard.');
-        }
 
         // Required fields validation
         if (
             empty($employer->company_size) ||
-            empty($employer->verification_doc) ||
             empty($employer->contact_email)
         ) {
             return redirect()->to('employer/profile');
@@ -245,6 +238,7 @@ class EmployerController extends BaseController
             'title'             => 'Dashboard',
             'user'              => $this->auth->user(),
             'employer'          => $employer,
+            'hasCACDocument'    => $hasCACDocument,
 
             // Stats
             'totalJobs'         => $totalJobs,
@@ -713,16 +707,16 @@ class EmployerController extends BaseController
             $postData['employer_id'] = $employer->id;
             $postData['status'] = 'pending_approval';
             $postData['admin_status'] = 'pending';
-            $application_deadline = $postData['application_deadline'];
-            $start_date = $postData['start_date'];
+            $application_deadline = $postData['application_deadline'] ?? null;
+            $start_date = $postData['start_date'] ?? null;
 
             // Set premium features
             $postData['is_featured'] = $shouldBeFeatured ? 1 : 0;
             $postData['featured_until'] = $shouldBeFeatured ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
             $postData['is_anonymous'] = ($canPostAnonymous && $this->request->getPost('is_anonymous')) ? 1 : 0;
             $postData['network_blast'] = $canUseNetworkBlast ? 1 : 0;
-            $postData['application_deadline'] = $application_deadline ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
-            $postData['start_date'] = $start_date ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
+            $postData['application_deadline'] = $application_deadline ? date('Y-m-d H:i:s', strtotime($application_deadline)) : null;
+            $postData['start_date'] = $start_date ? date('Y-m-d H:i:s', strtotime($start_date)) : null;
 
             // Notification preferences
             $notificationPreferences = [
@@ -763,11 +757,14 @@ class EmployerController extends BaseController
                     $questionModel = model(\App\Models\JobQuestionModel::class);
                     foreach ($questions as $q) {
                         if (!empty($q['text'])) {
+                            $allowedTypes = ['text', 'yes_no', 'multiple_choice', 'select', 'radio', 'checkbox'];
+                            $qType = in_array($q['type'] ?? 'text', $allowedTypes) ? $q['type'] : 'text';
                             $questionModel->insert([
                                 'job_id'        => $jobId,
                                 'question_text' => trim($q['text']),
-                                'question_type' => in_array($q['type'] ?? 'text', ['text', 'yes_no', 'multiple_choice']) ? $q['type'] : 'text',
+                                'question_type' => $qType,
                                 'is_required'   => isset($q['is_required']) ? 1 : 0,
+                                'options'       => !empty($q['options']) ? trim($q['options']) : null,
                             ]);
                         }
                     }
@@ -2676,7 +2673,7 @@ class EmployerController extends BaseController
 
         // Get pre-screening answers
         $answerModel = model(\App\Models\ApplicationAnswerModel::class);
-        $answers = $answerModel->select('application_answers.*, job_questions.question, job_questions.type')
+        $answers = $answerModel->select('application_answers.*, job_questions.question_text as question, job_questions.question_type as type, job_questions.options')
             ->join('job_questions', 'job_questions.id = application_answers.question_id')
             ->where('application_answers.application_id', $id)
             ->findAll();
@@ -2741,7 +2738,7 @@ class EmployerController extends BaseController
         // Fetch the industries the employer belongs to
         $employerIndustryIds = $employerIndustryModel
             ->where('employer_id', $employer->id)
-            ->findColumn('industry_id');
+            ->findColumn('industry_id') ?? [];
 
         // Fetch employer's industries for display
         $employer->industries = $employerIndustryModel
@@ -2998,7 +2995,7 @@ class EmployerController extends BaseController
         // Employer's linked industries
         $employerIndustryIds = $employerIndustryModel
             ->where('employer_id', $employer->id)
-            ->findColumn('industry_id');
+            ->findColumn('industry_id') ?? [];
 
         $data = [
             'title' => 'Update Company Profile',
@@ -4024,7 +4021,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
-            'public_key'  => getenv('paystack_public_key'),
+            'public_key'  => env('paystack_public_key'),
             'email'       => $user->email,
             'amount'      => (int) ($bundle['price'] * 100),
             'reference'   => 'bundle_' . uniqid(),
@@ -4097,7 +4094,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
-            'public_key'  => getenv('paystack_public_key'),
+            'public_key'  => env('paystack_public_key'),
             'email'       => $user->email,
             'amount'      => (int) ($remaining * 100),
             'reference'   => 'bundle_hybrid_' . uniqid(),
@@ -4219,7 +4216,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'    => true,
             'paystack'   => true,
-            'public_key' => getenv('paystack_public_key'),
+            'public_key' => env('paystack_public_key'),
             'email'      => $user->email,
             'amount'     => (int) ($plan->price * 100),
             'reference'  => 'sub_' . uniqid(),
@@ -4580,7 +4577,7 @@ class EmployerController extends BaseController
             'plan'   => $plan->paystack_plan_code,
             'amount'    => (int) ($amount * 100), // kobo
             'email'     => $user->getEmail(),
-            'publicKey' => getenv('paystack_public_key'),
+            'publicKey' => env('paystack_public_key'),
         ]);
     }
 
@@ -5092,7 +5089,7 @@ class EmployerController extends BaseController
      */
     protected function enablePaystackSubscription(string $subscriptionCode): bool
     {
-        $secret = $this->paystackSecret; // or getenv('PAYSTACK_SECRET_KEY')
+        $secret = $this->paystackSecret; // or env('PAYSTACK_SECRET_KEY')
         $url = "https://api.paystack.co/subscription/enable";
 
         $payload = [
@@ -5594,5 +5591,47 @@ class EmployerController extends BaseController
             'success' => false,
             'message' => $result['message']
         ]);
+    }
+
+    /**
+     * GDPR: Export all employer data
+     */
+    public function exportData()
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        $data = [
+            'account' => [
+                'email' => $user->email,
+                'username' => $user->username ?? '',
+                'created_at' => $user->created_at ?? '',
+            ],
+            'company' => $employer ? [
+                'company_name' => $employer->company_name ?? '',
+                'contact_name' => $employer->contact_name ?? '',
+                'contact_email' => $employer->contact_email ?? '',
+                'description' => $employer->description ?? '',
+                'is_verified' => $employer->is_verified ?? 0,
+            ] : [],
+            'jobs' => model(\App\Models\JobModel::class)
+                ->where('employer_id', $employer?->id)
+                ->findAll(),
+            'subscriptions' => model(\App\Models\UserSubscriptionModel::class)
+                ->where('user_id', $user->id)
+                ->findAll(),
+            'payments' => model(\App\Models\PaymentModel::class)
+                ->where('user_id', $user->id)
+                ->findAll(),
+        ];
+
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $filename = 'jobberrecruit_employer_data_export_' . date('Y-m-d') . '.json';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/json')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($json);
     }
 }

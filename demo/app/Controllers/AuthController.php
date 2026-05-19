@@ -153,7 +153,7 @@ class AuthController extends BaseController
             return false;
         }
 
-        $secretKey = getenv('recaptcha_secret_key');
+        $secretKey = env('recaptcha_secret_key');
 
         try {
             $response = file_get_contents(
@@ -190,6 +190,11 @@ class AuthController extends BaseController
                 'phone'      => 'required',
                 'user_type'  => 'required|in_list[employer,job_seeker]',
             ];
+
+            // Require company_name for employer registration
+            if ($this->request->getPost('user_type') === 'employer') {
+                $rules['company_name'] = 'required|min_length[2]';
+            }
 
             if (!$this->validate($rules)) {
                 return $this->response->setJSON([
@@ -342,7 +347,7 @@ class AuthController extends BaseController
 
     private function paystackPost($endpoint, $data)
     {
-        $key = getenv('paystack_secret_key');
+        $key = env('paystack_secret_key');
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -385,8 +390,8 @@ class AuthController extends BaseController
      --------------------------------------------------------------------------*/
     public function googleLogin()
     {
-        $clientId    = getenv('google_client_id');
-        $redirectUri = getenv('google_redirect_uri');
+        $clientId    = env('google_client_id');
+        $redirectUri = env('google_redirect_uri');
 
         if (!$clientId || !$redirectUri) {
             return redirect()->to('/login')->with('error', 'Google is not configured.');
@@ -432,8 +437,8 @@ class AuthController extends BaseController
      --------------------------------------------------------------------------*/
     public function linkedinLogin()
     {
-        $client_id = getenv('linkedin_client_id');
-        $redirect  = getenv('linkedin_redirect_uri');
+        $client_id = env('linkedin_client_id');
+        $redirect  = env('linkedin_redirect_uri');
         $scope     = 'openid profile email';
 
         $state = bin2hex(random_bytes(16));
@@ -657,7 +662,7 @@ class AuthController extends BaseController
 
     private function createPaystackCustomer(string $email, int $userId)
     {
-        $secret = getenv('paystack_secret_key');
+        $secret = env('paystack_secret_key');
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -832,6 +837,14 @@ class AuthController extends BaseController
             $data = $this->request->getVar();
             $email = $data['email'];
             $identity = $this->db->table('auth_identities')->where('secret', $email)->get()->getRow();
+
+            if (!$identity) {
+                return $this->response->setJSON([
+                    'status'  => 'success',
+                    'message' => 'If this email is registered, instructions will be sent.'
+                ]);
+            }
+
             $user = $this->db->table('users')->where('id', $identity->user_id)->get()->getRow();
 
             if (!$user) {
@@ -859,7 +872,7 @@ class AuthController extends BaseController
                 $sent = $mailer->sendResetPassword($email, 'Password Reset Requested', [
                     'fullname' => $user->username,
                     'resetLink' => $resetLink,
-                    'siteName' => getenv('site_name') ?: 'JobberRecruit',
+                    'siteName' => env('site_name') ?: 'JobberRecruit',
                 ]);
 
                 if (!$sent) {
@@ -872,7 +885,6 @@ class AuthController extends BaseController
             return $this->response->setJSON([
                 'status'      => 'success',
                 'message'     => 'Password reset link has been sent to your email.',
-                'reset_token' => $token,
             ]);
         }
 
@@ -979,7 +991,7 @@ class AuthController extends BaseController
             $sent = $mailer->sendVerifyEmail($email, 'Please verify your JobberRecruit email', [
                 'fullname' => $fullname,
                 'verifyUrl' => $verifyUrl,
-                'siteName' => getenv('site_name') ?: 'JobberRecruit',
+                'siteName' => env('site_name') ?: 'JobberRecruit',
             ]);
 
             if (!$sent) {

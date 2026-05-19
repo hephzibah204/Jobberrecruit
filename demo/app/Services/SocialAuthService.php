@@ -54,9 +54,9 @@ class SocialAuthService
         // 1) Exchange authorization code → Access token
         $tokenResponse = $this->httpPost('https://oauth2.googleapis.com/token', [
             'code'          => $code,
-            'client_id'     => getenv('google_client_id'),
-            'client_secret' => getenv('google_client_secret'),
-            'redirect_uri'  => getenv('google_redirect_uri'),
+            'client_id'     => env('google_client_id'),
+            'client_secret' => env('google_client_secret'),
+            'redirect_uri'  => env('google_redirect_uri'),
             'grant_type'    => 'authorization_code',
         ]);
 
@@ -90,9 +90,9 @@ class SocialAuthService
         $tokenResponse = $this->httpPost('https://www.linkedin.com/oauth/v2/accessToken', [
             'grant_type'    => 'authorization_code',
             'code'          => $code,
-            'redirect_uri'  => getenv('linkedin_redirect_uri'),
-            'client_id'     => getenv('linkedin_client_id'),
-            'client_secret' => getenv('linkedin_client_secret'),
+            'redirect_uri'  => env('linkedin_redirect_uri'),
+            'client_id'     => env('linkedin_client_id'),
+            'client_secret' => env('linkedin_client_secret'),
         ]);
 
         $accessToken = $tokenResponse->access_token ?? null;

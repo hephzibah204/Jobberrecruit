@@ -200,5 +200,30 @@
     window.addEventListener('popstate', () => {
         location.reload();
     });
+
+    /* ---------- MESSAGE CANDIDATE ---------- */
+    function startMessage(candidateId) {
+        const formData = new FormData();
+        formData.append('seeker_id', candidateId);
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+        fetch('<?= base_url("employer/messages/start") ?>', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success && res.redirect) {
+                window.location.href = res.redirect;
+            } else {
+                toastr.error(res.message || 'Failed to start conversation');
+            }
+        })
+        .catch(err => {
+            toastr.error('Error starting conversation');
+            console.error(err);
+        });
+    }
 </script>
 <?= $this->endSection() ?>

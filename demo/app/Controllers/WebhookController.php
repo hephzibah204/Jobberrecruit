@@ -181,37 +181,24 @@ class WebhookController extends Controller
                 'channel'    => $channel,
             ]);
 
+            // Monthly credit refill for subscription renewals
+            if (!empty($data['subscription']['subscription_code'])) {
+                try {
+                    (new \App\Services\SubscriptionService())->creditMonthly(
+                        userId: (int) $user->id,
+                        planId: (int) $plan->id,
+                        reference: 'sub_renew_' . $reference,
+                        source: 'subscription_renewal'
+                    );
+                    log_message('info', "Monthly credits refilled for user {$user->id}");
+                } catch (\Throwable $e) {
+                    log_message('error', "Failed to credit monthly for user {$user->id}: " . $e->getMessage());
+                }
+            }
+
             log_message('info', "Subscription activated/renewed and invoice emailed for user {$user->id}");
 
             return $this->response->setStatusCode(200);
-        }
-
-        // webhook
-        if ($eventType === 'charge.success') {
-
-            $subCode = $event['data']['subscription']['subscription_code'];
-
-            $subscription = model(UserSubscriptionModel::class)
-                ->where('paystack_subscription_code', $subCode)
-                ->first();
-
-            if ($subscription) {
-
-                // Extend subscription
-                model(UserSubscriptionModel::class)
-                    ->update($subscription['id'], [
-                        'ends_at' => date('Y-m-d H:i:s', strtotime('+30 days')),
-                        'is_active' => 1
-                    ]);
-
-                // Monthly credit refill
-                (new \App\Services\SubscriptionService())->creditMonthly(
-                    userId: (int) $subscription['user_id'],
-                    planId: (int) $subscription['plan_id'],
-                    reference: 'sub_renew_' . $event['data']['reference'],
-                    source: 'subscription_renewal'
-                );
-            }
         }
 
         /*

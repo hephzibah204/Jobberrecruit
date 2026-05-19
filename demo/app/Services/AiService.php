@@ -9,8 +9,8 @@ class AiService
 
     public function __construct()
     {
-        $this->apiKey = getenv('GEMINI_API_KEY');
-        $this->model  = getenv('GEMINI_MODEL') ?: 'gemini-2.5-flash';
+        $this->apiKey = env('GEMINI_API_KEY');
+        $this->model  = env('GEMINI_MODEL') ?: 'gemini-2.5-flash';
     }
 
     /**
@@ -313,6 +313,38 @@ class AiService
         
         return $this->generate($prompt);
     }
+
+    /**
+     * Generate a tailored cover letter
+     */
+    public function generateCoverLetter(array $params): string
+    {
+        $jobTitle = $params['job_title'] ?? 'the position';
+        $companyName = $params['company_name'] ?? 'your company';
+        $jobDescription = $params['job_description'] ?? '';
+        $candidateName = $params['candidate_name'] ?? 'the candidate';
+        $candidateSkills = $params['candidate_skills'] ?? '';
+        $candidateExperience = $params['candidate_experience'] ?? '';
+        $candidateEducation = $params['candidate_education'] ?? '';
+
+        $prompt = "Write a professional, compelling cover letter for {$candidateName} applying for the '{$jobTitle}' position at {$companyName}.\n\n";
+        $prompt .= "Candidate Skills: {$candidateSkills}\n";
+        $prompt .= "Candidate Experience: {$candidateExperience}\n";
+        $prompt .= "Candidate Education: {$candidateEducation}\n";
+        if ($jobDescription) {
+            $prompt .= "Job Description: {$jobDescription}\n";
+        }
+        $prompt .= "\nRequirements:\n";
+        $prompt .= "- Keep it to 3-4 paragraphs\n";
+        $prompt .= "- Highlight relevant skills and experience that match the job\n";
+        $prompt .= "- Be professional but enthusiastic\n";
+        $prompt .= "- Include a strong opening and closing\n";
+        $prompt .= "- Do NOT include placeholders or bracketed text\n";
+        $prompt .= "- Use the candidate's actual name in the greeting";
+
+        return $this->generate($prompt);
+    }
+
     /**
      * Get a chat response with history and context
      */

@@ -105,6 +105,37 @@ class ResumeController extends BaseController
     }
 
     /**
+     * AJAX: Generate cover letter
+     */
+    public function generateCoverLetter()
+    {
+        $jobTitle = $this->request->getPost('job_title');
+        $companyName = $this->request->getPost('company_name');
+        $jobDescription = $this->request->getPost('job_description');
+
+        if (empty($jobTitle)) {
+            return $this->fail('Job title is required.');
+        }
+
+        $user = auth()->user();
+        $candidateModel = model(\App\Models\JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $user->id)->first();
+
+        $params = [
+            'job_title' => $jobTitle,
+            'company_name' => $companyName ?? '',
+            'job_description' => $jobDescription ?? '',
+            'candidate_name' => $candidate?->full_name ?? '',
+            'candidate_skills' => $candidate?->skills ?? '',
+            'candidate_experience' => $candidate?->experience_years ?? '',
+            'candidate_education' => $candidate?->education_level ?? '',
+        ];
+
+        $coverLetter = $this->aiService->generateCoverLetter($params);
+        return $this->respond(['cover_letter' => $coverLetter]);
+    }
+
+    /**
      * Save resume data
      */
     public function save()
@@ -131,6 +162,9 @@ class ResumeController extends BaseController
         $expCompanies = $this->request->getPost('exp_company') ?? [];
         $expPositions = $this->request->getPost('exp_position') ?? [];
         $expDescriptions = $this->request->getPost('exp_description') ?? [];
+        $expStartDates = $this->request->getPost('exp_start_date') ?? [];
+        $expEndDates = $this->request->getPost('exp_end_date') ?? [];
+        $expCurrent = $this->request->getPost('exp_current') ?? [];
 
         foreach ($expCompanies as $index => $company) {
             if (empty($company)) continue;
@@ -139,8 +173,27 @@ class ResumeController extends BaseController
                 'company' => $company,
                 'position' => $expPositions[$index] ?? '',
                 'description' => $expDescriptions[$index] ?? '',
-                'start_date' => date('Y-m-d'), // Simplified for now
-                'is_current' => 0
+                'start_date' => $expStartDates[$index] ?? date('Y-m-d'),
+                'end_date' => !empty($expEndDates[$index]) ? $expEndDates[$index] : null,
+                'is_current' => in_array($index, $expCurrent) ? 1 : 0,
+            ]);
+        }
+
+        // Handle Education
+        $this->educationModel->where('resume_id', $resumeId)->delete();
+        $eduSchools = $this->request->getPost('edu_school') ?? [];
+        $eduDegrees = $this->request->getPost('edu_degree') ?? [];
+        $eduFields = $this->request->getPost('edu_field') ?? [];
+        $eduYears = $this->request->getPost('edu_year') ?? [];
+
+        foreach ($eduSchools as $index => $school) {
+            if (empty($school)) continue;
+            $this->educationModel->insert([
+                'resume_id' => $resumeId,
+                'school' => $school,
+                'degree' => $eduDegrees[$index] ?? '',
+                'field_of_study' => $eduFields[$index] ?? '',
+                'graduation_year' => $eduYears[$index] ?? null,
             ]);
         }
 

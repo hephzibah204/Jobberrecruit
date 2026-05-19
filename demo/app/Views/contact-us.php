@@ -589,7 +589,7 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://www.google.com/recaptcha/api.js?render=<?= getenv('recaptcha_site_key'); ?>"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha_site_key'); ?>"></script>
 <script>
     // Form Validation and Submission
     document.addEventListener('DOMContentLoaded', function() {
@@ -611,7 +611,7 @@
             spinner.classList.remove('d-none');
 
             grecaptcha.ready(function() {
-                grecaptcha.execute('<?= getenv('recaptcha_site_key'); ?>', {
+                grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
                     action: 'contact'
                 }).then(function(token) {
 

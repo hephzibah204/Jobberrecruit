@@ -619,7 +619,7 @@
 
             <div class="mb-3" id="company-field">
                 <label for="company_name" class="form-label">Company Name</label>
-                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="Enter your company name">
+                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="Enter your company name" required>
                 <div class="invalid-feedback"></div>
             </div>
 
@@ -873,7 +873,7 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://www.google.com/recaptcha/api.js?render=<?= getenv('recaptcha_site_key'); ?>"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha_site_key'); ?>"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('registerForm');
@@ -982,7 +982,7 @@
 
             grecaptcha.ready(async function() {
                 try {
-                    const token = await grecaptcha.execute('<?= getenv('recaptcha_site_key'); ?>', {
+                    const token = await grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
                         action: 'register'
                     });
 

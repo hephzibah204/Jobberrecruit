@@ -70,9 +70,12 @@
                                     </div>
                                 </div>
                                 <div class="mt-4">
-                                    <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="btn btn-primary w-100">
+                                    <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="btn btn-primary w-100 mb-2">
                                         <i class="ri-download-line me-1"></i> Download Resume
                                     </a>
+                                    <button class="btn btn-outline-primary w-100" onclick="startMessage(<?= $candidate->id ?>)">
+                                        <i class="ri-message-2-line me-1"></i> Send Message
+                                    </button>
                                 </div>
                             <?php else: ?>
                                 <!-- LOCKED STATE -->
@@ -208,6 +211,30 @@ function unlockCandidate(id) {
             console.error(err);
             btn.disabled = false;
             btn.innerHTML = originalHtml;
+        });
+    }
+
+    function startMessage(candidateId) {
+        const formData = new FormData();
+        formData.append('seeker_id', candidateId);
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+        fetch('<?= base_url("employer/messages/start") ?>', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success && res.redirect) {
+                window.location.href = res.redirect;
+            } else {
+                toastr.error(res.message || 'Failed to start conversation');
+            }
+        })
+        .catch(err => {
+            toastr.error('Error starting conversation');
+            console.error(err);
         });
     }
 }

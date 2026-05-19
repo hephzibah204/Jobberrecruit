@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <form action="<?= base_url('employer/profile/update/' . $employer->id) ?>" method="POST" class="edit-employer-form" enctype="multipart/form-data" id="editEmployerForm">
+    <form action="<?= base_url('employer/profile/edit') ?>" method="POST" class="edit-employer-form" enctype="multipart/form-data" id="editEmployerForm">
         <?= csrf_field() ?>
 
         <div class="add-employer">
@@ -207,7 +207,7 @@
                             <div class="alert alert-info mt-3">
                                 <i data-feather="info" class="me-2"></i>
                                 <strong>Note:</strong> CAC Certificate is now required for verification.
-                                Please upload your CAC certificate <a href="<?= base_url('employer/upload-document') ?>">here</a> if you haven't already.
+                                Please upload your CAC certificate <a href="<?= base_url('employer/profile/upload-document') ?>">here</a> if you haven't already.
                             </div>
                         </div>
                     </div>

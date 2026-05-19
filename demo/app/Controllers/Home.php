@@ -277,7 +277,10 @@ class Home extends BaseController
     public function location_hub($slug)
     {
         $stateModel = model(StateModel::class);
-        $state = $stateModel->where('slug', $slug)->first();
+        $stateName = str_replace(['-', '_'], ' ', trim($slug));
+        $state = $stateModel
+            ->where('LOWER(name) =', strtolower($stateName), false)
+            ->first();
         if (!$state) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Location not found: $slug");
 
         // Force the filter in the request
@@ -1240,13 +1243,8 @@ class Home extends BaseController
 
         // Log the click
         $clickModel = new JobClickModel();
-        // Get the user if there is user_id
-        $user = $this->auth->getUser();
-        if(!$user || $user->user_type == 'employer'){ 
-            $clickModel->logClick($jobId, $method, null);
-        } else {
-            $clickModel->logClick($jobId, $method, function_exists('user_id') ? user_id() : null);
-        }
+        $clickUserId = $this->auth->loggedIn() ? $this->auth->user()->id : null;
+        $clickModel->logClick($jobId, $method, $clickUserId);
 
         // Redirect to final destination
         return redirect()->to($redirectUrl);
@@ -1657,8 +1655,9 @@ class Home extends BaseController
                 ]);
             }
 
-            // Check if already applied
-            $existingApplication = $applicationModel->where('email', $this->request->getPost('email'))->where('job_id', $jobId)->first();
+            // Check if already applied (use logged-in user's email when available)
+            $applicantEmail = $loggedIn ? $user->email : $this->request->getPost('email');
+            $existingApplication = $applicationModel->where('email', $applicantEmail)->where('job_id', $jobId)->first();
             if ($existingApplication) {
                 return $this->response->setJSON([
                     'status' => 'error',
@@ -1725,7 +1724,7 @@ class Home extends BaseController
             // ---- Save Pre-screening Answers ----
             $answers = $this->request->getPost('answers');
             if (!empty($answers) && is_array($answers)) {
-                $answerModel = model(\App\Models\JobApplicationAnswerModel::class);
+                $answerModel = model(\App\Models\ApplicationAnswerModel::class);
                 foreach ($answers as $questionId => $answer) {
                     if (is_array($answer)) {
                         $answer = implode(', ', $answer);
@@ -1733,7 +1732,7 @@ class Home extends BaseController
                     $answerModel->insert([
                         'application_id' => $applicationId,
                         'question_id'    => (int) $questionId,
-                        'answer_text'    => trim($answer),
+                        'answer'         => trim($answer),
                     ]);
                 }
             }
@@ -1975,7 +1974,7 @@ class Home extends BaseController
             // reCAPTCHA v3 VALIDATION
             // ------------------------------------
             $recaptchaResponse = $this->request->getPost('g-recaptcha-response');
-            $recaptchaSecret  = getenv('recaptcha_secret_key');
+            $recaptchaSecret  = env('recaptcha_secret_key');
 
             if (! $recaptchaResponse) {
                 return $this->response->setJSON([
@@ -2237,6 +2236,8 @@ class Home extends BaseController
 
             // Fallback: If no matches or not enough, get most viewed posts
             if (count($relatedPosts) < 3) {
+
+                $relatedIds = array_column($relatedPosts, 'id');
 
                 $fallbackQuery = $blogModel
                     ->where('status', 'published')
@@ -2522,13 +2523,14 @@ class Home extends BaseController
             ->where('user_subscriptions.user_id', $company->user_id)
             ->first();
 
+        $planFeatures = [];
         if ($activeSub && !empty($activeSub['features'])) {
-            $planFeature = planFeatures(json_decode($activeSub['features'], true));
+            $planFeatures = planFeatures(json_decode($activeSub['features'], true));
         }
 
         // TRUST BADGE
         $company->show_trust_badge =
-            ($planFeature['trust_badge']) && ($company->is_verified == 1);
+            !empty($planFeature['trust_badge']) && ($company->is_verified == 1);
 
         // Load industries
         $industryIDs = $industryMap->where('employer_id', $id)->findColumn('industry_id') ?? [];
@@ -2545,37 +2547,27 @@ class Home extends BaseController
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
+        // Fetch subscription plan features once (all jobs belong to same employer)
+        $subscriptionModel = model(UserSubscriptionModel::class);
+        $activeSub = $subscriptionModel
+            ->select('plans.features')
+            ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
+            ->where('user_subscriptions.is_active', 1)
+            ->where('user_subscriptions.user_id', $id)
+            ->first();
+
         $planFeatures = [];
+        if ($activeSub && !empty($activeSub['features'])) {
+            $planFeatures = planFeatures(json_decode($activeSub['features'], true));
+        }
 
         foreach ($openJobs as &$job) {
-
-            $subscriptionModel = model(UserSubscriptionModel::class);
-
-            $activeSub = $subscriptionModel
-                ->select('plans.features')
-                ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
-                ->where('user_subscriptions.is_active', 1)
-                ->where('user_subscriptions.user_id', $job->employer_user_id)
-                ->first();
-
-            if ($activeSub && !empty($activeSub['features'])) {
-                $planFeatures = planFeatures(json_decode($activeSub['features'], true));
-            }
-
             $job->anonymous = !empty($planFeatures['anonymous']) && ($job->is_anonymous);
 
-            // ANONYMOUS POSTING
             if (!empty($planFeatures['anonymous']) && ($job->is_anonymous)) {
                 $job->employer_name = 'Confidential Employer';
                 $job->company_logo  = base_url('images/favicon.png');
             }
-
-            // Normalize logo URL
-            // if (!empty($job->company_logo)) {
-            //     $job->company_logo = !empty($job->company_logo)
-            //         ? base_url($job->company_logo)
-            //         : base_url('images/favicon.png');
-            // }
         }
 
         return view('company_profile', [
