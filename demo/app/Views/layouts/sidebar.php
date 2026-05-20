@@ -35,6 +35,13 @@ if ($isEmployer) {
                 <?= esc($displayName) ?>
             </h6>
             <p class="fs-12 mb-0"><?= esc($email) ?></p>
+            <?php if (!$isEmployer): ?>
+                <div class="mt-3">
+                    <a href="<?= base_url('candidate/subscription/pricing') ?>" class="btn btn-sm btn-gradient-warning text-white fw-bold w-100 rounded-pill py-2 px-3 shadow" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none;">
+                        <i class="ti ti-crown me-1"></i> Upgrade Plan
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
     <!-- /Profile Summary -->
@@ -56,9 +63,13 @@ if ($isEmployer) {
                             <li <?= uri_string() === 'employer/applications' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/applications') ?>"><i class="ti ti-file-description fs-16 me-2"></i><span>Applications</span></a></li>
                             <li <?= uri_string() === 'employer/candidates' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/candidates') ?>"><i class="ti ti-users fs-16 me-2"></i><span>Candidates Search</span></a></li>
                             <li <?= uri_string() === 'employer/profile' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/profile') ?>"><i class="ti ti-building fs-16 me-2"></i><span>Company Profile</span></a></li>
+                            <?php if (env('feature_messaging', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'employer/messages' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/messages') ?>"><i class="ti ti-message-dots fs-16 me-2"></i><span>Messages</span></a></li>
+                            <?php endif; ?>
                             <li <?= uri_string() === 'employer/pricing' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/pricing') ?>"><i class="ti ti-credit-card fs-16 me-2"></i><span>Billing & Plans</span></a></li>
+                            <?php if (env('feature_referrals', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'employer/referrals' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/referrals') ?>"><i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span></a></li>
+                            <?php endif; ?>
                             <li <?= uri_string() === 'employer/notifications' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/notifications') ?>"><i class="ti ti-bell fs-16 me-2"></i><span>Notifications</span></a></li>
                         <?php else: ?>
                             <li class="active">
@@ -69,13 +80,23 @@ if ($isEmployer) {
                             <li <?= uri_string() === 'candidate/jobs' ? 'class="active"' : '' ?>><a href="<?= base_url('jobs') ?>"><i class="ti ti-briefcase fs-16 me-2"></i><span>Browse Jobs</span></a></li>
                             <li <?= uri_string() === 'candidate/applications' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/applications') ?>"><i class="ti ti-file-check fs-16 me-2"></i><span>My Applications</span></a></li>
                             <li <?= uri_string() === 'candidate/profile' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/profile') ?>"><i class="ti ti-user fs-16 me-2"></i><span>My Profile</span></a></li>
+                            <?php if (env('feature_ai_resume', 'true') === 'true'): ?>
                             <li <?= strpos(uri_string(), 'candidate/resumes') !== false ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/resumes') ?>"><i class="ti ti-file-spark fs-16 me-2"></i><span>AI Resume Builder</span></a></li>
+                            <?php endif; ?>
+                            <?php if (env('feature_ai_career_tools', 'true') === 'true'): ?>
                             <li <?= strpos(uri_string(), 'candidate/career-tools') !== false ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/career-tools') ?>"><i class="ti ti-sparkles fs-16 me-2"></i><span>AI Career Tools</span></a></li>
+                            <?php endif; ?>
                             <li <?= strpos(uri_string(), 'candidate/subscription') !== false ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/subscription/pricing') ?>"><i class="ti ti-crown fs-16 me-2"></i><span>Premium Plans</span></a></li>
+                            <?php if (env('feature_messaging', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'candidate/messages' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/messages') ?>"><i class="ti ti-message-circle fs-16 me-2"></i><span>Messages</span></a></li>
+                            <?php endif; ?>
+                            <?php if (env('feature_referrals', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'candidate/referrals' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/referrals') ?>"><i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span></a></li>
+                            <?php endif; ?>
                             <li <?= uri_string() === 'candidate/notifications' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/notifications') ?>"><i class="ti ti-bell fs-16 me-2"></i><span>Notifications</span></a></li>
+                            <?php if (env('feature_webinars', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'webinars' ? 'class="active"' : '' ?>><a href="<?= base_url('webinars') ?>"><i class="ti ti-video fs-16 me-2"></i><span>Career Webinars</span></a></li>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </ul>
                 </li>

@@ -94,12 +94,16 @@ class Mailer
             'siteName' => $siteName,
         ]);
 
-        return $this->setTo($to)
+        \Config\Services::$bypassQueue = true;
+        $result = $this->setTo($to)
             ->setFrom(env('email_from_address') ?: 'no-reply@' . parse_url(base_url(), PHP_URL_HOST), env('email_from_name') ?: $siteName)
             ->setSubject($subject)
             ->setMessage($html)
             ->setAltMessage($text)
             ->send();
+        \Config\Services::$bypassQueue = false;
+
+        return $result;
     }
 
     public function sendResetPassword(string $to, string $subject, array $data): bool
@@ -121,12 +125,16 @@ class Mailer
             'siteName' => $siteName,
         ]);
 
-        return $this->setTo($to)
+        \Config\Services::$bypassQueue = true;
+        $result = $this->setTo($to)
             ->setFrom(env('email_from_address') ?: 'no-reply@' . parse_url(base_url(), PHP_URL_HOST), env('email_from_name') ?: $siteName)
             ->setSubject($subject)
             ->setMessage($html)
             ->setAltMessage($text)
             ->send();
+        \Config\Services::$bypassQueue = false;
+
+        return $result;
     }
 
     /**

@@ -254,6 +254,24 @@ class Home extends BaseController
         $states = $cache->get($statesCacheKey) ?: $stateModel->orderBy('name', 'ASC')->findAll();
         $cache->save($statesCacheKey, $states, 60);
 
+        $employerModel = new \App\Models\EmployerModel();
+        $jobAppModel = new \App\Models\JobApplicationModel();
+
+        $activeJobsCount = $jobModel->where('status', 'open')->countAllResults();
+
+        $verifiedEmployersCount = $employerModel->groupStart()
+            ->where('verification_status', 'verified')
+            ->orWhere('is_verified', 1)
+            ->groupEnd()
+            ->countAllResults();
+
+        $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
+        $monthlyApplicantsCount = $jobAppModel->where('created_at >=', $thirtyDaysAgo)->countAllResults();
+
+        $totalApps = $jobAppModel->countAllResults();
+        $hiredApps = $jobAppModel->where('status', 'hired')->countAllResults();
+        $placementSuccess = $totalApps > 0 ? round(($hiredApps / $totalApps) * 100) : 95;
+
         $data = [
             'title' => 'Find Jobs in Nigeria | JobberRecruit — Hire Top Talent',
             'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt and more. Employers can post jobs and hire top Nigerian talent today.',
@@ -268,7 +286,11 @@ class Home extends BaseController
             'top_companies' => $top_companies,
             'featured_jobs' => $featured_jobs,
             'popular_vacancies' => $popular_vacancies,
-            'website_logo' => 'assets/imgs/page/homepage4/banner.png'
+            'website_logo' => 'assets/imgs/page/homepage4/banner.png',
+            'activeJobsCount' => $activeJobsCount,
+            'verifiedEmployersCount' => $verifiedEmployersCount,
+            'monthlyApplicantsCount' => $monthlyApplicantsCount,
+            'placementSuccess' => $placementSuccess
         ];
 
         return view('home/index', $data);
@@ -372,12 +394,19 @@ class Home extends BaseController
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->where('status', 'open');
 
+        $selectedIndustryName = null;
+        $selectedStateName = null;
+
         // Apply filters
         if ($industryId) {
             $query->where('jobs.industry_id', $industryId);
+            $ind = $industryModel->find($industryId);
+            if ($ind) $selectedIndustryName = $ind->name;
         }
         if ($stateId) {
             $query->where('jobs.state_id', $stateId);
+            $st = $stateModel->find($stateId);
+            if ($st) $selectedStateName = $st->name;
         }
         if ($experienceLevel) {
             $query->where('jobs.experience_level', $experienceLevel);
@@ -564,6 +593,8 @@ class Home extends BaseController
             'sort_by' => $sortBy,
             'industryId' => $industryId,
             'stateId' => $stateId,
+            'selectedIndustryName' => $selectedIndustryName,
+            'selectedStateName' => $selectedStateName,
             'experienceLevel' => $experienceLevel,
             'salaryMin' => $salaryMin,
             'salaryMax' => $salaryMax,

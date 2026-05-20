@@ -1,5 +1,47 @@
 <?= $this->extend('templates/base') ?>
 
+<?= $this->section('schema') ?>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "JobberRecruit Professional E-Learning Courses",
+  "description": "Browse admin-curated professional training courses, career development guides, and tech certifications on JobberRecruit.",
+  "url": "<?= current_url() ?>",
+  "numberOfItems": <?= count($courses) ?>,
+  "itemListElement": [
+    <?php foreach (array_slice($courses, 0, 10) as $index => $course): ?>
+    {
+      "@type": "ListItem",
+      "position": <?= $index + 1 ?>,
+      "item": {
+        "@type": "Course",
+        "name": "<?= esc($course->title) ?>",
+        "description": "<?= esc(mb_substr(strip_tags((string) $course->description), 0, 150)) ?>...",
+        "provider": {
+          "@type": "Organization",
+          "name": "JobberRecruit",
+          "sameAs": "<?= base_url() ?>"
+        },
+        "hasCourseInstance": {
+          "@type": "CourseInstance",
+          "courseMode": "online",
+          "duration": "<?= esc($course->duration ?: 'Self-paced') ?>",
+          "offers": {
+            "@type": "Offer",
+            "price": "<?= (float) ($course->price ?? 0) ?>",
+            "priceCurrency": "NGN",
+            "category": "<?= (float) ($course->price ?? 0) > 0 ? 'Paid' : 'Free' ?>"
+          }
+        }
+      }
+    }<?= $index < min(count($courses) - 1, 9) ? ',' : '' ?>
+    <?php endforeach; ?>
+  ]
+}
+</script>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <section class="course-hero">
     <div class="container">
@@ -47,7 +89,11 @@
                 <div class="col-lg-4">
                     <div class="featured-course-card">
                         <div class="featured-course-meta">
-                            <span class="badge-soft"><?= strtoupper((string) ($course->level ?? 'beginner')) ?></span>
+                            <?php if (($course->item_type ?? 'course') === 'ebook'): ?>
+                                <span class="badge-soft" style="background:#198754;color:#fff;">EBOOK (PDF)</span>
+                            <?php else: ?>
+                                <span class="badge-soft"><?= strtoupper((string) ($course->level ?? 'beginner')) ?></span>
+                            <?php endif; ?>
                             <span class="badge-soft"><?= (float) $course->price > 0 ? 'PAID' : 'FREE' ?></span>
                         </div>
                         <h3><?= esc($course->title) ?></h3>
@@ -88,8 +134,12 @@
                             <div class="course-card-image">
                                 <img src="<?= $course->thumbnail ? base_url($course->thumbnail) : 'https://placehold.co/900x560/0d6efd/ffffff?text=' . urlencode($course->title) ?>" alt="<?= esc($course->title) ?>">
                                 <div class="course-card-badges">
-                                    <span><?= ucfirst((string) ($course->level ?? 'beginner')) ?></span>
-                                    <span><?= ucfirst((string) ($course->content_source ?? 'none')) ?></span>
+                                    <?php if (($course->item_type ?? 'course') === 'ebook'): ?>
+                                        <span style="background:#198754;color:#fff;">eBook (PDF)</span>
+                                    <?php else: ?>
+                                        <span><?= ucfirst((string) ($course->level ?? 'beginner')) ?></span>
+                                        <span><?= ucfirst((string) ($course->content_source ?? 'none')) ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="course-card-body">

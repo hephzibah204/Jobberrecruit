@@ -54,8 +54,12 @@
                     <ul class="main-menu">
                         <li><a <?= (uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                         <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                        <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
+                        <?php if (env('feature_elearning', 'true') === 'true'): ?>
+                        <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">E-Learning</a></li>
+                        <?php endif; ?>
+                        <?php if (env('feature_webinars', 'true') === 'true'): ?>
                         <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                        <?php endif; ?>
                         <li><a <?= (uri_string() == 'blogs') ? 'class="active"' : '' ?> href="<?= base_url('blogs'); ?>">Blogs</a></li>
                         <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                         <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
@@ -98,8 +102,12 @@
                         <ul class="mobile-menu font-heading">
                             <li><a <?= (uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                             <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
+                            <?php if (env('feature_elearning', 'true') === 'true'): ?>
+                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">E-Learning</a></li>
+                            <?php endif; ?>
+                            <?php if (env('feature_webinars', 'true') === 'true'): ?>
                             <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                            <?php endif; ?>
                             <li><a <?= (uri_string() == 'blogs') ? 'class="active"' : '' ?> href="<?= base_url('blogs'); ?>">Blogs</a></li>
                             <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                             <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
@@ -143,8 +151,12 @@
                         <ul class="mobile-menu font-heading">
                             <li><a <?= (uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                             <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
+                            <?php if (env('feature_elearning', 'true') === 'true'): ?>
+                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">E-Learning</a></li>
+                            <?php endif; ?>
+                            <?php if (env('feature_webinars', 'true') === 'true'): ?>
                             <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                            <?php endif; ?>
                             <li><a <?= (uri_string() == 'blogs') ? 'class="active"' : '' ?> href="<?= base_url('blogs'); ?>">Blogs</a></li>
                             <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                             <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>

@@ -246,6 +246,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->group('career-tools', function ($routes) {
         $routes->get('', 'CareerToolsController::index');
         $routes->get('mock-interview', 'CareerToolsController::mockInterview');
+        $routes->get('mock-interview/start', 'CareerToolsController::startInterviewSession');
         $routes->get('salary-negotiation', 'CareerToolsController::salaryNegotiation');
         $routes->get('career-advice', 'CareerToolsController::careerAdvice');
         $routes->post('send-message', 'CareerToolsController::sendMessage');
@@ -271,6 +272,8 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('theme/toggle', 'AdminController::toggleTheme');
     $routes->get('users', 'AdminController::index');
     $routes->get('settings', 'AdminController::index');
+    $routes->get('features', 'AdminController::features');
+    $routes->post('features/save', 'AdminController::saveFeatures');
 
     $routes->get('profile', 'AdminController::profile');
     $routes->post('profile/update', 'AdminController::updateProfile');
@@ -368,6 +371,12 @@ service('auth')->routes($routes);
 $routes->post('chatbot/send', 'ChatbotController::sendMessage');
 $routes->post('chatbot/clear', 'ChatbotController::clearHistory');
 
+// Debug Routes (Development Only)
+if (ENVIRONMENT === 'development') {
+    $routes->get('debug', 'DebugController::index');
+    $routes->get('debug/seed', 'DebugController::seed');
+}
+
 // Newsletter & Webinar Routes
 $routes->get('webinars', 'NewsletterController::webinars');
 $routes->post('newsletter/subscribe', 'NewsletterController::subscribe');
@@ -392,6 +401,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('newsletters/save', 'NewsletterController::saveNewsletter');
     $routes->post('newsletters/send/(:num)', 'NewsletterController::sendNewsletter/$1');
     $routes->post('webinars/save', 'NewsletterController::saveWebinar');
+    $routes->get('webinars', 'NewsletterController::adminWebinarsIndex');
 
     // Job Reports
     $routes->get('reports', 'JobReportController::adminIndex');
@@ -400,4 +410,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     // E-Learning
     $routes->get('elearning', 'ElearningController::adminIndex');
     $routes->post('elearning/save', 'ElearningController::saveCourse');
+    $routes->get('elearning/modules/(:num)', 'ElearningController::adminModules/$1');
+    $routes->post('elearning/modules/save', 'ElearningController::adminSaveModule');
+    $routes->post('elearning/modules/delete/(:num)', 'ElearningController::adminDeleteModule/$1');
 });

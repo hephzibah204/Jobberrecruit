@@ -39,6 +39,7 @@ class Filters extends BaseFilters
         'auth'          => UserAuthFilter::class,
         'guest'         => GuestFilter::class,
         'adminAuth' => \App\Filters\AdminFilter::class,
+        'featureGate'   => \App\Filters\FeatureGateFilter::class,
     ];
 
     /**
@@ -77,6 +78,7 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            'featureGate',
             // 'honeypot',
             // 'csrf' => ['except' => ['subscription/webhook']]
             // 'csrf' => [

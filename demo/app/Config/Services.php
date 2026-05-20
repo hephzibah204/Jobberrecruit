@@ -21,6 +21,8 @@ use App\Services\PaystackService;
  */
 class Services extends BaseService
 {
+    public static bool $bypassQueue = false;
+
     /*
      * public static function example($getShared = true)
      * {
@@ -31,6 +33,21 @@ class Services extends BaseService
      *     return new \CodeIgniter\Example();
      * }
      */
+
+    public static function email($getShared = true)
+    {
+        if ($getShared && !static::$bypassQueue) {
+            return static::getSharedInstance('email');
+        }
+
+        $config = config('Email');
+
+        if (static::$bypassQueue) {
+            return new \CodeIgniter\Email\Email($config);
+        }
+
+        return new \App\Libraries\QueuedEmail($config);
+    }
 
     public static function socialAuth(bool $getShared = true): SocialAuthService
     {

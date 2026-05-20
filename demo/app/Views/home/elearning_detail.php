@@ -1,14 +1,50 @@
 <?= $this->extend('templates/base') ?>
 
+<?= $this->section('schema') ?>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "<?= esc($course->title) ?>",
+  "description": "<?= esc(mb_substr(strip_tags((string) $course->description), 0, 200)) ?>...",
+  "provider": {
+    "@type": "Organization",
+    "name": "JobberRecruit",
+    "sameAs": "<?= base_url() ?>"
+  },
+  "hasCourseInstance": {
+    "@type": "CourseInstance",
+    "courseMode": "online",
+    "duration": "<?= esc($course->duration ?: 'Self-paced') ?>",
+    "instructor": {
+      "@type": "Person",
+      "name": "<?= esc($course->instructor ?: 'JobberRecruit') ?>"
+    }
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "<?= (float) ($course->price ?? 0) ?>",
+    "priceCurrency": "NGN",
+    "availability": "https://schema.org/InStock",
+    "category": "<?= (float) ($course->price ?? 0) > 0 ? 'Paid' : 'Free' ?>"
+  }
+}
+</script>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <section class="course-detail-hero">
     <div class="container">
         <div class="row align-items-center gy-4">
             <div class="col-lg-7">
                 <div class="detail-badges">
-                    <span><?= ucfirst((string) ($course->level ?? 'beginner')) ?></span>
-                    <span><?= (float) ($course->price ?? 0) > 0 ? 'Paid Course' : 'Free Course' ?></span>
-                    <span><?= ucfirst((string) ($course->content_source ?? 'none')) ?></span>
+                    <?php if (($course->item_type ?? 'course') === 'ebook'): ?>
+                        <span style="background:#198754;color:#fff;">eBook (PDF)</span>
+                    <?php else: ?>
+                        <span><?= ucfirst((string) ($course->level ?? 'beginner')) ?></span>
+                        <span><?= ucfirst((string) ($course->content_source ?? 'none')) ?></span>
+                    <?php endif; ?>
+                    <span><?= (float) ($course->price ?? 0) > 0 ? 'Paid' : 'Free' ?></span>
                 </div>
                 <h1><?= esc($course->title) ?></h1>
                 <p class="detail-lead"><?= esc(mb_substr(strip_tags((string) $course->description), 0, 220)) ?>...</p>
@@ -28,11 +64,12 @@
                             <div class="access-state warning">Enroll to unlock the full content.</div>
                         <?php endif; ?>
 
+                        <?php $isEbook = ($course->item_type ?? 'course') === 'ebook'; ?>
                         <?php if ((float) ($course->price ?? 0) > 0): ?>
-                            <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary w-100">Buy Course</a>
+                            <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary w-100">Buy <?= $isEbook ? 'eBook' : 'Course' ?></a>
                         <?php else: ?>
                             <a href="<?= $canAccessContent ? '#course-content' : base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary w-100">
-                                <?= $canAccessContent ? 'Go to Content' : 'Enroll for Free' ?>
+                                <?= $canAccessContent ? ($isEbook ? 'Download eBook' : 'Go to Content') : ($isEbook ? 'Get eBook for Free' : 'Enroll for Free') ?>
                             </a>
                         <?php endif; ?>
 
@@ -56,19 +93,56 @@
                 </div>
 
                 <div class="content-card mt-4" id="course-content">
-                    <h2>Course content</h2>
+                    <h2><?= ($course->item_type ?? 'course') === 'ebook' ? 'eBook Download' : 'Course content' ?></h2>
 
                     <?php if (! $canAccessContent): ?>
-                        <p class="text-muted mb-0">This content unlocks after enrollment. Free courses unlock instantly when you enroll, while paid courses unlock after successful payment.</p>
-                    <?php elseif (($course->content_source ?? 'none') === 'youtube' && $youtubeEmbedUrl): ?>
-                        <div class="ratio ratio-16x9">
-                            <iframe src="<?= esc($youtubeEmbedUrl) ?>" title="<?= esc($course->title) ?>" allowfullscreen></iframe>
+                        <p class="text-muted mb-0">This content unlocks after <?= ($course->item_type ?? 'course') === 'ebook' ? 'purchase/enrollment' : 'enrollment' ?>.</p>
+                    <?php elseif (!empty($modules)): ?>
+                        <div class="accordion" id="modulesAccordion">
+                            <?php foreach($modules as $idx => $mod): ?>
+                                <div class="accordion-item mb-2 border rounded">
+                                    <h2 class="accordion-header" id="heading<?= $mod->id ?>">
+                                        <button class="accordion-button <?= $idx !== 0 ? 'collapsed' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $mod->id ?>" aria-expanded="<?= $idx === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $mod->id ?>">
+                                            Module <?= $idx + 1 ?>: <?= esc($mod->title) ?>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse<?= $mod->id ?>" class="accordion-collapse collapse <?= $idx === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $mod->id ?>" data-bs-parent="#modulesAccordion">
+                                        <div class="accordion-body">
+                                            <?php if ($mod->description): ?>
+                                                <p class="mb-3 text-muted"><?= esc($mod->description) ?></p>
+                                            <?php endif; ?>
+
+                                            <?php if ($mod->content_source === 'youtube' && !empty($mod->youtube_url)): ?>
+                                                <?php 
+                                                    preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $mod->youtube_url, $match);
+                                                    $ytUrl = isset($match[1]) ? "https://www.youtube.com/embed/" . $match[1] : $mod->youtube_url;
+                                                ?>
+                                                <div class="ratio ratio-16x9">
+                                                    <iframe src="<?= esc($ytUrl) ?>" allowfullscreen></iframe>
+                                                </div>
+                                            <?php elseif ($mod->content_source === 'upload' && !empty($mod->content_file)): ?>
+                                                <div class="p-3 bg-light rounded text-center">
+                                                    <i class="ti ti-file-download fs-1 text-primary mb-2 d-block"></i>
+                                                    <a href="<?= base_url('training/content/' . $course->id . '?module_id=' . $mod->id) ?>" class="btn btn-primary">Download Attached File</a>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-                    <?php elseif (($course->content_source ?? 'none') === 'upload' && ! empty($course->content_file)): ?>
-                        <p class="text-muted">Download the uploaded course resource below.</p>
-                        <a href="<?= base_url('training/content/' . $course->id) ?>" class="btn btn-outline-primary">Download Course Resource</a>
                     <?php else: ?>
-                        <p class="text-muted mb-0">No course content has been attached yet.</p>
+                        <!-- Legacy Single Video/File Fallback -->
+                        <?php if (($course->content_source ?? 'none') === 'youtube' && !empty($youtubeEmbedUrl)): ?>
+                            <div class="ratio ratio-16x9">
+                                <iframe src="<?= esc($youtubeEmbedUrl) ?>" title="<?= esc($course->title) ?>" allowfullscreen></iframe>
+                            </div>
+                        <?php elseif (($course->content_source ?? 'none') === 'upload' && ! empty($course->content_file)): ?>
+                            <p class="text-muted">Download the attached resource below.</p>
+                            <a href="<?= base_url('training/content/' . $course->id) ?>" class="btn btn-outline-primary">Download <?= ($course->item_type ?? 'course') === 'ebook' ? 'eBook' : 'Course Resource' ?></a>
+                        <?php else: ?>
+                            <p class="text-muted mb-0">No course content has been attached yet.</p>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>

@@ -176,4 +176,12 @@ class NewsletterController extends BaseController
 
         return redirect()->back()->with('success', 'Webinar saved successfully');
     }
+
+    public function adminWebinarsIndex()
+    {
+        return view('admin/webinars/index', [
+            'title' => 'Webinar Management',
+            'webinars' => $this->webinarModel->orderBy('scheduled_at', 'DESC')->findAll(),
+        ]);
+    }
 }

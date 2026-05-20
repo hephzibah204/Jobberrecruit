@@ -35,6 +35,14 @@
                 <a href="<?= base_url('candidate/saved-jobs') ?>" class="btn btn-outline-primary btn-md mb-2">
                     Saved Jobs
                 </a>
+                <?php if (env('feature_ai_career_tools', 'true') === 'true'): ?>
+                <a href="<?= base_url('candidate/career-tools') ?>" class="btn btn-outline-info btn-md me-2 mb-2">
+                    AI Career Tools
+                </a>
+                <a href="<?= base_url('candidate/career-tools/mock-interview') ?>" class="btn btn-outline-success btn-md mb-2" target="_blank" rel="noopener">
+                    Start Mock Interview
+                </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>

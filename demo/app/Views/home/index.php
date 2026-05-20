@@ -241,19 +241,19 @@
     <div class="container">
         <div class="row g-4 text-center">
             <div class="col-6 col-md-3">
-                <div class="counter text-primary display-6 mb-1" data-count="175000">175,000+</div>
+                <div class="counter text-primary display-6 mb-1" data-count="<?= esc($activeJobsCount ?? 0) ?>"><?= number_format($activeJobsCount ?? 0) ?></div>
                 <div class="text-muted small fw-medium text-uppercase">Active Jobs</div>
             </div>
             <div class="col-6 col-md-3 border-start-md border-secondary-subtle">
-                <div class="counter text-success display-6 mb-1" data-count="38000">38,000+</div>
+                <div class="counter text-success display-6 mb-1" data-count="<?= esc($verifiedEmployersCount ?? 0) ?>"><?= number_format($verifiedEmployersCount ?? 0) ?></div>
                 <div class="text-muted small fw-medium text-uppercase">Verified Employers</div>
             </div>
             <div class="col-6 col-md-3 border-start-md border-secondary-subtle">
-                <div class="counter text-info display-6 mb-1" data-count="1200000">1.2M+</div>
+                <div class="counter text-info display-6 mb-1" data-count="<?= esc($monthlyApplicantsCount ?? 0) ?>"><?= number_format($monthlyApplicantsCount ?? 0) ?></div>
                 <div class="text-muted small fw-medium text-uppercase">Monthly Applicants</div>
             </div>
             <div class="col-6 col-md-3 border-start-md border-secondary-subtle">
-                <div class="counter text-warning display-6 mb-1" data-count="95">95%</div>
+                <div class="text-warning display-6 mb-1"><span class="counter d-inline-block" data-count="<?= esc($placementSuccess ?? 95) ?>"><?= number_format($placementSuccess ?? 95) ?></span>%</div>
                 <div class="text-muted small fw-medium text-uppercase">Placement Success</div>
             </div>
         </div>
@@ -294,7 +294,7 @@
             <?php if (!empty($jobs)): ?>
                 <?php foreach ($jobs as $job): ?>
                     <div class="col-12 col-md-6 col-lg-4">
-                        <div class="glass-card p-4 h-100">
+                        <div class="glass-card p-4 h-100 position-relative">
                                 <!-- Featured Badge -->
                                 <?php if ($job->is_featured ?? false): ?>
                                     <div class="position-absolute top-0 start-0 ms-3">
@@ -449,7 +449,7 @@
             </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4 mb-5">
             <?php if (!empty($categories)): ?>
                 <?php foreach (array_slice($categories, 0, 8) as $index => $category): ?>
                     <div class="col-6 col-md-4 col-lg-3">
@@ -459,7 +459,35 @@
                                     <i class="<?= $category->icon ?? 'bi-grid' ?> text-white fs-2" style="text-shadow: 0 0 15px rgba(14, 165, 233, 0.8);"></i>
                                 </div>
                                 <h6 class="fw-bold text-main mb-2"><?= esc($category->name) ?></h6>
-                                <p class="text-muted small mb-0"><?= esc($category->formatted_count) ?> jobs</p>
+                                <p class="text-muted small mb-0"><?= esc($category->formatted_count) ?></p>
+                            </div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- Top Locations -->
+        <div class="section-header mb-5 border-0 pt-5">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="display-5 fw-bold mb-3 text-gradient">Browse by Location</h2>
+                    <p class="lead text-muted">Find jobs in top cities and regions</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <?php if (!empty($top_locations)): ?>
+                <?php foreach ($top_locations as $location): ?>
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <a href="<?= esc($location->url) ?>" class="text-decoration-none">
+                            <div class="glass-card p-4 text-center h-100 hover-lift">
+                                <div class="icon-wrapper rounded-circle p-3 mx-auto mb-4" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-geo-alt text-success fs-2" style="text-shadow: 0 0 15px rgba(16, 185, 129, 0.8);"></i>
+                                </div>
+                                <h6 class="fw-bold text-main mb-2"><?= esc($location->name) ?></h6>
+                                <p class="text-muted small mb-0"><?= esc($location->formatted_count) ?></p>
                             </div>
                         </a>
                     </div>

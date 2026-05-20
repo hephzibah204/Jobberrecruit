@@ -49,6 +49,9 @@ class QueueProcessor extends BaseCommand
                 case 'newsletter_email':
                     $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
                     break;
+                case 'transactional_email':
+                    $success = $this->sendTransactionalEmail($data);
+                    break;
                 // Add more cases here as needed
                 default:
                     $error = "Unknown job type: {$type}";
@@ -77,7 +80,10 @@ class QueueProcessor extends BaseCommand
 
     protected function sendEmail($to, $subject, $content)
     {
-        $email = \Config\Services::email();
+        \Config\Services::$bypassQueue = true;
+        $email = \Config\Services::email(false);
+        \Config\Services::$bypassQueue = false;
+
         $email->setTo($to);
         $email->setSubject($subject);
         $email->setMessage($content);
@@ -90,6 +96,39 @@ class QueueProcessor extends BaseCommand
         } else {
             // Log full error for debugging
             log_message('error', 'Queue Email Error: ' . $email->printDebugger(['headers']));
+            return false;
+        }
+    }
+
+    protected function sendTransactionalEmail($data)
+    {
+        \Config\Services::$bypassQueue = true;
+        $email = \Config\Services::email(false);
+        \Config\Services::$bypassQueue = false;
+
+        $email->setTo($data['to']);
+        $email->setSubject($data['subject']);
+        $email->setMessage($data['message']);
+
+        if (!empty($data['alt_message'])) {
+            $email->setAltMessage($data['alt_message']);
+        }
+        if (!empty($data['reply_to'])) {
+            $email->setReplyTo($data['reply_to']);
+        }
+        if (!empty($data['mail_type'])) {
+            $email->setMailType($data['mail_type']);
+        }
+        if (!empty($data['headers']) && is_array($data['headers'])) {
+            foreach ($data['headers'] as $key => $val) {
+                $email->setHeader($key, $val);
+            }
+        }
+
+        if ($email->send()) {
+            return true;
+        } else {
+            log_message('error', 'Queue Transactional Email Error: ' . $email->printDebugger(['headers']));
             return false;
         }
     }

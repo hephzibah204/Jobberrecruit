@@ -57,6 +57,8 @@ function openIf(array $paths)
                                                 'admin/candidates',
                                                 'admin/employers',
                                                 'admin/applications',
+                                                'admin/elearning',
+                                                'admin/webinars',
                                                 'admin/plans'
                                             ]) ?>">
                     <a href="javascript:void(0);" class="side-menu__item <?= openIf([
@@ -68,6 +70,8 @@ function openIf(array $paths)
                                                                                 'admin/candidates',
                                                                                 'admin/employers',
                                                                                 'admin/applications',
+                                                                                'admin/elearning',
+                                                                                'admin/webinars',
                                                                                 'admin/plans'
                                                                             ]) ?>">
                         <!-- ICON PRESERVED -->
@@ -163,6 +167,74 @@ function openIf(array $paths)
                             </ul>
                         </li>
 
+                        <!-- E-LEARNING -->
+                         <li class="slide has-sub <?= openIf(['admin/elearning']) ?>">
+                             <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/elearning']) ?>">
+                                 <!-- BOOK / E-LEARNING ICON -->
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon" viewBox="0 0 256 256">
+                                     <rect width="256" height="256" fill="none" />
+                                     <path d="M216,40H40a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H216a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z" opacity="0.2" />
+                                     <path d="M216,40H40a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H216a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                     <line x1="32" y1="160" x2="224" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                     <path d="M112,160a32,32,0,0,0,32,32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                     <line x1="80" y1="40" x2="80" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                     <line x1="176" y1="40" x2="176" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                 </svg>
+                                 E-Learning
+                                 <i class="ri-arrow-right-s-line side-menu__angle"></i>
+                             </a>
+
+                             <ul class="slide-menu child2">
+                                 <?php 
+                                 $isCreateActive = isExact('admin/elearning') && (isset($_GET['create']) && $_GET['create'] == '1');
+                                 $isManageActive = isExact('admin/elearning') && !$isCreateActive;
+                                 ?>
+                                 <li class="slide <?= $isManageActive ? 'active' : '' ?>">
+                                     <a href="<?= base_url('admin/elearning') ?>" class="side-menu__item <?= $isManageActive ? 'active' : '' ?>">
+                                         Manage Courses
+                                     </a>
+                                 </li>
+                                 <li class="slide <?= $isCreateActive ? 'active' : '' ?>">
+                                     <a href="<?= base_url('admin/elearning?create=1') ?>" class="side-menu__item <?= $isCreateActive ? 'active' : '' ?>">
+                                         Create Course
+                                     </a>
+                                 </li>
+                             </ul>
+                         </li>
+
+                         <!-- WEBINARS -->
+                         <li class="slide has-sub <?= openIf(['admin/webinars']) ?>">
+                             <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/webinars']) ?>">
+                                 <!-- VIDEO / WEBINAR ICON -->
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon" viewBox="0 0 256 256">
+                                     <rect width="256" height="256" fill="none" />
+                                     <path d="M128,128a48,48,0,1,0-48-48A48,48,0,0,0,128,128Z" opacity="0.2" />
+                                     <circle cx="128" cy="80" r="48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                     <path d="M192,200a64,64,0,0,0-128,0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                     <rect x="24" y="24" width="208" height="176" rx="8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                 </svg>
+                                 Webinar Classes
+                                 <i class="ri-arrow-right-s-line side-menu__angle"></i>
+                             </a>
+
+                             <ul class="slide-menu child2">
+                                 <?php 
+                                 $isWebinarCreateActive = isExact('admin/webinars') && (isset($_GET['create']) && $_GET['create'] == '1');
+                                 $isWebinarManageActive = isExact('admin/webinars') && !$isWebinarCreateActive;
+                                 ?>
+                                 <li class="slide <?= $isWebinarManageActive ? 'active' : '' ?>">
+                                     <a href="<?= base_url('admin/webinars') ?>" class="side-menu__item <?= $isWebinarManageActive ? 'active' : '' ?>">
+                                         Manage Webinars
+                                     </a>
+                                 </li>
+                                 <li class="slide <?= $isWebinarCreateActive ? 'active' : '' ?>">
+                                     <a href="<?= base_url('admin/webinars?create=1') ?>" class="side-menu__item <?= $isWebinarCreateActive ? 'active' : '' ?>">
+                                         Schedule Webinar
+                                     </a>
+                                 </li>
+                             </ul>
+                         </li>
+
                         <!-- SUBSCRIPTION PLANS -->
                         <li class="slide <?= isExact('admin/plans') ?>">
                             <a href="<?= base_url('admin/plans') ?>" class="side-menu__item <?= isExact('admin/plans') ?>">
@@ -183,6 +255,18 @@ function openIf(array $paths)
                                     <path d="M128,128,80,224l48-32,48,32Z" opacity="0.2" />
                                 </svg>
                                 Affiliate Program
+                            </a>
+                        </li>
+
+                        <!-- FEATURE GATES & OPTIMIZATION -->
+                        <li class="slide <?= isExact('admin/features') ?>">
+                            <a href="<?= base_url('admin/features') ?>" class="side-menu__item <?= isExact('admin/features') ?>">
+                                <!-- ICON PRESERVED -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon" viewBox="0 0 256 256">
+                                    <rect width="256" height="256" fill="none" />
+                                    <path d="M104,112V48a8,8,0,0,1,8-8h32a8,8,0,0,1,8,8v64Z" opacity="0.2" />
+                                </svg>
+                                Feature Management
                             </a>
                         </li>
                     </ul>
@@ -293,23 +377,6 @@ function openIf(array $paths)
                             </a>
                         </li>
 
-                        <!-- E-Learning -->
-                        <li class="slide <?= isExact('admin/elearning') ?>">
-                            <a href="<?= base_url('admin/elearning') ?>"
-                                class="side-menu__item <?= isExact('admin/elearning') ?>">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon" viewBox="0 0 256 256">
-                                    <rect width="256" height="256" fill="none" />
-                                    <path d="M216,40H40a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H216a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z" opacity="0.2" />
-                                    <path d="M216,40H40a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H216a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                    <line x1="32" y1="160" x2="224" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                    <path d="M112,160a32,32,0,0,0,32,32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                    <line x1="80" y1="40" x2="80" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                    <line x1="176" y1="40" x2="176" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                </svg>
-                                E-Learning
-                            </a>
-                        </li>
-
                         <!-- Team -->
                         <!-- <li class="slide <?= isExact('admin/team') ?>">
                             <a href="<?= base_url('admin/team') ?>" class="side-menu__item <?= isExact('admin/team') ?>">
@@ -326,29 +393,6 @@ function openIf(array $paths)
                             </a>
                         </li> -->
 
-                    </ul>
-                </li>
-
-                <li>
-                    <ul class="slide-menu child1 doublemenu_slide-menu">
-                        <li class="text-center p-3 text-fixed-white">
-                            <div class="doublemenu_slide-menu-background">
-                                <img src="<?= base_url('admin/images/media/backgrounds/13.png') ?>" alt="">
-                            </div>
-                            <div class="d-flex flex-column align-items-center justify-content-between h-100">
-                                <div class="fs-15 fw-medium">Extra Features?</div>
-                                <div>
-                                    <span class="avatar avatar-lg p-1">
-                                        <img src="<?= base_url('admin/images/bitbiz.png') ?>" alt="">
-                                        <span class="top-right"></span>
-                                        <span class="bottom-right"></span>
-                                    </span>
-                                </div>
-                                <div class="d-grid w-100">
-                                    <a href="https://bitbiz.ng" class="btn btn-light border-0">Reach Out</a>
-                                </div>
-                            </div>
-                        </li>
                     </ul>
                 </li>
             </ul>

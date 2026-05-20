@@ -36,6 +36,27 @@ class JobQueueModel extends Model
     }
 
     /**
+     * Dispatch a job to the queue and execute it immediately in the background.
+     */
+    public function dispatchAndRun($type, $data, $queue = 'default', $delay = 0)
+    {
+        $id = $this->dispatch($type, $data, $queue, $delay);
+
+        // Build command to execute spark queue:work
+        $cmd = PHP_BINARY . ' ' . escapeshellarg(ROOTPATH . 'spark') . ' queue:work';
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows: Run in background using popen/start
+            pclose(popen("start /B " . $cmd, "r"));
+        } else {
+            // Linux/macOS: Run in background using nohup or exec with redirect
+            exec("nohup " . $cmd . " > /dev/null 2>&1 &");
+        }
+
+        return $id;
+    }
+
+    /**
      * Get pending jobs
      */
     public function getPending($limit = 10)

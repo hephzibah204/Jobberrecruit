@@ -16,11 +16,13 @@ class ElearningController extends BaseController
 
     protected $courseModel;
     protected $enrollmentModel;
+    protected $courseModuleModel;
 
     public function __construct()
     {
         $this->courseModel = new CourseModel();
         $this->enrollmentModel = new CourseEnrollmentModel();
+        $this->courseModuleModel = new \App\Models\CourseModuleModel();
     }
 
     /**
@@ -45,11 +47,15 @@ class ElearningController extends BaseController
         ));
 
         return view('home/elearning', [
-            'title'           => 'E-Learning & Training Marketplace',
-            'courses'         => $courses,
-            'featuredCourses' => array_slice($featuredCourses, 0, 3),
-            'freeCount'       => $freeCount,
-            'paidCount'       => count($courses) - $freeCount,
+            'title'             => 'Professional E-Learning & Career Training | JobberRecruit',
+            'meta_description'  => 'Upgrade your skills with JobberRecruit E-Learning and Training Marketplace. Explore free & premium certification courses in Tech, Business Management, sales, and more.',
+            'keywords'          => 'elearning Nigeria, professional courses Lagos, online training, job skills, career development, IT certification, interview preparation, JobberRecruit',
+            'og_title'          => 'Professional E-Learning & Career Training | JobberRecruit',
+            'og_description'    => 'Upgrade your skills with JobberRecruit E-Learning and Training Marketplace. Explore free & premium certification courses.',
+            'courses'           => $courses,
+            'featuredCourses'   => array_slice($featuredCourses, 0, 3),
+            'freeCount'         => $freeCount,
+            'paidCount'         => count($courses) - $freeCount,
         ]);
     }
 
@@ -74,13 +80,23 @@ class ElearningController extends BaseController
             ->orderBy('created_at', 'DESC')
             ->findAll(3);
 
+        $cleanDescription = esc(mb_substr(strip_tags((string) $course->description), 0, 155));
+
+        $modules = $this->courseModuleModel->where('course_id', $course->id)->orderBy('order_index', 'ASC')->findAll();
+
         return view('home/elearning_detail', [
-            'title'            => $course->title,
-            'course'           => $course,
-            'enrollment'       => $enrollment,
-            'canAccessContent' => $canAccessContent,
-            'youtubeEmbedUrl'  => $this->getYoutubeEmbedUrl($course->youtube_url ?? null),
-            'relatedCourses'   => $relatedCourses,
+            'title'             => esc($course->title) . ' - E-Learning Course | JobberRecruit',
+            'meta_description'  => $cleanDescription . '...',
+            'keywords'          => esc($course->title) . ', online course, ' . esc($course->instructor ?: 'JobberRecruit') . ', free training, online certification',
+            'og_title'          => esc($course->title) . ' | JobberRecruit',
+            'og_description'    => $cleanDescription . '...',
+            'og_image'          => $course->thumbnail ? base_url($course->thumbnail) : base_url('images/og-image-main.png'),
+            'course'            => $course,
+            'modules'           => $modules,
+            'enrollment'        => $enrollment,
+            'canAccessContent'  => $canAccessContent,
+            'youtubeEmbedUrl'   => $this->getYoutubeEmbedUrl($course->youtube_url ?? null),
+            'relatedCourses'    => $relatedCourses,
         ]);
     }
 
@@ -120,7 +136,8 @@ class ElearningController extends BaseController
         $data = [
             'title'          => $title,
             'slug'           => $this->generateUniqueSlug($title, $id ? (int) $id : null),
-            'description' => $this->request->getPost('description'),
+            'item_type'      => $this->request->getPost('item_type') ?: 'course',
+            'description'    => $this->request->getPost('description'),
             'instructor'     => $this->request->getPost('instructor'),
             'price'          => (float) ($this->request->getPost('price') ?: 0),
             'duration'       => trim((string) $this->request->getPost('duration')) ?: null,
@@ -183,8 +200,8 @@ class ElearningController extends BaseController
             ->where('is_active', 1)
             ->first();
 
-        if (! $course || ($course->content_source ?? 'none') !== 'upload' || empty($course->content_file)) {
-            return redirect()->to('training')->with('error', 'Course content not found.');
+        if (! $course) {
+            return redirect()->to('training')->with('error', 'Course not found.');
         }
 
         if (! $this->canAccessCourse($course, $this->getEnrollmentForCurrentUser((int) $course->id))) {
@@ -192,10 +209,27 @@ class ElearningController extends BaseController
                 ->with('error', 'Please enroll in this course to access the content.');
         }
 
-        $path = WRITEPATH . 'uploads/' . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $course->content_file);
+        $moduleId = $this->request->getGet('module_id');
+        $fileToServe = null;
+
+        if ($moduleId) {
+            $module = $this->courseModuleModel->find($moduleId);
+            if ($module && $module->course_id == $course->id && $module->content_source === 'upload' && !empty($module->content_file)) {
+                $fileToServe = $module->content_file;
+            }
+        } elseif (($course->content_source ?? 'none') === 'upload' && !empty($course->content_file)) {
+            $fileToServe = $course->content_file;
+        }
+
+        if (!$fileToServe) {
+            return redirect()->to('training/course/' . $course->id)
+                ->with('error', 'The requested file is not available.');
+        }
+
+        $path = WRITEPATH . 'uploads/' . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $fileToServe);
         if (! is_file($path)) {
             return redirect()->to('training/course/' . $course->id)
-                ->with('error', 'The uploaded course file is missing.');
+                ->with('error', 'The uploaded file is missing on the server.');
         }
 
         return $this->response->download($path, null)->setFileName(basename($path));
@@ -468,5 +502,90 @@ class ElearningController extends BaseController
             'title' => 'My Certificates',
             'certificates' => $certificates,
         ]);
+    }
+
+    /**
+     * Admin: Manage Course Modules
+     */
+    public function adminModules($courseId)
+    {
+        $course = $this->courseModel->find($courseId);
+        if (!$course) {
+            return redirect()->back()->with('error', 'Course not found.');
+        }
+
+        $modules = $this->courseModuleModel->where('course_id', $courseId)->orderBy('order_index', 'ASC')->findAll();
+
+        return view('admin/elearning/modules', [
+            'title'   => 'Manage Modules: ' . esc($course->title),
+            'course'  => $course,
+            'modules' => $modules,
+        ]);
+    }
+
+    /**
+     * Admin: Save Course Module
+     */
+    public function adminSaveModule()
+    {
+        $id = $this->request->getPost('id') ?: null;
+        $courseId = $this->request->getPost('course_id');
+        $existing = $id ? $this->courseModuleModel->find($id) : null;
+        
+        $contentSource = (string) $this->request->getPost('content_source');
+        $allowedSources = ['none', 'youtube', 'upload', 'text'];
+        if (! in_array($contentSource, $allowedSources, true)) {
+            $contentSource = 'none';
+        }
+
+        $data = [
+            'course_id'      => $courseId,
+            'title'          => trim((string) $this->request->getPost('title')),
+            'description'    => $this->request->getPost('description'),
+            'content_source' => $contentSource,
+            'youtube_url'    => $contentSource === 'youtube'
+                ? (trim((string) $this->request->getPost('youtube_url')) ?: null)
+                : null,
+            'order_index'    => (int) $this->request->getPost('order_index'),
+        ];
+
+        $contentFile = $this->request->getFile('content_file');
+        if ($contentSource === 'upload' && $contentFile && $contentFile->isValid() && ! $contentFile->hasMoved()) {
+            $contentDir = WRITEPATH . 'uploads/courses/modules';
+            if (! is_dir($contentDir)) {
+                mkdir($contentDir, 0775, true);
+            }
+
+            $newContentName = $contentFile->getRandomName();
+            $contentFile->move($contentDir, $newContentName);
+            $data['content_file'] = 'courses/modules/' . $newContentName;
+        } elseif ($contentSource === 'upload' && $existing?->content_file) {
+            $data['content_file'] = $existing->content_file;
+        } elseif ($contentSource !== 'upload') {
+            $data['content_file'] = null;
+        }
+
+        if ($id) {
+            $this->courseModuleModel->update($id, $data);
+            $msg = 'Module updated successfully';
+        } else {
+            $this->courseModuleModel->insert($data);
+            $msg = 'Module created successfully';
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    /**
+     * Admin: Delete Course Module
+     */
+    public function adminDeleteModule($id)
+    {
+        $module = $this->courseModuleModel->find($id);
+        if ($module) {
+            $this->courseModuleModel->delete($id);
+            return redirect()->back()->with('success', 'Module deleted.');
+        }
+        return redirect()->back()->with('error', 'Module not found.');
     }
 }

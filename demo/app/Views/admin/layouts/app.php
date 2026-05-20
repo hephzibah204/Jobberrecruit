@@ -585,10 +585,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between canvas-footer flex-wrap">
-                    <a href="https://1.envato.market/zxD4aM" target="_blank" class="btn btn-primary">Buy Now</a>
-                    <a href="https://1.envato.market/MGEaN" target="_blank" class="btn btn-secondary">Our Portfolio</a>
-                    <a href="javascript:void(0);" id="reset-all" class="btn btn-danger">Reset</a>
+                <div class="d-flex justify-content-center canvas-footer flex-wrap">
+                    <a href="javascript:void(0);" id="reset-all" class="btn btn-danger w-100">Reset</a>
                 </div>
             </div>
         </div>

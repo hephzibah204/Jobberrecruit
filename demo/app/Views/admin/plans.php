@@ -97,21 +97,84 @@
 
         <!-- Active Subscriptions -->
         <div class="tab-pane fade" id="subsTab">
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="card-title mb-0 fs-16"><i class="ti ti-user-plus me-1 text-primary"></i> Assign Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <form id="assignSubscriptionForm" class="row g-3">
+                        <?= csrf_field() ?>
+                        <div class="col-md-3">
+                            <label class="form-label">Select Plan *</label>
+                            <select name="plan_id" id="assign_plan_id" class="form-select" required onchange="onPlanSelected()">
+                                <option value="">Choose plan...</option>
+                                <?php foreach ($employerPlans as $p): ?>
+                                    <?php if (($p->base_price ?? 0) == 0): ?>
+                                        <option value="<?= $p->id ?>" data-type="employer"><?= esc($p->name) ?> (Employer - Free)</option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                <?php foreach ($candidatePlans as $p): ?>
+                                    <?php if (($p->base_price ?? 0) == 0): ?>
+                                        <option value="<?= $p->id ?>" data-type="candidate"><?= esc($p->name) ?> (Candidate - Free)</option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="assign_employer_group" style="display: none;">
+                            <label class="form-label">Select Employer *</label>
+                            <select name="employer_id" id="assign_employer_id" class="form-select">
+                                <option value="">Choose employer...</option>
+                                <?php foreach ($allEmployers as $e): ?>
+                                    <option value="<?= $e->user_id ?>"><?= esc($e->company_name ?: 'N/A') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="assign_candidate_group" style="display: none;">
+                            <label class="form-label">Select Candidate *</label>
+                            <select name="candidate_id" id="assign_candidate_id" class="form-select">
+                                <option value="">Choose candidate...</option>
+                                <?php foreach ($allCandidates as $c): ?>
+                                    <option value="<?= $c->user_id ?>"><?= esc($c->full_name ?: 'N/A') ?> (<?= esc($c->phone ?: 'N/A') ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Starts At *</label>
+                            <input type="date" name="starts_at" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Ends At (Optional)</label>
+                            <input type="date" name="ends_at" class="form-control">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100"><i class="ti ti-plus me-1"></i> Assign</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table text-nowrap mb-0">
-                            <thead><tr><th>Company</th><th>Plan</th><th>Type</th><th>End Date</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Subscriber</th><th>Plan</th><th>Type</th><th>End Date</th><th>Status</th></tr></thead>
                             <tbody>
                                 <?php foreach ($subscriptions as $sub): ?>
                                     <tr>
-                                        <td><?= esc($sub->company_name ?? 'N/A') ?></td>
+                                        <td>
+                                            <?php if ($sub->plan_type === 'employer'): ?>
+                                                <strong><?= esc($sub->company_name ?? 'N/A') ?></strong>
+                                            <?php else: ?>
+                                                <strong><?= esc($sub->candidate_name ?? 'N/A') ?></strong> (Candidate)
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= esc($sub->plan_name ?? '—') ?></td>
                                         <td><span class="badge bg-<?= $sub->plan_type === 'employer' ? 'primary' : 'info' ?>"><?= esc($sub->plan_type) ?></span></td>
-                                        <td><?= $sub->end_date ? date('M d, Y', strtotime($sub->end_date)) : '—' ?></td>
+                                        <td><?= $sub->ends_at ? date('M d, Y', strtotime($sub->ends_at)) : '—' ?></td>
                                         <td><span class="badge bg-<?= $sub->is_active ? 'success' : 'secondary' ?>"><?= $sub->is_active ? 'Active' : 'Expired' ?></span></td>
                                     </tr>
                                 <?php endforeach; ?>
+                                <?php if (empty($subscriptions)): ?><tr><td colspan="5" class="text-center p-4 text-muted">No subscriptions assigned.</td></tr><?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -214,5 +277,67 @@ function revokeUnlimitedAccess(id) {
     fetch('<?= base_url("admin/plans/revoke-unlimited-access") ?>', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { alert(d.message); } });
 }
+
+function onPlanSelected() {
+    const select = document.getElementById('assign_plan_id');
+    const selectedOpt = select.options[select.selectedIndex];
+    const type = selectedOpt ? selectedOpt.getAttribute('data-type') : '';
+    
+    const empGroup = document.getElementById('assign_employer_group');
+    const candGroup = document.getElementById('assign_candidate_group');
+    const empSelect = document.getElementById('assign_employer_id');
+    const candSelect = document.getElementById('assign_candidate_id');
+    
+    if (type === 'employer') {
+        empGroup.style.display = 'block';
+        candGroup.style.display = 'none';
+        empSelect.required = true;
+        candSelect.required = false;
+        candSelect.value = '';
+    } else if (type === 'candidate') {
+        empGroup.style.display = 'none';
+        candGroup.style.display = 'block';
+        empSelect.required = false;
+        candSelect.required = true;
+        empSelect.value = '';
+    } else {
+        empGroup.style.display = 'none';
+        candGroup.style.display = 'none';
+        empSelect.required = false;
+        candSelect.required = false;
+    }
+}
+
+document.getElementById('assignSubscriptionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    
+    const select = document.getElementById('assign_plan_id');
+    const selectedOpt = select.options[select.selectedIndex];
+    const type = selectedOpt ? selectedOpt.getAttribute('data-type') : '';
+    
+    let userId = '';
+    if (type === 'employer') {
+        userId = document.getElementById('assign_employer_id').value;
+    } else if (type === 'candidate') {
+        userId = document.getElementById('assign_candidate_id').value;
+    }
+    
+    fd.append('user_id', userId);
+    
+    fetch('<?= base_url("admin/plans/assign") ?>', {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            location.reload();
+        } else {
+            alert(d.message);
+        }
+    });
+});
 </script>
 <?= $this->endSection() ?>

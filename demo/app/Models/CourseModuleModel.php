@@ -4,28 +4,21 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class CourseModel extends Model
+class CourseModuleModel extends Model
 {
-    protected $table            = 'courses';
+    protected $table            = 'course_modules';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'object';
     protected $protectFields    = true;
     protected $allowedFields    = [
+        'course_id',
         'title',
-        'slug',
-        'item_type',
         'description',
-        'instructor',
-        'price',
-        'duration',
-        'level',
-        'thumbnail',
         'content_source',
         'youtube_url',
         'content_file',
-        'is_featured',
-        'is_active',
+        'order_index',
     ];
 
     protected $useTimestamps = true;

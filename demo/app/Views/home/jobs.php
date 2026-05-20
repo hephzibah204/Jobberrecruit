@@ -59,7 +59,15 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <h1 class="display-5 fw-bold mb-3">Find Your <span class="text-gradient">Dream Job</span></h1>
+                <?php
+                $ctaText = "Find Your <span class=\"text-gradient\">Dream Job</span>";
+                if (!empty($selectedIndustryName)) {
+                    $ctaText = "Find Your <span class=\"text-gradient\">" . esc($selectedIndustryName) . " Job</span>";
+                } elseif (!empty($selectedStateName)) {
+                    $ctaText = "Find Your Dream Job in <span class=\"text-gradient\">" . esc($selectedStateName) . "</span>";
+                }
+                ?>
+                <h1 class="display-5 fw-bold mb-3"><?= $ctaText ?></h1>
                 <p class="lead text-muted mb-4">
                     Browse verified opportunities from top companies in Nigeria.
                     Filter by location, experience, salary, and more.
@@ -319,7 +327,7 @@
                                     data-experience="<?= esc($job->experience_level) ?>"
                                     data-industry="<?= esc($job->industry_name) ?>"
                                     data-salary="<?= esc($job->salary) ?>">
-                                     <div class="glass-card h-100 p-4">
+                                     <div class="glass-card h-100 p-4 position-relative">
                                         <?php if ($job->is_featured && $job->featured_until >= date('Y-m-d')) : ?>
                                             <div class="featured-ribbon">
                                                 <i class="bi bi-star-fill me-1"></i>Promoted
@@ -1053,7 +1061,7 @@
                     title="This employer is verified and subscribed to a trusted plan"></span>` : '';
 
             div.innerHTML = `
-            <div class="glass-card h-100 p-4">
+            <div class="glass-card h-100 p-4 position-relative">
                 ${isFeaturedActive ? `
                 <div class="featured-ribbon">
                     <i class="bi bi-star-fill me-1"></i>Promoted

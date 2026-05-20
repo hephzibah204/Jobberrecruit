@@ -2410,6 +2410,7 @@ class AdminController extends BaseController
 
         $subscriptionModel = model(UserSubscriptionModel::class);
         $employerModel = model(EmployerModel::class);
+        $candidateModel = model(JobSeekerModel::class);
         $bundleModel = model(PlanBundleModel::class);
 
         $employerPlans = $planModel->where('plan_type', 'employer')->orderBy('base_price', 'ASC')->findAll();
@@ -2417,10 +2418,11 @@ class AdminController extends BaseController
         $bundles = $bundleModel->where('is_active', 1)->orderBy('job_credits', 'ASC')->findAll();
 
         $subscriptions = $subscriptionModel
-            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.company_name')
+            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.company_name, job_seekers.full_name AS candidate_name')
             ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
             ->join('employers', 'employers.user_id = user_subscriptions.user_id', 'left')
-            ->orderBy('user_subscriptions.end_date', 'ASC')
+            ->join('job_seekers', 'job_seekers.user_id = user_subscriptions.user_id', 'left')
+            ->orderBy('user_subscriptions.ends_at', 'ASC')
             ->findAll();
 
         $planStats = $subscriptionModel
@@ -2448,6 +2450,7 @@ class AdminController extends BaseController
             ->findAll();
 
         $allEmployers = $employerModel->findAll();
+        $allCandidates = $candidateModel->findAll();
 
         $isFreeMode = env('site_free_mode') === 'true';
 
@@ -2463,6 +2466,7 @@ class AdminController extends BaseController
             'monthlyRevenue' => $monthlyRevenue,
             'employersWithUnlimited' => $employersWithUnlimited,
             'allEmployers' => $allEmployers,
+            'allCandidates' => $allCandidates,
             'isFreeMode' => $isFreeMode,
         ]);
     }
@@ -2512,6 +2516,66 @@ class AdminController extends BaseController
 
         file_put_contents($envFile, $content);
         return $this->response->setJSON(['success' => true, 'message' => "Free mode " . ($newValue === 'true' ? 'enabled' : 'disabled')]);
+    }
+
+    public function features()
+    {
+        $data = [
+            'title'                     => 'Feature Management',
+            'feature_webinars'          => env('feature_webinars', 'true') === 'true',
+            'feature_elearning'         => env('feature_elearning', 'true') === 'true',
+            'feature_ai_resume'         => env('feature_ai_resume', 'true') === 'true',
+            'feature_ai_career_tools'   => env('feature_ai_career_tools', 'true') === 'true',
+            'ai_tools_paid_mode'        => env('ai_tools_paid_mode', 'false') === 'true',
+            'feature_messaging'         => env('feature_messaging', 'true') === 'true',
+            'feature_referrals'         => env('feature_referrals', 'true') === 'true',
+            'email_use_queue'           => env('email_use_queue', 'true') === 'true',
+            'site_free_mode'            => env('site_free_mode', 'false') === 'true',
+        ];
+
+        return view('admin/feature_settings', $data);
+    }
+
+    public function saveFeatures()
+    {
+        $keys = [
+            'feature_webinars',
+            'feature_elearning',
+            'feature_ai_resume',
+            'feature_ai_career_tools',
+            'ai_tools_paid_mode',
+            'feature_messaging',
+            'feature_referrals',
+            'email_use_queue',
+        ];
+
+        $updateData = [];
+        foreach ($keys as $key) {
+            $val = $this->request->getPost($key) ? 'true' : 'false';
+            $updateData[$key] = $val;
+        }
+
+        $envFile = ROOTPATH . '.env';
+        if (!is_file($envFile)) {
+            return redirect()->back()->with('error', '.env file not found.');
+        }
+
+        $content = file_get_contents($envFile);
+
+        foreach ($updateData as $key => $value) {
+            $newValueLine = "{$key} = \"{$value}\"";
+            if (preg_match('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $content)) {
+                $content = preg_replace('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $newValueLine, $content);
+            } else {
+                $content .= "\n{$newValueLine}\n";
+            }
+        }
+
+        if (file_put_contents($envFile, $content) === false) {
+            return redirect()->back()->with('error', 'Failed to update feature settings.');
+        }
+
+        return redirect()->back()->with('success', 'Feature settings updated successfully.');
     }
 
     public function bundles()
@@ -2598,26 +2662,30 @@ class AdminController extends BaseController
             return redirect()->back();
         }
 
-        $rules = [
-            'employer_id' => 'required|integer',
-            'plan_id'     => 'required|integer',
-            'start_date'  => 'required|valid_date',
-        ];
+        $userId = $this->request->getPost('user_id') ?: $this->request->getPost('employer_id');
+        $startsAt = $this->request->getPost('starts_at') ?: $this->request->getPost('start_date');
+        $endsAt = $this->request->getPost('ends_at') ?: $this->request->getPost('end_date');
 
-        if (! $this->validate($rules)) {
+        if (!$userId || !$startsAt) {
             return $this->response->setJSON([
                 'success' => false,
-                'errors'  => $this->validator->getErrors()
+                'message' => 'User ID and Start Date are required'
             ]);
         }
 
-        $planModel = model(SubscriptionPlanModel::class);
+        $planModel = model(PlanModel::class);
         $subModel  = model(UserSubscriptionModel::class);
 
         $plan = $planModel->find($this->request->getPost('plan_id'));
+        if (!$plan) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Plan not found'
+            ]);
+        }
 
         // 🚫 Block paid plans
-        if ($plan->price > 0) {
+        if (($plan->base_price ?? 0) > 0) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Paid plans must be purchased via Paystack'
@@ -2625,16 +2693,16 @@ class AdminController extends BaseController
         }
 
         // Deactivate existing subscription
-        $subModel->where('user_id', $this->request->getPost('employer_id'))
+        $subModel->where('user_id', $userId)
             ->set(['is_active' => 0])
             ->update();
 
         // Assign new subscription
         $subModel->insert([
-            'user_id'    => $this->request->getPost('employer_id'),
+            'user_id'    => $userId,
             'plan_id'    => $plan->id,
-            'start_date' => $this->request->getPost('start_date'),
-            'end_date'   => $this->request->getPost('end_date') ?: null,
+            'starts_at'  => $startsAt,
+            'ends_at'    => $endsAt ?: null,
             'is_active'  => 1,
         ]);
 

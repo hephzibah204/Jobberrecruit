@@ -58,6 +58,38 @@ class CareerToolsController extends BaseController
         ]);
     }
 
+    /**
+     * Start distraction-free AI Mock Interview session
+     */
+    public function startInterviewSession()
+    {
+        $applicationId = (int) ($this->request->getGet('application_id') ?? 0);
+        
+        $jobTitle = $this->request->getGet('job_title') ?? '';
+        $difficulty = $this->request->getGet('difficulty') ?? 'medium';
+        $questionPack = $this->request->getGet('question_pack') ?? 'general';
+        $interviewMode = $this->request->getGet('interview_mode') ?? 'chat';
+        $webcamEnabled = $this->request->getGet('webcam_enabled') === '1' || $this->request->getGet('webcam_enabled') === 'true';
+
+        $contextPreset = [
+            'job_title' => $jobTitle,
+            'difficulty' => $difficulty,
+            'question_pack' => $questionPack,
+            'interview_mode' => $interviewMode,
+            'webcam_enabled' => $webcamEnabled,
+            'application_id' => $applicationId,
+        ];
+
+        if ($applicationId > 0) {
+            $contextPreset = array_merge($contextPreset, $this->buildApplicationInterviewContext($applicationId));
+        }
+
+        return view('candidate/career-tools/mock-interview-session', [
+            'title' => 'AI Mock Interview - Live Practice Session',
+            'contextPreset' => $contextPreset,
+        ]);
+    }
+
     public function sendMessage()
     {
         $type = $this->request->getPost('type');

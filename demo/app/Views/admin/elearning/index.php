@@ -26,6 +26,7 @@
                                         <th>Instructor</th>
                                         <th>Price</th>
                                         <th>Source</th>
+                                        <th>Type</th>
                                         <th>Level</th>
                                         <th>Status</th>
                                         <th>Featured</th>
@@ -57,6 +58,9 @@
                                             <td>
                                                 <span class="badge bg-info-transparent"><?= ucfirst((string) ($course->content_source ?? 'none')) ?></span>
                                             </td>
+                                            <td>
+                                                <span class="badge <?= ($course->item_type ?? 'course') === 'ebook' ? 'bg-success' : 'bg-primary' ?>"><?= ucfirst($course->item_type ?? 'course') ?></span>
+                                            </td>
                                             <td><span class="badge bg-primary-transparent"><?= ucfirst((string) ($course->level ?? 'beginner')) ?></span></td>
                                             <td>
                                                 <span class="badge <?= !empty($course->is_active) ? 'bg-success-transparent' : 'bg-danger-transparent' ?>">
@@ -65,10 +69,13 @@
                                             </td>
                                             <td><?= !empty($course->is_featured) ? '<span class="badge bg-warning-transparent">Featured</span>' : '<span class="text-muted">No</span>' ?></td>
                                             <td>
-                                                <button class="btn btn-sm btn-icon btn-info-light" data-bs-toggle="modal" data-bs-target="#editCourseModal<?= $course->id ?>">
+                                                <a href="<?= base_url('admin/elearning/modules/' . $course->id) ?>" class="btn btn-sm btn-icon btn-secondary-light" title="Manage Modules">
+                                                    <i class="ti ti-list"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-icon btn-info-light" data-bs-toggle="modal" data-bs-target="#editCourseModal<?= $course->id ?>" title="Edit Course">
                                                     <i class="ti ti-edit"></i>
                                                 </button>
-                                                <a href="<?= base_url('training/course/' . $course->id) ?>" class="btn btn-sm btn-icon btn-primary-light" target="_blank">
+                                                <a href="<?= base_url('training/course/' . $course->id) ?>" class="btn btn-sm btn-icon btn-primary-light" target="_blank" title="View Course">
                                                     <i class="ti ti-eye"></i>
                                                 </a>
                                             </td>
@@ -97,6 +104,13 @@
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Price (NGN)</label>
                                                                     <input type="number" step="0.01" name="price" class="form-control" value="<?= $course->price ?>" required>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Item Type</label>
+                                                                    <select name="item_type" class="form-select">
+                                                                        <option value="course" <?= ($course->item_type ?? 'course') === 'course' ? 'selected' : '' ?>>Course</option>
+                                                                        <option value="ebook" <?= ($course->item_type ?? 'course') === 'ebook' ? 'selected' : '' ?>>eBook (PDF)</option>
+                                                                    </select>
                                                                 </div>
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Duration</label>
@@ -194,6 +208,13 @@
                         <div class="col-md-4">
                             <label class="form-label">Price (NGN)</label>
                             <input type="number" step="0.01" name="price" class="form-control" value="0.00" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Item Type</label>
+                            <select name="item_type" class="form-select">
+                                <option value="course">Course</option>
+                                <option value="ebook">eBook (PDF)</option>
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Duration</label>
