@@ -543,18 +543,18 @@
             text.addClass('d-none');
             spin.removeClass('d-none');
 
-            // Validate portfolio before submit
-            // ✅ STRICT website validation
-            const portfolioResult = normalizeAndValidateWebsite(portfolioInput.val());
+             // Validate portfolio before submit
+             // ✅ STRICT website validation
+             const portfolioResult = normalizeAndValidateWebsite(portfolioInput.val());
 
-            if (!portfolioResult.valid) {
-                toastr.error('Please enter a valid portfolio URL.');
-                portfolioInput.addClass('is-invalid');
-                submitBtn.prop('disabled', false);
-                btnText.removeClass('d-none');
-                spinner.addClass('d-none');
-                return;
-            }
+             if (!portfolioResult.valid) {
+                 toastr.error('Please enter a valid portfolio URL.');
+                 portfolioInput.addClass('is-invalid');
+                 btn.prop('disabled', false);
+                 text.removeClass('d-none');
+                 spin.addClass('d-none');
+                 return;
+             }
 
             // Set normalized value
             portfolioInput.val(portfolioResult.value);
