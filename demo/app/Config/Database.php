@@ -199,5 +199,13 @@ class Database extends Config
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
         }
+
+        // Dynamically resolve relative SQLite database path to WRITEPATH to avoid CWD issues
+        if (isset($this->default['DBDriver']) && $this->default['DBDriver'] === 'SQLite3') {
+            $dbPath = $this->default['database'] ?? '';
+            if ($dbPath !== '' && !str_starts_with($dbPath, '/') && !str_contains($dbPath, ':') && str_contains($dbPath, 'database.sqlite')) {
+                $this->default['database'] = WRITEPATH . 'database.sqlite';
+            }
+        }
     }
 }
