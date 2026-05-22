@@ -148,6 +148,47 @@
         align-items: center;
         justify-content: center;
     }
+
+    @media (max-width: 767.98px) {
+        .chat-area {
+            height: calc(100vh - 320px) !important;
+        }
+        .bubble {
+            max-width: 90% !important;
+            font-size: 14px !important;
+            padding: 12px 14px !important;
+        }
+        .session-header {
+            padding: 0.75rem 1rem !important;
+        }
+        .session-header .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.75rem;
+        }
+        .start-overlay .glass-card {
+            width: 90% !important;
+            margin: 0 1rem;
+        }
+        .avatar-xxl {
+            width: 60px !important;
+            height: 60px !important;
+            font-size: 28px !important;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .chat-area {
+            height: calc(100vh - 350px) !important;
+        }
+        .session-header h5 {
+            font-size: 1rem;
+        }
+        .btn-lg {
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+        }
+    }
 </style>
 <?= $this->endSection() ?>
 

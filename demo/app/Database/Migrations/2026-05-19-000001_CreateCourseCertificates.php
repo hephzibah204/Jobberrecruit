@@ -25,11 +25,21 @@ class CreateCourseCertificates extends Migration
         $this->forge->createTable('course_certificates', true);
 
         // Add completion status and completed_at to course_enrollments
-        $this->forge->addColumn('course_enrollments', [
-            'status' => ['type' => 'VARCHAR', 'constraint' => '20', 'default' => 'enrolled'],
-            'completed_at' => ['type' => 'DATETIME', 'null' => true],
-            'progress' => ['type' => 'INT', 'default' => 0],
-        ]);
+        if (!$this->db->fieldExists('status', 'course_enrollments')) {
+            $this->forge->addColumn('course_enrollments', [
+                'status' => ['type' => 'VARCHAR', 'constraint' => '20', 'default' => 'enrolled'],
+            ]);
+        }
+        if (!$this->db->fieldExists('completed_at', 'course_enrollments')) {
+            $this->forge->addColumn('course_enrollments', [
+                'completed_at' => ['type' => 'DATETIME', 'null' => true],
+            ]);
+        }
+        if (!$this->db->fieldExists('progress', 'course_enrollments')) {
+            $this->forge->addColumn('course_enrollments', [
+                'progress' => ['type' => 'INT', 'default' => 0],
+            ]);
+        }
     }
 
     public function down()

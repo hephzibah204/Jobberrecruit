@@ -499,12 +499,12 @@ HTML;
                     <!-- Share Job -->
                     <div class="bg-white p-4 rounded-3 shadow-sm">
                         <h6 class="fw-semibold mb-3">Share this Job</h6>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
                             <button class="btn btn-outline-secondary btn-sm" id="copyLink" title="Copy Job Link"><i class="bi bi-link-45deg"></i> Copy Link</button>
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(current_url()) ?>" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-linkedin"></i></a>
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode(current_url()) ?>" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-facebook"></i></a>
-                            <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($job->title) ?>" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-twitter"></i></a>
-                            <a href="mailto:?subject=Check out this job: <?= urlencode($job->title) ?>&body=<?= urlencode(current_url()) ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-envelope"></i></a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(current_url()) ?>" class="btn btn-sm" style="background: #0A66C2; color: white; border: none;" target="_blank"><i class="bi bi-linkedin"></i> LinkedIn</a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode(current_url()) ?>" class="btn btn-sm" style="background: #1877F2; color: white; border: none;" target="_blank"><i class="bi bi-facebook"></i> Facebook</a>
+                            <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($job->title) ?>" class="btn btn-sm" style="background: #000000; color: white; border: none;" target="_blank"><i class="bi bi-twitter-x"></i> X</a>
+                            <a href="mailto:?subject=Check out this job: <?= urlencode($job->title) ?>&body=<?= urlencode(current_url()) ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-envelope"></i> Email</a>
                         </div>
                     </div>
                 <?php endif; ?>

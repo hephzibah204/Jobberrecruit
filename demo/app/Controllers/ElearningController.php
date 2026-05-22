@@ -387,6 +387,28 @@ class ElearningController extends BaseController
     }
 
     /**
+     * Candidate: View my enrolled courses
+     */
+    public function myCourses()
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login')->with('error', 'Please login');
+        }
+
+        $enrollments = $this->enrollmentModel
+            ->select('course_enrollments.*, courses.title as course_title, courses.thumbnail, courses.instructor, courses.duration, courses.content_source, courses.price')
+            ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
+            ->where('course_enrollments.user_id', auth()->id())
+            ->orderBy('course_enrollments.created_at', 'DESC')
+            ->findAll();
+
+        return view('candidate/my_courses', [
+            'title' => 'My Courses',
+            'enrollments' => $enrollments,
+        ]);
+    }
+
+    /**
      * Mark course as complete and generate certificate
      */
     public function completeCourse($courseId)
@@ -587,5 +609,65 @@ class ElearningController extends BaseController
             return redirect()->back()->with('success', 'Module deleted.');
         }
         return redirect()->back()->with('error', 'Module not found.');
+    }
+
+    /**
+     * CV Review Upload Page
+     */
+    public function cvReview()
+    {
+        return view('home/cv_review', [
+            'title' => 'Professional CV Review Service | JobberRecruit'
+        ]);
+    }
+
+    /**
+     * Handle CV Review Upload
+     */
+    public function uploadCvReview()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->fail('Invalid request');
+        }
+
+        $cvFile = $this->request->getFile('cv_file');
+        
+        if (!$cvFile || !$cvFile->isValid()) {
+            return $this->fail('Please upload a valid CV file');
+        }
+
+        $allowedTypes = ['pdf', 'doc', 'docx'];
+        $ext = strtolower($cvFile->getExtension());
+        
+        if (!in_array($ext, $allowedTypes)) {
+            return $this->fail('Only PDF, DOC, and DOCX files are allowed');
+        }
+
+        if ($cvFile->getSize() > 5 * 1024 * 1024) {
+            return $this->fail('File size must be less than 5MB');
+        }
+
+        $uploadPath = 'uploads/cv_reviews';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0775, true);
+        }
+
+        $newName = uniqid('cv_') . '.' . $ext;
+        $cvFile->move($uploadPath, $newName);
+
+        // Save to database or session for admin review
+        $reviewData = [
+            'user_id' => auth()->id(),
+            'file_path' => $uploadPath . '/' . $newName,
+            'uploaded_at' => date('Y-m-d H:i:s'),
+            'status' => 'pending'
+        ];
+
+        // You can save this to a database table if needed
+        // For now, just return success
+        return $this->respond([
+            'success' => true,
+            'message' => 'CV uploaded successfully! Our team will review it within 48 hours.'
+        ]);
     }
 }

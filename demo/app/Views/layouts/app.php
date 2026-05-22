@@ -21,6 +21,9 @@
     <link rel="shortcut icon" href="<?= base_url('auth/img/favicon.png'); ?>" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('auth/img/apple-touch-icon.png'); ?>">
 
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+
     <!-- CSS Files -->
     <link rel="stylesheet" href="<?= base_url('auth/css/bootstrap.min.css'); ?>">
     <link rel="stylesheet" href="<?= base_url('auth/css/toastr.min.css'); ?>">

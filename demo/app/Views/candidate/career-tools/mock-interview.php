@@ -168,6 +168,36 @@ $questionPackLabels = [
 .text-muted-light {
     color: #cbd5e1;
 }
+
+@media (max-width: 1199.98px) {
+    .page-header .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+    .page-header .btn {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .card-header.bg-gradient-primary {
+        padding: 1.5rem !important;
+    }
+    .card-body.p-4 {
+        padding: 1.5rem !important;
+    }
+    .form-select-lg, .form-control-lg {
+        font-size: 1rem;
+        padding: 0.75rem;
+    }
+    #recent-sessions-list {
+        gap: 1rem !important;
+    }
+    .hover-translate-y {
+        padding: 1rem !important;
+    }
+}
 </style>
 
 <script>

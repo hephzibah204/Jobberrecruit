@@ -662,6 +662,32 @@ class AdminController extends BaseController
             $notes = $this->request->getPost('notes');
 
             if ($employerModel->verifyEmployer($employerId, $this->admin->id, $notes)) {
+                // Send approval email
+                try {
+                    $employer = $employerModel->find($employerId);
+                    if ($employer) {
+                        $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
+                        $user = $userModel->find($employer->user_id);
+                        
+                        if ($user) {
+                            $email = \Config\Services::email();
+                            $email->setTo($user->email);
+                            $email->setSubject('Your Employer Account Has Been Verified - JobberRecruit');
+                            
+                            $emailData = [
+                                'company_name' => $employer->company_name,
+                                'contact_name' => $employer->contact_person ?? $user->username,
+                                'verification_date' => date('Y-m-d H:i:s')
+                            ];
+                            
+                            $email->setMessage(view('emails/verification_approved', $emailData));
+                            $email->send();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    log_message('error', 'Failed to send verification approval email: ' . $e->getMessage());
+                }
+                
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Employer verified successfully'
@@ -682,6 +708,33 @@ class AdminController extends BaseController
             $reason = $this->request->getPost('reason');
 
             if ($employerModel->rejectEmployer($employerId, $this->admin->id, $reason)) {
+                // Send rejection email
+                try {
+                    $employer = $employerModel->find($employerId);
+                    if ($employer) {
+                        $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
+                        $user = $userModel->find($employer->user_id);
+                        
+                        if ($user) {
+                            $email = \Config\Services::email();
+                            $email->setTo($user->email);
+                            $email->setSubject('Verification Update - JobberRecruit');
+                            
+                            $emailData = [
+                                'company_name' => $employer->company_name,
+                                'contact_name' => $employer->contact_person ?? $user->username,
+                                'review_date' => date('Y-m-d H:i:s'),
+                                'rejection_reason' => $reason ?? 'Documents did not meet our verification requirements.'
+                            ];
+                            
+                            $email->setMessage(view('emails/verification_rejected', $emailData));
+                            $email->send();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    log_message('error', 'Failed to send verification rejection email: ' . $e->getMessage());
+                }
+                
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Employer rejected'
@@ -2576,6 +2629,55 @@ class AdminController extends BaseController
         }
 
         return redirect()->back()->with('success', 'Feature settings updated successfully.');
+    }
+
+    /**
+     * Chatbot Settings Page
+     */
+    public function chatbotSettings()
+    {
+        $data = [
+            'title' => 'Chatbot Management',
+            'chatbot_enabled' => env('chatbot_enabled', 'true') === 'true',
+            'chatbot_welcome_message' => env('chatbot_welcome_message', 'Hello! How can I help you today?'),
+            'chatbot_suggestions' => env('chatbot_suggestions', 'Browse Jobs,Post a Job,Resume Builder,Career Advice'),
+        ];
+
+        return view('admin/chatbot_settings', $data);
+    }
+
+    /**
+     * Save Chatbot Settings
+     */
+    public function saveChatbotSettings()
+    {
+        $envFile = ROOTPATH . '.env';
+        if (!is_file($envFile)) {
+            return redirect()->back()->with('error', '.env file not found.');
+        }
+
+        $content = file_get_contents($envFile);
+
+        $updates = [
+            'chatbot_enabled' => $this->request->getPost('chatbot_enabled') ? 'true' : 'false',
+            'chatbot_welcome_message' => trim($this->request->getPost('chatbot_welcome_message') ?? 'Hello! How can I help you today?'),
+            'chatbot_suggestions' => trim($this->request->getPost('chatbot_suggestions') ?? 'Browse Jobs,Post a Job,Resume Builder,Career Advice'),
+        ];
+
+        foreach ($updates as $key => $value) {
+            $newValueLine = "{$key} = \"{$value}\"";
+            if (preg_match('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $content)) {
+                $content = preg_replace('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $newValueLine, $content);
+            } else {
+                $content .= "\n{$newValueLine}\n";
+            }
+        }
+
+        if (file_put_contents($envFile, $content) === false) {
+            return redirect()->back()->with('error', 'Failed to update chatbot settings.');
+        }
+
+        return redirect()->back()->with('success', 'Chatbot settings updated successfully.');
     }
 
     public function bundles()

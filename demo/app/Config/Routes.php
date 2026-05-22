@@ -9,9 +9,9 @@ use CodeIgniter\Router\RouteCollection;
 // $routes->get('uploads/(:segment)/(:num)/(:any)', 'FileController::serve/$1/$2/$3');
 // // Language switcher
 // $routes->get('lang/(:segment)', 'Language::switch/$1');
-// $routes->get('ping', function () {
-//     return response()->setStatusCode(200)->setBody('OK');
-// });
+$routes->get('ping', function () {
+    return response()->setStatusCode(200)->setBody('OK');
+});
 
 $routes->get('/', 'Home::home');
 $routes->get('jobs', 'Home::jobs');
@@ -171,6 +171,9 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     $routes->get('pricing/verify', 'EmployerController::verify'); // callback URL
 
+    // Transactions
+    $routes->get('transactions', 'EmployerController::transactions');
+
     $routes->get('notifications', 'EmployerController::notifications');
     $routes->post('notifications/mark-read', 'EmployerController::markNotificationRead');
     $routes->post('notifications/mark-all-read', 'EmployerController::markAllNotificationsRead');
@@ -252,6 +255,12 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
         $routes->post('send-message', 'CareerToolsController::sendMessage');
         $routes->post('evaluate-interview', 'CareerToolsController::evaluateInterview');
     });
+
+    // My Courses
+    $routes->get('my-courses', 'ElearningController::myCourses');
+
+    // Transactions
+    $routes->get('transactions', 'JobSeekerController::transactions');
 });
 
 
@@ -274,6 +283,10 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('settings', 'AdminController::index');
     $routes->get('features', 'AdminController::features');
     $routes->post('features/save', 'AdminController::saveFeatures');
+
+    // Chatbot Management
+    $routes->get('chatbot', 'AdminController::chatbotSettings');
+    $routes->post('chatbot/save', 'AdminController::saveChatbotSettings');
 
     $routes->get('profile', 'AdminController::profile');
     $routes->post('profile/update', 'AdminController::updateProfile');
@@ -395,13 +408,21 @@ $routes->post('training/complete/(:num)', 'ElearningController::completeCourse/$
 $routes->get('training/certificate/download/(:num)', 'ElearningController::downloadCertificate/$1');
 $routes->get('training/certificates', 'ElearningController::myCertificates');
 
-// Admin Newsletter & Webinar Management
-$routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
-    $routes->get('newsletters', 'NewsletterController::adminIndex');
-    $routes->post('newsletters/save', 'NewsletterController::saveNewsletter');
-    $routes->post('newsletters/send/(:num)', 'NewsletterController::sendNewsletter/$1');
-    $routes->post('webinars/save', 'NewsletterController::saveWebinar');
-    $routes->get('webinars', 'NewsletterController::adminWebinarsIndex');
+// CV Review Routes
+$routes->get('cv-review', 'ElearningController::cvReview');
+$routes->post('cv-review/upload', 'ElearningController::uploadCvReview');
+
+    // Admin Newsletter & Webinar Management
+    $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
+        $routes->get('newsletters', 'NewsletterController::adminIndex');
+        $routes->post('newsletters/save', 'NewsletterController::saveNewsletter');
+        $routes->post('newsletters/send/(:num)', 'NewsletterController::sendNewsletter/$1');
+        $routes->get('newsletters/subscribers', 'NewsletterController::adminSubscribers');
+        $routes->post('newsletters/subscribers/delete/(:num)', 'NewsletterController::deleteSubscriber/$1');
+        $routes->get('newsletters/subscribers/export', 'NewsletterController::exportSubscribers');
+        $routes->post('webinars/save', 'NewsletterController::saveWebinar');
+        $routes->post('webinars/delete/(:num)', 'NewsletterController::deleteWebinar/$1');
+        $routes->get('webinars', 'NewsletterController::adminWebinarsIndex');
 
     // Job Reports
     $routes->get('reports', 'JobReportController::adminIndex');

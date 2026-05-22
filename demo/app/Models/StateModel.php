@@ -9,7 +9,7 @@ class StateModel extends Model
     protected $table      = 'states';
     protected $primaryKey = 'id';
     protected $returnType = \App\Entities\State::class;
-    protected $allowedFields = ['name', 'capital', 'region', 'is_active'];
+    protected $allowedFields = ['name', 'slug', 'capital', 'region', 'is_active', 'description', 'meta_description', 'seo_h1'];
 
     protected $validationRules = [
         'name' => 'required|min_length[2]|max_length[100]|is_unique[states.name,id,{id}]',
@@ -28,6 +28,12 @@ class StateModel extends Model
     protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
+
+    public function findBySlug(string $slug): ?object
+    {
+        return $this->where('slug', $slug)->first()
+            ?? $this->where('slug', rtrim($slug, '-state') . '-state')->first();
+    }
 
     public function getStatesWithStats()
     {

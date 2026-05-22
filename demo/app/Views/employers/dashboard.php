@@ -44,6 +44,9 @@
                     <a href="<?= base_url('employer/applications') ?>" class="btn btn-outline-primary btn-md rounded-pill mb-2">
                         View Applicants
                     </a>
+                    <a href="<?= base_url('recruitment') ?>" class="btn btn-success btn-md rounded-pill mb-2">
+                        <i class="bi bi-people-fill me-1"></i>Let Us Help You Hire
+                    </a>
                 </div>
             </div>
         </div>
@@ -54,10 +57,10 @@
     </div>
 
     <?php if (isset($hasCACDocument) && !$hasCACDocument): ?>
-        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
-            <i data-feather="alert-triangle" class="me-2 flex-shrink-0"></i>
+        <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+            <i data-feather="info" class="me-2 flex-shrink-0"></i>
             <div>
-                <strong>Action Required:</strong> Please upload your CAC certificate to verify your company and enable job posting.
+                <strong>Recommendation:</strong> Upload your CAC certificate to get a verified badge and increase trust with job seekers.
                 <a href="<?= base_url('employer/profile/upload-document') ?>" class="alert-link ms-2">Upload now</a>
             </div>
         </div>

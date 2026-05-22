@@ -47,9 +47,24 @@ class MessageModel extends Model
 
     public function getUnreadCount(int $userId, string $userType): int
     {
-        $senderType = $userType === 'employer' ? 'job_seeker' : 'employer';
-        return $this->where('sender_type', $senderType)
-            ->where('is_read', 0)
-            ->countAllResults();
+        $builder = $this->db->table('messages');
+        $builder->join('conversations', 'conversations.id = messages.conversation_id');
+
+        if ($userType === 'employer') {
+            $employerModel = model(\App\Models\EmployerModel::class);
+            $employer = $employerModel->where('user_id', $userId)->first();
+            if (!$employer) return 0;
+            $builder->where('conversations.employer_id', $employer->id);
+            $builder->where('messages.sender_type', 'job_seeker');
+        } else {
+            $seekerModel = model(\App\Models\JobSeekerModel::class);
+            $seeker = $seekerModel->where('user_id', $userId)->first();
+            if (!$seeker) return 0;
+            $builder->where('conversations.job_seeker_id', $seeker->id);
+            $builder->where('messages.sender_type', 'employer');
+        }
+
+        $builder->where('messages.is_read', 0);
+        return $builder->countAllResults();
     }
 }

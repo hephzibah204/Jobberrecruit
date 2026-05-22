@@ -1,6 +1,6 @@
 <?= $this->extend('admin/layouts/app') ?>
 
-<?= $this->section('content') ?>
+<?= $this->section('section') ?>
 <div class="main-content app-content">
     <div class="container-fluid">
         <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">

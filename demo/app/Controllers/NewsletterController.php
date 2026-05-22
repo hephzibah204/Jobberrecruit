@@ -184,4 +184,58 @@ class NewsletterController extends BaseController
             'webinars' => $this->webinarModel->orderBy('scheduled_at', 'DESC')->findAll(),
         ]);
     }
+
+    public function deleteWebinar($id)
+    {
+        $this->webinarModel->delete($id);
+        return redirect()->back()->with('success', 'Webinar deleted successfully.');
+    }
+
+    /**
+     * View all newsletter subscribers
+     */
+    public function adminSubscribers()
+    {
+        return view('admin/newsletters/subscribers', [
+            'title' => 'Newsletter Subscribers',
+            'subscribers' => $this->subscriberModel->orderBy('created_at', 'DESC')->findAll()
+        ]);
+    }
+
+    /**
+     * Delete a subscriber
+     */
+    public function deleteSubscriber($id)
+    {
+        $this->subscriberModel->delete($id);
+        return redirect()->back()->with('success', 'Subscriber deleted successfully.');
+    }
+
+    /**
+     * Export subscriber emails as CSV
+     */
+    public function exportSubscribers()
+    {
+        $subscribers = $this->subscriberModel->where('is_active', 1)->findAll();
+        
+        $filename = 'newsletter_subscribers_' . date('Y-m-d') . '.csv';
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['Email', 'User ID', 'Subscribed At', 'Status']);
+        
+        foreach ($subscribers as $subscriber) {
+            fputcsv($output, [
+                $subscriber->email,
+                $subscriber->user_id ?? 'Guest',
+                $subscriber->created_at ?? '',
+                $subscriber->is_active ? 'Active' : 'Inactive'
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
 }

@@ -52,8 +52,8 @@
     <div class="page-header">
         <div class="add-item d-flex">
             <div class="page-title">
-                <h4 class="fw-bold">Notifications</h4>
-                <h6>View and manage your notifications</h6>
+                <h4 class="fw-bold">Job Alerts</h4>
+                <h6>View and manage your job alerts and notifications</h6>
             </div>
         </div>
         <ul class="table-top-head">
@@ -82,7 +82,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total Notifications</h6>
+                            <h6 class="text-muted mb-1">Total Job Alerts</h6>
                             <h4 class="mb-0"><?= number_format($totalNotifications) ?></h4>
                         </div>
                         <div class="avatar bg-primary-transparent">

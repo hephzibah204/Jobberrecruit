@@ -11,6 +11,29 @@
         </div>
     </div>
 
+    <!-- Newsletter Subscription Banner -->
+    <div class="card custom-card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+        <div class="card-body p-4 p-md-5">
+            <div class="row align-items-center">
+                <div class="col-md-7 mb-3 mb-md-0">
+                    <h5 class="text-white fw-bold mb-2">
+                        <i class="ti ti-mail me-2"></i>Subscribe to Career Webinar Newsletter
+                    </h5>
+                    <p class="text-white-50 mb-0">Get notified about upcoming webinars, career tips, and exclusive events delivered straight to your inbox.</p>
+                </div>
+                <div class="col-md-5">
+                    <form id="webinar-newsletter-form" class="d-flex gap-2">
+                        <input type="email" name="email" class="form-control form-control-lg" placeholder="Enter your email address" required>
+                        <button type="submit" class="btn btn-warning btn-lg text-dark fw-bold" id="btn-webinar-subscribe">
+                            Subscribe
+                        </button>
+                    </form>
+                    <div id="webinar-newsletter-msg" class="mt-2 small text-white"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <?php if (empty($webinars)): ?>
             <div class="col-12 text-center py-5">
@@ -67,6 +90,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Webinar registration
     const btns = document.querySelectorAll('.btn-register');
     btns.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -103,6 +127,48 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Webinar newsletter subscription
+    const webinarForm = document.getElementById('webinar-newsletter-form');
+    if (webinarForm) {
+        webinarForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-webinar-subscribe');
+            const msg = document.getElementById('webinar-newsletter-msg');
+            const formData = new FormData(webinarForm);
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            fetch('<?= base_url('newsletter/subscribe') ?>', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 201 || data.status === 200 || !data.error) {
+                    msg.className = 'mt-2 small text-success';
+                    msg.innerHTML = '<i class="ti ti-check-circle me-1"></i>' + (data.message || 'Successfully subscribed!');
+                    webinarForm.reset();
+                } else {
+                    msg.className = 'mt-2 small text-warning';
+                    msg.innerHTML = data.messages ? data.messages.error : (data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                msg.className = 'mt-2 small text-warning';
+                msg.innerHTML = 'An error occurred. Please try again.';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Subscribe';
+            });
+        });
+    }
 });
 </script>
 <?= $this->endSection() ?>

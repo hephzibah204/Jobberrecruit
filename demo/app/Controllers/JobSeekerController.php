@@ -908,4 +908,77 @@ class JobSeekerController extends BaseController
             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->setBody($json);
     }
+
+    /**
+     * Transaction history for candidates
+     */
+    public function transactions()
+    {
+        $user = $this->auth->user();
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        $transactions = [];
+
+        // Get course enrollments with payments
+        $enrollments = model(\App\Models\CourseEnrollmentModel::class)
+            ->select('course_enrollments.*, courses.title as course_name')
+            ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
+            ->where('course_enrollments.user_id', $user->id)
+            ->orderBy('course_enrollments.created_at', 'DESC')
+            ->findAll();
+
+        foreach ($enrollments as $enr) {
+            $transactions[] = [
+                'type' => 'course',
+                'description' => 'Course: ' . ($enr->course_name ?? 'Unknown'),
+                'reference' => $enr->payment_reference ?? 'FREE-' . $enr->id,
+                'amount' => (float) ($enr->amount ?? 0),
+                'status' => $enr->payment_reference ? 'paid' : ($enr->amount > 0 ? 'pending' : 'free'),
+                'date' => $enr->created_at ?? '',
+                'icon' => 'ti ti-book',
+            ];
+        }
+
+        // Get subscription payments
+        $payments = model(\App\Models\PaymentModel::class)
+            ->where('user_id', $user->id)
+            ->orderBy('paid_at', 'DESC')
+            ->findAll();
+
+        foreach ($payments as $pay) {
+            $metadata = is_string($pay['metadata']) ? json_decode($pay['metadata'], true) : ($pay['metadata'] ?? []);
+            $desc = 'Subscription Payment';
+            if (!empty($metadata['plan_id'])) {
+                $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
+                $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
+            }
+            $transactions[] = [
+                'type' => 'subscription',
+                'description' => $desc,
+                'reference' => $pay['reference'] ?? '',
+                'amount' => (float) ($pay['amount'] ?? 0),
+                'status' => $pay['status'] ?? 'pending',
+                'date' => $pay['paid_at'] ?? $pay['created_at'] ?? '',
+                'icon' => 'ti ti-credit-card',
+            ];
+        }
+
+        // Sort by date desc
+        usort($transactions, function ($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+
+        $totalSpent = array_sum(array_column(
+            array_filter($transactions, fn($t) => in_array($t['status'], ['paid', 'completed'])),
+            'amount'
+        ));
+
+        return view('candidate/transactions', [
+            'title' => 'Transaction History',
+            'transactions' => $transactions,
+            'totalSpent' => $totalSpent,
+        ]);
+    }
 }

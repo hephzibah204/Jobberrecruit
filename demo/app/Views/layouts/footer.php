@@ -14,6 +14,8 @@
                 <h6 class="fw-bold mb-3">Quick Links</h6>
                 <ul class="list-unstyled">
                     <li><a href="<?= base_url('jobs') ?>" class="text-muted">Browse Jobs</a></li>
+                    <li><a href="<?= base_url('jobs') ?>" class="text-muted">Browse by Location</a></li>
+                    <li><a href="<?= base_url('jobs') ?>" class="text-muted">Browse by Category</a></li>
                     <li><a href="<?= base_url('about-us') ?>" class="text-muted">About Us</a></li>
                     <li><a href="<?= base_url('contact-us') ?>" class="text-muted">Contact</a></li>
                     <li><a href="<?= base_url('faq') ?>" class="text-muted">FAQ</a></li>

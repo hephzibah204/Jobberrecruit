@@ -99,7 +99,7 @@
                                 <!-- Keyword -->
                                 <div class="col-12">
                                     <label class="form-label fw-medium mb-2">
-                                        <i class="bi bi-briefcase me-1"></i>Job Title or Keyword
+                                        <i class="bi bi-briefcase me-1" aria-hidden="true"></i>Job Title or Keyword
                                     </label>
                                     <div class="input-group">
                                         <input type="text"
@@ -138,33 +138,35 @@
 
                                 <!-- Job Type -->
                                 <div class="col-12">
-                                    <label class="form-label fw-medium mb-2">
-                                        <i class="bi bi-clock me-1"></i>Job Type
-                                    </label>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="job_type[]" value="full_time" id="fullTime">
-                                            <label class="form-check-label small" for="fullTime">Full Time</label>
+                                    <fieldset>
+                                        <legend class="form-label fw-medium mb-2">
+                                            <i class="bi bi-clock me-1" aria-hidden="true"></i>Job Type
+                                        </legend>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="full_time" id="fullTime">
+                                                <label class="form-check-label small" for="fullTime">Full Time</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="part_time" id="partTime">
+                                                <label class="form-check-label small" for="partTime">Part Time</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="remote" id="remote">
+                                                <label class="form-check-label small" for="remote">Remote</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="contract" id="contract">
+                                                <label class="form-check-label small" for="contract">Contract</label>
+                                            </div>
                                         </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="job_type[]" value="part_time" id="partTime">
-                                            <label class="form-check-label small" for="partTime">Part Time</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="job_type[]" value="remote" id="remote">
-                                            <label class="form-check-label small" for="remote">Remote</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="job_type[]" value="contract" id="contract">
-                                            <label class="form-check-label small" for="contract">Contract</label>
-                                        </div>
-                                    </div>
+                                    </fieldset>
                                 </div>
 
                                 <!-- Search Button -->
                                 <div class="col-12 mt-4">
-                                    <button type="submit" class="btn btn-primary w-100 btn-lg" id="search-btn">
-                                        <i class="bi bi-search me-2"></i>Search Verified Jobs
+                                    <button type="submit" class="btn btn-primary w-100 btn-lg" id="search-btn" aria-label="Search jobs">
+                                        <i class="bi bi-search me-2" aria-hidden="true"></i>Search Verified Jobs
                                     </button>
                                 </div>
                             </form>
@@ -191,37 +193,42 @@
                     </div>
 
                     <!-- Floating Testimonial -->
-                    <div class="position-absolute bottom-0 end-0 mb-3 me-3 d-none d-lg-block">
-                        <div class="card border-0 shadow-sm testimonial-card">
-                            <div class="card-body p-3">
-                                <div class="d-flex align-items-start">
-                                    <div class="flex-shrink-0">
-                                        <img src="<?= base_url('images/favicon.png') ?>"
-                                            class="rounded-circle"
-                                            width="40"
-                                            height="40"
-                                            alt="Sarah Johnson">
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <p class="small mb-2">
-                                            <i class="bi bi-quote text-primary"></i>
-                                            Found my dream job in 2 weeks!
-                                        </p>
-                                        <div class="d-flex align-items-center">
-                                            <div class="stars small">
-                                                <i class="bi bi-star-fill text-warning"></i>
-                                                <i class="bi bi-star-fill text-warning"></i>
-                                                <i class="bi bi-star-fill text-warning"></i>
-                                                <i class="bi bi-star-fill text-warning"></i>
-                                                <i class="bi bi-star-fill text-warning"></i>
+                    <?php if (!empty($testimonials) && count($testimonials) > 0):
+                        $t = $testimonials[array_rand($testimonials)]; ?>
+                        <div class="position-absolute bottom-0 end-0 mb-3 me-3 d-none d-lg-block">
+                            <div class="card border-0 shadow-sm testimonial-card">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-shrink-0">
+                                            <img src="<?= esc($t->avatar ?? base_url('images/default-company.png')) ?>"
+                                                class="rounded-circle"
+                                                width="40"
+                                                height="40"
+                                                alt="<?= esc($t->name ?? 'Job Seeker') ?>"
+                                                loading="lazy"
+                                                onerror="this.src='<?= base_url('images/default-company.png') ?>'">
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <p class="small mb-2">
+                                                <i class="bi bi-quote text-primary" aria-hidden="true"></i>
+                                                <?= esc($t->content ?? 'Found a great job through this platform!') ?>
+                                            </p>
+                                            <div class="d-flex align-items-center">
+                                                <div class="stars small">
+                                                    <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+                                                    <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+                                                    <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+                                                    <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+                                                    <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+                                                </div>
+                                                <span class="text-muted small ms-2">- <?= esc($t->name ?? 'Job Seeker') ?></span>
                                             </div>
-                                            <span class="text-muted small ms-2">- Sarah</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -236,6 +243,7 @@
     </div>
 </section>
 
+<?php if (false): ?>
 <!-- Global Stats Bar -->
 <section class="py-4 border-top border-bottom" style="background: rgba(14, 165, 233, 0.05) !important; border-color: var(--border) !important;">
     <div class="container">
@@ -259,6 +267,7 @@
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- Ad-Res -->
 <ins class="adsbygoogle"
@@ -268,7 +277,9 @@
     data-ad-format="auto"
     data-full-width-responsive="true"></ins>
 <script>
-    (adsbygoogle = window.adsbygoogle || []).push({});
+    if (window.adsbygoogle && document.querySelector('.adsbygoogle')) {
+        try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { console.warn('Adsense push error'); }
+    }
 </script>
 
 <!-- Featured Jobs -->
@@ -345,7 +356,8 @@
                                         <div class="company-logo-container me-3">
                                             <img src="<?= base_url('images/favicon.png') ?>"
                                                 alt="Anonymous Employer"
-                                                class="img-fluid rounded-2">
+                                                class="img-fluid rounded-2"
+                                                loading="lazy">
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="fw-semibold mb-0">Confidential Employer</h6>
@@ -355,9 +367,11 @@
                                 <?php else: ?>
                                     <div class="d-flex align-items-center mb-4">
                                         <div class="company-logo-container me-3">
-                                            <img src="<?= $job->company_logo ?>"
+                                            <img src="<?= esc($job->company_logo) ?>"
                                                 alt="<?= esc($job->industry_name ?? 'Company') ?>"
-                                                class="img-fluid rounded-2">
+                                                class="img-fluid rounded-2"
+                                                loading="lazy"
+                                                onerror="this.src='<?= base_url('images/default-company.png') ?>'">
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="fw-semibold mb-0"><?= esc($job->industry_name ?? 'Unknown Company') ?></h6>
@@ -392,12 +406,11 @@
     </div>
 </section>
 
-</section>
-
 <!-- Discovery Phase: Companies & Categories -->
 <section class="py-5" style="background: var(--midnight-bg) !important;">
     <div class="container">
         <!-- Top Hiring Companies -->
+        <?php if (false): ?>
         <div class="section-header mb-5 border-0">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -420,7 +433,7 @@
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-start">
                                     <div class="company-logo-container me-3 flex-shrink-0 shadow-sm" style="background: white;">
-                                        <img src="<?= esc($company->logo) ?>" alt="<?= esc($company->company_name) ?>" class="img-fluid rounded-3">
+                                        <img src="<?= esc($company->logo) ?>" alt="<?= esc($company->company_name) ?>" class="img-fluid rounded-3" loading="lazy" onerror="this.src='<?= base_url('images/default-company.png') ?>'">
                                     </div>
                                     <div class="flex-grow-1">
                                         <h5 class="fw-bold mb-1 text-main"><?= esc($company->company_name) ?>
@@ -438,6 +451,7 @@
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
 
         <!-- Popular Categories -->
         <div class="section-header mb-5 border-0 pt-5">
@@ -478,21 +492,30 @@
         </div>
 
         <div class="row g-4">
-            <?php if (!empty($top_locations)): ?>
-                <?php foreach ($top_locations as $location): ?>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a href="<?= esc($location->url) ?>" class="text-decoration-none">
-                            <div class="glass-card p-4 text-center h-100 hover-lift">
-                                <div class="icon-wrapper rounded-circle p-3 mx-auto mb-4" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="bi bi-geo-alt text-success fs-2" style="text-shadow: 0 0 15px rgba(16, 185, 129, 0.8);"></i>
-                                </div>
-                                <h6 class="fw-bold text-main mb-2"><?= esc($location->name) ?></h6>
-                                <p class="text-muted small mb-0"><?= esc($location->formatted_count) ?></p>
+            <?php
+            $locationItems = !empty($top_locations) ? $top_locations : array_slice((array)$states, 0, 8);
+            foreach ($locationItems as $location):
+                if (isset($location->url)) {
+                    $locUrl   = $location->url;
+                    $locCount = $location->formatted_count;
+                } else {
+                    $slugPart = !empty($location->slug) ? $location->slug : strtolower(str_replace(' ', '-', $location->name)) . '-state';
+                    $locUrl   = base_url('jobs-in-' . $slugPart);
+                    $locCount = 'View jobs';
+                }
+            ?>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="<?= esc($locUrl) ?>" class="text-decoration-none">
+                        <div class="glass-card p-4 text-center h-100 hover-lift">
+                            <div class="icon-wrapper rounded-circle p-3 mx-auto mb-4" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-geo-alt text-success fs-2" style="text-shadow: 0 0 15px rgba(16, 185, 129, 0.8);"></i>
                             </div>
-                        </a>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                            <h6 class="fw-bold text-main mb-2"><?= esc($location->name) ?></h6>
+                            <p class="text-muted small mb-0"><?= esc($locCount) ?></p>
+                        </div>
+                    </a>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>
@@ -803,21 +826,10 @@
     }
 
     /* Quick Links Badges */
-    .badge.bg-light:hover {
-        background-color: #0D609E !important;
-        color: white !important;
-        transform: translateY(-2px);
-        transition: all 0.3s ease;
-    }
 
     /* Background Elements */
     .opacity-10 {
         opacity: 0.1;
-    }
-
-    /* Card Styling */
-    .card {
-        border: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .card-header.bg-primary {
@@ -890,14 +902,6 @@
     }
 
     /* Counter Animation */
-    .counter {
-        font-size: 3.5rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #0D609E, #0D609E);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
 
     /* CTA Section */
     .bg-primary {
@@ -1242,50 +1246,61 @@
 <?= $this->section('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Counter animation
+        // Counter animation — reads target from data-count, always starts from 0
         const counters = document.querySelectorAll('.counter');
-        const speed = 200;
 
-        const animateCounter = (counter) => {
-            const target = +counter.getAttribute('data-count');
-            const count = +counter.innerText.replace(/,/g, '');
-            const increment = target / speed;
+        function animateCounter(el) {
+            const raw = el.getAttribute('data-count');
+            const target = parseInt(String(raw).replace(/,/g, ''), 10) || 0;
+            const duration = 1800; // ms
+            const startTime = performance.now();
 
-            if (count < target) {
-                counter.innerText = Math.ceil(count + increment).toLocaleString();
-                setTimeout(() => animateCounter(counter), 1);
-            } else {
-                counter.innerText = target.toLocaleString();
+            el.innerText = '0';
+
+            function step(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease-out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = Math.round(eased * target);
+                el.innerText = current.toLocaleString();
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    el.innerText = target.toLocaleString();
+                }
             }
-        };
 
-        $('.searchable-select').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: function() {
-                return $(this).attr('id') === 'state' ?
-                    'Search location…' :
-                    'Search industry…';
-            },
-            allowClear: false
-        });
+            requestAnimationFrame(step);
+        }
 
-        // Intersection Observer for counters
-        const observer = new IntersectionObserver((entries) => {
+        // Intersection Observer — fires when counter scrolls into view
+        const observer = new IntersectionObserver((entries, obs) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     animateCounter(entry.target);
-                    observer.unobserve(entry.target);
+                    obs.unobserve(entry.target);
                 }
             });
-        }, {
-            threshold: 0.5
-        });
+        }, { threshold: 0.3 });
 
         counters.forEach(counter => {
-            counter.innerText = '0';
             observer.observe(counter);
         });
+
+        // Initialize searchable dropdowns
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            $('.searchable-select').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: function() {
+                    return $(this).attr('id') === 'state' ?
+                        'Search location…' :
+                        'Search industry…';
+                },
+                allowClear: false
+            });
+        }
 
         // Form submission with loading state
         const form = document.getElementById('job-search-form');
@@ -1299,7 +1314,7 @@
                 // Remove disabled state after form submits
                 setTimeout(() => {
                     searchBtn.disabled = false;
-                    searchBtn.innerHTML = '<i class="bi bi-search me-2"></i>Search 175K+ Jobs';
+                    searchBtn.innerHTML = '<i class="bi bi-search me-2" aria-hidden="true"></i>Search Verified Jobs';
                 }, 2000);
             });
         }
@@ -1341,28 +1356,72 @@
                 const jobId = this.getAttribute('data-job-id');
                 const icon = this.querySelector('i');
 
-                // Toggle state
-                if (icon.classList.contains('bi-bookmark')) {
-                    icon.classList.remove('bi-bookmark');
-                    icon.classList.add('bi-bookmark-fill', 'text-primary');
-                    showToast('Job saved to favorites', 'success');
-                } else {
-                    icon.classList.remove('bi-bookmark-fill', 'text-primary');
-                    icon.classList.add('bi-bookmark');
-                    showToast('Job removed from favorites', 'info');
-                }
+                const isSaved = icon.classList.contains('bi-bookmark-fill');
+                const csrfName = document.querySelector('meta[name="csrf-header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-                // In a real app, you would make an AJAX call here
-                // fetch(`/jobs/${jobId}/save`, { method: 'POST' })
+                fetch('<?= base_url('jobs/toggle-save') ?>/' + jobId, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        [csrfName]: csrfToken
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.saved) {
+                        icon.classList.remove('bi-bookmark');
+                        icon.classList.add('bi-bookmark-fill', 'text-primary');
+                        showToast(data.message || 'Job saved to favorites', 'success');
+                    } else if (data.success && !data.saved) {
+                        icon.classList.remove('bi-bookmark-fill', 'text-primary');
+                        icon.classList.add('bi-bookmark');
+                        showToast(data.message || 'Job removed from favorites', 'info');
+                    } else {
+                        showToast(data.message || 'An error occurred', 'danger');
+                    }
+                })
+                .catch(() => {
+                    // Revert icon on failure
+                    if (isSaved) {
+                        icon.classList.remove('bi-bookmark-fill', 'text-primary');
+                        icon.classList.add('bi-bookmark');
+                    } else {
+                        icon.classList.remove('bi-bookmark');
+                        icon.classList.add('bi-bookmark-fill', 'text-primary');
+                    }
+                    showToast('Could not save job. Please try again.', 'danger');
+                });
             });
         });
 
         // Show toast function
         function showToast(message, type = 'info') {
-            // You can integrate a toast library here
-            console.log(`${type.toUpperCase()}: ${message}`);
-            // For now, using alert
-            alert(message);
+            const existing = document.querySelector('.jr-toast');
+            if (existing) existing.remove();
+
+            const colors = { success: '#10b981', danger: '#ef4444', info: '#3b82f6', warning: '#f59e0b' };
+            const toast = document.createElement('div');
+            toast.className = 'jr-toast';
+            toast.innerHTML = message;
+            Object.assign(toast.style, {
+                position: 'fixed', bottom: '24px', right: '24px', zIndex: '99999',
+                background: colors[type] || '#3b82f6', color: '#fff',
+                padding: '12px 24px', borderRadius: '8px', fontSize: '14px',
+                fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                opacity: '0', transform: 'translateY(12px)',
+                transition: 'opacity 0.3s, transform 0.3s', maxWidth: '360px'
+            });
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateY(0)';
+            });
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(12px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         // Smooth scroll for anchor links
@@ -1382,14 +1441,21 @@
             });
         });
 
-        // Parallax effect for hero section
+        // Parallax effect for hero section (throttled)
+        let ticking = false;
         window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const heroSection = document.querySelector('.hero-section');
-            if (heroSection) {
-                heroSection.style.transform = `translateY(${scrolled * 0.05}px)`;
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const scrolled = window.pageYOffset;
+                    const heroSection = document.querySelector('.hero-section');
+                    if (heroSection) {
+                        heroSection.style.transform = `translateY(${scrolled * 0.05}px)`;
+                    }
+                    ticking = false;
+                });
+                ticking = true;
             }
-        });
+        }, { passive: true });
     });
 </script>
 <?= $this->endSection() ?>

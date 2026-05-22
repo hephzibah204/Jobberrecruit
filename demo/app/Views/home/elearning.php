@@ -52,6 +52,7 @@
                 <p class="hero-copy">Explore job-ready training, interview prep, hiring playbooks, and AI-driven career development resources built for JobberRecruit users.</p>
                 <div class="hero-actions">
                     <a href="#course-catalog" class="btn btn-primary">Browse Courses</a>
+                    <a href="<?= base_url('cv-review') ?>" class="btn btn-success">Get CV Reviewed</a>
                     <a href="<?= base_url('register') ?>" class="btn btn-outline-primary">Create Account</a>
                 </div>
             </div>

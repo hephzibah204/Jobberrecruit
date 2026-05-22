@@ -403,24 +403,21 @@ HTML;
                 <!-- Share Job -->
                 <div class="glass-card p-4">
                     <h6 class="fw-semibold mb-3">Share this Job</h6>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
                         <a class="btn btn-outline-secondary btn-sm" id="copyLink" title="Copy Job Link">
-                            <i class="bi bi-link-45deg"></i>
+                            <i class="bi bi-link-45deg"></i> Copy Link
                         </a>
-                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(current_url()) ?>" class="btn btn-outline-primary btn-sm" target="_blank" title="Share on LinkedIn">
-                            <i class="bi bi-linkedin"></i>
+                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(current_url()) ?>" class="btn btn-sm" style="background: #0A66C2; color: white; border: none;" target="_blank" title="Share on LinkedIn">
+                            <i class="bi bi-linkedin"></i> LinkedIn
                         </a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode(current_url()) ?>" class="btn btn-outline-primary btn-sm" target="_blank" title="Share on Facebook">
-                            <i class="bi bi-facebook"></i>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode(current_url()) ?>" class="btn btn-sm" style="background: #1877F2; color: white; border: none;" target="_blank" title="Share on Facebook">
+                            <i class="bi bi-facebook"></i> Facebook
                         </a>
-                        <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($job->title) ?>" class="btn btn-outline-info btn-sm" target="_blank" title="Share on Twitter">
-                            <i class="bi bi-twitter"></i>
-                        </a>
-                        <a href="https://wa.me/?text=<?= urlencode('Check out this job: ' . $job->title . ' ' . current_url()) ?>" class="btn btn-outline-success btn-sm" target="_blank" title="Share on WhatsApp">
-                            <i class="bi bi-whatsapp"></i>
+                        <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($job->title) ?>" class="btn btn-sm" style="background: #000000; color: white; border: none;" target="_blank" title="Share on X">
+                            <i class="bi bi-twitter-x"></i> X
                         </a>
                         <a href="mailto:?subject=Check out this job: <?= urlencode($job->title) ?>&body=<?= urlencode(current_url()) ?>" class="btn btn-outline-secondary btn-sm" title="Share via Email">
-                            <i class="bi bi-envelope"></i>
+                            <i class="bi bi-envelope"></i> Email
                         </a>
                     </div>
                 </div>

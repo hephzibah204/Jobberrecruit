@@ -1,6 +1,6 @@
 <?= $this->extend('layouts/app') ?>
 
-<?= $this->section('content') ?>
+<?= $this->section('section') ?>
 <div class="content">
     <div class="page-header mb-4">
         <div class="page-title">

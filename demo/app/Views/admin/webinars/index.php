@@ -1,6 +1,6 @@
 <?= $this->extend('admin/layouts/app') ?>
 
-<?= $this->section('content') ?>
+<?= $this->section('section') ?>
 <div class="main-content app-content">
     <div class="container-fluid">
         <!-- Page Header -->
@@ -115,9 +115,15 @@
                                                 <button class="btn btn-sm btn-icon btn-info-light me-1" onclick="editWebinar(<?= htmlspecialchars(json_encode($webinar)) ?>)" title="Edit Webinar">
                                                     <i class="ti ti-edit"></i>
                                                 </button>
-                                                <a href="<?= $link ?>" class="btn btn-sm btn-icon btn-primary-light" target="_blank" title="Join Meeting">
+                                                <a href="<?= $link ?>" class="btn btn-sm btn-icon btn-primary-light me-1" target="_blank" title="Join Meeting">
                                                     <i class="ti ti-video"></i>
                                                 </a>
+                                                <form action="<?= base_url('admin/webinars/delete/' . $webinar->id) ?>" method="POST" class="d-inline" onsubmit="return confirm('Delete this webinar?')">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="btn btn-sm btn-icon btn-danger-light" title="Delete Webinar">
+                                                        <i class="ti ti-trash"></i>
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

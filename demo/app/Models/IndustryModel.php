@@ -14,6 +14,9 @@ class IndustryModel extends Model
         'parent_id',
         'name',
         'slug',
+        'description',
+        'meta_description',
+        'seo_h1',
         'is_active'
     ];
 

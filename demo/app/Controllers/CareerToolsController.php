@@ -285,10 +285,36 @@ class CareerToolsController extends BaseController
         $profile = "Name: {$name}, Skills: {$skills}, Bio: {$bio}";
 
         $advice = $this->aiService->getCareerAdvice($profile);
+        
+        // Clean up markdown formatting
+        $advice = $this->cleanMarkdown($advice);
 
         return view('candidate/career-tools/career-advice', [
             'title' => 'AI Career Advice',
             'advice' => $advice
         ]);
+    }
+    
+    /**
+     * Clean markdown formatting from AI response
+     */
+    protected function cleanMarkdown($text)
+    {
+        // Convert **bold** to <strong>
+        $text = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
+        // Convert *italic* to <em>
+        $text = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $text);
+        // Convert ### headers to <h3>
+        $text = preg_replace('/^### (.+)$/m', '<h3>$1</h3>', $text);
+        // Convert ## headers to <h2>
+        $text = preg_replace('/^## (.+)$/m', '<h2>$1</h2>', $text);
+        // Convert # headers to <h1>
+        $text = preg_replace('/^# (.+)$/m', '<h1>$1</h1>', $text);
+        // Remove standalone asterisks used as bullet points
+        $text = preg_replace('/^\s*\*\s+/m', '', $text);
+        // Remove multiple asterisks at start of lines
+        $text = preg_replace('/^\s*\*+\s*/m', '', $text);
+        
+        return $text;
     }
 }

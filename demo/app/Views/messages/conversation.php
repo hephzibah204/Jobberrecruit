@@ -58,11 +58,10 @@
 
         <div class="card-footer">
             <form id="messageForm" class="d-flex gap-2">
-                <?= csrf_field() ?>
                 <input type="hidden" name="conversation_id" value="<?= $conversation['id'] ?>">
                 <input type="hidden" name="recipient_id" value="<?= $user->user_type === 'employer' ? $conversation['job_seeker_id'] : $conversation['employer_id'] ?>">
-                <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." required>
-                <button type="submit" class="btn btn-primary"><i data-feather="send"></i></button>
+                <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." required autocomplete="off">
+                <button type="submit" class="btn btn-primary" id="sendBtn"><i data-feather="send"></i></button>
             </form>
         </div>
     </div>
@@ -73,20 +72,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('messageContainer');
     if (container) container.scrollTop = container.scrollHeight;
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const csrfHeader = 'X-CSRF-TOKEN';
+
     document.getElementById('messageForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const input = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
         const msg = input.value.trim();
         if (!msg) return;
+
+        sendBtn.disabled = true;
 
         const formData = new FormData();
         formData.append('message', msg);
         formData.append('recipient_id', this.querySelector('[name="recipient_id"]').value);
         formData.append('job_id', '<?= $conversation['job_id'] ?? 0 ?>');
-        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
-        fetch('<?= base_url(auth()->user()->user_type === "employer" ? "employer/messages/send" : "candidate/messages/send") ?>', {
+        const sendUrl = '<?= base_url(auth()->user()->user_type === "employer" ? "employer/messages/send" : "candidate/messages/send") ?>';
+
+        fetch(sendUrl, {
             method: 'POST',
+            headers: {
+                [csrfHeader]: csrfToken
+            },
             body: formData
         })
         .then(r => r.json())
@@ -96,16 +105,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const div = document.createElement('div');
                 div.className = 'd-flex mb-3 justify-content-end';
                 div.innerHTML = `<div class="message-bubble p-2 px-3 rounded bg-primary text-white" style="max-width: 70%;">
-                    <p class="mb-1 small">${msg.replace(/\n/g, '<br>')}</p>
+                    <p class="mb-1 small">${msg.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>
                     <small class="text-white-50" style="font-size: 0.7rem;">Just now</small>
                 </div>`;
                 container.appendChild(div);
                 container.scrollTop = container.scrollHeight;
                 input.value = '';
+            } else {
+                alert(data.message || 'Failed to send message');
             }
+            sendBtn.disabled = false;
         })
-        .catch(err => console.error('Error sending message:', err));
+        .catch(err => {
+            console.error('Error sending message:', err);
+            alert('Network error. Please try again.');
+            sendBtn.disabled = false;
+        });
     });
+
+    if (container) container.scrollTop = container.scrollHeight;
 });
 </script>
 <?= $this->endSection() ?>

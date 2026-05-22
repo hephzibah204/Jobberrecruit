@@ -67,10 +67,11 @@ if ($isEmployer) {
                             <li <?= uri_string() === 'employer/messages' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/messages') ?>"><i class="ti ti-message-dots fs-16 me-2"></i><span>Messages</span></a></li>
                             <?php endif; ?>
                             <li <?= uri_string() === 'employer/pricing' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/pricing') ?>"><i class="ti ti-credit-card fs-16 me-2"></i><span>Billing & Plans</span></a></li>
+                            <li <?= uri_string() === 'employer/transactions' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/transactions') ?>"><i class="ti ti-receipt fs-16 me-2"></i><span>Transactions</span></a></li>
                             <?php if (env('feature_referrals', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'employer/referrals' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/referrals') ?>"><i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span></a></li>
                             <?php endif; ?>
-                            <li <?= uri_string() === 'employer/notifications' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/notifications') ?>"><i class="ti ti-bell fs-16 me-2"></i><span>Notifications</span></a></li>
+                            <li <?= uri_string() === 'employer/notifications' ? 'class="active"' : '' ?>><a href="<?= base_url('employer/notifications') ?>"><i class="ti ti-bell fs-16 me-2"></i><span>Job Alerts</span></a></li>
                         <?php else: ?>
                             <li class="active">
                                 <a href="<?= base_url('candidate/dashboard') ?>">
@@ -87,13 +88,16 @@ if ($isEmployer) {
                             <li <?= strpos(uri_string(), 'candidate/career-tools') !== false ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/career-tools') ?>"><i class="ti ti-sparkles fs-16 me-2"></i><span>AI Career Tools</span></a></li>
                             <?php endif; ?>
                             <li <?= strpos(uri_string(), 'candidate/subscription') !== false ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/subscription/pricing') ?>"><i class="ti ti-crown fs-16 me-2"></i><span>Premium Plans</span></a></li>
+                            <li <?= uri_string() === 'candidate/my-courses' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/my-courses') ?>"><i class="ti ti-book fs-16 me-2"></i><span>My Courses</span></a></li>
+                            <li <?= uri_string() === 'training/certificates' ? 'class="active"' : '' ?>><a href="<?= base_url('training/certificates') ?>"><i class="ti ti-award fs-16 me-2"></i><span>Certificates</span></a></li>
+                            <li <?= uri_string() === 'candidate/transactions' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/transactions') ?>"><i class="ti ti-receipt fs-16 me-2"></i><span>Transactions</span></a></li>
                             <?php if (env('feature_messaging', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'candidate/messages' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/messages') ?>"><i class="ti ti-message-circle fs-16 me-2"></i><span>Messages</span></a></li>
                             <?php endif; ?>
                             <?php if (env('feature_referrals', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'candidate/referrals' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/referrals') ?>"><i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span></a></li>
                             <?php endif; ?>
-                            <li <?= uri_string() === 'candidate/notifications' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/notifications') ?>"><i class="ti ti-bell fs-16 me-2"></i><span>Notifications</span></a></li>
+                            <li <?= uri_string() === 'candidate/notifications' ? 'class="active"' : '' ?>><a href="<?= base_url('candidate/notifications') ?>"><i class="ti ti-bell fs-16 me-2"></i><span>Job Alerts</span></a></li>
                             <?php if (env('feature_webinars', 'true') === 'true'): ?>
                             <li <?= uri_string() === 'webinars' ? 'class="active"' : '' ?>><a href="<?= base_url('webinars') ?>"><i class="ti ti-video fs-16 me-2"></i><span>Career Webinars</span></a></li>
                             <?php endif; ?>

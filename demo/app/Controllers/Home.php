@@ -254,6 +254,27 @@ class Home extends BaseController
         $states = $cache->get($statesCacheKey) ?: $stateModel->orderBy('name', 'ASC')->findAll();
         $cache->save($statesCacheKey, $states, 60);
 
+        // Top Locations with open job counts
+        $topLocationsCacheKey = 'top_locations_home_v2';
+        $top_locations = $cache->get($topLocationsCacheKey);
+        if (!$top_locations) {
+            $db = db_connect();
+            $top_locations = $db->table('states')
+                ->select('states.id, states.name, states.slug, COUNT(jobs.id) as job_count')
+                ->join('jobs', 'jobs.state_id = states.id AND jobs.status = "open"', 'left')
+                ->groupBy('states.id')
+                ->orderBy('job_count', 'DESC')
+                ->limit(8)
+                ->get()
+                ->getResultObject();
+
+            foreach ($top_locations as $loc) {
+                $loc->url = base_url('jobs-in-' . ($loc->slug ?? strtolower(str_replace(' ', '-', $loc->name)) . '-state'));
+                $loc->formatted_count = number_format((int)$loc->job_count) . ' job' . ((int)$loc->job_count !== 1 ? 's' : '');
+            }
+            $cache->save($topLocationsCacheKey, $top_locations, 3600);
+        }
+
         $employerModel = new \App\Models\EmployerModel();
         $jobAppModel = new \App\Models\JobApplicationModel();
 
@@ -283,6 +304,7 @@ class Home extends BaseController
             'jobs' => $jobs,
             'industries' => $industries,
             'states' => $states,
+            'top_locations' => $top_locations,
             'top_companies' => $top_companies,
             'featured_jobs' => $featured_jobs,
             'popular_vacancies' => $popular_vacancies,
@@ -290,7 +312,9 @@ class Home extends BaseController
             'activeJobsCount' => $activeJobsCount,
             'verifiedEmployersCount' => $verifiedEmployersCount,
             'monthlyApplicantsCount' => $monthlyApplicantsCount,
-            'placementSuccess' => $placementSuccess
+            'placementSuccess' => $placementSuccess,
+            'testimonials' => model(\App\Models\TestimonialModel::class)->where('status', 'active')->orderBy('created_at', 'DESC')->findAll(),
+            'q' => $this->request->getGet('q') ?? ''
         ];
 
         return view('home/index', $data);
@@ -299,60 +323,134 @@ class Home extends BaseController
     public function location_hub($slug)
     {
         $stateModel = model(StateModel::class);
-        $stateName = str_replace(['-', '_'], ' ', trim($slug));
-        
-        $state = $stateModel->where('name', $stateName)->first();
-        
+        $jobModel   = new \App\Models\JobModel();
+
+        // --- 1. Resolve state by slug (most reliable) ---
+        $state = $stateModel->where('slug', $slug)->first();
+
+        // Fallback: strip "-state" suffix and try by name
         if (!$state) {
-            $state = $stateModel->like('name', $stateName, 'none')->first();
+            $stateName = ucwords(str_replace('-', ' ', preg_replace('/-state$/', '', $slug)));
+            $state = $stateModel->where('name', $stateName)->first()
+                ?? $stateModel->like('name', $stateName, 'none')->first();
         }
 
-        if (!$state) {
-            $allStates = $stateModel->findAll();
-            foreach ($allStates as $s) {
-                if (strtolower($s->name) === strtolower($stateName)) {
-                    $state = $s;
-                    break;
-                }
-            }
+        // Fallback: handle "fct-abuja", "abuja", etc. → search for Abuja/FCT
+        if (!$state && (str_contains($slug, 'fct') || str_contains($slug, 'abuja'))) {
+            $state = $stateModel->groupStart()
+                ->like('name', 'FCT', 'none')
+                ->orLike('name', 'Abuja', 'none')
+                ->orLike('name', 'Federal Capital', 'after')
+                ->groupEnd()
+                ->first();
         }
 
         if (!$state) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Location not found: $slug");
         }
 
-        $_GET['state_id'] = $state->id;
+        // --- 2. Fetch jobs for this state (latest 12) ---
+        $db       = db_connect();
+        $jobs     = $db->table('jobs')
+            ->select('jobs.*, employers.company_name AS employer_name, employers.logo AS company_logo,
+                      industries.name AS industry_name, states.name AS state_name')
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->join('industries', 'industries.id = jobs.industry_id', 'left')
+            ->join('states', 'states.id = jobs.state_id', 'left')
+            ->where('jobs.state_id', $state->id)
+            ->where('jobs.status', 'open')
+            ->orderBy('jobs.created_at', 'DESC')
+            ->limit(12)
+            ->get()
+            ->getResultObject();
 
-        $customTitle = "Find Verified Jobs in " . esc($state->name) . " — Apply Now | JobberRecruit";
-        $customMeta = "Browse and apply for the latest job opportunities in " . esc($state->name) . ". Verified vacancies from top employers in Nigeria.";
+        $totalJobs = $db->table('jobs')
+            ->where('state_id', $state->id)
+            ->where('status', 'open')
+            ->countAllResults();
 
-        return $this->jobs($customTitle, $customMeta);
+        // --- 3. Fetch all active states for the sidebar/related links ---
+        $allStates = $stateModel->where('is_active', 1)->orderBy('name', 'ASC')->findAll();
+
+        // --- 4. Build SEO fields ---
+        $seoH1   = !empty($state->seo_h1)
+            ? $state->seo_h1
+            : 'Jobs in ' . $state->name . ', Nigeria — Find Verified Vacancies';
+        $seoMeta = !empty($state->meta_description)
+            ? $state->meta_description
+            : 'Browse verified jobs in ' . $state->name . '. Apply to the latest vacancies from top employers in Nigeria.';
+
+        return view('home/location_hub', [
+            'title'            => $seoH1,
+            'meta_description' => $seoMeta,
+            'state'            => $state,
+            'jobs'             => $jobs,
+            'total_jobs'       => $totalJobs,
+            'all_states'       => $allStates,
+            'auth'             => $this->auth,
+        ]);
     }
 
     public function industry_hub($slug)
     {
-        // Check for common 'jobs' suffix in slug if needed, but our route uses (:segment)-jobs
-        // Clean industry slug from route segment
-        $industrySlug = str_replace('-jobs', '', $slug);
-
         $industryModel = model(IndustryModel::class);
-        $industry = $industryModel->where('slug', $industrySlug)->first();
 
-        // Fallback check if it doesn't match perfectly
+        // Strip the trailing "-jobs" that the route captures
+        $industrySlug = preg_replace('/-jobs$/', '', $slug);
+
+        // Lookup by slug (primary)
+        $industry = $industryModel->where('slug', $industrySlug)->first()
+            ?? $industryModel->where('slug', $slug)->first();
+
         if (!$industry) {
-             $industry = $industryModel->where('slug', $slug)->first();
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Industry not found: $slug");
         }
 
-        if (!$industry) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Industry not found: $slug");
+        // Fetch latest 12 open jobs for this industry
+        $db   = db_connect();
+        $jobs = $db->table('jobs')
+            ->select('jobs.*, employers.company_name AS employer_name, employers.logo AS company_logo,
+                      industries.name AS industry_name, states.name AS state_name')
+            ->join('employers',  'employers.id  = jobs.employer_id',  'left')
+            ->join('industries', 'industries.id = jobs.industry_id',  'left')
+            ->join('states',     'states.id     = jobs.state_id',     'left')
+            ->where('jobs.industry_id', $industry->id)
+            ->where('jobs.status', 'open')
+            ->orderBy('jobs.is_featured', 'DESC')
+            ->orderBy('jobs.created_at',  'DESC')
+            ->limit(12)
+            ->get()
+            ->getResultObject();
 
-        // Force the filter
-        $_GET['industry_id'] = $industry->id;
+        $totalJobs = $db->table('jobs')
+            ->where('industry_id', $industry->id)
+            ->where('status', 'open')
+            ->countAllResults();
 
-        // Custom SEO Meta
-        $customTitle = esc($industry->name) . " Jobs in Nigeria — Hiring Now | JobberRecruit";
-        $customMeta = "Looking for " . esc($industry->name) . " jobs? Find verified career opportunities from top companies in Nigeria. Apply today!";
+        // Fetch sibling industries for the "Browse other categories" section
+        $allIndustries = $industryModel
+            ->where('is_active', 1)
+            ->where('parent_id', null)
+            ->orderBy('name', 'ASC')
+            ->findAll();
 
-        return $this->jobs($customTitle, $customMeta);
+        // Build SEO fields
+        $seoH1   = !empty($industry->seo_h1)
+            ? $industry->seo_h1
+            : $industry->name . ' Jobs in Nigeria';
+        $seoMeta = !empty($industry->meta_description)
+            ? $industry->meta_description
+            : 'Browse verified ' . $industry->name . ' jobs in Nigeria. Apply to the latest vacancies from top employers today.';
+
+        return view('home/industry_hub', [
+            'title'            => $seoH1,
+            'meta_description' => $seoMeta,
+            'industry'         => $industry,
+            'jobs'             => $jobs,
+            'total_jobs'       => $totalJobs,
+            'all_industries'   => $allIndustries,
+            'auth'             => $this->auth,
+        ]);
     }
 
     public function jobs($overrideTitle = null, $overrideMeta = null)
@@ -1993,7 +2091,7 @@ class Home extends BaseController
             'title' => 'About JobberRecruit — Nigeria\'s Job Platform',
             'meta_description' => 'JobberRecruit is Nigeria\'s modern job platform helping job seekers find verified opportunities and enabling employers to hire top talent easily.',
             'auth' => $this->auth,
-            'testimonials' => model(TestimonialModel::class)->orderBy('created_at', 'DESC')->findAll(),
+            'testimonials' => model(TestimonialModel::class)->where('status', 'active')->orderBy('created_at', 'DESC')->findAll(),
         ];
         return view('about-us', $data);
     }

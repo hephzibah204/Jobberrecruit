@@ -22,27 +22,31 @@ class RenewSubscriptions extends BaseCommand
         $now = date('Y-m-d H:i:s');
 
         $subs = $subModel
-            ->where('status', 'active')
+            ->where('is_active', 1)
             ->where('ends_at <=', $now)
             ->findAll();
 
         foreach ($subs as $sub) {
-            $plan = $planModel->find($sub->subscription_plan_id);
+            $planId = is_array($sub) ? ($sub['plan_id'] ?? null) : ($sub->plan_id ?? $sub->subscription_plan_id ?? null);
+            $plan = $planModel->find($planId);
 
             if (! $plan) {
                 continue;
             }
 
+            $userId = is_array($sub) ? $sub['user_id'] : $sub->user_id;
+            $subId = is_array($sub) ? $sub['id'] : $sub->id;
+
             $wallet->credit(
-                $sub->user_id,
+                $userId,
                 $plan->credit_allowance,
                 'subscription_credit',
                 'SUB-' . time(),
-                $sub->id,
+                $subId,
                 'Monthly subscription credit'
             );
 
-            $subModel->update($sub->id, [
+            $subModel->update($subId, [
                 'starts_at' => $now,
                 'ends_at'   => date('Y-m-d H:i:s', strtotime('+1 month')),
             ]);

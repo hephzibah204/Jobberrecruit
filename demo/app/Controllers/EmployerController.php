@@ -360,11 +360,8 @@ class EmployerController extends BaseController
                 ->with('error', 'Please complete your company profile before posting a job.');
         }
 
-        // 3. Check if CAC document is uploaded
-        if (!$this->hasUploadedCACDocument($employer->id)) {
-            return redirect()->to('employer/profile/upload-document')
-                ->with('error', 'Please upload your CAC certificate before posting a job.');
-        }
+        // CAC document check is now OPTIONAL - employers can post jobs before verification
+        // Verification badge will still work, but upload is not blocking
 
         $creditService = new \App\Services\CreditService();
 
@@ -629,11 +626,7 @@ class EmployerController extends BaseController
                 ->with('error', 'Please complete your employer profile before posting a job.');
         }
 
-        // Check CAC document
-        if (!$this->hasUploadedCACDocument($employer->id)) {
-            return redirect()->to('employer/profile/upload-document')
-                ->with('error', 'Please upload your CAC certificate before posting a job.');
-        }
+        // CAC document check is now OPTIONAL - employers can post jobs before verification
 
         // This will redirect automatically if access is denied
         $access = $this->checkJobPostingAccess();
@@ -2716,11 +2709,11 @@ class EmployerController extends BaseController
 
         $hasCACDocument = !empty($cacDocument);
 
-        // If no CAC document, redirect to upload page
-        if (!$hasCACDocument && !in_array($this->request->getUri()->getSegment(2), ['upload-document', 'process-document-upload'])) {
-            return redirect()->to('employer/profile/upload-document')
-                ->with('error', 'Please upload your CAC certificate to continue.');
-        }
+        // CAC document is now OPTIONAL - employers can access profile without uploading
+        // if (!$hasCACDocument && !in_array($this->request->getUri()->getSegment(2), ['upload-document', 'process-document-upload'])) {
+        //     return redirect()->to('employer/profile/upload-document')
+        //         ->with('error', 'Please upload your CAC certificate to continue.');
+        // }
 
         $industryModel = model('App\Models\IndustryModel');
         $stateModel = model('App\Models\StateModel');
@@ -3427,6 +3420,43 @@ class EmployerController extends BaseController
         ]);
     }
 
+    /**
+     * Basic Transaction Details Page
+     */
+    public function transactions()
+    {
+        $user = $this->auth->user();
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+        
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $paymentModel = model(PaymentModel::class);
+        
+        // Get all payments for this employer
+        $transactions = $paymentModel
+            ->where('employer_id', $employer->id)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        // Calculate total spent
+        $totalSpent = array_sum(array_column($transactions, 'amount'));
+
+        return view('employers/transactions', [
+            'title' => 'Transaction History',
+            'user' => $user,
+            'employer' => $employer,
+            'transactions' => $transactions,
+            'totalSpent' => $totalSpent
+        ]);
+    }
+
     public function initiate_payment()
     {
         $user = $this->auth->user();
@@ -3723,39 +3753,49 @@ class EmployerController extends BaseController
             return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
         }
 
-        // Verify payment with Paystack
-        $paystack = service('paystack');
-        $verification = $paystack->verifyTransaction($reference);
-
-        if (!$verification['status'] || $verification['data']['status'] !== 'success') {
-            return redirect()->to('employer/pricing')->with('error', 'Payment verification failed. Please contact support.');
-        }
-
-        $amount = $verification['data']['amount'] / 100;
-        $metadata = $verification['data']['metadata']['app_data'] ?? [];
-
-        $type = $metadata['type'] ?? null;
-        $db = db_connect();
-        $db->transStart();
-
         try {
-            // Create payment record
-            $paymentModel = model(PaymentModel::class);
-            $paymentId = $paymentModel->insert([
-                'user_id' => $user->id,
-                'employer_id' => $employer->id,
-                'reference' => $reference,
-                'amount' => $amount,
-                'status' => 'paid',
-                'payment_method' => $verification['data']['channel'] ?? 'card',
-                'metadata' => json_encode($metadata),
-                'paid_at' => date('Y-m-d H:i:s')
-            ]);
+            // Verify payment with Paystack
+            $paystack = service('paystack');
+            $verification = $paystack->verifyTransaction($reference);
 
-            $creditService = new \App\Services\CreditService();
-            $invoiceService = new \App\Services\InvoiceService();
-            $message = '';
-            $emailSent = false;
+            if (!$verification['status'] || $verification['data']['status'] !== 'success') {
+                log_message('error', 'Payment verification failed for reference: ' . $reference);
+                return redirect()->to('employer/pricing')->with('error', 'Payment verification failed. Please contact support.');
+            }
+
+            $amount = $verification['data']['amount'] / 100;
+            $metadata = $verification['data']['metadata']['app_data'] ?? [];
+
+            $type = $metadata['type'] ?? null;
+            $db = db_connect();
+            $db->transStart();
+
+            try {
+                // Create payment record
+                $paymentModel = model(PaymentModel::class);
+                
+                // Check if payment already processed
+                $existingPayment = $paymentModel->where('reference', $reference)->first();
+                if ($existingPayment && $existingPayment['status'] === 'paid') {
+                    $db->transRollback();
+                    return redirect()->to('employer/pricing')->with('success', 'Payment already processed successfully.');
+                }
+                
+                $paymentId = $paymentModel->insert([
+                    'user_id' => $user->id,
+                    'employer_id' => $employer->id,
+                    'reference' => $reference,
+                    'amount' => $amount,
+                    'status' => 'paid',
+                    'payment_method' => $verification['data']['channel'] ?? 'card',
+                    'metadata' => json_encode($metadata),
+                    'paid_at' => date('Y-m-d H:i:s')
+                ]);
+
+                $creditService = new \App\Services\CreditService();
+                $invoiceService = new \App\Services\InvoiceService();
+                $message = '';
+                $emailSent = false;
 
             // Handle SUBSCRIPTION
             if ($type === 'subscription') {
@@ -3865,20 +3905,26 @@ class EmployerController extends BaseController
 
             $db->transComplete();
 
-            // Add flash message about email status
-            if (!$emailSent) {
-                session()->setFlashdata('warning', $message . ' (Invoice email could not be sent, but you can download it from your account)');
-            } else {
-                session()->setFlashdata('success', $message);
-            }
+                // Add flash message about email status
+                if (!$emailSent) {
+                    session()->setFlashdata('warning', $message . ' (Invoice email could not be sent, but you can download it from your account)');
+                } else {
+                    session()->setFlashdata('success', $message);
+                }
 
-            return redirect()->to('employer/pricing');
+                return redirect()->to('employer/pricing');
+            } catch (\Exception $e) {
+                $db->transRollback();
+                log_message('error', 'Payment processing failed: ' . $e->getMessage());
+
+                return redirect()->to('employer/pricing')
+                    ->with('error', 'Payment processing failed: ' . $e->getMessage());
+            }
         } catch (\Exception $e) {
-            $db->transRollback();
             log_message('error', 'Payment verification failed: ' . $e->getMessage());
 
             return redirect()->to('employer/pricing')
-                ->with('error', 'Payment verification failed: ' . $e->getMessage());
+                ->with('error', 'Payment verification failed. Please contact support.');
         }
     }
 

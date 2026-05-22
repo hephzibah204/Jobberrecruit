@@ -1,6 +1,6 @@
 <?= $this->extend('admin/layouts/app') ?>
 
-<?= $this->section('content') ?>
+<?= $this->section('section') ?>
 <div class="main-content app-content">
     <div class="container-fluid">
         <!-- Page Header -->

@@ -32,7 +32,7 @@
                 </div>
                 <div class="card-body p-5">
                     <div class="advice-content fs-15 text-muted line-height-lg">
-                        <?= nl2br($advice) ?>
+                        <?= $advice ?>
                     </div>
                 </div>
                 <div class="card-footer border-top bg-light p-4">
@@ -49,20 +49,41 @@
 </div>
 
 <style>
+.advice-content {
+    line-height: 1.8;
+}
 .advice-content h1, .advice-content h2, .advice-content h3 {
     color: #0dcaf0;
     margin-top: 1.5rem;
     margin-bottom: 1rem;
     font-weight: 700;
 }
+.advice-content h1 {
+    font-size: 1.75rem;
+}
+.advice-content h2 {
+    font-size: 1.5rem;
+}
+.advice-content h3 {
+    font-size: 1.25rem;
+}
 .advice-content p {
     margin-bottom: 1.2rem;
 }
-.advice-content ul {
+.advice-content ul, .advice-content ol {
     margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
 }
 .advice-content li {
     margin-bottom: 0.5rem;
+}
+.advice-content strong {
+    color: #0dcaf0;
+    font-weight: 600;
+}
+.advice-content em {
+    font-style: italic;
+    color: #6c757d;
 }
 .line-height-lg {
     line-height: 1.8;

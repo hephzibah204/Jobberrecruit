@@ -348,9 +348,8 @@ function openIf(array $paths)
                         </li>
 
                         <!-- Newsletters -->
-                        <li class="slide <?= isExact('admin/newsletters') ?>">
-                            <a href="<?= base_url('admin/newsletters') ?>"
-                                class="side-menu__item <?= isExact('admin/newsletters') ?>">
+                        <li class="slide has-sub <?= openIf(['admin/newsletters']) ?>">
+                            <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/newsletters']) ?>">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon" viewBox="0 0 256 256">
                                     <rect width="256" height="256" fill="none" />
                                     <path d="M224,96H32a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H224a8,8,0,0,1,8,8V88A8,8,0,0,1,224,96Z" opacity="0.2" />
@@ -359,6 +358,34 @@ function openIf(array $paths)
                                     <polyline points="32 96 128 152 224 96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
                                 </svg>
                                 Newsletters
+                                <i class="ri-arrow-right-s-line side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child2">
+                                <li class="slide <?= isExact('admin/newsletters') ?>">
+                                    <a href="<?= base_url('admin/newsletters') ?>" class="side-menu__item <?= isExact('admin/newsletters') ?>">
+                                        Campaigns
+                                    </a>
+                                </li>
+                                <li class="slide <?= isExact('admin/newsletters/subscribers') ?>">
+                                    <a href="<?= base_url('admin/newsletters/subscribers') ?>" class="side-menu__item <?= isExact('admin/newsletters/subscribers') ?>">
+                                        Subscribers
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Chatbot -->
+                        <li class="slide <?= isExact('admin/chatbot') ?>">
+                            <a href="<?= base_url('admin/chatbot') ?>" class="side-menu__item <?= isExact('admin/chatbot') ?>">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon" viewBox="0 0 256 256">
+                                    <rect width="256" height="256" fill="none" />
+                                    <path d="M160,72a32,32,0,0,1-32,32h0a32,32,0,0,1-32-32V56a32,32,0,0,1,32-32h0a32,32,0,0,1,32,32Z" opacity="0.2" />
+                                    <circle cx="128" cy="176" r="40" opacity="0.2" />
+                                    <path d="M200,160v40a8,8,0,0,1-8,8H64a8,8,0,0,1-8-8V160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <line x1="128" y1="208" x2="128" y2="240" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <polyline points="160 232 128 240 96 232" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                </svg>
+                                Chatbot
                             </a>
                         </li>
 
