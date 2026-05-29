@@ -17,6 +17,7 @@ $routes->get('/', 'Home::home');
 $routes->get('jobs', 'Home::jobs');
 $routes->get('jobs-in-(:segment)', 'Home::location_hub/$1');
 $routes->get('(:segment)-jobs', 'Home::industry_hub/$1');
+$routes->get('jobs/featured', 'Home::featuredJobs');
 $routes->get('jobs/(:segment)', 'Home::view_job/$1');
 $routes->get('job/view/(:any)', 'Home::view_job/$1');
 $routes->get('job/start-application/(:num)', 'Home::startApplication/$1');
@@ -28,8 +29,6 @@ $routes->post('job/unsave/(:num)', 'Home::unsave_job/$1');
 $routes->get('employer/(:num)', 'Home::viewCompany/$1');
 $routes->get('candidates', 'Home::talents');
 
-$routes->get('jobs/featured', 'Home::featuredJobs');
-
 $routes->get('about-us', 'Home::aboutUs');
 $routes->get('contact-us', 'Home::contactUs');
 $routes->post('contact-us', 'Home::contactUs');
@@ -38,10 +37,13 @@ $routes->get('blog/(:segment)', 'Home::blogPost/$1');
 // RSS
 $routes->get('rss/blog', 'Home::rss');
 $routes->get('privacy-policy', 'Home::privacyPolicy');
+$routes->addRedirect('terms-of-service', 'terms-and-conditions', 301);
 $routes->get('terms-and-conditions', 'Home::termsOfService');
 $routes->get('faq', 'Home::faq');
 $routes->get('recruitment', 'Home::recruitment');
 $routes->get('job-ads', 'Home::adPage');
+
+$routes->get('job-alerts', 'JobSeekerController::notifications', ['filter' => 'auth']);
 
 // -----------------------------------------------------------
 // AUTH ROUTES
@@ -224,10 +226,19 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('resumes/build', 'ResumeController::build');
     $routes->get('resumes/build/(:num)', 'ResumeController::build/$1');
     $routes->post('resumes/save', 'ResumeController::save');
+    $routes->post('resumes/import-profile', 'ResumeController::importFromProfile');
+    $routes->get('resumes/clone/(:num)', 'ResumeController::cloneResume/$1');
     $routes->post('resumes/ai/generate-summary', 'ResumeController::generateSummary');
+    $routes->post('resumes/ai/generate-bullets', 'ResumeController::generateBullets');
     $routes->post('resumes/ai/improve-description', 'ResumeController::improveDescription');
+    $routes->post('resumes/autosave', 'ResumeController::autosave');
+    $routes->get('resumes/(:num)/autosaves', 'ResumeController::listAutosaves/$1');
+    $routes->post('resumes/(:num)/restore-autosave', 'ResumeController::restoreAutosave/$1');
     $routes->post('resumes/ai/generate-cover-letter', 'ResumeController::generateCoverLetter');
+    $routes->post('resumes/ai/chat', 'ResumeController::chat');
+    $routes->post('resumes/ai/proxy-image', 'ResumeController::proxyAiImage');
     $routes->get('resumes/download/(:num)', 'ResumeController::download/$1');
+    $routes->get('resumes/download-docx/(:num)', 'ResumeController::downloadDocx/$1');
 
     // Referrals
     $routes->get('referrals', 'ReferralController::index');
@@ -258,6 +269,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
 
     // My Courses
     $routes->get('my-courses', 'ElearningController::myCourses');
+    $routes->get('my-courses/(:num)', 'ElearningController::classroom/$1');
 
     // Transactions
     $routes->get('transactions', 'JobSeekerController::transactions');
@@ -321,7 +333,6 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('jobs/edit/(:num)', 'AdminController::editJob/$1');
     $routes->post('jobs/update/(:num)', 'AdminController::updateJob/$1');
 
-    $routes->post('jobs/delete', 'AdminController::deleteJob');
     // Applications
     $routes->get('applications', 'AdminController::applications');
     $routes->get('applications/view/(:num)', 'AdminController::viewApplication/$1');
@@ -365,6 +376,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('blogs/check-slug', 'AdminController::checkSlug');
     $routes->post('blogs/check-title', 'AdminController::checkTitle');
     $routes->post('blogs/delete/(:num)', 'AdminController::deleteBlog/$1');
+    $routes->post('blogs/upload-editor-image', 'AdminController::uploadEditorImage');
 
     // Testimonials
     $routes->get('testimonials', 'AdminController::testimonials');
@@ -402,7 +414,7 @@ $routes->post('jobs/report', 'JobReportController::submit');
 $routes->get('training', 'ElearningController::index');
 $routes->get('training/course/(:num)', 'ElearningController::show/$1');
 $routes->get('training/content/(:num)', 'ElearningController::content/$1');
-$routes->get('training/enroll/(:num)', 'ElearningController::enroll');
+$routes->get('training/enroll/(:num)', 'ElearningController::enroll/$1');
 $routes->get('training/verify/(:num)', 'ElearningController::verify/$1');
 $routes->post('training/complete/(:num)', 'ElearningController::completeCourse/$1');
 $routes->get('training/certificate/download/(:num)', 'ElearningController::downloadCertificate/$1');
@@ -410,7 +422,10 @@ $routes->get('training/certificates', 'ElearningController::myCertificates');
 
 // CV Review Routes
 $routes->get('cv-review', 'ElearningController::cvReview');
+$routes->get('cv-review/submit', 'ElearningController::cvReviewSubmit');
 $routes->post('cv-review/upload', 'ElearningController::uploadCvReview');
+$routes->post('cv-review/pay', 'ElearningController::initiateCvPayment');
+$routes->get('cv-review/verify', 'ElearningController::verifyCvPayment');
 
     // Admin Newsletter & Webinar Management
     $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
@@ -434,4 +449,14 @@ $routes->post('cv-review/upload', 'ElearningController::uploadCvReview');
     $routes->get('elearning/modules/(:num)', 'ElearningController::adminModules/$1');
     $routes->post('elearning/modules/save', 'ElearningController::adminSaveModule');
     $routes->post('elearning/modules/delete/(:num)', 'ElearningController::adminDeleteModule/$1');
+
+    // CV Review Admin
+    $routes->get('cv-reviews', 'AdminController::cvReviews');
+    $routes->get('cv-reviews/view/(:num)', 'AdminController::cvReviewDetail/$1');
+    $routes->get('cv-reviews/download/(:num)', 'AdminController::cvReviewDownload/$1');
+    $routes->post('cv-reviews/ai-review/(:num)', 'AdminController::cvReviewAiGenerate/$1');
+    $routes->post('cv-reviews/mark-in-review/(:num)', 'AdminController::cvReviewMarkInReview/$1');
+    $routes->post('cv-reviews/complete/(:num)', 'AdminController::cvReviewComplete/$1');
+    $routes->post('cv-reviews/save-notes/(:num)', 'AdminController::cvReviewSaveNotes/$1');
+    $routes->post('cv-reviews/deliver/(:num)', 'AdminController::cvReviewDeliver/$1');
 });

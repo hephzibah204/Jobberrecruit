@@ -23,7 +23,7 @@
 
                         <div class="mb-3">
                             <label class="fw-semibold">Keyword</label>
-                            <input type="text" name="keyword" class="form-control" placeholder="e.g. Software Developer">
+                            <input type="text" name="keyword" class="form-control" placeholder="e.g. Software Developer" value="<?= esc($presetKeyword ?? '') ?>">
                         </div>
 
                         <div class="mb-3">
@@ -31,7 +31,7 @@
                             <select name="location_id" class="form-select" required>
                                 <option value="" disabled selected>Choose Location</option>
                                 <?php foreach ($states as $state): ?>
-                                    <option value="<?= $state->id ?>"><?= esc($state->name) ?></option>
+                                    <option value="<?= $state->id ?>" <?= ($presetLocationId ?? '') == $state->id ? 'selected' : '' ?>><?= esc($state->name) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

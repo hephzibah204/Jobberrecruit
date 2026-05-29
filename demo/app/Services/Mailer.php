@@ -94,9 +94,13 @@ class Mailer
             'siteName' => $siteName,
         ]);
 
+        $config = config('Email');
+        $fromEmail = env('email.fromEmail') ?: ($config->fromEmail ?? 'no-reply@' . parse_url(base_url(), PHP_URL_HOST));
+        $fromName  = env('email.fromName') ?: ($config->fromName ?? $siteName);
+
         \Config\Services::$bypassQueue = true;
         $result = $this->setTo($to)
-            ->setFrom(env('email_from_address') ?: 'no-reply@' . parse_url(base_url(), PHP_URL_HOST), env('email_from_name') ?: $siteName)
+            ->setFrom($fromEmail, $fromName)
             ->setSubject($subject)
             ->setMessage($html)
             ->setAltMessage($text)
@@ -125,9 +129,13 @@ class Mailer
             'siteName' => $siteName,
         ]);
 
+        $config = config('Email');
+        $fromEmail = env('email.fromEmail') ?: ($config->fromEmail ?? 'no-reply@' . parse_url(base_url(), PHP_URL_HOST));
+        $fromName  = env('email.fromName') ?: ($config->fromName ?? $siteName);
+
         \Config\Services::$bypassQueue = true;
         $result = $this->setTo($to)
-            ->setFrom(env('email_from_address') ?: 'no-reply@' . parse_url(base_url(), PHP_URL_HOST), env('email_from_name') ?: $siteName)
+            ->setFrom($fromEmail, $fromName)
             ->setSubject($subject)
             ->setMessage($html)
             ->setAltMessage($text)

@@ -3,8 +3,8 @@
 <?= $this->section('styles') ?>
 <style>
     :root {
-        --primary-color: #0D609E;
-        --secondary-color: #F0890E;
+        --primary-color: #005DA8;
+        --secondary-color: #F5A623;
         --text-dark: #1E293B;
         --text-muted: #64748B;
         --bg-light: #f8f9fb;

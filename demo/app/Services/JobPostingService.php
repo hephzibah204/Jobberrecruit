@@ -23,13 +23,19 @@ class JobPostingService
 
     public function post(array $data, int $userId)
     {
-        // 1️⃣ Enforce features
         service(FeatureGateService::class)->enforce($data, $userId);
 
-        // 2️⃣ Check credits
-        service(JobCreditService::class)->deduct($userId, null);
+        $jobId = model(JobModel::class)->insert($data);
 
-        // 3️⃣ Save job
-        return model(JobModel::class)->insert($data);
+        if ($jobId) {
+            try {
+                $creditService = new JobCreditService();
+                $creditService->deduct($userId, $jobId, 1, 'job_posting');
+            } catch (\Throwable $e) {
+                log_message('error', "Credit deduction failed for job {$jobId}: " . $e->getMessage());
+            }
+        }
+
+        return $jobId;
     }
 }

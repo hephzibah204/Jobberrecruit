@@ -47,12 +47,12 @@
 
 </head>
 
-<body class="bg-light">
+<body class="<?= $bodyClass ?? '' ?>">
     <div id="global-loader">
         <div class="whirly-loader"> </div>
     </div>
     
-    <div class="main-wrapper" style="min-height: 100vh;">
+    <div class="main-wrapper d-flex flex-column" style="min-height: 100vh;">
         <?= $this->renderSection('content') ?>
     </div>
 

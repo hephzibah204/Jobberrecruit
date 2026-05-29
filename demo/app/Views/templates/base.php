@@ -26,7 +26,7 @@
     <meta name="apple-mobile-web-app-title" content="JobberRecruit">
 
     <!-- SEO Meta Description -->
-    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt and more. Employers can post jobs and hire top Nigerian talent today.'); ?>">
+    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt. Post jobs and hire top Nigerian talent.'); ?>">
 
     <!-- Keywords -->
     <meta name="keywords" content="<?= $keywords ?? 'jobs in Nigeria, African job portal, find jobs, hire talent, recruitment platform, jobber recruit, employment portal'; ?>">
@@ -41,12 +41,15 @@
     <link rel="shortcut icon" href="<?= base_url('images/favicon.png'); ?>" type="image/png">
     <link rel="apple-touch-icon" href="<?= base_url('images/favicon.png'); ?>">
 
+    <!-- Page-Specific Meta (title, description, OG, etc.) -->
+    <?= $this->renderSection('meta'); ?>
+
     <!-- Google Site Verification -->
     <meta name="google-site-verification" content="7ca31c2813a87974">
 
     <!-- Theme / App Data -->
     <meta name="application-name" content="JobberRecruit">
-    <meta name="theme-color" content="#0D609E">
+    <meta name="theme-color" content="#005DA8">
 
     <!-- Preconnect & Prefetch (Performance Boost) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -57,7 +60,7 @@
     <link rel="alternate"
         type="application/rss+xml"
         title="JobberRecruit Blog RSS"
-        href="<?= base_url('blog/rss') ?>">
+        href="<?= base_url('rss/blog') ?>">
 
     <!-- Open Graph / Social Preview -->
     <meta property="og:title" content="<?= esc($og_title ?? $title ?? 'JobberRecruit — Hire Top Talent in Nigeria') ?>">
@@ -65,7 +68,7 @@
     <meta property="og:type" content="<?= $og_type ?? 'website' ?>">
     <meta property="og:url" content="<?= current_url() ?>">
     <meta property="og:site_name" content="JobberRecruit">
-    <meta property="og:image" content="<?= $og_image ?? base_url('images/og-image-main.png') ?>">
+    <meta property="og:image" content="<?= $og_image ?? base_url('images/default-og-image.jpg') ?>">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
 
@@ -73,22 +76,21 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<?= esc($twitter_title ?? $title ?? 'JobberRecruit') ?>">
     <meta name="twitter:description" content="<?= esc($twitter_description ?? $meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit.') ?>">
-    <meta name="twitter:image" content="<?= $og_image ?? base_url('images/og-image-main.png') ?>">
+    <meta name="twitter:image" content="<?= $og_image ?? base_url('images/default-og-image.jpg') ?>">
 
     <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "url": "<?= base_url() ?>",
-            "logo": "<?= base_url('images/logo.png') ?>",
-            "sameAs": [
-                "https://www.facebook.com/jobberrecruit",
-                "https://www.twitter.com/jobberrecruit",
-                "https://www.linkedin.com/company/jobberrecruit"
-            ]
-
-        }
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type'    => 'Organization',
+        'name'     => 'JobberRecruit',
+        'url'      => base_url(),
+        'logo'     => base_url('images/logo.png'),
+        'sameAs'   => [
+            'https://www.facebook.com/jobberrecruit',
+            'https://www.twitter.com/jobberrecruit',
+            'https://www.linkedin.com/company/jobberrecruit',
+        ],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
     </script>
 
     <!-- Page-Specific Schema (Jobs, Blog, etc.) -->
@@ -151,11 +153,33 @@
                         <li class="nav-item">
                             <a class="nav-link <?= (uri_string() == 'jobs') ? 'active' : '' ?>" href="<?= base_url('jobs') ?>">Find Jobs</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == 'recruitment') ? 'active' : '' ?>" href="<?= base_url('recruitment') ?>">Recruitment</a>
+                        <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Training
+                            </a>
+                            <ul class="dropdown-menu text-center">
+                                <li><a class="dropdown-item" href="<?= base_url('training') ?>">Courses</a></li>
+                                <li><a class="dropdown-item" href="<?= base_url('webinars') ?>">Webinars</a></li>
+                            </ul>
                         </li>
+                        <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
                         <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == 'job-ads') ? 'active' : '' ?>" href="<?= base_url('job-ads') ?>">Job Ads</a>
+                            <a class="nav-link <?= (uri_string() == 'training') ? 'active' : '' ?>" href="<?= base_url('training') ?>">Training</a>
+                        </li>
+                        <?php elseif (env('feature_webinars', 'true') == 'true'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link <?= (uri_string() == 'webinars') ? 'active' : '' ?>" href="<?= base_url('webinars') ?>">Webinars</a>
+                        </li>
+                        <?php endif; ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle <?= (uri_string() == 'recruitment' || uri_string() == 'job-ads') ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Recruitment
+                            </a>
+                            <ul class="dropdown-menu text-center">
+                                <li><a class="dropdown-item" href="<?= base_url('recruitment') ?>">Recruitment Services</a></li>
+                                <li><a class="dropdown-item" href="<?= base_url('job-ads') ?>">Job Ads</a></li>
+                            </ul>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -467,16 +491,16 @@
     </footer>
 
 
-    <script src="<?= base_url('js/jquery-3.7.1.min.js'); ?>" defer></script>
-    <script src="<?= base_url('js/bootstrap.bundle.min.js'); ?>" defer></script>
-    <script src="<?= base_url('js/toastr.min.js'); ?>" defer></script>
+    <script src="<?= base_url('js/jquery-3.7.1.min.js'); ?>"></script>
+    <script src="<?= base_url('js/bootstrap.bundle.min.js'); ?>"></script>
+    <script src="<?= base_url('js/toastr.min.js'); ?>"></script>
     <!-- Owl Carousel JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
     <!-- Swiper JS -->
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
-    <script src="<?= base_url('js/plugins/select2.min.js'); ?>" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="<?= base_url('js/plugins/select2.min.js'); ?>"></script>
     <!-- Custom -->
-    <script src="<?= base_url('js/scripts.js'); ?>" defer></script>
+    <script src="<?= base_url('js/scripts.js'); ?>"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -502,13 +526,6 @@
             });
         }
 
-        $(document).ready(function() {
-            if (sessionStorage.getItem('isOffline') === '1' || !navigator.onLine) {
-                showOffline();
-                startRetry();
-            }
-        });
-
         (function($) {
             let retryInterval = null;
             const retryDelay = 5000; // 5 seconds
@@ -533,7 +550,7 @@
 
                 setTimeout(() => {
                     $('#network-status').fadeOut(() => {
-                        $(this).addClass('d-none').show();
+                        $('#network-status').addClass('d-none').show();
                     });
                 }, 2000);
             }
@@ -550,9 +567,17 @@
             function startRetry() {
                 if (retryInterval) return;
 
-                retryInterval = setInterval(() => {
-                    if (!navigator.onLine) return;
+                // Ping immediately on start to resolve quickly if we are actually online
+                pingServer()
+                    .done(() => {
+                        stopRetry();
+                        showOnline();
+                    })
+                    .fail(() => {
+                        showOffline();
+                    });
 
+                retryInterval = setInterval(() => {
                     pingServer()
                         .done(() => {
                             stopRetry();
@@ -562,8 +587,10 @@
             }
 
             function stopRetry() {
-                clearInterval(retryInterval);
-                retryInterval = null;
+                if (retryInterval) {
+                    clearInterval(retryInterval);
+                    retryInterval = null;
+                }
             }
 
             // Browser native detection
@@ -573,14 +600,12 @@
             });
 
             window.addEventListener('online', () => {
-                stopRetry();
-                showOnline();
+                startRetry(); // Trigger verification ping instead of blindly assuming connection is up
             });
 
-            // Initial check (important)
+            // Initial check on load
             $(document).ready(function() {
-                if (!navigator.onLine) {
-                    showOffline();
+                if (!navigator.onLine || sessionStorage.getItem('isOffline') === '1') {
                     startRetry();
                 }
             });

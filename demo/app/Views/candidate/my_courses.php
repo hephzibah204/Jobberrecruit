@@ -73,12 +73,12 @@
                             <?php endif; ?>
                             <div class="mt-auto d-flex gap-2">
                                 <?php if ($isCompleted): ?>
-                                    <a href="<?= base_url('training/certificates') ?>" class="btn btn-outline-success btn-sm flex-grow-1">
-                                        <i class="ti ti-award me-1"></i>View Certificate
+                                    <a href="<?= base_url('candidate/my-courses/' . $enrollment->course_id) ?>" class="btn btn-outline-success btn-sm flex-grow-1">
+                                        <i class="ti ti-award me-1"></i>View Classroom & Cert
                                     </a>
                                 <?php else: ?>
-                                    <a href="<?= base_url('training/course/' . $enrollment->course_id) ?>" class="btn btn-primary btn-sm flex-grow-1">
-                                        <i class="ti ti-player-play me-1"></i>Continue
+                                    <a href="<?= base_url('candidate/my-courses/' . $enrollment->course_id) ?>" class="btn btn-primary btn-sm flex-grow-1">
+                                        <i class="ti ti-player-play me-1"></i>Enter Classroom
                                     </a>
                                 <?php endif; ?>
                             </div>

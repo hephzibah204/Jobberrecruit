@@ -2,23 +2,23 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Terms of Service",
-        "description": "Terms and conditions for using JobberRecruit.com - Understand your rights and responsibilities when using our recruitment platform.",
-        "url": "<?= current_url() ?>",
-        "datePublished": "2025-02-12",
-        "dateModified": "2025-02-12",
-        "publisher": {
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "<?= base_url('images/logo.png') ?>"
-            }
-        }
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'WebPage',
+    'name'     => 'Terms of Service',
+    'description' => 'Terms and conditions for using JobberRecruit.com - Understand your rights and responsibilities when using our recruitment platform.',
+    'url'      => current_url(),
+    'datePublished' => '2025-02-12',
+    'dateModified'  => '2025-02-12',
+    'publisher' => [
+        '@type' => 'Organization',
+        'name'  => 'JobberRecruit',
+        'logo'  => [
+            '@type' => 'ImageObject',
+            'url'   => base_url('images/logo.png'),
+        ],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -628,7 +628,7 @@
 
     /* Hero Section */
     .terms-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
         position: relative;
         overflow: hidden;
     }
@@ -638,14 +638,14 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
     .bg-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
     }
 
     /* Section Cards */
@@ -689,14 +689,14 @@
     }
 
     .accordion-button:not(.collapsed) {
-        color: #0D609E;
+        color: #005DA8;
         background-color: rgba(10, 88, 202, 0.05);
         box-shadow: none;
     }
 
     .accordion-button:focus {
         box-shadow: none;
-        border-color: #0D609E;
+        border-color: #005DA8;
     }
 
     /* Liability Cards */
@@ -722,14 +722,14 @@
     }
 
     .nav-link.scroll-to:hover {
-        color: #0D609E;
-        border-left-color: #0D609E;
+        color: #005DA8;
+        border-left-color: #005DA8;
         background-color: rgba(102, 126, 234, 0.05);
     }
 
     .nav-link.scroll-to.active {
-        color: #0D609E;
-        border-left-color: #0D609E;
+        color: #005DA8;
+        border-left-color: #005DA8;
         background-color: rgba(102, 126, 234, 0.05);
         font-weight: 600;
     }
@@ -747,7 +747,7 @@
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F0890E 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
     }
 
     /* Print Styles */

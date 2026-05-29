@@ -157,10 +157,10 @@
                         <li>
                             <ul class="list-unstyled mb-0 sub-list">
                                 <li>
-                                    <a class="dropdown-item d-flex align-items-center" href="profile.html"><i class="ti ti-user-circle me-2 fs-18"></i>View Profile</a>
+                                    <a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/profile') ?>"><i class="ti ti-user-circle me-2 fs-18"></i>View Profile</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item d-flex align-items-center" href="mail-settings.html"><i class="ti ti-settings-cog me-2 fs-18"></i>Account Settings</a>
+                                    <a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/profile') ?>"><i class="ti ti-settings-cog me-2 fs-18"></i>Account Settings</a>
                                 </li>
                             </ul>
                         </li>

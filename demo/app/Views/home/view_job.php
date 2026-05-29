@@ -1,93 +1,28 @@
 <?= $this->extend('templates/base') ?>
 <?= $this->section('schema') ?>
 <?php
-// Map employment type to Google accepted values
-$typeMapping = [
-    'full_time' => 'FULL_TIME',
-    'full-time' => 'FULL_TIME',
-    'part_time' => 'PART_TIME',
-    'part-time' => 'PART_TIME',
-    'contract' => 'CONTRACTOR',
-    'internship' => 'INTERN',
-    'remote' => 'FULL_TIME',
-    'temporary' => 'TEMPORARY',
+include_once APPPATH . 'Views/partials/schema/job_posting.php';
+$jobSchema = jobPostingSchema($job, base_url());
+$jobSchema['identifier'] = [
+    '@type' => 'PropertyValue',
+    'name'  => 'JobberRecruit',
+    'value' => 'JR-' . $job->id,
 ];
-$employmentType = $typeMapping[strtolower($job->job_type)] ?? 'OTHER';
-
-// Format dates
-$datePosted = date('c', strtotime($job->created_at));
-$expiryDate = $job->expiry_date ? date('c', strtotime($job->expiry_date)) : date('c', strtotime($job->created_at . ' +30 days'));
-
-// Clean description (remove HTML tags for JSON)
-$cleanDescription = strip_tags($job->description);
 ?>
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "JobPosting",
-  "title": "<?= esc($job->title) ?>",
-  "description": "<?= esc($cleanDescription) ?>",
-  "identifier": {
-    "@type": "PropertyValue",
-    "name": "JobberRecruit",
-    "value": "JR-<?= $job->id ?>"
-  },
-  "datePosted": "<?= $datePosted ?>",
-  "validThrough": "<?= $expiryDate ?>",
-  "employmentType": "<?= $employmentType ?>",
-  "hiringOrganization": {
-    "@type": "Organization",
-    "name": "<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential Employer' : esc($job->employer_name) ?>",
-    "sameAs": "<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url() : esc($job->company_website ?? base_url()) ?>",
-    "logo": "<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : $job->company_logo ?>"
-  },
-  "jobLocation": {
-    "@type": "Place",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "<?= esc($job->location ?? 'Nigeria') ?>",
-      "addressCountry": "NG"
-    }
-  },
-  <?php if ($job->salary): ?>
-  "baseSalary": {
-    "@type": "MonetaryAmount",
-    "currency": "NGN",
-    "value": {
-      "@type": "QuantitativeValue",
-      "value": <?= (float)$job->salary ?>,
-      "unitText": "<?= strtoupper(esc($job->salary_period ?? 'MONTH')) ?>"
-    }
-  },
-  <?php endif; ?>
-  "applicantLocationRequirements": {
-    "@type": "Country",
-    "name": "Nigeria"
-  }
-}
+<?= json_encode($jobSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [{
-    "@type": "ListItem",
-    "position": 1,
-    "name": "Home",
-    "item": "<?= base_url() ?>"
-  },{
-    "@type": "ListItem",
-    "position": 2,
-    "name": "Jobs",
-    "item": "<?= base_url('jobs') ?>"
-  },{
-    "@type": "ListItem",
-    "position": 3,
-    "name": "<?= esc($job->title) ?>",
-    "item": "<?= current_url() ?>"
-  }]
-}
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'BreadcrumbList',
+    'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => base_url()],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Jobs', 'item' => base_url('jobs')],
+        ['@type' => 'ListItem', 'position' => 3, 'name' => $job->title, 'item' => current_url()],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 <?= $this->section('content') ?>
@@ -168,7 +103,7 @@ HTML;
                     <div class="d-flex align-items-center mb-3">
                         <img src="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : $job->company_logo ?>" alt="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Anonymous Employer' : esc($job->employer_name) ?> Logo" class="rounded me-3" width="80" height="80" style="object-fit: cover; border: 1px solid var(--border);">
                         <div>
-                            <h3 class="fw-bold mb-1 text-gradient"><?= esc($job->title) ?></h3>
+                            <h1 class="fw-bold mb-1 text-gradient h3"><?= esc($job->title) ?></h1>
                             <p class="mb-0 text-muted fs-6">
                                  by <?php if (!empty($job->anonymous) || !empty($job->is_anonymous)): ?>
                                     <span class="fw-semibold">Confidential Employer</span>

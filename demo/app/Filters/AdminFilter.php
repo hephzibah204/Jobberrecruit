@@ -26,7 +26,7 @@ class AdminFilter implements FilterInterface
         $user = $auth->user();
 
         // Logged in but not admin
-        if (! $user || ! $user->user_type === 'admin') {
+        if (! $user || $user->user_type !== 'admin') {
             throw AuthenticationException::forInvalidUser();
         }
     }

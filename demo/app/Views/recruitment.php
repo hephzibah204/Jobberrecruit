@@ -2,61 +2,39 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        "name": "Recruitment Agency Services in Nigeria",
-        "description": "Professional recruitment and staffing solutions connecting Nigerian businesses with top executive, mid-level, and graduate talent.",
-        "provider": {
-            "@type": "Organization",
-            "name": "Jobber Recruit LTD",
-            "url": "<?= base_url() ?>",
-            "logo": "<?= base_url('images/logo.png') ?>"
-        },
-        "serviceType": [
-            "Executive Search",
-            "Management Recruitment",
-            "Graduate Recruitment",
-            "Business Process Outsourcing"
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'Service',
+    'name'     => 'Recruitment Agency Services in Nigeria',
+    'description' => 'Professional recruitment and staffing solutions connecting Nigerian businesses with top executive, mid-level, and graduate talent.',
+    'provider' => [
+        '@type' => 'Organization',
+        'name'  => 'Jobber Recruit LTD',
+        'url'   => base_url(),
+        'logo'  => base_url('images/logo.png'),
+    ],
+    'serviceType' => [
+        'Executive Search',
+        'Management Recruitment',
+        'Graduate Recruitment',
+        'Business Process Outsourcing',
+    ],
+    'areaServed' => [
+        '@type' => 'Country',
+        'name'  => 'Nigeria',
+    ],
+    'hasOfferCatalog' => [
+        '@type' => 'OfferCatalog',
+        'name'  => 'Recruitment Services',
+        'itemListElement' => [
+            ['@type' => 'Offer', 'itemOffered' => ['@type' => 'Service', 'name' => 'Executive Search']],
+            ['@type' => 'Offer', 'itemOffered' => ['@type' => 'Service', 'name' => 'Mid-Level Management Recruitment']],
+            ['@type' => 'Offer', 'itemOffered' => ['@type' => 'Service', 'name' => 'Graduate Recruitment']],
+            ['@type' => 'Offer', 'itemOffered' => ['@type' => 'Service', 'name' => 'Business Process Outsourcing']],
+            ['@type' => 'Offer', 'itemOffered' => ['@type' => 'Service', 'name' => 'HR Consulting']],
         ],
-        "areaServed": {
-            "@type": "Country",
-            "name": "Nigeria"
-        },
-        "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": "Recruitment Services",
-            "itemListElement": [{
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Service",
-                        "name": "Executive Search"
-                    }
-                },
-                {
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Service",
-                        "name": "Mid-Level Management Recruitment"
-                    }
-                },
-                {
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Service",
-                        "name": "Graduate Recruitment"
-                    }
-                },
-                {
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Service",
-                        "name": "Business Process Outsourcing"
-                    }
-                }
-            ]
-        }
-    }
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -545,7 +523,7 @@
 
     /* Hero Section */
     .recruitment-hero {
-        background: linear-gradient(#0D609Eb3, #0D609Eb3),
+        background: linear-gradient(#005DA8b3, #005DA8b3),
             url('<?= base_url('images/office-team.jpg') ?>');
         background-size: cover;
         background-position: center;
@@ -579,7 +557,7 @@
     .philosophy-icon {
         width: 80px;
         height: 80px;
-        background: linear-gradient(135deg, #F0890E, rgba(240, 137, 14, 0.1));
+        background: linear-gradient(135deg, #F5A623, rgba(240, 137, 14, 0.1));
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -615,7 +593,7 @@
     /* Form Styling */
     .form-control:focus,
     .form-select:focus {
-        border-color: #F0890E;
+        border-color: #F5A623;
         box-shadow: 0 0 0 0.25rem rgba(240, 137, 14, 0.25);
     }
 

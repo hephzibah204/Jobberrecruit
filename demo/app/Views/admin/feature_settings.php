@@ -160,6 +160,39 @@
                     </div>
                 </div>
 
+                <!-- CV Review Settings -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white py-3 px-4 border-bottom">
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center">
+                            <i class="ti ti-file-analytics text-primary me-2"></i> CV Review Service
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Review Mode</label>
+                            <select name="cv_review_mode" class="form-select">
+                                <option value="semi" <?= ($cv_review_mode ?? 'semi') === 'semi' ? 'selected' : '' ?>>Semi-Automatic (AI assists admin, admin approves before delivery)</option>
+                                <option value="auto" <?= ($cv_review_mode ?? 'semi') === 'auto' ? 'selected' : '' ?>>Fully Automatic (AI reviews instantly on submission)</option>
+                            </select>
+                            <div class="form-text text-muted">
+                                <strong>Semi:</strong> Admin receives the request, can use AI to generate a review, then manually delivers feedback.<br>
+                                <strong>Auto:</strong> AI automatically reviews the CV upon upload/callback and delivers instant feedback.
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Professional Price (₦)</label>
+                                <input type="number" name="cv_review_pro_price" class="form-control" value="<?= $cv_review_pro_price ?? 15000 ?>" min="0" step="500">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Premium Price (₦)</label>
+                                <input type="number" name="cv_review_prem_price" class="form-control" value="<?= $cv_review_prem_price ?? 30000 ?>" min="0" step="500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Info Help Card -->
                 <div class="card bg-gradient-info text-white border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);">
                     <div class="card-body p-4">

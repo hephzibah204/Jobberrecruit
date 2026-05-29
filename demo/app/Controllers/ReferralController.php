@@ -31,7 +31,7 @@ class ReferralController extends BaseController
         
         $referrals = $this->referralModel
             ->select('referrals.*, users.username as referee_name, users.created_at as joined_at')
-            ->join('users', 'users.id = referrals.referred_id')
+            ->join('users', 'users.id = referrals.referee_id')
             ->where('referrer_id', $user->id)
             ->orderBy('referrals.created_at', 'DESC')
             ->findAll();

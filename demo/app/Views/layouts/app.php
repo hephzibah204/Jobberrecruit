@@ -35,7 +35,6 @@
     <link rel="stylesheet" href="<?= base_url('auth/plugins/bootstrap-tagsinput/bootstrap-tagsinput.css'); ?>">
     <link rel="stylesheet" href="<?= base_url('auth/plugins/intltelinput/css/intlTelInput.css'); ?>">
     <link rel="stylesheet" href="<?= base_url('auth/css/dataTables.bootstrap5.min.css'); ?>">
-    <link rel="stylesheet" href="<?= base_url('auth/plugins/fontawesome/css/fontawesome.min.css'); ?>">
     <link rel="stylesheet" href="<?= base_url('auth/plugins/fontawesome/css/all.min.css'); ?>">
     <link rel="stylesheet" href="<?= base_url('auth/plugins/daterangepicker/daterangepicker.css'); ?>">
     <link rel="stylesheet" href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css'); ?>">
@@ -101,14 +100,6 @@
     <script src="<?= base_url('auth/plugins/apexchart/apexcharts.min.js'); ?>" type="text/javascript"></script>
     <script src="<?= base_url('auth/plugins/apexchart/chart-data.js'); ?>" type="text/javascript"></script>
 
-    <!-- Chart JS -->
-    <script src="<?= base_url('auth/plugins/chartjs/chart.min.js'); ?>" type="text/javascript"></script>
-    <script src="<?= base_url('auth/plugins/chartjs/chart-data.js'); ?>" type="text/javascript"></script>
-
-    <!-- Chart JS -->
-    <script src="<?= base_url('auth/plugins/peity/jquery.peity.min.js'); ?>" type="text/javascript"></script>
-    <script src="<?= base_url('auth/plugins/peity/chart-data.js'); ?>" type="text/javascript"></script>
-
     <!-- Select2 JS -->
     <script src="<?= base_url('auth/plugins/select2/js/select2.min.js'); ?>" type="text/javascript"></script>
 
@@ -130,8 +121,8 @@
     <script src="<?= base_url('auth/js/script.js'); ?>" type="text/javascript"></script>
 
 
-    <script src="<?= base_url('cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js'); ?>" data-cf-settings="dede6c1f97572059be43d960-|49" defer></script>
     <?= $this->include('partials/chatbot'); ?>
+    <?= $this->include('partials/cookie_consent'); ?>
     <?= $this->renderSection('scripts') ?>
 </body>
 

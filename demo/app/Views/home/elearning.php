@@ -1,44 +1,51 @@
 <?= $this->extend('templates/base') ?>
 
 <?= $this->section('schema') ?>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  "name": "JobberRecruit Professional E-Learning Courses",
-  "description": "Browse admin-curated professional training courses, career development guides, and tech certifications on JobberRecruit.",
-  "url": "<?= current_url() ?>",
-  "numberOfItems": <?= count($courses) ?>,
-  "itemListElement": [
-    <?php foreach (array_slice($courses, 0, 10) as $index => $course): ?>
-    {
-      "@type": "ListItem",
-      "position": <?= $index + 1 ?>,
-      "item": {
-        "@type": "Course",
-        "name": "<?= esc($course->title) ?>",
-        "description": "<?= esc(mb_substr(strip_tags((string) $course->description), 0, 150)) ?>...",
-        "provider": {
-          "@type": "Organization",
-          "name": "JobberRecruit",
-          "sameAs": "<?= base_url() ?>"
-        },
-        "hasCourseInstance": {
-          "@type": "CourseInstance",
-          "courseMode": "online",
-          "duration": "<?= esc($course->duration ?: 'Self-paced') ?>",
-          "offers": {
-            "@type": "Offer",
-            "price": "<?= (float) ($course->price ?? 0) ?>",
-            "priceCurrency": "NGN",
-            "category": "<?= (float) ($course->price ?? 0) > 0 ? 'Paid' : 'Free' ?>"
-          }
-        }
-      }
-    }<?= $index < min(count($courses) - 1, 9) ? ',' : '' ?>
-    <?php endforeach; ?>
-  ]
+<?php
+$listItems = [];
+foreach (array_slice($courses, 0, 10) as $index => $course) {
+    $listItems[] = [
+        '@type'    => 'ListItem',
+        'position' => $index + 1,
+        'item'     => [
+            '@type'       => 'Course',
+            'name'        => $course->title,
+            'description' => mb_substr(strip_tags((string) $course->description), 0, 150),
+            'provider'    => [
+                '@type' => 'Organization',
+                'name'  => 'JobberRecruit',
+                'sameAs' => base_url(),
+            ],
+            'hasCourseInstance' => [
+                '@type'      => 'CourseInstance',
+                'courseMode' => 'online',
+                'duration'   => $course->duration ?: 'Self-paced',
+                'offers'     => [
+                    '@type'        => 'Offer',
+                    'price'        => (float) ($course->price ?? 0),
+                    'priceCurrency' => 'NGN',
+                    'availability' => 'https://schema.org/InStock',
+                    'category'     => (float) ($course->price ?? 0) > 0 ? 'Paid' : 'Free',
+                ],
+                'instructor' => [
+                    '@type' => 'Person',
+                    'name'  => $course->instructor ?: 'JobberRecruit',
+                ],
+            ],
+        ],
+    ];
 }
+?>
+<script type="application/ld+json">
+<?= json_encode([
+    '@context'   => 'https://schema.org',
+    '@type'      => 'ItemList',
+    'name'        => 'JobberRecruit Professional E-Learning Courses',
+    'description' => 'Browse admin-curated professional training courses, career development guides, and tech certifications on JobberRecruit.',
+    'url'          => current_url(),
+    'numberOfItems' => count($courses),
+    'itemListElement' => $listItems,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 

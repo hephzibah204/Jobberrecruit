@@ -1,6 +1,14 @@
 <?php
+// Bootstrap autoloading
+require __DIR__ . '/vendor/autoload.php';
+
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR);
-require_once __DIR__ . '/vendor/codeigniter4/framework/system/bootstrap.php';
+require __DIR__ . '/app/Config/Paths.php';
+$paths = new \Config\Paths();
+
+require $paths->systemDirectory . '/Boot.php';
+define('ENVIRONMENT', 'development');
+\CodeIgniter\Boot::bootConsole($paths);
 
 use App\Models\StateModel;
 use Config\Database;

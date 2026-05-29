@@ -25,7 +25,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #0D609E 0%, #0a4a7a 100%);
+            background: linear-gradient(135deg, #005DA8 0%, #0a4a7a 100%);
             padding: 30px 20px;
             text-align: center;
             color: white;
@@ -48,7 +48,7 @@
         }
 
         .content h2 {
-            color: #0D609E;
+            color: #005DA8;
             margin-top: 0;
             font-size: 22px;
             font-weight: 600;
@@ -85,7 +85,7 @@
         }
 
         th {
-            background-color: #0D609E;
+            background-color: #005DA8;
             color: white;
             font-weight: 600;
             width: 40%;
@@ -98,13 +98,13 @@
         .total {
             font-size: 20px;
             font-weight: 700;
-            color: #0D609E;
+            color: #005DA8;
             background: #e7f3ff !important;
         }
 
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #0D609E, #0a4a7a);
+            background: linear-gradient(135deg, #005DA8, #0a4a7a);
             color: white;
             padding: 14px 32px;
             text-decoration: none;
@@ -124,7 +124,7 @@
         }
 
         .footer a {
-            color: #0D609E;
+            color: #005DA8;
             text-decoration: none;
             margin: 0 10px;
             font-weight: 500;

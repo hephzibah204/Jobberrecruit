@@ -9,6 +9,7 @@ use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use App\Models\CvReviewModel;
 
 class ElearningController extends BaseController
 {
@@ -90,7 +91,7 @@ class ElearningController extends BaseController
             'keywords'          => esc($course->title) . ', online course, ' . esc($course->instructor ?: 'JobberRecruit') . ', free training, online certification',
             'og_title'          => esc($course->title) . ' | JobberRecruit',
             'og_description'    => $cleanDescription . '...',
-            'og_image'          => $course->thumbnail ? base_url($course->thumbnail) : base_url('images/og-image-main.png'),
+            'og_image'          => $course->thumbnail ? base_url($course->thumbnail) : base_url('images/default-og-image.jpg'),
             'course'            => $course,
             'modules'           => $modules,
             'enrollment'        => $enrollment,
@@ -238,10 +239,18 @@ class ElearningController extends BaseController
     /**
      * Candidate: Enroll in a course (with Payment support)
      */
-    public function enroll($id)
+    public function enroll($id = null)
     {
         if (!auth()->loggedIn()) {
             return redirect()->to('login')->with('error', 'Please login to enroll in courses');
+        }
+
+        if ($id === null) {
+            $id = $this->request->getVar('id') ?? $this->request->getVar('course_id');
+        }
+
+        if (empty($id)) {
+            return redirect()->to('training')->with('error', 'Course ID is required to enroll.');
         }
 
         $userId = auth()->id();
@@ -283,7 +292,7 @@ class ElearningController extends BaseController
             'amount' => 0
         ]);
 
-        return redirect()->to('training/course/' . $id)->with('success', 'Enrolled successfully!');
+        return redirect()->to('candidate/my-courses/' . $id)->with('success', 'Enrolled successfully! Welcome to your interactive classroom.');
     }
 
     /**
@@ -311,7 +320,7 @@ class ElearningController extends BaseController
                 'amount' => $response['data']['amount'] / 100
             ]);
 
-            return redirect()->to('training/course/' . $courseId)->with('success', 'Payment successful! You are now enrolled.');
+            return redirect()->to('candidate/my-courses/' . $courseId)->with('success', 'Payment successful! Welcome to your interactive classroom.');
         }
 
         return redirect()->to('training')->with('error', 'Payment verification failed');
@@ -409,6 +418,90 @@ class ElearningController extends BaseController
     }
 
     /**
+     * Candidate: Interactive Classroom Workspace
+     */
+    public function classroom($courseId)
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login')->with('error', 'Please login to access the classroom');
+        }
+
+        $userId = auth()->id();
+        
+        // Fetch course
+        $course = $this->courseModel->find($courseId);
+        if (!$course) {
+            return redirect()->to('training')->with('error', 'Course not found.');
+        }
+
+        // Fetch user enrollment
+        $enrollment = $this->enrollmentModel
+            ->where('course_id', $courseId)
+            ->where('user_id', $userId)
+            ->first();
+
+        // If not enrolled but it is a paid course, block them
+        if (!$enrollment && (float)($course->price ?? 0) > 0) {
+            return redirect()->to('training/course/' . $courseId)->with('error', 'Please enroll in this course to access the classroom.');
+        }
+
+        // Auto enroll them if it's a free course and they clicked through
+        if (!$enrollment && (float)($course->price ?? 0) <= 0) {
+            $this->enrollmentModel->insert([
+                'course_id' => $courseId,
+                'user_id' => $userId,
+                'status' => 'enrolled',
+                'amount' => 0
+            ]);
+            $enrollment = $this->enrollmentModel
+                ->where('course_id', $courseId)
+                ->where('user_id', $userId)
+                ->first();
+        }
+
+        // Fetch modules
+        $modules = $this->courseModuleModel
+            ->where('course_id', $courseId)
+            ->orderBy('order_index', 'ASC')
+            ->findAll();
+
+        // Determine active module
+        $activeModuleId = $this->request->getGet('module_id');
+        $activeModule = null;
+
+        if ($activeModuleId) {
+            foreach ($modules as $mod) {
+                if ((int)$mod->id === (int)$activeModuleId) {
+                    $activeModule = $mod;
+                    break;
+                }
+            }
+        }
+
+        // Default to the first module if no active module found/selected
+        if (!$activeModule && !empty($modules)) {
+            $activeModule = $modules[0];
+        }
+
+        // Fetch certificate if completed
+        $certificate = null;
+        if ($enrollment && $enrollment->status === 'completed') {
+            $certModel = model(CourseCertificateModel::class);
+            $certificate = $certModel->getCertificateForUser($userId, $courseId);
+        }
+
+        return view('candidate/classroom', [
+            'title' => esc($course->title) . ' - Learning Portal',
+            'course' => $course,
+            'enrollment' => (object) $enrollment,
+            'modules' => $modules,
+            'activeModule' => $activeModule,
+            'certificate' => $certificate,
+            'youtubeEmbedUrl' => $activeModule ? $this->getYoutubeEmbedUrl($activeModule->youtube_url ?? null) : null
+        ]);
+    }
+
+    /**
      * Mark course as complete and generate certificate
      */
     public function completeCourse($courseId)
@@ -443,7 +536,7 @@ class ElearningController extends BaseController
             ]);
         }
 
-        $this->enrollmentModel->update($enrollment['id'], [
+        $this->enrollmentModel->update($enrollment->id, [
             'status' => 'completed',
             'completed_at' => date('Y-m-d H:i:s'),
             'progress' => 100,
@@ -453,7 +546,7 @@ class ElearningController extends BaseController
         $certId = $certModel->insert([
             'user_id' => $userId,
             'course_id' => $courseId,
-            'enrollment_id' => $enrollment['id'],
+            'enrollment_id' => $enrollment->id,
             'certificate_code' => $certCode,
             'issued_at' => date('Y-m-d H:i:s'),
         ]);
@@ -612,13 +705,134 @@ class ElearningController extends BaseController
     }
 
     /**
-     * CV Review Upload Page
+     * CV Review Marketing Landing Page
      */
     public function cvReview()
     {
+        $paidPlan = $this->request->getGet('plan');
+        $reviewId = $this->request->getGet('review_id');
+
         return view('home/cv_review', [
-            'title' => 'Professional CV Review Service | JobberRecruit'
+            'title'           => 'Professional CV Review Service | JobberRecruit',
+            'isLoggedIn'      => auth()->loggedIn(),
+            'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
+            'reviewId'        => $reviewId ? (int) $reviewId : null,
+            'planPrices'      => [
+                'basic'        => 0,
+                'professional' => (int) env('cv_review_pro_price', 15000),
+                'premium'      => (int) env('cv_review_prem_price', 30000),
+            ],
         ]);
+    }
+
+    /**
+     * CV Review Submission Page (authenticated)
+     */
+    public function cvReviewSubmit()
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login?redirect=cv-review/submit')
+                ->with('error', 'Please login to submit your CV for review.');
+        }
+
+        $paidPlan = $this->request->getGet('plan');
+        $reviewId = $this->request->getGet('review_id');
+
+        return view('home/cv_review_submit', [
+            'title'           => 'Submit Your CV for Review | JobberRecruit',
+            'isLoggedIn'      => true,
+            'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
+            'reviewId'        => $reviewId ? (int) $reviewId : null,
+            'planPrices'      => [
+                'basic'        => 0,
+                'professional' => (int) env('cv_review_pro_price', 15000),
+                'premium'      => (int) env('cv_review_prem_price', 30000),
+            ],
+        ]);
+    }
+
+    /**
+     * Initiate Paystack payment for a paid CV review plan
+     */
+    public function initiateCvPayment()
+    {
+        if (!auth()->loggedIn()) {
+            return $this->failUnauthorized('Please login to continue');
+        }
+
+        $plan = $this->request->getPost('plan');
+        $amounts = [
+            'professional' => (int) env('cv_review_pro_price', 15000),
+            'premium'      => (int) env('cv_review_prem_price', 30000),
+        ];
+
+        if (!isset($amounts[$plan])) {
+            return $this->fail('Invalid plan selected');
+        }
+
+        $amount = $amounts[$plan];
+        $paystack = new \App\Services\PaystackService();
+        $email = auth()->user()->email;
+        $callbackUrl = base_url('cv-review/verify');
+
+        $response = $paystack->initialize($email, $amount, $callbackUrl, [
+            'type'    => 'cv_review',
+            'plan'    => $plan,
+            'user_id' => auth()->id(),
+        ]);
+
+        if (!($response['status'] ?? false)) {
+            return $this->fail('Payment initialization failed: ' . ($response['message'] ?? 'Unknown error'));
+        }
+
+        return $this->respond([
+            'success'          => true,
+            'authorization_url' => $response['data']['authorization_url'],
+        ]);
+    }
+
+    /**
+     * Verify Paystack payment for CV review and create pending record
+     */
+    public function verifyCvPayment()
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login')->with('error', 'Please login');
+        }
+
+        $reference = $this->request->getGet('reference');
+        if (!$reference) {
+            return redirect()->to('cv-review')->with('error', 'Invalid payment reference');
+        }
+
+        $paystack = new \App\Services\PaystackService();
+        $result = $paystack->verify($reference);
+
+        if (!($result['status'] ?? false) || ($result['data']['status'] ?? '') !== 'success') {
+            return redirect()->to('cv-review')->with('error', 'Payment verification failed');
+        }
+
+        $metadata = $result['data']['metadata'] ?? [];
+        $plan = $metadata['plan'] ?? 'professional';
+        $amount = ($result['data']['amount'] ?? 0) / 100;
+
+        $reviewMode = env('cv_review_mode', 'semi') === 'auto' ? 'auto' : 'semi';
+
+        $reviewModel = model(CvReviewModel::class);
+        $reviewModel->insert([
+            'user_id'           => auth()->id(),
+            'plan'              => $plan,
+            'amount'            => $amount,
+            'payment_reference' => $reference,
+            'payment_status'    => 'paid',
+            'status'            => 'pending',
+            'review_mode'       => $reviewMode,
+        ]);
+
+        $reviewId = $reviewModel->getInsertID();
+
+        return redirect()->to('cv-review/submit?review_id=' . $reviewId)
+            ->with('success', 'Payment successful! Please upload your CV below.');
     }
 
     /**
@@ -626,19 +840,38 @@ class ElearningController extends BaseController
      */
     public function uploadCvReview()
     {
+        if (!auth()->loggedIn()) {
+            return $this->failUnauthorized('Please login to continue');
+        }
+
         if (!$this->request->isAJAX()) {
             return $this->fail('Invalid request');
         }
 
+        $plan   = $this->request->getPost('plan') ?? 'basic';
+        $reviewId = $this->request->getPost('review_id');
+
+        // Paid plans require a successful payment record
+        if (in_array($plan, ['professional', 'premium'], true)) {
+            if (!$reviewId) {
+                return $this->fail('Payment is required. Please select a plan and complete payment first.');
+            }
+
+            $review = model(CvReviewModel::class)->find($reviewId);
+            if (!$review || $review['user_id'] != auth()->id() || $review['payment_status'] !== 'paid') {
+                return $this->fail('Valid payment record not found. Please complete payment first.');
+            }
+        }
+
         $cvFile = $this->request->getFile('cv_file');
-        
+
         if (!$cvFile || !$cvFile->isValid()) {
             return $this->fail('Please upload a valid CV file');
         }
 
         $allowedTypes = ['pdf', 'doc', 'docx'];
         $ext = strtolower($cvFile->getExtension());
-        
+
         if (!in_array($ext, $allowedTypes)) {
             return $this->fail('Only PDF, DOC, and DOCX files are allowed');
         }
@@ -647,7 +880,7 @@ class ElearningController extends BaseController
             return $this->fail('File size must be less than 5MB');
         }
 
-        $uploadPath = 'uploads/cv_reviews';
+        $uploadPath = FCPATH . 'uploads/cv_reviews';
         if (!is_dir($uploadPath)) {
             mkdir($uploadPath, 0775, true);
         }
@@ -655,16 +888,76 @@ class ElearningController extends BaseController
         $newName = uniqid('cv_') . '.' . $ext;
         $cvFile->move($uploadPath, $newName);
 
-        // Save to database or session for admin review
-        $reviewData = [
-            'user_id' => auth()->id(),
-            'file_path' => $uploadPath . '/' . $newName,
-            'uploaded_at' => date('Y-m-d H:i:s'),
-            'status' => 'pending'
-        ];
+        $reviewModel = model(CvReviewModel::class);
 
-        // You can save this to a database table if needed
-        // For now, just return success
+        $now = date('Y-m-d H:i:s');
+
+        if ($reviewId) {
+            $reviewModel->update($reviewId, [
+                'file_path'        => 'uploads/cv_reviews/' . $newName,
+                'full_name'        => $this->request->getPost('full_name'),
+                'email'            => auth()->user()->email,
+                'phone'            => $this->request->getPost('phone'),
+                'industry'         => $this->request->getPost('industry'),
+                'target_role'      => $this->request->getPost('target_role'),
+                'feedback_request' => $this->request->getPost('feedback_request'),
+                'status'           => 'pending',
+            ]);
+            $currentReviewId = $reviewId;
+        } else {
+            $reviewMode = env('cv_review_mode', 'semi') === 'auto' ? 'auto' : 'semi';
+            $reviewModel->insert([
+                'user_id'           => auth()->id(),
+                'plan'              => 'basic',
+                'amount'            => 0,
+                'payment_status'    => 'free',
+                'file_path'         => 'uploads/cv_reviews/' . $newName,
+                'full_name'         => $this->request->getPost('full_name'),
+                'email'             => auth()->user()->email,
+                'phone'             => $this->request->getPost('phone'),
+                'industry'          => $this->request->getPost('industry'),
+                'target_role'       => $this->request->getPost('target_role'),
+                'feedback_request'  => $this->request->getPost('feedback_request'),
+                'status'            => 'pending',
+                'review_mode'       => $reviewMode,
+            ]);
+            $currentReviewId = $reviewModel->getInsertID();
+        }
+
+        $autoReview = false;
+        if ($currentReviewId) {
+            $submitted = $reviewModel->find($currentReviewId);
+            if ($submitted && ($submitted->review_mode ?? env('cv_review_mode', 'semi')) === 'auto') {
+                $filePath = FCPATH . 'uploads/cv_reviews/' . $newName;
+                $cvContent = '';
+                if (is_file($filePath)) {
+                    $cvContent = file_get_contents($filePath) ?: '[Binary file]';
+                }
+                $aiService = new \App\Services\AiService();
+                $aiReview = $aiService->generateCvReview([
+                    'full_name'        => $this->request->getPost('full_name') ?? 'Candidate',
+                    'target_role'      => $this->request->getPost('target_role') ?? '',
+                    'industry'         => $this->request->getPost('industry') ?? '',
+                    'feedback_request' => $this->request->getPost('feedback_request') ?? '',
+                    'cv_content'       => $cvContent,
+                    'plan'             => $submitted->plan ?? 'basic',
+                ]);
+                $reviewModel->update($currentReviewId, [
+                    'ai_review'   => $aiReview,
+                    'status'      => 'completed',
+                    'reviewed_at' => $now,
+                ]);
+                $autoReview = true;
+            }
+        }
+
+        if ($autoReview) {
+            return $this->respond([
+                'success' => true,
+                'message' => 'CV reviewed successfully! Your AI-powered review is ready. Check your dashboard to view it.'
+            ]);
+        }
+
         return $this->respond([
             'success' => true,
             'message' => 'CV uploaded successfully! Our team will review it within 48 hours.'

@@ -19,7 +19,7 @@
                     <div class="mb-4">
                         <img src="<?= base_url('images/success-check.svg') ?>"
                             alt="Success" width="110" class="mb-3">
-                        <h2 class="fw-bold mb-2 text-success">Application Submitted!</h2>
+                        <h1 class="fw-bold mb-2 text-success h2">Application Submitted!</h1>
                         <p class="text-muted fs-6">
                             Your application for the position of
                             <strong><?= esc($job->title) ?></strong>

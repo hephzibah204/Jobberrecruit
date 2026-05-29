@@ -733,14 +733,20 @@ class JobSeekerController extends BaseController
 
         $states = $state->orderBy('name', 'ASC')->findAll();
 
+        // Pre-fill from query params (e.g. from industry/location hub pages)
+        $presetKeyword    = $this->request->getGet('industry') ? $industryModel->find($this->request->getGet('industry'))?->name : null;
+        $presetLocationId = $this->request->getGet('state');
+
         return view('candidate/notifications', [
-            'title'      => 'Job Alerts',
-            'user'       => $user,
-            'candidate'  => $candidate,
-            'alerts'     => $alerts,
-            'industries' => $industries,
-            'categories' => $categories,
-            'states'     => $states
+            'title'           => 'Job Alerts',
+            'user'            => $user,
+            'candidate'       => $candidate,
+            'alerts'          => $alerts,
+            'industries'      => $industries,
+            'categories'      => $categories,
+            'states'          => $states,
+            'presetKeyword'   => $presetKeyword,
+            'presetLocationId' => $presetLocationId
         ]);
     }
 
@@ -921,48 +927,54 @@ class JobSeekerController extends BaseController
 
         $transactions = [];
 
-        // Get course enrollments with payments
-        $enrollments = model(\App\Models\CourseEnrollmentModel::class)
-            ->select('course_enrollments.*, courses.title as course_name')
-            ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
-            ->where('course_enrollments.user_id', $user->id)
-            ->orderBy('course_enrollments.created_at', 'DESC')
-            ->findAll();
+        $db = \Config\Database::connect();
 
-        foreach ($enrollments as $enr) {
-            $transactions[] = [
-                'type' => 'course',
-                'description' => 'Course: ' . ($enr->course_name ?? 'Unknown'),
-                'reference' => $enr->payment_reference ?? 'FREE-' . $enr->id,
-                'amount' => (float) ($enr->amount ?? 0),
-                'status' => $enr->payment_reference ? 'paid' : ($enr->amount > 0 ? 'pending' : 'free'),
-                'date' => $enr->created_at ?? '',
-                'icon' => 'ti ti-book',
-            ];
+        // Get course enrollments with payments
+        if ($db->tableExists('course_enrollments') && $db->tableExists('courses')) {
+            $enrollments = model(\App\Models\CourseEnrollmentModel::class)
+                ->select('course_enrollments.*, courses.title as course_name')
+                ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
+                ->where('course_enrollments.user_id', $user->id)
+                ->orderBy('course_enrollments.created_at', 'DESC')
+                ->findAll();
+
+            foreach ($enrollments as $enr) {
+                $transactions[] = [
+                    'type' => 'course',
+                    'description' => 'Course: ' . ($enr->course_name ?? 'Unknown'),
+                    'reference' => $enr->payment_reference ?? 'FREE-' . $enr->id,
+                    'amount' => (float) ($enr->amount ?? 0),
+                    'status' => $enr->payment_reference ? 'paid' : ($enr->amount > 0 ? 'pending' : 'free'),
+                    'date' => $enr->created_at ?? '',
+                    'icon' => 'ti ti-book',
+                ];
+            }
         }
 
         // Get subscription payments
-        $payments = model(\App\Models\PaymentModel::class)
-            ->where('user_id', $user->id)
-            ->orderBy('paid_at', 'DESC')
-            ->findAll();
+        if ($db->tableExists('payments')) {
+            $payments = model(\App\Models\PaymentModel::class)
+                ->where('user_id', $user->id)
+                ->orderBy('paid_at', 'DESC')
+                ->findAll();
 
-        foreach ($payments as $pay) {
-            $metadata = is_string($pay['metadata']) ? json_decode($pay['metadata'], true) : ($pay['metadata'] ?? []);
-            $desc = 'Subscription Payment';
-            if (!empty($metadata['plan_id'])) {
-                $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
-                $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
+            foreach ($payments as $pay) {
+                $metadata = is_string($pay['metadata']) ? json_decode($pay['metadata'], true) : ($pay['metadata'] ?? []);
+                $desc = 'Subscription Payment';
+                if (!empty($metadata['plan_id']) && $db->tableExists('plans')) {
+                    $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
+                    $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
+                }
+                $transactions[] = [
+                    'type' => 'subscription',
+                    'description' => $desc,
+                    'reference' => $pay['reference'] ?? '',
+                    'amount' => (float) ($pay['amount'] ?? 0),
+                    'status' => $pay['status'] ?? 'pending',
+                    'date' => $pay['paid_at'] ?? $pay['created_at'] ?? '',
+                    'icon' => 'ti ti-credit-card',
+                ];
             }
-            $transactions[] = [
-                'type' => 'subscription',
-                'description' => $desc,
-                'reference' => $pay['reference'] ?? '',
-                'amount' => (float) ($pay['amount'] ?? 0),
-                'status' => $pay['status'] ?? 'pending',
-                'date' => $pay['paid_at'] ?? $pay['created_at'] ?? '',
-                'icon' => 'ti ti-credit-card',
-            ];
         }
 
         // Sort by date desc

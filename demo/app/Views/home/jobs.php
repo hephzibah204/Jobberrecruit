@@ -1,54 +1,28 @@
 <?= $this->extend('templates/base') ?>
 
 <?= $this->section('schema') ?>
+<?php
+include_once APPPATH . 'Views/partials/schema/job_posting.php';
+$listItems = [];
+foreach ($jobs as $index => $j) {
+    $item = jobPostingSchema($j, base_url());
+    $listItems[] = [
+        '@type'    => 'ListItem',
+        'position' => $index + 1,
+        'item'     => $item,
+    ];
+}
+?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "ItemList",
-        "name": "Job Listings",
-        "description": "Find your next career opportunity from thousands of job listings",
-        "url": "<?= current_url() ?>",
-        "numberOfItems": "<?= $total_jobs ?>",
-        "itemListElement": [
-            <?php foreach ($jobs as $index => $job): ?> {
-                    "@type": "ListItem",
-                    "position": <?= $index + 1 ?>,
-                    "item": {
-                        "@type": "JobPosting",
-                        "title": "<?= addslashes($job->title ?? '') ?>",
-                        "description": "<?= addslashes($job->description ?? '') ?>",
-                        "datePosted": "<?= date('Y-m-d', strtotime($job->created_at ?? 'now')) ?>",
-                        "validThrough": "<?= date('Y-m-d', strtotime($job->expires_at ?? '+30 days')) ?>",
-                        "employmentType": "<?= $job->job_type ?? '' ?>",
-                        "hiringOrganization": {
-                            "@type": "Organization",
-                            "name": "<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential Employer' : addslashes($job->employer_name ?? '') ?>",
-                            "logo": "<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : base_url($job->company_logo ?? 'images/favicon.png') ?>"
-                        },
-                        "jobLocation": {
-                            "@type": "Place",
-                            "address": {
-                                "@type": "PostalAddress",
-                                "addressLocality": "<?= $job->location ?>",
-                                "addressCountry": "NG"
-                            }
-                        },
-                        "baseSalary": {
-                            "@type": "MonetaryAmount",
-                            "currency": "NGN",
-                            "value": {
-                                "@type": "QuantitativeValue",
-                                "minValue": <?= $job->salary ?>,
-                                "maxValue": <?= $job->max_salary ?? $job->salary ?>,
-                                "unitText": "<?= $job->salary_period ?>"
-                            }
-                        }
-                    }
-                }
-                <?= $index < count($jobs) - 1 ? ',' : '' ?>
-            <?php endforeach; ?>
-        ]
-    }
+<?= json_encode([
+    '@context'      => 'https://schema.org',
+    '@type'         => 'ItemList',
+    'name'          => 'Job Listings',
+    'description'   => 'Find your next career opportunity from thousands of job listings',
+    'url'           => current_url(),
+    'numberOfItems' => (int) $total_jobs,
+    'itemListElement' => $listItems,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -59,25 +33,18 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <?php
-                $ctaText = "Find Your <span class=\"text-gradient\">Dream Job</span>";
-                if (!empty($selectedIndustryName)) {
-                    $ctaText = "Find Your <span class=\"text-gradient\">" . esc($selectedIndustryName) . " Job</span>";
-                } elseif (!empty($selectedStateName)) {
-                    $ctaText = "Find Your Dream Job in <span class=\"text-gradient\">" . esc($selectedStateName) . "</span>";
-                }
-                ?>
-                <h1 class="display-5 fw-bold mb-3"><?= $ctaText ?></h1>
+                <h1 class="display-5 fw-bold mb-3">Find Job In Nigeria</h1>
                 <p class="lead text-muted mb-4">
-                    Browse verified opportunities from top companies in Nigeria.
-                    Filter by location, experience, salary, and more.
+                    Find and apply for the latest Jobs in Nigeria. Browse Full-time, part-time, and remote vacancies in Lagos, Abuja, Portharcourt, and across all 36 states. New listings added daily.
                 </p>
             </div>
-            <!-- <div class="col-lg-4 text-lg-end">
+            <?php if (!empty($auth)): ?>
+            <div class="col-lg-4 text-lg-end">
                 <a href="<?= base_url('job-alerts') ?>" class="btn btn-outline-primary">
                     <i class="bi bi-bell me-2"></i>Create Job Alert
                 </a>
-            </div> -->
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </section>
@@ -401,6 +368,7 @@
                                                             <span><?= esc($job->employer_name) ?> </span>
                                                             <span><?php if ($job->show_trust_badge): ?>
                                                                     <img src="<?= base_url('images/badge.svg') ?>"
+                                                                        alt="Verified Employer"
                                                                         data-bs-toggle="tooltip"
                                                                         width="16"
                                                                         title="This employer is verified and subscribed to a trusted plan"><?php endif; ?></span>
@@ -533,7 +501,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -580,9 +548,9 @@
 
     /* View Toggle */
     .btn-group .btn.active {
-        background-color: #0D609E;
+        background-color: #005DA8;
         color: white;
-        border-color: #0D609E;
+        border-color: #005DA8;
     }
 
     /* Badges */
@@ -634,13 +602,13 @@
 
     /* Pagination */
     .pagination .page-item.active .page-link {
-        background-color: #0D609E;
-        border-color: #0D609E;
+        background-color: #005DA8;
+        border-color: #005DA8;
         color: #e2e8f0;
     }
 
     .pagination .page-link {
-        color: #0D609E;
+        color: #005DA8;
         border-radius: 8px;
         margin: 0 0.25rem;
         border: 1px solid #e9ecef;
@@ -648,7 +616,7 @@
 
     .pagination .page-link:hover {
         background-color: #f8f9fa;
-        border-color: #0D609E;
+        border-color: #005DA8;
     }
 
     /* Loading State */
@@ -692,14 +660,14 @@
 
     .form-select:focus,
     .form-control:focus {
-        border-color: #0D609E;
+        border-color: #005DA8;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
     /* Filter Checkboxes */
     .form-check-input:checked {
-        background-color: #0D609E;
-        border-color: #0D609E;
+        background-color: #005DA8;
+        border-color: #005DA8;
     }
 
     .form-check-input:focus {
@@ -708,17 +676,17 @@
 
     /* Quick Apply Button */
     .quick-apply-btn:hover {
-        background-color: #0D609E;
+        background-color: #005DA8;
         color: white;
     }
 
     /* Bookmark Button */
     .bookmark-btn:hover {
-        color: #0D609E;
+        color: #005DA8;
     }
 
     .bookmark-btn.active {
-        color: #0D609E;
+        color: #005DA8;
     }
 
     /* Featured / Promoted Jobs */
@@ -1056,6 +1024,7 @@
             const employerName = isAnonymousJob ? 'Confidential Employer' : job.employer_name;
             const trustBadge = !isAnonymousJob && job.show_trust_badge ? `
                 <span><img src="<?= base_url('images/badge.svg') ?>"
+                    alt="Verified Employer"
                     data-bs-toggle="tooltip"
                     width="16"
                     title="This employer is verified and subscribed to a trusted plan"></span>` : '';

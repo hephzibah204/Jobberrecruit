@@ -9,5 +9,6 @@ class ResumeSkillModel extends Model
     protected $returnType = \App\Entities\ResumeSkill::class;
     protected $allowedFields = ['resume_id', 'skill_name', 'proficiency_level'];
     protected $useTimestamps = true;
-    protected $updatedField = '';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
 }

@@ -1,42 +1,36 @@
 <?= $this->extend('templates/base') ?>
 
 <?= $this->section('schema') ?>
+<?php
+$allFaqs = array_merge(
+    $faq1 ?? [],
+    $faq2 ?? [],
+    $faq3 ?? [],
+    $faq4 ?? [],
+    $faq5 ?? [],
+    $faq7 ?? [],
+    $faq8 ?? [],
+    $faq9 ?? [],
+    $faq10 ?? []
+);
+$mainEntity = [];
+foreach ($allFaqs as $question => $answer) {
+    $mainEntity[] = [
+        '@type'          => 'Question',
+        'name'           => $question,
+        'acceptedAnswer' => [
+            '@type' => 'Answer',
+            'text'  => $answer,
+        ],
+    ];
+}
+?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            <?php
-            // Combine all FAQ sections for structured data
-            $allFaqs = array_merge(
-                $faq1 ?? [],
-                $faq2 ?? [],
-                $faq3 ?? [],
-                $faq4 ?? [],
-                $faq5 ?? [],
-                $faq7 ?? [],
-                $faq8 ?? [],
-                $faq9 ?? [],
-                $faq10 ?? []
-            );
-            $faqItems = [];
-            $index = 0;
-            foreach ($allFaqs as $question => $answer):
-                if ($index > 0) echo ',';
-            ?> {
-                    "@type": "Question",
-                    "name": "<?= addslashes($question) ?>",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "<?= addslashes($answer) ?>"
-                    }
-                }
-            <?php
-                $index++;
-            endforeach;
-            ?>
-        ]
-    }
+<?= json_encode([
+    '@context'   => 'https://schema.org',
+    '@type'      => 'FAQPage',
+    'mainEntity' => $mainEntity,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -699,7 +693,7 @@
 
     /* Hero Section */
     .faq-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
         position: relative;
         overflow: hidden;
     }
@@ -709,7 +703,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -758,7 +752,7 @@
     }
 
     .accordion-button:not(.collapsed) {
-        color: #0D609E;
+        color: #005DA8;
         background-color: rgba(102, 126, 234, 0.05);
         border-bottom-left-radius: 0 !important;
         border-bottom-right-radius: 0 !important;
@@ -773,7 +767,7 @@
     }
 
     .accordion-button:focus {
-        border-color: #0D609E;
+        border-color: #005DA8;
         box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
     }
 
@@ -791,7 +785,7 @@
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F0890E 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
     }
 
     /* FAQ Sections */
@@ -806,7 +800,7 @@
 
     /* CTA Section */
     .bg-primary {
-        background: linear-gradient(135deg, #0D609E 0%, #02365eff 100%) !important;
+        background: linear-gradient(135deg, #005DA8 0%, #02365eff 100%) !important;
     }
 
     /* Search Results Highlight */

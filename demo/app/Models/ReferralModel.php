@@ -13,10 +13,10 @@ class ReferralModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'referrer_id',
-        'referred_id',
+        'referee_id',
+        'code',
         'status',
         'reward_amount',
-        'reward_paid',
         'created_at',
     ];
 

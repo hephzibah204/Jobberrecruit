@@ -24,7 +24,7 @@
         }
 
         .header {
-            background-color: #0D609E;
+            background-color: #005DA8;
             /* Secondary Color */
             padding: 20px;
             text-align: center;
@@ -40,7 +40,7 @@
         }
 
         .content h2 {
-            color: #F0890E;
+            color: #F5A623;
             /* Primary Color */
             margin-top: 0;
         }
@@ -55,7 +55,7 @@
 
         .job-item h4 {
             margin: 0 0 10px 0;
-            color: #0D609E;
+            color: #005DA8;
             font-size: 18px;
         }
 
@@ -67,7 +67,7 @@
         .button {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #F0890E;
+            background-color: #F5A623;
             /* Primary Color */
             color: #ffffff !important;
             text-decoration: none;
@@ -77,7 +77,7 @@
         }
 
         .footer {
-            background-color: #0D609E;
+            background-color: #005DA8;
             /* Secondary Color */
             color: #ffffff;
             padding: 20px;

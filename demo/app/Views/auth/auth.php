@@ -18,7 +18,7 @@
     <link rel="canonical" href="<?= current_url(); ?>">
 
     <!-- Branding -->
-    <meta name="theme-color" content="#0D609E">
+    <meta name="theme-color" content="#005DA8">
     <meta name="application-name" content="JobberRecruit">
 
     <!-- Favicons -->

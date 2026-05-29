@@ -38,7 +38,7 @@
                                     <i class="ti ti-user"></i>
                                 </div>
                                 <div class="message-content p-3 bg-light rounded-3">
-                                    <p class="mb-0">Hello! I'm here to help you practice your salary negotiation. To start, please provide the **Current Offer Details** (Job Title, Base Salary, and any benefits offered).</p>
+                                    <p class="mb-0">Hello! I'm here to help you practice your salary negotiation. To start, please provide the Current Offer Details (Job Title, Base Salary, and any benefits offered).</p>
                                 </div>
                             </div>
                         </div>

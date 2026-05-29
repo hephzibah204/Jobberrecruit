@@ -1,38 +1,40 @@
 <?= $this->extend('templates/base') ?>
 
 <?= $this->section('schema') ?>
+<?php
+$listItems = [];
+foreach ($blogs as $index => $blog) {
+    $listItems[] = [
+        '@type'     => 'ListItem',
+        'position'  => $index + 1,
+        'item'      => [
+            '@type'         => 'BlogPosting',
+            'headline'      => $blog->title,
+            'description'   => $blog->excerpt ?? '',
+            'url'           => base_url('blog/' . $blog->slug),
+            'image'         => $blog->thumbnail ?: base_url('images/blog-default.jpg'),
+            'datePublished' => date('c', strtotime($blog->created_at)),
+            'author'        => [
+                '@type' => 'Organization',
+                'name'  => 'JobberRecruit',
+            ],
+        ],
+    ];
+}
+?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "CollectionPage",
-        "name": "JobberRecruit Blog",
-        "description": "Insights, tips, and updates to help job seekers and employers succeed.",
-        "url": "<?= current_url() ?>",
-        "mainEntity": {
-            "@type": "ItemList",
-            "numberOfItems": "<?= count($blogs) ?>",
-            "itemListElement": [
-                <?php foreach ($blogs as $index => $blog): ?> {
-                        "@type": "ListItem",
-                        "position": <?= $index + 1 ?>,
-                        "item": {
-                            "@type": "BlogPosting",
-                            "headline": "<?= addslashes($blog->title) ?>",
-                            "description": "<?= addslashes($blog->excerpt) ?>",
-                            "url": "<?= base_url('blog/' . $blog->slug) ?>",
-                            "image": "<?= esc($blog->thumbnail ?: base_url('images/blog-default.jpg')) ?>",
-                            "datePublished": "<?= date('c', strtotime($blog->created_at)) ?>",
-                            "author": {
-                                "@type": "Organization",
-                                "name": "JobberRecruit"
-                            }
-                        }
-                    }
-                    <?= $index < count($blogs) - 1 ? ',' : '' ?>
-                <?php endforeach; ?>
-            ]
-        }
-    }
+<?= json_encode([
+    '@context'   => 'https://schema.org',
+    '@type'      => 'CollectionPage',
+    'name'       => 'JobberRecruit Blog',
+    'description'=> 'Insights, tips, and updates to help job seekers and employers succeed.',
+    'url'        => current_url(),
+    'mainEntity' => [
+        '@type'           => 'ItemList',
+        'numberOfItems'   => count($blogs),
+        'itemListElement' => $listItems,
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -378,7 +380,7 @@
 
     /* Custom Blog Styles */
     .blog-hero-section {
-        background: linear-gradient(135deg, #F0890E 0%, #bb6804ff 100%);
+        background: linear-gradient(135deg, #F5A623 0%, #bb6804ff 100%);
         position: relative;
         overflow: hidden;
     }
@@ -397,7 +399,7 @@
 
     .stat-item {
         padding: 1rem;
-        background: #0D609E;
+        background: #005DA8;
         border-radius: 0.75rem;
         backdrop-filter: blur(10px);
     }
@@ -427,12 +429,12 @@
     }
 
     .search-section {
-        background-color: #0D609E;
+        background-color: #005DA8;
     }
 
     .search-section .btn-secondary {
-        background-color: #F0890E !important;
-        border-color: #F0890E !important;
+        background-color: #F5A623 !important;
+        border-color: #F5A623 !important;
     }
 
     .search-form .form-control {
@@ -482,7 +484,7 @@
     }
 
     .bg-primary {
-        background-color: #0D609E !important;
+        background-color: #005DA8 !important;
         color: #fff !important;
     }
 
@@ -491,23 +493,23 @@
     }
 
     .btn-outline-primary {
-        color: #0D609E !important;
+        color: #005DA8 !important;
         border-color: #fff !important;
     }
 
     a.btn-outline-primary {
-        background-color: #0D609E !important;
+        background-color: #005DA8 !important;
         color: #fff !important;
     }
 
     /* Pagination */
     .pagination .page-item.active .page-link {
-        background-color: #0D609E;
-        border-color: #0D609E;
+        background-color: #005DA8;
+        border-color: #005DA8;
     }
 
     .pagination .page-link {
-        color: #0D609E;
+        color: #005DA8;
         border-radius: 0.375rem;
         margin: 0 0.25rem;
     }
@@ -544,12 +546,12 @@
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
         .card {
-            background-color: #0D609E;
-            border-color: #0D609E;
+            background-color: #005DA8;
+            border-color: #005DA8;
         }
 
         .text-dark {
-            color: #0D609E !important;
+            color: #005DA8 !important;
         }
 
         .text-muted {
@@ -561,11 +563,11 @@
         }
 
         .border-bottom {
-            border-color: #0D609E !important;
+            border-color: #005DA8 !important;
         }
 
         .bg-secondary {
-            background: #F0890E !important;
+            background: #F5A623 !important;
             color: #fff !important;
         }
     }

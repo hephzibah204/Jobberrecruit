@@ -167,7 +167,7 @@
                                 <div class="col-sm-6 col-12">
                                     <div class="mb-3" id="salary_input_container">
                                         <label class="form-label">Salary</label>
-                                        <input type="text" name="salary" id="salary_input" class="form-control" placeholder="e.g., ₦500,000 or ₦250,000 - ₦750,000" value="<?= old('salary') ?>">
+                                        <input type="text" name="salary" id="salary_input" class="form-control" placeholder="e.g., 500000 or 250000 - 750000" value="<?= old('salary') ?>" inputmode="numeric">
                                     </div>
                                 </div>
 

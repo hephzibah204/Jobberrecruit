@@ -12,23 +12,19 @@ class SubscriptionPlanModel extends Model
 
     protected $allowedFields = [
         'name',
+        'slug',
         'price',
+        'duration',
         'billing_cycle',
         'credit_allowance',
         'discount_percentage',
+        'job_limit',
+        'featured_limit',
+        'search_access',
+        'description',
+        'paystack_plan_code',
         'is_active'
     ];
-    // protected $allowedFields = [
-    //     'name',
-    //     'slug',
-    //     'price',
-    //     'duration',
-    //     'job_limit',
-    //     'featured_limit',
-    //     'search_access',
-    //     'description',
-    //     'paystack_plan_code',
-    // ];
 
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';

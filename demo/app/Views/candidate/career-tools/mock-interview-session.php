@@ -2,192 +2,382 @@
 
 <?= $this->section('styles') ?>
 <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    
     body {
-        background-color: #0f172a;
-        color: #f8fafc;
-        font-family: 'Outfit', sans-serif;
+        background: #080c1a !important;
+        color: #e2e8f0 !important;
+        font-family: 'Outfit', 'Inter', system-ui, sans-serif;
         overflow-x: hidden;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .session-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
     }
     
     .session-header {
-        background: rgba(15, 23, 42, 0.8);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 100;
-    }
-
-    .glass-card {
-        background: rgba(30, 41, 59, 0.7);
+        background: rgba(8, 12, 26, 0.92);
         backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        z-index: 100;
+        flex-shrink: 0;
     }
-
-    .chat-area {
-        height: calc(100vh - 280px);
-        overflow-y: auto;
-        padding-right: 8px;
+    
+    .session-header .badge-live {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        box-shadow: 0 0 20px rgba(220, 38, 38, 0.25);
     }
-
-    .chat-area::-webkit-scrollbar {
-        width: 6px;
-    }
-    .chat-area::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.02);
-    }
-    .chat-area::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-    }
-
-    .bubble {
-        max-width: 80%;
-        border-radius: 16px;
-        padding: 14px 18px;
-        font-size: 15px;
-        line-height: 1.6;
-    }
-
-    .bubble-model {
-        background: rgba(51, 65, 85, 0.5);
-        color: #f1f5f9;
-        border-bottom-left-radius: 4px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .bubble-user {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        color: #ffffff;
-        border-bottom-right-radius: 4px;
-    }
-
-    .voice-indicator-active {
-        animation: pulse 1.5s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.1); opacity: 0.7; }
-    }
-
-    .star-pill {
+    
+    .session-stat {
         background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 10px;
-        padding: 10px;
-        transition: all 0.3s ease;
+        padding: 6px 16px;
+        text-align: center;
+        transition: border-color 0.3s;
     }
-
+    .session-stat:hover { border-color: rgba(255, 255, 255, 0.12); }
+    
+    .glass-card {
+        background: rgba(18, 24, 48, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 18px;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .glass-card:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    .glass-card .card-header {
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .glass-card .card-footer {
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    
+    .chat-area {
+        height: calc(100vh - 320px);
+        overflow-y: auto;
+        padding-right: 6px;
+        scroll-behavior: smooth;
+    }
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 4px; }
+    .chat-area::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.4); }
+    
+    .bubble {
+        max-width: 82%;
+        border-radius: 18px;
+        padding: 14px 20px;
+        font-size: 14.5px;
+        line-height: 1.65;
+        position: relative;
+        animation: bubbleIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes bubbleIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .bubble-model {
+        background: rgba(30, 41, 59, 0.7);
+        color: #f1f5f9;
+        border-bottom-left-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .bubble-model::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        bottom: 10px;
+        width: 12px;
+        height: 12px;
+        background: rgba(30, 41, 59, 0.7);
+        border-radius: 2px;
+        transform: rotate(45deg);
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .bubble-user {
+        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        color: #fff;
+        border-bottom-right-radius: 6px;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
+    }
+    .bubble-user::before {
+        content: '';
+        position: absolute;
+        right: -6px;
+        bottom: 10px;
+        width: 12px;
+        height: 12px;
+        background: #4f46e5;
+        border-radius: 2px;
+        transform: rotate(45deg);
+        border-right: 1px solid rgba(59, 130, 246, 0.05);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.05);
+    }
+    
+    .transcript-box {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px 16px;
+    }
+    .transcript-box textarea {
+        background: transparent !important;
+        color: #e2e8f0 !important;
+        border: none !important;
+        resize: none;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    .transcript-box textarea::placeholder { color: rgba(255, 255, 255, 0.3); }
+    
+    .voice-indicator-active {
+        animation: voicePulse 1.2s infinite ease-in-out;
+    }
+    @keyframes voicePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+    }
+    
+    .status-pill {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 4px 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .status-pill .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .status-pill .dot.idle { background: #94a3b8; }
+    .status-pill .dot.listening { background: #22c55e; animation: dotPulse 1s infinite; }
+    .status-pill .dot.speaking { background: #3b82f6; animation: dotPulse 1s infinite; }
+    .status-pill .dot.error { background: #ef4444; }
+    @keyframes dotPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    
+    .star-pill {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 12px 14px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
     .star-pill.active {
-        background: rgba(59, 130, 246, 0.1);
-        border-color: rgba(59, 130, 246, 0.3);
+        background: rgba(59, 130, 246, 0.08);
+        border-color: rgba(59, 130, 246, 0.25);
+        transform: translateX(4px);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.05);
     }
-
-    /* Video area styles */
+    .star-pill .progress {
+        background: rgba(255, 255, 255, 0.05) !important;
+        height: 5px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .star-pill .progress-bar {
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .score-badge-lg {
+        font-size: 2.8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
     .video-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 15px;
+        gap: 16px;
         margin-bottom: 20px;
     }
-
     @media (min-width: 992px) {
-        .video-grid.two-cols {
-            grid-template-columns: 1fr 1fr;
-        }
+        .video-grid.two-cols { grid-template-columns: 1fr 1fr; }
     }
-
+    
     .video-box {
         position: relative;
         background: #020617;
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
         aspect-ratio: 16/9;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-
+    .video-box video { object-fit: cover; }
     .video-label {
         position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.6);
+        bottom: 12px;
+        left: 12px;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(8px);
         color: #fff;
-        padding: 4px 8px;
-        font-size: 12px;
-        border-radius: 4px;
+        padding: 5px 10px;
+        font-size: 11px;
+        border-radius: 6px;
         z-index: 10;
         display: flex;
         align-items: center;
         gap: 6px;
+        letter-spacing: 0.02em;
     }
-
+    
     .waveform-bar {
         display: inline-block;
         width: 3px;
-        height: 15px;
-        background-color: #3b82f6;
-        margin: 0 1px;
+        height: 16px;
+        background: linear-gradient(to top, #3b82f6, #6366f1);
+        margin: 0 2px;
+        border-radius: 2px;
         animation: wave 1.2s infinite ease-in-out;
     }
-
     @keyframes wave {
         0%, 100% { height: 5px; }
-        50% { height: 25px; }
+        30% { height: 22px; }
+        60% { height: 12px; }
     }
-
-    /* Overlay styles */
+    
     .start-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: #090d16;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: radial-gradient(ellipse at center, #0f172a 0%, #080c1a 100%);
         z-index: 2000;
         display: flex;
         align-items: center;
         justify-content: center;
     }
-
-    @media (max-width: 767.98px) {
-        .chat-area {
-            height: calc(100vh - 320px) !important;
-        }
-        .bubble {
-            max-width: 90% !important;
-            font-size: 14px !important;
-            padding: 12px 14px !important;
-        }
-        .session-header {
-            padding: 0.75rem 1rem !important;
-        }
-        .session-header .d-flex {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 0.75rem;
-        }
-        .start-overlay .glass-card {
-            width: 90% !important;
-            margin: 0 1rem;
-        }
-        .avatar-xxl {
-            width: 60px !important;
-            height: 60px !important;
-            font-size: 28px !important;
+    .start-overlay .enter-card {
+        width: 480px;
+        max-width: 92vw;
+        padding: 2.5rem;
+    }
+    .start-overlay .enter-icon {
+        width: 90px; height: 90px;
+        background: rgba(79, 70, 229, 0.12);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2.4rem;
+        color: #818cf8;
+        border: 1px solid rgba(79, 70, 229, 0.15);
+    }
+    
+    .control-btn {
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 8px 18px;
+        font-size: 13.5px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .control-btn:active { transform: scale(0.96); }
+    .control-btn:disabled { opacity: 0.35; transform: none; }
+    
+    .chat-input {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        color: #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 12px 18px !important;
+        font-size: 14px !important;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .chat-input:focus {
+        border-color: rgba(99, 102, 241, 0.4) !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    }
+    .chat-input::placeholder { color: rgba(255, 255, 255, 0.25); }
+    
+    .btn-gradient {
+        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        border: none;
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+        transition: all 0.3s;
+    }
+    .btn-gradient:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+        color: #fff;
+    }
+    .btn-gradient:active { transform: translateY(0); }
+    
+    .btn-enter-room {
+        background: linear-gradient(135deg, #4f46e5, #6366f1);
+        border: none;
+        font-size: 1.05rem;
+        padding: 14px 28px;
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(79, 70, 229, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-enter-room:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 12px 40px rgba(79, 70, 229, 0.4);
+    }
+    
+    .evaluation-card {
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        background: rgba(34, 197, 94, 0.03);
+    }
+    .evaluation-card .score-tile {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .text-muted-light { color: #94a3b8 !important; }
+    
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.06); border-radius: 4px; }
+    
+    @media (max-width: 991.98px) {
+        .chat-area { height: calc(50vh - 100px) !important; }
+        .video-grid.two-cols { grid-template-columns: 1fr; }
+        .session-header .header-controls {
+            flex-wrap: wrap;
+            gap: 8px;
         }
     }
-
+    @media (max-width: 767.98px) {
+        .chat-area { height: calc(40vh - 80px) !important; }
+        .bubble { max-width: 92% !important; font-size: 13.5px !important; padding: 11px 15px !important; }
+        .session-header { padding: 10px 14px !important; }
+        .start-overlay .enter-card { padding: 1.5rem !important; }
+        .control-btn { font-size: 12px !important; padding: 6px 12px !important; }
+    }
     @media (max-width: 575.98px) {
-        .chat-area {
-            height: calc(100vh - 350px) !important;
-        }
-        .session-header h5 {
-            font-size: 1rem;
-        }
-        .btn-lg {
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-        }
+        .chat-area { height: calc(35vh - 60px) !important; }
+        .session-stat { padding: 4px 10px; }
+        .session-stat small { font-size: 9px; }
+        .session-stat span { font-size: 12px; }
     }
 </style>
 <?= $this->endSection() ?>
@@ -217,7 +407,7 @@ $contextPreset = $contextPreset ?? [];
 </div>
 
 <!-- Main UI -->
-<div class="d-flex flex-column" style="min-height: 100vh;">
+<div class="d-flex flex-column flex-grow-1">
     <!-- Top Header -->
     <header class="session-header py-3 px-4 sticky-top">
         <div class="container-fluid">
@@ -254,9 +444,9 @@ $contextPreset = $contextPreset ?? [];
     </header>
 
     <!-- Content Workspace -->
-    <main class="flex-grow-1 p-4 d-flex align-items-stretch">
-        <div class="container-fluid">
-            <div class="row h-100">
+    <main class="flex-grow-1 p-4 d-flex flex-column" style="min-height: 0;">
+        <div class="container-fluid h-100 d-flex flex-column">
+            <div class="row h-100 flex-grow-1">
                 <!-- Left Main Panel (Chat & Videos) -->
                 <div class="col-lg-8 d-flex flex-column mb-4 mb-lg-0">
                     <!-- Video Feeds Section (Shows only if enabled) -->
@@ -367,7 +557,7 @@ $contextPreset = $contextPreset ?? [];
                         <div class="card-header border-bottom border-secondary border-opacity-10 py-3 px-4 bg-dark bg-opacity-20">
                             <h6 class="fw-bold mb-0 text-white"><i class="ti ti-bulb text-warning me-1"></i> Live STAR Coaching</h6>
                         </div>
-                        <div class="card-body p-4 overflow-y-auto" style="height: calc(100vh - 280px);">
+                        <div class="card-body p-4 overflow-y-auto" style="flex: 1; min-height: 0;">
                             <div class="text-center py-3 border-bottom border-secondary border-opacity-10 mb-4">
                                 <small class="text-muted d-block uppercase fs-11">Current Answer STAR Score</small>
                                 <h2 class="fw-bold text-success mt-1 mb-0" id="latest-star-score">0/10</h2>
@@ -379,12 +569,18 @@ $contextPreset = $contextPreset ?? [];
                                         <span class="fw-semibold fs-13">Situation</span>
                                         <span class="badge bg-secondary rounded-pill" id="star-situation">0</span>
                                     </div>
+                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
+                                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="star-progress-situation" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
+                                    </div>
                                     <small class="text-muted fs-11 d-block">Detail the context/background of your story.</small>
                                 </div>
                                 <div class="star-pill" id="star-pill-task">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="fw-semibold fs-13">Task</span>
                                         <span class="badge bg-secondary rounded-pill" id="star-task">0</span>
+                                    </div>
+                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
+                                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" id="star-progress-task" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
                                     </div>
                                     <small class="text-muted fs-11 d-block">Define your specific responsibilities or goal.</small>
                                 </div>
@@ -393,12 +589,18 @@ $contextPreset = $contextPreset ?? [];
                                         <span class="fw-semibold fs-13">Action</span>
                                         <span class="badge bg-secondary rounded-pill" id="star-action">0</span>
                                     </div>
+                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
+                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="star-progress-action" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
+                                    </div>
                                     <small class="text-muted fs-11 d-block">Explain the exact steps you took to solve it.</small>
                                 </div>
                                 <div class="star-pill" id="star-pill-result">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="fw-semibold fs-13">Result</span>
                                         <span class="badge bg-secondary rounded-pill" id="star-result">0</span>
+                                    </div>
+                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
+                                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="star-progress-result" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
                                     </div>
                                     <small class="text-muted fs-11 d-block">Detail the metrics, outcomes, and achievements.</small>
                                 </div>
@@ -424,7 +626,7 @@ $contextPreset = $contextPreset ?? [];
                             <h6 class="fw-bold mb-0 text-white"><i class="ti ti-rosette-discount-check text-success me-1"></i> Interview Result</h6>
                             <span class="badge bg-success fs-14 px-3 py-1.5" id="overall-score-badge">0/10</span>
                         </div>
-                        <div class="card-body p-4 overflow-y-auto" style="height: calc(100vh - 280px);">
+                        <div class="card-body p-4 overflow-y-auto" style="flex: 1; min-height: 0;">
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
                                     <div class="p-2 bg-dark rounded border border-secondary border-opacity-10 text-center">
@@ -752,7 +954,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const updatePill = (id, val) => {
             const el = document.getElementById('star-' + id);
             const pill = document.getElementById('star-pill-' + id);
+            const progressBar = document.getElementById('star-progress-' + id);
+            
             if (el) el.textContent = String(val);
+            if (progressBar) {
+                const pct = Math.min(100, Math.max(0, val * 10)); // val is from 0 to 10
+                progressBar.style.width = pct + '%';
+                progressBar.setAttribute('aria-valuenow', val);
+                
+                // Add glowing shadow effect when active
+                if (val > 0) {
+                    let color = 'rgba(59, 130, 246, 0.6)'; // default Situation blue
+                    if (id === 'task') color = 'rgba(13, 202, 240, 0.6)'; // cyan
+                    if (id === 'action') color = 'rgba(255, 193, 7, 0.6)'; // yellow
+                    if (id === 'result') color = 'rgba(25, 135, 84, 0.6)'; // green
+                    progressBar.style.boxShadow = `0 0 10px ${color}`;
+                } else {
+                    progressBar.style.boxShadow = 'none';
+                }
+            }
             if (pill) {
                 if (val > 0) {
                     pill.classList.add('active');
@@ -935,8 +1155,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            // Hide coaching panel & show results
-            document.getElementById('evaluation-panel').parentNode.classList.add('col-lg-4');
+            // Show results panel
             document.getElementById('evaluation-panel').classList.remove('d-none');
             
             // Fill scores

@@ -74,7 +74,7 @@ HTML;
                         <img src="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : $job->company_logo ?>" alt="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Anonymous Employer' : esc($job->employer_name) ?> Logo"
                             class="rounded me-3" width="80" height="80" style="object-fit: cover;">
                         <div>
-                            <h3 class="fw-bold mb-1"><?= esc($job->title) ?></h3>
+                            <h1 class="fw-bold mb-1 h3"><?= esc($job->title) ?></h1>
                             <p class="mb-0 text-muted fs-6">
                                 by <?php if (!empty($job->anonymous) || !empty($job->is_anonymous)): ?>
                                     <span class="fw-semibold text-dark">Confidential Employer</span>
@@ -82,6 +82,7 @@ HTML;
                                     <a href="<?= base_url('employer/' . $job->employer_id) ?>"><span class="fw-semibold text-dark"><?= esc($job->employer_name) ?></span>
                                         <span><?php if ($job->show_trust_badge): ?>
                                                 <img src="<?= base_url('images/badge.svg') ?>"
+                                                    alt="Verified Employer"
                                                     data-bs-toggle="tooltip"
                                                     width="16"
                                                     title="This employer is verified and subscribed to a trusted plan"><?php endif; ?></span></a>
@@ -829,11 +830,16 @@ HTML;
 
             try {
                 // 🔐 Generate fresh reCAPTCHA token
-                const token = await grecaptcha.execute(
-                    '<?= env('recaptcha_site_key') ?>', {
-                        action: 'apply_job'
-                    }
-                );
+                let token;
+                if (typeof grecaptcha !== 'undefined') {
+                    token = await grecaptcha.execute(
+                        '<?= env('recaptcha_site_key') ?>', {
+                            action: 'apply_job'
+                        }
+                    );
+                } else {
+                    token = 'dev-bypass';
+                }
 
                 document.getElementById('g-recaptcha-response').value = token;
 

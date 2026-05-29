@@ -2,21 +2,21 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "JobberRecruit",
-        "url": "<?= base_url() ?>",
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": "<?= base_url('jobs') ?>?q={search_term_string}"
-            },
-            "query-input": "required name=search_term_string"
-        },
-        "description": "Find your dream job with JobberRecruit - Nigeria's leading job portal connecting job seekers with top employers."
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'WebSite',
+    'name'    => 'JobberRecruit',
+    'url'     => current_url(),
+    'potentialAction' => [
+        '@type'       => 'SearchAction',
+        'target'      => [
+            '@type'       => 'EntryPoint',
+            'urlTemplate' => base_url('jobs') . '?q={search_term_string}',
+        ],
+        'query-input' => 'required name=search_term_string',
+    ],
+    'description' => 'Find your dream job with JobberRecruit - Nigeria\'s leading job portal connecting job seekers with top employers.',
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -33,7 +33,7 @@
                     <div class="d-flex align-items-center gap-3 mb-4 d-none d-md-flex d-lg-flex">
                         <div class="trust-badge bg-light-primary rounded-pill px-3 py-2">
                             <i class="bi bi-shield-check me-2 text-primary"></i>
-                            <span class="fw-medium">Trusted by 38,000+ Professionals</span>
+                            <span class="fw-medium">Trusted by <?= number_format($trustedCount ?? 38000) ?>+ Professionals</span>
                         </div>
                         <div class="trust-badge bg-light-success rounded-pill px-3 py-2">
                             <i class="bi bi-award me-2 text-success"></i>
@@ -144,20 +144,20 @@
                                         </legend>
                                         <div class="d-flex flex-wrap gap-2">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="full_time" id="fullTime">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="full-time" id="fullTime">
                                                 <label class="form-check-label small" for="fullTime">Full Time</label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="part_time" id="partTime">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="part-time" id="partTime">
                                                 <label class="form-check-label small" for="partTime">Part Time</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="remote" id="remote">
-                                                <label class="form-check-label small" for="remote">Remote</label>
                                             </div>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="job_type[]" value="contract" id="contract">
                                                 <label class="form-check-label small" for="contract">Contract</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="job_type[]" value="internship" id="internship">
+                                                <label class="form-check-label small" for="internship">Internship</label>
                                             </div>
                                         </div>
                                     </fieldset>
@@ -238,7 +238,7 @@
     <div class="position-absolute bottom-0 start-0 w-100 h-50 bg-light-primary opacity-10"></div>
     <div class="position-absolute top-0 end-0 w-25 h-25 opacity-10">
         <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M100 0C44.8 0 0 44.8 0 100s44.8 100 100 100 100-44.8 100-100S155.2 0 100 0zm0 180c-44.2 0-80-35.8-80-80s35.8-80 80-80 80 35.8 80 80-35.8 80-80 80z" fill="#0D609E" />
+            <path d="M100 0C44.8 0 0 44.8 0 100s44.8 100 100 100 100-44.8 100-100S155.2 0 100 0zm0 180c-44.2 0-80-35.8-80-80s35.8-80 80-80 80 35.8 80 80-35.8 80-80 80z" fill="#005DA8" />
         </svg>
     </div>
 </section>
@@ -633,7 +633,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -684,7 +684,7 @@
 
     /* Search Form */
     .form-label {
-        color: #0D609E;
+        color: #005DA8;
         font-size: 0.9rem;
     }
 
@@ -697,7 +697,7 @@
 
     .form-select:focus,
     .form-control:focus {
-        border-color: #0D609E;
+        border-color: #005DA8;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
@@ -707,8 +707,8 @@
     }
 
     .form-check-input:checked {
-        background-color: #0D609E;
-        border-color: #0D609E;
+        background-color: #005DA8;
+        border-color: #005DA8;
     }
 
     /* Testimonial Card */
@@ -748,7 +748,7 @@
     .counter {
         font-size: 2.5rem;
         font-weight: 700;
-        background: linear-gradient(90deg, #1a202c, #0D609E);
+        background: linear-gradient(90deg, #1a202c, #005DA8);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -833,7 +833,7 @@
     }
 
     .card-header.bg-primary {
-        background: linear-gradient(135deg, #0D609E 0%, #0D609E 100%) !important;
+        background: linear-gradient(135deg, #005DA8 0%, #005DA8 100%) !important;
     }
 
     /* Input Group Styling */
@@ -861,7 +861,7 @@
 
     /* Step Numbers */
     .step-number {
-        color: #0D609E;
+        color: #005DA8;
         font-size: 3rem;
         font-weight: 800;
         opacity: 0.1;
@@ -905,12 +905,12 @@
 
     /* CTA Section */
     .bg-primary {
-        background: linear-gradient(135deg, #0D609E 0%, #0D609E 100%) !important;
+        background: linear-gradient(135deg, #005DA8 0%, #005DA8 100%) !important;
     }
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(135deg, #005DA8 0%, #005DA8 100%);
     }
 
     /* Icon Wrappers */
@@ -979,7 +979,7 @@
 
     /* Quick Search Tags */
     .badge.bg-light:hover {
-        background-color: #0D609E !important;
+        background-color: #005DA8 !important;
         color: white !important;
     }
 
@@ -1116,7 +1116,7 @@
        EMPLOYER CTA SECTION — Vibrant Redesign
     ============================================= */
     .employer-cta-section {
-        background: linear-gradient(135deg, #0c4a6e 0%, #0D609E 40%, #312e81 100%) !important;
+        background: linear-gradient(135deg, #0c4a6e 0%, #005DA8 40%, #312e81 100%) !important;
         padding: 80px 0;
         position: relative;
     }

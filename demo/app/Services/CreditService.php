@@ -107,6 +107,9 @@ class CreditService
      */
     public function addCredits(int $userId, int $credits, string $source, $referenceId, ?string $expiresAt = null): bool
     {
+        if ($credits <= 0) {
+            throw new \InvalidArgumentException('Credit amount must be positive');
+        }
         $this->walletModel->insert([
             'user_id'       => $userId,
             'credits'       => $credits,
@@ -263,15 +266,13 @@ class CreditService
         $db->transStart();
 
         try {
-            // Get wallets (FIFO - oldest first, expiring soonest priority)
-            $wallets = $this->walletModel
-                ->where('user_id', $userId)
-                ->where('credits >', 0)
-                ->where('(expires_at IS NULL OR expires_at > NOW())')
-                ->orderBy('expires_at', 'ASC')
-                ->orderBy('created_at', 'ASC')
-                ->get()
-                ->getResult();
+            // Get wallets with FOR UPDATE lock to prevent race conditions
+            $sql = "SELECT * FROM job_credit_wallet
+                    WHERE user_id = ? AND credits > 0
+                    AND (expires_at IS NULL OR expires_at > NOW())
+                    ORDER BY expires_at ASC, created_at ASC
+                    FOR UPDATE";
+            $wallets = $db->query($sql, [$userId])->getResult();
 
             if (empty($wallets)) {
                 throw new \Exception('No credits available to deduct');

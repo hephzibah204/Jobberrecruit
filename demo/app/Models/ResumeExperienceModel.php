@@ -9,5 +9,6 @@ class ResumeExperienceModel extends Model
     protected $returnType = \App\Entities\ResumeExperience::class;
     protected $allowedFields = ['resume_id', 'company', 'position', 'start_date', 'end_date', 'description', 'is_current'];
     protected $useTimestamps = true;
-    protected $updatedField = ''; // experiences only have created_at in my migration
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at'; // uses same column, set in migration
 }

@@ -71,12 +71,14 @@ class AuthController extends BaseController
             ]);
         }
 
-        // 3️⃣ reCAPTCHA
-        if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'))) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'reCAPTCHA verification failed.',
-            ]);
+        // 3️⃣ reCAPTCHA (skipped in development)
+        if (ENVIRONMENT !== 'development') {
+            if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'))) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'reCAPTCHA verification failed.',
+                ]);
+            }
         }
 
         // 4️⃣ Manual credential validation via Shield identities (NO SESSION)
@@ -204,12 +206,14 @@ class AuthController extends BaseController
                 ]);
             }
 
-            // reCAPTCHA
-            if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'))) {
-                return $this->response->setJSON([
-                    'status' => 'error',
-                    'message' => 'Failed reCAPTCHA verification. Please try again.'
-                ]);
+            // reCAPTCHA (skipped in development)
+            if (ENVIRONMENT !== 'development') {
+                if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'))) {
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => 'Failed reCAPTCHA verification. Please try again.'
+                    ]);
+                }
             }
 
             $users = $this->getUserProvider();
@@ -308,11 +312,13 @@ class AuthController extends BaseController
             }
 
             // Send verification email and do NOT auto-login outside development.
-            $this->createAndSendVerification($user->id, $email, $this->request->getPost('full_name'));
+            $emailSent = $this->createAndSendVerification($user->id, $email, $this->request->getPost('full_name'));
 
             return $this->response->setJSON([
-                'status'       => 'success',
-                'message'      => 'Account created. Please check your email to verify your account.',
+                'status'       => $emailSent ? 'success' : 'warning',
+                'message'      => $emailSent
+                    ? 'Account created. Please check your email to verify your account.'
+                    : 'Account created but verification email could not be sent. You can request a new one from the login page.',
                 'user_id'      => $user->id,
                 'redirect_url' => base_url('auth/verify-email')
             ]);
@@ -397,6 +403,9 @@ class AuthController extends BaseController
             return redirect()->to('/login')->with('error', 'Google is not configured.');
         }
 
+        $state = bin2hex(random_bytes(16));
+        session()->set('google_oauth_state', $state);
+
         $params = http_build_query([
             'client_id'     => $clientId,
             'redirect_uri'  => $redirectUri,
@@ -404,7 +413,7 @@ class AuthController extends BaseController
             'scope'         => 'openid email profile',
             'access_type'   => 'offline',
             'prompt'        => 'select_account',
-            'state'         => bin2hex(random_bytes(16)),
+            'state'         => $state,
         ]);
 
         return redirect()->to('https://accounts.google.com/o/oauth2/v2/auth?' . $params);
@@ -412,6 +421,15 @@ class AuthController extends BaseController
 
     public function googleCallback()
     {
+        $state = $this->request->getGet('state');
+        $saved = session()->get('google_oauth_state');
+        session()->remove('google_oauth_state');
+
+        if ($state !== $saved) {
+            log_message('error', "Google OAuth STATE mismatch: received={$state}, expected={$saved}");
+            return redirect()->to('/login')->with('error', 'Invalid OAuth state');
+        }
+
         $code = $this->request->getGet('code');
         $social = service('socialAuth');
 
@@ -970,7 +988,7 @@ class AuthController extends BaseController
     /**
      * createAndSendVerification: creates a token and sends the verification email using Mailer
      */
-    protected function createAndSendVerification(int $userId, string $email, ?string $fullname = null): void
+    protected function createAndSendVerification(int $userId, string $email, ?string $fullname = null): bool
     {
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', strtotime('+1 day'));
@@ -985,7 +1003,6 @@ class AuthController extends BaseController
 
         $verifyUrl = base_url("auth/verify-email/{$token}");
 
-        // Use your Mailer service (app/Services/Mailer.php)
         try {
             $mailer = new \App\Services\Mailer();
             $sent = $mailer->sendVerifyEmail($email, 'Please verify your JobberRecruit email', [
@@ -996,9 +1013,13 @@ class AuthController extends BaseController
 
             if (!$sent) {
                 log_message('error', "Failed sending verification email to {$email}");
+                return false;
             }
+
+            return true;
         } catch (\Throwable $e) {
             log_message('error', "Mailer failed: " . $e->getMessage());
+            return false;
         }
     }
 

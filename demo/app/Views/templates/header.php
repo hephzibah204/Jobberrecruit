@@ -32,12 +32,12 @@
                     <div class="login_footer form-group d-flex justify-content-between">
                         <label class="cb-container">
                             <input type="checkbox"><span class="text-small">Agree our terms and policy</span><span class="checkmark"></span>
-                        </label><a class="text-muted" href="page-contact">Lean more</a>
+                        </label><a class="text-muted" href="<?= base_url('contact-us') ?>">Learn more</a>
                     </div>
                     <div class="form-group">
                         <button class="btn btn-default hover-up w-100" type="submit" name="login">Apply Job</button>
                     </div>
-                    <div class="text-muted text-center">Do you need support? <a href="page-contact">Contact Us</a></div>
+                    <div class="text-muted text-center">Do you need support? <a href="<?= base_url('contact-us') ?>">Contact Us</a></div>
                 </form>
             </div>
         </div>
@@ -52,22 +52,29 @@
             <div class="header-nav">
                 <nav class="nav-main-menu">
                     <ul class="main-menu">
-                        <li><a <?= (uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
+                            <li><a <?= (uri_string() == '' || uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                         <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                        <?php if (env('feature_elearning', 'true') === 'true'): ?>
-                        <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">E-Learning</a></li>
-                        <?php endif; ?>
-                        <?php if (env('feature_webinars', 'true') === 'true'): ?>
+                        <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
+                        <li class="has-children">
+                            <a <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'class="active"' : '' ?> href="#">Training</a>
+                            <ul class="sub-menu">
+                                <li><a href="<?= base_url('training'); ?>">Courses</a></li>
+                                <li><a href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                            </ul>
+                        </li>
+                        <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
+                        <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
+                        <?php elseif (env('feature_webinars', 'true') == 'true'): ?>
                         <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
                         <?php endif; ?>
-                        <li><a <?= (uri_string() == 'blogs') ? 'class="active"' : '' ?> href="<?= base_url('blogs'); ?>">Blogs</a></li>
+                        <li><a <?= (uri_string() == 'blog') ? 'class="active"' : '' ?> href="<?= base_url('blog'); ?>">Blog</a></li>
                         <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                         <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
                         <?php if ($auth->user()) : ?>
                             <?php if ($auth->user()->user_type == 'employer'): ?>
-                                <li class="dashboard"><a href="<?= base_url('employer/dashboard') ?>" target="_blank">Dashboard</a></li>
+                                <li class="dashboard"><a href="<?= base_url('employer/dashboard') ?>">Dashboard</a></li>
                             <?php else: ?>
-                                <li class="dashboard"><a href="<?= base_url('candidate/dashboard') ?>" target="_blank">Dashboard</a></li>
+                                <li class="dashboard"><a href="<?= base_url('candidate/dashboard') ?>">Dashboard</a></li>
                             <?php endif; ?>
                         <?php endif; ?>
                     </ul>
@@ -92,30 +99,37 @@
         <div class="mobile-header-content-area">
             <div class="perfect-scroll">
                 <div class="mobile-search mobile-header-border mb-30">
-                    <form action="#">
-                        <input type="text" placeholder="Search…"><i class="fi-rr-search"></i>
+                    <form action="<?= base_url('jobs') ?>" method="GET">
+                        <input type="text" name="q" placeholder="Search…"><i class="fi-rr-search"></i>
                     </form>
                 </div>
                 <div class="mobile-menu-wrap mobile-header-border">
                     <!-- mobile menu start-->
                     <nav>
                         <ul class="mobile-menu font-heading">
-                            <li><a <?= (uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
+<li><a <?= (uri_string() == '' || uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                             <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                            <?php if (env('feature_elearning', 'true') === 'true'): ?>
-                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">E-Learning</a></li>
-                            <?php endif; ?>
-                            <?php if (env('feature_webinars', 'true') === 'true'): ?>
+                            <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
+                            <li class="has-children">
+                                <a <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'class="active"' : '' ?> href="#">Training</a>
+                                <ul class="sub-menu">
+                                    <li><a href="<?= base_url('training'); ?>">Courses</a></li>
+                                    <li><a href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                                </ul>
+                            </li>
+                            <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
+                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
+                            <?php elseif (env('feature_webinars', 'true') == 'true'): ?>
                             <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
                             <?php endif; ?>
-                            <li><a <?= (uri_string() == 'blogs') ? 'class="active"' : '' ?> href="<?= base_url('blogs'); ?>">Blogs</a></li>
+                            <li><a <?= (uri_string() == 'blog') ? 'class="active"' : '' ?> href="<?= base_url('blog'); ?>">Blog</a></li>
                             <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                             <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
                             <?php if ($auth->user()) : ?>
                                 <?php if ($auth->user()->user_type == 'employer'): ?>
-                                    <li><a href="<?= base_url('employer/dashboard') ?>" target="_blank">Dashboard</a></li>
+                                    <li><a href="<?= base_url('employer/dashboard') ?>">Dashboard</a></li>
                                 <?php else: ?>
-                                    <li><a href="<?= base_url('candidate/dashboard') ?>" target="_blank">Dashboard</a></li>
+                                    <li><a href="<?= base_url('candidate/dashboard') ?>">Dashboard</a></li>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </ul>
@@ -132,57 +146,6 @@
                     </ul>
                 </div>
                 <div class="site-copyright">Copyright <?= date('Y') ?> &copy; JobberRecruit. <br>Designed by BITBIZ NIG LIMITED.</div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="mobile-header-active mobile-header-wrapper-style perfect-scrollbar">
-    <div class="mobile-header-wrapper-inner">
-        <div class="mobile-header-content-area">
-            <div class="perfect-scroll">
-                <div class="mobile-search mobile-header-border mb-30">
-                    <form action="#">
-                        <input type="text" placeholder="Search…"><i class="fi-rr-search"></i>
-                    </form>
-                </div>
-                <div class="mobile-menu-wrap mobile-header-border">
-                    <!-- mobile menu start-->
-                    <nav>
-                        <ul class="mobile-menu font-heading">
-                            <li><a <?= (uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
-                            <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                            <?php if (env('feature_elearning', 'true') === 'true'): ?>
-                            <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">E-Learning</a></li>
-                            <?php endif; ?>
-                            <?php if (env('feature_webinars', 'true') === 'true'): ?>
-                            <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
-                            <?php endif; ?>
-                            <li><a <?= (uri_string() == 'blogs') ? 'class="active"' : '' ?> href="<?= base_url('blogs'); ?>">Blogs</a></li>
-                            <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
-                            <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
-                            <?php if ($auth->user()) : ?>
-                                <?php if ($auth->user()->user_type == 'employer'): ?>
-                                    <li><a href="<?= base_url('employer/dashboard') ?>" target="_blank">Dashboard</a></li>
-                                <?php else: ?>
-                                    <li><a href="<?= base_url('candidate/dashboard') ?>" target="_blank">Dashboard</a></li>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </ul>
-                    </nav>
-                </div>
-                <?php if ($auth->user()) : ?>
-                    <div class="mobile-account">
-                        <h6 class="mb-10">Your Account</h6>
-                        <ul class="mobile-menu font-heading">
-                            <!-- <li><a href="#">Profile</a></li>
-                            <li><a href="#">Work Preferences</a></li>
-                            <li><a href="#">Account Settings</a></li>
-                            <li><a href="#">Go Pro</a></li> -->
-                            <li><a href="<?= base_url('logout') ?>">Sign Out</a></li>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-                <div class="site-copyright">Copyright <?= date('Y') ?> &copy; JobberRecruit.<br>Designed by BITBIZ NIG LIMITED.</div>
             </div>
         </div>
     </div>

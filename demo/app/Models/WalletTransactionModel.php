@@ -14,10 +14,6 @@ class WalletTransactionModel extends Model
         'wallet_id',
         'type',
         'amount',
-        'balance_before',
-        'balance_after',
-        'source',
-        'source_id',
         'reference',
         'description'
     ];

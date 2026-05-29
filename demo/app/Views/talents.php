@@ -1,39 +1,9 @@
 <?= $this->extend('templates/base') ?>
 
 <?= $this->section('meta') ?>
-<!-- SEO Metadata -->
-<title>Become a Candidate - Find Remote & Local Jobs | <?= $app_name ?? 'JobberRecruit' ?></title>
-<meta name="description" content="Join 10,000+ professionals finding high-paying remote and local jobs at verified companies. Create your free candidate profile and get matched with premium opportunities in tech, design, marketing, and more.">
-<meta name="keywords" content="remote jobs, job seekers, candidates, talent platform, hire developers, global opportunities, tech jobs, remote work, career opportunities, verified employers">
-<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-<meta name="author" content="JobberRecruit">
-
-<!-- Canonical URL -->
-<link rel="canonical" href="<?= current_url() ?>">
-
-<!-- Open Graph -->
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="JobberRecruit">
-<meta property="og:title" content="Become a Candidate | Find Premium Remote & Local Jobs">
-<meta property="og:description" content="Join top talents connecting with verified companies worldwide. Get matched with high-quality remote and local opportunities.">
-<meta property="og:image" content="<?= base_url('assets/og-candidate-cover.jpg') ?>">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:url" content="<?= current_url() ?>">
 <meta property="og:locale" content="en_US">
-
-<!-- Twitter -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Become a Candidate | Unlock Global Job Opportunities">
-<meta name="twitter:description" content="Join thousands of professionals connecting with verified companies. Build your professional brand and find your dream job.">
-<meta name="twitter:image" content="<?= base_url('assets/og-candidate-cover.jpg') ?>">
 <meta name="twitter:site" content="@JobberRecruit">
-
-<!-- Additional Meta -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0038a8">
 <link rel="alternate" href="<?= current_url() ?>" hreflang="en">
-
 <?= $this->endSection() ?>
 
 
@@ -51,7 +21,7 @@
                 speed="1"
                 style="width: 260px; height: 260px; margin:auto;"
                 loop autoplay
-                alt="Animation showing candidate success">
+                aria-label="Animation showing candidate success">
             </lottie-player>
         </div>
 
@@ -304,7 +274,7 @@
 <?= $this->section('styles') ?>
 <style>
     .candidate-hero {
-        background: linear-gradient(135deg, #F0890E 0%, #F0890E 50%, #814a07ff 100%);
+        background: linear-gradient(135deg, #F5A623 0%, #F5A623 50%, #814a07ff 100%);
         position: relative;
         overflow: hidden;
     }
@@ -331,7 +301,7 @@
     }
 
     .testimonial-box {
-        border-left: 4px solid #0D609E;
+        border-left: 4px solid #005DA8;
         background: #fff;
         transition: transform 0.3s ease;
     }
@@ -343,7 +313,7 @@
     .step-circle {
         width: 60px;
         height: 60px;
-        background: linear-gradient(135deg, #0D609E 0%, #0b5ed7 100%);
+        background: linear-gradient(135deg, #005DA8 0%, #0b5ed7 100%);
         color: #fff;
         border-radius: 50%;
         font-weight: bold;
@@ -419,79 +389,56 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Become a Candidate - Find Remote & Local Jobs | JobberRecruit",
-        "description": "Join 10,000+ professionals finding high-paying remote and local jobs at verified companies. Create your free candidate profile and get matched with premium opportunities.",
-        "url": "<?= current_url() ?>",
-        "breadcrumb": {
-            "@type": "BreadcrumbList",
-            "itemListElement": [{
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "<?= base_url() ?>"
-            }, {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Become a Candidate",
-                "item": "<?= current_url() ?>"
-            }]
-        },
-        "mainEntity": {
-            "@type": "HowTo",
-            "name": "How to Become a Candidate on JobberRecruit",
-            "description": "Step-by-step guide to creating a candidate profile and finding jobs",
-            "totalTime": "PT15M",
-            "estimatedCost": {
-                "@type": "MonetaryAmount",
-                "currency": "USD",
-                "value": "0"
-            },
-            "step": [{
-                "@type": "HowToStep",
-                "position": "1",
-                "name": "Create Your Profile",
-                "text": "Sign up and build your professional profile with skills, experience, and portfolio",
-                "url": "<?= base_url('register') ?>"
-            }, {
-                "@type": "HowToStep",
-                "position": "2",
-                "name": "Complete Skill Verification",
-                "text": "Take optional skill assessments to validate your expertise"
-            }, {
-                "@type": "HowToStep",
-                "position": "3",
-                "name": "Get Job Matches",
-                "text": "Receive personalized job matches based on your profile"
-            }, {
-                "@type": "HowToStep",
-                "position": "4",
-                "name": "Interview and Get Hired",
-                "text": "Connect with employers and land your next role"
-            }]
-        },
-        "publisher": {
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "<?= base_url('images/logo.png') ?>",
-                "width": "300",
-                "height": "60"
-            },
-            "sameAs": [
-                "https://twitter.com/JobberRecruit",
-                "https://linkedin.com/company/jobberrecruit",
-                "https://facebook.com/JobberRecruit"
-            ]
-        },
-        "potentialAction": {
-            "@type": "CreateAccountAction",
-            "target": "<?= base_url('register') ?>",
-            "description": "Create a free candidate account"
-        }
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'WebPage',
+    'name' => 'Become a Candidate - Find Remote & Local Jobs | JobberRecruit',
+    'description' => 'Join 10,000+ professionals finding high-paying remote and local jobs at verified companies. Create your free candidate profile and get matched with premium opportunities.',
+    'url'  => current_url(),
+    'breadcrumb' => [
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => base_url()],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => 'Become a Candidate', 'item' => current_url()],
+        ],
+    ],
+    'mainEntity' => [
+        '@type'       => 'HowTo',
+        'name'        => 'How to Become a Candidate on JobberRecruit',
+        'description' => 'Step-by-step guide to creating a candidate profile and finding jobs',
+        'totalTime'   => 'PT15M',
+        'estimatedCost' => [
+            '@type'    => 'MonetaryAmount',
+            'currency' => 'USD',
+            'value'    => '0',
+        ],
+        'step' => [
+            ['@type' => 'HowToStep', 'position' => '1', 'name' => 'Create Your Profile', 'text' => 'Sign up and build your professional profile with skills, experience, and portfolio', 'url' => base_url('register')],
+            ['@type' => 'HowToStep', 'position' => '2', 'name' => 'Complete Skill Verification', 'text' => 'Take optional skill assessments to validate your expertise'],
+            ['@type' => 'HowToStep', 'position' => '3', 'name' => 'Get Job Matches', 'text' => 'Receive personalized job matches based on your profile'],
+            ['@type' => 'HowToStep', 'position' => '4', 'name' => 'Interview and Get Hired', 'text' => 'Connect with employers and land your next role'],
+        ],
+    ],
+    'publisher' => [
+        '@type' => 'Organization',
+        'name'  => 'JobberRecruit',
+        'logo'  => [
+            '@type'  => 'ImageObject',
+            'url'    => base_url('images/logo.png'),
+            'width'  => '300',
+            'height' => '60',
+        ],
+        'sameAs' => [
+            'https://twitter.com/JobberRecruit',
+            'https://linkedin.com/company/jobberrecruit',
+            'https://facebook.com/JobberRecruit',
+        ],
+    ],
+    'potentialAction' => [
+        '@type'       => 'CreateAccountAction',
+        'target'      => base_url('register'),
+        'description' => 'Create a free candidate account',
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>

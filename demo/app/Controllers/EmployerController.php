@@ -696,7 +696,8 @@ class EmployerController extends BaseController
             $canUseNetworkBlast = $this->canUseNetworkBlast($currentPlan, $hasUnlimitedAccess);
 
             /* ====================== PREPARE JOB DATA ====================== */
-            $postData = $this->request->getPost();
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
+            $postData = $this->request->getPost($allowed);
             $postData['employer_id'] = $employer->id;
             $postData['status'] = 'pending_approval';
             $postData['admin_status'] = 'pending';
@@ -2383,13 +2384,22 @@ class EmployerController extends BaseController
 
     public function deleteJob($id) 
     {
-        // We will delete the job and everything related to it.
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
         $jobModel = model(JobModel::class);
         $job = $jobModel->find($id);
         if (!$job) {
             return $this->response->setJSON([
                 'status' => 'error',
                 'message' => 'Job not found'
+            ]);
+        }
+        if ($job->employer_id !== ($employer->id ?? null)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'You do not have permission to delete this job'
             ]);
         }
         $jobModel->delete($id);
@@ -4931,6 +4941,7 @@ class EmployerController extends BaseController
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $resp = curl_exec($ch);
         $err = curl_error($ch);
         curl_close($ch);
@@ -4959,8 +4970,7 @@ class EmployerController extends BaseController
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $resp = curl_exec($ch);
         $err = curl_error($ch);
         curl_close($ch);
@@ -5119,6 +5129,7 @@ class EmployerController extends BaseController
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$secret}"]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $resp = curl_exec($ch);
         curl_close($ch);
 
@@ -5152,6 +5163,7 @@ class EmployerController extends BaseController
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -5181,6 +5193,7 @@ class EmployerController extends BaseController
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$secret}"]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $resp = curl_exec($ch);
         curl_close($ch);
 
@@ -5679,5 +5692,123 @@ class EmployerController extends BaseController
             ->setHeader('Content-Type', 'application/json')
             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->setBody($json);
+    }
+
+    public function bulkUpdateApplicationStatus()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $ids = $this->request->getPost('ids');
+        $status = $this->request->getPost('status');
+
+        if (empty($ids) || empty($status)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Missing required parameters']);
+        }
+
+        $user = $this->auth->user();
+        $employerModel = model(\App\Models\EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $applicationModel = model(\App\Models\JobApplicationModel::class);
+        $applications = $applicationModel->select('job_applications.id')
+            ->join('jobs', 'jobs.id = job_applications.job_id')
+            ->whereIn('job_applications.id', $ids)
+            ->where('jobs.employer_id', $employer->id)
+            ->findAll();
+
+        $allowedIds = array_column($applications, 'id');
+        if (empty($allowedIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No valid applications found']);
+        }
+
+        $applicationModel->whereIn('id', $allowedIds)->set(['status' => $status])->update();
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Applications updated successfully']);
+    }
+
+    public function bulkDeleteApplications()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $ids = $this->request->getPost('ids');
+        if (empty($ids)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No applications selected']);
+        }
+
+        $user = $this->auth->user();
+        $employerModel = model(\App\Models\EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $applicationModel = model(\App\Models\JobApplicationModel::class);
+        $applications = $applicationModel->select('job_applications.id')
+            ->join('jobs', 'jobs.id = job_applications.job_id')
+            ->whereIn('job_applications.id', $ids)
+            ->where('jobs.employer_id', $employer->id)
+            ->findAll();
+
+        $allowedIds = array_column($applications, 'id');
+        if (empty($allowedIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No valid applications found']);
+        }
+
+        $applicationModel->whereIn('id', $allowedIds)->delete();
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Applications deleted successfully']);
+    }
+
+    public function addApplicationNote()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $applicationId = $this->request->getPost('application_id');
+        $note = $this->request->getPost('note');
+
+        if (empty($applicationId) || empty($note)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Missing required parameters']);
+        }
+
+        $user = $this->auth->user();
+        $employerModel = model(\App\Models\EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        $noteModel = model(\App\Models\ApplicationNoteModel::class);
+        $noteModel->insert([
+            'application_id' => $applicationId,
+            'employer_id' => $employer->id ?? 0,
+            'note' => $note,
+            'created_by' => $user->id ?? 0
+        ]);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Note added successfully']);
+    }
+
+    public function deleteApplicationNote($id)
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $noteModel = model(\App\Models\ApplicationNoteModel::class);
+        $note = $noteModel->find($id);
+
+        if (!$note) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Note not found']);
+        }
+
+        $noteModel->delete($id);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Note deleted successfully']);
     }
 }

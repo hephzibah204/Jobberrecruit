@@ -26,7 +26,7 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'localhost',
+        'hostname'     => '',
         'username'     => '',
         'password'     => '',
         'database'     => '',
@@ -44,6 +44,9 @@ class Database extends Config
         'port'         => 3306,
         'numberNative' => false,
         'foundRows'    => false,
+        'foreignKeys'  => true,
+        'busyTimeout'  => 1000,
+        'synchronous'  => null,
         'dateFormat'   => [
             'date'     => 'Y-m-d',
             'datetime' => 'Y-m-d H:i:s',
@@ -193,6 +196,23 @@ class Database extends Config
     {
         parent::__construct();
 
+        // Load database settings from .env (PHP 8.4 requires property declarations to be constant expressions)
+        $this->default['hostname'] = env('database.default.hostname', 'localhost');
+        $this->default['database'] = env('database.default.database', 'jobberrecruit');
+        $this->default['username'] = env('database.default.username', 'root');
+        $this->default['password'] = env('database.default.password', '');
+        $this->default['DBDriver'] = env('database.default.DBDriver', 'MySQLi');
+        $this->default['DBPrefix'] = env('database.default.DBPrefix', '');
+        $this->default['DBDebug']  = (bool) env('database.default.DBDebug', true);
+        $this->default['charset']  = env('database.default.charset', 'utf8mb4');
+        $this->default['DBCollat'] = env('database.default.DBCollat', 'utf8mb4_general_ci');
+        $this->default['port']     = (int) env('database.default.port', 3306);
+
+        // Ensure database hostname is never null or empty string to prevent MySQLi driver offset crash in PHP 8.2+
+        if (empty($this->default['hostname']) || !is_string($this->default['hostname'])) {
+            $this->default['hostname'] = 'localhost';
+        }
+
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
         // we don't overwrite live data on accident.
@@ -200,12 +220,9 @@ class Database extends Config
             $this->defaultGroup = 'tests';
         }
 
-        // Dynamically resolve relative SQLite database path to WRITEPATH to avoid CWD issues
+        // Dynamically resolve SQLite database path to WRITEPATH unconditionally to avoid CWD and DotEnv quoting issues
         if (isset($this->default['DBDriver']) && $this->default['DBDriver'] === 'SQLite3') {
-            $dbPath = $this->default['database'] ?? '';
-            if ($dbPath !== '' && !str_starts_with($dbPath, '/') && !str_contains($dbPath, ':') && str_contains($dbPath, 'database.sqlite')) {
-                $this->default['database'] = WRITEPATH . 'database.sqlite';
-            }
+            $this->default['database'] = WRITEPATH . 'database.sqlite';
         }
     }
 }

@@ -71,7 +71,7 @@
                         </div>
                         <div>
                             <h6 class="mb-1">AI Support Chatbot</h6>
-                            <p class="text-muted small mb-0">Powered by Gemini AI</p>
+                            <p class="text-muted small mb-0">Powered by AI</p>
                         </div>
                     </div>
 

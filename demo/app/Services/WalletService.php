@@ -69,16 +69,15 @@ class WalletService
 
             $this->walletModel->update($lockedWallet->id, ['balance' => $after]);
 
+            $sourceLabel = $sourceId ? "{$source}#{$sourceId}" : $source;
+            $desc = $description ? "[{$sourceLabel}] {$description}" : "[{$sourceLabel}]";
+
             $this->txModel->insert([
                 'wallet_id'       => $lockedWallet->id,
                 'type'            => 'credit',
                 'amount'          => $amount,
-                'balance_before'  => $before,
-                'balance_after'   => $after,
-                'source'          => $source,
-                'source_id'       => $sourceId,
                 'reference'       => $reference,
-                'description'     => $description,
+                'description'     => $desc,
             ]);
 
             if ($this->db->transStatus() === false) {
@@ -123,16 +122,15 @@ class WalletService
 
             $this->walletModel->update($lockedWallet->id, ['balance' => $after]);
 
+            $sourceLabel = $sourceId ? "{$source}#{$sourceId}" : $source;
+            $desc = $description ? "[{$sourceLabel}] {$description}" : "[{$sourceLabel}]";
+
             $this->txModel->insert([
                 'wallet_id'       => $lockedWallet->id,
                 'type'            => 'debit',
                 'amount'          => $amount,
-                'balance_before'  => $before,
-                'balance_after'   => $after,
-                'source'          => $source,
-                'source_id'       => $sourceId,
                 'reference'       => $reference,
-                'description'     => $description,
+                'description'     => $desc,
             ]);
 
             if ($this->db->transStatus() === false) {

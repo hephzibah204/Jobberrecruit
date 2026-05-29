@@ -2,35 +2,35 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "ContactPage",
-        "name": "Contact JobberRecruit",
-        "description": "Get in touch with JobberRecruit for career guidance, recruitment services, or any inquiries. We're here to help job seekers and employers connect.",
-        "url": "<?= current_url() ?>",
-        "publisher": {
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "<?= base_url('images/logo.png') ?>"
-            },
-            "contactPoint": {
-                "@type": "ContactPoint",
-                "telephone": "+234-123-456-7890",
-                "contactType": "customer service",
-                "email": "support@jobberrecruit.com",
-                "areaServed": "NG",
-                "availableLanguage": ["English"]
-            },
-            "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "123 Jobber Street",
-                "addressLocality": "Lagos",
-                "addressCountry": "NG"
-            }
-        }
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'ContactPage',
+    'name'     => 'Contact JobberRecruit',
+    'description' => "Get in touch with JobberRecruit for career guidance, recruitment services, or any inquiries. We're here to help job seekers and employers connect.",
+    'url'      => current_url(),
+    'publisher' => [
+        '@type' => 'Organization',
+        'name'  => 'JobberRecruit',
+        'logo'  => [
+            '@type' => 'ImageObject',
+            'url'   => base_url('images/logo.png'),
+        ],
+        'contactPoint' => [
+            '@type'     => 'ContactPoint',
+            'telephone'  => '+234-123-456-7890',
+            'contactType' => 'customer service',
+            'email'      => 'support@jobberrecruit.com',
+            'areaServed' => 'NG',
+            'availableLanguage' => ['English'],
+        ],
+        'address' => [
+            '@type'            => 'PostalAddress',
+            'streetAddress'    => '123 Jobber Street',
+            'addressLocality'  => 'Lagos',
+            'addressCountry'   => 'NG',
+        ],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -65,7 +65,7 @@
             <circle cx="100" cy="100" r="100" fill="url(#paint0_linear)" fill-opacity="0.05" />
             <defs>
                 <linearGradient id="paint0_linear" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#0D609E" />
+                    <stop stop-color="#005DA8" />
                     <stop offset="1" stop-color="#02365eff" />
                 </linearGradient>
             </defs>
@@ -385,7 +385,7 @@
 
     /* Hero Section */
     .contact-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
         position: relative;
         overflow: hidden;
     }
@@ -395,7 +395,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -507,7 +507,7 @@
 
     .accordion-button:not(.collapsed) {
         background-color: rgba(102, 126, 234, 0.1);
-        color: #0D609E;
+        color: #005DA8;
         box-shadow: none;
     }
 
@@ -523,12 +523,12 @@
 
     /* CTA Section */
     .bg-primary {
-        background: linear-gradient(135deg, #0D609E 0%, #02365eff 100%) !important;
+        background: linear-gradient(135deg, #005DA8 0%, #02365eff 100%) !important;
     }
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F0890E 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
     }
 
     /* Form Validation */
@@ -610,24 +610,20 @@
             submitText.classList.add('d-none');
             spinner.classList.remove('d-none');
 
-            grecaptcha.ready(function() {
-                grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
-                    action: 'contact'
-                }).then(function(token) {
+            function doContactSubmit(token) {
+                const formData = new FormData(form);
+                formData.append('g-recaptcha-response', token);
 
-                    const formData = new FormData(form);
-                    formData.append('g-recaptcha-response', token);
-
-                    fetch(form.action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: formData
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
+                fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
                                 showAlert('success', data.message);
                                 form.reset();
                                 form.classList.remove('was-validated');
@@ -649,8 +645,19 @@
                             submitText.classList.remove('d-none');
                             spinner.classList.add('d-none');
                         });
+            }
+
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
+                        action: 'contact'
+                    }).then(function(token) {
+                        doContactSubmit(token);
+                    });
                 });
-            });
+            } else {
+                doContactSubmit('dev-bypass');
+            }
         });
 
         function showAlert(type, message) {

@@ -2,23 +2,23 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Privacy Policy",
-        "description": "Privacy Policy for JobberRecruit.com - Learn how we collect, use, and protect your personal data.",
-        "url": "<?= current_url() ?>",
-        "datePublished": "2024-10-23",
-        "dateModified": "2024-10-23",
-        "publisher": {
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "<?= base_url('images/logo.png') ?>"
-            }
-        }
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'WebPage',
+    'name'     => 'Privacy Policy',
+    'description' => 'Privacy Policy for JobberRecruit.com - Learn how we collect, use, and protect your personal data.',
+    'url'      => current_url(),
+    'datePublished' => '2024-10-23',
+    'dateModified'  => '2024-10-23',
+    'publisher' => [
+        '@type' => 'Organization',
+        'name'  => 'JobberRecruit',
+        'logo'  => [
+            '@type' => 'ImageObject',
+            'url'   => base_url('images/logo.png'),
+        ],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -567,7 +567,7 @@
 
     /* Hero Section */
     .privacy-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
         position: relative;
         overflow: hidden;
     }
@@ -577,7 +577,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #0D609E 0%, #0D609E 100%);
+        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -634,8 +634,8 @@
     }
 
     .nav-link.scroll-to:hover {
-        color: #0D609E;
-        border-left-color: #0D609E;
+        color: #005DA8;
+        border-left-color: #005DA8;
         background-color: rgba(102, 126, 234, 0.05);
     }
 
@@ -652,7 +652,7 @@
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F0890E 0%, #F0890E 100%);
+        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
     }
 
     /* Print Styles */
@@ -786,7 +786,7 @@
                 link.classList.remove('active');
                 if (link.getAttribute('href') === `#${current}`) {
                     link.classList.add('active');
-                    link.style.borderLeftColor = '#0D609E';
+                    link.style.borderLeftColor = '#005DA8';
                     link.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
                 }
             });

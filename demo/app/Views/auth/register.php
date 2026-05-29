@@ -3,8 +3,8 @@
 <?= $this->section('styles') ?>
 <style>
     :root {
-        --primary-color: #0D609E;
-        --secondary-color: #F0890E;
+        --primary-color: #005DA8;
+        --secondary-color: #F5A623;
         --text-dark: #1E293B;
         --text-muted: #64748B;
         --bg-light: #f8f9fb;
@@ -553,12 +553,12 @@
         <h4>Sign Up for Free</h4>
         <p>Fill in the details below to get started.</p>
 
-        <button class="social-login" type="button" onclick="window.location.href='<?= base_url('auth/google'); ?>'">
+        <button class="social-login" type="button" data-href="<?= base_url('auth/google'); ?>">
             <img src="<?= base_url('assets/imgs/template/icons/icon-google.svg'); ?>" alt="Google">
             <strong>Sign up with Google</strong>
         </button>
 
-        <button class="social-login" type="button" onclick="window.location.href='<?= base_url('auth/linkedin'); ?>'">
+        <button class="social-login" type="button" data-href="<?= base_url('auth/linkedin'); ?>">
             <img src="<?= base_url('assets/imgs/template/icons/linkedin.svg'); ?>" alt="LinkedIn">
             <strong>Sign up with LinkedIn</strong>
         </button>
@@ -603,7 +603,7 @@
 
             <div class="mb-3">
                 <label for="phone" class="form-label">Phone Number</label>
-                <input type="tel" class="form-control" id="phone" name="phone" placeholder="Enter your phone number" required>
+                <input type="tel" class="form-control" id="phone" name="phone" placeholder="Enter your phone number" required inputmode="numeric" pattern="[\+\d\s\-\(\)]+">
                 <div class="invalid-feedback"></div>
             </div>
 
@@ -650,7 +650,7 @@
                     <input type="checkbox" id="agree_terms" name="agree_terms" required>
                     <label for="agree_terms">Agree to our terms and policy</label>
                 </div>
-                <a href="#" target="_blank">Learn more</a>
+                <a href="<?= base_url('terms-of-service') ?>" target="_blank">Learn more</a>
             </div>
 
             <button id="registerBtn" type="submit" class="register-btn">
@@ -890,6 +890,12 @@
 
         fullNameInput.focus();
 
+        document.querySelectorAll('.social-login').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+
         // 1️⃣ Show/Hide Company Field
         userTypeSelect.addEventListener('change', function() {
             if (this.value === 'employer') {
@@ -980,30 +986,34 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            grecaptcha.ready(async function() {
-                try {
-                    const token = await grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
-                        action: 'register'
-                    });
-
-                    // Append token to form
-                    let tokenInput = document.querySelector('input[name="g-recaptcha-response"]');
-                    if (!tokenInput) {
-                        tokenInput = document.createElement('input');
-                        tokenInput.type = 'hidden';
-                        tokenInput.name = 'g-recaptcha-response';
-                        form.appendChild(tokenInput);
-                    }
-                    tokenInput.value = token;
-
-                    // Submit form through AJAX
-                    submitRegisterForm();
-
-                } catch (err) {
-                    toastr?.error("Security verification failed. Please refresh the page.");
-                    console.error(err);
+            async function doRecaptchaAndSubmit() {
+                let tokenInput = document.querySelector('input[name="g-recaptcha-response"]');
+                if (!tokenInput) {
+                    tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = 'g-recaptcha-response';
+                    form.appendChild(tokenInput);
                 }
-            });
+
+                if (typeof grecaptcha !== 'undefined') {
+                    try {
+                        const token = await grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
+                            action: 'register'
+                        });
+                        tokenInput.value = token;
+                    } catch (err) {
+                        toastr?.error("Security verification failed. Please refresh the page.");
+                        console.error(err);
+                        return;
+                    }
+                } else {
+                    tokenInput.value = 'dev-bypass';
+                }
+
+                submitRegisterForm();
+            }
+
+            doRecaptchaAndSubmit();
         });
 
         // ------------------------------------------------------------------

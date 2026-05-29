@@ -24,7 +24,7 @@
         }
 
         .header {
-            background-color: #0D609E;
+            background-color: #005DA8;
             /* Secondary Color */
             padding: 20px;
             text-align: center;
@@ -40,7 +40,7 @@
         }
 
         .footer {
-            background-color: #F0890E;
+            background-color: #F5A623;
             /* Primary Color */
             color: #ffffff;
             padding: 20px;

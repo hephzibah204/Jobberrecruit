@@ -154,7 +154,7 @@ class AdminController extends BaseController
     {
 
         if ($this->auth->user()->user_type !== 'admin') {
-            redirect('/');
+            return redirect()->to('/');
         }
         helper('date');
 
@@ -2558,7 +2558,7 @@ class AdminController extends BaseController
         }
 
         $content = file_get_contents($envFile);
-        $current = env('site_free_mode') === 'true';
+        $current = env('site_free_mode') == 'true';
         $newValue = $current ? 'false' : 'true';
 
         if (preg_match('/^site_free_mode\s*=\s*.+$/m', $content)) {
@@ -2575,15 +2575,18 @@ class AdminController extends BaseController
     {
         $data = [
             'title'                     => 'Feature Management',
-            'feature_webinars'          => env('feature_webinars', 'true') === 'true',
-            'feature_elearning'         => env('feature_elearning', 'true') === 'true',
-            'feature_ai_resume'         => env('feature_ai_resume', 'true') === 'true',
-            'feature_ai_career_tools'   => env('feature_ai_career_tools', 'true') === 'true',
-            'ai_tools_paid_mode'        => env('ai_tools_paid_mode', 'false') === 'true',
-            'feature_messaging'         => env('feature_messaging', 'true') === 'true',
-            'feature_referrals'         => env('feature_referrals', 'true') === 'true',
-            'email_use_queue'           => env('email_use_queue', 'true') === 'true',
-            'site_free_mode'            => env('site_free_mode', 'false') === 'true',
+            'feature_webinars'          => env('feature_webinars', 'true') == 'true',
+            'feature_elearning'         => env('feature_elearning', 'true') == 'true',
+            'feature_ai_resume'         => env('feature_ai_resume', 'true') == 'true',
+            'feature_ai_career_tools'   => env('feature_ai_career_tools', 'true') == 'true',
+            'ai_tools_paid_mode'        => env('ai_tools_paid_mode', 'false') == 'true',
+            'feature_messaging'         => env('feature_messaging', 'true') == 'true',
+            'feature_referrals'         => env('feature_referrals', 'true') == 'true',
+            'email_use_queue'           => env('email_use_queue', 'true') == 'true',
+            'site_free_mode'            => env('site_free_mode', 'false') == 'true',
+            'cv_review_pro_price'       => (int) env('cv_review_pro_price', 15000),
+            'cv_review_prem_price'      => (int) env('cv_review_prem_price', 30000),
+            'cv_review_mode'            => env('cv_review_mode', 'semi'),
         ];
 
         return view('admin/feature_settings', $data);
@@ -2600,11 +2603,18 @@ class AdminController extends BaseController
             'feature_messaging',
             'feature_referrals',
             'email_use_queue',
+            'cv_review_pro_price',
+            'cv_review_prem_price',
+            'cv_review_mode',
         ];
 
         $updateData = [];
         foreach ($keys as $key) {
-            $val = $this->request->getPost($key) ? 'true' : 'false';
+            if ($key === 'cv_review_mode') {
+                $val = $this->request->getPost($key) === 'auto' ? 'auto' : 'semi';
+            } else {
+                $val = $this->request->getPost($key) ? 'true' : 'false';
+            }
             $updateData[$key] = $val;
         }
 
@@ -2853,7 +2863,8 @@ class AdminController extends BaseController
         }
 
         $model = new BlogModel();
-        $data  = $this->request->getPost();
+        $allowed = ['id', 'title', 'slug', 'content', 'excerpt', 'meta_title', 'meta_description', 'meta_keywords', 'status', 'category_id', 'tags', 'is_featured', 'existing_thumbnail'];
+        $data  = $this->request->getPost($allowed);
         $data['admin_id'] = $this->admin->id;
 
         // -------------------------------------------------
@@ -3692,5 +3703,141 @@ class AdminController extends BaseController
                 'message' => 'Failed to delete employers: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * CV Review Management
+     */
+    public function cvReviews()
+    {
+        $reviewModel = model(\App\Models\CvReviewModel::class);
+        $reviews = $reviewModel->orderBy('created_at', 'DESC')->findAll();
+
+        return view('admin/cv_reviews', [
+            'title'   => 'CV Review Management',
+            'reviews' => $reviews,
+        ]);
+    }
+
+    public function cvReviewDetail($id)
+    {
+        $reviewModel = model(\App\Models\CvReviewModel::class);
+        $review = $reviewModel->find($id);
+
+        if (!$review) {
+            return redirect()->to('admin/cv-reviews')->with('error', 'CV Review not found.');
+        }
+
+        return view('admin/cv_review_detail', [
+            'title'  => 'CV Review #' . $id,
+            'review' => $review,
+        ]);
+    }
+
+    public function cvReviewDownload($id)
+    {
+        $reviewModel = model(\App\Models\CvReviewModel::class);
+        $review = $reviewModel->find($id);
+
+        if (!$review || !$review->file_path) {
+            return redirect()->to('admin/cv-reviews')->with('error', 'File not found.');
+        }
+
+        $filePath = FCPATH . $review->file_path;
+        if (!is_file($filePath)) {
+            return redirect()->to('admin/cv-reviews')->with('error', 'File does not exist on disk.');
+        }
+
+        return $this->response->download($filePath, null);
+    }
+
+    public function cvReviewAiGenerate($id)
+    {
+        $reviewModel = model(\App\Models\CvReviewModel::class);
+        $review = $reviewModel->find($id);
+
+        if (!$review) {
+            return redirect()->to('admin/cv-reviews')->with('error', 'CV Review not found.');
+        }
+
+        $filePath = FCPATH . ($review->file_path ?? '');
+        $cvContent = '';
+
+        if ($review->file_path && is_file($filePath)) {
+            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $cvContent = file_get_contents($filePath);
+
+            if (in_array($ext, ['doc', 'docx']) && $cvContent === false) {
+                $cvContent = '[Binary document format — unable to extract text. Please review manually.]';
+            }
+        }
+
+        if (empty($cvContent)) {
+            $cvContent = '[No CV file content available — review based on candidate info]';
+        }
+
+        $aiService = new \App\Services\AiService();
+        $aiReview = $aiService->generateCvReview([
+            'full_name'        => $review->full_name ?? 'Candidate',
+            'target_role'      => $review->target_role ?? '',
+            'industry'         => $review->industry ?? '',
+            'feedback_request' => $review->feedback_request ?? '',
+            'cv_content'       => $cvContent,
+            'plan'             => $review->plan ?? 'basic',
+        ]);
+
+        $reviewModel->update($id, [
+            'ai_review'   => $aiReview,
+            'admin_id'    => auth()->id(),
+            'status'      => 'in_review',
+            'review_mode' => 'semi',
+            'reviewed_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return redirect()->to('admin/cv-reviews/view/' . $id)
+            ->with('success', 'AI review generated successfully.');
+    }
+
+    public function cvReviewMarkInReview($id)
+    {
+        model(\App\Models\CvReviewModel::class)->update($id, [
+            'status' => 'in_review',
+        ]);
+
+        return redirect()->to('admin/cv-reviews/view/' . $id)
+            ->with('success', 'Review marked as in progress.');
+    }
+
+    public function cvReviewComplete($id)
+    {
+        model(\App\Models\CvReviewModel::class)->update($id, [
+            'status' => 'completed',
+        ]);
+
+        return redirect()->to('admin/cv-reviews/view/' . $id)
+            ->with('success', 'Review marked as completed.');
+    }
+
+    public function cvReviewSaveNotes($id)
+    {
+        $notes = $this->request->getPost('admin_notes');
+        model(\App\Models\CvReviewModel::class)->update($id, [
+            'admin_notes' => $notes,
+        ]);
+
+        return redirect()->to('admin/cv-reviews/view/' . $id)
+            ->with('success', 'Notes saved successfully.');
+    }
+
+    public function cvReviewDeliver($id)
+    {
+        model(\App\Models\CvReviewModel::class)->update($id, [
+            'feedback_delivered' => 1,
+            'delivered_at'       => date('Y-m-d H:i:s'),
+            'status'             => 'completed',
+        ]);
+
+        return redirect()->to('admin/cv-reviews/view/' . $id)
+            ->with('success', 'Feedback marked as delivered. The candidate has been notified.');
     }
 }

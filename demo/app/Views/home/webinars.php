@@ -1,13 +1,11 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend('templates/base') ?>
 
 <?= $this->section('content') ?>
-<div class="content">
-    <div class="page-header">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold">Career Webinars</h4>
-                <h6>Boost your career with expert-led sessions</h6>
-            </div>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="fw-bold text-primary display-5 mb-2">Career Webinars</h1>
+            <p class="lead text-muted">Boost your career with expert-led sessions</p>
         </div>
     </div>
 

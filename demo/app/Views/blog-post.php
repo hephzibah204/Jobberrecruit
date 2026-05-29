@@ -4,61 +4,50 @@
 <link rel="canonical" href="<?= base_url('blog/' . $blog->slug) ?>">
 
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "headline": "<?= esc($blog->title) ?>",
-        "description": "<?= esc($meta_description ?? '') ?>",
-        "image": "<?= esc($og_image ?? '') ?>",
-        "author": {
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "url": "<?= base_url() ?>"
-        },
-        "publisher": {
-            "@type": "Organization",
-            "name": "JobberRecruit",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "<?= base_url('images/logo.png') ?>",
-                "width": 600,
-                "height": 60
-            }
-        },
-        "datePublished": "<?= date(DATE_ATOM, strtotime($blog->created_at)) ?>",
-        "dateModified": "<?= date(DATE_ATOM, strtotime($blog->updated_at ?? $blog->created_at)) ?>",
-        "mainEntityOfPage": {
-            "@type": "WebPage",
-            "@id": "<?= current_url() ?>"
-        },
-        "wordCount": "<?= str_word_count(strip_tags($blog->content)) ?>",
-        "timeRequired": "PT<?= $readingTime ?? 5 ?>M",
-        "keywords": "<?= $blog->tags ?? '' ?>"
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'BlogPosting',
+    'headline' => $blog->title,
+    'description' => $meta_description ?? '',
+    'image'    => $og_image ?? '',
+    'author'   => [
+        '@type' => 'Organization',
+        'name'  => 'JobberRecruit',
+        'url'   => base_url(),
+    ],
+    'publisher' => [
+        '@type' => 'Organization',
+        'name'  => 'JobberRecruit',
+        'logo'  => [
+            '@type'  => 'ImageObject',
+            'url'    => base_url('images/logo.png'),
+            'width'  => 600,
+            'height' => 60,
+        ],
+    ],
+    'datePublished'  => date(DATE_ATOM, strtotime($blog->created_at)),
+    'dateModified'   => date(DATE_ATOM, strtotime($blog->updated_at ?? $blog->created_at)),
+    'mainEntityOfPage' => [
+        '@type' => 'WebPage',
+        '@id'   => current_url(),
+    ],
+    'wordCount'    => str_word_count(strip_tags($blog->content)),
+    'timeRequired' => 'PT' . ($readingTime ?? 5) . 'M',
+    'keywords'     => $blog->tags ?? '',
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 
 <!-- Breadcrumb Schema -->
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [{
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "<?= base_url() ?>"
-        }, {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Blog",
-            "item": "<?= base_url('blog') ?>"
-        }, {
-            "@type": "ListItem",
-            "position": 3,
-            "name": "<?= esc($blog->title) ?>",
-            "item": "<?= current_url() ?>"
-        }]
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'BreadcrumbList',
+    'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => base_url()],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Blog', 'item' => base_url('blog')],
+        ['@type' => 'ListItem', 'position' => 3, 'name' => $blog->title, 'item' => current_url()],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 

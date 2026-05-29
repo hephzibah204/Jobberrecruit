@@ -7,8 +7,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="msapplication-TileColor" content="#0E0E0E">
     <meta name="template-color" content="#0E0E0E">
-    <link rel="manifest" href="manifest.html" crossorigin>
-    <meta name="msapplication-config" content="browserconfig.html">
+    <link rel="manifest" href="<?= base_url('manifest.json') ?>" crossorigin>
+    <meta name="msapplication-config" content="<?= base_url('browserconfig.xml') ?>">
     <meta name="description" content="Index page">
     <meta name="keywords" content="index, page">
     <meta name="author" content="">
@@ -58,12 +58,12 @@
               <div class="login_footer form-group d-flex justify-content-between">
                 <label class="cb-container">
                   <input type="checkbox"><span class="text-small">Agree our terms and policy</span><span class="checkmark"></span>
-                </label><a class="text-muted" href="page-contact">Lean more</a>
+                </label><a class="text-muted" href="<?= base_url('contact-us') ?>">Learn more</a>
               </div>
               <div class="form-group">
                 <button class="btn btn-default hover-up w-100" type="submit" name="login">Apply Job</button>
               </div>
-              <div class="text-muted text-center">Do you need support? <a href="page-contact">Contact Us</a></div>
+              <div class="text-muted text-center">Do you need support? <a href="<?= base_url('contact-us') ?>">Contact Us</a></div>
             </form>
           </div>
         </div>
@@ -113,7 +113,7 @@
                   <ul class="sub-menu">
                     <li><a href="page-about">About Us</a></li>
                     <li><a href="page-pricing">Pricing Plan</a></li>
-                    <li><a href="page-contact">Contact Us</a></li>
+                    <li><a href="<?= base_url('contact-us') ?>">Contact Us</a></li>
                     <li><a href="page-register">Register</a></li>
                     <li><a href="page-signin">Signin</a></li>
                     <li><a href="page-reset-password">Reset Password</a></li>
@@ -186,7 +186,7 @@
                     <ul class="sub-menu">
                       <li><a href="page-about">About Us</a></li>
                       <li><a href="page-pricing">Pricing Plan</a></li>
-                      <li><a href="page-contact">Contact Us</a></li>
+                      <li><a href="<?= base_url('contact-us') ?>">Contact Us</a></li>
                       <li><a href="page-register">Register</a></li>
                       <li><a href="page-signin">Signin</a></li>
                       <li><a href="page-reset-password">Reset Password</a></li>
@@ -267,7 +267,7 @@
                     <ul class="sub-menu">
                       <li><a href="page-about">About Us</a></li>
                       <li><a href="page-pricing">Pricing Plan</a></li>
-                      <li><a href="page-contact">Contact Us</a></li>
+                      <li><a href="<?= base_url('contact-us') ?>">Contact Us</a></li>
                       <li><a href="page-register">Register</a></li>
                       <li><a href="page-signin">Signin</a></li>
                       <li><a href="page-reset-password">Reset Password</a></li>

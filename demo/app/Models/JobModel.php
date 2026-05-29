@@ -110,7 +110,7 @@ class JobModel extends Model
         // We need a loop to find a unique slug
         // Note: $this->where() might fail if called from within a hook in some CI4 versions,
         // but typically it works.
-        while ($this->db->table($this->table)->where('slug', $slug)->where('id !=', $data['id'][0] ?? 0)->countAllResults() > 0) {
+        while ($this->db->table($this->table)->where('slug', $slug)->where('id !=', $data['id'] ?? 0)->countAllResults() > 0) {
             $suffix = '-' . (++$count);
             $slug = substr($originalSlug, 0, 75 - strlen($suffix)) . $suffix;
         }

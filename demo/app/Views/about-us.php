@@ -2,42 +2,38 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "AboutPage",
-        "name": "About Jobber Recruit LTD",
-        "description": "Redefining recruitment in Nigeria through a massive digital talent ecosystem that connects ambition with opportunity faster than anyone else.",
-        "url": "<?= current_url() ?>",
-        "publisher": {
-            "@type": "Organization",
-            "name": "Jobber Recruit LTD",
-            "alternateName": "JobberRecruit",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "<?= base_url('images/logo.png') ?>"
-            },
-            "foundingDate": "2023",
-            "address": {
-                "@type": "PostalAddress",
-                "addressCountry": "NG"
-            },
-            "founder": "Jobber Recruit Team"
-        },
-        "mainEntity": {
-            "@type": "Organization",
-            "name": "Jobber Recruit LTD",
-            "description": "A digital-first recruitment agency transforming how talent connects with opportunity across Nigeria through social media networks and digital ecosystems.",
-            "url": "<?= base_url() ?>",
-            "founder": "Jobber Recruit Team",
-            "foundingDate": "2023",
-            "numberOfEmployees": "50+",
-            "owns": {
-                "@type": "WebSite",
-                "name": "JobberRecruit Platform",
-                "url": "<?= base_url() ?>"
-            }
-        }
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'AboutPage',
+    'name'     => 'About Jobber Recruit LTD',
+    'description' => 'Redefining recruitment in Nigeria through a massive digital talent ecosystem that connects ambition with opportunity faster than anyone else.',
+    'url'      => current_url(),
+    'publisher' => [
+        '@type'         => 'Organization',
+        'name'          => 'Jobber Recruit LTD',
+        'alternateName' => 'JobberRecruit',
+        'logo'          => [
+            '@type' => 'ImageObject',
+            'url'   => base_url('images/logo.png'),
+        ],
+        'foundingDate' => '2023',
+        'address'      => [
+            '@type'          => 'PostalAddress',
+            'addressCountry' => 'NG',
+        ],
+        'founder' => 'Jobber Recruit Team',
+    ],
+    'mainEntity' => [
+        '@type'         => 'Organization',
+        'name'          => 'Jobber Recruit LTD',
+        'description'   => 'A digital-first recruitment agency transforming how talent connects with opportunity across Nigeria through social media networks and digital ecosystems.',
+        'url'           => base_url(),
+        'address'       => [
+            '@type'          => 'PostalAddress',
+            'addressCountry' => 'NG',
+        ],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -82,8 +78,8 @@
             <circle cx="150" cy="150" r="150" fill="url(#paint0_linear)" fill-opacity="0.05" />
             <defs>
                 <linearGradient id="paint0_linear" x1="0" y1="0" x2="300" y2="300" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#F0890E" />
-                    <stop offset="1" stop-color="#F0890E" />
+                    <stop stop-color="#F5A623" />
+                    <stop offset="1" stop-color="#F5A623" />
                 </linearGradient>
             </defs>
         </svg>
@@ -95,7 +91,7 @@
     <div class="container">
         <div class="row g-5">
             <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid #F0890E;">
+                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid #F5A623;">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center mb-4">
                             <div class="icon-wrapper bg-primary bg-opacity-10 rounded-3 p-3 me-3">
@@ -121,7 +117,7 @@
                 </div>
             </div>
             <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid #0D609E;">
+                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid #005DA8;">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center mb-4">
                             <div class="icon-wrapper bg-info bg-opacity-10 rounded-3 p-3 me-3">
@@ -485,7 +481,7 @@
 
     /* Gradient Text */
     .text-gradient-primary {
-        background: linear-gradient(90deg, #F0890E 0%, #e67e00 100%);
+        background: linear-gradient(90deg, #F5A623 0%, #e67e00 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -531,7 +527,7 @@
         top: 0;
         bottom: 0;
         width: 2px;
-        background: linear-gradient(to bottom, #F0890E, #0D609E);
+        background: linear-gradient(to bottom, #F5A623, #005DA8);
         opacity: 0.3;
     }
 
@@ -582,23 +578,23 @@
     .counter {
         font-size: 3.5rem;
         font-weight: 700;
-        background: linear-gradient(90deg, #F0890E, #0D609E);
+        background: linear-gradient(90deg, #F5A623, #005DA8);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
     /* Primary Color Override */
     .bg-primary {
-        background: linear-gradient(135deg, #F0890E 0%, #e67e00 100%) !important;
+        background: linear-gradient(135deg, #F5A623 0%, #e67e00 100%) !important;
     }
 
     .text-primary {
-        color: #F0890E !important;
+        color: #F5A623 !important;
     }
 
     .btn-primary {
-        background: #F0890E;
-        border-color: #F0890E;
+        background: #F5A623;
+        border-color: #F5A623;
     }
 
     .btn-primary:hover {
@@ -620,17 +616,17 @@
 
     /* Blockquote Styling */
     blockquote {
-        border-left-color: #F0890E !important;
+        border-left-color: #F5A623 !important;
     }
 
     blockquote.border-info {
-        border-left-color: #0D609E !important;
+        border-left-color: #005DA8 !important;
     }
 
     /* Badge Styles */
     .badge.bg-primary {
         background-color: rgba(240, 137, 14, 0.1) !important;
-        color: #F0890E;
+        color: #F5A623;
     }
 
     /* Section Spacing */

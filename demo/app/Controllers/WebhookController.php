@@ -14,29 +14,24 @@ class WebhookController extends Controller
 {
     public function paystack()
     {
-        // --------------------------------------------------
-        // 1. PAYSTACK IP WHITELIST
-        // --------------------------------------------------
-        $allowedIps = [
-            '52.31.139.75',
-            '52.49.173.169',
-            '52.214.14.220',
-            // '34.243.147.89',
-            // '54.76.141.43',
-            // '54.171.129.173',
-        ];
+        $payload = file_get_contents('php://input');
 
-        $requestIp = $this->request->getIPAddress();
-
-        if (! in_array($requestIp, $allowedIps, true)) {
-            log_message('error', 'Unauthorized Paystack webhook attempt from IP: ' . $requestIp);
-            return $this->response->setStatusCode(401)->setBody('Unauthorized');
+        // --------------------------------------------------
+        // 1. HMAC-SHA256 SIGNATURE VERIFICATION
+        // --------------------------------------------------
+        $signature = $this->request->getHeaderLine('x-paystack-signature');
+        $secretKey = env('PAYSTACK_SECRET_KEY');
+        if ($secretKey) {
+            $computed = hash_hmac('sha256', $payload, $secretKey);
+            if (!hash_equals($computed, $signature)) {
+                log_message('error', 'Paystack webhook: Invalid HMAC signature');
+                return $this->response->setStatusCode(401)->setBody('Unauthorized');
+            }
         }
 
         // --------------------------------------------------
         // 2. READ & PARSE PAYLOAD
         // --------------------------------------------------
-        $payload = file_get_contents('php://input');
         $event   = json_decode($payload, true);
 
         if (! is_array($event) || empty($event['event'])) {
@@ -313,7 +308,7 @@ class WebhookController extends Controller
         $emailService->setSubject('Your JobberRecruit Subscription Invoice - ' . $data['reference']);
 
         $viewData = [
-            'fullname'       => $data['employer']->company_name ?? $data['user']->username ?? 'Employer',
+            'fullname'       => ($data['employer']->company_name ?? $data['user']->username) ?? 'Employer',
             'planName'       => $data['plan']->name,
             'amount'         => number_format($data['amountPaid'], 2),
             'reference'      => $data['reference'],

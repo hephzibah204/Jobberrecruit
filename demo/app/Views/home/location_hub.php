@@ -1,40 +1,28 @@
 <?= $this->extend('templates/base') ?>
 
 <?= $this->section('schema') ?>
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": "<?= addslashes($title ?? '') ?>",
-    "description": "<?= addslashes($meta_description ?? '') ?>",
-    "url": "<?= current_url() ?>",
-    "numberOfItems": "<?= $total_jobs ?>",
-    "itemListElement": [
-        <?php foreach ($jobs as $index => $job): ?>{
-            "@type": "ListItem",
-            "position": <?= $index + 1 ?>,
-            "item": {
-                "@type": "JobPosting",
-                "title": "<?= addslashes($job->title ?? '') ?>",
-                "datePosted": "<?= date('Y-m-d', strtotime($job->created_at ?? 'now')) ?>",
-                "employmentType": "<?= $job->job_type ?? '' ?>",
-                "hiringOrganization": {
-                    "@type": "Organization",
-                    "name": "<?= !empty($job->is_anonymous) ? 'Confidential Employer' : addslashes($job->employer_name ?? '') ?>"
-                },
-                "jobLocation": {
-                    "@type": "Place",
-                    "address": {
-                        "@type": "PostalAddress",
-                        "addressLocality": "<?= esc($state->name) ?>",
-                        "addressCountry": "NG"
-                    }
-                }
-            }
-        }<?= $index < count($jobs) - 1 ? ',' : '' ?>
-        <?php endforeach; ?>
-    ]
+<?php
+include_once APPPATH . 'Views/partials/schema/job_posting.php';
+$listItems = [];
+foreach ($jobs as $index => $j) {
+    $item = jobPostingSchema($j, base_url());
+    $listItems[] = [
+        '@type'    => 'ListItem',
+        'position' => $index + 1,
+        'item'     => $item,
+    ];
 }
+?>
+<script type="application/ld+json">
+<?= json_encode([
+    '@context'      => 'https://schema.org',
+    '@type'         => 'ItemList',
+    'name'          => $title ?? 'Location Job Listings',
+    'description'   => $meta_description ?? 'Browse job listings by location',
+    'url'           => current_url(),
+    'numberOfItems' => (int) $total_jobs,
+    'itemListElement' => $listItems,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -43,17 +31,17 @@
 <!-- ============================================================
      HERO SECTION
 ============================================================ -->
-<section class="location-hero py-5" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0c4a6e 100%); position: relative; overflow: hidden;">
+<section class="location-hero py-5" style="background: linear-gradient(135deg, #002855 0%, #005DA8 50%, #001a3b 100%); position: relative; overflow: hidden;">
     <!-- Decorative blobs -->
-    <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(14,165,233,0.08);pointer-events:none;"></div>
-    <div style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;background:rgba(16,185,129,0.07);pointer-events:none;"></div>
+    <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(245, 166, 35, 0.1);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;background:rgba(0, 93, 168, 0.1);pointer-events:none;"></div>
 
     <div class="container position-relative" style="z-index:2;">
         <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb mb-0" style="background:transparent;">
-                <li class="breadcrumb-item"><a href="<?= base_url() ?>" class="text-info text-decoration-none"><i class="bi bi-house me-1"></i>Home</a></li>
-                <li class="breadcrumb-item"><a href="<?= base_url('jobs') ?>" class="text-info text-decoration-none">All Jobs</a></li>
+                <li class="breadcrumb-item"><a href="<?= base_url() ?>" class="text-decoration-none" style="color: #8ac4ff;"><i class="bi bi-house me-1"></i>Home</a></li>
+                <li class="breadcrumb-item"><a href="<?= base_url('jobs') ?>" class="text-decoration-none" style="color: #8ac4ff;">All Jobs</a></li>
                 <li class="breadcrumb-item active text-white-50"><?= esc($state->name) ?> Jobs</li>
             </ol>
         </nav>
@@ -62,11 +50,11 @@
             <div class="col-lg-8">
                 <!-- Location badge -->
                 <div class="mb-3">
-                    <span class="badge px-3 py-2 fs-13 fw-medium" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);">
+                    <span class="badge px-3 py-2 fs-13 fw-medium" style="background: rgba(245, 166, 35, 0.15); color: #F5A623; border: 1px solid rgba(245, 166, 35, 0.3);">
                         <i class="bi bi-geo-alt-fill me-1"></i><?= esc($state->region ?? 'Nigeria') ?>
                     </span>
                     <?php if (!empty($state->capital)): ?>
-                    <span class="badge px-3 py-2 fs-13 fw-medium ms-2" style="background: rgba(14,165,233,0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3);">
+                    <span class="badge px-3 py-2 fs-13 fw-medium ms-2" style="background: rgba(0, 93, 168, 0.15); color: #8ac4ff; border: 1px solid rgba(0, 93, 168, 0.3);">
                         <i class="bi bi-building me-1"></i>Capital: <?= esc($state->capital) ?>
                     </span>
                     <?php endif; ?>
@@ -82,15 +70,15 @@
 
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2 text-white">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);">
-                            <i class="bi bi-briefcase text-success fs-5"></i>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:rgba(245, 166, 35, 0.15);border:1px solid rgba(245, 166, 35, 0.3);">
+                            <i class="bi bi-briefcase fs-5" style="color:#F5A623;"></i>
                         </div>
                         <div>
                             <div class="fw-bold fs-5"><?= number_format($total_jobs) ?></div>
                             <div class="text-white-50 small">Open Roles</div>
                         </div>
                     </div>
-                    <a href="<?= base_url('jobs?state_id=' . $state->id) ?>" class="btn btn-success btn-lg rounded-pill px-4">
+                    <a href="<?= base_url('jobs?state_id=' . $state->id) ?>" class="btn btn-lg rounded-pill px-4 text-white border-0" style="background: linear-gradient(135deg, #F5A623, #d48b11);">
                         <i class="bi bi-search me-2"></i>Browse All Jobs
                     </a>
                     <?php if (!empty($auth)): ?>
@@ -105,16 +93,16 @@
             <div class="col-lg-4">
                 <div class="glass-card p-4 text-white" style="background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.1) !important;">
                     <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-map text-info fs-4 me-2"></i>
+                        <i class="bi bi-map fs-4 me-2" style="color:#F5A623;"></i>
                         <span class="fw-bold">About <?= esc($state->name) ?></span>
                     </div>
                     <div class="row g-3 text-center">
                         <div class="col-6">
-                            <div class="fw-bold fs-4 text-success"><?= number_format($total_jobs) ?>+</div>
+                            <div class="fw-bold fs-4" style="color:#F5A623;"><?= number_format($total_jobs) ?>+</div>
                             <div class="text-white-50 small">Live Jobs</div>
                         </div>
                         <div class="col-6">
-                            <div class="fw-bold fs-4 text-info"><?= esc($state->capital ?? '—') ?></div>
+                            <div class="fw-bold fs-4" style="color:#8ac4ff;"><?= esc($state->capital ?? '—') ?></div>
                             <div class="text-white-50 small">Capital City</div>
                         </div>
                     </div>
@@ -132,11 +120,11 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="glass-card p-4 p-md-5 border-start border-4 border-success">
+                <div class="glass-card p-4 p-md-5 border-start border-4" style="border-left-color: #005DA8 !important;">
                     <div class="d-flex align-items-start gap-3">
                         <div class="flex-shrink-0">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(16,185,129,0.1);border:2px solid rgba(16,185,129,0.3);">
-                                <i class="bi bi-info-circle text-success fs-5"></i>
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(0, 93, 168, 0.1);border:2px solid rgba(0, 93, 168, 0.3);">
+                                <i class="bi bi-info-circle fs-5" style="color:#005DA8;"></i>
                             </div>
                         </div>
                         <div>
@@ -285,9 +273,9 @@
             <div class="col-6 col-md-4 col-lg-3 col-xl-2">
                 <a href="<?= base_url('jobs-in-' . esc($sSlug)) ?>"
                    class="d-block text-decoration-none rounded-3 py-2 px-3 text-center fw-medium small transition-all
-                          <?= $isActive ? 'bg-primary text-white' : 'glass-card text-main hover-lift' ?>"
-                   style="<?= $isActive ? 'border:none;' : '' ?>">
-                    <i class="bi bi-geo-alt<?= $isActive ? '' : '-fill' ?> me-1 <?= $isActive ? '' : 'text-success' ?>"></i>
+                          <?= $isActive ? 'text-white' : 'glass-card text-main hover-lift' ?>"
+                   style="<?= $isActive ? 'background: linear-gradient(135deg, #005DA8, #004a87); border:none;' : '' ?>">
+                    <i class="bi bi-geo-alt<?= $isActive ? '' : '-fill' ?> me-1 <?= $isActive ? '' : '' ?>" <?= $isActive ? '' : 'style="color:#005DA8;"' ?>></i>
                     <?= esc($s->name) ?>
                 </a>
             </div>

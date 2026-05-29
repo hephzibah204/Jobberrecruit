@@ -57,7 +57,7 @@ class ReferralService
 
         return $this->referralModel->insert([
             'referrer_id' => $referrer->id,
-            'referred_id' => $newUserId,
+            'referee_id' => $newUserId,
             'status'      => 'pending',
             'created_at'  => date('Y-m-d H:i:s')
         ]);
@@ -68,7 +68,7 @@ class ReferralService
      */
     public function rewardReferrer($referredId, $actionType = 'payment')
     {
-        $referral = $this->referralModel->where('referred_id', $referredId)->where('status', 'pending')->first();
+        $referral = $this->referralModel->where('referee_id', $referredId)->where('status', 'pending')->first();
         if (!$referral) {
             return false;
         }

@@ -28,7 +28,7 @@ $siteName = 'JobberRecruit';
         }
 
         .header {
-            background-color: #0D609E;
+            background-color: #005DA8;
             /* Secondary Color */
             padding: 20px;
             text-align: center;
@@ -44,7 +44,7 @@ $siteName = 'JobberRecruit';
         }
 
         .content h2 {
-            color: #F0890E;
+            color: #F5A623;
             /* Primary Color */
             margin-top: 0;
         }
@@ -52,7 +52,7 @@ $siteName = 'JobberRecruit';
         .button {
             display: inline-block;
             padding: 14px 28px;
-            background-color: #F0890E;
+            background-color: #F5A623;
             /* Primary Color */
             color: #ffffff !important;
             text-decoration: none;
@@ -69,7 +69,7 @@ $siteName = 'JobberRecruit';
         }
 
         .muted a {
-            color: #0D609E;
+            color: #005DA8;
             text-decoration: underline;
         }
 
@@ -80,7 +80,7 @@ $siteName = 'JobberRecruit';
         }
 
         .footer {
-            background-color: #0D609E;
+            background-color: #005DA8;
             /* Secondary Color */
             color: #ffffff;
             padding: 20px;

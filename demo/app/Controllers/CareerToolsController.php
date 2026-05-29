@@ -87,6 +87,7 @@ class CareerToolsController extends BaseController
         return view('candidate/career-tools/mock-interview-session', [
             'title' => 'AI Mock Interview - Live Practice Session',
             'contextPreset' => $contextPreset,
+            'bodyClass' => '',
         ]);
     }
 

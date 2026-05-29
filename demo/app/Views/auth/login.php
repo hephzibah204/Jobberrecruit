@@ -3,8 +3,8 @@
 <?= $this->section('styles') ?>
 <style>
     :root {
-        --primary-color: #0D609E;
-        --secondary-color: #F0890E;
+        --primary-color: #005DA8;
+        --secondary-color: #F5A623;
         --text-dark: #1E293B;
         --text-muted: #64748B;
         --bg-light: #f8f9fb;
@@ -382,12 +382,12 @@
         <h4>Sign In to Your Account</h4>
         <p>Enter your credentials below to get started.</p>
 
-        <button class="social-login" type="button" onclick="window.location.href='<?= base_url('auth/google'); ?>'">
+        <button class="social-login" type="button" data-href="<?= base_url('auth/google'); ?>">
             <img src="<?= base_url('assets/imgs/template/icons/icon-google.svg'); ?>" alt="Google">
-            <strong>Sign up with Google</strong>
+            <strong>Sign in with Google</strong>
         </button>
 
-        <button class="social-login" type="button" onclick="window.location.href='<?= base_url('auth/linkedin'); ?>'">
+        <button class="social-login" type="button" data-href="<?= base_url('auth/linkedin'); ?>">
             <img src="<?= base_url('assets/imgs/template/icons/linkedin.svg'); ?>" alt="LinkedIn">
             <strong>Sign in with LinkedIn</strong>
         </button>
@@ -424,14 +424,14 @@
         <form id="loginForm" action="<?= base_url('login'); ?>" method="POST" novalidate>
             <div class="mb-3">
                 <label for="email" class="form-label">Email Address</label>
-                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required>
+                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required autocomplete="email">
                 <div class="invalid-feedback"></div>
             </div>
 
             <div class="mb-3 position-relative">
                 <label for="password" class="form-label">Password</label>
                 <div class="input-group">
-                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
                     <span class="input-group-text password-toggle" style="cursor:pointer">
                         <i class="bi bi-eye-slash"></i>
                     </span>
@@ -475,25 +475,40 @@
         // Auto-focus email
         emailInput.focus();
 
+        // Social login buttons
+        document.querySelectorAll('.social-login').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+
         // Form submit
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             clearErrors();
 
-            grecaptcha.ready(function() {
-                grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
-                    action: 'login'
-                }).then(function(token) {
-
-                    const tokenInput = document.createElement('input');
-                    tokenInput.type = 'hidden';
-                    tokenInput.name = 'g-recaptcha-response';
-                    tokenInput.value = token;
-                    form.appendChild(tokenInput);
-
-                    submitLoginForm();
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
+                        action: 'login'
+                    }).then(function(token) {
+                        appendTokenAndSubmit(token);
+                    }).catch(function() {
+                        appendTokenAndSubmit('dev-bypass');
+                    });
                 });
-            });
+            } else {
+                appendTokenAndSubmit('dev-bypass');
+            }
+
+            function appendTokenAndSubmit(token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = 'g-recaptcha-response';
+                tokenInput.value = token;
+                form.appendChild(tokenInput);
+                submitLoginForm();
+            }
 
             // const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value);
             // const passwordValid = passwordInput.value.length >= 6;

@@ -2,38 +2,31 @@
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Post a Job & Hire Fast | Affordable Recruitment Plans",
-        "description": "Post your job vacancy on JobberRecruit today. Choose from affordable Pay-As-You-Go or Unlimited plans. Get 3x visibility and screen candidates instantly.",
-        "publisher": {
-            "@type": "Organization",
-            "name": "Jobber Recruit LTD",
-            "url": "<?= base_url() ?>",
-            "logo": "<?= base_url('images/logo.png') ?>"
-        },
-        "mainEntity": {
-            "@type": "Service",
-            "name": "Job Posting Service",
-            "description": "Premium job posting platform with advanced screening and distribution tools",
-            "offers": {
-                "@type": "AggregateOffer",
-                "offerCount": "2",
-                "offers": [{
-                        "@type": "Offer",
-                        "name": "Pay-As-You-Go Plan",
-                        "description": "Pay per job posting with premium features"
-                    },
-                    {
-                        "@type": "Offer",
-                        "name": "Unlimited Plan",
-                        "description": "Unlimited job postings for growing companies"
-                    }
-                ]
-            }
-        }
-    }
+<?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type'    => 'WebPage',
+    'name'     => 'Post a Job & Hire Fast | Affordable Recruitment Plans',
+    'description' => 'Post your job vacancy on JobberRecruit today. Choose from affordable Pay-As-You-Go or Unlimited plans. Get 3x visibility and screen candidates instantly.',
+    'publisher' => [
+        '@type' => 'Organization',
+        'name'  => 'Jobber Recruit LTD',
+        'url'   => base_url(),
+        'logo'  => base_url('images/logo.png'),
+    ],
+    'mainEntity' => [
+        '@type'       => 'Service',
+        'name'        => 'Job Posting Service',
+        'description' => 'Premium job posting platform with advanced screening and distribution tools',
+        'offers'      => [
+            '@type'       => 'AggregateOffer',
+            'offerCount'  => '2',
+            'offers'      => [
+                ['@type' => 'Offer', 'name' => 'Pay-As-You-Go Plan', 'description' => 'Pay per job posting with premium features'],
+                ['@type' => 'Offer', 'name' => 'Unlimited Plan', 'description' => 'Unlimited job postings for growing companies'],
+            ],
+        ],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
 <?= $this->endSection() ?>
 
@@ -464,7 +457,7 @@
 
     /* Hero Section */
     .job-posting-hero {
-        background: linear-gradient(#0D609Eb3, #0D609Eb3),
+        background: linear-gradient(#005DA8b3, #005DA8b3),
             url('<?= base_url('images/hiring-process.webp') ?>');
         background-size: cover;
         background-position: center;
@@ -546,7 +539,7 @@
     .feature-card:hover {
         transform: translateY(-10px);
         box-shadow: 0 20px 40px rgba(240, 137, 14, 0.1) !important;
-        border-color: #F0890E !important;
+        border-color: #F5A623 !important;
     }
 
     .feature-icon i {
@@ -555,7 +548,7 @@
 
     /* Collaborator Card */
     .collaborator-card {
-        background: linear-gradient(135deg, #F0890E, #e67e00) !important;
+        background: linear-gradient(135deg, #F5A623, #e67e00) !important;
         transition: all 0.3s ease;
     }
 
@@ -566,7 +559,7 @@
 
     /* Testimonial */
     .testimonial-card {
-        border-left: 4px solid #F0890E;
+        border-left: 4px solid #F5A623;
     }
 
     .quote-icon {
@@ -582,7 +575,7 @@
 
     .company-logo:hover {
         transform: scale(1.05);
-        border-color: #F0890E;
+        border-color: #F5A623;
         box-shadow: 0 5px 15px rgba(240, 137, 14, 0.1);
     }
 
@@ -603,7 +596,7 @@
     .step-number {
         width: 60px;
         height: 60px;
-        background: linear-gradient(135deg, #F0890E, #e67e00);
+        background: linear-gradient(135deg, #F5A623, #e67e00);
         color: white;
         border-radius: 50%;
         display: flex;
@@ -620,7 +613,7 @@
         position: absolute;
         width: 70px;
         height: 70px;
-        border: 2px dashed #F0890E;
+        border: 2px dashed #F5A623;
         border-radius: 50%;
         opacity: 0.3;
     }
