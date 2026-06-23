@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<!--
+  CV PREVIEW & PDF TEMPLATE — JobberRecruit
+  ══════════════════════════════════════════
+  Dual-purpose file:
+    • Browser: full preview page with nav + action bar
+    • Dompdf PDF: only the .cv-doc element is rendered
+      ($is_pdf = true hides browser chrome)
+
+  ATS COMPLIANCE NOTES:
+    • Single column body — no floats or columns in content sections
+    • Skills rendered as "Name — Level" text (not visual-only dots)
+    • Standard section headings (Work Experience, Education, Skills...)
+    • All contact info as real text (not SVG-only)
+    • Semantic HTML: h1 name, h2 sections, ul/li for bullets
+    • Dates adjacent to their entry titles
+    • No text inside images
+    • Photo has alt="" (decorative, ATS ignores)
+
+  FIELD MAP: {{tokens}} replaced server-side. See cv-pdf-developer-handoff.md
+-->
+<title>CV – Adaeze Okonkwo | Built on JobberRecruit</title>
+
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+<style>
+/* ══════════════════════════════════════════════════════
+   RESET + TOKENS
+══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #0861A9; --brand-dark: #064A85; --brand-deep: #0A2F57;
+  --brand-light: #E6F0F8; --accent: #ED9020; --accent-dark: #C8770E;
+  --text: #141926; --muted: #5b6577; --bg: #f5f7fb;
+  --white: #ffffff; --border: #e2e8f2;
+  --radius: 10px; --shadow-lg: 0 14px 40px rgba(10,47,87,.16); --transition: .18s ease;
+}
+html { scroll-behavior: smooth; }
+body { padding-bottom: env(safe-area-inset-bottom, 0px); font-family: 'Inter','Segoe UI',Arial,sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+h1,h2,h3 { font-family: 'Sora','Inter',Arial,sans-serif; letter-spacing: -.02em; }
+a { color: var(--brand); text-decoration: none; }
+img { max-width: 100%; height: auto; display: block; }
+svg { flex-shrink: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* ══════════════════════════════════════════════════════
+   BROWSER UI — navbar + action bar
+   Hidden entirely on print / Dompdf
+══════════════════════════════════════════════════════ */
+.container { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 20px; border-radius: 8px; font-family: 'Inter',sans-serif; font-size: .88rem; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: var(--transition); text-decoration: none; }
+.btn svg { width: 16px; height: 16px; }
+.btn-primary { background: var(--brand); color: var(--white); border-color: var(--brand); }
+.btn-primary:hover { background: var(--brand-dark); text-decoration: none; }
+.btn-outline { background: transparent; color: var(--brand); border-color: var(--border); }
+.btn-outline:hover { background: var(--brand); color: var(--white); text-decoration: none; }
+.btn-accent { background: var(--accent); color: var(--brand-deep); border-color: var(--accent); }
+.btn-accent:hover { background: var(--accent-dark); text-decoration: none; }
+.navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); box-shadow: 0 1px 6px rgba(10,47,87,.06); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
+.nav-logo { display: flex; align-items: center; }
+.nav-logo img { height: 58px; width: auto; }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.action-bar { position: sticky; top: 70px; z-index: 90; background: var(--white); border-bottom: 1px solid var(--border); padding: 11px 0; box-shadow: 0 2px 8px rgba(10,47,87,.06); }
+.action-bar-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.action-bar-left { display: flex; align-items: center; gap: 12px; }
+.action-bar-left strong { font-size: .9rem; }
+.action-bar-left span { font-size: .8rem; color: var(--muted); }
+.action-bar-right { display: flex; align-items: center; gap: 8px; }
+.preview-page { padding: 36px 0 72px; }
+.cv-wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+
+/* ══════════════════════════════════════════════════════
+   CV DOCUMENT
+   ─────────────────────────────────────────────────────
+   Design system:
+     • 5px orange top bar  = JobberRecruit signature
+     • Brand blue (#0861A9) for name + section headings
+     • Orange (#ED9020) left border on sections
+     • White background throughout = ATS-safe + clean print
+     • Single-column body = ATS linearisation safe
+     • Dompdf-safe CSS only: floats, inline-block, block
+       No CSS Grid. No flex-gap. No sticky/backdrop-filter.
+
+   ATS: all text is real HTML text. Skills written as
+   "Name — Level" so parsers read the proficiency.
+   References stacked single-column.
+══════════════════════════════════════════════════════ */
+.cv-doc {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #1a1f2e;
+  border-top: 5px solid var(--accent); /* ← JobberRecruit orange signature bar */
+}
+
+/* ── Header ── */
+.cv-header {
+  background: var(--white);
+  padding: 34px 42px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.cv-header-top { overflow: hidden; margin-bottom: 18px; }
+.cv-photo {
+  float: right; margin-left: 22px;
+  width: 90px; height: 90px; border-radius: 50%;
+  border: 3px solid var(--brand-light);
+  overflow: hidden; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.cv-photo img { width: 100%; height: 100%; object-fit: cover; }
+.cv-photo-placeholder { width: 44px; height: 44px; color: #b0bec5; }
+.cv-name {
+  font-family: 'Sora', 'Inter', Arial, sans-serif;
+  font-size: 32px; font-weight: 800;
+  color: var(--brand); letter-spacing: -.04em;
+  line-height: 1; margin-bottom: 6px;
+}
+.cv-headline {
+  font-size: 14.5px; font-weight: 500;
+  color: var(--muted); margin-bottom: 0;
+  letter-spacing: .01em;
+}
+.cv-contact-row {
+  border-top: 1px solid var(--border);
+  padding-top: 14px; font-size: 12.5px; color: var(--muted);
+}
+.cv-contact-item {
+  display: inline-block; margin-right: 18px; margin-bottom: 5px;
+  color: var(--muted);
+}
+.cv-contact-item svg { width: 12px; height: 12px; vertical-align: middle; margin-right: 4px; margin-top: -2px; }
+.cv-contact-item a { color: var(--muted); }
+.cv-contact-item a:hover { color: var(--brand); }
+
+/* ── Body ── */
+.cv-body { padding: 30px 42px 28px; }
+
+/* ── Section ── */
+.cv-section { margin-bottom: 24px; }
+.cv-section:last-child { margin-bottom: 0; }
+.cv-section-title {
+  display: block;
+  font-family: 'Sora', 'Inter', Arial, sans-serif;
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--brand);
+  padding: 5px 0 8px 12px;
+  border-left: 3px solid var(--accent);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+/* ── Entry (work / education / awards) ── */
+.cv-entry { margin-bottom: 15px; }
+.cv-entry:last-child { margin-bottom: 0; }
+.cv-entry-header { overflow: hidden; margin-bottom: 2px; }
+.cv-entry-title {
+  float: left;
+  font-size: 13.5px; font-weight: 700; color: var(--text);
+}
+.cv-entry-dates {
+  float: right;
+  font-size: 12px; color: var(--muted); padding-top: 1px;
+}
+.cv-entry-sub { clear: both; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
+.cv-entry-body { font-size: 13px; color: #2d3748; line-height: 1.7; }
+.cv-entry-body ul { margin-left: 17px; }
+.cv-entry-body li { margin-bottom: 3px; }
+
+/* ── Summary ── */
+.cv-summary { font-size: 13.5px; line-height: 1.8; color: #2d3748; }
+
+/* ── Skills (ATS-SAFE)
+   "Name — Level" format so ATS parsers read the proficiency as text.
+   Visual bar is decorative only — ATS sees and reads the text.
+   Single-column: no float grid that risks linearisation errors.
+── */
+.cv-skill-row { margin-bottom: 9px; overflow: hidden; }
+.cv-skill-info { overflow: hidden; margin-bottom: 4px; }
+.cv-skill-name { float: left; font-size: 13px; font-weight: 600; color: var(--text); }
+.cv-skill-level { float: right; font-size: 11.5px; font-weight: 600; color: var(--muted); padding-top: 2px; }
+.cv-skill-track {
+  clear: both;
+  height: 4px; background: #e8edf5; border-radius: 2px;
+  overflow: hidden;
+}
+.cv-skill-fill {
+  height: 4px; background: var(--brand); border-radius: 2px;
+  display: block;
+}
+
+/* ── Languages ── */
+.cv-lang-list { font-size: 13px; color: var(--text); line-height: 1.9; }
+/* ATS reads comma-separated inline list cleanly */
+
+/* ── Certs ── */
+.cv-cert-item { margin-bottom: 11px; overflow: hidden; }
+.cv-cert-item:last-child { margin-bottom: 0; }
+.cv-cert-name { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.cv-cert-org { font-size: 12.5px; color: var(--muted); }
+/* JR Verified badge — inline, Dompdf-safe */
+.cv-jr-badge {
+  display: inline-block;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+  background: var(--brand); color: #ffffff;
+  padding: 2px 7px; border-radius: 20px;
+  margin-left: 7px; vertical-align: middle;
+  line-height: 1.6;
+}
+
+/* ── References (ATS-SAFE)
+   Single-column stacked entries.
+   Float grid risks ATS reading ref2-name after ref1-email incorrectly.
+── */
+.cv-ref-item { margin-bottom: 13px; padding-bottom: 13px; border-bottom: 1px solid var(--border); }
+.cv-ref-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.cv-ref-name { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.cv-ref-sub { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.cv-refs-on-request { font-size: 13px; color: var(--muted); font-style: italic; }
+
+/* ── JobberRecruit CV Footer ──
+   Brand signature at the bottom of every generated CV.
+   Signals where the CV was built — free marketing, trusted signal.
+   The JR wordmark in brand blue + orange dot is recognisable.
+── */
+.cv-jr-footer {
+  background: var(--brand-deep);
+  padding: 14px 42px;
+  overflow: hidden;
+}
+.cv-jr-footer-brand {
+  float: left;
+  display: inline-block;
+  font-size: 12px; font-weight: 700;
+  color: rgba(255,255,255,.9);
+  letter-spacing: .01em; line-height: 1.6;
+}
+.cv-jr-footer-brand .jr-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--accent);
+  vertical-align: middle; margin-right: 2px;
+}
+.cv-jr-footer-url {
+  float: right;
+  font-size: 11.5px; color: rgba(255,255,255,.5);
+  letter-spacing: .02em;
+}
+
+/* ══════════════════════════════════════════════════════
+   PRINT / DOMPDF STYLES
+   @media print hides all browser chrome and formats
+   the cv-doc exactly for A4 paper output.
+══════════════════════════════════════════════════════ */
+@media print {
+  .navbar, .action-bar, .preview-page > *:not(.cv-wrap),
+  .cv-wrap > *:not(.cv-doc) { display: none !important; }
+  body { background: #ffffff; }
+  .preview-page { padding: 0; }
+  .cv-wrap { max-width: 100%; padding: 0; margin: 0; }
+  .cv-doc { box-shadow: none; border-radius: 0; margin: 0; }
+  @page { size: A4 portrait; margin: 0; }
+  /* Force background colours to print */
+  .cv-doc, .cv-header, .cv-body, .cv-jr-footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cv-skill-fill, .cv-jr-badge, .cv-jr-footer-brand .jr-dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Prevent awkward page breaks */
+  .cv-entry, .cv-cert-item, .cv-ref-item, .cv-section { page-break-inside: avoid; }
+  .cv-section-title { page-break-after: avoid; }
+}
+
+/* Responsive browser view */
+@media (max-width: 640px) {
+  .cv-header { padding: 24px 22px 18px; }
+  .cv-body { padding: 22px 22px 20px; }
+  .cv-jr-footer { padding: 12px 22px; }
+  .cv-entry-dates { float: none; display: block; margin-bottom: 2px; }
+  .cv-entry-title { float: none; display: block; }
+  .action-bar-right { width: 100%; }
+  .action-bar-right .btn { flex: 1; justify-content: center; }
+}
+
+/* Skip link (keyboard accessibility) */
+.skip-link { position:absolute; top:-50px; left:16px; background:var(--brand); color:var(--white); padding:8px 16px; border-radius:0 0 6px 6px; font-weight:600; z-index:9999; transition:top .2s; }
+.skip-link:focus { top:0; }
+
+/* ── Mobile touch targets: Apple HIG minimum 44px ── */
+@media (max-width: 900px) {
+  .btn    { min-height: 44px; }
+  .btn-sm { min-height: 40px; padding: 9px 14px; }
+  .btn-lg { min-height: 50px; }
+  /* Nav hamburger and save buttons */
+  .hamburger { min-height: 44px; min-width: 44px; }
+  .save-btn, .btn-report { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to CV content</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3.5A11.9 11.9 0 0 0 12 0C5.5 0 .2 5.3.2 11.8c0 2.1.5 4.1 1.6 5.9L0 24l6.5-1.7c1.7 1 3.6 1.4 5.5 1.4 6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.1-3.3-8.4ZM12 21.5c-1.7 0-3.4-.5-4.9-1.3l-.3-.2-3.7 1 1-3.6-.2-.4a9.7 9.7 0 0 1-1.5-5.2c0-5.4 4.4-9.8 9.8-9.8 2.6 0 5.1 1 6.9 2.9a9.7 9.7 0 0 1 2.9 6.9c0 5.4-4.4 9.7-9.9 9.7Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+</defs></svg>
+
+<!-- ══ BROWSER NAVBAR — hidden on print ══ -->
+<header class="navbar" role="banner">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo" aria-label="JobberRecruit Home">
+        <picture><source srcset="/assets/logo.webp" type="image/webp"><img src="/assets/logo.png" alt="JobberRecruit" width="232" height="60" loading="eager" decoding="async"></picture>
+      </a>
+      <div class="nav-actions">
+        <a href="/profile/edit" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-edit"/></svg> Back to editing</a>
+        <button class="btn btn-primary" onclick="window.print()"><svg aria-hidden="true"><use href="#i-download"/></svg> Download PDF</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══ BROWSER ACTION BAR — hidden on print ══ -->
+<div class="action-bar" aria-label="CV actions">
+  <div class="container action-bar-inner">
+    <div class="action-bar-left">
+      <strong>Adaeze Okonkwo</strong>
+      <span>CV Preview · ATS optimised</span>
+    </div>
+    <div class="action-bar-right">
+      <a href="/profile/edit" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit</a>
+      <button class="btn btn-accent" onclick="window.print()"><svg aria-hidden="true"><use href="#i-download"/></svg> Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CV DOCUMENT ══ -->
+<main class="preview-page">
+  <div class="cv-wrap">
+
+    <article class="cv-doc" role="main" aria-label="Curriculum vitae — Adaeze Okonkwo">
+
+      <!-- ── HEADER ──
+           The 5px orange top bar on .cv-doc is the JobberRecruit signature.
+           White background is ATS-safe and prints cleanly on any printer.
+           Photo floats right — ATS ignores images (alt="").
+      -->
+      <header class="cv-header">
+        <div class="cv-header-top">
+
+          <!-- IF candidate.profile_photo: replace with <img src="{{photo_url}}" alt=""> -->
+          <div class="cv-photo" aria-hidden="true">
+            <svg class="cv-photo-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 22a8.5 8.5 0 0 1 17 0"/></svg>
+          </div>
+
+          <!-- candidate.first_name + ' ' + candidate.last_name -->
+          <h1 class="cv-name">Adaeze Okonkwo</h1>
+          <!-- candidate.headline -->
+          <p class="cv-headline">Senior Product Manager · Lagos, Nigeria</p>
+        </div>
+
+        <!-- Contact row — only render items that are filled in candidate record -->
+        <div class="cv-contact-row">
+          <!-- candidate.phone -->
+          <span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-phone"/></svg>08012345678</span>
+          <!-- candidate.whatsapp (only if differs from phone) -->
+          <span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-whatsapp"/></svg>08012345678</span>
+          <!-- candidate.email -->
+          <span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-mail"/></svg>adaeze@email.com</span>
+          <!-- candidate.state_of_residence + ', Nigeria' -->
+          <span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-pin"/></svg>Lagos, Nigeria</span>
+          <!-- social profile where platform = 'LinkedIn' (if set) -->
+          <span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-globe"/></svg><a href="https://linkedin.com/in/adaeze-okonkwo">linkedin.com/in/adaeze-okonkwo</a></span>
+        </div>
+      </header>
+
+      <div class="cv-body">
+
+        <!-- ── PROFESSIONAL SUMMARY ──
+             ATS reads this as plain paragraph text. Good.
+        -->
+        <section class="cv-section" aria-labelledby="cv-h-summary">
+          <h2 class="cv-section-title" id="cv-h-summary">Professional Summary</h2>
+          <!-- candidate.summary — output unescaped (trusted admin HTML / nl2br) -->
+          <p class="cv-summary">Results-driven Senior Product Manager with 6+ years of experience leading cross-functional teams to deliver high-impact digital products across fintech and e-commerce sectors in Nigeria. Proven track record of increasing user engagement by 40%+ and reducing time-to-market by 30% through agile methodologies. Adept at bridging business strategy, user research, and engineering execution to build products that scale.</p>
+        </section>
+
+        <!-- ── WORK EXPERIENCE ──
+             LOOP: candidate.work_experience (ordered start_year DESC).
+             Dates are right-floated beside the title — ATS reads
+             the float-cleared sub-line next, then the body. Correct order.
+        -->
+        <section class="cv-section" aria-labelledby="cv-h-work">
+          <h2 class="cv-section-title" id="cv-h-work">Work Experience</h2>
+
+          <div class="cv-entry">
+            <div class="cv-entry-header">
+              <span class="cv-entry-title">Senior Product Manager</span>
+              <span class="cv-entry-dates">Jan 2022 – Present</span>
+            </div>
+            <p class="cv-entry-sub">Flutterwave · Lagos, Nigeria</p>
+            <div class="cv-entry-body">
+              <ul>
+                <li>Led a cross-functional team of 12 to launch a merchant payments dashboard used by 200,000+ SMEs across 5 African markets</li>
+                <li>Increased checkout conversion rate by 38% through data-driven A/B testing and iterative UX improvements</li>
+                <li>Reduced feature delivery cycle from 8 weeks to 4 weeks by implementing a dual-track agile framework</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="cv-entry">
+            <div class="cv-entry-header">
+              <span class="cv-entry-title">Product Manager</span>
+              <span class="cv-entry-dates">Mar 2019 – Dec 2021</span>
+            </div>
+            <p class="cv-entry-sub">Konga Online Shopping Ltd · Lagos, Nigeria</p>
+            <div class="cv-entry-body">
+              <ul>
+                <li>Owned the seller onboarding product, reducing activation time from 14 days to 3 days and growing active sellers by 60%</li>
+                <li>Collaborated with engineering, design, and commercial teams to ship 9 major product releases over 2.5 years</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── EDUCATION ── -->
+        <section class="cv-section" aria-labelledby="cv-h-edu">
+          <h2 class="cv-section-title" id="cv-h-edu">Education</h2>
+
+          <div class="cv-entry">
+            <div class="cv-entry-header">
+              <span class="cv-entry-title">B.Sc Computer Science</span>
+              <span class="cv-entry-dates">2015 – 2019</span>
+            </div>
+            <p class="cv-entry-sub">University of Lagos · First Class Honours</p>
+          </div>
+
+          <div class="cv-entry">
+            <div class="cv-entry-header">
+              <span class="cv-entry-title">WAEC / SSCE</span>
+              <span class="cv-entry-dates">2010 – 2015</span>
+            </div>
+            <p class="cv-entry-sub">Queen's College, Lagos · 9 distinctions</p>
+          </div>
+        </section>
+
+        <!-- ── SKILLS ──
+             ATS-SAFE FORMAT: "Skill Name — Level" as real text.
+             The visual bar beneath each skill is decorative only.
+             ATS parsers see: "Product Management Expert" — readable.
+
+             LOOP: candidate.skills
+             Level map: 1=Beginner 2=Elementary 3=Intermediate 4=Advanced 5=Expert
+             Bar width:  1=20% 2=40% 3=60% 4=80% 5=100%
+        -->
+        <section class="cv-section" aria-labelledby="cv-h-skills">
+          <h2 class="cv-section-title" id="cv-h-skills">Skills</h2>
+
+          <div class="cv-skill-row">
+            <div class="cv-skill-info">
+              <span class="cv-skill-name">Product Management</span>
+              <span class="cv-skill-level">Expert</span>
+            </div>
+            <div class="cv-skill-track"><span class="cv-skill-fill" style="width:100%"></span></div>
+          </div>
+          <div class="cv-skill-row">
+            <div class="cv-skill-info">
+              <span class="cv-skill-name">Agile &amp; Scrum</span>
+              <span class="cv-skill-level">Advanced</span>
+            </div>
+            <div class="cv-skill-track"><span class="cv-skill-fill" style="width:80%"></span></div>
+          </div>
+          <div class="cv-skill-row">
+            <div class="cv-skill-info">
+              <span class="cv-skill-name">Data Analysis &amp; SQL</span>
+              <span class="cv-skill-level">Intermediate</span>
+            </div>
+            <div class="cv-skill-track"><span class="cv-skill-fill" style="width:60%"></span></div>
+          </div>
+          <div class="cv-skill-row">
+            <div class="cv-skill-info">
+              <span class="cv-skill-name">UX Research</span>
+              <span class="cv-skill-level">Advanced</span>
+            </div>
+            <div class="cv-skill-track"><span class="cv-skill-fill" style="width:80%"></span></div>
+          </div>
+          <div class="cv-skill-row">
+            <div class="cv-skill-info">
+              <span class="cv-skill-name">Figma</span>
+              <span class="cv-skill-level">Intermediate</span>
+            </div>
+            <div class="cv-skill-track"><span class="cv-skill-fill" style="width:60%"></span></div>
+          </div>
+        </section>
+
+        <!-- ── LANGUAGES ──
+             ATS reads comma-separated text cleanly.
+             LOOP: candidate.languages — "Name (Proficiency)"
+        -->
+        <section class="cv-section" aria-labelledby="cv-h-langs">
+          <h2 class="cv-section-title" id="cv-h-langs">Languages</h2>
+          <p class="cv-lang-list">
+            English <em>(Native)</em> &nbsp;·&nbsp;
+            Igbo <em>(Native)</em> &nbsp;·&nbsp;
+            Yoruba <em>(Conversational)</em>
+          </p>
+        </section>
+
+        <!-- ── CERTIFICATIONS ──
+             JR auto-synced certs carry the JR Verified badge.
+             External certs have no badge.
+             LOOP: candidate.jr_certificates first, then candidate.external_certs
+        -->
+        <section class="cv-section" aria-labelledby="cv-h-certs">
+          <h2 class="cv-section-title" id="cv-h-certs">Certifications</h2>
+
+          <!-- JR auto-synced (paid completed course) -->
+          <div class="cv-cert-item">
+            <div class="cv-cert-name">
+              Digital Marketing Fundamentals
+              <span class="cv-jr-badge" aria-label="JobberRecruit verified"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:middle;margin-right:2px"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>JR Verified</span>
+            </div>
+            <div class="cv-cert-org">JobberRecruit Training · Completed June 2026</div>
+          </div>
+
+          <!-- External cert — no badge -->
+          <div class="cv-cert-item">
+            <div class="cv-cert-name">Project Management Professional (PMP)</div>
+            <div class="cv-cert-org">Project Management Institute (PMI) · 2023 · Credential ID: PMI-234567</div>
+          </div>
+        </section>
+
+        <!-- ── HONOURS & AWARDS ── -->
+        <section class="cv-section" aria-labelledby="cv-h-awards">
+          <h2 class="cv-section-title" id="cv-h-awards">Honours &amp; Awards</h2>
+          <div class="cv-entry">
+            <div class="cv-entry-header">
+              <span class="cv-entry-title">Best Product Manager of the Year</span>
+              <span class="cv-entry-dates">2023</span>
+            </div>
+            <p class="cv-entry-sub">Flutterwave Internal Awards · Recognised for delivering the highest-impact product initiative of the fiscal year</p>
+          </div>
+        </section>
+
+        <!-- ── REFERENCES ──
+             ATS-SAFE: single-column stacked entries.
+             Two-column float grids risk ATS reading ref2.name between
+             ref1.phone and ref1.email — this avoids that.
+
+             IF candidate.refs_on_request == true: show the italic line only.
+             ELSE: LOOP candidate.references (max 2)
+        -->
+        <section class="cv-section" aria-labelledby="cv-h-refs">
+          <h2 class="cv-section-title" id="cv-h-refs">References</h2>
+
+          <div class="cv-ref-item">
+            <div class="cv-ref-name">Dr. Chukwuemeka Obi</div>
+            <div class="cv-ref-sub">
+              Head of Engineering, Flutterwave &nbsp;·&nbsp; Former manager<br>
+              +234 801 234 5678 &nbsp;·&nbsp; c.obi@flutterwave.com
+            </div>
+          </div>
+
+          <div class="cv-ref-item">
+            <div class="cv-ref-name">Mrs. Folake Adeleke</div>
+            <div class="cv-ref-sub">
+              Marketing Director, Konga &nbsp;·&nbsp; Former colleague<br>
+              +234 812 345 6789 &nbsp;·&nbsp; f.adeleke@konga.com
+            </div>
+          </div>
+
+        </section>
+
+      </div><!-- /cv-body -->
+
+      <!-- ══ JOBBERRECRUIT SIGNATURE FOOTER ══
+           This appears on every CV generated through JobberRecruit.
+           Dark brand-deep background, JR wordmark + orange dot, URL.
+           Signals where the CV was built — professional brand stamp.
+           The orange dot echoes the orange accent bar at the top,
+           bookending the document with the JobberRecruit identity.
+      -->
+      <div class="cv-jr-footer" role="contentinfo" aria-label="Generated by JobberRecruit">
+        <div class="cv-jr-footer-brand">
+          <span class="jr-dot" aria-hidden="true"></span>
+          Built on <strong style="margin-left:2px;letter-spacing:.01em">JobberRecruit</strong>
+        </div>
+        <div class="cv-jr-footer-url">jobberrecruit.com</div>
+      </div>
+
+    </article>
+  </div>
+</main>
+
+<script>
+/* Browser print = PDF via system dialog.
+   Server-side Dompdf handles the actual PDF generation at /profile/download.
+   See cv-pdf-developer-handoff.md */
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Offline | JobberRecruit</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            -webkit-font-smoothing: antialiased;
+        }
+        .offline-icon {
+            font-size: 64px;
+            color: #94a3b8;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            color: #0f172a;
+        }
+        p {
+            font-size: 16px;
+            color: #64748b;
+            margin: 0 0 32px 0;
+            max-width: 300px;
+            line-height: 1.5;
+        }
+        .btn-retry {
+            background-color: #0D609E;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(13, 96, 158, 0.2);
+            transition: transform 0.1s, background-color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-retry:active {
+            transform: scale(0.96);
+            background-color: #0a4d7e;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #0f172a; color: #f8fafc; }
+            h1 { color: #f1f5f9; }
+            p { color: #94a3b8; }
+            .offline-icon { color: #475569; }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-icon">
+        <svg xmlns="http://www.w3.org/2000/event" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+    </div>
+    <h1>You are offline</h1>
+    <p>Please check your internet connection and try again.</p>
+    <button class="btn-retry" onclick="window.location.reload()">Try Again</button>
+
+    <script>
+        // Optional: Auto-reload when back online
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+    </script>
+</body>
+</html>

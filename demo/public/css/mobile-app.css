@@ -219,3 +219,77 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
 [data-theme="dark"] .jr-action-bar .jr-save {
   border-color: rgba(255, 255, 255, .12);
 }
+
+/* =========================================
+   NATIVE MOBILE APP FEEL & BOTTOM NAV
+   ========================================= */
+
+/* Mobile Bottom Navigation */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-white, #ffffff);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-top: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 1040;
+    border-top: 1px solid var(--border-light, #e2e8f0);
+    transition: transform 0.3s ease;
+}
+
+/* Hide on larger screens */
+@media (min-width: 768px) {
+    .mobile-bottom-nav {
+        display: none !important;
+    }
+}
+
+/* Pad the bottom of the body so content isn't hidden under the nav */
+@media (max-width: 767.98px) {
+    body {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+.mobile-bottom-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-muted, #64748b);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    min-width: 60px;
+}
+
+.mobile-bottom-nav .nav-item i {
+    font-size: 20px;
+    margin-bottom: 4px;
+    transition: transform 0.2s ease;
+}
+
+/* Active State */
+.mobile-bottom-nav .nav-item.active {
+    color: var(--brand, #0D609E);
+}
+
+.mobile-bottom-nav .nav-item.active i {
+    transform: translateY(-2px);
+    font-weight: 600;
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .mobile-bottom-nav {
+    background: var(--bg-light, #1E293B);
+    border-top-color: var(--border-light, #334155);
+}
+
+[data-theme="dark"] .mobile-bottom-nav .nav-item.active {
+    color: var(--brand-light, #3b82f6);
+}
