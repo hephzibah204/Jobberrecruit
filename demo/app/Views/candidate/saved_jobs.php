@@ -90,10 +90,10 @@
                 if (data.success !== false) {
                     this.closest('tr').remove();
                 } else {
-                    alert(data.message || 'Failed to unsave job.');
+                    toastr.error(data.message || 'Failed to unsave job.');
                 }
             })
-            .catch(() => alert('Network error. Please try again.'));
+            .catch(() => toastr.error('Network error. Please try again.'));
         });
     });
 </script>

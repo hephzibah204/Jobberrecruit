@@ -112,13 +112,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.scrollTop = container.scrollHeight;
                 input.value = '';
             } else {
-                alert(data.message || 'Failed to send message');
+                toastr.error(data.message || 'Failed to send message');
             }
             sendBtn.disabled = false;
         })
         .catch(err => {
             console.error('Error sending message:', err);
-            alert('Network error. Please try again.');
+            toastr.error('Network error. Please try again.');
             sendBtn.disabled = false;
         });
     });

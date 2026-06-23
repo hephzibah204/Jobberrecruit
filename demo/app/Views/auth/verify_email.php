@@ -67,7 +67,7 @@
     }
 
     .verify-card h3 {
-        color: #005DA8;
+        color: var(--brand);
         font-weight: 700;
         margin-bottom: 1rem;
     }
@@ -81,7 +81,7 @@
     .btn-primary {
         width: 100%;
         padding: 0.85rem;
-        background-color: #005DA8;
+        background-color: var(--brand);
         border: none;
         color: #fff;
         font-weight: 600;
@@ -97,7 +97,7 @@
     .btn-resend {
         width: 80%;
         padding: 0.85rem;
-        background-color: #F5A623;
+        background-color: var(--accent);
         border: none;
         color: #fff;
         font-weight: 600;

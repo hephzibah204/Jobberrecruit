@@ -120,9 +120,9 @@
                                                 </a>
                                                 <form action="<?= base_url('admin/webinars/delete/' . $webinar->id) ?>" method="POST" class="d-inline" onsubmit="return confirm('Delete this webinar?')">
                                                     <?= csrf_field() ?>
-                                                    <button type="submit" class="btn btn-sm btn-icon btn-danger-light" title="Delete Webinar">
-                                                        <i class="ti ti-trash"></i>
-                                                    </button>
+                                                    <button type="submit" class="btn btn-sm btn-icon btn-danger-light" title="Delete Webinar" aria-label="Delete">
+    <i class="ti ti-trash"></i>
+</button>
                                                 </form>
                                             </td>
                                         </tr>

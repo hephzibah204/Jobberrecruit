@@ -83,7 +83,7 @@
                                 <span class="featured-badge">FEATURED</span>
 
                                 <div class="d-flex align-items-center mb-3">
-                                    <img src="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : ($job->company_logo ? base_url($job->company_logo) : base_url('images/default-company.png')) ?>"
+                                    <img src="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>"
                                         class="company-logo me-3" alt="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Anonymous Employer' : esc($job->company_name) ?>">
                                     <div>
                                         <h6 class="fw-semibold mb-1 text-dark"><?= esc($job->title) ?></h6>

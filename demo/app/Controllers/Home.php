@@ -30,7 +30,7 @@ class Home extends BaseController
     {
         $this->auth = service('auth');
         $this->config = config('Auth');
-        helper(['auth', 'text', 'form', 'url', 'env', 'category', 'time']);
+        helper(['auth', 'text', 'form', 'url', 'env', 'category', 'time', 'image']);
         $this->users = model(UserModel::class);
         $this->userModel = model(ModelsUserModel::class);
         $this->session = \Config\Services::session();
@@ -317,6 +317,7 @@ class Home extends BaseController
 
         $employerModel = new \App\Models\EmployerModel();
         $jobAppModel = new \App\Models\JobApplicationModel();
+        $courseModel = new \App\Models\CourseModel();
 
         $activeJobsCount = $jobModel->where('status', 'open')->countAllResults();
 
@@ -333,6 +334,13 @@ class Home extends BaseController
         $hiredApps = $jobAppModel->where('status', 'hired')->countAllResults();
         $placementSuccess = $totalApps > 0 ? round(($hiredApps / $totalApps) * 100) : 95;
 
+        $featuredCourses = $courseModel
+            ->where('is_featured', 1)
+            ->where('is_active', 1)
+            ->orderBy('created_at', 'DESC')
+            ->limit(5)
+            ->findAll();
+
         $data = [
             'title' => 'Find Jobs in Nigeria | JobberRecruit — Hire Top Talent',
             'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt and more. Employers can post jobs and hire top Nigerian talent today.',
@@ -348,6 +356,7 @@ class Home extends BaseController
             'top_companies' => $top_companies,
             'featured_jobs' => $featured_jobs,
             'popular_vacancies' => $popular_vacancies,
+            'featured_courses' => $featuredCourses,
             'website_logo' => 'assets/imgs/page/homepage4/banner.png',
             'activeJobsCount' => $activeJobsCount,
             'verifiedEmployersCount' => $verifiedEmployersCount,
@@ -810,6 +819,7 @@ class Home extends BaseController
             'jobType' => $jobType,
             'jobPosted' => $jobPosted,
             'view_mode' => $viewMode,
+            'savedJobIds' => ($this->auth->loggedIn()) ? array_column(model('App\Models\SavedJobModel')->where('user_id', $this->auth->user()->id)->findAll(), 'job_id') : [],
         ];
 
         if ($this->request->isAJAX()) {
@@ -846,30 +856,19 @@ class Home extends BaseController
             ]);
         }
 
-        $candidateModel = model(JobSeekerModel::class);
         $savedJobModel  = model('App\Models\SavedJobModel');
-
-        $candidate = $candidateModel
-            ->where('user_id', $this->auth->user()->id)
-            ->first();
-
-        if (!$candidate) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Candidate profile not found.'
-            ]);
-        }
+        $userId = $this->auth->user()->id;
 
         // Toggle logic
-        if ($savedJobModel->isSaved($candidate->id, $jobId)) {
-            $savedJobModel->removeJob($candidate->id, $jobId);
+        if ($savedJobModel->isSaved($userId, $jobId)) {
+            $savedJobModel->removeJob($userId, $jobId);
             return $this->response->setJSON([
                 'success' => true,
                 'saved' => false,
                 'message' => 'Job removed from saved list.'
             ]);
         } else {
-            $savedJobModel->saveJob($candidate->id, $jobId);
+            $savedJobModel->saveJob($userId, $jobId);
             return $this->response->setJSON([
                 'success' => true,
                 'saved' => true,
@@ -987,15 +986,15 @@ class Home extends BaseController
         //     throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         // }
 
+        $candidate = null;
         if ($this->auth->loggedIn()) {
-            $candidate = model(JobSeekerModel::class)
-                ->where('user_id', $this->auth->user()->id)
-                ->first();
-
-            if ($candidate) {
-                $isSaved = $savedJobModel->isSaved($candidate->id, $job->id);
-            }
+            $isSaved = $savedJobModel->isSaved($this->auth->user()->id, $job->id);
+            $candidateModel = model(\App\Models\JobSeekerModel::class);
+            $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
         }
+
+        $questionModel = model(\App\Models\JobQuestionModel::class);
+        $questions = $questionModel->where('job_id', $job->id)->findAll();
 
         // Fetch related jobs (based on category or industry, excluding current job)
         $relatedJobsCacheKey = "related_jobs_{$jobId}";
@@ -1062,6 +1061,9 @@ class Home extends BaseController
             'featured_jobs' => $featured_jobs,
             'employer_job_count' => $employer_job_count,
             'isSaved' => $isSaved,
+            'user' => $this->auth->user(),
+            'candidate' => $candidate,
+            'questions' => $questions,
             'website_logo' => 'assets/imgs/logo.png',
         ];
 
@@ -2122,30 +2124,8 @@ class Home extends BaseController
             ]);
         }
 
-        // GET: Load Application Page
-        $savedJobModel = model('App\Models\SavedJobModel');
-        $questionModel = model(\App\Models\JobQuestionModel::class);
-        $isSaved = false;
-        $candidate = null;
-
-        if (auth()->loggedIn()) {
-            $candidate = $candidateModel->where('user_id', auth()->user()->id)->first();
-            if ($candidate) {
-                $isSaved = $savedJobModel->isSaved($candidate->id, $jobId);
-            }
-        }
-
-        $questions = $questionModel->where('job_id', $job->id)->findAll();
-
-        return view('home/apply', [
-            'title'   => 'Apply for ' . esc($job->title),
-            'auth'    => auth(),
-            'user'    => auth()->user(),
-            'job'     => $job,
-            'isSaved' => $isSaved,
-            'candidate' => $candidate ?? null,
-            'questions' => $questions
-        ]);
+        // GET: Redirect to main job details page (form is now embedded)
+        return redirect()->to(base_url('jobs/view/' . ($job->slug ?? $jobId)));
 
     }
 
@@ -2907,5 +2887,89 @@ class Home extends BaseController
             'auth' => $this->auth,
         ];
         return view('ad', $data);
+    }
+
+    public function ajaxRecentJobs()
+    {
+        $jobModel = new \App\Models\JobModel();
+        $cache = \Config\Services::cache();
+        
+        $jobsCacheKey = 'recent_jobs_home_v2';
+        $jobs = $cache->get($jobsCacheKey);
+
+        if (!$jobs) {
+            $jobs = $jobModel
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.company_name as employer_name')
+                ->where('status', 'open')
+                ->join('states', 'states.id = jobs.state_id', 'left')
+                ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
+                ->join('industries', 'industries.id = jobs.industry_id', 'left')
+                ->join('employers', 'employers.id = jobs.employer_id', 'left')
+                ->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC')
+                ->findAll(6);
+
+            $cache->save($jobsCacheKey, $jobs, 3600);
+        }
+
+        $employerUserIds = [];
+        foreach ($jobs as $job) {
+            if (!empty($job->employer_user_id)) {
+                $employerUserIds[] = $job->employer_user_id;
+            }
+        }
+
+        $activeSubsMap = [];
+        if (!empty($employerUserIds)) {
+            $subscriptionModel = model(\App\Models\UserSubscriptionModel::class);
+            $activeSubs = $subscriptionModel
+                ->select('user_subscriptions.user_id, plans.features')
+                ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
+                ->where('user_subscriptions.is_active', 1)
+                ->whereIn('user_subscriptions.user_id', array_unique($employerUserIds))
+                ->findAll();
+
+            foreach ($activeSubs as $sub) {
+                $userId = is_array($sub) ? $sub['user_id'] : $sub->user_id;
+                $features = is_array($sub) ? $sub['features'] : $sub->features;
+                $activeSubsMap[$userId] = $features;
+            }
+        }
+
+        foreach ($jobs as &$job) {
+            $planFeatures = [];
+            $featuresJson = $activeSubsMap[$job->employer_user_id] ?? null;
+
+            if ($featuresJson && !empty($featuresJson)) {
+                $planFeatures = planFeatures(json_decode($featuresJson, true));
+            }
+
+            $job->show_trust_badge =
+                !empty($planFeatures['trust_badge']) && ($job->is_verified == 1);
+
+            $job->anonymous = !empty($planFeatures['anonymous']) && ($job->is_anonymous);
+
+            if (!empty($planFeatures['anonymous']) && ($job->is_anonymous)) {
+                $job->employer_name = 'Confidential Employer';
+                $job->company_logo  = base_url('images/favicon.png');
+            }
+        }
+        
+        return view('home/partials/recent_jobs_ajax', ['jobs' => $jobs]);
+    }
+
+    public function ajaxCategories()
+    {
+        $db = db_connect();
+        
+        $categories = $db->table('job_categories')
+            ->select('job_categories.id, job_categories.name, COUNT(jobs.id) as job_count')
+            ->join('jobs', 'jobs.category_id = job_categories.id AND jobs.status = "open"', 'left')
+            ->groupBy('job_categories.id')
+            ->orderBy('job_count', 'DESC')
+            ->limit(8)
+            ->get()
+            ->getResultArray();
+            
+        return view('home/partials/categories_ajax', ['categories' => $categories]);
     }
 }

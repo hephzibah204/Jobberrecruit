@@ -22,7 +22,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            background: linear-gradient(135deg, #0D609E, #0b5ed7);
             color: white;
             padding: 20px;
             text-align: center;
@@ -44,12 +44,12 @@
             padding: 15px;
             border-radius: 8px;
             margin: 15px 0;
-            border-left: 4px solid #0d6efd;
+            border-left: 4px solid #0D609E;
         }
 
         .button {
             display: inline-block;
-            background: #0d6efd;
+            background: #0D609E;
             color: #ffffff;
             padding: 10px 20px;
             text-decoration: none;
@@ -106,7 +106,7 @@
             <div class="alert-info">
                 <strong>📝 Guest Applicant Note:</strong><br>
                 You applied as a guest. To track all your applications, view history, and get faster updates,
-                <a href="<?= site_url('register') ?>" style="color: #0d6efd;">create a free account</a> with the same email address.
+                <a href="<?= site_url('register') ?>" style="color: #0D609E;">create a free account</a> with the same email address.
             </div>
         <?php endif; ?>
 

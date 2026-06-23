@@ -54,9 +54,9 @@
                                                     </button>
                                                     <form action="<?= base_url('admin/elearning/modules/delete/' . $module->id) ?>" method="POST" class="d-inline">
                                                         <?= csrf_field() ?>
-                                                        <button type="submit" class="btn btn-sm btn-icon btn-danger-light" onclick="return confirm('Are you sure you want to delete this module?')" title="Delete Module">
-                                                            <i class="ti ti-trash"></i>
-                                                        </button>
+                                                        <button type="submit" class="btn btn-sm btn-icon btn-danger-light" onclick="return confirm('Are you sure you want to delete this module?')" title="Delete Module" aria-label="Delete">
+    <i class="ti ti-trash"></i>
+</button>
                                                     </form>
                                                 </td>
                                             </tr>

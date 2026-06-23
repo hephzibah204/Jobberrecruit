@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="msapplication-TileColor" content="#0E0E0E">
     <meta name="template-color" content="#0E0E0E">
@@ -15,6 +15,8 @@
     <link rel="canonical" href="<?= current_url(); ?>">
     <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('images/favicon.png'); ?>">
     <link href="<?= base_url('assets/css/jobberrecruit.css'); ?>" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/global-core.css'); ?>">
+    <link rel="stylesheet" href="<?= base_url('css/mobile-app.css'); ?>">
     <link href="<?= base_url('assets/css/toastr.min.css'); ?>" rel="stylesheet">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -73,6 +75,7 @@
     <script src="<?= base_url('assets/js/plugins/scrollup.js'); ?>"></script>
     <script src="<?= base_url('assets/js/plugins/swiper-bundle.min.js'); ?>"></script>
     <script src="<?= base_url('assets/js/main8c94.js?v=4.1'); ?>"></script>
+    <script src="<?= base_url('assets/js/mobile-app.js?v=1.0'); ?>"></script>
     <?= $this->include('partials/cookie_consent'); ?>
     <?= $this->renderSection('scripts'); ?>
 </body>

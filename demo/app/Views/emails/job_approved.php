@@ -132,7 +132,7 @@
         }
 
         .plan-subscription {
-            background: #0d6efd;
+            background: #0D609E;
             color: white;
         }
 

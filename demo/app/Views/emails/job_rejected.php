@@ -50,7 +50,7 @@
 
         .button {
             display: inline-block;
-            background: #0d6efd;
+            background: #0D609E;
             color: white;
             padding: 12px 24px;
             text-decoration: none;

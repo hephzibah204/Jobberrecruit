@@ -693,7 +693,7 @@ foreach ($allFaqs as $question => $answer) {
 
     /* Hero Section */
     .faq-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, var(--accent) 100%);
         position: relative;
         overflow: hidden;
     }
@@ -703,7 +703,7 @@ foreach ($allFaqs as $question => $answer) {
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
+        background: linear-gradient(90deg, var(--brand) 0%, var(--brand) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -752,7 +752,7 @@ foreach ($allFaqs as $question => $answer) {
     }
 
     .accordion-button:not(.collapsed) {
-        color: #005DA8;
+        color: var(--brand);
         background-color: rgba(102, 126, 234, 0.05);
         border-bottom-left-radius: 0 !important;
         border-bottom-right-radius: 0 !important;
@@ -767,7 +767,7 @@ foreach ($allFaqs as $question => $answer) {
     }
 
     .accordion-button:focus {
-        border-color: #005DA8;
+        border-color: var(--brand);
         box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
     }
 
@@ -785,7 +785,7 @@ foreach ($allFaqs as $question => $answer) {
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 100%);
     }
 
     /* FAQ Sections */
@@ -800,7 +800,7 @@ foreach ($allFaqs as $question => $answer) {
 
     /* CTA Section */
     .bg-primary {
-        background: linear-gradient(135deg, #005DA8 0%, #02365eff 100%) !important;
+        background: linear-gradient(135deg, var(--brand) 0%, #02365eff 100%) !important;
     }
 
     /* Search Results Highlight */
@@ -997,14 +997,14 @@ foreach ($allFaqs as $question => $answer) {
             }
         });
 
-        // Real-time search (optional - comment out if you prefer manual search)
-        // searchInput.addEventListener('input', function() {
-        //     if (this.value.length >= 3) {
-        //         searchFAQs();
-        //     } else if (this.value.length === 0) {
-        //         clearSearch();
-        //     }
-        // });
+        // Real-time search
+        searchInput.addEventListener('input', function() {
+            if (this.value.length >= 3) {
+                searchFAQs();
+            } else if (this.value.length === 0) {
+                clearSearch();
+            }
+        });
 
         // Smooth scroll for anchor links
         document.querySelectorAll('.scroll-to').forEach(link => {
@@ -1078,7 +1078,7 @@ foreach ($allFaqs as $question => $answer) {
         } else {
             // Fallback for browsers that don't support Web Share API
             navigator.clipboard.writeText(window.location.href).then(() => {
-                alert('Link copied to clipboard!');
+                toastr.success('Link copied to clipboard!');
             });
         }
     }

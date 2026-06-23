@@ -380,7 +380,7 @@ foreach ($blogs as $index => $blog) {
 
     /* Custom Blog Styles */
     .blog-hero-section {
-        background: linear-gradient(135deg, #F5A623 0%, #bb6804ff 100%);
+        background: linear-gradient(135deg, var(--accent) 0%, #bb6804ff 100%);
         position: relative;
         overflow: hidden;
     }
@@ -399,7 +399,7 @@ foreach ($blogs as $index => $blog) {
 
     .stat-item {
         padding: 1rem;
-        background: #005DA8;
+        background: var(--brand);
         border-radius: 0.75rem;
         backdrop-filter: blur(10px);
     }
@@ -429,12 +429,12 @@ foreach ($blogs as $index => $blog) {
     }
 
     .search-section {
-        background-color: #005DA8;
+        background-color: var(--brand);
     }
 
     .search-section .btn-secondary {
-        background-color: #F5A623 !important;
-        border-color: #F5A623 !important;
+        background-color: var(--accent) !important;
+        border-color: var(--accent) !important;
     }
 
     .search-form .form-control {
@@ -484,7 +484,7 @@ foreach ($blogs as $index => $blog) {
     }
 
     .bg-primary {
-        background-color: #005DA8 !important;
+        background-color: var(--brand) !important;
         color: #fff !important;
     }
 
@@ -493,23 +493,23 @@ foreach ($blogs as $index => $blog) {
     }
 
     .btn-outline-primary {
-        color: #005DA8 !important;
+        color: var(--brand) !important;
         border-color: #fff !important;
     }
 
     a.btn-outline-primary {
-        background-color: #005DA8 !important;
+        background-color: var(--brand) !important;
         color: #fff !important;
     }
 
     /* Pagination */
     .pagination .page-item.active .page-link {
-        background-color: #005DA8;
-        border-color: #005DA8;
+        background-color: var(--brand);
+        border-color: var(--brand);
     }
 
     .pagination .page-link {
-        color: #005DA8;
+        color: var(--brand);
         border-radius: 0.375rem;
         margin: 0 0.25rem;
     }
@@ -546,12 +546,12 @@ foreach ($blogs as $index => $blog) {
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
         .card {
-            background-color: #005DA8;
-            border-color: #005DA8;
+            background-color: var(--brand);
+            border-color: var(--brand);
         }
 
         .text-dark {
-            color: #005DA8 !important;
+            color: var(--brand) !important;
         }
 
         .text-muted {
@@ -563,11 +563,11 @@ foreach ($blogs as $index => $blog) {
         }
 
         .border-bottom {
-            border-color: #005DA8 !important;
+            border-color: var(--brand) !important;
         }
 
         .bg-secondary {
-            background: #F5A623 !important;
+            background: var(--accent) !important;
             color: #fff !important;
         }
     }

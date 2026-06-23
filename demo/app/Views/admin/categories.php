@@ -81,7 +81,7 @@
         <div class="card-body p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
-                    <select class="form-select form-select-sm" style="width: 140px;" id="bulkAction">
+                    <select class="w-auto form-select form-select-sm"  id="bulkAction">
                         <option value="">Bulk Actions</option>
                         <option value="activate">Activate</option>
                         <option value="deactivate">Deactivate</option>
@@ -91,9 +91,9 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
-                    <input type="text" class="form-control form-control-sm" placeholder="Search categories..."
-                        id="searchInput" onkeyup="searchTable()" style="width: 200px;">
-                    <select class="form-select form-select-sm" style="width: 120px;" id="filterStatus" onchange="filterByStatus()">
+                    <input type="text" class="w-auto form-control form-control-sm" placeholder="Search categories..."
+                        id="searchInput" onkeyup="searchTable()" >
+                    <select class="w-auto form-select form-select-sm"  id="filterStatus" onchange="filterByStatus()">
                         <option value="">All Status</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>

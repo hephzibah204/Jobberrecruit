@@ -36,9 +36,9 @@
                             <label class="form-label">Current Password <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="password" name="current_password" class="form-control" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button">
-                                    <i class="ti ti-eye-off"></i>
-                                </button>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" aria-label="View">
+    <i class="ti ti-eye-off"></i>
+</button>
                             </div>
                         </div>
 
@@ -46,9 +46,9 @@
                             <label class="form-label">New Password <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="password" name="new_password" class="form-control" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button">
-                                    <i class="ti ti-eye-off"></i>
-                                </button>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" aria-label="View">
+    <i class="ti ti-eye-off"></i>
+</button>
                             </div>
                             <small class="text-muted">
                                 Must be at least 8 characters with uppercase, lowercase, number, and symbol.
@@ -59,9 +59,9 @@
                             <label class="form-label">Confirm New Password <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="password" name="confirm_new_password" class="form-control" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button">
-                                    <i class="ti ti-eye-off"></i>
-                                </button>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" aria-label="View">
+    <i class="ti ti-eye-off"></i>
+</button>
                             </div>
                         </div>
 

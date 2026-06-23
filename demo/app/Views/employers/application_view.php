@@ -3,7 +3,7 @@
 <style>
     .note-card {
         transition: all 0.2s ease;
-        border-left: 4px solid #0d6efd;
+        border-left: 4px solid #0D609E;
     }
 
     .note-card:hover {
@@ -121,7 +121,7 @@
                             <div class="mb-3">
                                 <label class="text-muted small text-uppercase">Status</label>
                                 <div>
-                                    <select class="form-select form-select-sm status-select" style="width: 150px;" data-id="<?= $application->id ?>">
+                                    <select class="w-auto form-select form-select-sm status-select"  data-id="<?= $application->id ?>">
                                         <option value="pending" <?= $application->status == 'pending' ? 'selected' : '' ?>>⏳ Pending</option>
                                         <option value="reviewed" <?= $application->status == 'reviewed' ? 'selected' : '' ?>>👁️ Reviewed</option>
                                         <option value="shortlisted" <?= $application->status == 'shortlisted' ? 'selected' : '' ?>>⭐ Shortlisted</option>
@@ -541,9 +541,9 @@
                                             <i class="ti ti-clock ms-2 me-1"></i>${response.note.created_at}
                                         </small>
                                     </div>
-                                    <button class="btn btn-sm btn-link text-danger delete-note" data-id="${response.note.id}" style="padding: 0;">
-                                        <i class="ti ti-trash"></i>
-                                    </button>
+                                    <button class="btn btn-sm btn-link text-danger delete-note" data-id="${response.note.id}" style="padding: 0;" aria-label="Delete">
+    <i class="ti ti-trash"></i>
+</button>
                                 </div>
                             </div>
                         </div>

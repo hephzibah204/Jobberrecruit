@@ -53,7 +53,7 @@
     line-height: 1.8;
 }
 .advice-content h1, .advice-content h2, .advice-content h3 {
-    color: #0dcaf0;
+    color: #0D609E;
     margin-top: 1.5rem;
     margin-bottom: 1rem;
     font-weight: 700;
@@ -78,7 +78,7 @@
     margin-bottom: 0.5rem;
 }
 .advice-content strong {
-    color: #0dcaf0;
+    color: #0D609E;
     font-weight: 600;
 }
 .advice-content em {

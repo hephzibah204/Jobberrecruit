@@ -72,8 +72,8 @@
     }
     .chat-area::-webkit-scrollbar { width: 4px; }
     .chat-area::-webkit-scrollbar-track { background: transparent; }
-    .chat-area::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 4px; }
-    .chat-area::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.4); }
+    .chat-area::-webkit-scrollbar-thumb { background: rgba(13, 96, 158, 0.2); border-radius: 4px; }
+    .chat-area::-webkit-scrollbar-thumb:hover { background: rgba(13, 96, 158, 0.4); }
     
     .bubble {
         max-width: 82%;
@@ -108,10 +108,10 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
     .bubble-user {
-        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        background: linear-gradient(135deg, #0d609e, #0a4d7e);
         color: #fff;
         border-bottom-right-radius: 6px;
-        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
+        box-shadow: 0 4px 16px rgba(13, 96, 158, 0.25);
     }
     .bubble-user::before {
         content: '';
@@ -120,7 +120,7 @@
         bottom: 10px;
         width: 12px;
         height: 12px;
-        background: #4f46e5;
+        background: #0d609e;
         border-radius: 2px;
         transform: rotate(45deg);
         border-right: 1px solid rgba(59, 130, 246, 0.05);
@@ -168,7 +168,7 @@
     }
     .status-pill .dot.idle { background: #94a3b8; }
     .status-pill .dot.listening { background: #22c55e; animation: dotPulse 1s infinite; }
-    .status-pill .dot.speaking { background: #3b82f6; animation: dotPulse 1s infinite; }
+    .status-pill .dot.speaking { background: #0a4d7e; animation: dotPulse 1s infinite; }
     .status-pill .dot.error { background: #ef4444; }
     @keyframes dotPulse {
         0%, 100% { opacity: 1; transform: scale(1); }
@@ -201,7 +201,7 @@
     .score-badge-lg {
         font-size: 2.8rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        background: linear-gradient(135deg, #0d609e, #0a4d7e);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -248,7 +248,7 @@
         display: inline-block;
         width: 3px;
         height: 16px;
-        background: linear-gradient(to top, #3b82f6, #6366f1);
+        background: linear-gradient(to top, #0a4d7e, #0d609e);
         margin: 0 2px;
         border-radius: 2px;
         animation: wave 1.2s infinite ease-in-out;
@@ -276,7 +276,7 @@
     }
     .start-overlay .enter-icon {
         width: 90px; height: 90px;
-        background: rgba(79, 70, 229, 0.12);
+        background: rgba(13, 96, 158, 0.12);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -284,7 +284,7 @@
         margin: 0 auto 1.5rem;
         font-size: 2.4rem;
         color: #818cf8;
-        border: 1px solid rgba(79, 70, 229, 0.15);
+        border: 1px solid rgba(13, 96, 158, 0.15);
     }
     
     .control-btn {
@@ -307,37 +307,37 @@
         transition: border-color 0.3s, box-shadow 0.3s;
     }
     .chat-input:focus {
-        border-color: rgba(99, 102, 241, 0.4) !important;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+        border-color: rgba(13, 96, 158, 0.4) !important;
+        box-shadow: 0 0 0 3px rgba(13, 96, 158, 0.1) !important;
     }
     .chat-input::placeholder { color: rgba(255, 255, 255, 0.25); }
     
     .btn-gradient {
-        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        background: linear-gradient(135deg, #0d609e, #0a4d7e);
         border: none;
         color: #fff;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+        box-shadow: 0 4px 14px rgba(13, 96, 158, 0.25);
         transition: all 0.3s;
     }
     .btn-gradient:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+        box-shadow: 0 6px 20px rgba(13, 96, 158, 0.35);
         color: #fff;
     }
     .btn-gradient:active { transform: translateY(0); }
     
     .btn-enter-room {
-        background: linear-gradient(135deg, #4f46e5, #6366f1);
+        background: linear-gradient(135deg, #0d609e, #0d609e);
         border: none;
         font-size: 1.05rem;
         padding: 14px 28px;
         border-radius: 14px;
-        box-shadow: 0 8px 32px rgba(79, 70, 229, 0.3);
+        box-shadow: 0 8px 32px rgba(13, 96, 158, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .btn-enter-room:hover {
         transform: translateY(-2px) scale(1.01);
-        box-shadow: 0 12px 40px rgba(79, 70, 229, 0.4);
+        box-shadow: 0 12px 40px rgba(13, 96, 158, 0.4);
     }
     
     .evaluation-card {
@@ -541,9 +541,9 @@ $contextPreset = $contextPreset ?? [];
                             <form id="chat-form">
                                 <div class="input-group">
                                     <input type="text" id="chat-input" class="form-control bg-dark border-secondary border-opacity-20 text-white rounded-3-start py-3" placeholder="Type your answer here..." autocomplete="off">
-                                    <button class="btn btn-primary px-4 rounded-3-end" type="submit" id="btn-send">
-                                        <i class="ti ti-send fs-18"></i>
-                                    </button>
+                                    <button class="btn btn-primary px-4 rounded-3-end" type="submit" id="btn-send" aria-label="Action">
+    <i class="ti ti-send fs-18"></i>
+</button>
                                 </div>
                             </form>
                         </div>
@@ -1342,3 +1342,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?= $this->endSection() ?>
+

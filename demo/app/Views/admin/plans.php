@@ -258,24 +258,24 @@ function editPlan(plan) {
 function deletePlan(id) {
     if (!confirm('Delete this plan? Active subscriptions will not be affected.')) return;
     fetch('<?= base_url("admin/plans/delete") ?>/' + id, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { alert(d.message); } });
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
 }
 function toggleFreeMode() {
     if (!confirm('Toggle free mode? This affects all users.')) return;
     fetch('<?= base_url("admin/plans/toggle-free-mode") ?>', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { alert(d.message); } });
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
 }
 document.getElementById('unlimitedAccessForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const fd = new FormData(this);
     fetch('<?= base_url("admin/plans/grant-unlimited-access") ?>', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { alert(d.message); } });
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
 });
 function revokeUnlimitedAccess(id) {
     if (!confirm('Revoke unlimited access?')) return;
     const fd = new FormData(); fd.append('employer_id', id);
     fetch('<?= base_url("admin/plans/revoke-unlimited-access") ?>', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { alert(d.message); } });
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
 }
 
 function onPlanSelected() {
@@ -335,7 +335,7 @@ document.getElementById('assignSubscriptionForm').addEventListener('submit', fun
         if (d.success) {
             location.reload();
         } else {
-            alert(d.message);
+            toastr.error(d.message);
         }
     });
 });

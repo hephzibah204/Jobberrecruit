@@ -1,8 +1,9 @@
 :root {
     /* Core Midnight Aura Palette */
-    --primary: #0ea5e9; /* Vibrant Blue */
-    --primary-glow: rgba(14, 165, 233, 0.3);
-    --secondary: #f59e0b; /* Amber/Orange */
+    --primary: #0D609E; /* Brand Blue */
+    --primary-glow: rgba(13, 96, 158, 0.3);
+    --secondary: #F08F1A; /* Brand Orange */
+    --main-color: #0D609E;
     --midnight-bg: #020617;
     --surface: #0f172a;
     --surface-light: #1e293b;
@@ -18,7 +19,7 @@
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-indigo: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+    --shadow-indigo: 0 10px 25px -5px rgba(13, 96, 158, 0.4);
 }
 
 /* Base Styles Overhaul */
@@ -40,7 +41,7 @@ body {
 }
 
 .glass-card:hover {
-    border-color: rgba(14, 165, 233, 0.4);
+    border-color: rgba(13, 96, 158, 0.4);
     box-shadow: var(--shadow-indigo);
     transform: translateY(-4px);
 }
@@ -81,17 +82,17 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Buttons */
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, #0284c7 100%) !important;
+    background: linear-gradient(135deg, var(--primary) 0%, #0A4D7E 100%) !important;
     border: none !important;
     padding: 0.75rem 1.5rem !important;
     font-weight: 600 !important;
-    box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
+    box-shadow: 0 4px 14px 0 rgba(13, 96, 158, 0.39);
     transition: all 0.2s ease !important;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.23) !important;
+    box-shadow: 0 6px 20px rgba(13, 96, 158, 0.23) !important;
 }
 
 /* Inputs */
@@ -219,8 +220,8 @@ section    { background-color: var(--midnight-bg); }
     transition: all 0.3s ease;
 }
 .card:hover {
-    border-color: rgba(14, 165, 233, 0.35) !important;
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.12) !important;
+    border-color: rgba(13, 96, 158, 0.35) !important;
+    box-shadow: 0 8px 25px rgba(13, 96, 158, 0.12) !important;
     transform: translateY(-2px);
 }
 .card-header {
@@ -251,19 +252,19 @@ section    { background-color: var(--midnight-bg); }
 /* Nav Tabs */
 .nav-tabs                   { border-bottom: 1px solid var(--border) !important; }
 .nav-tabs .nav-link         { color: var(--text-muted) !important; border: none !important; border-radius: .5rem .5rem 0 0; transition: all .2s; }
-.nav-tabs .nav-link:hover   { color: var(--primary) !important; background: rgba(14,165,233,.1) !important; }
-.nav-tabs .nav-link.active  { color: var(--primary) !important; background: rgba(14,165,233,.15) !important; border-bottom: 2px solid var(--primary) !important; }
+.nav-tabs .nav-link:hover   { color: var(--primary) !important; background: rgba(13,96,158,.1) !important; }
+.nav-tabs .nav-link.active  { color: var(--primary) !important; background: rgba(13,96,158,.15) !important; border-bottom: 2px solid var(--primary) !important; }
 
 /* Dropdowns */
 .dropdown-menu   { background-color: var(--surface) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg); }
 .dropdown-item   { color: var(--text-muted) !important; transition: all .2s; }
-.dropdown-item:hover { background-color: rgba(14,165,233,.1) !important; color: var(--primary) !important; }
+.dropdown-item:hover { background-color: rgba(13,96,158,.1) !important; color: var(--primary) !important; }
 
 /* Tables */
 .table           { color: var(--text-main) !important; border-color: var(--border) !important; }
 .table thead th  { color: var(--text-muted) !important; background: var(--surface) !important; border-bottom: 1px solid var(--border) !important; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
 .table tbody td  { border-bottom: 1px solid var(--border) !important; vertical-align: middle; }
-.table tbody tr:hover { background: rgba(14,165,233,.05) !important; }
+.table tbody tr:hover { background: rgba(13,96,158,.05) !important; }
 
 /* Job Card Elements */
 .card-grid-2, .card-grid-3 {
@@ -273,7 +274,7 @@ section    { background-color: var(--midnight-bg); }
     transition: all .3s ease;
 }
 .card-grid-2:hover, .card-grid-3:hover {
-    border-color: rgba(14,165,233,.4) !important;
+    border-color: rgba(13,96,158,.4) !important;
     box-shadow: var(--shadow-indigo) !important;
     transform: translateY(-4px);
 }
@@ -284,9 +285,9 @@ section    { background-color: var(--midnight-bg); }
 
 /* Skill Tags */
 .btn-tags-sm {
-    background: rgba(14,165,233,.1) !important;
+    background: rgba(13,96,158,.1) !important;
     color: var(--primary) !important;
-    border: 1px solid rgba(14,165,233,.2) !important;
+    border: 1px solid rgba(13,96,158,.2) !important;
     border-radius: 6px; font-size: .75rem; padding: .2rem .6rem; transition: all .2s;
 }
 .btn-tags-sm:hover { background: var(--primary) !important; color: #fff !important; }
@@ -303,7 +304,7 @@ section    { background-color: var(--midnight-bg); }
 
 /* Alerts */
 .alert          { border-radius: .75rem; border: 1px solid var(--border); }
-.alert-info     { background: rgba(14,165,233,.1) !important;  color: var(--text-main) !important; border-color: rgba(14,165,233,.3) !important; }
+.alert-info     { background: rgba(13,96,158,.1) !important;  color: var(--text-main) !important; border-color: rgba(13,96,158,.3) !important; }
 .alert-success  { background: rgba(16,185,129,.1) !important;  color: var(--text-main) !important; border-color: rgba(16,185,129,.3) !important; }
 .alert-warning  { background: rgba(245,158,11,.1) !important;  color: var(--text-main) !important; border-color: rgba(245,158,11,.3) !important; }
 .alert-danger   { background: rgba(239,68,68,.1) !important;   color: var(--text-main) !important; border-color: rgba(239,68,68,.3) !important; }
@@ -327,7 +328,7 @@ section    { background-color: var(--midnight-bg); }
 p, span, li  { color: var(--text-muted); }
 strong, b, .fw-bold, .fw-semibold { color: var(--text-main) !important; }
 a            { color: var(--primary); }
-a:hover      { color: #38bdf8; }
+a:hover      { color: #1b7ac2; }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar        { width: 6px; }
@@ -359,14 +360,14 @@ a:hover      { color: #38bdf8; }
 }
 
 .sidebar-menu ul li a:hover {
-    background: rgba(14, 165, 233, 0.1) !important;
+    background: rgba(13, 96, 158, 0.1) !important;
     color: var(--main-color) !important;
 }
 
 .sidebar-menu ul li.active a {
-    background: linear-gradient(135deg, var(--main-color) 0%, #38bdf8 100%) !important;
+    background: linear-gradient(135deg, var(--main-color) 0%, #0A4D7E 100%) !important;
     color: white !important;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(13, 96, 158, 0.3) !important;
 }
 
 .header {
@@ -475,9 +476,9 @@ a:hover      { color: #38bdf8; }
 
 /* Custom badges for dashboard */
 .badge-verified {
-    background: rgba(14, 165, 233, 0.1) !important;
+    background: rgba(13, 96, 158, 0.1) !important;
     color: var(--main-color) !important;
-    border: 1px solid rgba(14, 165, 233, 0.2) !important;
+    border: 1px solid rgba(13, 96, 158, 0.2) !important;
     padding: 4px 10px;
     border-radius: 50px;
     font-size: 0.75rem;
@@ -524,7 +525,7 @@ a:hover      { color: #38bdf8; }
 }
 
 .hero-section .text-gradient {
-    background: linear-gradient(135deg, var(--primary) 0%, #38bdf8 100%) !important;
+    background: linear-gradient(135deg, var(--primary) 0%, #0A4D7E 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
 }
@@ -537,7 +538,7 @@ a:hover      { color: #38bdf8; }
 }
 
 .collaborator-card {
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0.05)) !important;
+    background: linear-gradient(135deg, rgba(13, 96, 158, 0.2), rgba(13, 96, 158, 0.05)) !important;
     border: 1px solid var(--primary-glow) !important;
     backdrop-filter: blur(10px) !important;
 }
@@ -597,7 +598,7 @@ body::before, body::after {
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(14, 165, 233, 0.05) !important;
+    background-color: rgba(13, 96, 158, 0.05) !important;
 }
 
 /* Select2 Dark Mode */

@@ -12,7 +12,7 @@ class SavedJobModel extends Model
     protected $useAutoIncrement = true;
 
     protected $allowedFields = [
-        'job_seeker_id',
+        'user_id',
         'job_id',
         'created_at'
     ];
@@ -20,50 +20,50 @@ class SavedJobModel extends Model
     protected $useTimestamps = false; // we manually set created_at
 
     /**
-     * Save a job for the candidate
+     * Save a job for the user
      */
-    public function saveJob(int $candidateId, int $jobId): bool
+    public function saveJob(int $userId, int $jobId): bool
     {
         // Prevent duplicate saves
-        if ($this->isSaved($candidateId, $jobId)) {
+        if ($this->isSaved($userId, $jobId)) {
             return true;
         }
 
         return $this->insert([
-            'job_seeker_id' => $candidateId,
-            'job_id'       => $jobId,
-            'created_at'   => date('Y-m-d H:i:s')
+            'user_id'    => $userId,
+            'job_id'     => $jobId,
+            'created_at' => date('Y-m-d H:i:s')
         ]);
     }
 
     /**
      * Check if a job is already saved
      */
-    public function isSaved(int $candidateId, int $jobId): bool
+    public function isSaved(int $userId, int $jobId): bool
     {
         return $this->where([
-            'job_seeker_id' => $candidateId,
-            'job_id'       => $jobId
+            'user_id' => $userId,
+            'job_id'  => $jobId
         ])->countAllResults() > 0;
     }
 
     /**
      * Remove a saved job
      */
-    public function removeJob(int $candidateId, int $jobId): bool
+    public function removeJob(int $userId, int $jobId): bool
     {
         return $this->where([
-            'job_seeker_id' => $candidateId,
-            'job_id'       => $jobId
+            'user_id' => $userId,
+            'job_id'  => $jobId
         ])->delete();
     }
 
     /**
-     * Get all saved jobs for a candidate
+     * Get all saved jobs for a user
      */
-    public function getSavedJobs(int $candidateId)
+    public function getSavedJobs(int $userId)
     {
-        return $this->where('job_seeker_id', $candidateId)
+        return $this->where('user_id', $userId)
             ->orderBy('created_at', 'DESC')
             ->findAll();
     }
@@ -71,8 +71,8 @@ class SavedJobModel extends Model
     /**
      * Count saved jobs
      */
-    public function countSavedJobs(int $candidateId): int
+    public function countSavedJobs(int $userId): int
     {
-        return $this->where('job_seeker_id', $candidateId)->countAllResults();
+        return $this->where('user_id', $userId)->countAllResults();
     }
 }

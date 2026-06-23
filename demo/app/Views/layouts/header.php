@@ -69,6 +69,12 @@ if ($isEmployer) {
                 </a>
             </li>
 
+            <li class="nav-item nav-item-box">
+                <a href="javascript:void(0);" class="theme-toggle" aria-label="Toggle dark mode">
+                    <i class="ti ti-moon"></i>
+                </a>
+            </li>
+
             <!-- /Notifications -->
 
 

@@ -3,8 +3,8 @@
 <?= $this->section('styles') ?>
 <style>
     :root {
-        --primary-color: #005DA8;
-        --secondary-color: #F5A623;
+        --primary-color: #0D609E;
+        --secondary-color: #F08F1A;
         --text-dark: #1E293B;
         --text-muted: #64748B;
         --bg-light: #f8f9fb;
@@ -187,9 +187,9 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    alert("Verification email sent successfully.");
+                    toastr.success("Verification email sent successfully.");
                 } else {
-                    alert(data.message || "Unable to resend email.");
+                    toastr.error(data.message || "Unable to resend email.");
                 }
             })
             .finally(() => {

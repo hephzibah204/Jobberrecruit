@@ -97,7 +97,7 @@
 
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            background: linear-gradient(135deg, #0D609E, #0a58ca);
             color: white;
             padding: 14px 32px;
             text-decoration: none;
@@ -112,12 +112,12 @@
             padding: 20px;
             border-radius: 8px;
             margin: 20px 0;
-            border-left: 4px solid #0d6efd;
+            border-left: 4px solid #0D609E;
         }
 
         .help-box h4 {
             margin: 0 0 10px 0;
-            color: #0d6efd;
+            color: #0D609E;
         }
 
         .footer {
@@ -130,7 +130,7 @@
         }
 
         .footer a {
-            color: #0d6efd;
+            color: #0D609E;
             text-decoration: none;
         }
     </style>

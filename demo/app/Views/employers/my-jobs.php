@@ -307,7 +307,7 @@
             </div>
         </div>
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive data-grid-container">
                 <table class="table" id="jobs-table">
                     <thead class="thead-light">
                         <tr>

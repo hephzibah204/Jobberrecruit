@@ -10,7 +10,7 @@
     </div>
 
     <!-- Newsletter Subscription Banner -->
-    <div class="card custom-card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+    <div class="card custom-card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #0D609E 0%, #0a58ca 100%);">
         <div class="card-body p-4 p-md-5">
             <div class="row align-items-center">
                 <div class="col-md-7 mb-3 mb-md-0">

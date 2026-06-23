@@ -39,9 +39,9 @@
                                     <small class="text-muted">Last updated: <?= date('M d, Y', strtotime($resume->updated_at)) ?></small>
                                 </div>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                        <i class="ti ti-settings"></i>
-                                    </button>
+                                    <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-label="Action">
+    <i class="ti ti-settings"></i>
+</button>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item" href="<?= site_url('candidate/resumes/build/' . $resume->id) ?>"><i class="ti ti-edit me-2"></i>Edit</a></li>
                                         <li><a class="dropdown-item text-danger" href="#"><i class="ti ti-trash me-2"></i>Delete</a></li>

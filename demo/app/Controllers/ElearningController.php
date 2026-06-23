@@ -31,20 +31,50 @@ class ElearningController extends BaseController
      */
     public function index()
     {
-        $courses = $this->courseModel
-            ->where('is_active', 1)
+        $q = trim((string) ($this->request->getVar('q') ?? ''));
+        $level = trim((string) ($this->request->getVar('level') ?? ''));
+        $type = trim((string) ($this->request->getVar('type') ?? ''));
+        $price = trim((string) ($this->request->getVar('price') ?? ''));
+
+        // Total Counts (non-filtered stats for hero section)
+        $totalCourses = $this->courseModel->where('is_active', 1)->findAll();
+        $freeCount = count(array_filter(
+            $totalCourses,
+            static fn ($course) => (float) ($course->price ?? 0) <= 0
+        ));
+
+        // Filtered Query Builder
+        $dbBuilder = $this->courseModel->where('is_active', 1);
+
+        if ($q !== '') {
+            $dbBuilder->groupStart()
+                      ->like('title', $q)
+                      ->orLike('description', $q)
+                      ->orLike('instructor', $q)
+                      ->groupEnd();
+        }
+        if ($level !== '') {
+            $dbBuilder->where('level', $level);
+        }
+        if ($type !== '') {
+            $dbBuilder->where('item_type', $type);
+        }
+        if ($price !== '') {
+            if ($price === 'free') {
+                $dbBuilder->where('price <=', 0);
+            } elseif ($price === 'paid') {
+                $dbBuilder->where('price >', 0);
+            }
+        }
+
+        $courses = $dbBuilder
             ->orderBy('is_featured', 'DESC')
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
         $featuredCourses = array_values(array_filter(
-            $courses,
+            $totalCourses,
             static fn ($course) => (int) ($course->is_featured ?? 0) === 1
-        ));
-
-        $freeCount = count(array_filter(
-            $courses,
-            static fn ($course) => (float) ($course->price ?? 0) <= 0
         ));
 
         return view('home/elearning', [
@@ -56,7 +86,12 @@ class ElearningController extends BaseController
             'courses'           => $courses,
             'featuredCourses'   => array_slice($featuredCourses, 0, 3),
             'freeCount'         => $freeCount,
-            'paidCount'         => count($courses) - $freeCount,
+            'paidCount'         => count($totalCourses) - $freeCount,
+            'totalActive'       => count($totalCourses),
+            'q'                 => $q,
+            'level'             => $level,
+            'type'              => $type,
+            'price'             => $price,
         ]);
     }
 

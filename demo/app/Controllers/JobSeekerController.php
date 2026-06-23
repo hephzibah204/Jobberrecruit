@@ -79,7 +79,7 @@ class JobSeekerController extends BaseController
 
         // Saved Jobs
         $savedJobs = $savedJobModel
-            ->where('job_seeker_id', $candidate->id)
+            ->where('user_id', $this->auth->user()->id)
             ->countAllResults();
 
         // Jobs Viewed
@@ -155,12 +155,18 @@ class JobSeekerController extends BaseController
     {
         $candidateModel = model(JobSeekerModel::class);
 
-        // Get candidate profile
+        // Get candidate profile with location
         $candidate = $candidateModel
-        ->select('job_seekers.*, states.name as location')
-        ->join('states', 'states.id = job_seekers.state_id', 'left')
+            ->select('job_seekers.*, states.name as location')
+            ->join('states', 'states.id = job_seekers.state_id', 'left')
             ->where('user_id', $this->auth->user()->id)
             ->first();
+
+        // If candidate profile does not exist, redirect to edit profile
+        if (!$candidate) {
+            return redirect()->to('candidate/profile/edit')
+                ->with('error', 'Please create your profile first.');
+        }
 
         $data = [
             'title'     => 'Profile',
@@ -674,7 +680,7 @@ class JobSeekerController extends BaseController
         }
 
         $savedJobIds = $savedJobModel
-            ->where('job_seeker_id', $candidate->id)
+            ->where('user_id', $user->id)
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
@@ -899,7 +905,7 @@ class JobSeekerController extends BaseController
                 ->where('job_seeker_id', $candidate?->id)
                 ->findAll(),
             'saved_jobs' => model(\App\Models\SavedJobModel::class)
-                ->where('job_seeker_id', $candidate?->id)
+                ->where('user_id', $this->auth->user()->id)
                 ->findAll(),
             'job_alerts' => model(\App\Models\JobAlertModel::class)
                 ->where('job_seeker_id', $candidate?->id)

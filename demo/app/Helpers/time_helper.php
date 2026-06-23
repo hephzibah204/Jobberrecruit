@@ -52,4 +52,18 @@ if (!function_exists('time_elapsed_string')) {
 
         return $result ? implode(', ', $result) . ' ago' : 'just now';
     }
+function time_ago($timestamp)
+{
+    // Accept datetime string or Unix timestamp
+    if (is_int($timestamp)) {
+        $timestamp = date('Y-m-d H:i:s', $timestamp);
+    }
+    try {
+        $time = \CodeIgniter\I18n\Time::parse($timestamp);
+        return $time->humanize();
+    } catch (\Exception $e) {
+        return $timestamp;
+    }
+}
+
 }

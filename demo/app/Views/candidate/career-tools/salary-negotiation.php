@@ -48,9 +48,9 @@
                     <form id="chat-form">
                         <div class="input-group">
                             <input type="text" id="chat-input" class="form-control border-0 bg-light" placeholder="Type your response here..." autocomplete="off">
-                            <button class="btn btn-success text-white" type="submit" id="btn-send">
-                                <i class="ti ti-send"></i>
-                            </button>
+                            <button class="btn btn-success text-white" type="submit" id="btn-send" aria-label="Action">
+    <i class="ti ti-send"></i>
+</button>
                         </div>
                     </form>
                 </div>

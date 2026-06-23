@@ -14,6 +14,8 @@ $routes->get('ping', function () {
 });
 
 $routes->get('/', 'Home::home');
+$routes->get('home/ajaxRecentJobs', 'Home::ajaxRecentJobs');
+$routes->get('home/ajaxCategories', 'Home::ajaxCategories');
 $routes->get('jobs', 'Home::jobs');
 $routes->get('jobs-in-(:segment)', 'Home::location_hub/$1');
 $routes->get('(:segment)-jobs', 'Home::industry_hub/$1');

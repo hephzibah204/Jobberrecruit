@@ -35,9 +35,9 @@
                 <form id="newsletter-form" class="mt-3">
                     <div class="input-group">
                         <input type="email" name="email" class="form-control" placeholder="Enter your email" required>
-                        <button class="btn btn-primary" type="submit" id="btn-subscribe">
-                            <i class="ti ti-send"></i>
-                        </button>
+                        <button class="btn btn-primary" type="submit" id="btn-subscribe" aria-label="Action">
+    <i class="ti ti-send"></i>
+</button>
                     </div>
                 </form>
                 <div id="newsletter-msg" class="mt-2 small"></div>

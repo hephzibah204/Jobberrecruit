@@ -150,7 +150,7 @@
                     <input type="file" class="form-control" name="thumbnail" accept="image/*">
 
                     <div id="thumbnailPreview" class="mt-2 d-none">
-                        <img src="" class="img-thumbnail" style="max-height:120px;">
+                        <img src="" class="img-thumbnail" style="max-height:120px;" alt="">
                     </div>
                 </div>
 

@@ -2,6 +2,14 @@
 <html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat" data-toggled="close" data-vertical-style="doublemenu" data-toggled="double-menu-open">
 
 <head>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('jr-theme');
+            const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (preferDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 
     <!-- Meta Data -->
     <meta charset="UTF-8">
@@ -51,6 +59,7 @@
 
     <!-- Style Css -->
     <link href="<?= base_url('admin/css/styles.css'); ?>" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/global-core.css'); ?>">
 
     <!-- Midnight Aura Theme (toggled via JS) -->
     <!-- Midnight Aura Theme -->
@@ -117,7 +126,7 @@
                     <div class="border-top pt-3 mt-1">
                         <p class="switcher-style-head d-flex align-items-center gap-2">
                             Midnight Aura
-                            <span class="badge fs-10 fw-semibold px-2 py-1" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);color:#fff;border-radius:50px;letter-spacing:.5px;">PREMIUM</span>
+                            <span class="badge fs-10 fw-semibold px-2 py-1" style="background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:#fff;border-radius:50px;letter-spacing:.5px;">PREMIUM</span>
                         </p>
                         <div class="switcher-style pb-2">
                             <p class="fs-12 text-muted mb-2">Enable the deep dark glassmorphic theme across the entire admin dashboard.</p>
@@ -127,9 +136,9 @@
                                     <label class="form-check-label fw-semibold" for="switcher-midnight-aura" style="cursor:pointer;">Enable Midnight Aura</label>
                                 </div>
                             </div>
-                            <div id="midnight-aura-preview" class="mt-3 rounded-3 p-3 d-none" style="background:linear-gradient(135deg,#020617 0%,#0f172a 50%,#1e293b 100%);border:1px solid rgba(14,165,233,.3);">
+                            <div id="midnight-aura-preview" class="mt-3 rounded-3 p-3 d-none" style="background:linear-gradient(135deg,#020617 0%,#0f172a 50%,#1e293b 100%);border:1px solid rgba(13,96,158,.3);">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <div style="width:10px;height:10px;border-radius:50%;background:#0ea5e9;box-shadow:0 0 8px #0ea5e9;"></div>
+                                    <div style="width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 8px var(--brand);"></div>
                                     <span class="fs-11 fw-semibold" style="color:#f8fafc;">Midnight Aura Active</span>
                                 </div>
                                 <p class="fs-11 mb-0" style="color:#94a3b8;">Deep dark glassmorphism with vibrant blue accents and smooth animations.</p>
@@ -707,14 +716,14 @@
                     // Reload the page to apply the global theme to all components and avoid partial state
                     window.location.reload();
                 } else {
-                    alert('Failed to toggle theme');
+                    toastr.error('Failed to toggle theme');
                     toggle.checked = !toggle.checked; // Revert
                     toggle.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Network error while toggling theme');
+                toastr.error('Network error while toggling theme');
                 toggle.checked = !toggle.checked; // Revert
                 toggle.disabled = false;
             });
@@ -725,6 +734,7 @@
     <?= $this->include('partials/chatbot'); ?>
     <?= $this->renderSection('scripts') ?>
 
+    <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>
 </body>
 
 </html>

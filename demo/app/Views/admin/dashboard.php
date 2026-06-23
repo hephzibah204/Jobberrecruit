@@ -21,7 +21,7 @@
 
         <!-- Total Employers -->
         <div class="col">
-            <div class="card custom-card dashboard-main-card">
+            <div class="card custom-card dashboard-main-card kpi-card card-glass">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -37,7 +37,7 @@
 
         <!-- Total Candidates -->
         <div class="col">
-            <div class="card custom-card dashboard-main-card">
+            <div class="card custom-card dashboard-main-card kpi-card card-glass">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -53,7 +53,7 @@
 
         <!-- Total Jobs -->
         <div class="col">
-            <div class="card custom-card dashboard-main-card">
+            <div class="card custom-card dashboard-main-card kpi-card card-glass">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -69,7 +69,7 @@
 
         <!-- Total Applications -->
         <div class="col">
-            <div class="card custom-card dashboard-main-card">
+            <div class="card custom-card dashboard-main-card kpi-card card-glass">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -85,7 +85,7 @@
 
         <!-- Active Subscribers -->
         <div class="col">
-            <div class="card custom-card dashboard-main-card">
+            <div class="card custom-card dashboard-main-card kpi-card card-glass">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -137,8 +137,7 @@
                                         <!-- Logo -->
                                         <div>
                                             <span class="avatar avatar-md avatar-rounded">
-                                                <img
-                                                    src="<?= $employer->logo
+                                                <img src="<?= $employer->logo
                                                                 ? base_url($employer->logo)
                                                                 : base_url('images/favicon.png') ?>"
                                                     alt="<?= esc($employer->company_name) ?>">
@@ -250,7 +249,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive data-grid-container">
                         <table class="table text-nowrap">
                             <thead>
                                 <tr>
@@ -267,8 +266,7 @@
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="avatar avatar-sm bg-light avatar-rounded">
-                                                        <img
-                                                            src="<?= $job->logo
+                                                        <img src="<?= $job->logo
                                                                         ? base_url($job->logo)
                                                                         : base_url('images/favicon.png') ?>"
                                                             alt="<?= esc($job->company_name) ?>">
@@ -474,7 +472,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive data-grid-container">
                         <table class="table text-nowrap">
                             <thead>
                                 <tr>

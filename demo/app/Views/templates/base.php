@@ -3,12 +3,21 @@
 <html lang="en">
 
 <head>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('jr-theme');
+            const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (preferDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-theme-mode', theme);
+        })();
+    </script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3464186884176173"
         crossorigin="anonymous"></script>
     <meta charset="UTF-8">
 
     <!-- Mobile & Browser -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +28,7 @@
 
     <!-- PWA -->
     <link rel="manifest" href="<?= base_url('manifest.json'); ?>">
-    <meta name="theme-color" content="#fff8f0">
+    <meta name="theme-color" content="#0D609E">
 
     <!-- iOS PWA -->
     <link rel="apple-touch-icon" href="<?= base_url('images/pwa/icon-192.png'); ?>">
@@ -49,7 +58,7 @@
 
     <!-- Theme / App Data -->
     <meta name="application-name" content="JobberRecruit">
-    <meta name="theme-color" content="#005DA8">
+    <meta name="theme-color" content="var(--brand)">
 
     <!-- Preconnect & Prefetch (Performance Boost) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -104,13 +113,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css" />
     <link href="<?= base_url('css/plugins/select2.min.css'); ?>" rel="stylesheet">
+    <link href="<?= base_url('css/variables.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('css/style.css'); ?>" rel="stylesheet">
     <!-- Midnight Aura Theme -->
     <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
         <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet">
     <?php endif; ?>
     <link href="<?= base_url('css/bootstrap-icons.css'); ?>" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Sora (headings) + Inter (body) — matching reference design -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+    <!-- JobberRecruit Design System -->
+    <link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
+
+    <!-- Section 8 — Native Mobile App Feel -->
+    <link rel="stylesheet" href="<?= base_url('css/mobile-app.css') ?>">
 
     <!-- Page Custom Styles -->
     <?= $this->renderSection('styles'); ?>
@@ -118,117 +139,21 @@
 
 
 <body>
-    <!-- Top Navigation -->
-    <div class="top-nav">
-        <div class="container d-flex justify-content-between align-items-center flex-wrap py-2">
-            <ul class="nav small-nav mb-0">
-                <li class="nav-item"><a href="<?= base_url('blog') ?>" class="nav-link">Blog</a></li>
-                <li class="nav-item"><a href="<?= base_url('about-us') ?>" class="nav-link">About Us</a></li>
-                <li class="nav-item"><a href="<?= base_url('contact-us') ?>" class="nav-link">Contact</a></li>
-                <li class="nav-item"><a href="<?= base_url('faq') ?>" class="nav-link">FAQs</a></li>
-            </ul>
-            <div class="d-flex align-items-center">
-            </div>
-        </div>
-    </div>
+    <!-- Essential SVG sprite for nav icons (chev-down, etc.) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="i-chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+        <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+      </defs>
+    </svg>
 
-    <!-- Main Header -->
-    <header class="main-header">
-        <nav class="navbar navbar-expand-lg py-3">
-            <div class="container">
-                <!-- Logo -->
-                <a class="navbar-brand brand-logo" href="<?= base_url(); ?>">
-                    <img src="<?= base_url('images/logo.png') ?>" alt="Jobber Recruit Logo" class="img-fluid">
-                </a>
-                <!-- Toggler for Mobile -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <!-- Navigation Menu -->
-                    <ul class="navbar-nav ms-auto text-center">
-                        <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == '/' || uri_string() == '') ? 'active' : '' ?>" href="<?= base_url('/') ?>">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == 'jobs') ? 'active' : '' ?>" href="<?= base_url('jobs') ?>">Find Jobs</a>
-                        </li>
-                        <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Training
-                            </a>
-                            <ul class="dropdown-menu text-center">
-                                <li><a class="dropdown-item" href="<?= base_url('training') ?>">Courses</a></li>
-                                <li><a class="dropdown-item" href="<?= base_url('webinars') ?>">Webinars</a></li>
-                            </ul>
-                        </li>
-                        <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == 'training') ? 'active' : '' ?>" href="<?= base_url('training') ?>">Training</a>
-                        </li>
-                        <?php elseif (env('feature_webinars', 'true') == 'true'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == 'webinars') ? 'active' : '' ?>" href="<?= base_url('webinars') ?>">Webinars</a>
-                        </li>
-                        <?php endif; ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle <?= (uri_string() == 'recruitment' || uri_string() == 'job-ads') ? 'active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Recruitment
-                            </a>
-                            <ul class="dropdown-menu text-center">
-                                <li><a class="dropdown-item" href="<?= base_url('recruitment') ?>">Recruitment Services</a></li>
-                                <li><a class="dropdown-item" href="<?= base_url('job-ads') ?>">Job Ads</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Employers
-                            </a>
-                            <ul class="dropdown-menu text-center">
-                                <li><a class="dropdown-item" href="<?= base_url('employer/post-job') ?>">Post Job</a></li>
-                                <li><a class="dropdown-item" href="<?= base_url('employer/jobs') ?>">Manage Jobs</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?= (uri_string() == 'candidates') ? 'active' : '' ?>" href="<?= base_url('candidates') ?>">Candidates</a>
-                        </li>
-                        <li class="nav-item d-block d-lg-none">
-                            <a class="nav-link <?= (uri_string() == 'about-us') ? 'active' : '' ?>" href="<?= base_url('about-us') ?>">About Us</a>
-                        </li>
-                        <li class="nav-item d-block d-lg-none">
-                            <a class="nav-link <?= (uri_string() == 'blog') ? 'active' : '' ?>" href="<?= base_url('blog') ?>">Blog</a>
-                        </li>
-                        <li class="nav-item d-block d-lg-none">
-                            <a class="nav-link" <?= (uri_string() == 'contact-us') ? 'active' : '' ?> href="<?= base_url('contact-us') ?>">Contact Us</a>
-                        </li>
-                    </ul>
-                    <!-- Buttons -->
-                    <div class="d-flex header-buttons ms-3">
-                        <button
-                            id="pwa-install-btn"
-                            onclick="installPWA()"
-                            class="btn btn-secondary d-lg-block d-none">
-                            Install App
-                        </button>
-                        <?php if (!$auth->user()) : ?>
-                            <a href="<?= base_url('login') ?>" class="btn btn-outline-primary me-2">Sign In</a>
-                            <a href="<?= base_url('register') ?>" class="btn btn-primary">Register</a>
-                        <?php else : ?>
-                            <?php if ($auth->user()->user_type == 'employer'): ?>
-                                <a href="<?= base_url('employer/dashboard') ?>" class="btn btn-primary">Dashboard</a>
-                            <?php elseif ($auth->user()->user_type == 'job_seeker'): ?>
-                                <a href="<?= base_url('candidate/dashboard') ?>" class="btn btn-primary">Dashboard</a>
-                            <?php else: ?>
-                                <a href="<?= base_url('admin/dashboard') ?>" class="btn btn-secondary">Dashboard</a>
-                            <?php endif; ?>
-                            <a href="<?= base_url('logout') ?>" class="btn btn-outline-primary me-2">Logout</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    </header>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-50px;left:16px;background:var(--brand);color:#fff;padding:8px 16px;border-radius:0 0 6px 6px;font-weight:600;z-index:9999;transition:top .2s">Skip to main content</a>
+<style>.skip-link:focus{top:0!important;outline:3px solid #ED9020;outline-offset:2px}</style>
+    <!-- Skip-link target for accessibility (homepage has id="main-content", other pages use fallback) -->
+    <div id="main-content" hidden></div>
+
+    <!-- Sticky Navbar (reference design) -->
+    <?= $this->include('templates/partials/header') ?>
 
     <!-- Offline Banner -->
     <div id="network-status" class="alert alert-danger text-center fw-semibold d-none" style="position: fixed; top: 0; left: 0; right: 0; opacity: 0.8; z-index: 9999;">
@@ -240,255 +165,11 @@
         <?= $this->renderSection('content'); ?>
     </div>
 
-    <?php
-    $currentPath = trim(uri_string(), '/');
-    $firstSegment = service('uri')->getSegment(1) ?? '';
-    $skipSharedCta = $currentPath === 'training' || str_starts_with($currentPath, 'training/');
-
-    $cta = [
-        'title' => 'Join JobberRecruit Today',
-        'description' => 'Whether you’re a job seeker searching for your next career move or an employer looking to hire exceptional talent, JobberRecruit provides the tools and support you need to succeed.',
-        'left_title' => 'Become a Candidate',
-        'left_text' => 'Take the next step in your career with confidence. Create your profile, explore verified job opportunities, and connect with employers actively searching for talent like yours.',
-        'left_href' => base_url('register'),
-        'left_button' => 'Register Now',
-        'left_button_class' => 'btn-primary text-light',
-        'left_image_alt' => 'Candidate',
-        'right_title' => 'Become an Employer',
-        'right_text' => 'Find the right talent faster. Post job openings, access a pool of qualified candidates, and streamline your recruitment process with ease.',
-        'right_href' => base_url('register'),
-        'right_button' => 'Register Now',
-        'right_button_class' => 'btn-light text-primary',
-        'right_image_alt' => 'Employer',
-    ];
-
-    if ($currentPath !== '') {
-        if (in_array($firstSegment, ['jobs', 'job', 'talents'], true)) {
-            $cta = [
-                'title' => 'Move From Browsing To Action',
-                'description' => 'You are already exploring opportunities. Create your profile, apply faster, and stay visible to employers looking for your skills.',
-                'left_title' => 'Create Candidate Profile',
-                'left_text' => 'Save your CV, track applications, and unlock application-aware mock interviews tailored to the jobs you pursue.',
-                'left_href' => base_url('register'),
-                'left_button' => 'Start As Candidate',
-                'left_button_class' => 'btn-primary text-light',
-                'left_image_alt' => 'Candidate',
-                'right_title' => 'Need Better Applicants?',
-                'right_text' => 'Post roles, manage applications, and reach qualified candidates from one recruitment dashboard.',
-                'right_href' => base_url('pricing'),
-                'right_button' => 'View Employer Plans',
-                'right_button_class' => 'btn-light text-primary',
-                'right_image_alt' => 'Employer',
-            ];
-        } elseif (in_array($firstSegment, ['candidate', 'resume-builder', 'cv-builder'], true)) {
-            $cta = [
-                'title' => 'Advance Your Job Search Faster',
-                'description' => 'Keep your profile interview-ready, discover better matches, and turn every application into a stronger opportunity.',
-                'left_title' => 'Practice Smarter',
-                'left_text' => 'Use AI mock interviews, resume tools, and saved application history to prepare with more confidence.',
-                'left_href' => base_url('candidate/career-tools/mock-interview'),
-                'left_button' => 'Start Mock Interview',
-                'left_button_class' => 'btn-primary text-light',
-                'left_image_alt' => 'Mock interview',
-                'right_title' => 'Find More Opportunities',
-                'right_text' => 'Search verified jobs, save relevant openings, and keep your next application aligned with your career goals.',
-                'right_href' => base_url('jobs'),
-                'right_button' => 'Browse Jobs',
-                'right_button_class' => 'btn-light text-primary',
-                'right_image_alt' => 'Jobs',
-            ];
-        } elseif (in_array($firstSegment, ['employer', 'pricing', 'recruitment', 'job-ads'], true)) {
-            $cta = [
-                'title' => 'Hire With More Confidence',
-                'description' => 'Turn interest into qualified applications with flexible hiring tools, employer branding, and faster screening workflows.',
-                'left_title' => 'Post Your Next Role',
-                'left_text' => 'Publish openings, manage applicants, and keep your hiring pipeline moving from one dashboard.',
-                'left_href' => base_url('employer/post-job'),
-                'left_button' => 'Post a Job',
-                'left_button_class' => 'btn-primary text-light',
-                'left_image_alt' => 'Post a job',
-                'right_title' => 'Compare Hiring Plans',
-                'right_text' => 'Choose the pricing option that matches your team size, hiring urgency, and visibility needs.',
-                'right_href' => base_url('pricing'),
-                'right_button' => 'See Pricing',
-                'right_button_class' => 'btn-light text-primary',
-                'right_image_alt' => 'Employer plans',
-            ];
-        } elseif (in_array($firstSegment, ['blog', 'about-us', 'contact-us', 'faqs'], true)) {
-            $cta = [
-                'title' => 'Put The Insights To Work',
-                'description' => 'You have the information. Now take the next practical step, whether that is landing a job or filling a role.',
-                'left_title' => 'Start Your Career Journey',
-                'left_text' => 'Create an account, upload your CV, and begin applying for roles that match your strengths.',
-                'left_href' => base_url('register'),
-                'left_button' => 'Join As Candidate',
-                'left_button_class' => 'btn-primary text-light',
-                'left_image_alt' => 'Candidate',
-                'right_title' => 'Grow Your Team',
-                'right_text' => 'Reach qualified talent and simplify hiring with employer tools built for faster recruitment.',
-                'right_href' => base_url('pricing'),
-                'right_button' => 'Hire With JobberRecruit',
-                'right_button_class' => 'btn-light text-primary',
-                'right_image_alt' => 'Employer',
-            ];
-        }
-    }
-    ?>
-    <?php if (! $skipSharedCta): ?>
-        <!-- Call to Action Section -->
-        <section class="cta-section py-5">
-            <div class="container text-center">
-                <h2 class="fw-semibold mb-3"><?= esc($cta['title']) ?></h2>
-                <p class="text-muted mb-4 col-md-8 mx-auto">
-                    <?= esc($cta['description']) ?>
-                </p>
-                <div class="row g-4">
-                    <div class="col-12 col-md-6">
-                        <div class="become-card candidate-card position-relative text-white">
-                            <div class="content pe-md-5">
-                                <h4 class="fw-semibold text-light mb-2"><?= esc($cta['left_title']) ?></h4>
-                                <p class="text-light mb-4">
-                                    <?= esc($cta['left_text']) ?>
-                                </p>
-                                <a href="<?= esc($cta['left_href']) ?>" class="btn flat-btn <?= esc($cta['left_button_class']) ?>">
-                                    <?= esc($cta['left_button']) ?> <i class="bi bi-arrow-right ms-1"></i>
-                                </a>
-                            </div>
-                            <img
-                                src="<?= base_url('images/hero-banner.png'); ?>"
-                                alt="<?= esc($cta['left_image_alt']) ?>"
-                                class="card-image d-none d-md-block" />
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-md-6">
-                        <div class="become-card employer-card position-relative text-white">
-                            <div class="content pe-md-5">
-                                <h4 class="fw-semibold mb-2"><?= esc($cta['right_title']) ?></h4>
-                                <p class="text-light mb-4">
-                                    <?= esc($cta['right_text']) ?>
-                                </p>
-                                <a href="<?= esc($cta['right_href']) ?>" class="btn flat-btn <?= esc($cta['right_button_class']) ?>">
-                                    <?= esc($cta['right_button']) ?> <i class="bi bi-arrow-right ms-1"></i>
-                                </a>
-                            </div>
-                            <img
-                                src="<?= base_url('images/hero-banner.png'); ?>"
-                                alt="<?= esc($cta['right_image_alt']) ?>"
-                                class="card-image d-none d-md-block" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- END CALL TO ACTION -->
-    <?php endif; ?>
-
-    <!-- Footer -->
-    <footer class="footer text-light pt-5 pb-4 mt-5">
-        <div class="container">
-            <div class="row gy-4">
-                <!-- Logo + Contact -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="footer-brand mb-4">
-                        <a href="<?= base_url(); ?>">
-                            <img src="<?= base_url('images/logo-white.png') ?>" alt="Jobber Recruit Logo" class="img-fluid">
-                        </a>
-                    </div>
-                    <p class="mb-2 small text-light">
-                        <i class="bi bi-telephone me-2"></i>
-                        <a href="tel:+2349014808902" class="footer-link">+234 901 480 8902</a>
-                    </p>
-                    <p class="small text-light">
-                        6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria
-                    </p>
-                </div>
-
-                <!-- Quick Links -->
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="fw-semibold mb-4">Quick Links</h6>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="<?= base_url('about-us') ?>">About</a></li>
-                        <li><a href="<?= base_url('contact-us') ?>">Contact</a></li>
-                        <!-- <li><a href="<?= base_url('pricing') ?>">Pricing</a></li> -->
-                        <li><a href="<?= base_url('blog') ?>">Blog</a></li>
-                    </ul>
-                </div>
-
-                <!-- Candidate -->
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="fw-semibold mb-4">Candidate</h6>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="<?= base_url('jobs') ?>">Browse Jobs</a></li>
-                        <li><a href="<?= base_url('candidates') ?>">Talents</a></li>
-                    </ul>
-                </div>
-
-                <!-- Employers -->
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="fw-semibold mb-4">Employers</h6>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="<?= base_url('employer/post-job') ?>">Post a Job</a></li>
-                        <li><a href="<?= base_url('employer/applications') ?>">Applications</a></li>
-                    </ul>
-                </div>
-
-                <!-- Support -->
-                <div class="col-lg-3 col-md-6">
-                    <h6 class="fw-semibold mb-4">Support</h6>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="<?= base_url('faq') ?>">FAQs</a></li>
-                        <li><a href="<?= base_url('privacy-policy') ?>">Privacy Policy</a></li>
-                        <li><a href="<?= base_url('terms-and-conditions') ?>">Terms & Conditions</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <hr class="footer-divider my-4">
-
-            <!-- SEO Hubs (Internal Linking Engine) -->
-            <div class="row gy-4 mb-4">
-                <div class="col-md-6">
-                    <h6 class="fw-semibold mb-3 text-light">Top Job Locations</h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="<?= base_url('jobs-in-lagos') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Jobs in Lagos</a>
-                        <a href="<?= base_url('jobs-in-abuja') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Jobs in Abuja</a>
-                        <a href="<?= base_url('jobs-in-rivers') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Jobs in Port Harcourt</a>
-                        <a href="<?= base_url('jobs-in-kano') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Jobs in Kano</a>
-                        <a href="<?= base_url('jobs-in-oyo') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Jobs in Ibadan</a>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <h6 class="fw-semibold mb-3 text-light">Popular Categories</h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="<?= base_url('it-software-jobs') ?>" class="badge bg-dark-subtle text-light text-decoration-none">IT & Software</a>
-                        <a href="<?= base_url('banking-finance-jobs') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Banking & Finance</a>
-                        <a href="<?= base_url('healthcare-jobs') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Healthcare</a>
-                        <a href="<?= base_url('marketing-sales-jobs') ?>" class="badge bg-dark-subtle text-light text-decoration-none">Marketing & Sales</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bottom Bar -->
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                <p class="small mb-2 mb-md-0 text-light">
-                    © <?= date('Y') ?> <span class="fw-semibold">JobberRecruit</span> - Job Portal. All rights reserved.
-                </p>
-                <!-- Built by -->
-                <p class="small mb-2 mb-md-0 text-light">
-                    Built with <i class="bi bi-heart-fill text-danger"></i> by <a href="https://bitbiz.ng" class="text-light">BITBIZ NIG LIMITED</a>
-                </p>
-                <div class="footer-socials">
-                    <a href="https://wa.me/message/GZ266BV42CQUK1" class="me-3"><i class="bi bi-whatsapp"></i></a>
-                    <a href="https://www.tiktok.com/@jobberecruit" class="me-3"><i class="bi bi-tiktok"></i></a>
-                    <a href="https://www.linkedin.com/company/jobber-recruit/" class="me-3"><i class="bi bi-linkedin"></i></a>
-                    <a href="https://www.instagram.com/jobberrecruit_ltd?igsh=YWFheGE0eDJ6NXh2" class="me-3"><i class="bi bi-instagram"></i></a>
-                    <a href="https://t.me/jobberecruit" class="me-3"><i class="bi bi-telegram"></i></a>
-                    <a href="https://x.com/jobberrecruit?s=21&t=-feIW_cwkJ1KudODM2mONQ"><i class="bi bi-twitter-x"></i></a>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer (reference design) -->
+    <?= $this->include('templates/partials/footer') ?>
+    
+    <!-- Mobile Bottom App Navigation -->
+    <?= $this->include('partials/mobile_bottom_nav') ?>
 
 
     <script src="<?= base_url('js/jquery-3.7.1.min.js'); ?>"></script>
@@ -689,7 +370,68 @@
             closePWABanner();
         });
     </script>
+    <!-- Back-to-top button -->
+    <button id="btt" aria-label="Back to top" title="Back to top"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
+    <script>
+      function toggleMenu(btn) {
+        const nav = document.getElementById('mob-nav');
+        if (!nav) return;
+        const open = nav.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+        document.body.style.overflow = open ? 'hidden' : '';
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        const mobNav = document.getElementById('mob-nav');
+        if (mobNav) {
+          mobNav.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+              this.classList.remove('open');
+              const hamburger = document.querySelector('.hamburger');
+              if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+              document.body.style.overflow = '';
+            }
+          });
+        }
+        // Nav dropdown toggle for touch devices
+        document.querySelectorAll('.nav-dropdown-toggle').forEach(function(toggle) {
+          toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = this.getAttribute('aria-expanded') === 'true';
+            document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+              t.setAttribute('aria-expanded', 'false');
+            });
+            this.setAttribute('aria-expanded', String(!isOpen));
+          });
+        });
+        document.addEventListener('click', function() {
+          document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+            t.setAttribute('aria-expanded', 'false');
+          });
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') {
+            document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+              t.setAttribute('aria-expanded', 'false');
+            });
+          }
+        });
+        // Back to top
+        var btt = document.getElementById('btt');
+        if (btt) {
+          window.addEventListener('scroll', function() {
+            btt.classList.toggle('show', window.scrollY > 400);
+          }, { passive: true });
+          btt.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+      });
+    </script>
     <?= $this->renderSection('scripts'); ?>
+    <script src="<?= base_url('assets/js/mobile-app.js?v=1.0'); ?>"></script>
+    <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>
+    <script src="<?= base_url('js/inline-validation.js'); ?>" type="text/javascript"></script>
+    <script src="<?= base_url('js/interactive-ui.js'); ?>" type="text/javascript"></script>
 </body>
 
 </html>

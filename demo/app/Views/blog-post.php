@@ -212,39 +212,51 @@
                     <?php endif; ?>
 
                     <!-- Share Section -->
-                    <div class="share-section my-5 p-4 bg-light rounded-3">
-                        <h5 class="fw-semibold mb-3">Share This Article</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            <?php
-                            $currentUrl = current_url();
-                            $encodedUrl = urlencode($currentUrl);
-                            $encodedTitle = urlencode($blog->title);
-                            $encodedDesc = urlencode($meta_description ?? '');
-                            ?>
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= $encodedUrl ?>"
-                                target="_blank" rel="noopener noreferrer"
-                                class="btn btn-outline-primary share-btn">
-                                <i class="bi bi-facebook me-2"></i>Facebook
-                                <span class="badge bg-primary ms-2 share-count">0</span>
-                            </a>
-                            <a href="https://twitter.com/intent/tweet?url=<?= $encodedUrl ?>&text=<?= $encodedTitle ?>"
-                                target="_blank" rel="noopener noreferrer"
-                                class="btn btn-outline-info share-btn">
-                                <i class="bi bi-twitter me-2"></i>Twitter
-                                <span class="badge bg-info ms-2 share-count">0</span>
-                            </a>
-                            <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?= $encodedUrl ?>&title=<?= $encodedTitle ?>&summary=<?= $encodedDesc ?>"
-                                target="_blank" rel="noopener noreferrer"
-                                class="btn btn-outline-dark share-btn">
-                                <i class="bi bi-linkedin me-2"></i>LinkedIn
-                                <span class="badge bg-dark ms-2 share-count">0</span>
-                            </a>
-                            <button onclick="copyToClipboard('<?= $currentUrl ?>')"
-                                class="btn btn-outline-success share-btn">
-                                <i class="bi bi-link-45deg me-2"></i>Copy Link
-                            </button>
-                        </div>
+                    <div class="share-section floating-share-widget d-none d-lg-flex flex-column gap-3">
+                        <div class="fw-semibold text-muted text-uppercase small text-center" style="writing-mode: vertical-rl; transform: rotate(180deg); margin-bottom: 10px;">Share</div>
+                        <?php
+                        $currentUrl = current_url();
+                        $encodedUrl = urlencode($currentUrl);
+                        $encodedTitle = urlencode($blog->title);
+                        $encodedDesc = urlencode($meta_description ?? '');
+                        ?>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= $encodedUrl ?>"
+                            target="_blank" rel="noopener noreferrer"
+                            class="btn btn-outline-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?url=<?= $encodedUrl ?>&text=<?= $encodedTitle ?>"
+                            target="_blank" rel="noopener noreferrer"
+                            class="btn btn-outline-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                            <i class="bi bi-twitter"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?= $encodedUrl ?>&title=<?= $encodedTitle ?>&summary=<?= $encodedDesc ?>"
+                            target="_blank" rel="noopener noreferrer"
+                            class="btn btn-outline-dark rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                        <button onclick="copyToClipboard('<?= $currentUrl ?>')"
+                            class="btn btn-outline-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" title="Copy Link">
+                            <i class="bi bi-link-45deg"></i>
+                        </button>
                     </div>
+                    
+                    <style>
+                        .floating-share-widget {
+                            position: absolute;
+                            left: -80px;
+                            top: 0;
+                            position: sticky;
+                            top: 120px;
+                            height: max-content;
+                            z-index: 10;
+                        }
+                        @media (max-width: 1200px) {
+                            .floating-share-widget {
+                                display: none !important;
+                            }
+                        }
+                    </style>
 
                     <!-- Author Card -->
                     <div class="author-card card shadow-sm mb-5">
@@ -404,7 +416,7 @@
     // Copy to Clipboard
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(function() {
-            alert('Link copied to clipboard!');
+            toastr.success('Link copied to clipboard!');
         }, function(err) {
             console.error('Could not copy text: ', err);
         });

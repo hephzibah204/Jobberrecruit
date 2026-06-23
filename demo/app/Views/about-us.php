@@ -78,8 +78,8 @@
             <circle cx="150" cy="150" r="150" fill="url(#paint0_linear)" fill-opacity="0.05" />
             <defs>
                 <linearGradient id="paint0_linear" x1="0" y1="0" x2="300" y2="300" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#F5A623" />
-                    <stop offset="1" stop-color="#F5A623" />
+                    <stop stop-color="var(--accent)" />
+                    <stop offset="1" stop-color="var(--accent)" />
                 </linearGradient>
             </defs>
         </svg>
@@ -91,7 +91,7 @@
     <div class="container">
         <div class="row g-5">
             <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid #F5A623;">
+                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid var(--accent);">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center mb-4">
                             <div class="icon-wrapper bg-primary bg-opacity-10 rounded-3 p-3 me-3">
@@ -117,7 +117,7 @@
                 </div>
             </div>
             <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid #005DA8;">
+                <div class="card border-0 shadow-sm h-100 hover-lift" style="border-left: 4px solid var(--brand);">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center mb-4">
                             <div class="icon-wrapper bg-info bg-opacity-10 rounded-3 p-3 me-3">
@@ -481,7 +481,7 @@
 
     /* Gradient Text */
     .text-gradient-primary {
-        background: linear-gradient(90deg, #F5A623 0%, #e67e00 100%);
+        background: linear-gradient(90deg, var(--accent) 0%, #e67e00 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -527,7 +527,7 @@
         top: 0;
         bottom: 0;
         width: 2px;
-        background: linear-gradient(to bottom, #F5A623, #005DA8);
+        background: linear-gradient(to bottom, var(--accent), var(--brand));
         opacity: 0.3;
     }
 
@@ -578,23 +578,23 @@
     .counter {
         font-size: 3.5rem;
         font-weight: 700;
-        background: linear-gradient(90deg, #F5A623, #005DA8);
+        background: linear-gradient(90deg, var(--accent), var(--brand));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
     /* Primary Color Override */
     .bg-primary {
-        background: linear-gradient(135deg, #F5A623 0%, #e67e00 100%) !important;
+        background: linear-gradient(135deg, var(--accent) 0%, #e67e00 100%) !important;
     }
 
     .text-primary {
-        color: #F5A623 !important;
+        color: var(--accent) !important;
     }
 
     .btn-primary {
-        background: #F5A623;
-        border-color: #F5A623;
+        background: var(--accent);
+        border-color: var(--accent);
     }
 
     .btn-primary:hover {
@@ -616,17 +616,17 @@
 
     /* Blockquote Styling */
     blockquote {
-        border-left-color: #F5A623 !important;
+        border-left-color: var(--accent) !important;
     }
 
     blockquote.border-info {
-        border-left-color: #005DA8 !important;
+        border-left-color: var(--brand) !important;
     }
 
     /* Badge Styles */
     .badge.bg-primary {
         background-color: rgba(240, 137, 14, 0.1) !important;
-        color: #F5A623;
+        color: var(--accent);
     }
 
     /* Section Spacing */

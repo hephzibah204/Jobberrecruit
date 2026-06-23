@@ -3,15 +3,15 @@
 <?= $this->section('styles') ?>
 <style>
     :root {
-        --primary-color: #005DA8;
-        --secondary-color: #F5A623;
+        --primary-color: #0D609E;
+        --secondary-color: #F08F1A;
         --text-dark: #1E293B;
         --text-muted: #64748B;
         --bg-light: #f8f9fb;
         --success-color: #198754;
         --danger-color: #dc3545;
         --warning-color: #ffc107;
-        --info-color: #0dcaf0;
+        --info-color: #0D609E;
         --light-color: #f8f9fa;
         --dark-color: #212529;
         --text-primary: #212529;
@@ -603,9 +603,9 @@
                                 placeholder="Enter new password"
                                 required
                                 autocomplete="new-password">
-                            <button type="button" class="password-toggle" id="togglePassword">
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
+                            <button type="button" class="password-toggle" id="togglePassword" aria-label="View">
+    <i class="bi bi-eye-slash"></i>
+</button>
                         </div>
                         <!-- Password Strength Meter -->
                         <div class="password-strength mt-2">
@@ -622,9 +622,9 @@
                                 placeholder="Confirm new password"
                                 required
                                 autocomplete="new-password">
-                            <button type="button" class="password-toggle" id="toggleConfirmPassword">
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
+                            <button type="button" class="password-toggle" id="toggleConfirmPassword" aria-label="View">
+    <i class="bi bi-eye-slash"></i>
+</button>
                         </div>
                         <div class="invalid-feedback"></div>
                         <div id="passwordMatch" class="mt-1" style="font-size: 0.85rem;"></div>

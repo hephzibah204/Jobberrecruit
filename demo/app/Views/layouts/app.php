@@ -2,11 +2,24 @@
 <html lang="en">
 
 <head>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('jr-theme');
+            const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (preferDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-theme-mode', theme);
+        })();
+    </script>
 
     <!-- Basic Meta -->
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    <meta name="theme-color" content="#0D609E">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <!-- SECURITY SEO: Prevent Indexing of Dashboard Pages -->
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
@@ -43,12 +56,13 @@
 
     <!-- Main Theme -->
     <link rel="stylesheet" href="<?= base_url('auth/css/style.css'); ?>">
+    <link rel="stylesheet" href="<?= base_url('css/global-core.css'); ?>">
     <!-- Midnight Aura Theme -->
     <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
         <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet">
     <?php endif; ?>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <!-- Unified Typography (Sora & Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Page-Level Styles -->
     <?= $this->renderSection('styles') ?>
 
@@ -73,6 +87,9 @@
         <div class="page-wrapper">
             <?= $this->renderSection('content') ?>
             <?= $this->include('layouts/footer'); ?>
+            
+            <!-- Mobile Bottom App Navigation -->
+            <?= $this->include('partials/mobile_bottom_nav') ?>
         </div>
 
 
@@ -119,6 +136,8 @@
     <!-- Custom JS -->
     <script src="<?= base_url('auth/js/theme-colorpicker.js'); ?>" type="text/javascript"></script>
     <script src="<?= base_url('auth/js/script.js'); ?>" type="text/javascript"></script>
+    <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>
+
 
 
     <?= $this->include('partials/chatbot'); ?>

@@ -3,15 +3,15 @@
 <?= $this->section('styles') ?>
 <style>
     :root {
-        --primary-color: #005DA8;
-        --secondary-color: #F5A623;
+        --primary-color: #0D609E;
+        --secondary-color: #F08F1A;
         --text-dark: #1E293B;
         --text-muted: #64748B;
         --bg-light: #f8f9fb;
         --success-color: #198754;
         --danger-color: #dc3545;
         --warning-color: #ffc107;
-        --info-color: #0dcaf0;
+        --info-color: #0D609E;
         --light-color: #f8f9fa;
         --dark-color: #212529;
         --text-primary: #212529;
@@ -36,71 +36,68 @@
         overflow-x: hidden;
     }
 
-    /* Ribbon Background */
-    body::before,
-    body::after {
+    
+    /* Split Screen Layout */
+    .auth-split-wrapper {
+        min-height: 100vh;
+        display: flex;
+    }
+    .auth-brand-side {
+        background: linear-gradient(135deg, var(--primary-navy, #002D5B), var(--primary-trust-blue, #005DA8));
+        color: white;
+        padding: 4rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+    .auth-brand-side::after {
         content: '';
         position: absolute;
+        bottom: -20%;
+        right: -10%;
         width: 600px;
         height: 600px;
-        background: linear-gradient(45deg, rgba(13, 96, 158, 0.08), transparent);
+        background: radial-gradient(circle, rgba(245, 166, 35, 0.15), transparent 70%);
         border-radius: 50%;
-        z-index: -2;
-        animation: float 15s infinite ease-in-out;
     }
-
-    body::before {
-        top: -200px;
-        left: -200px;
-        background: radial-gradient(circle, rgba(240, 137, 14, 0.1), transparent 70%);
+    .auth-testimonial {
+        font-size: 1.5rem;
+        font-weight: 500;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+        z-index: 1;
     }
-
-    body::after {
-        bottom: -150px;
-        right: -150px;
-        background: radial-gradient(circle, rgba(13, 96, 158, 0.1), transparent 70%);
-        animation-delay: -7.5s;
+    .auth-testimonial-author {
+        font-size: 1rem;
+        opacity: 0.8;
+        z-index: 1;
     }
-
-    @keyframes float {
-
-        0%,
-        100% {
-            transform: translateY(0) rotate(0deg);
-        }
-
-        50% {
-            transform: translateY(-30px) rotate(5deg);
-        }
+    .auth-form-side {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--bg-white, #ffffff);
     }
-
-    /* Ribbon Stripes */
-    .ribbon {
-        position: absolute;
-        height: 200px;
+    .login-card {
         width: 100%;
-        background: linear-gradient(135deg,
-                rgba(13, 96, 158, 0.05) 0%,
-                rgba(240, 137, 14, 0.05) 50%,
-                rgba(13, 96, 158, 0.05) 100%);
-        transform: rotate(-3deg);
-        top: 15%;
-        left: -10%;
-        z-index: -1;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        max-width: 440px;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
     }
-
-    .ribbon:nth-child(2) {
-        top: 70%;
-        transform: rotate(3deg);
-        background: linear-gradient(135deg,
-                rgba(240, 137, 14, 0.06) 0%,
-                rgba(13, 96, 158, 0.06) 50%,
-                rgba(240, 137, 14, 0.06) 100%);
-        left: -5%;
+    [data-theme="dark"] .auth-form-side {
+        background: var(--bg-white, #0F172A);
     }
-
-    /* Center Container */
+    [data-theme="dark"] .form-control {
+        background-color: var(--bg-light-gray, #1E293B);
+        border-color: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+    
     .register-container {
         min-height: 100vh;
         display: flex;

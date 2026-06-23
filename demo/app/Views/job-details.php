@@ -32,7 +32,7 @@
                     </div>
                     <div class="border-bottom pt-10 pb-10"></div>
                     <div class="banner-hero banner-image-single mt-10 mb-20">
-                        <img src="<?= $job->company_logo ? base_url($job->company_logo) : 'assets/imgs/page/job-single-2/img.png' ?>" alt="JobberRecruit">
+                        <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>" alt="JobberRecruit">
                     </div>
                     <div class="job-overview">
                         <h5 class="border-bottom pb-15 mb-30">Overview</h5>
@@ -123,7 +123,7 @@
                         <?= htmlspecialchars($job->application) ?>
                     </div>
                     <div class="author-single"><span><?= esc($job->employer_name) ?></span></div>
-                    <div class="single-apply-jobs">
+                    <div class="single-apply-jobs" data-inflow-cta>
                         <div class="row align-items-center">
                             <div class="col-md-5">
                                 <a class="btn btn-default mr-15" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
@@ -144,7 +144,7 @@
                 <div class="sidebar-border">
                     <div class="sidebar-heading">
                         <div class="avatar-sidebar">
-                            <figure><img class="company-logo" alt="JobberRecruit" src="<?= $job->company_logo ? base_url($job->company_logo) : 'assets/imgs/page/job-single/avatar.png' ?>"></figure>
+                            <figure><img class="company-logo" alt="JobberRecruit" src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>"></figure>
                             <div class="sidebar-info">
                                 <span class="sidebar-company"><?= esc($job->employer_name) ?></span>
                                 <span class="card-location"><?= esc($job->location) ?></span>
@@ -170,7 +170,7 @@
                             <?php foreach ($similar_jobs as $similar): ?>
                                 <li>
                                     <div class="card-list-4 hover-up">
-                                        <div class="image"><a href="<?= site_url('jobs/' . $similar->id) ?>"><img src="<?= $similar->company_logo ? base_url($similar->company_logo) : 'assets/imgs/brands/brand-1.png' ?>" alt="JobberRecruit"></a></div>
+                                        <div class="image"><a href="<?= site_url('jobs/' . $similar->id) ?>"><img src="<?= resolve_image_url($similar->company_logo ?? '', 'company', $similar->employer_name ?? 'Company') ?>" alt="JobberRecruit"></a></div>
                                         <div class="info-text">
                                             <h5 class="font-md font-bold color-brand-1"><a href="<?= site_url('jobs/view/' . $similar->id) ?>"><?= esc($similar->title) ?></a></h5>
                                             <div class="mt-0"><span class="card-briefcase"><?= esc(ucfirst($similar->job_type)) ?></span><span class="card-time"><?= humanize_time($similar->created_at) ?></span></div>
@@ -215,7 +215,7 @@
                             <div class="swiper-slide">
                                 <div class="card-grid-2 hover-up">
                                     <div class="card-grid-2-image-left"><span class="flash"></span>
-                                        <div class="image-box"><img src="<?= $featured->company_logo ? base_url($featured->company_logo) : 'assets/imgs/brands/brand-6.png' ?>" alt="JobberRecruit"></div>
+                                        <div class="image-box"><img src="<?= resolve_image_url($featured->company_logo ?? '', 'company', $featured->employer_name ?? 'Company') ?>" alt="JobberRecruit"></div>
                                         <div class="right-info"><a class="name-job" href="<?= site_url('company/' . $featured->employer_id) ?>"><?= esc($featured->employer_name) ?></a><span class="location-small"><?= esc($featured->location) ?></span></div>
                                     </div>
                                     <div class="card-block-info">
@@ -248,6 +248,20 @@
         </div>
     </div>
 </section>
+
+<!-- 8.3 Sticky bottom action bar (Section 8 — Native Mobile App Feel) -->
+<div class="jr-action-bar">
+    <div class="jr-action-meta">
+        <span class="label">Salary</span>
+        <span class="value"><?= esc($job->salary) ?: 'Negotiable' ?></span>
+    </div>
+    <div class="jr-action-cta">
+        <a class="jr-save" href="<?= site_url('jobs/save/' . $job->id) ?>" aria-label="Save job">
+            <i class="fi-rr-heart"></i>
+        </a>
+        <a class="btn btn-default" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+    </div>
+</div>
 
 <!-- Apply Job Modal -->
 <div class="modal fade" id="ModalApplyJobForm" tabindex="-1">
@@ -304,14 +318,14 @@
                 contentType: false,
                 success: function(response) {
                     if (response.success) {
-                        alert('Application submitted successfully!');
+                        toastr.success('Application submitted successfully!');
                         $('#ModalApplyJobForm').modal('hide');
                     } else {
-                        alert('Error: ' + (response.message || 'Something went wrong'));
+                        toastr.error('Error: ' + (response.message || 'Something went wrong'));
                     }
                 },
                 error: function() {
-                    alert('Network error. Please try again.');
+                    toastr.error('Network error. Please try again.');
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).text('Submit Application');

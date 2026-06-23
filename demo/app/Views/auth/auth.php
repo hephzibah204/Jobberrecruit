@@ -18,7 +18,7 @@
     <link rel="canonical" href="<?= current_url(); ?>">
 
     <!-- Branding -->
-    <meta name="theme-color" content="#005DA8">
+    <meta name="theme-color" content="var(--brand)">
     <meta name="application-name" content="JobberRecruit">
 
     <!-- Favicons -->
@@ -37,6 +37,7 @@
 
     <!-- Styles -->
     <link href="<?= base_url('assets/css/jobberrecruit.css'); ?>" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/global-core.css'); ?>">
     <link href="<?= base_url('assets/css/toastr.min.css'); ?>" rel="stylesheet">
 
     <?= $this->renderSection('styles'); ?>

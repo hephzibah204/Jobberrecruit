@@ -3,7 +3,9 @@
 <?= $this->section('content') ?>
 <style>
     .cv-hero {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        background: radial-gradient(ellipse 70% 60% at 82% 20%, rgba(240,143,26,.12) 0%, transparent 55%),
+                    radial-gradient(ellipse 80% 70% at 10% 90%, rgba(13,96,158,.28) 0%, transparent 55%),
+                    linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-dark) 55%, var(--brand) 100%);
         padding: 100px 0 80px;
         position: relative;
         overflow: hidden;
@@ -15,7 +17,7 @@
         right: -20%;
         width: 600px;
         height: 600px;
-        background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(13,96,158,0.2) 0%, transparent 70%);
         border-radius: 50%;
     }
     .cv-hero::after {
@@ -25,16 +27,16 @@
         left: -10%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(240,143,26,0.15) 0%, transparent 70%);
         border-radius: 50%;
     }
     .cv-hero-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(59,130,246,0.15);
-        border: 1px solid rgba(59,130,246,0.3);
-        color: #93c5fd;
+        background: rgba(240,143,26,0.15);
+        border: 1px solid rgba(240,143,26,0.3);
+        color: #fff7ed;
         padding: 6px 18px;
         border-radius: 50px;
         font-size: 0.85rem;
@@ -50,14 +52,14 @@
         margin-bottom: 20px;
     }
     .cv-hero h1 span {
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        background: linear-gradient(135deg, var(--accent), #ffb04c);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
     .cv-hero p {
         font-size: 1.15rem;
-        color: #94a3b8;
+        color: #e2e8f0;
         max-width: 600px;
         line-height: 1.7;
     }
@@ -72,18 +74,18 @@
     }
     .stat-card:hover {
         transform: translateY(-4px);
-        border-color: rgba(59,130,246,0.4);
+        border-color: rgba(240,143,26,0.4);
     }
     .stat-number {
         font-size: 2.2rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        background: linear-gradient(135deg, var(--accent), #ffb04c);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
     .stat-label {
-        color: #94a3b8;
+        color: #cbd5e1;
         font-size: 0.9rem;
         margin-top: 4px;
     }
@@ -98,7 +100,7 @@
         margin-bottom: 12px;
     }
     .section-header p {
-        color: #64748b;
+        color: #475569;
         font-size: 1.05rem;
         max-width: 600px;
         margin: 0 auto;
@@ -122,7 +124,7 @@
         top: -14px;
         left: 50%;
         transform: translateX(-50%);
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(135deg, var(--brand), var(--accent));
         color: #fff;
         width: 32px;
         height: 32px;
@@ -149,7 +151,7 @@
         color: #0f172a;
     }
     .process-card p {
-        color: #64748b;
+        color: #475569;
         font-size: 0.92rem;
         margin: 0;
     }
@@ -168,15 +170,15 @@
         transform: translateY(-4px);
     }
     .pricing-card.popular {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6, 0 20px 60px rgba(59,130,246,0.1);
+        border-color: var(--brand);
+        box-shadow: 0 0 0 1px var(--brand), 0 20px 60px rgba(13,96,158,0.1);
     }
     .popular-badge {
         position: absolute;
         top: -12px;
         left: 50%;
         transform: translateX(-50%);
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(135deg, var(--brand), var(--accent));
         color: #fff;
         padding: 4px 20px;
         border-radius: 50px;
@@ -191,7 +193,7 @@
     .pricing-card .price span {
         font-size: 1rem;
         font-weight: 400;
-        color: #64748b;
+        color: #475569;
     }
     .pricing-card ul {
         list-style: none;
@@ -200,14 +202,14 @@
     }
     .pricing-card ul li {
         padding: 8px 0;
-        color: #475569;
+        color: #334155;
         font-size: 0.95rem;
         display: flex;
         align-items: center;
         gap: 10px;
     }
     .pricing-card ul li i {
-        color: #22c55e;
+        color: #166534;
         font-size: 1.1rem;
     }
     .expert-card {
@@ -232,7 +234,7 @@
         justify-content: center;
         margin: 0 auto 16px;
         font-size: 2rem;
-        color: #3b82f6;
+        color: var(--brand);
         font-weight: 700;
     }
     .expert-card h5 {
@@ -240,13 +242,13 @@
         margin-bottom: 4px;
     }
     .expert-card .role {
-        color: #3b82f6;
+        color: var(--brand);
         font-size: 0.85rem;
         font-weight: 500;
         margin-bottom: 10px;
     }
     .expert-card p {
-        color: #64748b;
+        color: #475569;
         font-size: 0.88rem;
         margin: 0;
     }
@@ -261,7 +263,7 @@
         box-shadow: 0 12px 40px rgba(0,0,0,0.06);
     }
     .testimonial-card .stars {
-        color: #f59e0b;
+        color: #d97706;
         margin-bottom: 12px;
     }
     .testimonial-card blockquote {
@@ -285,7 +287,7 @@
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: #64748b;
+        color: #475569;
     }
     .testimonial-card .author .name {
         font-weight: 600;
@@ -293,7 +295,7 @@
     }
     .testimonial-card .author .title {
         font-size: 0.8rem;
-        color: #64748b;
+        color: #475569;
     }
     .review-item {
         display: flex;
@@ -310,7 +312,7 @@
     }
     .review-item i {
         font-size: 1.3rem;
-        color: #3b82f6;
+        color: var(--brand);
         margin-top: 2px;
     }
     .review-item h6 {
@@ -319,7 +321,7 @@
         margin-bottom: 4px;
     }
     .review-item p {
-        color: #64748b;
+        color: #475569;
         font-size: 0.85rem;
         margin: 0;
         line-height: 1.5;
@@ -334,12 +336,12 @@
         background: #f8fafc;
     }
     .upload-area:hover, .upload-area.dragover {
-        border-color: #3b82f6;
+        border-color: var(--brand);
         background: #eff6ff;
     }
     .upload-area i {
         font-size: 3rem;
-        color: #3b82f6;
+        color: var(--brand);
         margin-bottom: 16px;
     }
     .upload-area h5 {
@@ -347,12 +349,12 @@
         margin-bottom: 8px;
     }
     .upload-area p {
-        color: #64748b;
+        color: #475569;
         margin-bottom: 0;
         font-size: 0.9rem;
     }
     .upload-area .formats {
-        color: #94a3b8;
+        color: #475569;
         font-size: 0.8rem;
         margin-top: 8px;
     }
@@ -378,14 +380,14 @@
     }
     .faq-question i {
         transition: transform 0.3s;
-        color: #64748b;
+        color: #475569;
     }
     .faq-question.active i {
         transform: rotate(180deg);
     }
     .faq-answer {
         padding: 0 20px 18px;
-        color: #64748b;
+        color: #475569;
         font-size: 0.92rem;
         line-height: 1.7;
         display: none;
@@ -418,7 +420,7 @@
         margin-bottom: 12px;
     }
     .cta-section p {
-        color: #94a3b8;
+        color: #cbd5e1;
         font-size: 1.05rem;
         max-width: 550px;
         margin: 0 auto 28px;
@@ -438,16 +440,29 @@
     }
     .file-preview i {
         font-size: 2rem;
-        color: #22c55e;
+        color: #166534;
     }
     .file-preview .file-name {
         font-weight: 600;
         font-size: 0.95rem;
+        color: #166534;
     }
     .file-preview .file-size {
         font-size: 0.8rem;
-        color: #64748b;
+        color: #334155;
     }
+    /* Badge contrast overrides */
+    .bg-primary-transparent { background-color: rgba(13,96,158,0.12) !important; }
+    .text-primary { color: var(--brand) !important; }
+    .bg-success-transparent { background-color: rgba(22,101,52,0.12) !important; }
+    .text-success { color: #166534 !important; }
+    .bg-info-transparent { background-color: rgba(59,130,246,0.12) !important; }
+    .text-info { color: #1e3a8a !important; }
+    .bg-warning-transparent { background-color: rgba(240,143,26,0.12) !important; }
+    .text-warning { color: #7c2d12 !important; }
+    .bg-secondary-transparent { background-color: rgba(100,116,139,0.12) !important; }
+    .text-secondary { color: #334155 !important; }
+
     @media (max-width: 768px) {
         .cv-hero h1 { font-size: 2rem; }
         .cta-section { padding: 40px 24px; }
@@ -568,7 +583,7 @@
             <div class="col-lg-4 col-md-6">
                 <div class="pricing-card">
                     <h5 class="fw-bold mb-1">Basic Review</h5>
-                    <p style="color:#64748b;font-size:0.9rem;margin-bottom:16px;">AI-powered instant feedback</p>
+                    <p style="color:#475569;font-size:0.9rem;margin-bottom:16px;">AI-powered instant feedback</p>
                     <div class="price">Free <span></span></div>
                     <ul>
                         <li><i class="ti ti-check"></i> ATS Compatibility Scan</li>
@@ -584,7 +599,7 @@
                 <div class="pricing-card popular">
                     <div class="popular-badge">Most Popular</div>
                     <h5 class="fw-bold mb-1">Professional Review</h5>
-                    <p style="color:#64748b;font-size:0.9rem;margin-bottom:16px;">Expert human + AI analysis</p>
+                    <p style="color:#475569;font-size:0.9rem;margin-bottom:16px;">Expert human + AI analysis</p>
                     <div class="price">&#8358;<?= number_format($planPrices['professional'], 0) ?> <span>/review</span></div>
                     <ul>
                         <li><i class="ti ti-check"></i> Everything in Basic</li>
@@ -600,7 +615,7 @@
             <div class="col-lg-4 col-md-6">
                 <div class="pricing-card">
                     <h5 class="fw-bold mb-1">Premium Review</h5>
-                    <p style="color:#64748b;font-size:0.9rem;margin-bottom:16px;">Full career document overhaul</p>
+                    <p style="color:#475569;font-size:0.9rem;margin-bottom:16px;">Full career document overhaul</p>
                     <div class="price">&#8358;<?= number_format($planPrices['premium'], 0) ?> <span>/review</span></div>
                     <ul>
                         <li><i class="ti ti-check"></i> Everything in Professional</li>
@@ -879,9 +894,9 @@
                                         <div class="file-name" id="file-name"></div>
                                         <div class="file-size" id="file-size"></div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="remove-file">
-                                        <i class="ti ti-x"></i>
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="remove-file" aria-label="Close">
+    <i class="ti ti-x"></i>
+</button>
                                 </div>
                             </div>
                             <div class="mb-4">

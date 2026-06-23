@@ -83,7 +83,7 @@
 
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            background: linear-gradient(135deg, #0D609E, #0a58ca);
             color: white;
             padding: 14px 32px;
             text-decoration: none;
@@ -103,7 +103,7 @@
         }
 
         .footer a {
-            color: #0d6efd;
+            color: #0D609E;
             text-decoration: none;
         }
     </style>

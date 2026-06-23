@@ -13,7 +13,7 @@
 
     .notification-unread {
         background-color: #f0f7ff;
-        border-left-color: #0d6efd;
+        border-left-color: #0D609E;
     }
 
     .notification-read {
@@ -40,9 +40,9 @@
     }
 
     .filter-btn.active {
-        background-color: #0d6efd;
+        background-color: #0D609E;
         color: white;
-        border-color: #0d6efd;
+        border-color: #0D609E;
     }
 </style>
 <?= $this->endSection() ?>

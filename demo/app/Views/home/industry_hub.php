@@ -31,7 +31,7 @@ foreach ($jobs as $index => $j) {
 <!-- ============================================================
      HERO SECTION
 ============================================================ -->
-<section class="industry-hero py-5" style="background: linear-gradient(135deg, #002855 0%, #005DA8 50%, #001a3b 100%); position: relative; overflow: hidden;">
+<section class="industry-hero py-5" style="background: linear-gradient(135deg, #002855 0%, var(--brand) 50%, #001a3b 100%); position: relative; overflow: hidden;">
     <!-- Decorative blobs -->
     <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(245, 166, 35, 0.1);pointer-events:none;"></div>
     <div style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;background:rgba(0, 93, 168, 0.1);pointer-events:none;"></div>
@@ -50,7 +50,7 @@ foreach ($jobs as $index => $j) {
             <div class="col-lg-8">
                 <!-- Industry badge -->
                 <div class="mb-3">
-                    <span class="badge px-3 py-2 fs-13 fw-medium" style="background: rgba(245, 166, 35, 0.15); color: #F5A623; border: 1px solid rgba(245, 166, 35, 0.3);">
+                    <span class="badge px-3 py-2 fs-13 fw-medium" style="background: rgba(245, 166, 35, 0.15); color: var(--accent); border: 1px solid rgba(245, 166, 35, 0.3);">
                         <i class="bi bi-grid-fill me-1"></i>Industry Category
                     </span>
                 </div>
@@ -66,14 +66,14 @@ foreach ($jobs as $index => $j) {
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2 text-white">
                         <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:rgba(245, 166, 35, 0.15);border:1px solid rgba(245, 166, 35, 0.3);">
-                            <i class="bi bi-briefcase fs-5" style="color:#F5A623;"></i>
+                            <i class="bi bi-briefcase fs-5" style="color:var(--accent);"></i>
                         </div>
                         <div>
                             <div class="fw-bold fs-5"><?= number_format($total_jobs) ?></div>
                             <div class="text-white-50 small">Open Roles</div>
                         </div>
                     </div>
-                    <a href="<?= base_url('jobs?' . (!empty($is_category) ? 'category_id=' : 'industry_id=') . $industry->id) ?>" class="btn btn-lg rounded-pill px-4 text-white border-0" style="background: linear-gradient(135deg, #F5A623, #d48b11);">
+                    <a href="<?= base_url('jobs?' . (!empty($is_category) ? 'category_id=' : 'industry_id=') . $industry->id) ?>" class="btn btn-lg rounded-pill px-4 text-white border-0" style="background: linear-gradient(135deg, var(--accent), #d48b11);">
                         <i class="bi bi-search me-2"></i>Browse All Jobs
                     </a>
                     <?php if (!empty($auth)): ?>
@@ -88,12 +88,12 @@ foreach ($jobs as $index => $j) {
             <div class="col-lg-4">
                 <div class="glass-card p-4 text-white" style="background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.1) !important;">
                     <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-bar-chart-fill fs-4 me-2" style="color:#F5A623;"></i>
+                        <i class="bi bi-bar-chart-fill fs-4 me-2" style="color:var(--accent);"></i>
                         <span class="fw-bold">Sector Insights</span>
                     </div>
                     <div class="row g-3 text-center">
                         <div class="col-12">
-                            <div class="fw-bold fs-3" style="color:#F5A623;"><?= number_format($total_jobs) ?>+</div>
+                            <div class="fw-bold fs-3" style="color:var(--accent);"><?= number_format($total_jobs) ?>+</div>
                             <div class="text-white-50 small">Live Opportunities</div>
                         </div>
                     </div>
@@ -111,11 +111,11 @@ foreach ($jobs as $index => $j) {
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="glass-card p-4 p-md-5 border-start border-4" style="border-left-color: #005DA8 !important;">
+                <div class="glass-card p-4 p-md-5 border-start border-4" style="border-left-color: var(--brand) !important;">
                     <div class="d-flex align-items-start gap-3">
                         <div class="flex-shrink-0">
                             <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(0, 93, 168, 0.1);border:2px solid rgba(0, 93, 168, 0.3);">
-                                <i class="bi bi-info-circle fs-5" style="color:#005DA8;"></i>
+                                <i class="bi bi-info-circle fs-5" style="color:var(--brand);"></i>
                             </div>
                         </div>
                         <div>
@@ -165,8 +165,8 @@ foreach ($jobs as $index => $j) {
 
                     <!-- Company logo + name -->
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <?php if (!empty($job->company_logo) && empty($job->is_anonymous)): ?>
-                        <img src="<?= base_url($job->company_logo) ?>" alt="<?= esc($job->employer_name) ?>"
+                        <?php if (empty($job->is_anonymous)): ?>
+                        <img src=\"<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>\" alt="<?= esc($job->employer_name) ?>"
                              class="rounded" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--border);">
                         <?php else: ?>
                         <div class="rounded d-flex align-items-center justify-content-center"
@@ -265,7 +265,7 @@ foreach ($jobs as $index => $j) {
                 <a href="<?= base_url(esc($iSlug) . '-jobs') ?>"
                    class="d-block text-decoration-none rounded-3 py-2 px-3 text-center fw-medium small transition-all
                           <?= $isActive ? 'text-white' : 'glass-card text-main hover-lift' ?>"
-                   style="<?= $isActive ? 'background: linear-gradient(135deg, #005DA8, #004a87); border:none;' : '' ?>">
+                   style="<?= $isActive ? 'background: linear-gradient(135deg, var(--brand), #004a87); border:none;' : '' ?>">
                     <i class="bi bi-<?= $isActive ? 'check2-circle' : 'grid' ?> me-1 <?= $isActive ? '' : 'text-primary' ?>"></i>
                     <?= esc($i->name) ?>
                 </a>

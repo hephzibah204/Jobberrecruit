@@ -20,6 +20,39 @@
     ],
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
+
+    // ScrollSpy Implementation
+    function initScrollSpy() {
+        const sections = document.querySelectorAll('section[id], div[id^="section-"]');
+        const navLinks = document.querySelectorAll('.nav-link.scroll-to');
+        
+        if (sections.length === 0 || navLinks.length === 0) return;
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -60% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active', 'text-primary', 'fw-bold');
+                        if (link.getAttribute('href') === '#' + id) {
+                            link.classList.add('active', 'text-primary', 'fw-bold');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(sec => observer.observe(sec));
+    }
+    
+    document.addEventListener('DOMContentLoaded', initScrollSpy);
+
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -567,7 +600,7 @@
 
     /* Hero Section */
     .privacy-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, var(--accent) 100%);
         position: relative;
         overflow: hidden;
     }
@@ -577,7 +610,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
+        background: linear-gradient(90deg, var(--brand) 0%, var(--brand) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -634,8 +667,8 @@
     }
 
     .nav-link.scroll-to:hover {
-        color: #005DA8;
-        border-left-color: #005DA8;
+        color: var(--brand);
+        border-left-color: var(--brand);
         background-color: rgba(102, 126, 234, 0.05);
     }
 
@@ -652,7 +685,7 @@
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 100%);
     }
 
     /* Print Styles */
@@ -786,7 +819,7 @@
                 link.classList.remove('active');
                 if (link.getAttribute('href') === `#${current}`) {
                     link.classList.add('active');
-                    link.style.borderLeftColor = '#005DA8';
+                    link.style.borderLeftColor = 'var(--brand)';
                     link.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
                 }
             });
@@ -921,7 +954,7 @@
         } else {
             // Fallback for browsers that don't support Web Share API
             navigator.clipboard.writeText(window.location.href).then(() => {
-                alert('Link copied to clipboard!');
+                toastr.success('Link copied to clipboard!');
             });
         }
     }

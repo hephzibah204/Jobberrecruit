@@ -77,7 +77,7 @@
 
         <div class="alert-info">
             <strong>📝 Note:</strong> You applied as a guest. To track all your applications, get faster updates, and manage your job search,
-            <a href="<?= site_url('register') ?>" style="color: #0d6efd;">create a free account</a> with the same email address.
+            <a href="<?= site_url('register') ?>" style="color: #0D609E;">create a free account</a> with the same email address.
         </div>
 
         <p>

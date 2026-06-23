@@ -523,7 +523,7 @@
 
     /* Hero Section */
     .recruitment-hero {
-        background: linear-gradient(#005DA8b3, #005DA8b3),
+        background: linear-gradient(var(--brand)b3, var(--brand)b3),
             url('<?= base_url('images/office-team.jpg') ?>');
         background-size: cover;
         background-position: center;
@@ -557,7 +557,7 @@
     .philosophy-icon {
         width: 80px;
         height: 80px;
-        background: linear-gradient(135deg, #F5A623, rgba(240, 137, 14, 0.1));
+        background: linear-gradient(135deg, var(--accent), rgba(240, 137, 14, 0.1));
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -593,7 +593,7 @@
     /* Form Styling */
     .form-control:focus,
     .form-select:focus {
-        border-color: #F5A623;
+        border-color: var(--accent);
         box-shadow: 0 0 0 0.25rem rgba(240, 137, 14, 0.25);
     }
 
@@ -687,7 +687,7 @@
                     // Simulate API call (replace with actual AJAX call)
                     setTimeout(() => {
                         // In production, use fetch or XMLHttpRequest here
-                        alert('Thank you for your inquiry! We will contact you within 24 hours.');
+                        toastr.success('Thank you for your inquiry! We will contact you within 24 hours.');
                         recruitmentForm.reset();
                         submitBtn.innerHTML = originalText;
                         submitBtn.disabled = false;

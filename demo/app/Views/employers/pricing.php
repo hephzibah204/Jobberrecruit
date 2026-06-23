@@ -369,7 +369,7 @@
         <div style="max-width: 800px; margin: 20px auto; background: white; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
             
             <!-- Company Header -->
-            <div style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white; padding: 25px 30px;">
+            <div style="background: linear-gradient(135deg, #0D609E, #0b5ed7); color: white; padding: 25px 30px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <h2 style="margin: 0; font-size: 28px;">${'<?= esc($companyName ?? "Jobber Recruit") ?>'}</h2>
@@ -426,7 +426,7 @@
                 <!-- Total -->
                 <div style="text-align: right; padding: 20px; background: #f8f9fa; border-radius: 8px;">
                     <div style="font-size: 15px; color: #555;">Total Amount Due</div>
-                    <div style="font-size: 28px; font-weight: 700; color: #0d6efd;">
+                    <div style="font-size: 28px; font-weight: 700; color: #0D609E;">
                         ₦${amount.toLocaleString()}
                     </div>
                 </div>

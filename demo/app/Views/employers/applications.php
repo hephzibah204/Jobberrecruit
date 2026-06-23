@@ -187,9 +187,9 @@
                 </div>
 
                 <!-- Refresh Button -->
-                <button class="btn btn-outline-secondary btn-md" onclick="location.reload();">
-                    <i class="ti ti-refresh"></i>
-                </button>
+                <button class="btn btn-outline-secondary btn-md" onclick="location.reload();" aria-label="Action">
+    <i class="ti ti-refresh"></i>
+</button>
             </div>
         </div>
 

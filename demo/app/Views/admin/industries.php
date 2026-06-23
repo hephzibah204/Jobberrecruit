@@ -99,7 +99,7 @@
         <div class="card-body p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
-                    <select class="form-select form-select-sm" style="width: 140px;" id="bulkAction">
+                    <select class="w-auto form-select form-select-sm"  id="bulkAction">
                         <option value="">Bulk Actions</option>
                         <option value="activate">Activate</option>
                         <option value="deactivate">Deactivate</option>
@@ -109,14 +109,14 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
-                    <input type="text" class="form-control form-control-sm" placeholder="Search industries..."
-                        id="searchInput" onkeyup="searchTable()" style="width: 200px;">
-                    <select class="form-select form-select-sm" style="width: 120px;" id="filterType" onchange="filterByType()">
+                    <input type="text" class="w-auto form-control form-control-sm" placeholder="Search industries..."
+                        id="searchInput" onkeyup="searchTable()" >
+                    <select class="w-auto form-select form-select-sm"  id="filterType" onchange="filterByType()">
                         <option value="">All Types</option>
                         <option value="parent">Main Industries</option>
                         <option value="child">Sub-Industries</option>
                     </select>
-                    <select class="form-select form-select-sm" style="width: 120px;" id="filterStatus" onchange="filterByStatus()">
+                    <select class="w-auto form-select form-select-sm"  id="filterStatus" onchange="filterByStatus()">
                         <option value="">All Status</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>

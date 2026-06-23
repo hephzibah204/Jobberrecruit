@@ -69,9 +69,9 @@
                             id="keyword-input"
                             class="form-control form-control-lg"
                             placeholder="Search candidates...">
-                        <button class="btn btn-lg btn-primary">
-                            <i class="ri-search-line"></i>
-                        </button>
+                        <button class="btn btn-lg btn-primary" aria-label="Search">
+    <i class="ri-search-line"></i>
+</button>
                     </div>
                 </div>
             </div>

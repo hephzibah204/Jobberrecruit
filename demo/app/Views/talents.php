@@ -274,7 +274,7 @@
 <?= $this->section('styles') ?>
 <style>
     .candidate-hero {
-        background: linear-gradient(135deg, #F5A623 0%, #F5A623 50%, #814a07ff 100%);
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 50%, #814a07ff 100%);
         position: relative;
         overflow: hidden;
     }
@@ -301,7 +301,7 @@
     }
 
     .testimonial-box {
-        border-left: 4px solid #005DA8;
+        border-left: 4px solid var(--brand);
         background: #fff;
         transition: transform 0.3s ease;
     }
@@ -313,7 +313,7 @@
     .step-circle {
         width: 60px;
         height: 60px;
-        background: linear-gradient(135deg, #005DA8 0%, #0b5ed7 100%);
+        background: linear-gradient(135deg, var(--brand) 0%, #0b5ed7 100%);
         color: #fff;
         border-radius: 50%;
         font-weight: bold;

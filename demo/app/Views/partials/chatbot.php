@@ -17,12 +17,12 @@
             </div>
         </div>
         <div class="header-actions">
-            <button id="clear-chat" class="btn btn-sm text-white-50 p-0 me-2" title="Clear Chat">
-                <i class="ti ti-trash fs-16"></i>
-            </button>
-            <button id="close-chat" class="btn btn-sm text-white p-0">
-                <i class="ti ti-x fs-18"></i>
-            </button>
+            <button id="clear-chat" class="btn btn-sm text-white-50 p-0 me-2" title="Clear Chat" aria-label="Delete">
+    <i class="ti ti-trash fs-16"></i>
+</button>
+            <button id="close-chat" class="btn btn-sm text-white p-0" aria-label="Close">
+    <i class="ti ti-x fs-18"></i>
+</button>
         </div>
     </div>
     
@@ -45,9 +45,9 @@
         <form id="chat-form" class="chat-form">
             <div class="input-group">
                 <input type="text" id="chat-input" class="form-control" placeholder="Type a message..." autocomplete="off">
-                <button type="submit" class="btn btn-primary">
-                    <i class="ti ti-send"></i>
-                </button>
+                <button type="submit" class="btn btn-primary" aria-label="Action">
+    <i class="ti ti-send"></i>
+</button>
             </div>
         </form>
     </div>

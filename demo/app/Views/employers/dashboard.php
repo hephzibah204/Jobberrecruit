@@ -89,10 +89,10 @@
     }
 
     /* Color variations for icon wrappers */
-    .wrapper-blue { color: #0ea5e9; }
-    .wrapper-blue::after { background-color: #0ea5e9; }
-    .wrapper-warning { color: #f59e0b; }
-    .wrapper-warning::after { background-color: #f59e0b; }
+    .wrapper-blue { color: var(--brand); }
+    .wrapper-blue::after { background-color: var(--brand); }
+    .wrapper-warning { color: var(--accent); }
+    .wrapper-warning::after { background-color: var(--accent); }
     .wrapper-info { color: #06b6d4; }
     .wrapper-info::after { background-color: #06b6d4; }
     .wrapper-success { color: #10b981; }
@@ -133,6 +133,12 @@
 
     .text-main {
         color: #f8fafc !important;
+    }
+
+    /* Muted text overrides inside dark theme cards to ensure proper contrast */
+    .premium-welcome-card .text-muted,
+    .stat-card-premium .text-muted {
+        color: #94a3b8 !important;
     }
 </style>
 <?= $this->endSection() ?>
@@ -400,12 +406,12 @@
                     colorStops: [
                         {
                             offset: 0,
-                            color: '#0ea5e9',
+                            color: 'var(--brand)',
                             opacity: 0.35
                         },
                         {
                             offset: 100,
-                            color: '#0ea5e9',
+                            color: 'var(--brand)',
                             opacity: 0.01
                         }
                     ]
@@ -424,7 +430,7 @@
                 borderColor: 'rgba(255,255,255,0.05)',
                 strokeDashArray: 4
             },
-            colors: ['#0ea5e9'],
+            colors: ['var(--brand)'],
             tooltip: { theme: 'dark' }
         };
         var jobsChart = new ApexCharts(document.querySelector("#jobs-chart-container"), jobsOptions);

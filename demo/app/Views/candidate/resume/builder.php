@@ -2,6 +2,12 @@
 
 <?= $this->section('styles') ?>
 <style>
+    :root {
+        --primary-color: #0D609E;
+        --primary-color-dark: var(--brand-dark);
+        --accent-color: var(--accent);
+    }
+
     .builder-step-nav {
         border-right: 1px solid #e9ecef;
     }
@@ -56,17 +62,17 @@
     }
     .template-choice:hover {
         transform: translateY(-4px);
-        border-color: #0d6efd !important;
-        box-shadow: 0 6px 15px rgba(13, 110, 253, 0.12) !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 6px 15px rgba(13, 96, 158, 0.12) !important;
     }
     .template-choice.active {
-        border-color: #0d6efd !important;
+        border-color: var(--primary-color) !important;
         border-width: 2px !important;
-        box-shadow: 0 6px 15px rgba(13, 110, 253, 0.18) !important;
+        box-shadow: 0 6px 15px rgba(13, 96, 158, 0.18) !important;
         background-color: #f8fafc;
     }
     .template-choice.active h6 {
-        color: #0d6efd;
+        color: var(--primary-color);
     }
     
     .template-preview {
@@ -94,7 +100,7 @@
     }
     .download-docx-btn:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25) !important;
+        box-shadow: 0 8px 24px rgba(13, 96, 158, 0.25) !important;
     }
 
     /* AI Coach Floating Button */
@@ -107,9 +113,9 @@
         height: 60px;
         border-radius: 50%;
         /* brand primary gradient */
-        background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
         border: none;
-        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 10px 25px rgba(13, 96, 158, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -120,7 +126,7 @@
     .ai-coach-fab:hover {
         transform: scale(1.1) translateY(-3px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.12);
-        background: linear-gradient(135deg, #0b5ed7 0%, #084c9a 100%);
+        background: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--brand-deep) 100%);
     }
     .ai-coach-fab i {
         font-size: 1.6rem;
@@ -130,7 +136,7 @@
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        border: 3px solid rgba(99, 102, 241, 0.5);
+        border: 3px solid rgba(13, 96, 158, 0.5);
         animation: fab-pulse 2s infinite;
     }
 
@@ -208,7 +214,7 @@
     }
     .coach-bubble.coach .ai-card h3 {
         margin: 0 0 6px 0;
-        color: var(--primary-color, #0d6efd);
+        color: var(--primary-color, #0D609E);
         font-size: 1rem;
     }
     .coach-bubble.coach .ai-card p { color: #cbd5e1; margin:0 0 8px 0; }
@@ -220,7 +226,7 @@
         padding:4px 8px; border-radius:999px; font-size:0.78rem; border: 1px solid rgba(255,255,255,0.03);
     }
     .coach-bubble.user {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        background: linear-gradient(135deg, #0d609e 0%, #0d609e 100%);
         color: white;
         border-top-right-radius: 4px;
         align-self: flex-end;
@@ -268,7 +274,7 @@
         outline: none;
     }
     .coach-send-btn {
-        background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
         border: none;
         color: white;
         width: 36px;
@@ -282,12 +288,12 @@
     }
     .coach-send-btn:hover {
         transform: scale(1.08);
-        background: linear-gradient(135deg, #0b5ed7 0%, #084c9a 100%);
+        background: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--brand-deep) 100%);
     }
     .coach-apply-btn {
         margin-top: 8px;
-        background: rgba(11,94,215,0.08);
-        border: 1px dashed rgba(11,94,215,0.5);
+        background: rgba(13,96,158,0.08);
+        border: 1px dashed rgba(13,96,158,0.5);
         color: var(--primary-color);
         font-size: 0.8rem;
         padding: 5px 12px;
@@ -357,8 +363,8 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(99, 102, 241, 0.15);
-        border: 1px solid rgba(99, 102, 241, 0.4);
+        background: rgba(13, 96, 158, 0.15);
+        border: 1px solid rgba(13, 96, 158, 0.4);
         color: #a5b4fc;
         padding: 5px 16px;
         border-radius: 50px;
@@ -443,7 +449,7 @@
         margin-bottom: 1.25rem;
         font-size: 1.8rem;
     }
-    .ob-scratch .ob-icon-wrap { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .ob-scratch .ob-icon-wrap { background: linear-gradient(135deg, #0d609e, #8b5cf6); }
     .ob-profile .ob-icon-wrap { background: linear-gradient(135deg, #10b981, #06b6d4); }
     .ob-clone   .ob-icon-wrap { background: linear-gradient(135deg, #f59e0b, #ef4444); }
     .ob-icon-wrap i { color: white; }
@@ -816,6 +822,9 @@
                                     <input type="text" name="location" class="form-control" placeholder="e.g. New York, USA">
                                 </div>
                             </div>
+                            <div class="mt-4 d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary next-step" data-target="experience">Next: Experience <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -883,6 +892,10 @@
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="info"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-target="education">Next: Education <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -939,6 +952,10 @@
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="experience"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-target="skills">Next: Skills <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -963,6 +980,10 @@
                                 ?>
                                 <input type="text" name="skills" class="form-control tags-input" value="<?= esc($skillsVal) ?>" placeholder="e.g. PHP, JavaScript, Project Management">
                             </div>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -978,6 +999,10 @@
                         </div>
                         <div class="card-body">
                             <textarea name="summary" id="resume-summary" class="form-control" rows="6" placeholder="A brief overview of your professional background and key achievements..."><?= esc($resume->summary ?? '') ?></textarea>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1016,16 +1041,16 @@
                                     <div class="template-choice border rounded p-3 text-center cursor-pointer transition-all <?= ($resume->template_id ?? '') === 'modern' ? 'active border-primary border-2 shadow-sm' : '' ?>" data-template="modern">
                                         <div class="template-preview modern-preview mb-2 rounded position-relative" style="height: 150px; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff; display: flex;">
                                             <div style="width: 30%; background: #f8fafc; border-right: 1px solid #e2e8f0; height: 100%; padding: 8px 4px; box-sizing: border-box; text-align: left;">
-                                                <div style="height: 6px; background: #3b82f6; width: 80%; margin-bottom: 6px;"></div>
+                                                <div style="height: 6px; background: #0a4d7e; width: 80%; margin-bottom: 6px;"></div>
                                                 <div style="height: 3px; background: #cbd5e1; width: 90%; margin-bottom: 3px;"></div>
                                                 <div style="height: 3px; background: #cbd5e1; width: 70%; margin-bottom: 12px;"></div>
-                                                <div style="height: 6px; background: #3b82f6; width: 80%; margin-bottom: 6px;"></div>
+                                                <div style="height: 6px; background: #0a4d7e; width: 80%; margin-bottom: 6px;"></div>
                                                 <div style="height: 3px; background: #cbd5e1; width: 85%; margin-bottom: 3px;"></div>
                                                 <div style="height: 3px; background: #cbd5e1; width: 75%; margin-bottom: 3px;"></div>
                                             </div>
                                             <div style="width: 70%; padding: 8px; box-sizing: border-box; text-align: left;">
                                                 <div style="height: 10px; background: #1e3a8a; width: 70%; margin-bottom: 4px;"></div>
-                                                <div style="height: 4px; background: #3b82f6; width: 40%; margin-bottom: 10px;"></div>
+                                                <div style="height: 4px; background: #0a4d7e; width: 40%; margin-bottom: 10px;"></div>
                                                 <div style="height: 6px; background: #94a3b8; width: 50%; margin-bottom: 4px;"></div>
                                                 <div style="height: 3px; background: #e2e8f0; width: 90%; margin-bottom: 3px;"></div>
                                                 <div style="height: 3px; background: #e2e8f0; width: 85%; margin-bottom: 3px;"></div>
@@ -1099,6 +1124,10 @@
                                 </div>
                             </div>
 
+                            <div class="mt-4 d-flex justify-content-start">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="summary"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                            </div>
+
                             <!-- Download Section -->
                             <div class="mt-4 pt-4 border-top text-center">
                                 <h5 class="fw-bold text-dark mb-2">✨ Ready to apply? Download your resume!</h5>
@@ -1108,7 +1137,7 @@
                                     <button type="button" class="btn btn-danger btn-lg px-4 py-3 fw-bold download-pdf-btn d-flex align-items-center shadow-sm transition-all" style="border-radius: 12px; font-size: 0.95rem;">
                                         <i class="ti ti-file-type-pdf me-2 fs-4"></i> Download Professional PDF
                                     </button>
-                                    <button type="button" class="btn btn-primary btn-lg px-4 py-3 fw-bold download-docx-btn d-flex align-items-center shadow-sm transition-all" style="border-radius: 12px; font-size: 0.95rem; background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%); border: none;">
+                                    <button type="button" class="btn btn-primary btn-lg px-4 py-3 fw-bold download-docx-btn d-flex align-items-center shadow-sm transition-all" style="border-radius: 12px; font-size: 0.95rem; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%); border: none;">
                                         <i class="ti ti-file-text me-2 fs-4"></i> Download Word (DOCX)
                                     </button>
                                 </div>
@@ -1174,7 +1203,7 @@
 <div class="offcanvas offcanvas-end custom-coach-offcanvas" tabindex="-1" id="aiResumeCoachDrawer" aria-labelledby="aiResumeCoachDrawerLabel" data-bs-scroll="true" data-bs-backdrop="false">
     <div class="offcanvas-header d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
-            <div class="avatar avatar-md bg-primary-transparent me-2" style="width: 35px; height: 35px; background: rgba(99, 102, 241, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <div class="avatar avatar-md bg-primary-transparent me-2" style="width: 35px; height: 35px; background: rgba(13, 96, 158, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                 <i class="ti ti-sparkles text-primary fs-18"></i>
             </div>
             <div>
@@ -1198,9 +1227,9 @@
             <form id="coach-chat-form" onsubmit="return false;">
                 <div class="coach-input-group">
                     <input type="text" id="coach-chat-input" class="coach-input-field" placeholder="Type your message to ResumeAI..." autocomplete="off">
-                    <button class="coach-send-btn" type="submit" id="btn-coach-send">
-                        <i class="ti ti-send"></i>
-                    </button>
+                    <button class="coach-send-btn" type="submit" id="btn-coach-send" aria-label="Action">
+    <i class="ti ti-send"></i>
+</button>
                 </div>
             </form>
         </div>
@@ -1227,6 +1256,29 @@
             $(this).addClass('active');
             $('.step-content').addClass('d-none');
             $('#step-' + step).removeClass('d-none');
+            
+            // On mobile, scroll to the form so the user sees it
+            if (window.innerWidth < 992) {
+                const formOffset = $('#resume-form').offset().top - 80;
+                window.scrollTo({ top: formOffset, behavior: 'smooth' });
+            }
+        });
+
+        // Next/Prev Buttons
+        $(document).on('click', '.next-step, .prev-step', function(e) {
+            e.preventDefault();
+            const target = $(this).data('target');
+            
+            // Direct state update
+            $('.step-item').removeClass('active');
+            $('.step-item[data-step="' + target + '"]').addClass('active');
+            
+            $('.step-content').addClass('d-none');
+            $('#step-' + target).removeClass('d-none');
+            
+            // Scroll to form to avoid showing the top sidebar again on mobile
+            const formOffset = $('#resume-form').offset().top - 80;
+            window.scrollTo({ top: formOffset, behavior: 'smooth' });
         });
 
         // Click Event for Template Choice
@@ -2205,7 +2257,7 @@
                 
                 // Focus it and flash it
                 lastFocusedTextarea.focus();
-                lastFocusedTextarea.css('border-color', '#6366f1');
+                lastFocusedTextarea.css('border-color', '#0d609e');
                 setTimeout(function() {
                     lastFocusedTextarea.css('border-color', '');
                 }, 1000);
@@ -2293,7 +2345,7 @@
                 $('#aiPreviewModal').modal('hide');
                 toastr.success('Applied to the active input field!');
                 lastFocusedTextarea.focus();
-                lastFocusedTextarea.css('border-color', '#6366f1');
+                lastFocusedTextarea.css('border-color', '#0d609e');
                 setTimeout(function() { lastFocusedTextarea.css('border-color', ''); }, 1000);
                 return;
             }
@@ -2345,3 +2397,4 @@
     });
 </script>
 <?= $this->endSection() ?>
+

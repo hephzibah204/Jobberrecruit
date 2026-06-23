@@ -228,8 +228,7 @@
 <div id="payment-loader" class="payment-loader">
     <div class="spinner-border text-primary mb-3" role="status"></div>
 
-    <img
-        src="<?= base_url('assets/imgs/template/logo.png'); ?>"
+    <img src="<?= base_url('assets/imgs/template/logo.png'); ?>"
         alt="Processing"
         class="loader-logo img-fluid">
 

@@ -12,10 +12,10 @@
         background: #f8fafc;
     }
     .upload-area:hover, .upload-area.dragover {
-        border-color: #3b82f6;
-        background: #eff6ff;
+        border-color: var(--brand);
+        background: #E6F0F9;
     }
-    .upload-area i { font-size: 3rem; color: #3b82f6; margin-bottom: 16px; }
+    .upload-area i { font-size: 3rem; color: var(--brand); margin-bottom: 16px; }
     .upload-area h5 { font-weight: 600; margin-bottom: 8px; }
     .upload-area p { color: #64748b; margin-bottom: 0; font-size: 0.9rem; }
     .upload-area .formats { color: #94a3b8; font-size: 0.8rem; margin-top: 8px; }
@@ -38,7 +38,7 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(135deg, var(--brand), var(--accent));
         color: #fff;
         font-weight: 700;
         font-size: 0.85rem;
@@ -158,9 +158,9 @@
                                         <div class="file-name" id="file-name"></div>
                                         <div class="file-size" id="file-size"></div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="remove-file">
-                                        <i class="ti ti-x"></i>
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="remove-file" aria-label="Close">
+    <i class="ti ti-x"></i>
+</button>
                                 </div>
                             </div>
 

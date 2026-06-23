@@ -2,646 +2,532 @@
 
 <?= $this->section('content') ?>
 <?php
-// ---------------------------------------------------------------------
-// 1. Build the *Apply* button(s) – same logic as original file
-// ---------------------------------------------------------------------
-$trackUrl = base_url("job/start-application/{$job->id}");
-$defaultLabel = 'Apply Now';
-$defaultIcon = 'bi-arrow-right';
-
-switch ($job->application_method ?? 'form') {
-    case 'whatsapp':
-        $url = esc($job->whatsapp_link, 'url');
-        $label = 'Apply via WhatsApp';
-        $icon = 'bi-whatsapp';
-        $btnClass = 'btn-success';
-        $target = '_blank';
-        break;
-
-    case 'email':
-        $email = esc($job->application_email ?? $job->contact_email);
-        $subject = rawurlencode("Application: {$job->title}");
-        $url = "mailto:{$email}?subject={$subject}";
-        $label = 'Apply via Email';
-        $icon = 'bi-envelope';
-        $btnClass = 'btn-info';
-        $target = '';
-        break;
-
-    case 'external':
-        $url = esc($job->external_url, 'url');
-        $label = 'Apply on External Site';
-        $icon = 'bi-box-arrow-up-right';
-        $btnClass = 'btn-warning';
-        $target = '_blank';
-        break;
-
-    case 'form':
-    default:
-        $url = $trackUrl;
-        $label = $defaultLabel;
-        $icon = $defaultIcon;
-        $btnClass = 'btn-primary';
-        $target = '';
-        break;
-}
-$targetAttr = $target ? "target='_blank' rel='noopener'" : '';
-
-// Top-header button (kept for all methods)
-$applyBtn = <<<HTML
-<a href="{$url}" class="btn {$btnClass} btn-sm" {$targetAttr}>
-    {$label} <i class="bi {$icon} ms-1"></i>
-</a>
-HTML;
-
-// Sticky button – **only** for the internal form (we’ll replace it with a “Submit” button later)
-$stickyBtn = ($job->application_method === 'form')
-    ? '<button type="submit" form="jobApplicationForm" class="btn btn-primary btn-lg shadow">Submit Application <i class="bi bi-send ms-1"></i></button>'
-    : <<<HTML
-<a href="{$url}" class="btn {$btnClass} btn-lg shadow" {$targetAttr}>
-    {$label} <i class="bi {$icon} ms-1"></i>
-</a>
-HTML;
+$savedCvPath = $user ? ($candidate->resume ?? null) : null;
+$hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
 ?>
-<section class="job-details-section py-5 bg-light">
+
+  <!-- HERO STRIP -->
+  <section class="apply-hero" aria-label="Apply for this job">
     <div class="container">
-        <div class="row g-4">
-
-            <!-- ===== LEFT COLUMN: Job Description (unchanged) ===== -->
-            <div class="col-lg-8 order-2 order-lg-1">
-                <div class="job-header bg-white p-4 rounded-3 shadow-sm mb-4 position-relative">
-                    <div class="d-flex align-items-center mb-3">
-                        <img src="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? base_url('images/favicon.png') : $job->company_logo ?>" alt="<?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Anonymous Employer' : esc($job->employer_name) ?> Logo"
-                            class="rounded me-3" width="80" height="80" style="object-fit: cover;">
-                        <div>
-                            <h1 class="fw-bold mb-1 h3"><?= esc($job->title) ?></h1>
-                            <p class="mb-0 text-muted fs-6">
-                                by <?php if (!empty($job->anonymous) || !empty($job->is_anonymous)): ?>
-                                    <span class="fw-semibold text-dark">Confidential Employer</span>
-                                <?php else: ?>
-                                    <a href="<?= base_url('employer/' . $job->employer_id) ?>"><span class="fw-semibold text-dark"><?= esc($job->employer_name) ?></span>
-                                        <span><?php if ($job->show_trust_badge): ?>
-                                                <img src="<?= base_url('images/badge.svg') ?>"
-                                                    alt="Verified Employer"
-                                                    data-bs-toggle="tooltip"
-                                                    width="16"
-                                                    title="This employer is verified and subscribed to a trusted plan"><?php endif; ?></span></a>
-                                <?php endif; ?>
-                                <span class="badge bg-success-subtle text-success fw-medium ms-2"><?= strtoupper(esc($job->job_type)) ?></span>
-                                <?php if ($job->featured): ?>
-                                    <span class="badge bg-primary-subtle text-primary fw-medium ms-1">Featured</span>
-                                <?php endif; ?>
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- TOP HEADER BUTTON -->
-                    <div class="d-flex justify-content-end gap-2">
-                        <button
-                            id="saveJobBtn"
-                            data-job-id="<?= $job->id ?>"
-                            class="btn <?= $isSaved ? 'btn-danger' : 'btn-border' ?>">
-                            <?= $isSaved ? 'Unsave Job' : 'Save Job' ?>
-                        </button>
-                        <?= $applyBtn ?>
-                    </div>
-                </div>
-
-                <!-- Job Description -->
-                <div class="job-description bg-white p-4 rounded-3 shadow-sm mb-4 text-wrap">
-                    <h5 class="fw-semibold mb-3">Job Description</h5>
-                    <div class="text-muted">
-                        <?= $job->description ? $job->description : '<p>No job description provided.</p>' ?>
-                    </div>
-
-                    <?php if (!empty($job->requirements)): ?>
-                        <h6 class="fw-semibold mt-4 mb-3">Requirements</h6>
-                        <div class="text-muted"><?= $job->requirements ?></div>
-                    <?php endif; ?>
-
-                    <?php if (!empty($job->application)): ?>
-                        <h6 class="fw-semibold mt-4 mb-3">Application Guidelines</h6>
-                        <div class="text-muted"><?= $job->application ?></div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Related Jobs (unchanged) -->
-                <?php if (!empty($related_jobs)): ?>
-                    <div class="related-jobs bg-white p-4 rounded-3 shadow-sm">
-                        <h5 class="fw-semibold mb-3">Related Jobs</h5>
-                        <div class="row g-3">
-                            <?php foreach ($related_jobs as $related): ?>
-                                <div class="col-md-6">
-                                    <a href="<?= base_url('job/view/' . $related->id) ?>" class="text-decoration-none">
-                                        <div class="job-card p-3 bg-light rounded-3 transition-all">
-                                            <h6 class="fw-semibold mb-1 fs-6"><?= esc($related->title) ?></h6>
-                                            <p class="text-muted small mb-0">
-                                                <i class="bi bi-geo-alt me-1"></i><?= esc($related->location) ?>
-                                            </p>
-                                        </div>
-                                    </a>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- ===== RIGHT COLUMN: Application Form (only for internal form) ===== -->
-            <div class="col-lg-4 order-1 order-lg-2">
-                <?php if ($job->application_method === 'form'): ?>
-                    <!-- -------------------------------------------------
-                         APPLICATION FORM
-                         ------------------------------------------------- -->
-                    <?php
-                    /**
-                     * Enhanced Job Application Form with Full Real-World Features
-                     * 
-                     * This version includes:
-                     * 1. Complete form with all standard job application fields
-                     * 2. Smart CV handling (saved + upload)
-                     * 3. Optional cover letter with character counter
-                     * 4. Full name & contact info (for guest users)
-                     * 5. Professional references section
-                     * 6. Availability & salary expectations
-                     * 7. Eligibility to work confirmation
-                     * 8. Consent & data privacy acknowledgment
-                     * 9. reCAPTCHA v3 integration (optional)
-                     * 10. Client-side validation with visual feedback
-                     * 11. Accessible, responsive design
-                     * 
-                     * Assumptions:
-                     * - CodeIgniter 4 framework
-                     * - Bootstrap 5 + Bootstrap Icons
-                     * - reCAPTCHA v3 site key configured in .env
-                     * - File uploads stored in writable/uploads/cv/
-                     */
-
-                    // $user = auth()->user();
-                    // $loggedIn = auth()->loggedIn();
-                    $savedCvPath = $user ? ($candidate->resume ?? null) : null;
-                    $hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
-                    ?>
-
-                    <div class="bg-white p-4 rounded-3 shadow-sm mb-4">
-                        <h6 class="fw-semibold mb-3">Apply for this Position</h6>
-
-                        <?= form_open_multipart(base_url("job/application/{$job->id}"), [
-                            'id' => 'jobApplicationForm',
-                            'class' => 'needs-validation',
-                            'novalidate' => true
-                        ], ['job_id' => (string)$job->id]) ?>
-
-                        <!-- Display Flash Error (e.g., reCAPTCHA failure) -->
-                        <?php if (session()->getFlashdata('error')): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <?= esc(session()->getFlashdata('error')) ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Display Validation Errors -->
-                        <?php if (!empty($errors)): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <ul class="mb-0">
-                                    <?php foreach ($errors as $error): ?>
-                                        <li><?= esc($error) ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- GUEST USER NAME & EMAIL (only if not logged in) -->
-                        <?php if (!$user): ?>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="first_name" id="first_name" class="form-control" required
-                                        placeholder="John" maxlength="50">
-                                    <div class="invalid-feedback">Please enter your first name.</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="last_name" id="last_name" class="form-control" required
-                                        placeholder="Doe" maxlength="50">
-                                    <div class="invalid-feedback">Please enter your last name.</div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" name="email" id="email" class="form-control" required
-                                    placeholder="john.doe@example.com" maxlength="100">
-                                <div class="invalid-feedback">Please enter a valid email address.</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" name="phone" id="phone" class="form-control" required
-                                    placeholder="+234 800 000 0000" pattern="[\+]?[0-9\s\-\(\)]{10,20}">
-                                <div class="invalid-feedback">Please enter a valid phone number.</div>
-                            </div>
-
-                            <div class="alert alert-info small mb-3">
-                                <i class="bi bi-info-circle me-2"></i>
-                                You’re applying as a guest. <a href="<?= base_url('login') ?>" class="alert-link">Log in</a> or
-                                <a href="<?= base_url('register') ?>" class="alert-link">create an account</a> to save your CV and track applications.
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- COVER LETTER -->
-                        <div class="mb-3">
-                            <label for="cover_letter" class="form-label">
-                                Cover Letter <span class="text-muted">(optional)</span>
-                                <span id="charCount" class="text-muted small float-end">0 / 2000</span>
-                            </label>
-                            <div class="d-flex gap-2 mb-2">
-                                <textarea name="cover_letter" id="cover_letter" rows="6" class="form-control flex-grow"
-                                    placeholder="Why are you a great fit for this role? Highlight your relevant experience, skills, and enthusiasm for <?= esc($job->title) ?> at <?= esc($job->company_name) ?>."
-                                    maxlength="2000"></textarea>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="ai-cover-letter-btn" <?= !auth()->loggedIn() ? 'disabled title="Login required"' : '' ?>>
-                                <i class="ti ti-sparkles me-1"></i>Generate with AI
-                            </button>
-                            <div class="form-text">Tailor your message to the job description. Be concise and professional.</div>
-                        </div>
-
-                        <!-- PRE-SCREENING QUESTIONS (ATS) -->
-                        <?php if (!empty($questions)): ?>
-                            <div class="mb-4">
-                                <h6 class="fw-semibold mb-3 border-bottom pb-2"><i class="ti ti-clipboard-list me-2"></i>Pre-screening Questions</h6>
-                                <p class="text-muted small mb-3">Please answer the following questions as part of your application.</p>
-                                <?php foreach ($questions as $q): ?>
-                                    <div class="mb-3">
-                                        <label class="form-label"><?= esc($q->question_text) ?> <?= $q->is_required ? '<span class="text-danger">*</span>' : '' ?></label>
-                                        
-                                        <?php if ($q->question_type === 'text'): ?>
-                                            <textarea name="answers[<?= $q->id ?>]" class="form-control" rows="2" placeholder="Your answer..." <?= $q->is_required ? 'required' : '' ?>></textarea>
-                                        
-                                        <?php elseif ($q->question_type === 'yes_no'): ?>
-                                            <div class="d-flex gap-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="answers[<?= $q->id ?>]" value="Yes" id="q-<?= $q->id ?>-yes" <?= $q->is_required ? 'required' : '' ?>>
-                                                    <label class="form-check-label" for="q-<?= $q->id ?>-yes">Yes</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="answers[<?= $q->id ?>]" value="No" id="q-<?= $q->id ?>-no">
-                                                    <label class="form-check-label" for="q-<?= $q->id ?>-no">No</label>
-                                                </div>
-                                            </div>
-
-                                        <?php elseif (in_array($q->question_type, ['select', 'multiple_choice'])): ?>
-                                            <select name="answers[<?= $q->id ?>]" class="form-select" <?= $q->is_required ? 'required' : '' ?>>
-                                                <option value="">Select an option</option>
-                                                <?php 
-                                                    $opts = !empty($q->options) ? $q->options : ($q->options ?? '');
-                                                    foreach (explode(',', $opts) as $option): 
-                                                ?>
-                                                    <option value="<?= trim(esc($option)) ?>"><?= trim(esc($option)) ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-
-                                        <?php elseif (in_array($q->question_type, ['radio'])): ?>
-                                            <div class="d-flex flex-column gap-2">
-                                                <?php foreach (explode(',', $q->options ?? '') as $option): ?>
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="answers[<?= $q->id ?>]" value="<?= trim(esc($option)) ?>" id="q-<?= $q->id ?>-<?= md5(trim($option)) ?>" <?= $q->is_required ? 'required' : '' ?>>
-                                                        <label class="form-check-label" for="q-<?= $q->id ?>-<?= md5(trim($option)) ?>"><?= trim(esc($option)) ?></label>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-
-                                        <?php elseif ($q->question_type === 'checkbox'): ?>
-                                            <div class="d-flex flex-column gap-2">
-                                                <?php foreach (explode(',', $q->options ?? '') as $option): ?>
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="answers[<?= $q->id ?>][]" value="<?= trim(esc($option)) ?>" id="q-<?= $q->id ?>-<?= md5(trim($option)) ?>">
-                                                        <label class="form-check-label" for="q-<?= $q->id ?>-<?= md5(trim($option)) ?>"><?= trim(esc($option)) ?></label>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-
-                                        <?php else: ?>
-                                            <textarea name="answers[<?= $q->id ?>]" class="form-control" rows="2" placeholder="Your answer..." <?= $q->is_required ? 'required' : '' ?>></textarea>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- CV UPLOAD SECTION -->
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Attach Your CV <span class="text-danger">*</span></label>
-
-                            <?php if ($hasSavedCv): ?>
-                                <!-- Logged in + saved CV -->
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="cv_source" id="use_saved_cv" value="saved" checked>
-                                    <label class="form-check-label" for="use_saved_cv">
-                                        Use my saved CV
-                                        <span class="text-muted small d-block">
-                                            <?= esc(basename($savedCvPath)) ?>
-                                            <em class="text-success">(Uploaded on <?= date('M j, Y', filemtime(FCPATH . $savedCvPath)) ?>)</em>
-                                        </span>
-                                    </label>
-                                </div>
-
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="cv_source" id="upload_new_cv" value="upload">
-                                    <label class="form-check-label" for="upload_new_cv">Upload a new CV</label>
-                                </div>
-
-                                <div id="new_cv_container" class="mt-2" style="display: none;">
-                                    <input type="file" name="cv_file" id="cv_file" class="form-control" accept=".pdf,.doc,.docx">
-                                    <div class="form-text">Max 5 MB – PDF, DOC, DOCX</div>
-                                </div>
-
-                            <?php else: ?>
-                                <!-- Guest or no saved CV -->
-                                <input type="file" name="cv_file" id="cv_file" class="form-control" accept=".pdf,.doc,.docx" required>
-                                <div class="form-text">Max 5 MB – PDF, DOC, DOCX</div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- PROFESSIONAL REFERENCES (Optional but encouraged) -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Professional References <span class="text-muted">(optional)</span></label>
-                            <div id="references-container">
-                                <div class="reference-row mb-2 p-3 border rounded bg-light">
-                                    <div class="row g-2">
-                                        <div class="col-md-4">
-                                            <input type="text" name="ref_name[]" class="form-control form-control-sm" placeholder="Full Name">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" name="ref_title[]" class="form-control form-control-sm" placeholder="Job Title">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <input type="email" name="ref_email[]" class="form-control form-control-sm" placeholder="Email">
-                                        </div>
-                                        <div class="col-md-1 text-end">
-                                            <button type="button" class="btn btn-sm btn-outline-danger remove-ref" style="display:none;">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="button" id="add-reference" class="btn btn-sm btn-outline-secondary mt-1">
-                                <i class="bi bi-plus"></i> Add Reference
-                            </button>
-                            <div class="form-text">Provide at least 2 references if possible.</div>
-                        </div>
-
-                        <!-- AVAILABILITY & SALARY EXPECTATIONS -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="availability" class="form-label">When can you start? <span class="text-danger">*</span></label>
-                                <select name="availability" id="availability" class="form-select" required>
-                                    <option value="">Select availability</option>
-                                    <option value="immediate">Immediately</option>
-                                    <option value="1_week">Within 1 week</option>
-                                    <option value="2_weeks">Within 2 weeks</option>
-                                    <option value="1_month">Within 1 month</option>
-                                    <option value="notice_period">After serving notice period</option>
-                                </select>
-                                <div class="invalid-feedback">Please select your availability.</div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="salary_expectation" class="form-label">Expected Salary (<?= esc($job->currency ?? 'NGN') ?>) <span class="text-muted">(optional)</span></label>
-                                <input type="text" name="salary_expectation" id="salary_expectation" class="form-control"
-                                    placeholder="e.g., 500,000 - 700,000">
-                                <div class="form-text">Provide a range if possible.</div>
-                            </div>
-                        </div>
-
-                        <!-- ELIGIBILITY TO WORK -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Eligibility to Work in <?= esc($job->location_country ?? 'Nigeria') ?> <span class="text-danger">*</span></label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="work_eligibility" id="eligible_yes" value="yes" required>
-                                <label class="form-check-label" for="eligible_yes">
-                                    Yes, I am legally authorized to work in <?= esc($job->location_country ?? 'Nigeria') ?>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="work_eligibility" id="eligible_no" value="no">
-                                <label class="form-check-label" for="eligible_no">
-                                    No, I would require sponsorship
-                                </label>
-                            </div>
-                            <div class="invalid-feedback">Please confirm your eligibility.</div>
-                        </div>
-
-                        <!-- DATA CONSENT & SUBMISSION -->
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="consent" id="consent" required>
-                                <label class="form-check-label" for="consent">
-                                    I consent to the processing of my personal data in accordance with the
-                                    <a href="<?= base_url('privacy-policy') ?>" target="_blank">Privacy Policy</a>.
-                                    I understand my application will be retained for future opportunities unless I opt out.
-                                </label>
-                            </div>
-                            <div class="invalid-feedback">You must agree to the privacy terms.</div>
-                        </div>
-
-                        <!-- reCAPTCHA v3 (invisible) -->
-                        <?php if (env('recaptcha_site_key')): ?>
-                            <div class="g-recaptcha-response-wrapper">
-                                <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- SUBMIT BUTTON -->
-                        <button type="submit" id="submitBtn" class="btn btn-primary w-100" disabled>
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            Submit Application <i class="bi bi-send ms-1"></i>
-                        </button>
-
-                        <?= form_close() ?>
-                    </div>
-                <?php else: ?>
-                    <!-- -------------------------------------------------
-                         ORIGINAL SIDEBAR (Job Overview / Company / Share)
-                         ------------------------------------------------- -->
-                    <!-- Job Overview -->
-                    <div class="bg-white p-4 rounded-3 shadow-sm mb-4">
-                        <h6 class="fw-semibold mb-3">Job Overview</h6>
-                        <ul class="list-unstyled fs-6 text-muted">
-                            <li class="mb-3"><i class="bi bi-calendar me-2 text-primary"></i><strong>Posted:</strong> <?= esc($job->formatted_created_at) ?></li>
-                            <li class="mb-3"><i class="bi bi-clock me-2 text-primary"></i><strong>Status:</strong> <?= esc(ucfirst($job->status)) ?></li>
-                            <li class="mb-3"><i class="bi bi-briefcase me-2 text-primary"></i><strong>Level:</strong> <?= ucfirst(esc($job->experience_level)) ?></li>
-                            <li class="mb-3"><i class="bi bi-cash me-2 text-primary"></i><strong>Salary:</strong> <?= esc($job->salary_range) ?></li>
-                            <li class="mb-3"><i class="bi bi-building me-2 text-primary"></i><strong>Accommodation:</strong> <?= esc($job->accommodation === 'available' ? 'Available' : 'Not Available') ?></li>
-                            <li class="mb-3"><i class="bi bi-mortarboard me-2 text-primary"></i><strong>Education:</strong> <?= esc(ucfirst($job->education_level) ?? 'Not specified') ?></li>
-                            <li class="mb-0"><i class="bi bi-send me-2 text-primary"></i><strong>Apply Via:</strong> <?= ucfirst($job->application_method ?? 'form') ?></li>
-                        </ul>
-                    </div>
-
-                    <?php if($job->anonymous === false): ?>
-                    <!-- Company Overview -->
-                    <div class="bg-white p-4 rounded-3 shadow-sm mb-4">
-                        <h6 class="fw-semibold mb-3">About <?= esc($job->employer_name) ?></h6>
-                        <ul class="list-unstyled fs-6 text-muted">
-                            <li class="mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i><strong>Location:</strong> <?= esc($job->company_address ?? 'Not provided') ?></li>
-                            <li class="mb-3"><i class="bi bi-telephone me-2 text-primary"></i><strong>Phone:</strong> <?= esc($job->company_phone ?? 'Not provided') ?></li>
-                            <li class="mb-3"><i class="bi bi-envelope me-2 text-primary"></i><strong>Email:</strong> <?= esc($job->company_email ?? 'Not provided') ?></li>
-                            <?php if ($job->company_website): ?>
-                                <li class="mb-3"><i class="bi bi-globe me-2 text-primary"></i><strong>Website:</strong> <a href="<?= esc($job->company_website) ?>" target="_blank" class="text-primary"><?= esc($job->company_website) ?></a></li>
-                            <?php endif; ?>
-                            <li class="mb-0"><i class="bi bi-briefcase me-2 text-primary"></i><strong>Open Positions:</strong> <?= $employer_job_count ?></li>
-                        </ul>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Share Job -->
-                    <div class="bg-white p-4 rounded-3 shadow-sm">
-                        <h6 class="fw-semibold mb-3">Share this Job</h6>
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" id="copyLink" title="Copy Job Link"><i class="bi bi-link-45deg"></i> Copy Link</button>
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(current_url()) ?>" class="btn btn-sm" style="background: #0A66C2; color: white; border: none;" target="_blank"><i class="bi bi-linkedin"></i> LinkedIn</a>
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode(current_url()) ?>" class="btn btn-sm" style="background: #1877F2; color: white; border: none;" target="_blank"><i class="bi bi-facebook"></i> Facebook</a>
-                            <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($job->title) ?>" class="btn btn-sm" style="background: #000000; color: white; border: none;" target="_blank"><i class="bi bi-twitter-x"></i> X</a>
-                            <a href="mailto:?subject=Check out this job: <?= urlencode($job->title) ?>&body=<?= urlencode(current_url()) ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-envelope"></i> Email</a>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- STICKY BUTTON (bottom-right) -->
-            <!-- <div class="sticky-apply-btn position-fixed bottom-0 end-0 m-4 d-none d-lg-block">
-                <?= $stickyBtn ?>
-            </div> -->
-        </div>
+      <nav class="apply-breadcrumb" aria-label="Breadcrumb">
+        <a href="<?= base_url() ?>">Home</a>
+        <svg aria-hidden="true" style="transform:rotate(-90deg); width: 12px; height: 12px;"><use href="#i-chev-down"/></svg>
+        <a href="<?= base_url('jobs') ?>">Find Jobs</a>
+        <svg aria-hidden="true" style="transform:rotate(-90deg); width: 12px; height: 12px;"><use href="#i-chev-down"/></svg>
+        <a href="<?= base_url('jobs/' . $job->slug) ?>"><?= esc($job->title) ?></a>
+        <svg aria-hidden="true" style="transform:rotate(-90deg); width: 12px; height: 12px;"><use href="#i-chev-down"/></svg>
+        <span style="opacity:.7">Apply</span>
+      </nav>
     </div>
-</section>
+  </section>
+
+  <div class="container">
+    <div class="apply-layout">
+
+      <!-- MAIN: job summary + description -->
+      <div class="apply-main">
+
+        <div class="apply-jobcard">
+          <div class="apply-jobcard-head">
+            <div class="apply-jobcard-logo" aria-hidden="true">
+              <?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'CV' : esc(substr($job->employer_name ?? 'C', 0, 2)) ?>
+            </div>
+            <div class="apply-jobcard-body">
+              <h1 class="apply-jobcard-title"><?= esc($job->title) ?></h1>
+              <div class="apply-jobcard-co">at <strong><?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential Employer' : esc($job->employer_name) ?></strong>
+                <?php if (empty($job->anonymous) && empty($job->is_anonymous) && !empty($job->show_trust_badge)): ?>
+                  <button type="button" class="verified-check" aria-label="Verified employer"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span></button>
+                <?php endif; ?>
+              </div>
+              <div class="apply-jobcard-badges">
+                <span class="detail-badge db-type"><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= ucfirst(esc($job->job_type)) ?></span>
+                <?php if ($job->featured): ?>
+                  <span class="detail-badge db-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
+                <?php endif; ?>
+              </div>
+            </div>
+            <div class="apply-jobcard-actions">
+              <button class="save-btn" id="saveJobBtn" data-job-id="<?= $job->id ?>" aria-label="Save job" data-saved="<?= $isSaved ? 'true' : 'false' ?>">
+                <svg aria-hidden="true"><use href="#i-bookmark"/></svg> <span><?= $isSaved ? 'Unsave' : 'Save' ?></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <details class="apply-desc" id="apply-desc-details" open>
+          <summary class="apply-desc-summary">
+            <h2><svg aria-hidden="true"><use href="#i-doc"/></svg> Job description</h2>
+            <svg class="apply-desc-chev" aria-hidden="true"><use href="#i-chev-down"/></svg>
+            <span class="apply-desc-hint" style="display:none">Tap to view qualifications, responsibilities &amp; pay</span>
+          </summary>
+          <div class="apply-desc-body text-wrap">
+            <div class="text-muted">
+              <?= $job->description ? $job->description : '<p>No job description provided.</p>' ?>
+            </div>
+            <?php if (!empty($job->requirements)): ?>
+              <h3>Requirements</h3>
+              <div class="text-muted"><?= $job->requirements ?></div>
+            <?php endif; ?>
+            <?php if (!empty($job->application)): ?>
+              <h3>Application Guidelines</h3>
+              <div class="text-muted"><?= $job->application ?></div>
+            <?php endif; ?>
+          </div>
+        </details>
+      </div>
+
+      <!-- APPLY FORM -->
+      <aside>
+        <?= form_open_multipart(base_url("job/application/{$job->id}"), [
+            'id' => 'jobApplicationForm',
+            'class' => 'apply-form-card needs-validation',
+            'novalidate' => true
+        ], ['job_id' => (string)$job->id]) ?>
+
+          <h2 class="apply-form-title"><svg aria-hidden="true"><use href="#i-send"/></svg> Apply for this position</h2>
+
+          <!-- GUEST NOTICE -->
+          <?php if (!$user): ?>
+            <div class="guest-notice" id="guest-notice">
+              <svg aria-hidden="true"><use href="#i-flag"/></svg>
+              <span>You're applying as a guest. <a href="<?= base_url('login') ?>">Log in</a> or <a href="<?= base_url('register') ?>">create an account</a> to save your CV and track applications.</span>
+            </div>
+          <?php endif; ?>
+
+          <!-- Display Validation Errors -->
+          <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger ajax-alert">
+              <strong>Please fix the errors below:</strong>
+              <ul>
+                <?php foreach ($errors as $error): ?>
+                  <li><?= esc($error) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endif; ?>
+
+          <?php if (!$user): ?>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="first_name">First Name <span class="req">*</span></label>
+                <input class="form-input" type="text" id="first_name" name="first_name" placeholder="John" required maxlength="50">
+                <div class="invalid-feedback">Please enter your first name.</div>
+              </div>
+              <div class="form-group">
+                <label for="last_name">Last Name <span class="req">*</span></label>
+                <input class="form-input" type="text" id="last_name" name="last_name" placeholder="Doe" required maxlength="50">
+                <div class="invalid-feedback">Please enter your last name.</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email Address <span class="req">*</span></label>
+              <input class="form-input" type="email" id="email" name="email" placeholder="john.doe@example.com" required maxlength="100">
+              <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone Number <span class="req">*</span></label>
+              <input class="form-input" type="tel" id="phone" name="phone" placeholder="+234 800 000 0000" required>
+              <div class="invalid-feedback">Please enter a valid phone number.</div>
+            </div>
+          <?php endif; ?>
+
+          <div class="form-group">
+            <label for="cover_letter">Cover Letter <span class="opt">(optional)</span> <span class="form-charcount"><span id="cover-count">0</span> / 2000</span></label>
+            <textarea class="form-textarea" id="cover_letter" name="cover_letter" maxlength="2000" placeholder="Why are you a great fit for this role? Highlight your relevant experience, skills, and enthusiasm."></textarea>
+            <button type="button" class="ai-generate-btn" id="ai-cover-letter-btn" <?= !auth()->loggedIn() ? 'disabled title="Login required"' : '' ?>><svg aria-hidden="true"><use href="#i-bot"/></svg> Generate with AI</button>
+            <p class="form-hint">Tailor your message to the job description. Be concise and professional.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="cv_file">Attach Your CV <span class="req">*</span></label>
+            <?php if ($hasSavedCv): ?>
+              <div class="radio-group mb-2">
+                <label class="radio-option">
+                  <input type="radio" name="cv_source" id="use_saved_cv" value="saved" checked>
+                  <span>Use my saved CV (<?= esc(basename($savedCvPath)) ?>)</span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="cv_source" id="upload_new_cv" value="upload">
+                  <span>Upload a new CV</span>
+                </label>
+              </div>
+              <div id="new_cv_container" style="display: none;">
+                <label class="file-upload" for="cv_file" id="f-cv-label">
+                  <svg class="file-upload-ic" aria-hidden="true"><use href="#i-doc"/></svg>
+                  <div class="file-upload-label">Choose file</div>
+                  <div class="file-upload-name" id="cv-filename">No file chosen · Max 5MB — PDF, DOC, DOCX</div>
+                  <input type="file" id="cv_file" name="cv_file" accept=".pdf,.doc,.docx">
+                </label>
+              </div>
+            <?php else: ?>
+              <label class="file-upload" for="cv_file" id="f-cv-label">
+                <svg class="file-upload-ic" aria-hidden="true"><use href="#i-doc"/></svg>
+                <div class="file-upload-label">Choose file</div>
+                <div class="file-upload-name" id="cv-filename">No file chosen · Max 5MB — PDF, DOC, DOCX</div>
+                <input type="file" id="cv_file" name="cv_file" accept=".pdf,.doc,.docx" required>
+              </label>
+            <?php endif; ?>
+            <p class="form-error" id="cv-error" hidden></p>
+          </div>
+
+          <div class="form-group">
+            <label for="f-linkedin">LinkedIn / Portfolio URL <span class="opt">(optional)</span></label>
+            <input class="form-input" type="url" id="f-linkedin" name="linkedin_url" placeholder="https://linkedin.com/in/yourname">
+          </div>
+
+          <!-- PRE-SCREENING QUESTIONS (ATS) -->
+          <?php if (!empty($questions)): ?>
+            <div class="mb-4">
+              <h3 style="font-size:1rem;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px;">Pre-screening Questions</h3>
+              <?php foreach ($questions as $q): ?>
+                <div class="form-group">
+                  <label class="form-label"><?= esc($q->question_text) ?> <?= $q->is_required ? '<span class="req">*</span>' : '' ?></label>
+                  
+                  <?php if ($q->question_type === 'text'): ?>
+                    <textarea name="answers[<?= $q->id ?>]" class="form-textarea" rows="2" placeholder="Your answer..." <?= $q->is_required ? 'required' : '' ?>></textarea>
+                  
+                  <?php elseif ($q->question_type === 'yes_no'): ?>
+                    <div class="radio-group">
+                      <label class="radio-option">
+                        <input type="radio" name="answers[<?= $q->id ?>]" value="Yes" id="q-<?= $q->id ?>-yes" <?= $q->is_required ? 'required' : '' ?>>
+                        <span>Yes</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" name="answers[<?= $q->id ?>]" value="No" id="q-<?= $q->id ?>-no">
+                        <span>No</span>
+                      </label>
+                    </div>
+
+                  <?php elseif (in_array($q->question_type, ['select', 'multiple_choice'])): ?>
+                    <select name="answers[<?= $q->id ?>]" class="form-select" <?= $q->is_required ? 'required' : '' ?>>
+                      <option value="">Select an option</option>
+                      <?php 
+                        $opts = !empty($q->options) ? $q->options : ($q->options ?? '');
+                        foreach (explode(',', $opts) as $option): 
+                      ?>
+                        <option value="<?= trim(esc($option)) ?>"><?= trim(esc($option)) ?></option>
+                      <?php endforeach; ?>
+                    </select>
+
+                  <?php elseif (in_array($q->question_type, ['radio'])): ?>
+                    <div class="radio-group">
+                      <?php foreach (explode(',', $q->options ?? '') as $option): ?>
+                        <label class="radio-option">
+                          <input type="radio" name="answers[<?= $q->id ?>]" value="<?= trim(esc($option)) ?>" id="q-<?= $q->id ?>-<?= md5(trim($option)) ?>" <?= $q->is_required ? 'required' : '' ?>>
+                          <span><?= trim(esc($option)) ?></span>
+                        </label>
+                      <?php endforeach; ?>
+                    </div>
+
+                  <?php elseif ($q->question_type === 'checkbox'): ?>
+                    <div class="radio-group">
+                      <?php foreach (explode(',', $q->options ?? '') as $option): ?>
+                        <label class="radio-option">
+                          <input type="checkbox" name="answers[<?= $q->id ?>][]" value="<?= trim(esc($option)) ?>" id="q-<?= $q->id ?>-<?= md5(trim($option)) ?>">
+                          <span><?= trim(esc($option)) ?></span>
+                        </label>
+                      <?php endforeach; ?>
+                    </div>
+
+                  <?php else: ?>
+                    <textarea name="answers[<?= $q->id ?>]" class="form-textarea" rows="2" placeholder="Your answer..." <?= $q->is_required ? 'required' : '' ?>></textarea>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+
+          <details class="ref-disclosure form-group">
+            <summary class="ref-summary">
+              <span>Professional References <span class="opt">(optional)</span></span>
+              <svg class="ref-chev" aria-hidden="true"><use href="#i-chev-down"/></svg>
+            </summary>
+            <div class="ref-disclosure-body">
+              <div id="references-container">
+                <div class="reference-row mb-2 p-3 border rounded bg-light">
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <input type="text" name="ref_name[]" class="form-input form-control-sm" placeholder="Full Name">
+                    </div>
+                    <div class="col-md-4">
+                      <input type="text" name="ref_title[]" class="form-input form-control-sm" placeholder="Job Title">
+                    </div>
+                    <div class="col-md-3">
+                      <input type="email" name="ref_email[]" class="form-input form-control-sm" placeholder="Email">
+                    </div>
+                    <div class="col-md-1 text-end">
+                      <button type="button" class="ref-remove remove-ref" style="display:none;">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" id="add-reference" class="add-ref-btn mt-1">
+                <svg aria-hidden="true"><use href="#i-plus"/></svg> Add Reference
+              </button>
+            </div>
+          </details>
+
+          <div class="form-group">
+            <label for="availability">When can you start? <span class="req">*</span></label>
+            <select name="availability" id="availability" class="form-select" required>
+              <option value="">Select availability</option>
+              <option value="immediate">Immediately</option>
+              <option value="1_week">Within 1 week</option>
+              <option value="2_weeks">Within 2 weeks</option>
+              <option value="1_month">Within 1 month</option>
+              <option value="notice_period">After serving notice period</option>
+            </select>
+            <div class="invalid-feedback">Please select your availability.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="salary_expectation">Expected Salary (<?= esc($job->currency ?? 'NGN') ?>) <span class="opt">(optional)</span></label>
+            <input type="text" name="salary_expectation" id="salary_expectation" class="form-input" placeholder="e.g., 500,000 - 700,000">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label fw-semibold">Eligibility to Work <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" name="work_eligibility" id="eligible_yes" value="yes" required>
+                <span>Yes, I am legally authorized to work here</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="work_eligibility" id="eligible_no" value="no">
+                <span>No, I would require sponsorship</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="consent-row">
+            <input type="checkbox" name="consent" id="consent" required>
+            <span>I consent to the processing of my personal data in accordance with the <a href="<?= base_url('privacy-policy') ?>" target="_blank">Privacy Policy</a>.</span>
+          </div>
+
+          <?php if (env('recaptcha_site_key')): ?>
+            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+          <?php endif; ?>
+
+          <button type="submit" id="submitBtn" class="btn btn-primary apply-submit" disabled>
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Submit Application <svg aria-hidden="true" style="width:16px;height:16px;margin-left:4px;"><use href="#i-send"/></svg>
+          </button>
+
+        <?= form_close() ?>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Reusable SVG icon sprite (defined once, referenced via <use>) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.26 6.88.6-5.2 4.52 1.56 6.72L12 16.9l-6.14 3.7 1.56-6.72-5.2-4.52 6.88-.6z"/></symbol>
+      <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+      <symbol id="i-bookmark-fill" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-5 7 5V5a2 2 0 0 0-2-2z"/></symbol>
+      <symbol id="i-verified-disc" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M16.5 9.2l-5.6 5.6-3-3" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+      <symbol id="i-chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></symbol>
+      <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    </defs>
+  </svg>
 <?= $this->endSection() ?>
 
 <?= $this->section('styles') ?>
 <style>
-    .job-details-section {
-        font-family: 'Inter', sans-serif;
-        background-color: #f8f9fa;
-    }
+:root {
+  --white: #ffffff;
+  --text: var(--text-dark, #1E293B);
+  --muted: var(--text-muted, #64748B);
+  --border: var(--border-light, #e2e8f0);
+  --bg: var(--bg-white, #FFFFFF);
+  --transition: all 0.25s ease-in-out;
+}
 
-    .job-header {
-        transition: all .3s ease;
-        border: 1px solid #dee2e6;
-    }
+.apply-hero {
+  background: linear-gradient(150deg, #0A2F57 0%, #064A85 60%, var(--brand) 100%);
+  color: var(--white); padding: 28px 0;
+  padding-top: max(28px, calc(28px + env(safe-area-inset-top, 0px)));
+}
+.apply-breadcrumb { display: flex; align-items: center; gap: 7px; font-size: .76rem; opacity: .85; margin-bottom: 0; flex-wrap: wrap; }
+.apply-breadcrumb a { color: rgba(255,255,255,.85); text-decoration: none; }
+.apply-breadcrumb a:hover { color: #fff; text-decoration: underline; }
+.apply-breadcrumb svg { width: 12px; height: 12px; opacity: .6; color: #fff; }
 
-    .job-header:hover {
-        box-shadow: 0 6px 12px rgba(0, 0, 0, .1);
-    }
+.apply-layout { display: grid; grid-template-columns: 1fr 460px; gap: 28px; align-items: start; padding: 28px 0 64px; }
+.apply-main { min-width: 0; }
 
-    .job-description {
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        white-space: normal;
-    }
+/* Job summary card (left) */
+.apply-jobcard { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.apply-jobcard-head { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.apply-jobcard-logo { width: 58px; height: 58px; border-radius: 12px; background: var(--brand-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Sora', sans-serif; font-weight: 700; color: var(--brand); flex-shrink: 0; }
+.apply-jobcard-body { flex: 1; min-width: 220px; }
+.apply-jobcard-title { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 800; line-height: 1.25; margin-bottom: 6px; }
+.apply-jobcard-co { font-size: .88rem; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.apply-jobcard-co strong { color: var(--text); font-weight: 600; }
+.apply-jobcard-badges { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.detail-badge {
+  display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700;
+  padding: 4px 11px; border-radius: 20px; letter-spacing: .02em;
+}
+.detail-badge svg { width: 12px; height: 12px; }
+.db-type { background: var(--brand-light); color: var(--brand); }
+.db-featured { background: var(--accent); color: var(--brand-deep); }
+.apply-jobcard-actions { display: flex; gap: 10px; align-self: flex-start; flex-wrap: wrap; }
 
-    .job-description .text-muted {
-        word-break: break-word;
-        overflow-wrap: anywhere;
-    }
+.save-btn {
+  background: none; border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 8px 14px; cursor: pointer; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 6px; font-size: .82rem;
+  font-family: 'Inter', sans-serif; transition: var(--transition);
+  min-height: 40px;
+}
+.save-btn svg { width: 15px; height: 15px; }
+.save-btn:hover { border-color: var(--brand); color: var(--brand); }
+.save-btn.saved { color: var(--success-color, #10B981); border-color: var(--success-color, #10B981); background: var(--success-light, #ecfdf5); }
 
-    .job-description img {
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 1rem 0;
-        border-radius: 6px;
-    }
+/* Description card */
+.apply-desc { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.apply-desc-summary { list-style: none; cursor: default; display: flex; align-items: center; justify-content: space-between; }
+.apply-desc-summary::-webkit-details-marker { display: none; }
+.apply-desc-chev { width: 18px; height: 18px; color: var(--muted); display: none; transition: transform .18s ease; flex-shrink: 0; }
+.apply-desc[open] .apply-desc-chev { transform: rotate(180deg); }
+.apply-desc-body { margin-top: 14px; }
+.apply-desc h2 { font-family: 'Sora', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 0; display: flex; align-items: center; gap: 8px; }
+.apply-desc h2 svg { width: 17px; height: 17px; color: var(--brand); }
+.apply-desc h3 { font-family: 'Sora', sans-serif; font-size: .95rem; font-weight: 700; margin: 18px 0 8px; }
+.apply-desc h3:first-of-type { margin-top: 0; }
+.apply-desc p { font-size: .89rem; line-height: 1.7; color: var(--text); margin-bottom: 10px; }
+.apply-desc ul { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.apply-desc ul li { display: flex; gap: 9px; font-size: .88rem; line-height: 1.5; }
+.apply-desc ul li svg { width: 16px; height: 16px; color: var(--success-color, #10B981); flex-shrink: 0; margin-top: 2px; }
 
-    .job-description table {
-        width: 100%;
-        border-collapse: collapse;
-        overflow-x: auto;
-        display: block;
-    }
+/* ── Apply form (right, sticky) ── */
+.apply-form-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; position: sticky; top: 86px; }
+.apply-form-title { font-family: 'Sora', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--brand); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.apply-form-title svg { width: 19px; height: 19px; color: var(--accent); }
 
-    .job-description table td,
-    .job-description table th {
-        border: 1px solid #dee2e6;
-        padding: .5rem;
-    }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: .82rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: left; }
+.form-group label .req { color: var(--danger-color, #EF4444); }
+.form-group label .opt { color: var(--muted); font-weight: 500; font-size: .76rem; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 9px; padding: 10px 12px;
+  font-family: 'Inter', sans-serif; font-size: .88rem; color: var(--text); background: #fff;
+  transition: var(--transition);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,96,158,.12); }
+.form-input::placeholder, .form-textarea::placeholder { color: #9aa3b2; }
+.form-textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+.form-hint { font-size: .76rem; color: var(--muted); margin-top: 6px; text-align: left; }
+.form-error { font-size: .78rem; color: var(--danger-color, #EF4444); margin-top: 7px; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.form-error::before { content: "⚠"; font-size: .85rem; }
+.file-upload.has-error { border-color: var(--danger-color, #EF4444); background: #fef2f2; }
+.form-charcount { font-size: .74rem; color: var(--muted); float: right; }
 
-    .job-description pre,
-    .job-description code {
-        white-space: pre-wrap;
-        word-break: break-word;
-        background: #f8f9fa;
-        padding: .5rem;
-        border-radius: 6px;
-        display: block;
-        overflow-x: auto;
-    }
+.guest-notice {
+  display: flex; gap: 10px; align-items: flex-start; background: var(--brand-light);
+  border: 1px solid #cfe2f3; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+  font-size: .82rem; color: var(--text); line-height: 1.55; text-align: left;
+}
+.guest-notice svg { width: 16px; height: 16px; color: var(--brand); flex-shrink: 0; margin-top: 2px; }
+.guest-notice a { font-weight: 700; color: var(--brand); text-decoration: none; }
+.guest-notice a:hover { text-decoration: underline; }
 
-    .job-card {
-        transition: all .3s ease;
-    }
+.ai-generate-btn {
+  display: inline-flex; align-items: center; gap: 7px; background: var(--brand-light);
+  color: var(--brand); border: 1px solid #cfe2f3; border-radius: 8px; padding: 8px 14px;
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size: .8rem; cursor: pointer;
+  margin-top: 10px; transition: var(--transition);
+}
+.ai-generate-btn:hover { background: var(--brand); color: #fff; }
+.ai-generate-btn svg { width: 15px; height: 15px; }
 
-    .job-card:hover {
-        transform: translateY(-3px);
-        background-color: #f1f3f5 !important;
-    }
+.file-upload {
+  border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center;
+  cursor: pointer; transition: var(--transition); background: var(--bg-light, #F8F9FA);
+  display: block; width: 100%;
+}
+.file-upload:hover { border-color: var(--brand); background: var(--brand-light); }
+.file-upload input[type="file"] { display: none; }
+.file-upload-ic { width: 30px; height: 30px; color: var(--brand); margin: 0 auto 8px; }
+.file-upload-label { font-size: .84rem; font-weight: 600; color: var(--brand); }
+.file-upload-name { font-size: .78rem; color: var(--muted); margin-top: 4px; }
 
-    .btn-sm {
-        padding: .5rem 1rem;
-        font-size: .9rem;
-    }
+.ref-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 10px; align-items: center; }
+.ref-row .form-input { margin-bottom: 0; }
+.ref-remove { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); flex-shrink: 0; }
+.ref-remove:hover { border-color: var(--danger-color, #EF4444); color: var(--danger-color, #EF4444); }
+.add-ref-btn {
+  display: inline-flex; align-items: center; gap: 6px; background: none; border: 1.5px dashed var(--border);
+  border-radius: 8px; padding: 8px 14px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: .82rem;
+  color: var(--brand); cursor: pointer; transition: var(--transition); width: 100%; justify-content: center;
+}
+.add-ref-btn:hover { border-color: var(--brand); background: var(--brand-light); }
+.add-ref-btn svg { width: 15px; height: 15px; }
 
-    .shadow-sm {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, .05) !important;
-    }
+/* References disclosure — collapsed by default */
+.ref-disclosure { border: 1px solid var(--border); border-radius: 9px; padding: 0; background: var(--bg-light, #F8F9FA); }
+.ref-summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 13px; font-size: .82rem; font-weight: 600; color: var(--text);
+}
+.ref-summary::-webkit-details-marker { display: none; }
+.ref-summary .opt { font-weight: 500; }
+.ref-chev { width: 16px; height: 16px; color: var(--muted); transition: transform .18s ease; flex-shrink: 0; }
+.ref-disclosure[open] .ref-chev { transform: rotate(180deg); }
+.ref-disclosure-body { padding: 4px 13px 14px; }
 
-    .sticky-apply-btn {
-        z-index: 1000;
-    }
+.radio-group { display: flex; flex-direction: column; gap: 9px; }
+.radio-option { display: flex; align-items: flex-start; gap: 9px; font-size: .86rem; cursor: pointer; text-align: left; }
+.radio-option input[type="radio"], .radio-option input[type="checkbox"] { margin-top: 4px; accent-color: var(--brand); width: 16px; height: 16px; flex-shrink: 0; }
 
-    .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
-        transition: all .3s ease;
-    }
+.consent-row { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0; font-size: .8rem; color: var(--muted); line-height: 1.6; text-align: left; }
+.consent-row input[type="checkbox"] { margin-top: 3px; accent-color: var(--brand); width: 16px; height: 16px; flex-shrink: 0; }
+.consent-row a { color: var(--brand); font-weight: 600; text-decoration: none; }
+.consent-row a:hover { text-decoration: underline; }
 
-    .btn-primary:hover {
-        background-color: #0056b3;
-        border-color: #0056b3;
-        transform: translateY(-2px);
-    }
+.apply-submit { width: 100%; justify-content: center; font-size: .96rem; padding: 13px; }
+.apply-submit:disabled { opacity: .55; cursor: not-allowed; }
 
-    .bookmark-btn:hover i {
-        color: #007bff;
-    }
+.verified-check {
+  background: none; border: none; padding: 0; margin: 0; cursor: pointer; display: inline-flex; align-items: center; color: var(--brand); position: relative;
+}
+.verified-check svg { width: 14px; height: 14px; }
+.verified-tip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+  background: #ffffff; color: var(--text); font-size: .72rem; font-weight: 600; line-height: 1.4;
+  white-space: nowrap; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(10,47,87,.16); opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease; z-index: 40; display: inline-flex; align-items: center; gap: 6px;
+}
+.verified-tip::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent; border-top-color: #ffffff; filter: drop-shadow(0 1px 0 var(--border));
+}
+.verified-check:hover .verified-tip {
+  opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+}
 
-    .transition-all {
-        transition: all .3s ease;
-    }
-
-    .job-description * {
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    .reference-row {
-        transition: all 0.2s;
-    }
-
-    .reference-row:hover {
-        background-color: #f8f9fa;
-    }
-
-    #charCount {
-        font-size: 0.875rem;
-    }
-
-    .was-validated .form-control:invalid,
-    .was-validated .form-select:invalid {
-        border-color: #dc3545;
-    }
+@media (max-width: 900px) {
+  .apply-layout { grid-template-columns: 1fr; gap: 20px; }
+  .apply-layout aside { order: -1; }
+  .apply-form-card { position: static; }
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+  .ref-row { grid-template-columns: 1fr; }
+  .apply-desc-summary { cursor: pointer; flex-wrap: wrap; }
+  .apply-desc-chev { display: block; }
+  .apply-desc-hint { display: block !important; width: 100%; font-size: .76rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .apply-desc[open] .apply-desc-hint { display: none !important; }
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -649,45 +535,27 @@ HTML;
 <script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha_site_key') ?>"></script>
 <script>
     // -------------------------------------------------
-    // Copy link toast
-    // -------------------------------------------------
-    document.getElementById('copyLink')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            const toast = document.createElement('div');
-            toast.className = 'position-fixed bottom-0 end-0 m-4 p-3 bg-success text-white rounded-3 shadow';
-            toast.style.zIndex = '2000';
-            toast.textContent = 'Job link copied to clipboard!';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        });
-    });
-
-    // -------------------------------------------------
     // Bookmark toggle
     // -------------------------------------------------
     $("#saveJobBtn").on("click", function() {
         let btn = $(this);
         let jobId = btn.data("job-id");
 
-        btn.prop("disabled", true).text("Processing...");
+        btn.prop("disabled", true).find('span').text("Processing...");
 
         $.ajax({
             url: "<?= site_url('jobs/toggle-save') ?>/" + jobId,
             method: "POST",
             success: function(response) {
                 if (response.success) {
-                    if (response.saved) {
-                        btn.removeClass("btn-border").addClass("btn-danger").text("Unsave Job");
-                    } else {
-                        btn.removeClass("btn-danger").addClass("btn-border").text("Save Job");
-                    }
+                    btn.toggleClass("saved", response.saved);
+                    btn.find('span').text(response.saved ? "Unsave" : "Save");
                 } else {
                     toastr.error(response.message);
                 }
             },
             complete: function() {
                 btn.prop("disabled", false);
-                btn.removeClass("btn-danger").addClass("btn-border").text("Save Job");
             },
             error: function() {
                 toastr.error("Network error. Try again.");
@@ -696,27 +564,9 @@ HTML;
         });
     });
 
-    // -------------------------------------------------
-    // CV radio → show/hide upload field
-    // -------------------------------------------------
-    document.querySelectorAll('input[name="cv_source"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const container = document.getElementById('new_cv_container');
-            const fileInput = document.getElementById('cv_file');
-            if (!container) return;
-            if (this.value === 'upload') {
-                container.style.display = 'block';
-                fileInput.setAttribute('required', 'required');
-            } else {
-                container.style.display = 'none';
-                fileInput.removeAttribute('required');
-            }
-        });
-    });
-
     const form = document.getElementById('jobApplicationForm');
     const coverLetter = document.getElementById('cover_letter');
-    const charCount = document.getElementById('charCount');
+    const charCount = document.getElementById('cover-count');
     const cvSourceRadios = document.querySelectorAll('input[name="cv_source"]');
     const newCvContainer = document.getElementById('new_cv_container');
     const cvFileInput = document.getElementById('cv_file');
@@ -728,7 +578,7 @@ HTML;
     // Cover letter character counter
     if (coverLetter) {
         coverLetter.addEventListener('input', () => {
-            charCount.textContent = `${coverLetter.value.length} / 2000`;
+            charCount.textContent = coverLetter.value.length;
             coverLetter.classList.toggle('is-invalid', coverLetter.value.length > 1900);
         });
     }
@@ -746,6 +596,18 @@ HTML;
         });
     });
 
+    // CV filename updating
+    const filenameLabel = document.getElementById('cv-filename');
+    if (cvFileInput) {
+        cvFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                filenameLabel.textContent = this.files[0].name;
+            } else {
+                filenameLabel.textContent = 'No file chosen · Max 5MB — PDF, DOC, DOCX';
+            }
+        });
+    }
+
     // Add reference row
     addRefBtn?.addEventListener('click', () => {
         const rowCount = refContainer.children.length;
@@ -756,17 +618,17 @@ HTML;
         newRow.innerHTML = `
             <div class="row g-2">
                 <div class="col-md-4">
-                    <input type="text" name="ref_name[]" class="form-control form-control-sm" placeholder="Full Name">
+                    <input type="text" name="ref_name[]" class="form-input form-control-sm" placeholder="Full Name">
                 </div>
                 <div class="col-md-4">
-                    <input type="text" name="ref_title[]" class="form-control form-control-sm" placeholder="Job Title">
+                    <input type="text" name="ref_title[]" class="form-input form-control-sm" placeholder="Job Title">
                 </div>
                 <div class="col-md-3">
-                    <input type="email" name="ref_email[]" class="form-control form-control-sm" placeholder="Email">
+                    <input type="email" name="ref_email[]" class="form-input form-control-sm" placeholder="Email">
                 </div>
                 <div class="col-md-1 text-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-ref">
-                        <i class="bi bi-trash"></i>
+                    <button type="button" class="ref-remove remove-ref">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
                 </div>
             </div>`;
@@ -787,7 +649,9 @@ HTML;
         const rows = refContainer.querySelectorAll('.reference-row');
         rows.forEach((row, i) => {
             const btn = row.querySelector('.remove-ref');
-            btn.style.display = rows.length > 1 ? 'block' : 'none';
+            if(btn) {
+                btn.style.display = rows.length > 1 ? 'block' : 'none';
+            }
         });
     }
     updateRemoveButtons();
@@ -799,21 +663,9 @@ HTML;
             submitBtn.disabled = !consent.checked;
         });
     }
+
     document.addEventListener('DOMContentLoaded', () => {
-
-        const form = document.getElementById('jobApplicationForm');
         if (!form) return;
-
-        const submitBtn = document.getElementById('submitBtn');
-        const spinner = submitBtn.querySelector('.spinner-border');
-        const consent = document.getElementById('consent');
-
-        // Enable submit only when consent is checked
-        if (consent) {
-            consent.addEventListener('change', () => {
-                submitBtn.disabled = !consent.checked;
-            });
-        }
 
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -863,7 +715,6 @@ HTML;
                 window.location.href = data.redirect;
 
             } catch (error) {
-
                 submitBtn.disabled = false;
                 spinner.classList.add('d-none');
 
@@ -880,7 +731,7 @@ HTML;
                     </ul>
                 `;
                 } else {
-                    alert.textContent = 'Submission failed. Please try again.';
+                    alert.textContent = error.message || 'Submission failed. Please try again.';
                 }
 
                 form.prepend(alert);
@@ -905,7 +756,7 @@ HTML;
                     const formData = new FormData();
                     formData.append('job_title', '<?= addslashes($job->title) ?>');
                     formData.append('company_name', '<?= addslashes($job->company_name ?? '') ?>');
-                    formData.append('job_description', '<?= addslashes(substr($job->description ?? '', 0, 2000)) ?>');
+                    formData.append('job_description', '<?= addslashes(substr(strip_tags($job->description ?? ''), 0, 2000)) ?>');
                     formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
                     const response = await fetch('<?= base_url("candidate/resumes/ai/generate-cover-letter") ?>', {
@@ -934,5 +785,4 @@ HTML;
         }
     });
 </script>
-
 <?= $this->endSection() ?>

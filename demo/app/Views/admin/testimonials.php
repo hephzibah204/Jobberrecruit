@@ -185,7 +185,7 @@
                     <input type="hidden" name="existing_avatar" id="existing_avatar">
 
                     <div id="avatarPreview" class="mt-2 d-none">
-                        <img src="" class="img-thumbnail" style="max-height:120px;">
+                        <img src="" class="img-thumbnail" style="max-height:120px;" alt="">
                     </div>
                 </div>
 

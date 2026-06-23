@@ -30,7 +30,7 @@
 
                     <!-- JOB SUMMARY BOX -->
                     <div class="p-3 bg-light rounded-3 border mb-4 text-start d-flex align-items-center">
-                        <img src="<?= base_url($job->company_logo ?: 'images/default-company.png') ?>"
+                        <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>"
                             alt="Logo" class="rounded me-3"
                             width="60" height="60" style="object-fit:cover">
 

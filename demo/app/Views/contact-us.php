@@ -65,7 +65,7 @@
             <circle cx="100" cy="100" r="100" fill="url(#paint0_linear)" fill-opacity="0.05" />
             <defs>
                 <linearGradient id="paint0_linear" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#005DA8" />
+                    <stop stop-color="var(--brand)" />
                     <stop offset="1" stop-color="#02365eff" />
                 </linearGradient>
             </defs>
@@ -144,7 +144,7 @@
         <div class="row g-5">
             <!-- Contact Form -->
             <div class="col-lg-7">
-                <div class="card border-0 shadow-lg">
+                <div class="card border-0 shadow-lg card-glass">
                     <div class="card-body p-5">
                         <h2 class="display-6 fw-bold mb-1">Send Us a Message</h2>
                         <p class="text-muted mb-4">We'll respond within 24 hours</p>
@@ -385,7 +385,7 @@
 
     /* Hero Section */
     .contact-hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #F5A623 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, var(--accent) 100%);
         position: relative;
         overflow: hidden;
     }
@@ -395,7 +395,7 @@
     }
 
     .text-gradient-primary {
-        background: linear-gradient(90deg, #005DA8 0%, #005DA8 100%);
+        background: linear-gradient(90deg, var(--brand) 0%, var(--brand) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -507,7 +507,7 @@
 
     .accordion-button:not(.collapsed) {
         background-color: rgba(102, 126, 234, 0.1);
-        color: #005DA8;
+        color: var(--brand);
         box-shadow: none;
     }
 
@@ -523,12 +523,12 @@
 
     /* CTA Section */
     .bg-primary {
-        background: linear-gradient(135deg, #005DA8 0%, #02365eff 100%) !important;
+        background: linear-gradient(135deg, var(--brand) 0%, #02365eff 100%) !important;
     }
 
     /* Background Elements */
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #F5A623 0%, #F5A623 100%);
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 100%);
     }
 
     /* Form Validation */

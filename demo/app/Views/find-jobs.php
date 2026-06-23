@@ -62,7 +62,7 @@
                     <div class="box-filters-job">
                         <div class="row">
                             <div class="col-xl-6 col-lg-5">
-                                <span class="text-small text-showing">
+                                <span class="text-small text-showing" data-result-count="<?= (int) $total_jobs ?>">
                                     Showing <strong><?= ($current_page - 1) * $per_page + 1 ?>-<?= min($current_page * $per_page, $total_jobs) ?></strong> of <strong><?= $total_jobs ?></strong> jobs
                                 </span>
                             </div>
@@ -161,7 +161,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-12 col-sm-12 col-12">
+            <div class="col-lg-3 col-md-12 col-sm-12 col-12 d-none d-lg-block">
                 <div class="sidebar-shadow none-shadow mb-30">
                     <div class="sidebar-filters">
                         <div class="filter-block head-border mb-30">
@@ -398,6 +398,30 @@
         </div>
     </div>
 </section>
+
+<!-- 8.2 Mobile filter bottom sheet (Section 8 — Native Mobile App Feel) -->
+<button type="button" class="jr-filter-fab" id="jrFilterFab" aria-label="Open filters">
+    <i class="fi-rr-filter"></i> Filters
+    <span class="jr-fab-count" aria-hidden="true">0</span>
+</button>
+
+<div class="offcanvas offcanvas-bottom" tabindex="-1" id="jrFilterSheet" aria-labelledby="jrFilterSheetLabel">
+    <div class="jr-sheet-handle" aria-hidden="true"></div>
+    <div class="offcanvas-header pt-0">
+        <h5 class="offcanvas-title" id="jrFilterSheetLabel">Filters</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <!-- .sidebar-filters is moved here by mobile-app.js on open, restored on close -->
+        <div data-filter-target></div>
+        <div class="jr-sheet-footer">
+            <button type="button" class="btn btn-border" data-sheet-clear>Clear all</button>
+            <button type="button" class="btn btn-default" data-sheet-apply>
+                Show <span data-sheet-count><?= (int) $total_jobs ?></span> results
+            </button>
+        </div>
+    </div>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -527,7 +551,7 @@
                                                 <span>${job.job_type.charAt(0).toUpperCase() + job.job_type.slice(1)}</span>
                                             </span>
                                             <div class="image-box">
-                                                <img src="${job.company_logo ? '<?= base_url() ?>' + job.company_logo : '<?= base_url($website_logo) ?>'}" alt="JobberRecruit" class="img-fluid company-logo">
+                                                <img src="${job.company_logo && job.company_logo !== '' ? (job.company_logo.startsWith('http') ? job.company_logo : '<?= base_url() ?>' + job.company_logo) : `https://ui-avatars.com/api/?name=${encodeURIComponent(job.employer_name || 'Company')}&background=random&color=fff&size=128`}" alt="JobberRecruit" class="img-fluid company-logo">
                                             </div>
                                             <div class="right-info">
                                                 <a class="name-job" href="<?= site_url('company') ?>/${job.employer_id}">${job.employer_name}</a>

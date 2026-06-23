@@ -52,8 +52,8 @@
     }
 
     .nav-tabs .nav-link.active {
-        color: #0d6efd;
-        border-bottom-color: #0d6efd;
+        color: #0D609E;
+        border-bottom-color: #0D609E;
     }
 </style>
 <?= $this->endSection() ?>
@@ -425,7 +425,7 @@
                                             </td>
                                             <td><?= date('M d, Y H:i', strtotime($app->created_at)) ?></td>
                                             <td>
-                                                <select class="form-select form-select-sm status-select" style="width: 130px;" data-id="<?= $app->id ?>">
+                                                <select class="w-auto form-select form-select-sm status-select"  data-id="<?= $app->id ?>">
                                                     <option value="pending" <?= $app->status == 'pending' ? 'selected' : '' ?>>⏳ Pending</option>
                                                     <option value="reviewed" <?= $app->status == 'reviewed' ? 'selected' : '' ?>>👁️ Reviewed</option>
                                                     <option value="shortlisted" <?= $app->status == 'shortlisted' ? 'selected' : '' ?>>⭐ Shortlisted</option>

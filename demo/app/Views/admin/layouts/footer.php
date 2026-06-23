@@ -20,7 +20,9 @@
                     <input type="text" class="form-control border-end-0" placeholder="Search Anything ..."
                         aria-label="Search Anything ..." aria-describedby="button-addon2">
                     <button class="btn btn-primary" type="button"
-                        id="button-addon2"><i class="bi bi-search"></i></button>
+                        id="button-addon2" aria-label="Search">
+    <i class="bi bi-search"></i>
+</button>
                 </div>
             </div>
         </div>

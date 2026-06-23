@@ -70,9 +70,9 @@
                                     <td>
                                         <form method="POST" action="<?= base_url('admin/newsletters/subscribers/delete/' . $subscriber->id) ?>" class="d-inline" onsubmit="return confirm('Delete this subscriber?')">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="ti ti-trash"></i>
-                                            </button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete">
+    <i class="ti ti-trash"></i>
+</button>
                                         </form>
                                     </td>
                                 </tr>

@@ -1,5 +1,9 @@
 <?= $this->extend('layouts/app') ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=1.2">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <?php
 $recentSessions = $recentSessions ?? [];
@@ -32,7 +36,7 @@ $questionPackLabels = [
         <!-- Setup Card -->
         <div class="col-xl-7 mb-4">
             <div class="card premium-glow-card h-100 border-0 shadow-sm">
-                <div class="card-header py-4 px-4 text-white position-relative" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);">
+                <div class="card-header py-4 px-4 text-white position-relative" style="background: linear-gradient(135deg, #0d609e 0%, #0a4d7e 100%);">
                     <div class="d-flex align-items-center position-relative z-index-1">
                         <div class="avatar avatar-lg bg-white-transparent rounded-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(255,255,255,0.15);">
                             <i class="ti ti-adjustments-horizontal text-white fs-24 animate-pulse"></i>
@@ -93,7 +97,7 @@ $questionPackLabels = [
                         </div>
 
                         <?php if (! empty($contextPreset['job_title'])): ?>
-                            <div class="alert alert-info border-0 rounded-3 mb-4 p-3 d-flex align-items-start" style="background: rgba(79, 70, 229, 0.07); border-left: 4px solid #4f46e5 !important;">
+                            <div class="alert alert-info border-0 rounded-3 mb-4 p-3 d-flex align-items-start" style="background: rgba(13, 96, 158, 0.07); border-left: 4px solid #0d609e !important;">
                                 <i class="ti ti-info-circle text-primary fs-20 me-2 mt-1"></i>
                                 <div>
                                     <strong class="text-primary d-block mb-1 fs-14">Application-Aware Intelligence</strong>
@@ -117,16 +121,16 @@ $questionPackLabels = [
             <div class="card premium-glow-card h-100 border-0 shadow-sm">
                 <div class="card-header bg-white py-4 px-4 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center" style="font-family: 'Outfit', sans-serif;">
-                        <i class="ti ti-history text-indigo me-2"></i> Recent Sessions
+                        <i class="ti ti-history text-brand me-2"></i> Recent Sessions
                     </h5>
-                    <span class="badge bg-indigo bg-opacity-15 text-indigo rounded-pill px-3 py-1.5 fs-11 fw-bold"><?= count($recentSessions) ?> Completed</span>
+                    <span class="badge bg-brand bg-opacity-15 text-brand rounded-pill px-3 py-1.5 fs-11 fw-bold"><?= count($recentSessions) ?> Completed</span>
                 </div>
                 <div class="card-body p-4">
                     <div id="recent-sessions-list" class="d-grid gap-3" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
                         <?php if ($recentSessions === []): ?>
                             <div class="text-center py-5 text-muted">
-                                <div class="avatar avatar-xxl bg-light text-muted-light rounded-circle mb-3 mx-auto d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; background-color: rgba(99, 102, 241, 0.05) !important;">
-                                    <i class="ti ti-clipboard-list fs-32 text-indigo"></i>
+                                <div class="avatar avatar-xxl bg-light text-muted-light rounded-circle mb-3 mx-auto d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; background-color: rgba(13, 96, 158, 0.05) !important;">
+                                    <i class="ti ti-clipboard-list fs-32 text-brand"></i>
                                 </div>
                                 <p class="mb-0 fs-14 fw-semibold text-dark">No simulator history</p>
                                 <p class="text-muted-50 fs-12 mb-0">Launch your first session to build your interactive history.</p>
@@ -147,7 +151,7 @@ $questionPackLabels = [
                                         </div>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 mt-3 pt-2 text-muted fs-12">
-                                        <span>STAR Score: <strong class="text-indigo"><?= esc((string) ($session['star_average'] ?? 0)) ?>/10</strong></span>
+                                        <span>STAR Score: <strong class="text-brand"><?= esc((string) ($session['star_average'] ?? 0)) ?>/10</strong></span>
                                         <span><i class="ti ti-calendar me-1"></i><?= esc((string) ($session['created_at'] ?? '')) ?></span>
                                     </div>
                                 </div>
@@ -163,15 +167,15 @@ $questionPackLabels = [
 <style>
 .premium-glow-card {
     background: #ffffff;
-    border: 1px solid rgba(99, 102, 241, 0.1) !important;
-    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.04), 0 1px 6px rgba(0, 0, 0, 0.02) !important;
+    border: 1px solid rgba(13, 96, 158, 0.1) !important;
+    box-shadow: 0 8px 32px rgba(13, 96, 158, 0.04), 0 1px 6px rgba(0, 0, 0, 0.02) !important;
     border-radius: 22px !important;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 }
 .premium-glow-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 16px 48px rgba(99, 102, 241, 0.08), 0 2px 8px rgba(0, 0, 0, 0.02) !important;
+    box-shadow: 0 16px 48px rgba(13, 96, 158, 0.08), 0 2px 8px rgba(0, 0, 0, 0.02) !important;
 }
 .premium-glow-card .card-header {
     position: relative;
@@ -188,9 +192,9 @@ $questionPackLabels = [
     border-radius: 50%;
     pointer-events: none;
 }
-.text-indigo { color: #4f46e5 !important; }
-.bg-indigo { background-color: #4f46e5 !important; }
-.bg-indigo-soft { background-color: rgba(79, 70, 229, 0.06) !important; }
+.text-brand { color: #0d609e !important; }
+.bg-brand { background-color: #0d609e !important; }
+.bg-brand-soft { background-color: rgba(13, 96, 158, 0.06) !important; }
 
 .animate-pulse {
     animation: pulse-ring 2.5s infinite ease-in-out;
@@ -201,9 +205,9 @@ $questionPackLabels = [
 }
 
 .btn-launch-pulse {
-    background: linear-gradient(135deg, #4f46e5, #3b82f6) !important;
+    background: linear-gradient(135deg, #0d609e, #0a4d7e) !important;
     border: none !important;
-    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3) !important;
+    box-shadow: 0 4px 20px rgba(13, 96, 158, 0.3) !important;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
@@ -219,7 +223,7 @@ $questionPackLabels = [
 .btn-launch-pulse:hover::before { transform: translateX(100%); }
 .btn-launch-pulse:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.4) !important;
+    box-shadow: 0 8px 30px rgba(13, 96, 158, 0.4) !important;
 }
 .btn-launch-pulse:active { transform: translateY(0); }
 
@@ -227,12 +231,12 @@ $questionPackLabels = [
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 .form-control-lg:focus, .form-select-lg:focus {
-    border-color: #4f46e5 !important;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+    border-color: #0d609e !important;
+    box-shadow: 0 0 0 3px rgba(13, 96, 158, 0.1) !important;
 }
 .form-switch .form-check-input:checked {
-    background-color: #4f46e5 !important;
-    border-color: #4f46e5 !important;
+    background-color: #0d609e !important;
+    border-color: #0d609e !important;
 }
 
 .session-history-item {
@@ -243,15 +247,15 @@ $questionPackLabels = [
 }
 .session-history-item:hover {
     transform: translateY(-2px);
-    border-color: rgba(99, 102, 241, 0.15);
+    border-color: rgba(13, 96, 158, 0.15);
     background: #ffffff;
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.06);
+    box-shadow: 0 8px 24px rgba(13, 96, 158, 0.06);
 }
 
 #recent-sessions-list::-webkit-scrollbar { width: 4px; }
 #recent-sessions-list::-webkit-scrollbar-track { background: transparent; }
-#recent-sessions-list::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.12); border-radius: 4px; }
-#recent-sessions-list::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.25); }
+#recent-sessions-list::-webkit-scrollbar-thumb { background: rgba(13, 96, 158, 0.12); border-radius: 4px; }
+#recent-sessions-list::-webkit-scrollbar-thumb:hover { background: rgba(13, 96, 158, 0.25); }
 
 @media (max-width: 1199.98px) {
     .page-header .d-flex {
@@ -304,3 +308,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<?= $this->endSection() ?>
