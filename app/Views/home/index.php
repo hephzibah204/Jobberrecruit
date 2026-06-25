@@ -85,7 +85,9 @@ html, body { background: #f5f7fb; }
 main, .section, .container, .jobs-header, .jobs-grid { background-color: transparent; }
 .section { background-color: #f5f7fb; }
 .section.hiw-bg, .section.faq-bg, .section.training-bg, .section.testi-bg { background-color: #ffffff; }
-.section-title, .job-title, .cat-name, .loc-name, .step-title, .course-title, .testi-name, .feat-name, .cta-panel.light h2 { color: #141926; }
+.section-title, .job-title, .cat-name, .loc-name, .step-title, .course-title, .testi-name, .feat-name, .cta-panel.blue h2,
+.cta-panel.blue p { color: #ffffff; }
+.cta-panel.light h2 { color: #141926; }
 .section-title span { color: var(--brand); }
 .section-sub { color: #5b6577; }
 .job-card { background: #ffffff; }
@@ -1027,4 +1029,21 @@ document.querySelectorAll('.save-btn').forEach(btn => {
   }
 })();
 </script>
+
+<!-- SVG Icon Sprites -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 13c-1.5.5-3 2.5-3 5 2.5 0 4.5-1.5 5-3"/><path d="M13 7a8 8 0 0 1 7-4 8 8 0 0 1-4 7l-4 3-2-2Z"/><path d="m9 11-3 3 4 4 3-3M15 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/>
+  </symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </symbol>
+</svg>
+
 <?= $this->endSection() ?>

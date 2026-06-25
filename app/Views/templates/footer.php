@@ -3,7 +3,14 @@
         <div class="row">
             <div class="footer-col-1 col-md-3 col-sm-12"><a href="<?= base_url('/') ?>"><img alt="JobberRecruit" src="<?= base_url('assets/imgs/template/logo.png'); ?>"></a>
                 <div class="mt-20 mb-20 font-xs color-text-paragraph-2">JobberRecruit is the heart of the design community and the best resource to discover and connect with designers and jobs worldwide.</div>
-                <div class="footer-social"><a class="icon-socials icon-facebook" href="#"></a><a class="icon-socials icon-twitter" href="#"></a><a class="icon-socials icon-linkedin" href="#"></a></div>
+                <div class="footer-social">
+                    <a href="https://twitter.com/jobberrecruit" target="_blank" rel="noopener" class="social-icon"><i class="bi bi-twitter"></i></a>
+                    <a href="https://linkedin.com/company/jobberrecruit" target="_blank" rel="noopener" class="social-icon"><i class="bi bi-linkedin"></i></a>
+                    <a href="https://facebook.com/jobberrecruit" target="_blank" rel="noopener" class="social-icon"><i class="bi bi-facebook"></i></a>
+                    <a href="https://instagram.com/jobberrecruit" target="_blank" rel="noopener" class="social-icon"><i class="bi bi-instagram"></i></a>
+                    <a href="https://wa.me/234" target="_blank" rel="noopener" class="social-icon"><i class="bi bi-whatsapp"></i></a>
+                    <a href="https://telegram.com/jobberrecruit" target="_blank" rel="noopener" class="social-icon"><i class="bi bi-telegram"></i></a>
+                </div>
             </div>
             <div class="footer-col-2 col-md-2 col-xs-6">
                 <h6 class="mb-20">For Job Seekers</h6>

@@ -15,6 +15,15 @@
 
 /* 8.0 — Foundations -------------------------------------------------------- */
 
+/* Ensure Bootstrap Icons are visible */
+.bi, [class*="bi-"] {
+  display: inline-block;
+  vertical-align: -0.125em;
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
 /* Instant taps, no native grey/blue flash on touch */
 a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
 .btn-apply-now, .cb-container, label.cb-container {
@@ -291,5 +300,46 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
 }
 
 [data-theme="dark"] .mobile-bottom-nav .nav-item.active {
-    color: var(--brand-light, #3b82f6);
+    color: #60a5fa;
+}
+
+/* Footer Styling */
+.footer-brand p {
+    color: #ffffff;
+    opacity: 0.9;
+}
+
+/* Social Icons - Footer */
+.footer-socials {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.footer-socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.footer-socials a:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.4);
+    transform: translateY(-2px);
+}
+
+.footer-socials svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
 }
