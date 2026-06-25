@@ -180,11 +180,19 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
+                // Unregister all service workers during development
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(reg => reg.unregister());
+                });
+                // Disabled for development - service worker caching causes slow/scattered loads
+                // Re-enable in production when cache is properly configured
+                /*
                 navigator.serviceWorker.register('<?= base_url("sw.js") ?>', {
                         scope: '/'
                     })
                     .then(reg => console.log('Service Worker registered', reg))
                     .catch(err => console.log('Service Worker failed', err));
+                */
             });
         }
 
@@ -366,6 +374,9 @@
         });
 
         // Register Service Worker for Offline Support
+        // DISABLED during development - service worker caching causes slow/scattered loads
+        // Re-enable in production when cache is properly configured
+        /*
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').then((registration) => {
@@ -375,6 +386,7 @@
                 });
             });
         }
+        */
     </script>
     <!-- Back-to-top button -->
     <button id="btt" aria-label="Back to top" title="Back to top"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg></button>

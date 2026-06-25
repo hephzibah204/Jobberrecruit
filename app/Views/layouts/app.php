@@ -153,6 +153,9 @@
     
     <!-- Register Service Worker -->
     <script>
+        // Service Worker disabled during development - causes slow/scattered loads
+        // Re-enable in production when cache is properly configured
+        /*
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').then((registration) => {
@@ -162,6 +165,7 @@
                 });
             });
         }
+        */
     </script>
 </body>
 

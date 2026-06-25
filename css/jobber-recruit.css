@@ -580,7 +580,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .cta-ic svg { width: 25px; height: 25px; }
 .cta-panel h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 10px; }
 .cta-panel p { font-size: .87rem; margin-bottom: 22px; }
-.cta-panel.blue p { color: var(--white); opacity: .86; }
+.cta-panel.blue p { opacity: .86; }
 .cta-panel.light p { color: var(--muted); }
 .cta-list { list-style: none; margin-bottom: 26px; display: flex; flex-direction: column; gap: 9px; }
 .cta-list li { display: flex; align-items: center; gap: 9px; font-size: .85rem; }
@@ -592,7 +592,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 44px; }
 .footer-logo { display: flex; align-items: center; text-decoration: none; margin-bottom: 14px; }
 .footer-logo-img { height: 52px; width: auto; }
-.footer-brand p { font-size: .88rem; line-height: 1.6; color: rgba(255, 255, 255, 0.78); margin-bottom: 18px; }
+.footer-brand p { font-size: .83rem; line-height: 1.75; opacity: .78; margin-bottom: 18px; }
 .footer-socials { display: flex; gap: 8px; flex-wrap: wrap; }
 .footer-socials a { width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,.09); color: var(--white); display: flex; align-items: center; justify-content: center; transition: var(--transition); text-decoration: none; }
 .footer-socials a svg { width: 17px; height: 17px; }
