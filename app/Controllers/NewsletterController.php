@@ -154,12 +154,18 @@ class NewsletterController extends BaseController
             'target_group' => 'permit_empty',
             'content' => 'required'
         ];
-        
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
         $id = $this->request->getPost('id');
         $data = [
             'title' => $this->request->getPost('title'),
-            'subject' => $this->request->getPost('subject'),
-            'target_group' => $this->request->getPost('target_group'),
+            // subject/target_group are NOT NULL columns; default when omitted
+            'subject' => $this->request->getPost('subject') ?? '',
+            'target_group' => $this->request->getPost('target_group') ?? 'general',
             'content' => $this->request->getPost('content'),
             'status' => 'draft'
         ];
