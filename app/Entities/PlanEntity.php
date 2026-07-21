@@ -7,9 +7,9 @@ use CodeIgniter\Entity\Entity;
 class PlanEntity extends Entity
 {
     protected $casts = [
-        // 'array' param makes JsonCast return an associative array
+        // json-array makes JsonCast return an associative array
         // instead of stdClass, so $plan->features['featured'] works.
-        'features' => ['json', 'array'],
+        'features' => 'json-array',
     ];
 
     public function allows(string $feature): bool

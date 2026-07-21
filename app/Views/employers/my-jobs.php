@@ -104,7 +104,7 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
             $statOpenJobs++;
         }
         $statTotalViews += intval(is_object($job) ? ($job->views ?? 0) : ($job['views'] ?? 0));
-        $statTotalApplicants += intval(is_object($job) ? ($job->applicants_count ?? $job['applicants'] ?? 0) : ($job['applicants_count'] ?? $job['applicants'] ?? 0));
+        $statTotalApplicants += intval(is_object($job) ? ($job->applicants_count ?? $job->applicants ?? 0) : ($job['applicants_count'] ?? $job['applicants'] ?? 0));
     }
 }
 ?>
@@ -187,7 +187,7 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                         $deadline = is_object($job) ? $job->deadline : $job['deadline'];
                         $statusVal = is_object($job) ? $job->status : $job['status'];
                         $viewsVal = is_object($job) ? ($job->views ?? 0) : ($job['views'] ?? 0);
-                        $applicantsVal = is_object($job) ? ($job->applicants_count ?? $job['applicants'] ?? 0) : ($job['applicants_count'] ?? $job['applicants'] ?? 0);
+                        $applicantsVal = is_object($job) ? ($job->applicants_count ?? $job->applicants ?? 0) : ($job['applicants_count'] ?? $job['applicants'] ?? 0);
 
                         $status = strtolower($statusVal);
                         $pillClass = 'pill--closed';

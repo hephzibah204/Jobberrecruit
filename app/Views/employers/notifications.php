@@ -359,7 +359,8 @@
                     <select class="select" id="na-category" name="category">
                         <option value="">Any Category</option>
                         <?php foreach ($categories as $cat): ?>
-                            <option value="<?= esc($cat['name'] ?? $cat->name ?? $cat) ?>"><?= esc($cat['name'] ?? $cat->name ?? $cat) ?></option>
+                            <?php $catName = is_object($cat) ? ($cat->name ?? '') : (is_array($cat) ? ($cat['name'] ?? '') : $cat); ?>
+                            <option value="<?= esc($catName) ?>"><?= esc($catName) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

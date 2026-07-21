@@ -5625,6 +5625,10 @@ class EmployerController extends BaseController
             'unreadCount' => $unreadCount,
             'totalNotifications' => $totalNotifications,
             'typeStats' => $typeStats,
+            // Candidate-alert feature has no backend yet; the view needs the
+            // variable to render its empty state instead of a fatal.
+            'alerts' => [],
+            'categories' => model(JobCategoryModel::class)->orderBy('name')->findAll(),
             'currentPage' => $page,
             'perPage' => $perPage,
             'creditBalance' => $creditBalance,

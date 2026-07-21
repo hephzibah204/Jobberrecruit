@@ -248,8 +248,8 @@ $taskLogo = !empty($employer->logo);
       <?php else: ?>
         <?php foreach ($jobInsights as $insight): ?>
           <?php
-          $views = (int) ($insight->views ?? $insight['views'] ?? 0);
-          $apps = (int) ($insight->applications ?? $insight['applications'] ?? $insight->applicants_count ?? 0);
+          $views = (int) ($insight->views ?? 0);
+          $apps = (int) ($insight->app_count ?? $insight->applications ?? $insight->applicants_count ?? 0);
           $rate = $views > 0 ? ($apps / $views) * 100 : 0;
           $rateFormatted = number_format($rate, 1) . '%';
           
@@ -257,7 +257,7 @@ $taskLogo = !empty($employer->logo);
           $isGood = $rate >= 1.2;
           ?>
           <div class="ins-item">
-            <div class="ins-title" title="<?= esc($insight->title ?? $insight['title'] ?? '') ?>"><?= esc($insight->title ?? $insight['title'] ?? '') ?></div>
+            <div class="ins-title" title="<?= esc($insight->title ?? '') ?>"><?= esc($insight->title ?? '') ?></div>
             <div class="ins-nums"><b><?= number_format($views) ?></b> views &middot; <b><?= number_format($apps) ?></b> applications</div>
             <div class="ins-bar-row">
               <div class="ins-track">
@@ -270,7 +270,7 @@ $taskLogo = !empty($employer->logo);
                 <span class="ins-tip ins-tip--good"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Converting above the platform benchmark — no action needed</span>
               <?php else: ?>
                 <span class="ins-tip"><svg aria-hidden="true"><use href="#i-bulb"/></svg> High views, lower applications — add a salary range or clarify benefits</span>
-                <a href="<?= base_url('employer/jobs/edit/' . ($insight->id ?? $insight['id'] ?? '')) ?>" class="emp-btn emp-btn-outline emp-btn-sm">Review job</a>
+                <a href="<?= base_url('employer/jobs/edit/' . ($insight->id ?? '')) ?>" class="emp-btn emp-btn-outline emp-btn-sm">Review job</a>
               <?php endif; ?>
             </div>
           </div>
@@ -296,7 +296,7 @@ $taskLogo = !empty($employer->logo);
           $closingDate = $closingField ? strtotime($closingField) : time();
           $daysLeft = round(($closingDate - time()) / 86400);
           $isCritical = $daysLeft <= 7;
-          $jobId = $job->id ?? $job['id'] ?? '';
+          $jobId = $job->id ?? '';
           ?>
           <div class="close-item">
             <span class="close-ic <?= $isCritical ? 'close-ic--warn' : 'close-ic--ok' ?>" aria-hidden="true">
@@ -424,10 +424,10 @@ $taskLogo = !empty($employer->logo);
         <ul class="job-list">
           <?php
           foreach ($recentJobs as $job):
-            $jobId = $job->id ?? $job['id'] ?? '';
-            $jobTitle = $job->title ?? $job['title'] ?? '';
-            $jobViews = $job->views ?? $job['views'] ?? 0;
-            $postedDate = strtotime($job->created_at ?? $job['created_at'] ?? 'now');
+            $jobId = $job->id ?? '';
+            $jobTitle = $job->title ?? '';
+            $jobViews = $job->views ?? 0;
+            $postedDate = strtotime($job->created_at ?? 'now');
             ?>
             <li class="job-item">
               <span class="job-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>

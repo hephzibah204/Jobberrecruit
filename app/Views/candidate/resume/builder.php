@@ -1236,9 +1236,9 @@
     </div>
 </div>
 
-<?= $this->endSection() ?>
-
 <?= $this->include('candidate/resume/partials/revisions_modal') ?>
+
+<?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
