@@ -551,7 +551,7 @@
                                 ?>
 
                                 <li class="list-group-item border-start-0 border-end-0">
-                                    <a href="<?= base_url('admin/candidates/' . $candidate->id) ?>">
+                                    <a href="<?= base_url('admin/candidates/view/' . $candidate->id) ?>">
                                         <div class="d-flex align-items-center flex-wrap">
 
                                             <!-- Avatar -->

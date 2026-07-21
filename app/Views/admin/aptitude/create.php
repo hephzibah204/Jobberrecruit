@@ -41,7 +41,7 @@
                         $categories = $categoryModel->findAll();
                         foreach ($categories as $cat): 
                         ?>
-                            <option value="<?= $cat['id'] ?? $cat->id ?>"><?= esc($cat['name'] ?? $cat->name) ?></option>
+                            <option value="<?= is_object($cat) ? $cat->id : $cat['id'] ?>"><?= esc(is_object($cat) ? $cat->name : $cat['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

@@ -309,10 +309,15 @@ if (isset($user)) {
             <div class="xp">
               <span class="xp-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
               <div>
-                <b><?= esc($xp->job_title ?? $xp['job_title'] ?? $xp->title ?? $xp['title'] ?? '') ?></b>
-                <i><?= esc($xp->company ?? $xp['company'] ?? '') ?> &middot; <?= esc($xp->location ?? $xp['location'] ?? '') ?> &middot; <?= esc($xp->start_year ?? $xp['start_year'] ?? '') ?> &ndash; <?= !empty($xp->currently_working) || !empty($xp['currently_working']) || !empty($xp->present) || !empty($xp['present']) ? 'present' : esc($xp->end_year ?? $xp['end_year'] ?? 'present') ?></i>
-                <?php if (!empty($xp->description ?? $xp['description'] ?? '')): ?>
-                  <p><?= nl2br(esc($xp->description ?? $xp['description'] ?? '')) ?></p>
+                <?php
+                $xpStart = !empty($xp->start_date) ? date('Y', strtotime($xp->start_date)) : '';
+                $xpEnd   = !empty($xp->is_current) ? 'present'
+                    : (!empty($xp->end_date) ? date('Y', strtotime($xp->end_date)) : 'present');
+                ?>
+                <b><?= esc($xp->job_title ?? '') ?></b>
+                <i><?= esc($xp->company ?? '') ?> &middot; <?= esc($xp->location ?? '') ?> &middot; <?= esc($xpStart) ?> &ndash; <?= esc($xpEnd) ?></i>
+                <?php if (!empty($xp->description)): ?>
+                  <p><?= nl2br(esc($xp->description)) ?></p>
                 <?php endif; ?>
               </div>
             </div>
@@ -336,8 +341,8 @@ if (isset($user)) {
               <div class="xp" style="border:none;padding:2px 0">
                 <span class="xp-ic" aria-hidden="true"><svg><use href="#i-grad"/></svg></span>
                 <div>
-                  <b><?= esc($edu->degree ?? $edu['degree'] ?? '') ?> in <?= esc($edu->field_of_study ?? $edu['field_of_study'] ?? '') ?></b>
-                  <i><?= esc($edu->institution ?? $edu['institution'] ?? '') ?> &middot; <?= esc($edu->start_year ?? $edu['start_year'] ?? '') ?> &ndash; <?= esc($edu->end_year ?? $edu['end_year'] ?? 'Completed') ?></i>
+                  <b><?= esc($edu->degree ?? '') ?><?= !empty($edu->field_of_study) ? ' in ' . esc($edu->field_of_study) : '' ?></b>
+                  <i><?= esc($edu->school ?? '') ?> &middot; <?= esc($edu->start_year ?? '') ?> &ndash; <?= esc($edu->end_year ?? 'Completed') ?></i>
                 </div>
               </div>
             <?php endforeach; ?>

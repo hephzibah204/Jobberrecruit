@@ -97,7 +97,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-dark">Campaign Template Mode (A)</label>
-                            <?php $modeA = $newsletter ? ($newsletter->template_mode ?: 'standard') : 'standard'; ?>
+                            <?php $modeA = ($newsletter->template_mode ?? '') ?: 'standard'; ?>
                             <select name="template_mode" id="n_template_mode" class="form-select form-select-sm" onchange="toggleNewsletterMode(this.value, 'A')">
                                 <option value="standard" <?= $modeA == 'standard' ? 'selected' : '' ?>>Standard (Themed Content)</option>
                                 <option value="html" <?= $modeA == 'html' ? 'selected' : '' ?>>Advanced HTML (Raw Code)</option>
@@ -105,7 +105,7 @@
                         </div>
                         <div class="col-md-6 d-none" id="mode_b_container" >
                             <label class="form-label fw-semibold text-dark">Campaign Template Mode (B)</label>
-                            <?php $modeB = $newsletter ? ($newsletter->template_mode_b ?: 'standard') : 'standard'; ?>
+                            <?php $modeB = ($newsletter->template_mode_b ?? '') ?: 'standard'; ?>
                             <select name="template_mode_b" id="n_template_mode_b" class="form-select form-select-sm" onchange="toggleNewsletterMode(this.value, 'B')">
                                 <option value="standard" <?= $modeB == 'standard' ? 'selected' : '' ?>>Standard (Themed Content)</option>
                                 <option value="html" <?= $modeB == 'html' ? 'selected' : '' ?>>Advanced HTML (Raw Code)</option>
@@ -125,7 +125,7 @@
                         </ul>
                     </div>
                     <label class="form-label fw-semibold text-dark">Variation A HTML Code</label>
-                    <textarea name="custom_html" id="n_custom_html" class="form-control font-monospace fs-12" rows="10" placeholder="<html>...</html>"><?= $newsletter ? esc($newsletter->custom_html) : '' ?></textarea>
+                    <textarea name="custom_html" id="n_custom_html" class="form-control font-monospace fs-12" rows="10" placeholder="<html>...</html>"><?= esc($newsletter->custom_html ?? '') ?></textarea>
                     <div class="mt-2 bg-light p-2 rounded border">
                         <label class="fs-11 fw-bold d-block mb-1 text-primary">Email Placeholders:</label>
                         <div class="d-flex flex-wrap gap-1">
@@ -139,7 +139,7 @@
 
                 <div id="html_editor_b" class="mb-3 d-none">
                     <label class="form-label fw-semibold text-dark">Variation B HTML Code</label>
-                    <textarea name="custom_html_b" id="n_custom_html_b" class="form-control font-monospace fs-12" rows="10" placeholder="<html>...</html>"><?= $newsletter ? esc($newsletter->custom_html_b) : '' ?></textarea>
+                    <textarea name="custom_html_b" id="n_custom_html_b" class="form-control font-monospace fs-12" rows="10" placeholder="<html>...</html>"><?= esc($newsletter->custom_html_b ?? '') ?></textarea>
                     <small class="text-muted">Placeholders: {{name}}, {{email}}, {{unsub_link}}</small>
                 </div>
 

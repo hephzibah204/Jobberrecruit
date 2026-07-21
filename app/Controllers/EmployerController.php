@@ -5805,7 +5805,10 @@ class EmployerController extends BaseController
         }
 
         $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
-        
+        if (!$employer) {
+            return redirect()->to('employer/profile')->with('error', 'Complete your company profile to view candidates.');
+        }
+
         // Check if unlocked
         $db = db_connect();
         $isUnlocked = $db->table('candidate_unlocks')
@@ -5832,6 +5835,8 @@ class EmployerController extends BaseController
             'user'       => $this->auth->user(),
             'employer'   => $employer,
             'candidate'  => $candidate,
+            'experience' => model(\App\Models\JobSeekerExperienceModel::class)->forSeeker((int) $id),
+            'education'  => model(\App\Models\JobSeekerEducationModel::class)->forSeeker((int) $id),
             'industries' => $industries,
             'isUnlocked' => $isUnlocked || $hasUnlimited,
             'hasUnlimited' => $hasUnlimited,

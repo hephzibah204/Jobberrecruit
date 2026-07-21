@@ -339,8 +339,8 @@ $taskLogo = !empty($employer->logo);
           $totalJobsCount = max(1, $totalJobs);
           $i = 0;
           foreach ($categoryCounts as $cat):
-            $catName = $cat->name ?? $cat['name'] ?? 'Other';
-            $catJobs = (int) ($cat->total ?? $cat['total'] ?? 0);
+            $catName = $cat->name ?? 'Other';
+            $catJobs = (int) ($cat->total ?? 0);
             $catShare = min(100, round(($catJobs / $totalJobsCount) * 100));
             $color = $catColors[$i % count($catColors)];
             $i++;
@@ -376,13 +376,13 @@ $taskLogo = !empty($employer->logo);
         <ul class="app-list">
           <?php
           foreach ($recentApplications as $app):
-            $title = $app->job_title ?? $app['job_title'] ?? 'Job';
+            $title = $app->job_title ?? 'Job';
             $words = explode(' ', preg_replace('/\s+/', ' ', trim($title)));
             $initials = count($words) >= 2
                 ? strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1))
                 : strtoupper(substr($title, 0, 2));
                 
-            $status = strtolower($app->status ?? $app['status'] ?? 'pending');
+            $status = strtolower($app->status ?? 'pending');
             $pillClass = 'pill--pending';
             if ($status === 'reviewed') {
                 $pillClass = 'pill--reviewed';
@@ -400,7 +400,7 @@ $taskLogo = !empty($employer->logo);
                 <div class="app-name"><?= esc($title) ?></div>
                 <div class="app-meta">
                   <svg aria-hidden="true"><use href="#i-calendar"/></svg>
-                  Applied <?= date('d M Y', strtotime($app->created_at ?? $app['created_at'] ?? 'now')) ?>
+                  Applied <?= date('d M Y', strtotime($app->created_at ?? 'now')) ?>
                 </div>
               </div>
               <span class="pill <?= $pillClass ?>"><?= ucfirst($status) ?></span>
@@ -536,7 +536,7 @@ $taskLogo = !empty($employer->logo);
 $hiredApps = [];
 if (!empty($recentApplications)) {
     foreach ($recentApplications as $app) {
-        $status = strtolower($app->status ?? $app['status'] ?? '');
+        $status = strtolower($app->status ?? '');
         if ($status === 'hired') {
             $hiredApps[] = $app;
         }
@@ -559,13 +559,13 @@ if (!empty($recentApplications)) {
       <ul class="app-list">
         <?php foreach ($hiredApps as $app): ?>
           <?php
-          $firstName = $app->first_name ?? $app['first_name'] ?? '';
-          $lastName = $app->last_name ?? $app['last_name'] ?? '';
+          $firstName = $app->first_name ?? '';
+          $lastName = $app->last_name ?? '';
           $fullName = trim($firstName . ' ' . $lastName);
           if (empty($fullName)) {
               $fullName = 'Candidate';
           }
-          $jobTitle = $app->job_title ?? $app['job_title'] ?? 'Job';
+          $jobTitle = $app->job_title ?? 'Job';
           ?>
           <li class="app-item">
             <span class="app-ava" aria-hidden="true"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span>

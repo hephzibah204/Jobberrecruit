@@ -15,7 +15,7 @@
             <!-- Start::header-element -->
             <div class="header-element">
                 <div class="horizontal-logo">
-                    <a href="<?= base_url('admin') ?>" class="header-logo">
+                    <a href="<?= base_url('admin/dashboard') ?>" class="header-logo">
                         <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="desktop-logo">
                         <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="toggle-logo">
                         <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="desktop-dark">
