@@ -156,6 +156,8 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     $routes->post('jobs/stop-featured/(:num)', 'EmployerController::stopFeatured/$1');
     $routes->post('jobs/toggle-anonymous/(:num)', 'EmployerController::toggleAnonymous/$1');
+    $routes->post('jobs/pause/(:num)', 'EmployerController::toggleJobStatus/$1');
+    $routes->get('jobs/export', 'EmployerController::exportJobs');
 
     // Applications
     $routes->get('applications', 'EmployerController::applications');

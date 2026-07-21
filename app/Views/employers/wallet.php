@@ -83,7 +83,7 @@ if (!empty($transactions)) {
       <p>Your transaction history will appear here once you make a payment. Fund your wallet or buy a job bundle to get started.</p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">
         <a href="#" data-bs-toggle="modal" data-bs-target="#fundWalletModal" class="emp-btn emp-btn-primary emp-btn-sm"><svg aria-hidden="true"><use href="#i-plus"/></svg> Make Your First Payment</a>
-        <a href="<?= base_url('employer-billing.html') ?>" class="emp-btn emp-btn-outline emp-btn-sm">View Plans</a>
+        <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline emp-btn-sm">View Plans</a>
       </div>
     </div>
   <?php else: ?>
@@ -188,7 +188,7 @@ if (!empty($transactions)) {
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
-<a href="<?= base_url('employer/billing') ?>" class="emp-btn emp-btn-outline">View Plans</a>
+<a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline">View Plans</a>
 <a href="#" data-bs-toggle="modal" data-bs-target="#fundWalletModal" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</a>
 <?= $this->endSection() ?>
 

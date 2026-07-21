@@ -2532,6 +2532,76 @@ class EmployerController extends BaseController
         ]);
     }
 
+    /**
+     * Pause (close) or reopen a job. Toggles status open <-> closed.
+     * A closed job drops out of the public listing (which filters status='open').
+     */
+    public function toggleJobStatus($id)
+    {
+        $user     = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+
+        $jobModel = model(JobModel::class);
+        $job      = $jobModel->find($id);
+
+        if (! $job || $job->employer_id !== ($employer->id ?? null)) {
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or not yours.');
+        }
+
+        $newStatus = (strtolower((string) $job->status) === 'open') ? 'closed' : 'open';
+        $jobModel->update($id, ['status' => $newStatus]);
+
+        $label = $newStatus === 'open' ? 'reopened' : 'paused';
+        return redirect()->to('employer/jobs')->with('success', "Job {$label} successfully.");
+    }
+
+    /**
+     * Export this employer's jobs as a CSV download.
+     */
+    public function exportJobs()
+    {
+        $user     = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+
+        if (! $employer) {
+            return redirect()->to('employer/profile')->with('error', 'Complete your company profile first.');
+        }
+
+        $jobs = model(JobModel::class)
+            ->where('employer_id', $employer->id)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $rows   = [];
+        $rows[] = ['ID', 'Title', 'Type', 'Status', 'Admin Status', 'Views', 'Deadline', 'Created'];
+        foreach ($jobs as $j) {
+            $rows[] = [
+                $j->id,
+                $j->title,
+                $j->job_type ?? '',
+                $j->status ?? '',
+                $j->admin_status ?? '',
+                (int) ($j->views ?? 0),
+                ! empty($j->application_deadline) ? date('Y-m-d', strtotime($j->application_deadline)) : '',
+                ! empty($j->created_at) ? date('Y-m-d H:i', strtotime($j->created_at)) : '',
+            ];
+        }
+
+        $fh = fopen('php://temp', 'r+');
+        foreach ($rows as $r) {
+            fputcsv($fh, $r);
+        }
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        $filename = 'jobs-export-' . date('Y-m-d') . '.csv';
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($csv);
+    }
+
     public function applications()
     {
         $user = $this->auth->user();

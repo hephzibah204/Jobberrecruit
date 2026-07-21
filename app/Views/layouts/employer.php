@@ -355,9 +355,9 @@ $pendingCount = $pendingApps ?? 0;
     <footer class="dash-foot">
       <span>&copy; <?= date('Y') ?> JobberRecruit &middot; Jobber Recruit Ltd</span>
       <nav aria-label="Footer links">
-        <a href="<?= base_url('help') ?>">Help Centre</a>
+        <a href="<?= base_url('faq') ?>">Help Centre</a>
         <a href="<?= base_url('privacy-policy') ?>">Privacy</a>
-        <a href="<?= base_url('terms-of-service') ?>">Terms</a>
+        <a href="<?= base_url('terms-and-conditions') ?>">Terms</a>
         <a href="<?= base_url('contact-us') ?>">Contact</a>
       </nav>
     </footer>

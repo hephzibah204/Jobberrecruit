@@ -239,9 +239,13 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                                     <a href="<?= base_url('employer/jobs/edit/' . esc($jobId)) ?>" class="ic-btn" aria-label="Edit job" title="Edit">
                                         <svg aria-hidden="true"><use href="#i-edit"/></svg>
                                     </a>
-                                    <a href="<?= base_url('employer/jobs/pause/' . esc($jobId)) ?>" class="ic-btn" aria-label="Pause job" title="Pause">
-                                        <svg aria-hidden="true"><use href="#i-pause"/></svg>
-                                    </a>
+                                    <?php $isOpen = strtolower((string) $statusVal) === 'open'; ?>
+                                    <form action="<?= base_url('employer/jobs/pause/' . esc($jobId)) ?>" method="post" class="d-inline" onsubmit="return confirm('<?= $isOpen ? 'Pause this job? It will be hidden from job seekers.' : 'Reopen this job so it appears in listings again?' ?>');">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="ic-btn" aria-label="<?= $isOpen ? 'Pause job' : 'Reopen job' ?>" title="<?= $isOpen ? 'Pause' : 'Reopen' ?>">
+                                            <svg aria-hidden="true"><use href="#<?= $isOpen ? 'i-pause' : 'i-refresh' ?>"/></svg>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
