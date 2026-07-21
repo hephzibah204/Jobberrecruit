@@ -460,3 +460,13 @@ span.text-muted,
   font-size: .78rem;
   letter-spacing: .02em;
 }
+
+/* Flat sidebar: font icons sized to match the old SVG icons */
+.main-menu i.side-menu__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+  width: 1.15rem;
+  text-align: center;
+  margin-inline-end: .625rem;
+  flex-shrink: 0;
+}

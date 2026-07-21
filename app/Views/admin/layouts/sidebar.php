@@ -41,236 +41,65 @@ function openIf(array $paths)
                     <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z"></path>
                 </svg>
             </div>
+            <?php
+            // Flat one-click menu: category headers with pages listed directly.
+            // match: 'exact' highlights only that URI, 'prefix' highlights sub-pages too.
+            $adminMenu = [
+                'Overview' => [
+                    ['Dashboard',           'admin/dashboard',              'ti-layout-dashboard',  'exact'],
+                ],
+                'Platform' => [
+                    ['Jobs',                'admin/jobs',                   'ti-briefcase',         'prefix'],
+                    ['Candidates',          'admin/candidates',             'ti-users',             'prefix'],
+                    ['Employers',           'admin/employers',              'ti-building',          'prefix'],
+                    ['Applications',        'admin/applications',           'ti-file-description',  'prefix'],
+                    ['Users',               'admin/users',                  'ti-user-cog',          'prefix'],
+                ],
+                'Taxonomy' => [
+                    ['Categories',          'admin/categories',             'ti-category',          'exact'],
+                    ['Industries',          'admin/industries',             'ti-topology-star-3',   'exact'],
+                    ['Locations',           'admin/locations',              'ti-map-pin',           'exact'],
+                ],
+                'Learning' => [
+                    ['Courses',             'admin/elearning',              'ti-book',              'exact'],
+                    ['Certificates',        'admin/elearning/certificates', 'ti-certificate',       'prefix'],
+                    ['Webinars',            'admin/webinars',               'ti-device-desktop',    'prefix'],
+                    ['Aptitude Tests',      'admin/aptitude',               'ti-brain',             'prefix'],
+                ],
+                'Content' => [
+                    ['Blog',                'admin/blogs',                  'ti-news',              'prefix'],
+                    ['Testimonials',        'admin/testimonials',           'ti-message-star',      'exact'],
+                    ['Newsletters',         'admin/newsletters',            'ti-mail',              'prefix'],
+                    ['Chatbot',             'admin/chatbot',                'ti-message-chatbot',   'exact'],
+                ],
+                'Finance' => [
+                    ['Plans',               'admin/plans',                  'ti-crown',             'prefix'],
+                    ['Bundles',             'admin/bundles',                'ti-packages',          'exact'],
+                    ['Affiliates',          'admin/affiliate/settings',     'ti-share',             'exact'],
+                ],
+                'System' => [
+                    ['Feature Management',  'admin/features',               'ti-adjustments',       'exact'],
+                    ['CV Reviews',          'admin/cv-reviews',             'ti-file-text',         'prefix'],
+                    ['Reports',             'admin/reports',                'ti-flag',              'prefix'],
+                    ['Settings',            'admin/settings',               'ti-settings',          'exact'],
+                ],
+            ];
+            ?>
             <ul class="main-menu">
-
-                <!-- OVERVIEW -->
-                <li class="slide__category">
-                    <span class="category-name">Overview</span>
-                </li>
-                <li class="slide <?= isExact('admin/dashboard') ?>">
-                    <a href="<?= base_url('admin/dashboard') ?>" class="side-menu__item <?= isExact('admin/dashboard') ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <path d="M128,24,24,104v112a8,8,0,0,0,8,8H96V144h64v80h64a8,8,0,0,0,8-8V104Z" opacity="0.2" />
-                            <path d="M128,24,24,104v112a8,8,0,0,0,8,8H96V144h64v80h64a8,8,0,0,0,8-8V104Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">Dashboard</span>
-                    </a>
-                </li>
-
-                <!-- PLATFORM -->
-                <li class="slide__category">
-                    <span class="category-name">Platform</span>
-                </li>
-                <li class="slide has-sub <?= openIf(['admin/jobs', 'admin/candidates', 'admin/employers', 'admin/applications', 'admin/users']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/jobs', 'admin/candidates', 'admin/employers', 'admin/applications', 'admin/users']) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <circle cx="128" cy="128" r="96" opacity="0.2" />
-                            <circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <path d="M64,152a64,64,0,0,1,128,0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <circle cx="128" cy="96" r="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">Platform</span>
-                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
-                    </a>
-                    <ul class="slide-menu child1">
-                        <li class="slide side-menu__label1">
-                            <a href="javascript:void(0)">Platform</a>
+                <?php foreach ($adminMenu as $category => $items): ?>
+                    <li class="slide__category">
+                        <span class="category-name"><?= esc($category) ?></span>
+                    </li>
+                    <?php foreach ($items as [$label, $path, $icon, $match]): ?>
+                        <?php $active = $match === 'prefix' ? (isStartsWith($path) ? 'active' : '') : isExact($path); ?>
+                        <li class="slide <?= $active ?>">
+                            <a href="<?= base_url($path) ?>" class="side-menu__item <?= $active ?>">
+                                <i class="ti <?= $icon ?> side-menu__icon"></i>
+                                <span class="side-menu__label"><?= esc($label) ?></span>
+                            </a>
                         </li>
-                        <li class="slide <?= isStartsWith('admin/jobs') ? 'active' : '' ?>">
-                            <a href="<?= base_url('admin/jobs') ?>" class="side-menu__item <?= isStartsWith('admin/jobs') ? 'active' : '' ?>">Jobs</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/candidates') ?>">
-                            <a href="<?= base_url('admin/candidates') ?>" class="side-menu__item <?= isExact('admin/candidates') ?>">Candidates</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/employers') ?>">
-                            <a href="<?= base_url('admin/employers') ?>" class="side-menu__item <?= isExact('admin/employers') ?>">Employers</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/applications') ?>">
-                            <a href="<?= base_url('admin/applications') ?>" class="side-menu__item <?= isExact('admin/applications') ?>">Applications</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/users') ?>">
-                            <a href="<?= base_url('admin/users') ?>" class="side-menu__item <?= isExact('admin/users') ?>">Users</a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- TAXONOMY -->
-                <li class="slide__category">
-                    <span class="category-name">Taxonomy</span>
-                </li>
-                <li class="slide has-sub <?= openIf(['admin/categories', 'admin/industries', 'admin/locations']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/categories', 'admin/industries', 'admin/locations']) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <circle cx="64" cy="64" r="24" opacity="0.2" />
-                            <circle cx="192" cy="192" r="24" opacity="0.2" />
-                            <circle cx="64" cy="64" r="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <circle cx="192" cy="192" r="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <circle cx="192" cy="64" r="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="88" y1="64" x2="168" y2="64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="192" y1="88" x2="192" y2="168" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">Taxonomy</span>
-                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
-                    </a>
-                    <ul class="slide-menu child1">
-                        <li class="slide side-menu__label1">
-                            <a href="javascript:void(0)">Taxonomy</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/categories') ?>">
-                            <a href="<?= base_url('admin/categories') ?>" class="side-menu__item <?= isExact('admin/categories') ?>">Categories</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/industries') ?>">
-                            <a href="<?= base_url('admin/industries') ?>" class="side-menu__item <?= isExact('admin/industries') ?>">Industries</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/locations') ?>">
-                            <a href="<?= base_url('admin/locations') ?>" class="side-menu__item <?= isExact('admin/locations') ?>">Locations</a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- LEARNING -->
-                <li class="slide__category">
-                    <span class="category-name">Learning</span>
-                </li>
-
-                <li class="slide has-sub <?= openIf(['admin/elearning', 'admin/webinars', 'admin/aptitude']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/elearning', 'admin/webinars', 'admin/aptitude']) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <path d="M216,40H40a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H216a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z" opacity="0.2" />
-                            <path d="M216,40H40a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H216a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">Learning</span>
-                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
-                    </a>
-                    <ul class="slide-menu child1">
-                        <li class="slide side-menu__label1">
-                            <a href="javascript:void(0)">Learning</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/elearning') && !(isset($_GET['create']) && $_GET['create'] == '1') ? 'active' : '' ?>">
-                            <a href="<?= base_url('admin/elearning') ?>" class="side-menu__item <?= isExact('admin/elearning') && !(isset($_GET['create']) && $_GET['create'] == '1') ? 'active' : '' ?>">Courses</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/elearning/certificates') ?>">
-                            <a href="<?= base_url('admin/elearning/certificates') ?>" class="side-menu__item <?= isExact('admin/elearning/certificates') ?>">Certificates</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/elearning/certificates/settings') ?>">
-                            <a href="<?= base_url('admin/elearning/certificates/settings') ?>" class="side-menu__item <?= isExact('admin/elearning/certificates/settings') ?>">Certificate Settings</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/elearning/certificates/editor') ?>">
-                            <a href="<?= base_url('admin/elearning/certificates/editor') ?>" class="side-menu__item <?= isExact('admin/elearning/certificates/editor') ?>">Certificate Layout Editor</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/webinars') && !(isset($_GET['create']) && $_GET['create'] == '1') ? 'active' : '' ?>">
-                            <a href="<?= base_url('admin/webinars') ?>" class="side-menu__item <?= isExact('admin/webinars') && !(isset($_GET['create']) && $_GET['create'] == '1') ? 'active' : '' ?>">Webinars</a>
-                        </li>
-                        <li class="slide <?= isStartsWith('admin/aptitude') ? 'active' : '' ?>">
-                            <a href="<?= base_url('admin/aptitude') ?>" class="side-menu__item <?= isStartsWith('admin/aptitude') ? 'active' : '' ?>">Aptitude Tests</a>
-                        </li>
-                    </ul>
-                </li>
-                <!-- CONTENT -->
-                <li class="slide__category">
-                    <span class="category-name">Content</span>
-                </li>
-                <li class="slide has-sub <?= openIf(['admin/blogs', 'admin/testimonials', 'admin/newsletters', 'admin/chatbot']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/blogs', 'admin/testimonials', 'admin/newsletters', 'admin/chatbot']) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <polygon points="152 32 152 88 208 88 152 32" opacity="0.2" />
-                            <path d="M200,224H56a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h96l56,56V216A8,8,0,0,1,200,224Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <polyline points="152 32 152 88 208 88" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">Content</span>
-                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
-                    </a>
-                    <ul class="slide-menu child1">
-                        <li class="slide side-menu__label1">
-                            <a href="javascript:void(0)">Content</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/blogs') ?>">
-                            <a href="<?= base_url('admin/blogs') ?>" class="side-menu__item <?= isExact('admin/blogs') ?>">Blog</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/testimonials') ?>">
-                            <a href="<?= base_url('admin/testimonials') ?>" class="side-menu__item <?= isExact('admin/testimonials') ?>">Testimonials</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/newsletters') ?>">
-                            <a href="<?= base_url('admin/newsletters') ?>" class="side-menu__item <?= isExact('admin/newsletters') ?>">Newsletters</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/chatbot') ?>">
-                            <a href="<?= base_url('admin/chatbot') ?>" class="side-menu__item <?= isExact('admin/chatbot') ?>">Chatbot</a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- FINANCE -->
-                <li class="slide__category">
-                    <span class="category-name">Finance</span>
-                </li>
-                <li class="slide has-sub <?= openIf(['admin/plans', 'admin/bundles', 'admin/affiliate/settings']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/plans', 'admin/bundles', 'admin/affiliate/settings']) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <circle cx="128" cy="128" r="96" opacity="0.2" />
-                            <path d="M128,88a24,24,0,0,1,24,24c0,16-24,24-24,24V88Zm0,80V136s24,8,24,24A24,24,0,0,1,128,168Z" opacity="0.2" />
-                            <circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <path d="M128,88a24,24,0,0,1,24,24c0,16-24,24-24,24V88Zm0,80V136s24,8,24,24A24,24,0,0,1,128,168Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="128" y1="72" x2="128" y2="88" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="128" y1="168" x2="128" y2="184" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">Finance</span>
-                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
-                    </a>
-                    <ul class="slide-menu child1">
-                        <li class="slide side-menu__label1">
-                            <a href="javascript:void(0)">Finance</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/plans') ?>">
-                            <a href="<?= base_url('admin/plans') ?>" class="side-menu__item <?= isExact('admin/plans') ?>">Plans</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/bundles') ?>">
-                            <a href="<?= base_url('admin/bundles') ?>" class="side-menu__item <?= isExact('admin/bundles') ?>">Bundles</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/affiliate/settings') ?>">
-                            <a href="<?= base_url('admin/affiliate/settings') ?>" class="side-menu__item <?= isExact('admin/affiliate/settings') ?>">Affiliates</a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- SYSTEM -->
-                <li class="slide__category">
-                    <span class="category-name">System</span>
-                </li>
-                <li class="slide has-sub <?= openIf(['admin/features', 'admin/cv-reviews', 'admin/reports', 'admin/settings']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/features', 'admin/cv-reviews', 'admin/reports', 'admin/settings']) ?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <circle cx="128" cy="128" r="48" opacity="0.2" />
-                            <circle cx="128" cy="128" r="48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <path d="M197.4,113.5a16.2,16.2,0,0,0,14.6-21.5L200.7,60a16.2,16.2,0,0,0-25.1-6.1L156.4,68.1a16.2,16.2,0,0,1-23.3,0l-1.3-1.3a16.2,16.2,0,0,1,0-23.3L144.1,23.3a16.2,16.2,0,0,0-6.1-25.1L106,6.9a16.2,16.2,0,0,0-21.5,14.6L82.1,43.6a16.2,16.2,0,0,1-23.3,0l-1.3-1.3a16.2,16.2,0,0,1,0-23.3L70.1,6.9a16.2,16.2,0,0,0-25.1-6.1L13,13.5a16.2,16.2,0,0,0-6.1,25.1L23.3,56.4a16.2,16.2,0,0,1,0,23.3l-1.3,1.3a16.2,16.2,0,0,1-23.3,0L6.9,68.1A16.2,16.2,0,0,0,.8,93.2L13,126a16.2,16.2,0,0,0,25.1,6.1L56.4,113.5a16.2,16.2,0,0,1,23.3,0l1.3,1.3a16.2,16.2,0,0,1,0,23.3L68.1,156.4a16.2,16.2,0,0,0,6.1,25.1L106,200.7a16.2,16.2,0,0,0,21.5-14.6l2.4-22.1a16.2,16.2,0,0,1,23.3,0l1.3,1.3a16.2,16.2,0,0,1,0,23.3l-12.3,12.3a16.2,16.2,0,0,0,6.1,25.1L186,220.7a16.2,16.2,0,0,0,21.5-14.6l2.4-22.1a16.2,16.2,0,0,1,23.3,0l1.3,1.3a16.2,16.2,0,0,1,0,23.3l-12.3,12.3a16.2,16.2,0,0,0,6.1,25.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <span class="side-menu__label">System</span>
-                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
-                    </a>
-                    <ul class="slide-menu child1">
-                        <li class="slide side-menu__label1">
-                            <a href="javascript:void(0)">System</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/features') ?>">
-                            <a href="<?= base_url('admin/features') ?>" class="side-menu__item <?= isExact('admin/features') ?>">Feature Management</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/cv-reviews') ?>">
-                            <a href="<?= base_url('admin/cv-reviews') ?>" class="side-menu__item <?= isExact('admin/cv-reviews') ?>">CV Reviews</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/reports') ?>">
-                            <a href="<?= base_url('admin/reports') ?>" class="side-menu__item <?= isExact('admin/reports') ?>">Reports</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/settings') ?>">
-                            <a href="<?= base_url('admin/settings') ?>" class="side-menu__item <?= isExact('admin/settings') ?>">Settings</a>
-                        </li>
-                    </ul>
-                </li>
+                    <?php endforeach; ?>
+                <?php endforeach; ?>
             </ul>
 
             <ul class="doublemenu_bottom-menu main-menu mb-0 border-top">
