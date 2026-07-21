@@ -15,7 +15,7 @@
   --jr-gold: #F08F1A;
   --jr-gold-hover: #D47E0F;
   --jr-gold-bright: #FFB558; /* accent tone legible on the navy sidebar */
-  --jr-sidebar-muted: #59B7FF; /* vivid sky-blue for small text on the navy sidebar */
+  --jr-sidebar-muted: #BCD0E5; /* light blue-white for small text on the navy sidebar (~10:1) */
   --jr-light-blue: #E6F0F9;
   --jr-text: #141926;
   --jr-muted: #5b6577;
@@ -68,6 +68,8 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
   letter-spacing: 1.2px !important;
   font-weight: 700 !important;
   opacity: 1;
+  /* subtle dark edge for crispness on the gradient; a real outline smudges 10px text */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 /* Sidebar menu items */
