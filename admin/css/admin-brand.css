@@ -14,6 +14,8 @@
   --jr-blue: #0D609E;
   --jr-gold: #F08F1A;
   --jr-gold-hover: #D47E0F;
+  --jr-gold-bright: #FFB558; /* accent tone legible on the navy sidebar */
+  --jr-sidebar-muted: #A8BDD6; /* small-text color on the navy sidebar */
   --jr-light-blue: #E6F0F9;
   --jr-text: #141926;
   --jr-muted: #5b6577;
@@ -58,13 +60,14 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
 }
 
 .slide__category .category-name {
-  color: var(--jr-gold) !important;
+  /* small uppercase text needs a light tone on navy; orange muddied here */
+  color: var(--jr-sidebar-muted) !important;
   font-family: 'Sora', sans-serif !important;
   text-transform: uppercase !important;
   font-size: 10px !important;
-  letter-spacing: 1px !important;
+  letter-spacing: 1.2px !important;
   font-weight: 700 !important;
-  opacity: 0.8;
+  opacity: 1;
 }
 
 /* Sidebar menu items */
@@ -84,7 +87,7 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
 
 .side-menu__item:hover .side-menu__icon,
 .side-menu__item:hover .side-menu__angle {
-  color: var(--jr-gold) !important;
+  color: var(--jr-gold-bright) !important;
 }
 
 /* Active sidebar item state */
@@ -92,13 +95,13 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
 .side-menu__item.active {
   background: rgba(13, 96, 158, 0.15) !important;
   color: #fff !important;
-  border-left: 3px solid var(--jr-gold) !important;
+  border-left: 3px solid var(--jr-gold-bright) !important;
   font-weight: 600 !important;
 }
 
 .slide.active > .side-menu__item .side-menu__icon,
 .side-menu__item.active .side-menu__icon {
-  color: var(--jr-gold) !important;
+  color: var(--jr-gold-bright) !important;
 }
 
 .side-menu__icon {
@@ -122,7 +125,7 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
 }
 
 .slide-menu.child1 .side-menu__item.active {
-  border-left: 3px solid var(--jr-gold) !important;
+  border-left: 3px solid var(--jr-gold-bright) !important;
   background: rgba(255, 255, 255, 0.03) !important;
 }
 
