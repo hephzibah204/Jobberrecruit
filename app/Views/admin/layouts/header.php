@@ -34,10 +34,12 @@
             <div class="header-element  header-search header-search-content d-md-block d-none">
                 <!-- Start::header-link -->
                 <img src="<?= base_url('images/logo.png'); ?>" alt="logo" class="header-logo-1">
-                <input type="text" class="header-search-bar form-control bg-white" id="header-search" placeholder="Search" spellcheck=false autocomplete="off" autocapitalize="off" style="display: none;">
-                <a href="javascript:void(0);" class="header-search-icon border-0" style="display: none;">
-                    <i class="bi bi-search fs-12 mb-1"></i>
-                </a>
+                <div class="admin-global-search position-relative d-inline-block align-middle ms-3">
+                    <input type="text" class="header-search-bar form-control" id="admin-global-search-input"
+                           placeholder="Search jobs, candidates, employers…" spellcheck="false"
+                           autocomplete="off" autocapitalize="off" aria-label="Global admin search">
+                    <div class="admin-global-search-results dropdown-menu shadow" id="admin-global-search-results" role="listbox"></div>
+                </div>
                 <!-- End::header-link -->
             </div>
 
@@ -125,39 +127,43 @@
             <!-- Start::header-element -->
             <li class="header-element dropdown">
                 <!-- Start::header-link|dropdown-toggle -->
+                <?php
+                    if (!isset($user)) {
+                        $user = auth()->loggedIn() ? auth()->user() : null;
+                    }
+                    if (!isset($admin) && $user !== null) {
+                        $adminModel = model(\App\Models\AdminModel::class);
+                        $admin = $adminModel->where('user_id', $user->id)->first();
+                    }
+                    $adminDisplayName = $admin->full_name ?? $user->username ?? 'Admin';
+                    $adminInitials = strtoupper(mb_substr($adminDisplayName, 0, 1));
+                    if (preg_match('/\s+(\S)/u', $adminDisplayName, $mIni)) {
+                        $adminInitials .= strtoupper($mIni[1]);
+                    }
+                ?>
                 <a href="javascript:void(0);" class="header-link dropdown-toggle" id="mainHeaderProfile" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                    <div>
-                        <img src="<?= base_url('images/favicon.png'); ?>" alt="img" class="header-link-icon">
-                    </div>
+                    <span class="avatar avatar-sm avatar-rounded bg-primary text-fixed-white fw-semibold admin-avatar-initials"><?= esc($adminInitials) ?></span>
                 </a>
                 <!-- End::header-link|dropdown-toggle -->
                 <div class="main-header-dropdown dropdown-menu pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end" aria-labelledby="mainHeaderProfile">
                     <div class="p-3 bg-primary text-fixed-white">
                         <div class="d-flex align-items-center justify-content-between">
                             <p class="mb-0 fs-16">Profile</p>
-                            <a href="javascript:void(0);" class="text-fixed-white"><i class="ti ti-settings-cog"></i></a>
+                            <a href="<?= base_url('admin/profile') ?>" class="text-fixed-white" aria-label="Account settings"><i class="ti ti-settings-cog"></i></a>
                         </div>
                     </div>
                     <div class="dropdown-divider"></div>
                     <div class="p-3">
                         <div class="d-flex align-items-start gap-2">
                             <div class="lh-1">
-                                <span class="avatar avatar-sm bg-primary-transparent avatar-rounded">
-                                    <img src="<?= base_url('images/favicon.png'); ?>" alt="">
-                                </span>
+                                <span class="avatar avatar-sm bg-primary text-fixed-white avatar-rounded fw-semibold admin-avatar-initials"><?= esc($adminInitials) ?></span>
                             </div>
                             <div>
-                                <?php 
-                                    if (!isset($user)) {
-                                        $user = auth()->loggedIn() ? auth()->user() : null;
-                                    }
-                                    if (!isset($admin) && $user !== null) {
-                                        $adminModel = model(\App\Models\AdminModel::class);
-                                        $admin = $adminModel->where('user_id', $user->id)->first();
-                                    }
-                                ?>
-                                <span class="d-block fw-semibold lh-1"><?= esc($admin->full_name ?? $user->username ?? 'Admin') ?></span>
+                                <span class="d-block fw-semibold lh-1"><?= esc($adminDisplayName) ?></span>
                                 <span class="text-muted fs-12"><?= esc($user->email ?? '') ?></span>
+                                <?php if (!empty($admin->role)): ?>
+                                    <span class="badge bg-primary-transparent fs-10 mt-1"><?= esc(ucwords(str_replace('_', ' ', $admin->role))) ?></span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -176,13 +182,10 @@
                         <li>
                             <ul class="list-unstyled mb-0 sub-list">
                                 <li>
-                                    <a class="dropdown-item d-flex align-items-center" href="javascript:void(0);"><i class="ti ti-lifebuoy me-2 fs-18"></i>Support</a>
+                                    <a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/features') ?>"><i class="ti ti-adjustments me-2 fs-18"></i>Feature Management</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item d-flex align-items-center" href="javascript:void(0);"><i class="ti ti-bolt me-2 fs-18"></i>Activity Log</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item d-flex align-items-center" href="javascript:void(0);"><i class="ti ti-calendar me-2 fs-18"></i>Events</a>
+                                    <a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/settings') ?>"><i class="ti ti-settings me-2 fs-18"></i>Site Settings</a>
                                 </li>
                             </ul>
                         </li>
@@ -200,3 +203,75 @@
 
 </header>
 <!-- /app-header -->
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        var input = document.getElementById('admin-global-search-input');
+        var panel = document.getElementById('admin-global-search-results');
+        if (!input || !panel) return;
+
+        var timer = null;
+        var activeIndex = -1;
+
+        function close() { panel.classList.remove('show'); panel.innerHTML = ''; activeIndex = -1; }
+
+        function render(results) {
+            if (!results.length) {
+                panel.innerHTML = '<div class="dropdown-item-text text-muted fs-12">No matches</div>';
+                panel.classList.add('show');
+                return;
+            }
+            var html = '';
+            var lastGroup = null;
+            results.forEach(function (r, i) {
+                if (r.group !== lastGroup) {
+                    html += '<h6 class="dropdown-header py-1">' + r.group + '</h6>';
+                    lastGroup = r.group;
+                }
+                html += '<a class="dropdown-item d-flex flex-column py-1" data-idx="' + i + '" href="' + r.url + '">'
+                      + '<span class="fw-semibold fs-13 text-truncate">' + escapeHtml(r.label) + '</span>'
+                      + (r.sub ? '<span class="text-muted fs-11 text-truncate">' + escapeHtml(r.sub) + '</span>' : '')
+                      + '</a>';
+            });
+            panel.innerHTML = html;
+            panel.classList.add('show');
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            var q = input.value.trim();
+            if (q.length < 2) { close(); return; }
+            timer = setTimeout(function () {
+                fetch('<?= base_url('admin/search') ?>?q=' + encodeURIComponent(q), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { render(data.results || []); })
+                .catch(function () { close(); });
+            }, 250);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            var items = panel.querySelectorAll('.dropdown-item');
+            if (!items.length) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, items.length - 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); }
+            else if (e.key === 'Enter' && activeIndex >= 0) { e.preventDefault(); items[activeIndex].click(); return; }
+            else if (e.key === 'Escape') { close(); return; }
+            else { return; }
+            items.forEach(function (el, i) { el.classList.toggle('active', i === activeIndex); });
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!panel.contains(e.target) && e.target !== input) close();
+        });
+    });
+})();
+</script>

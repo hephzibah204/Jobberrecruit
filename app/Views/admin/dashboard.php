@@ -30,6 +30,7 @@
                                 <?= number_format($totalEmployers) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-primary-transparent text-primary rounded-circle kpi-icon"><i class="ti ti-building fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -46,6 +47,7 @@
                                 <?= number_format($totalCandidates) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-success-transparent text-success rounded-circle kpi-icon"><i class="ti ti-users fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -62,6 +64,7 @@
                                 <?= number_format($totalJobs) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-warning-transparent text-warning rounded-circle kpi-icon"><i class="ti ti-briefcase fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -78,6 +81,7 @@
                                 <?= number_format($totalApplications) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-info-transparent text-info rounded-circle kpi-icon"><i class="ti ti-file-description fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -94,6 +98,7 @@
                                 <?= number_format($activeSubscribers) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-danger-transparent text-danger rounded-circle kpi-icon"><i class="ti ti-crown fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -101,6 +106,48 @@
 
     </div>
     <!-- End:: row-1 -->
+
+    <!-- Start:: Needs attention queue -->
+    <?php
+    $attention = $attention ?? [];
+    $attentionTotal = array_sum(array_column($attention, 'count'));
+    ?>
+    <div class="card custom-card mb-4 attention-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="card-title mb-0">
+                <i class="ti ti-inbox me-1"></i> Needs Attention
+            </div>
+            <?php if ($attentionTotal > 0): ?>
+                <span class="badge bg-danger-transparent text-danger fw-semibold"><?= number_format($attentionTotal) ?> pending</span>
+            <?php else: ?>
+                <span class="badge bg-success-transparent text-success fw-semibold">All clear</span>
+            <?php endif; ?>
+        </div>
+        <div class="card-body py-3">
+            <?php if ($attentionTotal === 0): ?>
+                <p class="text-muted mb-0"><i class="ti ti-circle-check me-1 text-success"></i>Nothing is waiting on you — approvals, reports, and moderation queues are empty.</p>
+            <?php else: ?>
+                <div class="row gy-2">
+                    <?php foreach ($attention as $item): ?>
+                        <?php if ($item['count'] < 1) continue; ?>
+                        <div class="col-xl-2dot4 col-lg-4 col-md-6 col-12">
+                            <a href="<?= $item['url'] ?>" class="attention-item d-flex align-items-center gap-2 p-2 rounded border h-100">
+                                <span class="avatar avatar-sm bg-warning-transparent text-warning rounded-circle flex-shrink-0">
+                                    <i class="ti <?= esc($item['icon']) ?> fs-16"></i>
+                                </span>
+                                <span class="flex-fill lh-sm">
+                                    <b class="d-block fs-15"><?= number_format($item['count']) ?></b>
+                                    <span class="text-muted fs-11"><?= esc($item['label']) ?></span>
+                                </span>
+                                <i class="ti ti-chevron-right text-muted"></i>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <!-- End:: Needs attention queue -->
 
     <!-- Start:: Quick Actions -->
     <div class="row mb-4 gy-3">

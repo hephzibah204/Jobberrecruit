@@ -100,8 +100,8 @@ function openIf(array $paths)
                 <li class="slide__category">
                     <span class="category-name">Taxonomy</span>
                 </li>
-                <li class="slide has-sub <?= openIf(['admin/categories', 'admin/industries', 'admin/locations', 'admin/qualifications']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/categories', 'admin/industries', 'admin/locations', 'admin/qualifications']) ?>">
+                <li class="slide has-sub <?= openIf(['admin/categories', 'admin/industries', 'admin/locations']) ?>">
+                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/categories', 'admin/industries', 'admin/locations']) ?>">
                         <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
                             <rect width="256" height="256" fill="none" />
                             <circle cx="64" cy="64" r="24" opacity="0.2" />
@@ -127,9 +127,6 @@ function openIf(array $paths)
                         </li>
                         <li class="slide <?= isExact('admin/locations') ?>">
                             <a href="<?= base_url('admin/locations') ?>" class="side-menu__item <?= isExact('admin/locations') ?>">Locations</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/qualifications') ?>">
-                            <a href="<?= base_url('admin/qualifications') ?>" class="side-menu__item <?= isExact('admin/qualifications') ?>">Qualifications</a>
                         </li>
                     </ul>
                 </li>
@@ -211,8 +208,8 @@ function openIf(array $paths)
                 <li class="slide__category">
                     <span class="category-name">Finance</span>
                 </li>
-                <li class="slide has-sub <?= openIf(['admin/plans', 'admin/subscriptions', 'admin/transactions', 'admin/bundles', 'admin/affiliate/settings']) ?>">
-                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/plans', 'admin/subscriptions', 'admin/transactions', 'admin/bundles', 'admin/affiliate/settings']) ?>">
+                <li class="slide has-sub <?= openIf(['admin/plans', 'admin/bundles', 'admin/affiliate/settings']) ?>">
+                    <a href="javascript:void(0);" class="side-menu__item <?= openIf(['admin/plans', 'admin/bundles', 'admin/affiliate/settings']) ?>">
                         <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
                             <rect width="256" height="256" fill="none" />
                             <circle cx="128" cy="128" r="96" opacity="0.2" />
@@ -231,12 +228,6 @@ function openIf(array $paths)
                         </li>
                         <li class="slide <?= isExact('admin/plans') ?>">
                             <a href="<?= base_url('admin/plans') ?>" class="side-menu__item <?= isExact('admin/plans') ?>">Plans</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/subscriptions') ?>">
-                            <a href="<?= base_url('admin/subscriptions') ?>" class="side-menu__item <?= isExact('admin/subscriptions') ?>">Subscriptions</a>
-                        </li>
-                        <li class="slide <?= isExact('admin/transactions') ?>">
-                            <a href="<?= base_url('admin/transactions') ?>" class="side-menu__item <?= isExact('admin/transactions') ?>">Transactions</a>
                         </li>
                         <li class="slide <?= isExact('admin/bundles') ?>">
                             <a href="<?= base_url('admin/bundles') ?>" class="side-menu__item <?= isExact('admin/bundles') ?>">Bundles</a>

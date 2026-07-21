@@ -16,9 +16,8 @@
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title><?= esc($title ?? 'Dashboard') ?> | JobberRecruit Admin</title>
-    <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
-    <meta name="Author" content="Spruko Technologies Private Limited">
-    <meta name="keywords" content="admin dashboard html,admin html template,admin panel bootstrap template,admin panel html template,admin template html,bootstrap admin panel,bootstrap html template,bootstrap template,bootstrap with html,dashboard html template,dashboards ui,html admin dashboard,html bootstrap,html dashboard template,html template">
+    <meta name="description" content="JobberRecruit administration panel">
+    <meta name="robots" content="noindex, nofollow">
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.png'); ?>" type="image/png">

@@ -248,10 +248,46 @@ class AdminController extends BaseController
             $monthly[(int)$row->m] = (int)$row->total;
         }
 
+        // Items awaiting an admin decision, surfaced as the "Needs attention" queue
+        $db = \Config\Database::connect();
+        $attention = [
+            'jobs' => [
+                'label' => 'Jobs awaiting approval',
+                'count' => $this->jobModel->where('admin_status', 'pending')->countAllResults(),
+                'url'   => base_url('admin/jobs'),
+                'icon'  => 'ti-briefcase',
+            ],
+            'documents' => [
+                'label' => 'Employer documents to verify',
+                'count' => (int) $db->table('employer_documents')->where('status', 'pending')->countAllResults(),
+                'url'   => base_url('admin/employers'),
+                'icon'  => 'ti-file-certificate',
+            ],
+            'reports' => [
+                'label' => 'Job reports to resolve',
+                'count' => (int) $db->table('job_reports')->where('status', 'pending')->countAllResults(),
+                'url'   => base_url('admin/reports'),
+                'icon'  => 'ti-flag',
+            ],
+            'cv_reviews' => [
+                'label' => 'CV reviews in queue',
+                'count' => (int) $db->table('cv_reviews')->where('status', 'pending')->countAllResults(),
+                'url'   => base_url('admin/cv-reviews'),
+                'icon'  => 'ti-file-text',
+            ],
+            'testimonials' => [
+                'label' => 'Testimonials to moderate',
+                'count' => (int) $db->table('testimonials')->where('status', 'pending')->countAllResults(),
+                'url'   => base_url('admin/testimonials'),
+                'icon'  => 'ti-message-star',
+            ],
+        ];
+
         $data = [
             'title' => 'Dashboard',
             'user' => $this->auth->user(),
             'admin' => $this->admin,
+            'attention' => $attention,
             'totalEmployers'    => $this->employerModel->countAllResults(),
             'totalCandidates'   => $this->jobSeekerModel->countAllResults(),
             'totalJobs'         => $this->jobModel->countAllResults(),
@@ -322,6 +358,68 @@ class AdminController extends BaseController
             })(),
         ];
         return view('admin/dashboard', $data);
+    }
+
+    /**
+     * Global admin search (header search bar) — returns grouped JSON results.
+     */
+    public function globalSearch()
+    {
+        $q = trim((string) $this->request->getGet('q'));
+        if (mb_strlen($q) < 2) {
+            return $this->response->setJSON(['results' => []]);
+        }
+
+        $db = \Config\Database::connect();
+
+        $jobs = $db->table('jobs')
+            ->select('jobs.id, jobs.title, jobs.status, employers.company_name')
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->like('jobs.title', $q)
+            ->orderBy('jobs.created_at', 'DESC')
+            ->get(5)->getResult();
+
+        $candidates = $db->table('job_seekers')
+            ->select("job_seekers.id, job_seekers.full_name, ai.secret AS email")
+            ->join("auth_identities ai", "ai.user_id = job_seekers.user_id AND ai.type = 'email_password'", 'left')
+            ->groupStart()->like('job_seekers.full_name', $q)->orLike('ai.secret', $q)->groupEnd()
+            ->orderBy('job_seekers.id', 'DESC')
+            ->get(5)->getResult();
+
+        $employers = $db->table('employers')
+            ->select("employers.id, employers.company_name, ai.secret AS email")
+            ->join("auth_identities ai", "ai.user_id = employers.user_id AND ai.type = 'email_password'", 'left')
+            ->groupStart()->like('employers.company_name', $q)->orLike('ai.secret', $q)->groupEnd()
+            ->orderBy('employers.id', 'DESC')
+            ->get(5)->getResult();
+
+        $results = [];
+        foreach ($jobs as $j) {
+            $results[] = [
+                'group' => 'Jobs',
+                'label' => $j->title,
+                'sub'   => trim(($j->company_name ?? '') . ($j->status ? " · {$j->status}" : '')),
+                'url'   => base_url('admin/jobs/view/' . $j->id),
+            ];
+        }
+        foreach ($candidates as $c) {
+            $results[] = [
+                'group' => 'Candidates',
+                'label' => $c->full_name ?: ($c->email ?? 'Candidate #' . $c->id),
+                'sub'   => $c->email ?? '',
+                'url'   => base_url('admin/candidates/view/' . $c->id),
+            ];
+        }
+        foreach ($employers as $e) {
+            $results[] = [
+                'group' => 'Employers',
+                'label' => $e->company_name ?: ($e->email ?? 'Employer #' . $e->id),
+                'sub'   => $e->email ?? '',
+                'url'   => base_url('admin/employers/view/' . $e->id),
+            ];
+        }
+
+        return $this->response->setJSON(['results' => $results]);
     }
 
     /**
