@@ -20,6 +20,13 @@
 .cv-chev { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; transition: transform .25s; flex-shrink:0; color: var(--muted); }
 details[open] .cv-chev { transform: rotate(90deg); }
 .cv-card-body { padding: 6px 22px 22px; border-top: 1px solid var(--border); }
+.rep-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+.rep-row { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #fafbfd; position: relative; }
+.rep-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 620px) { .rep-grid { grid-template-columns: 1fr; } }
+.rep-current { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--text); margin: 10px 0; cursor: pointer; }
+.rep-remove { margin-top: 10px; color: #b91c1c; border-color: #f3c2c2; }
+.rep-remove:hover { background: #fef2f2; }
 .cv-card-hint { font-size: .82rem; color: var(--muted); margin-bottom: 16px; margin-top: 12px; line-height: 1.6; }
 .form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
 .autosave-note { font-size: .76rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
@@ -334,6 +341,94 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
+            <!-- ══ WORK EXPERIENCE ══ -->
+            <details class="cv-card <?= !empty($experiences) ? 'is-complete' : '' ?>">
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience</span>
+                    <span class="cv-card-done <?= !empty($experiences) ? 'complete' : 'incomplete' ?>"><?= !empty($experiences) ? count($experiences) . ' added' : 'Optional' ?></span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <div class="cv-card-hint">Add your roles, most recent first. This appears on your profile and helps employers understand your background.</div>
+                    <div id="exp-list" class="rep-list">
+                        <?php foreach (($experiences ?? []) as $xp): ?>
+                        <div class="rep-row">
+                            <div class="rep-grid">
+                                <div class="form-field"><label>Job title</label><input type="text" name="exp_job_title[]" class="input" value="<?= esc($xp->job_title, 'attr') ?>" placeholder="e.g. Accountant"></div>
+                                <div class="form-field"><label>Company</label><input type="text" name="exp_company[]" class="input" value="<?= esc($xp->company ?? '', 'attr') ?>" placeholder="e.g. Acme Ltd"></div>
+                                <div class="form-field"><label>Location</label><input type="text" name="exp_location[]" class="input" value="<?= esc($xp->location ?? '', 'attr') ?>" placeholder="e.g. Lagos"></div>
+                                <div class="form-field"><label>Start</label><input type="month" name="exp_start[]" class="input" value="<?= $xp->start_date ? esc(substr($xp->start_date, 0, 7), 'attr') : '' ?>"></div>
+                                <div class="form-field"><label>End</label><input type="month" name="exp_end[]" class="input" value="<?= $xp->end_date ? esc(substr($xp->end_date, 0, 7), 'attr') : '' ?>" <?= !empty($xp->is_current) ? 'disabled' : '' ?>></div>
+                            </div>
+                            <label class="rep-current"><input type="checkbox" class="exp-current-toggle" <?= !empty($xp->is_current) ? 'checked' : '' ?>> I currently work here</label>
+                            <input type="hidden" name="exp_is_current[]" value="<?= !empty($xp->is_current) ? '1' : '0' ?>">
+                            <div class="form-field"><label>Description</label><textarea name="exp_description[]" class="input" rows="2" placeholder="What you did / achieved"><?= esc($xp->description ?? '') ?></textarea></div>
+                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" id="add-exp"><svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-plus"/></svg> Add work experience</button>
+                </div>
+            </details>
+
+            <!-- ══ EDUCATION ══ -->
+            <details class="cv-card <?= !empty($education) ? 'is-complete' : '' ?>">
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education</span>
+                    <span class="cv-card-done <?= !empty($education) ? 'complete' : 'incomplete' ?>"><?= !empty($education) ? count($education) . ' added' : 'Optional' ?></span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <div class="cv-card-hint">Add your qualifications. Degrees, diplomas, and professional certifications all count.</div>
+                    <div id="edu-list" class="rep-list">
+                        <?php foreach (($education ?? []) as $ed): ?>
+                        <div class="rep-row">
+                            <div class="rep-grid">
+                                <div class="form-field"><label>Qualification / Degree</label><input type="text" name="edu_degree[]" class="input" value="<?= esc($ed->degree, 'attr') ?>" placeholder="e.g. B.Sc."></div>
+                                <div class="form-field"><label>Field of study</label><input type="text" name="edu_field[]" class="input" value="<?= esc($ed->field_of_study ?? '', 'attr') ?>" placeholder="e.g. Accounting"></div>
+                                <div class="form-field"><label>School</label><input type="text" name="edu_school[]" class="input" value="<?= esc($ed->school ?? '', 'attr') ?>" placeholder="e.g. University of Lagos"></div>
+                                <div class="form-field"><label>Start year</label><input type="text" name="edu_start_year[]" class="input" maxlength="4" value="<?= esc($ed->start_year ?? '', 'attr') ?>" placeholder="2014"></div>
+                                <div class="form-field"><label>End year</label><input type="text" name="edu_end_year[]" class="input" maxlength="4" value="<?= esc($ed->end_year ?? '', 'attr') ?>" placeholder="2018"></div>
+                                <div class="form-field"><label>Grade (optional)</label><input type="text" name="edu_grade[]" class="input" value="<?= esc($ed->grade ?? '', 'attr') ?>" placeholder="e.g. Second Class Upper"></div>
+                            </div>
+                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" id="add-edu"><svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-plus"/></svg> Add education</button>
+                </div>
+            </details>
+
+            <!-- Templates for cloning new rows -->
+            <template id="exp-template">
+                <div class="rep-row">
+                    <div class="rep-grid">
+                        <div class="form-field"><label>Job title</label><input type="text" name="exp_job_title[]" class="input" placeholder="e.g. Accountant"></div>
+                        <div class="form-field"><label>Company</label><input type="text" name="exp_company[]" class="input" placeholder="e.g. Acme Ltd"></div>
+                        <div class="form-field"><label>Location</label><input type="text" name="exp_location[]" class="input" placeholder="e.g. Lagos"></div>
+                        <div class="form-field"><label>Start</label><input type="month" name="exp_start[]" class="input"></div>
+                        <div class="form-field"><label>End</label><input type="month" name="exp_end[]" class="input"></div>
+                    </div>
+                    <label class="rep-current"><input type="checkbox" class="exp-current-toggle"> I currently work here</label>
+                    <input type="hidden" name="exp_is_current[]" value="0">
+                    <div class="form-field"><label>Description</label><textarea name="exp_description[]" class="input" rows="2" placeholder="What you did / achieved"></textarea></div>
+                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                </div>
+            </template>
+            <template id="edu-template">
+                <div class="rep-row">
+                    <div class="rep-grid">
+                        <div class="form-field"><label>Qualification / Degree</label><input type="text" name="edu_degree[]" class="input" placeholder="e.g. B.Sc."></div>
+                        <div class="form-field"><label>Field of study</label><input type="text" name="edu_field[]" class="input" placeholder="e.g. Accounting"></div>
+                        <div class="form-field"><label>School</label><input type="text" name="edu_school[]" class="input" placeholder="e.g. University of Lagos"></div>
+                        <div class="form-field"><label>Start year</label><input type="text" name="edu_start_year[]" class="input" maxlength="4" placeholder="2014"></div>
+                        <div class="form-field"><label>End year</label><input type="text" name="edu_end_year[]" class="input" maxlength="4" placeholder="2018"></div>
+                        <div class="form-field"><label>Grade (optional)</label><input type="text" name="edu_grade[]" class="input" placeholder="e.g. Second Class Upper"></div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                </div>
+            </template>
+
             <!-- ══ 4. SKILLS ══ -->
             <details class="cv-card <?= !empty($candidate->skills) ? 'is-complete' : '' ?>">
                 <summary class="cv-card-header">
@@ -611,6 +706,37 @@ $(document).ready(function () {
             }
         });
     });
+
+    // ── Repeatable Work Experience / Education rows ──
+    function wireRepRow(row) {
+        var toggle = row.querySelector('.exp-current-toggle');
+        if (toggle) {
+            var hidden = row.querySelector('input[name="exp_is_current[]"]');
+            var endInput = row.querySelector('input[name="exp_end[]"]');
+            var sync = function () {
+                if (hidden) hidden.value = toggle.checked ? '1' : '0';
+                if (endInput) { endInput.disabled = toggle.checked; if (toggle.checked) endInput.value = ''; }
+            };
+            toggle.addEventListener('change', sync);
+            sync();
+        }
+        var removeBtn = row.querySelector('.rep-remove');
+        if (removeBtn) removeBtn.addEventListener('click', function () { row.remove(); });
+    }
+    document.querySelectorAll('#exp-list .rep-row, #edu-list .rep-row').forEach(wireRepRow);
+
+    function addRepRow(templateId, listId) {
+        var tpl = document.getElementById(templateId);
+        var list = document.getElementById(listId);
+        if (!tpl || !list) return;
+        var node = tpl.content.firstElementChild.cloneNode(true);
+        list.appendChild(node);
+        wireRepRow(node);
+    }
+    var addExpBtn = document.getElementById('add-exp');
+    if (addExpBtn) addExpBtn.addEventListener('click', function () { addRepRow('exp-template', 'exp-list'); });
+    var addEduBtn = document.getElementById('add-edu');
+    if (addEduBtn) addEduBtn.addEventListener('click', function () { addRepRow('edu-template', 'edu-list'); });
 
 });
 </script>

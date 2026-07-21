@@ -2,6 +2,15 @@
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .sl{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.2s}
+.switch .sl::before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked + .sl{background:var(--brand)}
+.switch input:disabled + .sl{opacity:.6;cursor:not-allowed}
+.switch input:checked + .sl::before{transform:translateX(20px)}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -106,6 +115,26 @@ $completion = round(($completed / $totalFields) * 100);
           </div>
         </section>
 
+        <!-- Profile visibility -->
+        <section class="card" aria-label="Profile visibility">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-eye"/></svg> Profile Visibility</span></div>
+          <div class="card-body">
+            <div class="vis-row" style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
+              <p id="vis-text" style="font-size:.82rem;color:var(--muted);margin:0;">
+                <?php if (!empty($candidate->is_visible)): ?>
+                  <b style="color:var(--brand-deep)">Visible to employers.</b> Verified employers can find you in candidate search and invite you to roles.
+                <?php else: ?>
+                  <b style="color:var(--brand-deep)">Hidden.</b> You won't appear in employer candidate search until you turn this back on.
+                <?php endif; ?>
+              </p>
+              <label class="switch" style="flex-shrink:0;">
+                <input type="checkbox" id="visibility-toggle" <?= !empty($candidate->is_visible) ? 'checked' : '' ?> aria-label="Profile visible to employers">
+                <span class="sl"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
         <!-- Wallet card -->
         <section class="card" aria-label="Wallet">
           <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg> Wallet Balance</span></div>
@@ -171,6 +200,48 @@ $completion = round(($completed / $totalFields) * 100);
             <p style="font-size:.86rem;line-height:1.75">
                 <?= !empty($candidate->description) ? nl2br(esc($candidate->description)) : 'No professional summary added.' ?>
             </p>
+          </div>
+        </section>
+
+        <!-- Work Experience -->
+        <section class="card" aria-label="Work experience">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-briefcase"/></svg> Work Experience</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <?php if (!empty($experiences)): ?>
+                <?php foreach ($experiences as $xp): ?>
+                    <?php
+                    $start = !empty($xp->start_date) ? date('M Y', strtotime($xp->start_date)) : '';
+                    $end   = !empty($xp->is_current) ? 'present' : (!empty($xp->end_date) ? date('M Y', strtotime($xp->end_date)) : '');
+                    $range = trim($start . ($start && $end ? ' – ' : '') . $end);
+                    ?>
+                    <div class="xp"><span class="xp-ic" aria-hidden="true"><svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-briefcase"/></svg></span>
+                      <div><b><?= esc($xp->job_title) ?></b><i><?= esc(trim(($xp->company ?? '') . (!empty($xp->location) ? ' · ' . $xp->location : '') . ($range ? ' · ' . $range : ''), ' ·')) ?></i>
+                        <?php if (!empty($xp->description)): ?><p><?= nl2br(esc($xp->description)) ?></p><?php endif; ?>
+                      </div></div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="xp" style="border:none;padding:2px 0"><span class="xp-ic" aria-hidden="true"><svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-briefcase"/></svg></span>
+                  <div><b>No work experience added</b><i><a href="<?= base_url('candidate/profile/edit') ?>">Add your work history</a> so employers can see your background.</i></div></div>
+            <?php endif; ?>
+          </div>
+        </section>
+
+        <!-- Education -->
+        <section class="card" aria-label="Education">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-grad"/></svg> Education</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <?php if (!empty($education)): ?>
+                <?php foreach ($education as $ed): ?>
+                    <?php $yr = trim(($ed->start_year ?? '') . (($ed->start_year && $ed->end_year) ? ' – ' : '') . ($ed->end_year ?? '')); ?>
+                    <div class="xp"><span class="xp-ic" aria-hidden="true"><svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-grad"/></svg></span>
+                      <div><b><?= esc($ed->degree) ?><?= !empty($ed->field_of_study) ? ' — ' . esc($ed->field_of_study) : '' ?></b><i><?= esc(trim(($ed->school ?? '') . ($yr ? ' · ' . $yr : '') . (!empty($ed->grade) ? ' · ' . $ed->grade : ''), ' ·')) ?></i></div></div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="xp" style="border:none;padding:2px 0"><span class="xp-ic" aria-hidden="true"><svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-grad"/></svg></span>
+                  <div><b>No education added</b><i><a href="<?= base_url('candidate/profile/edit') ?>">Add your qualifications</a> to strengthen your profile.</i></div></div>
+            <?php endif; ?>
           </div>
         </section>
 
@@ -254,5 +325,42 @@ $completion = round(($completed / $totalFields) * 100);
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script>
+$(function () {
+    $('#visibility-toggle').on('change', function () {
+        var input = $(this);
+        var makeVisible = input.is(':checked') ? 1 : 0;
+        input.prop('disabled', true);
+
+        $.ajax({
+            url: '<?= base_url('candidate/profile/visibility') ?>',
+            type: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            data: {
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                is_visible: makeVisible
+            },
+            success: function (res) {
+                if (res && res.success) {
+                    if (typeof toastr !== 'undefined') toastr.success(res.message);
+                    if (res.is_visible) {
+                        $('#vis-text').html('<b style="color:var(--brand-deep)">Visible to employers.</b> Verified employers can find you in candidate search and invite you to roles.');
+                    } else {
+                        $('#vis-text').html('<b style="color:var(--brand-deep)">Hidden.</b> You won\'t appear in employer candidate search until you turn this back on.');
+                    }
+                } else {
+                    input.prop('checked', !makeVisible);
+                    if (typeof toastr !== 'undefined') toastr.error((res && res.message) || 'Could not update visibility.');
+                }
+            },
+            error: function () {
+                input.prop('checked', !makeVisible);
+                if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
+            },
+            complete: function () { input.prop('disabled', false); }
+        });
+    });
+});
+</script>
 <?= $this->endSection() ?>
 

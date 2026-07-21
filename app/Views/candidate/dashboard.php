@@ -2,6 +2,10 @@
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+.match-badge{flex-shrink:0;font-family:'Sora',sans-serif;font-weight:700;font-size:.72rem;padding:4px 10px;border-radius:20px;background:var(--brand-light);color:var(--brand)}
+.match-badge--hot{background:var(--accent-light);color:var(--accent-dark)}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -164,13 +168,14 @@
               <p class="text-muted text-center py-4 mb-0">No job matches found for your current profile. Update your preferences to see recommendations.</p>
           <?php else: ?>
               <?php foreach ($recommendedJobs as $job): ?>
+                  <?php $matchScore = (int) ($job->match_score ?? 0); ?>
                   <div class="pick">
                     <span class="pick-ic" aria-hidden="true"><svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-briefcase"/></svg></span>
                     <div class="pick-info">
                       <div class="pick-title"><a href="<?= base_url('job/view/' . $job->id) ?>"><?= esc($job->title) ?></a></div>
                       <div class="pick-sub"><svg aria-hidden="true" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-clock"/></svg> Posted <?= date('d M', strtotime($job->created_at)) ?> · <?= esc($job->location) ?></div>
                     </div>
-                    <span class="match-badge">85% match</span>
+                    <span class="match-badge<?= $matchScore >= 80 ? ' match-badge--hot' : '' ?>"><?= $matchScore ?>% match</span>
                   </div>
               <?php endforeach; ?>
           <?php endif; ?>

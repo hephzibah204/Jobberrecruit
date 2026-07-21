@@ -254,9 +254,12 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('profile', 'JobSeekerController::profile');
     $routes->get('profile/edit', 'JobSeekerController::edit_profile');
     $routes->post('profile/edit', 'JobSeekerController::edit_profile');
+    $routes->post('profile/visibility', 'JobSeekerController::toggleVisibility');
     $routes->get('settings/security', 'JobSeekerController::security');
     // $routes->get('security/edit', 'JobSeekerController::edit_security');
     $routes->post('settings/security/change-password', 'JobSeekerController::changePassword');
+    $routes->post('settings/notifications', 'JobSeekerController::saveNotificationPreferences');
+    $routes->post('settings/delete-account', 'JobSeekerController::deleteAccount');
     // $routes->post('profile/update/(:num)', 'JobSeekerController::update_profile/$1');
 
     // Resume Builder

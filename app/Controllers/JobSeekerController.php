@@ -87,12 +87,28 @@ class JobSeekerController extends BaseController
             ->where('user_id', $this->auth->user()->id)
             ->countAllResults();
 
-        // Recommended Jobs (simple example: by industry_id)
-        $recommendedJobs = $jobModel
-            ->where('industry_id', $candidate->industry_id ?? null)
-            ->orderBy('created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
+        // Candidate industries (pivot) drive recommendations + the match score.
+        $industryIds = array_column(
+            model(JobSeekerIndustryModel::class)->where('job_seeker_id', $candidate->id)->findAll(),
+            'industry_id'
+        );
+        if (! empty($industryIds)) {
+            // Primary industry, used by MatchService for the industry-alignment signal.
+            $candidate->industry_id = $industryIds[0];
+        }
+
+        // Recommended Jobs — prefer the candidate's industries, fall back to latest openings.
+        $jobQuery = $jobModel->orderBy('created_at', 'DESC');
+        if (! empty($industryIds)) {
+            $jobQuery->whereIn('industry_id', $industryIds);
+        }
+        $recommendedJobs = $jobQuery->limit(6)->findAll();
+        if (empty($recommendedJobs)) {
+            $recommendedJobs = $jobModel->orderBy('created_at', 'DESC')->limit(6)->findAll();
+        }
+
+        // Attach a real, computed match score to each recommendation.
+        $recommendedJobs = (new \App\Services\MatchService())->scoreJobs($candidate, $recommendedJobs);
 
         // Recent Applications (limit 5)
         $recentApplications = $applicationModel
@@ -172,11 +188,17 @@ class JobSeekerController extends BaseController
         $certificates = model(\App\Models\CourseCertificateModel::class)
             ->getUserCertificates($this->auth->user()->id);
 
+        // Structured work experience & education history
+        $experiences = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education   = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+
         $data = [
             'title'        => 'Profile',
             'user'         => $this->auth->user(),
             'candidate'    => $candidate,
             'certificates' => $certificates,
+            'experiences'  => $experiences,
+            'education'    => $education,
         ];
 
         return view('candidate/profile', $data);
@@ -334,6 +356,62 @@ class JobSeekerController extends BaseController
                 ]);
             }
 
+            /**
+             * SYNC WORK EXPERIENCE (delete + reinsert posted rows)
+             */
+            $normMonth = static fn ($v) => $v ? (preg_match('/^\d{4}-\d{2}$/', $v) ? $v . '-01' : $v) : null;
+            $expModel  = model(\App\Models\JobSeekerExperienceModel::class);
+            $expModel->where('job_seeker_id', $candidate->id)->delete();
+            $expTitles  = (array) ($this->request->getPost('exp_job_title') ?? []);
+            $expCompany = (array) ($this->request->getPost('exp_company') ?? []);
+            $expLoc     = (array) ($this->request->getPost('exp_location') ?? []);
+            $expStart   = (array) ($this->request->getPost('exp_start') ?? []);
+            $expEnd     = (array) ($this->request->getPost('exp_end') ?? []);
+            $expCurrent = (array) ($this->request->getPost('exp_is_current') ?? []);
+            $expDesc    = (array) ($this->request->getPost('exp_description') ?? []);
+            foreach ($expTitles as $i => $t) {
+                $t = trim((string) $t);
+                if ($t === '') continue;
+                $isCurrent = in_array($expCurrent[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+                $expModel->insert([
+                    'job_seeker_id' => $candidate->id,
+                    'job_title'     => $t,
+                    'company'       => trim((string) ($expCompany[$i] ?? '')) ?: null,
+                    'location'      => trim((string) ($expLoc[$i] ?? '')) ?: null,
+                    'start_date'    => $normMonth(trim((string) ($expStart[$i] ?? ''))),
+                    'end_date'      => $isCurrent ? null : $normMonth(trim((string) ($expEnd[$i] ?? ''))),
+                    'is_current'    => $isCurrent,
+                    'description'   => trim((string) ($expDesc[$i] ?? '')) ?: null,
+                    'sort_order'    => $i,
+                ]);
+            }
+
+            /**
+             * SYNC EDUCATION (delete + reinsert posted rows)
+             */
+            $eduModel = model(\App\Models\JobSeekerEducationModel::class);
+            $eduModel->where('job_seeker_id', $candidate->id)->delete();
+            $eduDegree = (array) ($this->request->getPost('edu_degree') ?? []);
+            $eduField  = (array) ($this->request->getPost('edu_field') ?? []);
+            $eduSchool = (array) ($this->request->getPost('edu_school') ?? []);
+            $eduStart  = (array) ($this->request->getPost('edu_start_year') ?? []);
+            $eduEnd    = (array) ($this->request->getPost('edu_end_year') ?? []);
+            $eduGrade  = (array) ($this->request->getPost('edu_grade') ?? []);
+            foreach ($eduDegree as $i => $d) {
+                $d = trim((string) $d);
+                if ($d === '') continue;
+                $eduModel->insert([
+                    'job_seeker_id'  => $candidate->id,
+                    'degree'         => $d,
+                    'field_of_study' => trim((string) ($eduField[$i] ?? '')) ?: null,
+                    'school'         => trim((string) ($eduSchool[$i] ?? '')) ?: null,
+                    'start_year'     => trim((string) ($eduStart[$i] ?? '')) ?: null,
+                    'end_year'       => trim((string) ($eduEnd[$i] ?? '')) ?: null,
+                    'grade'          => trim((string) ($eduGrade[$i] ?? '')) ?: null,
+                    'sort_order'     => $i,
+                ]);
+            }
+
             $db->transComplete();
 
             if ($db->transStatus() === false) {
@@ -367,13 +445,19 @@ class JobSeekerController extends BaseController
             ->where('job_seeker_id', $candidate->id)
             ->findColumn('industry_id') ?? [];
 
+        // Existing structured history for repeatable form sections
+        $experiences = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education   = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+
         return view('candidate/edit_profile', [
             'title' => 'Edit Profile',
             'user' => $user,
             'candidate' => $candidate,
             'industries' => $parentIndustries,
             'states' => $states,
-            'candidateIndustryIds' => $candidateIndustryIds
+            'candidateIndustryIds' => $candidateIndustryIds,
+            'experiences' => $experiences,
+            'education' => $education,
         ]);
     }
 
@@ -443,6 +527,164 @@ class JobSeekerController extends BaseController
         return $this->response->setJSON([
             'success' => false,
             'message' => 'Failed to update password. Please try again.'
+        ]);
+    }
+
+    /**
+     * Toggle the "visible to employers" flag (AJAX). Backs the profile visibility switch.
+     * When hidden, the candidate no longer appears in employer candidate search.
+     */
+    public function toggleVisibility()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
+        if (! $candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Profile not found.']);
+        }
+
+        // Use the posted value when present, otherwise flip the current state.
+        $raw = $this->request->getPost('is_visible');
+        if ($raw === null) {
+            $newValue = $candidate->is_visible ? 0 : 1;
+        } else {
+            $newValue = in_array($raw, ['1', 1, 'true', true, 'on'], true) ? 1 : 0;
+        }
+
+        $candidateModel->update($candidate->id, ['is_visible' => $newValue]);
+
+        return $this->response->setJSON([
+            'success'    => true,
+            'is_visible' => (bool) $newValue,
+            'message'    => $newValue
+                ? 'Your profile is now visible to employers.'
+                : 'Your profile is now hidden from employer search.',
+        ]);
+    }
+
+    /**
+     * Save per-channel notification preferences (AJAX).
+     */
+    public function saveNotificationPreferences()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
+        if (! $candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Profile not found.']);
+        }
+
+        $flag = fn (string $name) => in_array(
+            $this->request->getPost($name),
+            ['1', 1, 'true', true, 'on'],
+            true
+        ) ? 1 : 0;
+
+        $candidateModel->update($candidate->id, [
+            'notify_job_alerts'          => $flag('notify_job_alerts'),
+            'notify_application_updates' => $flag('notify_application_updates'),
+            'notify_messages'            => $flag('notify_messages'),
+            'notify_marketing'           => $flag('notify_marketing'),
+        ]);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Notification preferences saved.']);
+    }
+
+    /**
+     * Permanently delete the candidate's account and all associated data (GDPR erasure).
+     * Requires password confirmation. This is irreversible.
+     */
+    public function deleteAccount()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $user = $this->auth->user();
+
+        // Confirm the password before destroying anything.
+        $authenticator = auth()->getAuthenticator();
+        if (! $authenticator->check([
+            'email'    => $user->email,
+            'password' => (string) $this->request->getPost('password'),
+        ])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Password is incorrect.']);
+        }
+
+        $db = \Config\Database::connect();
+        $candidate = model(JobSeekerModel::class)->where('user_id', $user->id)->first();
+
+        // Best-effort deletion of owned rows. Each is guarded so an unexpected
+        // schema difference can never block the authoritative user deletion below.
+        $safeDelete = static function (string $table, string $column, $value) use ($db): void {
+            try {
+                if ($db->tableExists($table)) {
+                    $db->table($table)->where($column, $value)->delete();
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'deleteAccount cleanup failed on ' . $table . ': ' . $e->getMessage());
+            }
+        };
+
+        if ($candidate) {
+            $cid = $candidate->id;
+            foreach ([
+                'job_applications'        => 'job_seeker_id',
+                'job_alerts'              => 'job_seeker_id',
+                'candidate_notifications' => 'candidate_id',
+                'job_seeker_experiences'  => 'job_seeker_id',
+                'job_seeker_education'    => 'job_seeker_id',
+                'job_seeker_industries'   => 'job_seeker_id',
+            ] as $table => $column) {
+                $safeDelete($table, $column, $cid);
+            }
+        }
+
+        // Resume builder children are keyed by resume_id — clear them first.
+        try {
+            if ($db->tableExists('resumes')) {
+                $resumeIds = array_column($db->table('resumes')->select('id')->where('user_id', $user->id)->get()->getResultArray(), 'id');
+                if ($resumeIds) {
+                    foreach (['resume_autosaves', 'resume_education', 'resume_experiences', 'resume_skills'] as $child) {
+                        if ($db->tableExists($child)) {
+                            $db->table($child)->whereIn('resume_id', $resumeIds)->delete();
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'deleteAccount resume cleanup failed: ' . $e->getMessage());
+        }
+
+        foreach ([
+            'saved_jobs'          => 'user_id',
+            'job_clicks'          => 'user_id',
+            'wallets'             => 'user_id',
+            'resumes'             => 'user_id',
+            'course_certificates' => 'user_id',
+            'course_enrollments'  => 'user_id',
+            'job_seekers'         => 'user_id',
+        ] as $table => $column) {
+            $safeDelete($table, $column, $user->id);
+        }
+
+        // Authoritative removal of the identity (purges auth_identities, tokens, etc.).
+        model(\CodeIgniter\Shield\Models\UserModel::class)->delete($user->id, true);
+
+        // End the session.
+        auth()->logout();
+        session()->destroy();
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'message'  => 'Your account and all associated data have been permanently deleted.',
+            'redirect' => site_url('/'),
         ]);
     }
 
@@ -914,14 +1156,38 @@ class JobSeekerController extends BaseController
             'profile' => $candidate ? [
                 'full_name' => $candidate->full_name ?? '',
                 'phone' => $candidate->phone ?? '',
+                'dob' => $candidate->dob ?? '',
+                'gender' => $candidate->gender ?? '',
                 'bio' => $candidate->bio ?? '',
+                'description' => $candidate->description ?? '',
                 'skills' => $candidate->skills ?? '',
+                'languages' => $candidate->languages ?? '',
                 'experience_years' => $candidate->experience_years ?? '',
                 'education_level' => $candidate->education_level ?? '',
                 'job_title' => $candidate->job_title ?? '',
+                'employment_type' => $candidate->employment_type ?? '',
                 'location' => $candidate->location ?? '',
+                'desired_salary' => $candidate->desired_salary ?? '',
+                'salary_type' => $candidate->salary_type ?? '',
+                'availability' => $candidate->availability ?? '',
+                'portfolio' => $candidate->portfolio ?? '',
                 'resume' => $candidate->resume ?? '',
+                'is_visible' => $candidate->is_visible ?? '',
+                'notification_preferences' => [
+                    'job_alerts' => $candidate->notify_job_alerts ?? '',
+                    'application_updates' => $candidate->notify_application_updates ?? '',
+                    'messages' => $candidate->notify_messages ?? '',
+                    'marketing' => $candidate->notify_marketing ?? '',
+                ],
             ] : [],
+            'work_experience' => $candidate
+                ? model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id)
+                : [],
+            'education' => $candidate
+                ? model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id)
+                : [],
+            'certificates' => model(\App\Models\CourseCertificateModel::class)
+                ->getUserCertificates($this->auth->user()->id),
             'applications' => model(\App\Models\JobApplicationModel::class)
                 ->where('job_seeker_id', $candidate?->id)
                 ->findAll(),
