@@ -53,7 +53,7 @@
 /* ============================================================
    DESIGN SYSTEM — BRAND COLORS ONLY
    ⚠️ IMPORTANT: Reference/mockup design files may use
-   different hex values (e.g. #0861A9, #ED9020). NEVER copy
+   different hex values (e.g. #0D609E, #ED9020). NEVER copy
    those hexes directly — always use the BRAND COLORS below:
      Blue   → var(--brand)  (primary)
      Orange → var(--accent)  (accent)

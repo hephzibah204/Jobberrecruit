@@ -1,11 +1,15 @@
 <?php
 
 use CodeIgniter\Test\CIUnitTestCase;
+use CodeIgniter\Test\DatabaseTestTrait;
 use App\Models\ResumeAutosaveModel;
 
 final class AutosaveTest extends CIUnitTestCase
 {
+    use DatabaseTestTrait;
+
     protected $autosaveModel;
+    protected $namespace = null;
 
     protected function setUp(): void
     {

@@ -9,6 +9,7 @@ class ResumeAutosaveModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = ['resume_id','user_id','payload','metadata','created_at'];
     protected $useTimestamps = false;
+    protected $returnType = 'object';
 
     // Helper to insert a JSON snapshot safely
     public function insertSnapshot($data)

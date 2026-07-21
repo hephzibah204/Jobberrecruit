@@ -725,7 +725,7 @@
 
     function importFromProfile() {
         const card = document.getElementById('ob-profile-card');
-        card.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner-border text-success" role="status"></div><p style="color:#94a3b8;margin-top:1rem;font-size:0.9rem;">Creating your resume from profile...</p></div>';
+        card.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner" role="status"></div><p style="color:#94a3b8;margin-top:1rem;font-size:0.9rem;">Creating your resume from profile...</p></div>';
         document.getElementById('import-profile-form').submit();
     }
 
@@ -823,7 +823,7 @@
                                 </div>
                             </div>
                             <div class="mt-4 d-flex justify-content-end">
-                                <button type="button" class="btn btn-primary next-step" data-target="experience">Next: Experience <i class="ti ti-arrow-right ms-1"></i></button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="experience">Next: Experience <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
                         </div>
                     </div>
@@ -893,8 +893,8 @@
                                 <?php endforeach; ?>
                             <?php endif; ?>
                             <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="info"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-target="education">Next: Education <i class="ti ti-arrow-right ms-1"></i></button>
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="info"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="education">Next: Education <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
                         </div>
                     </div>
@@ -953,8 +953,8 @@
                                 <?php endforeach; ?>
                             <?php endif; ?>
                             <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="experience"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-target="skills">Next: Skills <i class="ti ti-arrow-right ms-1"></i></button>
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="experience"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="skills">Next: Skills <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
                         </div>
                     </div>
@@ -981,8 +981,8 @@
                                 <input type="text" name="skills" class="form-control tags-input" value="<?= esc($skillsVal) ?>" placeholder="e.g. PHP, JavaScript, Project Management">
                             </div>
                             <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
                         </div>
                     </div>
@@ -1000,8 +1000,8 @@
                         <div class="card-body">
                             <textarea name="summary" id="resume-summary" class="form-control" rows="6" placeholder="A brief overview of your professional background and key achievements..."><?= esc($resume->summary ?? '') ?></textarea>
                             <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
                         </div>
                     </div>
@@ -1125,7 +1125,7 @@
                             </div>
 
                             <div class="mt-4 d-flex justify-content-start">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-target="summary"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="summary"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                             </div>
 
                             <!-- Download Section -->
@@ -1144,10 +1144,10 @@
 
                                 <div class="mt-3 text-center">
                                     <div class="d-flex justify-content-center gap-2 align-items-center">
-                                        <button id="save-resume-btn" class="btn btn-primary px-4 py-2 fw-semibold">
+                                        <button type="button" id="save-resume-btn" class="btn btn-primary px-4 py-2 fw-semibold">
                                         <i class="ti ti-device-floppy me-1"></i> Save Resume
                                         </button>
-                                        <button id="open-revisions-btn" class="btn btn-outline-secondary px-3 py-2" title="Revision History">
+                                        <button type="button" id="open-revisions-btn" class="btn btn-outline-secondary px-3 py-2" title="Revision History">
                                             <i class="ti ti-history me-1"></i> Revisions
                                         </button>
                                     </div>
@@ -1157,45 +1157,6 @@
                     </div>
                 </div>
             </form>
-            
-            <!-- Sticky Mobile Next/Prev Action Bar -->
-            <div class="builder-action-bar d-flex justify-content-between align-items-center shadow-lg border-top">
-                <button type="button" class="btn btn-outline-secondary fw-semibold mobile-nav-btn" id="mobile-prev-btn" style="visibility: hidden;">
-                    <i class="ti ti-arrow-left me-1"></i> Prev
-                </button>
-                <div class="step-indicator fw-bold text-dark small" id="mobile-step-name">Basic Info</div>
-                <button type="button" class="btn btn-primary fw-semibold mobile-nav-btn shadow-sm" id="mobile-next-btn">
-                    Next <i class="ti ti-arrow-right ms-1"></i>
-                </button>
-            </div>
-            <style>
-                .builder-action-bar {
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    background: var(--bg-white, #fff);
-                    padding: 12px 20px;
-                    z-index: 1035;
-                    transition: bottom 0.3s ease;
-                }
-                @media (max-width: 767.98px) {
-                    .builder-action-bar {
-                        bottom: calc(70px + env(safe-area-inset-bottom));
-                        padding: 10px 15px;
-                    }
-                    .builder-action-bar .btn {
-                        padding: 8px 16px;
-                        font-size: 0.9rem;
-                    }
-                }
-                @media (min-width: 992px) {
-                    .builder-action-bar {
-                        left: 280px; /* offset sidebar if present */
-                        border-top-left-radius: 12px;
-                    }
-                }
-            </style>
         </div>
     </div>
 </div>
@@ -1204,7 +1165,7 @@
 <div class="modal fade" id="aiLoaderModal" data-bs-backdrop="static" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content text-center p-5 border-0 bg-transparent">
-            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <div class="spinner mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
             <h4 class="text-white fw-bold">AI is generating content...</h4>
             <p class="text-white-50">Preparing your personalized professional text.</p>
         </div>
@@ -1288,6 +1249,7 @@
                 return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]);
             });
         }
+
         // Step Navigation
         $('.step-item').on('click', function() {
             const step = $(this).data('step');
@@ -1295,74 +1257,46 @@
             $(this).addClass('active');
             $('.step-content').addClass('d-none');
             $('#step-' + step).removeClass('d-none');
-            
+
             // On mobile, scroll to the form so the user sees it
             if (window.innerWidth < 992) {
-                const formOffset = $('#resume-form').offset().top - 80;
-                window.scrollTo({ top: formOffset, behavior: 'smooth' });
+                const formEl = $('#resume-form');
+                if (formEl.length && formEl.is(':visible') && formEl.offset()) {
+                    const formOffset = formEl.offset().top - 80;
+                    window.scrollTo({ top: formOffset, behavior: 'smooth' });
+                }
             }
         });
 
-        // Step flow configuration
-        const stepFlow = ['info', 'experience', 'education', 'skills', 'summary', 'templates'];
-        const stepNames = {
-            'info': 'Basic Info',
-            'experience': 'Work Experience',
-            'education': 'Education',
-            'skills': 'Skills',
-            'summary': 'Summary',
-            'templates': 'Templates'
-        };
-
-        function updateMobileActionBar(currentStep) {
-            const idx = stepFlow.indexOf(currentStep);
-            
-            // Update Prev Button
-            if (idx > 0) {
-                $('#mobile-prev-btn').css('visibility', 'visible').data('target', stepFlow[idx - 1]);
-            } else {
-                $('#mobile-prev-btn').css('visibility', 'hidden');
-            }
-            
-            // Update Next Button
-            if (idx < stepFlow.length - 1) {
-                $('#mobile-next-btn').html('Next <i class="ti ti-arrow-right ms-1"></i>').removeClass('btn-success').addClass('btn-primary').data('target', stepFlow[idx + 1]);
-            } else {
-                $('#mobile-next-btn').html('<i class="ti ti-device-floppy me-1"></i> Finish').removeClass('btn-primary').addClass('btn-success').data('target', 'finish');
-            }
-            
-            // Update Label
-            $('#mobile-step-name').text(stepNames[currentStep] || 'Resume Builder');
-        }
-
-        // Initialize Action Bar
-        updateMobileActionBar('info');
-
-        // Next/Prev Buttons & Mobile Navigation
-        $(document).on('click', '.next-step, .prev-step, #mobile-prev-btn, #mobile-next-btn', function(e) {
+        // Next/Prev Buttons Navigation
+        $(document).on('click', '.next-step, .prev-step', function(e) {
             e.preventDefault();
-            const target = $(this).data('target');
+            const target = $(this).data('step-target');
             
             if (target === 'finish') {
                 // Focus on download buttons or trigger save
                 $('#save-resume-btn').trigger('click');
-                const formOffset = $('#save-resume-btn').offset().top - 150;
-                window.scrollTo({ top: formOffset, behavior: 'smooth' });
+                const saveBtn = $('#save-resume-btn');
+                if (saveBtn.length && saveBtn.is(':visible') && saveBtn.offset()) {
+                    const formOffset = saveBtn.offset().top - 150;
+                    window.scrollTo({ top: formOffset, behavior: 'smooth' });
+                }
                 return;
             }
             
             // Direct state update
             $('.step-item').removeClass('active');
             $('.step-item[data-step="' + target + '"]').addClass('active');
-            
+
             $('.step-content').addClass('d-none');
             $('#step-' + target).removeClass('d-none');
-            
-            updateMobileActionBar(target);
-            
+
             // Scroll to form to avoid showing the top sidebar again on mobile
-            const formOffset = $('#resume-form').offset().top - 80;
-            window.scrollTo({ top: formOffset, behavior: 'smooth' });
+            const formEl = $('#resume-form');
+            if (formEl.length && formEl.is(':visible') && formEl.offset()) {
+                const formOffset = formEl.offset().top - 80;
+                window.scrollTo({ top: formOffset, behavior: 'smooth' });
+            }
         });
 
         // Click Event for Template Choice
@@ -1374,6 +1308,7 @@
 
         // AI Summary Generation
         $('#generate-summary-ai').on('click', function() {
+            const btn = $(this);
             const experiences = [];
             const education = [];
             const skills = $('input[name="skills"]').val();
@@ -1403,6 +1338,7 @@
                 return;
             }
 
+            btn.prop('disabled', true);
             $('#aiLoaderModal').modal('show');
 
             $.ajax({
@@ -1412,7 +1348,7 @@
                     experiences: experiences,
                     education: education,
                     skills: skills,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
                     if (response.summary) {
@@ -1425,16 +1361,18 @@
                         toastr.error('AI returned no content.');
                     }
                     $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
                 },
                 error: function() {
                     toastr.error('AI generation failed. Please try again.');
                     $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
                 }
             });
         });
 
         // Add Experience Item (Dynamic)
-            $('.add-experience').on('click', function() {
+        $('.add-experience').on('click', function() {
             $('#experience-container .no-items').hide();
             
             // Generate next available index for exp_current value tracking
@@ -1556,14 +1494,16 @@
 
         // Improve Description with AI
         $(document).on('click', '.improve-desc-ai', function() {
-            const textarea = $(this).closest('.col-md-12').find('textarea');
-            const description = textarea.val();
+            const btn = $(this);
+            const textarea = btn.closest('.col-md-12').find('textarea');
+            const description = textarea.length ? textarea.val() : '';
 
-            if (!description.trim()) {
+            if (!description || !description.trim()) {
                 toastr.warning('Please enter a description first.');
                 return;
             }
 
+            btn.prop('disabled', true);
             $('#aiLoaderModal').modal('show');
 
             $.ajax({
@@ -1571,7 +1511,7 @@
                 type: 'POST',
                 data: {
                     description: description,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
                     if (response.description) {
@@ -1581,25 +1521,29 @@
                         $('#aiPreviewModal').modal('show');
                     }
                     $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
                 },
                 error: function() {
                     toastr.error('AI improvement failed.');
                     $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
                 }
             });
         });
 
         // Generate bullets for experience
         $(document).on('click', '.generate-bullets-ai', function() {
-            const textarea = $(this).closest('.col-md-12').find('textarea');
-            const description = textarea.val();
-            const position = $(this).closest('.experience-item').find('input[name="exp_position[]"]').val() || '';
+            const btn = $(this);
+            const textarea = btn.closest('.col-md-12').find('textarea');
+            const description = textarea.length ? textarea.val() : '';
+            const position = btn.closest('.experience-item').find('input[name="exp_position[]"]').val() || '';
 
-            if (!description.trim()) {
+            if (!description || !description.trim()) {
                 toastr.warning('Please enter an experience description first.');
                 return;
             }
 
+            btn.prop('disabled', true);
             $('#aiLoaderModal').modal('show');
 
             $.ajax({
@@ -1608,7 +1552,7 @@
                 data: {
                     description: description,
                     job_title: position,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
                     if (response.bullets) {
@@ -1621,10 +1565,12 @@
                         $('#aiPreviewModal').modal('show');
                     }
                     $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
                 },
                 error: function() {
                     toastr.error('Failed to generate bullets.');
                     $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
                 }
             });
         });
@@ -1642,7 +1588,7 @@
 
             const formData = $('#resume-form').serialize();
             const btn = $(this);
-            btn.prop('disabled', true).html('<i class="ti ti-loader-2 spinner-border spinner-border-sm me-1"></i>Saving...');
+            btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Saving...');
 
             $.ajax({
                 url: '<?= site_url("candidate/resumes/save") ?>',
@@ -1656,8 +1602,6 @@
                     // If this save was kicked off by a restore+save, create a snapshot autosave for history
                     if (window.restoreSavePending) {
                         try {
-                            // Post a snapshot to autosave endpoint
-                            const snapshotPayload = $('#resume-form').serializeArray();
                             // Convert to structured snapshot similar to doAutosave
                             const snapshot = { experiences: [], education: [] };
                             snapshot.id = $('input[name="id"]').val() || null;
@@ -1689,7 +1633,7 @@
                             $.ajax({
                                 url: '<?= site_url("candidate/resumes/autosave") ?>',
                                 type: 'POST',
-                                data: { snapshot: JSON.stringify(snapshot), id: snapshot.id, <?= csrf_token() ?>: '<?= csrf_hash() ?>' }
+                                data: { snapshot: JSON.stringify(snapshot), id: snapshot.id, '<?= csrf_token() ?>': '<?= csrf_hash() ?>' }
                             });
                         } catch (e) {
                             // ignore autosave snapshot errors
@@ -1758,12 +1702,19 @@
                 data: {
                     snapshot: JSON.stringify(snapshot),
                     id: $('input[name="id"]').val(),
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(resp) {
+                    if (resp.id) {
+                        $('input[name="id"]').val(resp.id);
+                    }
                     const ts = new Date().toLocaleTimeString();
                     $('#autosave-indicator').remove();
-                    $('.builder-header').append('<span id="autosave-indicator" class="text-muted ms-3" style="font-size:12px;">Autosaved at ' + ts + '</span>');
+                    
+                    const header = $('.page-title').length ? $('.page-title') : $('.page-header');
+                    if (header.length) {
+                        header.append('<span id="autosave-indicator" class="text-muted ms-3" style="font-size:12px;">Autosaved at ' + ts + '</span>');
+                    }
                 }
             });
         }
@@ -1771,7 +1722,15 @@
         // Track per-field changes
         $(document).on('input change', '#resume-form input, #resume-form textarea, #resume-form select', function() {
             const el = this;
-            const key = $(el).attr('name') || $(el).attr('id') || Date.now();
+            // Generate a unique reference using index suffix to avoid debounce key collisions in arrays
+            const name = $(el).attr('name') || '';
+            let key = el; // default to element DOM reference
+            if (name.includes('[]')) {
+                const index = $('[name="' + name + '"]').index(el);
+                key = name + '_' + index;
+            } else if ($(el).attr('id')) {
+                key = $(el).attr('id');
+            }
             if (debounceTimers.has(key)) clearTimeout(debounceTimers.get(key));
             debounceTimers.set(key, setTimeout(function() {
                 scheduleAutosave();
@@ -1851,7 +1810,7 @@
                 type: 'POST',
                 data: {
                     autosave_id: autosaveId,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(resp) {
                     if (resp.payload) {
@@ -1883,7 +1842,7 @@
                                                 <label class="form-label small fw-semibold text-muted">Start Date</label>
                                                 <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="${escapeHtml(e.start_date || '')}">
                                             </div>
-                                            <div class="col-md-4 mb-3 exp-end-date-col">
+                                            <div class="col-md-4 mb-3 exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">
                                                 <label class="form-label small fw-semibold text-muted">End Date</label>
                                                 <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="${escapeHtml(e.end_date || '')}">
                                             </div>
@@ -1982,7 +1941,7 @@
                 type: 'POST',
                 data: {
                     autosave_id: autosaveId,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(resp) {
                     if (resp.payload) {
@@ -2013,7 +1972,7 @@
                                                 <label class="form-label small fw-semibold text-muted">Start Date</label>
                                                 <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="${escapeHtml(e.start_date || '')}">
                                             </div>
-                                            <div class="col-md-4 mb-3 exp-end-date-col">
+                                            <div class="col-md-4 mb-3 exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">
                                                 <label class="form-label small fw-semibold text-muted">End Date</label>
                                                 <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="${escapeHtml(e.end_date || '')}">
                                             </div>
@@ -2085,19 +2044,17 @@
                         }
 
                         // After rebuilding, trigger save (and snapshot)
-                        $('#revisionsModal').modal('hide');
-                        // Flag to let save flow create a snapshot
                         window.restoreSavePending = true;
-                        // Trigger save - save handler will check restoreSavePending
                         $('#save-resume-btn').trigger('click');
+                        $('#revisionsModal').modal('hide');
                     } else {
                         toastr.error('Invalid autosave payload');
-                        btn.prop('disabled', false).text('Restore');
+                        btn.prop('disabled', false).text('Restore & Save');
                     }
                 },
                 error: function() {
                     toastr.error('Failed to restore revision.');
-                    btn.prop('disabled', false).text('Restore');
+                    btn.prop('disabled', false).text('Restore & Save');
                 }
             });
         });
@@ -2143,7 +2100,7 @@
         $(document).on('click', '.download-pdf-btn', function() {
             const btn = $(this);
             const originalHtml = btn.html();
-            btn.prop('disabled', true).html('<i class="ti ti-loader-2 spinner-border spinner-border-sm me-2"></i>Preparing PDF...');
+            btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Preparing PDF...');
             
             saveResumeBeforeDownload(function(id) {
                 btn.prop('disabled', false).html(originalHtml);
@@ -2155,7 +2112,7 @@
         $(document).on('click', '.download-docx-btn', function() {
             const btn = $(this);
             const originalHtml = btn.html();
-            btn.prop('disabled', true).html('<i class="ti ti-loader-2 spinner-border spinner-border-sm me-2"></i>Preparing Word...');
+            btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Preparing Word...');
             
             saveResumeBeforeDownload(function(id) {
                 btn.prop('disabled', false).html(originalHtml);
@@ -2207,7 +2164,7 @@
                 data: {
                     message: message,
                     history: JSON.stringify(coachHistory),
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
                     removeTypingIndicator();
@@ -2321,9 +2278,12 @@
             toastr.success('Applied to Professional Summary!');
             
             // Scroll to the professional summary element
-            $('html, body').animate({
-                scrollTop: $("#resume-summary").offset().top - 120
-            }, 300);
+            const targetEl = $("#resume-summary");
+            if (targetEl.length && targetEl.is(':visible') && targetEl.offset()) {
+                $('html, body').animate({
+                    scrollTop: targetEl.offset().top - 120
+                }, 300);
+            }
         });
 
         // Apply to Active/Last Focused text input or textarea
@@ -2354,18 +2314,23 @@
                     firstExpDesc.val(polishedText);
                     toastr.info('No active input was selected. Applied to first work experience description.');
                     
-                    $('html, body').animate({
-                        scrollTop: firstExpDesc.offset().top - 120
-                    }, 300);
+                    if (firstExpDesc.is(':visible') && firstExpDesc.offset()) {
+                        $('html, body').animate({
+                            scrollTop: firstExpDesc.offset().top - 120
+                        }, 300);
+                    }
                     firstExpDesc.focus();
                 } else {
                     // Otherwise default to summary
-                    $('#resume-summary').val(polishedText);
+                    const targetSummary = $('#resume-summary');
+                    targetSummary.val(polishedText);
                     toastr.info('No active input was selected. Applied to Professional Summary.');
                     
-                    $('html, body').animate({
-                        scrollTop: $("#resume-summary").offset().top - 120
-                    }, 300);
+                    if (targetSummary.is(':visible') && targetSummary.offset()) {
+                        $('html, body').animate({
+                            scrollTop: targetSummary.offset().top - 120
+                        }, 300);
+                    }
                 }
             }
         });
@@ -2441,7 +2406,9 @@
                 firstExpDesc.val(polished);
                 $('#aiPreviewModal').modal('hide');
                 toastr.info('No active input was selected. Applied to first work experience description.');
-                $('html, body').animate({ scrollTop: firstExpDesc.offset().top - 120 }, 300);
+                if (firstExpDesc.is(':visible') && firstExpDesc.offset()) {
+                    $('html, body').animate({ scrollTop: firstExpDesc.offset().top - 120 }, 300);
+                }
                 firstExpDesc.focus();
                 return;
             }
@@ -2452,7 +2419,10 @@
             $('#resume-summary').val(polished);
             $('#aiPreviewModal').modal('hide');
             toastr.info('No active input was selected. Applied to Professional Summary.');
-            $('html, body').animate({ scrollTop: $("#resume-summary").offset().top - 120 }, 300);
+            const targetSummary = $("#resume-summary");
+            if (targetSummary.length && targetSummary.is(':visible') && targetSummary.offset()) {
+                $('html, body').animate({ scrollTop: targetSummary.offset().top - 120 }, 300);
+            }
         });
 
         // Undo last AI apply for summary or focused field

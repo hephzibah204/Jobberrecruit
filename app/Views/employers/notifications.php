@@ -1,328 +1,487 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend('layouts/employer') ?>
+
 <?= $this->section('styles') ?>
 <style>
-    .notification-item {
-        transition: all 0.2s ease;
-        border-left: 4px solid transparent;
-        cursor: pointer;
+.alert-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: #fff;
+    transition: var(--transition);
+}
+.alert-card:hover {
+    box-shadow: var(--shadow);
+}
+.alert-card + .alert-card {
+    margin-top: 14px;
+}
+.alert-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.alert-ic {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--brand-light);
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.alert-ic svg {
+    width: 18px;
+    height: 18px;
+}
+.alert-name {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: .92rem;
+    color: var(--brand-deep);
+}
+.alert-meta {
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: 1px;
+}
+.alert-new {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .74rem;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-light);
+    border-radius: 20px;
+    padding: 5px 13px;
+    text-decoration: none;
+}
+.alert-new:hover {
+    background: #f8e3c4;
+    text-decoration: none;
+}
+.alert-new svg {
+    width: 12px;
+    height: 12px;
+}
+.alert-chips {
+    margin: 12px 0 14px;
+}
+.alert-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-top: 13px;
+    border-top: 1px dashed var(--border);
+}
+.alert-controls .select {
+    min-height: 38px;
+    width: auto;
+    font-size: .8rem;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+.ctl {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text);
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.switch .sl {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 20px;
+    transition: var(--transition);
+    cursor: pointer;
+}
+.switch .sl::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    left: 3px;
+    top: 3px;
+    transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.switch input:checked + .sl {
+    background: var(--brand);
+}
+.switch input:checked + .sl::before {
+    transform: translateX(18px);
+}
+.switch input:focus-visible + .sl {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+.alert-del {
+    margin-left: auto;
+}
+.match-strip {
+    display: flex;
+    gap: 9px;
+    margin-top: 13px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+}
+.match {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    flex-shrink: 0;
+    background: var(--bg);
+}
+.match .ava {
+    width: 32px;
+    height: 32px;
+    font-size: .66rem;
+    border-radius: 50%;
+}
+.match b {
+    font-size: .76rem;
+    color: var(--brand-deep);
+    display: block;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+.match i {
+    font-style: normal;
+    font-size: .64rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.new-alert-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+@media (max-width: 1200px) {
+    .new-alert-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
-
-    .notification-item:hover {
-        background-color: #f8f9fa;
+}
+@media (max-width: 768px) {
+    .new-alert-grid {
+        grid-template-columns: 1fr 1fr;
     }
-
-    .notification-unread {
-        background-color: #f0f7ff;
-        border-left-color: #0D609E;
+}
+@media (max-width: 480px) {
+    .new-alert-grid {
+        grid-template-columns: 1fr;
     }
-
-    .notification-read {
-        opacity: 0.75;
-    }
-
-    .notification-icon {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-    }
-
-    .notification-icon i {
-        font-size: 20px;
-    }
-
-    .type-badge {
-        font-size: 0.7rem;
-        padding: 3px 8px;
-        border-radius: 20px;
-    }
-
-    .filter-btn.active {
-        background-color: #0D609E;
-        color: white;
-        border-color: #0D609E;
-    }
+}
+.na-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+.na-foot p {
+    font-size: .74rem;
+    color: var(--muted);
+}
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="content">
-    <div class="page-header">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold">Job Alerts</h4>
-                <h6>View and manage your job alerts and notifications</h6>
-            </div>
-        </div>
-        <ul class="table-top-head">
-            <li>
-                <a data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh" onclick="location.reload()">
-                    <i class="ti ti-refresh"></i>
-                </a>
-            </li>
-            <li>
-                <a data-bs-toggle="tooltip" data-bs-placement="top" title="Mark all as read" id="mark-all-read">
-                    <i class="ti ti-mail-opened"></i>
-                </a>
-            </li>
-        </ul>
-        <div class="page-btn mt-0">
-            <a href="<?= site_url('employer/dashboard') ?>" class="btn btn-secondary">
-                <i class="ti ti-arrow-left me-1"></i>Back to Dashboard
-            </a>
-        </div>
+<div class="page-head">
+    <div class="page-head-left">
+        <h1>
+            <svg aria-hidden="true"><use href="#i-bell"/></svg> 
+            Candidate Alerts
+        </h1>
+        <p>Save search criteria once — we'll notify you when matching candidates join or update their profiles.</p>
     </div>
-
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card custom-card bg-primary bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total Job Alerts</h6>
-                            <h4 class="mb-0"><?= number_format($totalNotifications) ?></h4>
-                        </div>
-                        <div class="avatar bg-primary-transparent">
-                            <i class="ti ti-bell fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card custom-card bg-warning bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Unread</h6>
-                            <h4 class="mb-0 text-warning" id="unread-count"><?= number_format($unreadCount) ?></h4>
-                        </div>
-                        <div class="avatar bg-warning-transparent">
-                            <i class="ti ti-mail fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card custom-card bg-success bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">New Applications</h6>
-                            <h4 class="mb-0"><?= number_format($typeStats['new_application'] ?? 0) ?></h4>
-                        </div>
-                        <div class="avatar bg-success-transparent">
-                            <i class="ti ti-user-check fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card custom-card bg-info bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Job Updates</h6>
-                            <h4 class="mb-0"><?= number_format(($typeStats['job_approved'] ?? 0) + ($typeStats['job_rejected'] ?? 0) + ($typeStats['job_pending'] ?? 0)) ?></h4>
-                        </div>
-                        <div class="avatar bg-info-transparent">
-                            <i class="ti ti-briefcase fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notifications List -->
-    <div class="card custom-card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">All Notifications</h5>
-        </div>
-        <div class="card-body p-0">
-            <?php if (empty($notifications)): ?>
-                <div class="text-center py-5">
-                    <i class="ti ti-bell-off fs-48 text-muted mb-3 d-block"></i>
-                    <h5 class="text-muted">No notifications yet</h5>
-                    <p class="text-muted">When you receive notifications, they will appear here.</p>
-                </div>
-            <?php else: ?>
-                <div class="list-group list-group-flush" id="notifications-list">
-                    <?php foreach ($notifications as $notification): ?>
-                        <?php $typeInfo = \App\Models\JobNotificationModel::getTypeInfo($notification->type); ?>
-                        <div class="list-group-item notification-item <?= $notification->is_read ? 'notification-read' : 'notification-unread' ?>" data-id="<?= $notification->id ?>">
-                            <div class="d-flex align-items-start gap-3">
-                                <div class="notification-icon bg-<?= $typeInfo['color'] ?>-transparent">
-                                    <i class="ti <?= $typeInfo['icon'] ?> text-<?= $typeInfo['color'] ?>"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start flex-wrap">
-                                        <div>
-                                            <h6 class="mb-1">
-                                                <?= esc($notification->title) ?>
-                                                <?php if (!$notification->is_read): ?>
-                                                    <span class="badge bg-primary ms-2">New</span>
-                                                <?php endif; ?>
-                                            </h6>
-                                            <p class="mb-1 text-muted small"><?= esc($notification->message) ?></p>
-                                            <?php if ($notification->job_title): ?>
-                                                <span class="type-badge bg-light text-dark border">
-                                                    <i class="ti ti-briefcase me-1"></i><?= esc($notification->job_title) ?>
-                                                </span>
-                                            <?php endif; ?>
-                                            <?php if ($notification->first_name): ?>
-                                                <span class="type-badge bg-light text-dark border">
-                                                    <i class="ti ti-user me-1"></i><?= esc($notification->first_name . ' ' . $notification->last_name) ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="text-end">
-                                            <small class="text-muted"><?= time_elapsed_string($notification->created_at) ?></small>
-                                            <div class="mt-2">
-                                                <?php if (!$notification->is_read): ?>
-                                                    <button class="btn btn-sm btn-link text-primary mark-read-btn" data-id="<?= $notification->id ?>">
-                                                        <i class="ti ti-check"></i> Mark as read
-                                                    </button>
-                                                <?php endif; ?>
-                                                <button class="btn btn-sm btn-link text-danger delete-notification-btn" data-id="<?= $notification->id ?>">
-                                                    <i class="ti ti-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </div>
-        <?php if ($totalNotifications > $perPage): ?>
-            <div class="card-footer">
-                <?= $pager ?? '' ?>
-            </div>
-        <?php endif; ?>
+    <div class="page-actions">
+        <a href="#new-alert" class="emp-btn emp-btn-primary emp-btn-sm">
+            <svg aria-hidden="true"><use href="#i-plus"/></svg> New Alert
+        </a>
     </div>
 </div>
 
+<section class="card" aria-label="Your alerts">
+    <div class="card-head">
+        <span class="card-title">
+            <svg aria-hidden="true"><use href="#i-bell"/></svg> 
+            Your Alerts 
+            <span class="pill pill--reviewed">
+                <?= count($alerts) ?> <?= count($alerts) === 1 ? 'alert' : 'alerts' ?>
+            </span>
+        </span>
+    </div>
+    <div class="card-body">
+        <?php if (empty($alerts)): ?>
+            <div class="empty-state">
+                <div class="empty-ic">
+                    <svg aria-hidden="true"><use href="#i-bell"/></svg>
+                </div>
+                <h3>Create your first alert</h3>
+                <p>Set criteria below to stay updated with candidate matches tailored to your job descriptions.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($alerts as $alert): 
+                $criteria = is_string($alert['criteria'] ?? '') ? json_decode($alert['criteria'], true) : ($alert['criteria'] ?? []);
+                $matches = $alert['matches'] ?? [];
+                $matchesCount = count($matches);
+            ?>
+                <div class="alert-card" data-id="<?= esc($alert['id'] ?? '') ?>">
+                    <div class="alert-top">
+                        <span class="alert-ic" aria-hidden="true">
+                            <svg><use href="#i-bell"/></svg>
+                        </span>
+                        <div>
+                            <div class="alert-name"><?= esc($alert['name'] ?? 'Candidate Alert') ?></div>
+                            <div class="alert-meta">Created <?= date('d M Y', strtotime($alert['created_at'] ?? 'now')) ?></div>
+                        </div>
+                        <?php if ($matchesCount > 0): ?>
+                            <a href="<?= site_url('employer/candidates?' . http_build_query($criteria)) ?>" class="alert-new">
+                                <svg aria-hidden="true"><use href="#i-users"/></svg> 
+                                <?= $matchesCount ?> new <?= $matchesCount === 1 ? 'match' : 'matches' ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="chips alert-chips">
+                        <?php if (!empty($criteria['keyword'] ?? $criteria['role'] ?? '')): ?>
+                            <span class="chip"><?= esc($criteria['keyword'] ?? $criteria['role']) ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($criteria['category'] ?? '')): ?>
+                            <span class="chip"><?= esc($criteria['category']) ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($criteria['location'] ?? '')): ?>
+                            <span class="chip"><?= esc($criteria['location']) ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($criteria['experience'] ?? '')): ?>
+                            <span class="chip"><?= esc($criteria['experience']) ?>+ yrs exp</span>
+                        <?php endif; ?>
+                        <?php if (!empty($criteria['education'] ?? '')): ?>
+                            <span class="chip"><?= esc($criteria['education']) ?></span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (!empty($matches)): ?>
+                        <div class="match-strip" aria-label="New matching candidates">
+                            <?php foreach ($matches as $match): 
+                                $initials = strtoupper(substr($match['first_name'] ?? 'C', 0, 1) . substr($match['last_name'] ?? 'A', 0, 1));
+                            ?>
+                                <div class="match">
+                                    <span class="ava ava--round" aria-hidden="true"><?= esc($initials) ?></span>
+                                    <span>
+                                        <b><?= esc(($match['first_name'] ?? '') . ' ' . ($match['last_name'] ?? '')) ?></b>
+                                        <i><?= esc($match['title'] ?? 'Candidate') ?> &middot; <?= esc($match['experience'] ?? '0') ?> yrs</i>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="alert-controls">
+                        <label class="ctl">Frequency
+                            <select class="select frequency-select" aria-label="Alert frequency for <?= esc($alert['name'] ?? '') ?>">
+                                <option value="instant" <?= ($alert['frequency'] ?? '') === 'instant' ? 'selected' : '' ?>>Instant</option>
+                                <option value="daily" <?= ($alert['frequency'] ?? '') === 'daily' ? 'selected' : '' ?>>Daily digest</option>
+                                <option value="weekly" <?= ($alert['frequency'] ?? '') === 'weekly' ? 'selected' : '' ?>>Weekly digest</option>
+                            </select>
+                        </label>
+                        <label class="ctl">
+                            <span class="switch">
+                                <input type="checkbox" class="email-toggle" <?= ($alert['email_active'] ?? $alert['email'] ?? true) ? 'checked' : '' ?> aria-label="Email notifications for <?= esc($alert['name'] ?? '') ?>">
+                                <span class="sl"></span>
+                            </span> 
+                            Email
+                        </label>
+                        <label class="ctl">
+                            <span class="switch">
+                                <input type="checkbox" class="active-toggle" <?= ($alert['active'] ?? true) ? 'checked' : '' ?> aria-label="Alert active: <?= esc($alert['name'] ?? '') ?>">
+                                <span class="sl"></span>
+                            </span> 
+                            Active
+                        </label>
+                        <button class="ic-btn ic-btn--danger alert-del btn-delete-alert" aria-label="Delete alert: <?= esc($alert['name'] ?? '') ?>" title="Delete alert">
+                            <svg aria-hidden="true"><use href="#i-trash"/></svg>
+                        </button>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</section>
+
+<!-- create alert · POST /employer/candidate-alerts -->
+<section class="card" id="new-alert" aria-label="Create a new alert">
+    <div class="card-head">
+        <span class="card-title">
+            <svg aria-hidden="true"><use href="#i-plus"/></svg> Create a New Alert
+        </span>
+    </div>
+    <div class="card-body">
+        <form action="<?= site_url('employer/candidate-alerts') ?>" method="POST" id="create-alert-form">
+            <?= csrf_field() ?>
+            <div class="new-alert-grid">
+                <div>
+                    <label class="lbl" for="na-name">Alert Name</label>
+                    <input class="input" id="na-name" name="name" type="text" placeholder="e.g. Accountants in Lagos" required>
+                </div>
+                <div>
+                    <label class="lbl" for="na-role">Role or keywords</label>
+                    <input class="input" id="na-role" name="keyword" type="text" placeholder="e.g. Accountant, bookkeeping">
+                </div>
+                <div>
+                    <label class="lbl" for="na-category">Category</label>
+                    <select class="select" id="na-category" name="category">
+                        <option value="">Any Category</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?= esc($cat['name'] ?? $cat->name ?? $cat) ?>"><?= esc($cat['name'] ?? $cat->name ?? $cat) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="lbl" for="na-loc">Location</label>
+                    <select class="select" id="na-loc" name="location">
+                        <option value="">Any location</option>
+                        <option value="Lagos">Lagos State</option>
+                        <option value="Abuja">Abuja (FCT)</option>
+                        <option value="Rivers">Rivers State</option>
+                        <option value="Remote">Remote</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="lbl" for="na-exp">Minimum experience (years)</label>
+                    <select class="select" id="na-exp" name="experience">
+                        <option value="">Any</option>
+                        <option value="1">1+ years</option>
+                        <option value="3">3+ years</option>
+                        <option value="5">5+ years</option>
+                    </select>
+                </div>
+            </div>
+            <div class="na-foot">
+                <p>You can fine-tune frequency and channels after creating the alert.</p>
+                <button type="submit" class="emp-btn emp-btn-primary">
+                    <svg aria-hidden="true"><use href="#i-bell"/></svg> Create Alert
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="notice notice--info">
+    <svg aria-hidden="true"><use href="#i-bulb"/></svg>
+    <span>Alerts power your AI Recruiter matches on the dashboard. The more specific your criteria, the better the matches — you can create as many alerts as you need.</span>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    toastr.options = {
-        closeButton: true,
-        progressBar: true,
-        positionClass: 'toast-top-right',
-        timeOut: 4000
-    };
+$(document).ready(function() {
+    // CSRF Token and Hash
+    const csrfTokenName = '<?= csrf_token() ?>';
+    let csrfHash = '<?= csrf_hash() ?>';
 
-    // Mark single notification as read
-    $('.mark-read-btn').on('click', function(e) {
-        e.stopPropagation();
-        const btn = $(this);
-        const notificationId = btn.data('id');
-        const notificationItem = btn.closest('.notification-item');
-
-        $.ajax({
-            url: '<?= site_url("employer/notifications/mark-read") ?>',
-            type: 'POST',
-            data: {
-                notification_id: notificationId,
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    notificationItem.removeClass('notification-unread').addClass('notification-read');
-                    btn.remove();
-
-                    // Update unread count
-                    $('#unread-count').text(response.unreadCount);
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function() {
-                toastr.error('Failed to mark notification as read');
-            }
-        });
-    });
-
-    // Mark all notifications as read
-    $('#mark-all-read').on('click', function(e) {
-        e.preventDefault();
-
-        $.ajax({
-            url: '<?= site_url("employer/notifications/mark-all-read") ?>',
-            type: 'POST',
-            data: {
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('.notification-item').removeClass('notification-unread').addClass('notification-read');
-                    $('.mark-read-btn').remove();
-                    $('#unread-count').text('0');
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function() {
-                toastr.error('Failed to mark all as read');
-            }
-        });
-    });
-
-    // Delete notification
-    $('.delete-notification-btn').on('click', function(e) {
-        e.stopPropagation();
-        const btn = $(this);
-        const notificationId = btn.data('id');
-        const notificationItem = btn.closest('.notification-item');
-
-        if (confirm('Are you sure you want to delete this notification?')) {
-            $.ajax({
-                url: '<?= site_url("employer/notifications/delete") ?>',
-                type: 'POST',
-                data: {
-                    notification_id: notificationId,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message);
-                        notificationItem.fadeOut(300, function() {
-                            $(this).remove();
-                            $('#unread-count').text(response.unreadCount);
-
-                            // Show empty state if no notifications
-                            if ($('.notification-item').length === 0) {
-                                location.reload();
-                            }
-                        });
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function() {
-                    toastr.error('Failed to delete notification');
-                }
-            });
-        }
-    });
-
-    // Helper function for time elapsed
-    function time_elapsed_string($datetime, $full = false) {
-        // This is handled server-side, but keeping for reference
+    function getAjaxData(extraData = {}) {
+        return {
+            [csrfTokenName]: csrfHash,
+            ...extraData
+        };
     }
+
+    function updateCsrf(newHash) {
+        if (newHash) {
+            csrfHash = newHash;
+            $('input[name="' + csrfTokenName + '"]').val(newHash);
+        }
+    }
+
+    // Update settings (active, email, frequency)
+    $('.frequency-select, .email-toggle, .active-toggle').on('change', function() {
+        const card = $(this).closest('.alert-card');
+        const alertId = card.data('id');
+        const frequency = card.find('.frequency-select').val();
+        const email = card.find('.email-toggle').is(':checked') ? 1 : 0;
+        const active = card.find('.active-toggle').is(':checked') ? 1 : 0;
+
+        $.ajax({
+            url: '<?= site_url("employer/candidate-alerts/update") ?>/' + alertId,
+            type: 'POST',
+            data: getAjaxData({
+                frequency: frequency,
+                email_active: email,
+                active: active
+            }),
+            dataType: 'json',
+            success: function(response) {
+                if (response.csrf) updateCsrf(response.csrf);
+                if (response.success) {
+                    // Option to show a toast or highlight success
+                } else {
+                    alert(response.message || 'Failed to update alert settings.');
+                }
+            },
+            error: function() {
+                alert('An error occurred. Please try again.');
+            }
+        });
+    });
+
+    // Delete alert
+    $('.btn-delete-alert').on('click', function(e) {
+        e.preventDefault();
+        if (!confirm('Are you sure you want to delete this alert?')) return;
+
+        const card = $(this).closest('.alert-card');
+        const alertId = card.data('id');
+
+        $.ajax({
+            url: '<?= site_url("employer/candidate-alerts/delete") ?>/' + alertId,
+            type: 'POST',
+            data: getAjaxData(),
+            dataType: 'json',
+            success: function(response) {
+                if (response.csrf) updateCsrf(response.csrf);
+                if (response.success) {
+                    card.fadeOut(300, function() {
+                        $(this).remove();
+                        if ($('.alert-card').length === 0) {
+                            location.reload();
+                        }
+                    });
+                } else {
+                    alert(response.message || 'Failed to delete alert.');
+                }
+            },
+            error: function() {
+                alert('An error occurred. Please try again.');
+            }
+        });
+    });
+});
 </script>
 <?= $this->endSection() ?>

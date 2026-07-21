@@ -7,8 +7,7 @@ use App\Models\CourseEnrollmentModel;
 use App\Models\CourseCertificateModel;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Exceptions\PageNotFoundException;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use Spatie\Browsershot\Browsershot;
 use App\Models\CvReviewModel;
 
 class ElearningController extends BaseController
@@ -21,9 +20,43 @@ class ElearningController extends BaseController
 
     public function __construct()
     {
-        $this->courseModel = new CourseModel();
-        $this->enrollmentModel = new CourseEnrollmentModel();
+        $this->courseModel      = new CourseModel();
+        $this->enrollmentModel  = new CourseEnrollmentModel();
         $this->courseModuleModel = new \App\Models\CourseModuleModel();
+    }
+
+    public function verifyCertificateForm()
+    {
+        $code = $this->request->getGet('id');
+        $certificateData = null;
+
+        if ($code) {
+            $certModel = model(CourseCertificateModel::class);
+            $cert = $certModel->where('certificate_code', $code)->first();
+
+            if ($cert) {
+                $userModel = model(\App\Models\UserModel::class);
+                $user   = $userModel->find($cert['user_id']);
+                $course = model(CourseModel::class)->find($cert['course_id']);
+
+                if ($user && $course) {
+                    $certificateData = [
+                        'recipient'    => $user->full_name ?? 'Unknown',
+                        'course_title' => $course->title ?? 'Unknown Course',
+                        'type'         => 'Professional Training',
+                        'issued_at'    => date('d F Y', strtotime($cert['issued_at'])),
+                        'duration'     => $course->duration ?? 'N/A',
+                        'code'         => $cert['certificate_code'],
+                    ];
+                }
+            }
+        }
+
+        return view('certificates/verify', [
+            'title'           => 'Verify Certificate | JobberRecruit',
+            'code'            => $code,
+            'certificateData' => $certificateData,
+        ]);
     }
 
     /**
@@ -327,6 +360,20 @@ class ElearningController extends BaseController
             'amount' => 0
         ]);
 
+        $email = auth()->user()->email;
+        $name = auth()->user()->username ?? 'Student';
+        $emailService = service('mailer');
+        $emailService->sendTemplate(
+            $email,
+            'Welcome to ' . $course->title,
+            'emails/course_enrollment',
+            [
+                'user_name' => $name,
+                'course_title' => $course->title,
+                'course_id' => $id
+            ]
+        );
+
         return redirect()->to('candidate/my-courses/' . $id)->with('success', 'Enrolled successfully! Welcome to your interactive classroom.');
     }
 
@@ -354,6 +401,21 @@ class ElearningController extends BaseController
                 'payment_reference' => $reference,
                 'amount' => $response['data']['amount'] / 100
             ]);
+
+            $course = $this->courseModel->find($courseId);
+            $email = auth()->user()->email;
+            $name = auth()->user()->username ?? 'Student';
+            $emailService = service('mailer');
+            $emailService->sendTemplate(
+                $email,
+                'Welcome to ' . ($course->title ?? 'Your Course'),
+                'emails/course_enrollment',
+                [
+                    'user_name' => $name,
+                    'course_title' => $course->title ?? 'Your Course',
+                    'course_id' => $courseId
+                ]
+            );
 
             return redirect()->to('candidate/my-courses/' . $courseId)->with('success', 'Payment successful! Welcome to your interactive classroom.');
         }
@@ -586,6 +648,19 @@ class ElearningController extends BaseController
             'issued_at' => date('Y-m-d H:i:s'),
         ]);
 
+        $email = auth()->user()->email;
+        $name = auth()->user()->username ?? 'Student';
+        $emailService = service('mailer');
+        $emailService->sendTemplate(
+            $email,
+            'Course Completed! ' . ($course->title ?? ''),
+            'emails/course_completed',
+            [
+                'user_name' => $name,
+                'course_title' => $course->title ?? 'Course',
+            ]
+        );
+
         return $this->respond([
             'success' => true,
             'certificate_code' => $certCode,
@@ -605,35 +680,72 @@ class ElearningController extends BaseController
 
         $userId = auth()->id();
         $certModel = model(CourseCertificateModel::class);
-        $certificate = $certModel
-            ->where('id', $certificateId)
-            ->where('user_id', $userId)
-            ->first();
+        $user = auth()->user();
+        $certModel = model(CourseCertificateModel::class);
+
+        // Admins can download any certificate, candidates can only download their own
+        if ($user->inGroup('admin')) {
+            $certificate = $certModel->find($certificateId);
+        } else {
+            $certificate = $certModel
+                ->where('id', $certificateId)
+                ->where('user_id', $user->id)
+                ->first();
+        }
 
         if (!$certificate) {
             return redirect()->back()->with('error', 'Certificate not found');
         }
 
+        // Handle manual override certificate downloads
+        if (!empty($certificate['manual_certificate'])) {
+            $filePath = FCPATH . 'uploads/' . $certificate['manual_certificate'];
+            if (file_exists($filePath)) {
+                return $this->response->download($filePath, null)
+                    ->setFileName('certificate-' . $certificate['certificate_code'] . '.pdf');
+            }
+        }
+
         $course = $this->courseModel->find($certificate['course_id']);
-        $user = auth()->user();
+        // Fetch target user if downloading someone else's certificate (e.g. as admin)
+        $targetUser = ($user->id === (int)$certificate['user_id']) ? $user : model(UserModel::class)->find($certificate['user_id']);
 
         $html = view('certificates/course_certificate', [
             'certificate' => $certificate,
             'course' => $course,
-            'user' => $user,
+            'user' => $targetUser,
         ]);
 
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
+        $tempPath = WRITEPATH . 'temp/';
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+        $pdfPath = $tempPath . 'certificate-' . $certificate['certificate_code'] . '-' . time() . '.pdf';
 
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'landscape');
-        $dompdf->render();
+        try {
+            // Browsershot needs Node + Chrome on the host; not available on shared hosting
+            Browsershot::html($html)
+                ->format('A4')
+                ->landscape()
+                ->margins(0, 0, 0, 0)
+                ->showBackground()
+                ->noSandbox()
+                ->save($pdfPath);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Browsershot unavailable, falling back to Dompdf: ' . $e->getMessage());
 
-        $dompdf->stream('certificate-' . $certificate['certificate_code'] . '.pdf', ['Attachment' => true]);
-        exit();
+            $dompdf = new \Dompdf\Dompdf([
+                'isRemoteEnabled'      => true,
+                'isHtml5ParserEnabled' => true,
+            ]);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'landscape');
+            $dompdf->render();
+            file_put_contents($pdfPath, $dompdf->output());
+        }
+
+        return $this->response->download($pdfPath, null)
+            ->setFileName('certificate-' . $certificate['certificate_code'] . '.pdf');
     }
 
     /**
@@ -727,6 +839,44 @@ class ElearningController extends BaseController
     }
 
     /**
+     * Admin: Delete Course
+     */
+    public function adminDeleteCourse($id)
+    {
+        $course = $this->courseModel->find($id);
+        if (! $course) {
+            return redirect()->back()->with('error', 'Course not found.');
+        }
+
+        // Delete thumbnail if it exists
+        if (! empty($course->thumbnail)) {
+            $thumbPath = FCPATH . $course->thumbnail;
+            if (file_exists($thumbPath)) {
+                @unlink($thumbPath);
+            }
+        }
+
+        $this->courseModel->delete($id);
+        return redirect()->back()->with('success', 'Course deleted successfully.');
+    }
+
+    /**
+     * Admin: Toggle Course Active Status
+     */
+    public function adminToggleStatus($id)
+    {
+        $course = $this->courseModel->find($id);
+        if (! $course) {
+            return redirect()->back()->with('error', 'Course not found.');
+        }
+
+        $newStatus = empty($course->is_active) ? 1 : 0;
+        $this->courseModel->update($id, ['is_active' => $newStatus]);
+        $label = $newStatus ? 'published' : 'unpublished';
+        return redirect()->back()->with('success', "Course {$label} successfully.");
+    }
+
+    /**
      * Admin: Delete Course Module
      */
     public function adminDeleteModule($id)
@@ -747,7 +897,7 @@ class ElearningController extends BaseController
         $paidPlan = $this->request->getGet('plan');
         $reviewId = $this->request->getGet('review_id');
 
-        return view('home/cv_review', [
+        return view('cv_review', [
             'title'           => 'Professional CV Review Service | JobberRecruit',
             'isLoggedIn'      => auth()->loggedIn(),
             'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
@@ -959,30 +1109,46 @@ class ElearningController extends BaseController
             $currentReviewId = $reviewModel->getInsertID();
         }
 
+        $email = auth()->user()->email;
+        $name = $this->request->getPost('full_name') ?: (auth()->user()->username ?? 'Candidate');
+        $emailService = service('mailer');
+        $emailService->sendTemplate(
+            $email,
+            'CV Review Request Received',
+            'emails/cv_review_received',
+            [
+                'user_name' => $name,
+            ]
+        );
+
         $autoReview = false;
         if ($currentReviewId) {
             $submitted = $reviewModel->find($currentReviewId);
-            if ($submitted && ($submitted->review_mode ?? env('cv_review_mode', 'semi')) === 'auto') {
-                $filePath = FCPATH . 'uploads/cv_reviews/' . $newName;
-                $cvContent = '';
-                if (is_file($filePath)) {
-                    $cvContent = file_get_contents($filePath) ?: '[Binary file]';
+            if ($submitted) {
+                $subReviewMode = is_array($submitted) ? ($submitted['review_mode'] ?? null) : ($submitted->review_mode ?? null);
+                $subPlan = is_array($submitted) ? ($submitted['plan'] ?? 'basic') : ($submitted->plan ?? 'basic');
+                if (($subReviewMode ?? env('cv_review_mode', 'semi')) === 'auto') {
+                    $filePath = FCPATH . 'uploads/cv_reviews/' . $newName;
+                    $cvContent = '';
+                    if (is_file($filePath)) {
+                        $cvContent = file_get_contents($filePath) ?: '[Binary file]';
+                    }
+                    $aiService = new \App\Services\AiService();
+                    $aiReview = $aiService->generateCvReview([
+                        'full_name'        => $this->request->getPost('full_name') ?? 'Candidate',
+                        'target_role'      => $this->request->getPost('target_role') ?? '',
+                        'industry'         => $this->request->getPost('industry') ?? '',
+                        'feedback_request' => $this->request->getPost('feedback_request') ?? '',
+                        'cv_content'       => $cvContent,
+                        'plan'             => $subPlan,
+                    ]);
+                    $reviewModel->update($currentReviewId, [
+                        'ai_review'   => $aiReview,
+                        'status'      => 'completed',
+                        'reviewed_at' => $now,
+                    ]);
+                    $autoReview = true;
                 }
-                $aiService = new \App\Services\AiService();
-                $aiReview = $aiService->generateCvReview([
-                    'full_name'        => $this->request->getPost('full_name') ?? 'Candidate',
-                    'target_role'      => $this->request->getPost('target_role') ?? '',
-                    'industry'         => $this->request->getPost('industry') ?? '',
-                    'feedback_request' => $this->request->getPost('feedback_request') ?? '',
-                    'cv_content'       => $cvContent,
-                    'plan'             => $submitted->plan ?? 'basic',
-                ]);
-                $reviewModel->update($currentReviewId, [
-                    'ai_review'   => $aiReview,
-                    'status'      => 'completed',
-                    'reviewed_at' => $now,
-                ]);
-                $autoReview = true;
             }
         }
 
@@ -997,5 +1163,209 @@ class ElearningController extends BaseController
             'success' => true,
             'message' => 'CV uploaded successfully! Our team will review it within 48 hours.'
         ]);
+    }
+
+    /**
+     * Admin: Manage Issued Certificates
+     */
+    public function adminCertificates()
+    {
+        $certModel = model(CourseCertificateModel::class);
+        $certificates = $certModel->select('course_certificates.*, courses.title as course_title, users.username, auth_identities.secret as user_email, COALESCE((SELECT full_name FROM job_seekers WHERE user_id = users.id), (SELECT company_name FROM employers WHERE user_id = users.id), users.username) as full_name')
+            ->join('courses', 'courses.id = course_certificates.course_id', 'left')
+            ->join('users', 'users.id = course_certificates.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
+            ->orderBy('course_certificates.issued_at', 'DESC')
+            ->findAll();
+
+        return view('admin/elearning/certificates', [
+            'title' => 'Issued Certificates',
+            'certificates' => $certificates,
+        ]);
+    }
+
+    /**
+     * Admin: Upload Manual Certificate Override
+     */
+    public function uploadManualCertificate($id)
+    {
+        $certModel = model(CourseCertificateModel::class);
+        $certificate = $certModel->find($id);
+        if (!$certificate) {
+            return redirect()->back()->with('error', 'Certificate not found.');
+        }
+
+        $file = $this->request->getFile('manual_certificate');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            if ($file->getMimeType() !== 'application/pdf') {
+                return redirect()->back()->with('error', 'Please upload a valid PDF file.');
+            }
+
+            $uploadDir = FCPATH . 'uploads/certificates';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            if (!empty($certificate['manual_certificate']) && file_exists(FCPATH . 'uploads/' . $certificate['manual_certificate'])) {
+                @unlink(FCPATH . 'uploads/' . $certificate['manual_certificate']);
+            }
+
+            $newName = $file->getRandomName();
+            $file->move($uploadDir, $newName);
+
+            $certModel->update($id, [
+                'manual_certificate' => 'certificates/' . $newName
+            ]);
+
+            return redirect()->back()->with('success', 'Manual certificate uploaded and saved successfully.');
+        }
+
+        return redirect()->back()->with('error', 'Failed to upload manual certificate.');
+    }
+
+    /**
+     * Admin: Certificate Settings (signature, stamp)
+     */
+    public function adminCertificateSettings()
+    {
+        return view('admin/elearning/certificate_settings', [
+            'title' => 'Certificate Settings',
+        ]);
+    }
+
+    /**
+     * Admin: Save Certificate Settings
+     */
+    public function saveCertificateSettings()
+    {
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+        $uploadDir    = FCPATH . 'uploads/certificate_assets';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        foreach (['certificate_signature', 'certificate_stamp'] as $field) {
+            $file = $this->request->getFile($field);
+            if ($file && $file->isValid() && !$file->hasMoved()) {
+                if (!in_array($file->getMimeType(), $allowedTypes)) {
+                    return redirect()->back()->with('error', 'Only PNG/JPG images are allowed.');
+                }
+                $newName = $file->getRandomName();
+                $file->move($uploadDir, $newName);
+                setting('Elearning.' . $field, 'uploads/certificate_assets/' . $newName);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Certificate settings saved successfully.');
+    }
+
+    /**
+     * Admin: Certificate Template Editor
+     */
+    public function adminCertificateEditor()
+    {
+        $courses = model(\App\Models\CourseModel::class)->orderBy('title', 'ASC')->findAll();
+        $courseId = $this->request->getGet('course_id');
+
+        $templateModel = model(\App\Models\CertificateTemplateModel::class);
+        $template = $templateModel->getTemplateForCourse($courseId ?: null);
+
+        // Decode layout_json if stored as a JSON string
+        if ($template && !empty($template['layout_json']) && is_string($template['layout_json'])) {
+            $template['layout_json'] = json_decode($template['layout_json'], true) ?? [];
+        } elseif (!$template) {
+            $template = [
+                'id'             => null,
+                'course_id'      => null,
+                'template_mode'  => 'builder',
+                'primary_color'  => '#0D609E',
+                'secondary_color'=> '#F3921D',
+                'text_color'     => '#15233a',
+                'show_logo'      => true,
+                'show_qr_code'   => true,
+                'show_signature' => true,
+                'background_image' => '',
+                'custom_html'    => '',
+                'layout_json'    => [],
+                'additional_text'=> '',
+            ];
+        } elseif (empty($template['layout_json'])) {
+            $template['layout_json'] = [];
+        }
+
+        return view('admin/elearning/certificate_editor', [
+            'title'    => 'Certificate Template Editor',
+            'courses'  => $courses,
+            'template' => $template,
+            'selectedCourseId' => $courseId,
+        ]);
+    }
+
+    /**
+     * Admin: Save Certificate Template (upsert to certificate_templates table)
+     */
+    public function saveCertificateTemplate()
+    {
+        $templateModel = model(\App\Models\CertificateTemplateModel::class);
+
+        $courseId      = $this->request->getPost('course_id') ?: null;
+        $templateMode  = $this->request->getPost('template_mode') ?: 'builder';
+        $primaryColor  = $this->request->getPost('primary_color') ?: '#0D609E';
+        $secondaryColor= $this->request->getPost('secondary_color') ?: '#F3921D';
+        $textColor     = $this->request->getPost('text_color') ?: '#15233a';
+        $layoutJson    = $this->request->getPost('layout_json') ?: '{}';
+        $customHtml    = $this->request->getPost('custom_html') ?: '';
+        $additionalText= $this->request->getPost('additional_text') ?: '';
+        $showLogo      = $this->request->getPost('show_logo') !== null ? (bool)$this->request->getPost('show_logo') : true;
+        $showQr        = $this->request->getPost('show_qr_code') !== null ? (bool)$this->request->getPost('show_qr_code') : true;
+        $showSig       = $this->request->getPost('show_signature') !== null ? (bool)$this->request->getPost('show_signature') : true;
+
+        // Handle background image upload
+        $backgroundImage = '';
+        $bgFile = $this->request->getFile('background_image');
+        if ($bgFile && $bgFile->isValid() && !$bgFile->hasMoved()) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (in_array($bgFile->getMimeType(), $allowedTypes)) {
+                $uploadDir = FCPATH . 'uploads/certificate_assets/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                $newName = $bgFile->getRandomName();
+                $bgFile->move($uploadDir, $newName);
+                $backgroundImage = 'uploads/certificate_assets/' . $newName;
+            }
+        }
+
+        $data = [
+            'course_id'       => $courseId,
+            'template_mode'   => $templateMode,
+            'primary_color'   => $primaryColor,
+            'secondary_color' => $secondaryColor,
+            'text_color'      => $textColor,
+            'layout_json'     => $layoutJson,
+            'custom_html'     => $customHtml,
+            'additional_text' => $additionalText,
+            'show_logo'       => $showLogo ? 1 : 0,
+            'show_qr_code'    => $showQr ? 1 : 0,
+            'show_signature'  => $showSig ? 1 : 0,
+        ];
+
+        if (!empty($backgroundImage)) {
+            $data['background_image'] = $backgroundImage;
+        }
+
+        // Find existing record for this course (or global default if courseId is null)
+        $existing = $templateModel->getTemplateForCourse($courseId);
+
+        if ($existing) {
+            $templateModel->update($existing['id'], $data);
+        } else {
+            $templateModel->insert($data);
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Certificate template saved successfully.']);
+        }
+
+        return redirect()->back()->with('success', 'Certificate template saved successfully.');
     }
 }

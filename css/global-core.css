@@ -603,7 +603,21 @@ p {
 
     .footer .footer-brand {
         display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer .footer-brand .footer-socials {
         justify-content: center;
+    }
+
+    /* Hide logo and description text in mobile footer to reduce content */
+    .footer .footer-logo,
+    .footer .footer-brand p,
+    .footer-col-1 > a,
+    .footer-col-1 .color-text-paragraph-2 {
+        display: none !important;
     }
 
     .footer-socials a {
@@ -1985,3 +1999,93 @@ body {
 [data-theme="dark"] .mobile-bottom-nav .nav-item.active {
     color: var(--brand-light, #3b82f6);
 }
+
+/* ══ ADMIN SIDEBAR STYLE ADJUSTMENTS ══ */
+.sidebar {
+    background: #0A2F57 !important; /* Premium Dark Navy */
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Sidebar header / branding */
+.sidebar .sidebar-logo {
+    background: #08294c !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.sidebar .sidebar-logo a.logo-normal img {
+    filter: brightness(0) invert(1); /* Ensure logo is white against dark bg */
+}
+.sidebar .sidebar-logo #toggle_btn i {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Submenu Headers (OVERVIEW, PLATFORM, etc.) */
+.sidebar .sidebar-menu > ul > li.submenu-open .submenu-hdr, 
+.settings-sidebar .sidebar-menu > ul > li.submenu-open .submenu-hdr {
+    color: #ED9020 !important; /* Brighter warmth orange from logo */
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    font-size: 11px !important;
+    opacity: 0.95 !important;
+    margin: 18px 0 10px 0 !important;
+}
+
+/* Sidebar Links (Normal State) */
+.sidebar .sidebar-menu > ul > li > a, 
+.settings-sidebar .sidebar-menu > ul > li > a {
+    color: rgba(255, 255, 255, 0.72) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+.sidebar .sidebar-menu > ul > li > a i,
+.sidebar .sidebar-menu > ul > li > a svg {
+    color: rgba(255, 255, 255, 0.6) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Sidebar Links (Hover State) */
+.sidebar .sidebar-menu > ul > li > a:hover, 
+.settings-sidebar .sidebar-menu > ul > li > a:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+.sidebar .sidebar-menu > ul > li > a:hover i,
+.sidebar .sidebar-menu > ul > li > a:hover svg {
+    color: #ffffff !important;
+}
+
+/* Sidebar Active Item State */
+.sidebar .sidebar-menu > ul > li.active > a, 
+.settings-sidebar .sidebar-menu > ul > li.active > a {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    border-left: 3px solid #ED9020 !important; /* Brighter active orange border */
+    border-radius: 0 4px 4px 0 !important;
+    font-weight: 600 !important;
+}
+.sidebar .sidebar-menu > ul > li.active > a i,
+.sidebar .sidebar-menu > ul > li.active > a svg {
+    color: #ffffff !important;
+}
+
+/* Multi-level dropdown arrow adjustments */
+.sidebar .sidebar-menu ul li a .menu-arrow {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+.sidebar .sidebar-menu ul li a:hover .menu-arrow {
+    color: #ffffff !important;
+}
+
+/* Modern Profile box background adjustments if shown */
+.modern-profile .user-profile {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+.modern-profile .user-profile h6 {
+    color: #ffffff !important;
+}
+.modern-profile .user-profile p {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+

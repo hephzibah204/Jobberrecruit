@@ -767,6 +767,7 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
     .dual-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
     .cta-panel { border-radius: 16px; padding: 40px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; position: relative; overflow: hidden; }
     .cta-panel.blue { background: linear-gradient(135deg, var(--brand-deep), var(--brand)); color: #ffffff; }
+.cta-panel.blue h2, .cta-panel.blue p, .cta-panel.blue li, .cta-panel.blue strong, .cta-panel.blue a { color: var(--white) !important; }
     .cta-panel.light { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
     .cta-ic { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
     .cta-panel.blue .cta-ic { background: rgba(255,255,255,.1); color: var(--accent); }

@@ -39,6 +39,9 @@ class AddMissingColumnsToPayments extends Migration
 
     public function down()
     {
+        if ($this->db->getPlatform() === 'SQLite3') {
+            return;
+        }
         $this->forge->dropColumn('payments', ['amount_paid', 'currency', 'paid_at']);
     }
 }

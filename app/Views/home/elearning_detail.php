@@ -98,6 +98,18 @@
     <!-- Content Layout -->
     <div class="course-body-wrap">
       <div class="container">
+        <?php if (session()->getFlashdata('error')): ?>
+          <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <i class="ti ti-circle-x me-2"></i> <?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('success')): ?>
+          <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="ti ti-circle-check me-2"></i> <?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <?php endif; ?>
         <div class="course-layout">
           <!-- Main Content -->
           <div class="course-main">
@@ -128,7 +140,7 @@
                 <div>
                   <h3>Curriculum preview</h3>
                   <p>Enrol in this course to immediately unlock all video lectures, downloadable guides, worksheets, and certificate generation on paid tiers.</p>
-                  <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-sm btn-accent">Enrol &amp; unlock</a>
+                  <a href="#" data-bs-toggle="modal" data-bs-target="<?= (float) ($course->price ?? 0) > 0 ? '#paymentModal' : '#enrollModal' ?>" class="btn btn-sm btn-accent">Enrol &amp; unlock</a>
                 </div>
               </div>
               <?php endif; ?>
@@ -167,7 +179,7 @@
                       <?php else: ?>
                         <div class="lesson-locked-row">
                           <span>Enrol now to view lectures and download attached materials.</span>
-                          <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-outline btn-sm">Unlock lesson</a>
+                          <a href="#" data-bs-toggle="modal" data-bs-target="<?= (float) ($course->price ?? 0) > 0 ? '#paymentModal' : '#enrollModal' ?>" class="btn btn-outline btn-sm">Unlock lesson</a>
                         </div>
                       <?php endif; ?>
                     </div>
@@ -245,12 +257,12 @@
                   <?php endif; ?>
                 <?php else: ?>
                   <?php if ((float) ($course->price ?? 0) > 0): ?>
-                    <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary btn-block">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#paymentModal" class="btn btn-primary btn-block">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                       Buy Course (₦<?= number_format((float)$course->price, 2) ?>)
                     </a>
                   <?php else: ?>
-                    <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary btn-block">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#enrollModal" class="btn btn-primary btn-block">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                       Enroll for Free
                     </a>
@@ -331,10 +343,60 @@
         <a class="btn btn-primary" href="<?= base_url('candidate/my-courses/' . $course->id) ?>">Go to Classroom</a>
       <?php endif; ?>
     <?php else: ?>
-      <a class="btn btn-primary" href="<?= base_url('training/enroll/' . $course->id) ?>">
+      <a class="btn btn-primary" href="#" data-bs-toggle="modal" data-bs-target="<?= (float) ($course->price ?? 0) > 0 ? '#paymentModal' : '#enrollModal' ?>">
         <?= (float) ($course->price ?? 0) > 0 ? 'Buy Course' : 'Enrol Free' ?>
       </a>
     <?php endif; ?>
+  </div>
+</div>
+
+<!-- Enrollment Modal -->
+<div class="modal fade" id="enrollModal" tabindex="-1" aria-labelledby="enrollModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border:none;border-radius:12px;overflow:hidden;box-shadow:0 14px 40px rgba(10,47,87,.16)">
+      <div class="modal-header" style="background:var(--brand-light);color:var(--brand);padding:18px 22px">
+        <h5 class="modal-title fw-bold" id="enrollModalLabel">Enroll in Course</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="padding:22px">
+        <p>You are about to enroll in <strong><?= esc($course->title) ?></strong> for free.</p>
+        <p>Click "Confirm Enrollment" to add this course to your learning dashboard and get full access.</p>
+      </div>
+      <div class="modal-footer" style="padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
+        <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary">Confirm Enrollment</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border:none;border-radius:12px;overflow:hidden;box-shadow:0 14px 40px rgba(10,47,87,.16)">
+      <div class="modal-header" style="background:var(--brand-light);color:var(--brand);padding:18px 22px">
+        <h5 class="modal-title fw-bold" id="paymentModalLabel">Purchase Course</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="padding:22px">
+        <p>You are about to purchase <strong><?= esc($course->title) ?></strong>.</p>
+        <div style="background:#f5f7fb;padding:15px;border-radius:8px;margin-bottom:15px;border:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="color:var(--muted)">Price:</span>
+            <strong>₦<?= number_format((float)$course->price, 2) ?></strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:var(--muted)">Total:</span>
+            <strong style="color:var(--brand);font-size:1.1rem">₦<?= number_format((float)$course->price, 2) ?></strong>
+          </div>
+        </div>
+        <p style="font-size:0.9rem;color:var(--muted)"><i class="ti ti-lock"></i> Secure payment processed by Paystack.</p>
+      </div>
+      <div class="modal-footer" style="padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
+        <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary">Proceed to Payment</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -531,7 +593,7 @@
   overflow: hidden; margin-bottom: 24px;
 }
 .enrol-media {
-  aspect-ratio: 16/9; background: linear-gradient(135deg, #0861A9, #064A85);
+  aspect-ratio: 16/9; background: linear-gradient(135deg, #0D609E, #064A85);
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
 }

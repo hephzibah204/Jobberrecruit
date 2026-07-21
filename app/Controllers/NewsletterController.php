@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\NewsletterModel;
 use App\Models\NewsletterSubscriberModel;
+use App\Models\NewsletterTemplateModel;
 use App\Models\WebinarModel;
 use App\Models\WebinarRegistrationModel;
 use CodeIgniter\API\ResponseTrait;
@@ -16,6 +17,7 @@ class NewsletterController extends BaseController
     protected $subscriberModel;
     protected $webinarModel;
     protected $registrationModel;
+    protected $industryModel;
 
     public function __construct()
     {
@@ -23,6 +25,7 @@ class NewsletterController extends BaseController
         $this->subscriberModel = new NewsletterSubscriberModel();
         $this->webinarModel = new WebinarModel();
         $this->registrationModel = new WebinarRegistrationModel();
+        $this->industryModel = new \App\Models\IndustryModel();
     }
 
     /**
@@ -30,11 +33,18 @@ class NewsletterController extends BaseController
      */
     public function webinars()
     {
-        return view('home/webinars', [
+        return view('webinars_public', [
             'title' => 'Upcoming Career Webinars',
             'webinars' => $this->webinarModel->where('status !=', 'cancelled')
                                             ->orderBy('scheduled_at', 'ASC')
                                             ->findAll()
+        ]);
+    }
+
+    public function registered()
+    {
+        return view('webinar_registered', [
+            'title' => 'Webinar Registration Confirmed'
         ]);
     }
 
@@ -102,19 +112,54 @@ class NewsletterController extends BaseController
 
     public function adminIndex()
     {
+        $newsletters = $this->newsletterModel->orderBy('created_at', 'DESC')->findAll();
+        $webinars = $this->webinarModel->orderBy('created_at', 'DESC')->findAll();
+
         return view('admin/newsletters/index', [
-            'title' => 'Newsletter & Webinar Management',
-            'newsletters' => $this->newsletterModel->orderBy('created_at', 'DESC')->findAll(),
-            'subscribers' => $this->subscriberModel->countAllResults(),
-            'webinars' => $this->webinarModel->orderBy('scheduled_at', 'DESC')->findAll(),
+            'title' => 'Newsletters & Webinars',
+            'newsletters' => $newsletters,
+            'webinars' => $webinars,
+            'subscribers' => $this->subscriberModel->where('is_active', 1)->countAllResults()
+        ]);
+    }
+
+    public function create()
+    {
+        return view('admin/newsletters/editor', [
+            'title' => 'Create Newsletter',
+            'newsletter' => null,
+            'industries' => $this->industryModel->orderBy('name', 'ASC')->findAll()
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $newsletter = $this->newsletterModel->find($id);
+        if (!$newsletter) {
+            return redirect()->to('admin/newsletters')->with('error', 'Newsletter not found');
+        }
+
+        return view('admin/newsletters/editor', [
+            'title' => 'Edit Newsletter',
+            'newsletter' => $newsletter,
+            'industries' => $this->industryModel->orderBy('name', 'ASC')->findAll()
         ]);
     }
 
     public function saveNewsletter()
     {
+        $rules = [
+            'title' => 'required',
+            'subject' => 'permit_empty',
+            'target_group' => 'permit_empty',
+            'content' => 'required'
+        ];
+        
         $id = $this->request->getPost('id');
         $data = [
             'title' => $this->request->getPost('title'),
+            'subject' => $this->request->getPost('subject'),
+            'target_group' => $this->request->getPost('target_group'),
             'content' => $this->request->getPost('content'),
             'status' => 'draft'
         ];
@@ -126,6 +171,17 @@ class NewsletterController extends BaseController
         }
 
         return redirect()->back()->with('success', 'Newsletter saved as draft');
+    }
+
+    public function deleteNewsletter($id)
+    {
+        $newsletter = $this->newsletterModel->find($id);
+        if (! $newsletter) {
+            return redirect()->to('admin/newsletters')->with('error', 'Newsletter not found.');
+        }
+
+        $this->newsletterModel->delete($id);
+        return redirect()->to('admin/newsletters')->with('success', 'Newsletter deleted successfully.');
     }
 
     public function sendNewsletter($id)
@@ -237,5 +293,80 @@ class NewsletterController extends BaseController
         
         fclose($output);
         exit;
+    }
+
+    /**
+     * Get list of all newsletter templates, auto-seeding defaults if empty.
+     */
+    public function listTemplates()
+    {
+        $templateModel = new NewsletterTemplateModel();
+        
+        if ($templateModel->countAllResults() === 0) {
+            $defaults = [
+                [
+                    'name' => 'General Announcement Template',
+                    'html_content' => view('emails/newsletter_general', [
+                        'title'   => 'Important Platform Updates & Announcements',
+                        'content' => '<h4>Welcome to the JobberRecruit Announcement!</h4><p>We are thrilled to bring you the latest developments, platform updates, and feature upgrades designed to make recruiting and career-building simpler for everyone.</p><p>Use this space to tell your subscribers about your news, product additions, or announcements.</p>',
+                        'email'   => 'subscriber@example.com'
+                    ])
+                ],
+                [
+                    'name' => 'Candidate Careers Template',
+                    'html_content' => view('emails/newsletter_candidate', [
+                        'title'   => 'Top Career Tips & Job Search Success Strategies',
+                        'content' => '<h4>Maximize Your Opportunities Today!</h4><p>Explore custom career hacks, mock interview guidance, and the best ways to match with employers looking for your exact skillset.</p><p>Stay ahead of the curve with our expert resources curated specially for candidates like you.</p>',
+                        'email'   => 'candidate@example.com'
+                    ])
+                ],
+                [
+                    'name' => 'Employer Talent Update Template',
+                    'html_content' => view('emails/newsletter_employer', [
+                        'title'   => 'Attract, Screen & Retain Top Talent Efficiently',
+                        'content' => '<h4>Build the Ultimate Team with JobberRecruit</h4><p>Learn how to utilize our smart screening workflows, aptitude testing tools, and direct talent sourcing filters to find matching candidates in record time.</p>',
+                        'email'   => 'employer@example.com'
+                    ])
+                ]
+            ];
+            
+            foreach ($defaults as $tmpl) {
+                $templateModel->insert($tmpl);
+            }
+        }
+        
+        $templates = $templateModel->orderBy('created_at', 'DESC')->findAll();
+        
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'templates' => $templates
+        ]);
+    }
+
+    /**
+     * Save a newsletter template into the library.
+     */
+    public function storeTemplate()
+    {
+        $name = $this->request->getPost('name');
+        $html = $this->request->getPost('html_content');
+        
+        if (empty($name) || empty($html)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Template name and content are required'
+            ]);
+        }
+        
+        $templateModel = new NewsletterTemplateModel();
+        $templateModel->insert([
+            'name'         => $name,
+            'html_content' => $html
+        ]);
+        
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => 'Template successfully saved to library'
+        ]);
     }
 }

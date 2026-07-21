@@ -18,6 +18,32 @@ $routes->get('home/ajaxRecentJobs', 'Home::ajaxRecentJobs');
 $routes->get('home/ajaxCategories', 'Home::ajaxCategories');
 $routes->get('jobs', 'Home::jobs');
 $routes->get('jobs-in-(:segment)', 'Home::location_hub/$1');
+
+// E-Learning & CV Review — must be before (:segment)-jobs wildcard to avoid collision
+$routes->get('training', 'Home::training');
+$routes->get('training/course/(:num)', 'ElearningController::show/$1');
+$routes->get('training/content/(:num)', 'ElearningController::content/$1');
+$routes->get('training/enroll/(:num)', 'ElearningController::enroll/$1');
+$routes->get('training/verify/(:num)', 'ElearningController::verify/$1');
+$routes->get('training/certificate/download/(:num)', 'ElearningController::downloadCertificate/$1');
+$routes->get('training/certificates', 'ElearningController::myCertificates');
+$routes->post('training/complete/(:num)', 'ElearningController::completeCourse/$1');
+$routes->get('training/webinars/registered', 'NewsletterController::registered');
+$routes->get('cv-review', 'Home::cvReview');
+$routes->get('cv-review/submit', 'ElearningController::cvReviewSubmit');
+$routes->post('cv-review/upload', 'ElearningController::uploadCvReview');
+$routes->post('cv-review/pay', 'ElearningController::initiateCvPayment');
+$routes->get('cv-review/verify', 'ElearningController::verifyCvPayment');
+$routes->get('certificates/verify', 'ElearningController::verifyCertificateForm');
+$routes->get('aptitude', 'AptitudeController::index', ['filter' => 'auth']);
+$routes->get('aptitude/daily', 'AptitudeController::daily', ['filter' => 'auth']);
+$routes->get('aptitude/test/(:num)', 'AptitudeController::testEngine/$1', ['filter' => 'auth']);
+$routes->get('aptitude/result/(:num)', 'AptitudeController::result/$1', ['filter' => 'auth']);
+$routes->get('aptitude/results/(:num)', 'AptitudeController::result/$1', ['filter' => 'auth']);
+$routes->get('aptitude/(:segment)/practice', 'AptitudeController::practice/$1', ['filter' => 'auth']);
+$routes->get('aptitude/(:segment)/start', 'AptitudeController::official/$1', ['filter' => 'auth']);
+$routes->get('webinars', 'NewsletterController::webinars');
+
 $routes->get('(:segment)-jobs', 'Home::industry_hub/$1');
 $routes->get('jobs/featured', 'Home::featuredJobs');
 $routes->get('jobs/(:segment)', 'Home::view_job/$1');
@@ -43,6 +69,9 @@ $routes->addRedirect('terms-of-service', 'terms-and-conditions', 301);
 $routes->get('terms-and-conditions', 'Home::termsOfService');
 $routes->get('faq', 'Home::faq');
 $routes->get('recruitment', 'Home::recruitment');
+$routes->post('submit-recruitment-inquiry', 'Home::submitRecruitmentInquiry');
+$routes->get('employers', 'Home::employers');
+$routes->get('career-advice', 'Home::careerAdvice');
 $routes->get('job-ads', 'Home::adPage');
 
 $routes->get('job-alerts', 'JobSeekerController::notifications', ['filter' => 'auth']);
@@ -118,6 +147,8 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->post('jobs/update', 'EmployerController::updateJob');
     $routes->get('post-job', 'EmployerController::post_job');
     $routes->post('post-job', 'EmployerController::post_job');
+    $routes->get('jobs/create', 'EmployerController::post_job');
+    $routes->post('jobs/create', 'EmployerController::post_job');
 
     $routes->post('jobs/promote/(:num)', 'EmployerController::promoteJob/$1');
     $routes->get('jobs/view/(:num)', 'EmployerController::viewJob/$1');
@@ -177,6 +208,7 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     // Transactions
     $routes->get('transactions', 'EmployerController::transactions');
+    $routes->get('wallet', 'WalletController::employerWallet');
 
     $routes->get('notifications', 'EmployerController::notifications');
     $routes->post('notifications/mark-read', 'EmployerController::markNotificationRead');
@@ -188,6 +220,7 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('candidates/filter', 'EmployerController::filterCandidates');
     $routes->get('candidates/view/(:num)', 'EmployerController::viewCandidate/$1');
     $routes->post('candidates/unlock', 'EmployerController::unlockCandidate');
+    $routes->post('candidates/unlock-verify', 'EmployerController::verifyUnlockAjax');
 
     // Messaging
     $routes->get('messages', 'MessageController::inbox');
@@ -197,6 +230,9 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     // GDPR Data Export
     $routes->get('settings/export-data', 'EmployerController::exportData');
+
+    // AI generation
+    $routes->post('jobs/ai-generate', 'EmployerController::generateJobDescription');
 
     // Referrals
     $routes->get('referrals', 'ReferralController::index');
@@ -241,6 +277,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->post('resumes/ai/proxy-image', 'ResumeController::proxyAiImage');
     $routes->get('resumes/download/(:num)', 'ResumeController::download/$1');
     $routes->get('resumes/download-docx/(:num)', 'ResumeController::downloadDocx/$1');
+    $routes->post('resumes/delete/(:num)', 'ResumeController::delete/$1');
 
     // Referrals
     $routes->get('referrals', 'ReferralController::index');
@@ -275,6 +312,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
 
     // Transactions
     $routes->get('transactions', 'JobSeekerController::transactions');
+    $routes->get('wallet', 'WalletController::candidateWallet');
 });
 
 
@@ -282,6 +320,10 @@ $routes->get('track/open/(:num)', 'Home::trackOpen/$1');
 $routes->get('track/click/(:num)', 'Home::trackClick/$1');
 
 $routes->post('pricing/webhook', 'EmployerController::webhook'); // webhook endpoint (no CSRF)
+
+// Global Wallet Routes
+$routes->post('wallet/initialize', 'WalletController::initializeFunding', ['filter' => 'auth']);
+$routes->get('wallet/callback', 'WalletController::paymentCallback');
 
 
 // Admin
@@ -293,7 +335,12 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('logout', 'AdminController::logout');
     $routes->get('dashboard', 'AdminController::index');
     $routes->post('theme/toggle', 'AdminController::toggleTheme');
-    $routes->get('users', 'AdminController::index');
+    $routes->get('users', 'AdminUserController::index');
+    $routes->post('users/fund', 'AdminUserController::fundWallet');
+    $routes->post('users/reset-password', 'AdminUserController::resetPassword');
+    $routes->post('users/toggle-status', 'AdminUserController::toggleStatus');
+    $routes->post('users/delete', 'AdminUserController::deleteUser');
+    $routes->post('users/reset-account', 'AdminUserController::resetAccount');
     $routes->get('settings', 'AdminController::index');
     $routes->get('features', 'AdminController::features');
     $routes->post('features/save', 'AdminController::saveFeatures');
@@ -373,12 +420,17 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
 
     // Blog
     $routes->get('blogs', 'AdminController::blogs');
+    $routes->get('blogs/create', 'AdminController::createBlog');
+    $routes->get('blogs/edit/(:num)', 'AdminController::editBlog/$1');
     $routes->post('blogs/save', 'AdminController::saveBlog');
     $routes->get('blogs/preview/(:segment)', 'AdminController::previewBlog/$1');
     $routes->post('blogs/check-slug', 'AdminController::checkSlug');
     $routes->post('blogs/check-title', 'AdminController::checkTitle');
     $routes->post('blogs/delete/(:num)', 'AdminController::deleteBlog/$1');
     $routes->post('blogs/upload-editor-image', 'AdminController::uploadEditorImage');
+    $routes->post('blogs/upload-editor-image-ck4', 'AdminController::uploadEditorImageCk4');
+    $routes->post('blogs/ai-generate', 'AdminController::aiGenerateBlog');
+    $routes->post('blogs/ai-image', 'AdminController::aiGenerateImage');
 
     // Testimonials
     $routes->get('testimonials', 'AdminController::testimonials');
@@ -405,41 +457,49 @@ if (ENVIRONMENT === 'development') {
 }
 
 // Newsletter & Webinar Routes
-$routes->get('webinars', 'NewsletterController::webinars');
 $routes->post('newsletter/subscribe', 'NewsletterController::subscribe');
 $routes->post('webinars/register/(:num)', 'NewsletterController::registerWebinar/$1');
 
 // Job Reporting Routes
 $routes->post('jobs/report', 'JobReportController::submit');
 
-// E-Learning Routes
-$routes->get('training', 'ElearningController::index');
-$routes->get('training/course/(:num)', 'ElearningController::show/$1');
-$routes->get('training/content/(:num)', 'ElearningController::content/$1');
-$routes->get('training/enroll/(:num)', 'ElearningController::enroll/$1');
-$routes->get('training/verify/(:num)', 'ElearningController::verify/$1');
-$routes->post('training/complete/(:num)', 'ElearningController::completeCourse/$1');
-$routes->get('training/certificate/download/(:num)', 'ElearningController::downloadCertificate/$1');
-$routes->get('training/certificates', 'ElearningController::myCertificates');
-
-// CV Review Routes
-$routes->get('cv-review', 'ElearningController::cvReview');
-$routes->get('cv-review/submit', 'ElearningController::cvReviewSubmit');
-$routes->post('cv-review/upload', 'ElearningController::uploadCvReview');
-$routes->post('cv-review/pay', 'ElearningController::initiateCvPayment');
-$routes->get('cv-review/verify', 'ElearningController::verifyCvPayment');
+// Aptitude API Routes (auth-required group)
+$routes->group('api/aptitude', ['filter' => 'auth'], function ($routes) {
+    $routes->post('attempts', 'AptitudeController::startAttempt');
+    $routes->get('attempts/(:num)', 'AptitudeController::fetchTest/$1');
+    $routes->post('attempts/(:num)/answer', 'AptitudeController::saveAnswer/$1');
+    $routes->post('attempts/(:num)/submit', 'AptitudeController::submitTest/$1');
+});
 
     // Admin Newsletter & Webinar Management
     $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
         $routes->get('newsletters', 'NewsletterController::adminIndex');
+        $routes->get('newsletters/create', 'NewsletterController::create');
+        $routes->get('newsletters/edit/(:num)', 'NewsletterController::edit/$1');
         $routes->post('newsletters/save', 'NewsletterController::saveNewsletter');
         $routes->post('newsletters/send/(:num)', 'NewsletterController::sendNewsletter/$1');
+        $routes->post('newsletters/delete/(:num)', 'NewsletterController::deleteNewsletter/$1');
         $routes->get('newsletters/subscribers', 'NewsletterController::adminSubscribers');
         $routes->post('newsletters/subscribers/delete/(:num)', 'NewsletterController::deleteSubscriber/$1');
         $routes->get('newsletters/subscribers/export', 'NewsletterController::exportSubscribers');
+        $routes->get('newsletters/templates/list', 'NewsletterController::listTemplates');
+        $routes->post('newsletters/templates/store', 'NewsletterController::storeTemplate');
         $routes->post('webinars/save', 'NewsletterController::saveWebinar');
         $routes->post('webinars/delete/(:num)', 'NewsletterController::deleteWebinar/$1');
         $routes->get('webinars', 'NewsletterController::adminWebinarsIndex');
+
+    // Automations
+        $routes->get('newsletters/automations', 'NewsletterAutomationController::index');
+        $routes->get('newsletters/automations/builder', 'NewsletterAutomationController::builder');
+        $routes->get('newsletters/automations/builder/(:num)', 'NewsletterAutomationController::builder/$1');
+        $routes->post('newsletters/automations/save', 'NewsletterAutomationController::save');
+    });
+
+$routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
+    // Aptitude Tests
+    $routes->get('aptitude', 'AdminAptitudeController::index');
+    $routes->match(['GET', 'POST'], 'aptitude/create', 'AdminAptitudeController::createTest');
+    $routes->match(['GET', 'POST'], 'aptitude/import/(:num)', 'AdminAptitudeController::importQuestions/$1');
 
     // Job Reports
     $routes->get('reports', 'JobReportController::adminIndex');
@@ -448,9 +508,19 @@ $routes->get('cv-review/verify', 'ElearningController::verifyCvPayment');
     // E-Learning
     $routes->get('elearning', 'ElearningController::adminIndex');
     $routes->post('elearning/save', 'ElearningController::saveCourse');
+    $routes->post('elearning/delete/(:num)', 'ElearningController::adminDeleteCourse/$1');
+    $routes->post('elearning/toggle-status/(:num)', 'ElearningController::adminToggleStatus/$1');
     $routes->get('elearning/modules/(:num)', 'ElearningController::adminModules/$1');
     $routes->post('elearning/modules/save', 'ElearningController::adminSaveModule');
     $routes->post('elearning/modules/delete/(:num)', 'ElearningController::adminDeleteModule/$1');
+    $routes->get('elearning/certificates', 'ElearningController::adminCertificates');
+    $routes->post('elearning/certificates/upload-manual/(:num)', 'ElearningController::uploadManualCertificate/$1');
+    $routes->get('elearning/certificates/settings', 'ElearningController::adminCertificateSettings');
+    $routes->post('elearning/certificates/settings/save', 'ElearningController::saveCertificateSettings');
+    $routes->post('elearning/settings/save', 'ElearningController::saveCertificateSettings');
+    $routes->get('elearning/certificates/editor', 'ElearningController::adminCertificateEditor');
+    $routes->post('elearning/certificates/editor/save', 'ElearningController::saveCertificateTemplate');
+    $routes->post('elearning/save-certificate-template', 'ElearningController::saveCertificateTemplate');
 
     // CV Review Admin
     $routes->get('cv-reviews', 'AdminController::cvReviews');
@@ -462,3 +532,4 @@ $routes->get('cv-review/verify', 'ElearningController::verifyCvPayment');
     $routes->post('cv-reviews/save-notes/(:num)', 'AdminController::cvReviewSaveNotes/$1');
     $routes->post('cv-reviews/deliver/(:num)', 'AdminController::cvReviewDeliver/$1');
 });
+

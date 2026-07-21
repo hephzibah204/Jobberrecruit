@@ -26,7 +26,7 @@
                         <div class="card-title">Upload Signature & Stamp</div>
                     </div>
                     <div class="card-body">
-                        <form action="<?= base_url('admin/elearning/settings/save') ?>" method="POST" enctype="multipart/form-data">
+                        <form action="<?= base_url('admin/elearning/certificates/settings/save') ?>" method="POST" enctype="multipart/form-data">
                             <?= csrf_field() ?>
                             
                             <div class="mb-4">

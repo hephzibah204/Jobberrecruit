@@ -1,719 +1,525 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend('layouts/employer') ?>
+
+<?= $this->section('styles') ?>
+<style>
+.stats--apps {
+  grid-template-columns: repeat(6, 1fr);
+}
+@media (max-width: 1250px) {
+  .stats--apps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .stats--apps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.appl-cell {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.appl-name {
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--brand-deep);
+}
+.appl-mail {
+  font-size: .72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+@media (max-width: 860px) {
+  .tbl--apps {
+    min-width: 0;
+  }
+  .tbl--apps thead {
+    display: none;
+  }
+  .tbl--apps tr {
+    display: block;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 4px;
+  }
+  .tbl--apps td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: none;
+    padding: 5px 0;
+    gap: 10px;
+  }
+  .tbl--apps td::before {
+    content: attr(data-lbl);
+    font-size: .66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .tbl--apps td.no-lbl::before {
+    display: none;
+  }
+  .appl-mail {
+    max-width: 55vw;
+  }
+}
+
+/* Modal Styling */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 25, 45, 0.5);
+  backdrop-filter: blur(4px);
+  padding: 16px;
+}
+.modal.show {
+  display: flex;
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
-<div class="content">
+<div class="page-head">
+  <div class="page-head-left">
+    <h1><svg aria-hidden="true"><use href="#i-doc"/></svg> Applications</h1>
+    <p>View and manage applications for your job postings.</p>
+  </div>
+  <div class="page-actions">
+    <button class="emp-btn emp-btn-outline emp-btn-sm" onclick="location.reload();" aria-label="Refresh list">
+      <svg aria-hidden="true"><use href="#i-refresh"/></svg> Refresh
+    </button>
+    <a href="<?= site_url('employer/applications/export') ?>" class="emp-btn emp-btn-primary emp-btn-sm">
+      <svg aria-hidden="true"><use href="#i-download"/></svg> Export CSV
+    </a>
+  </div>
+</div>
 
-    <div class="page-header">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold">Applications</h4>
-                <h6>View and manage applications for your job postings</h6>
-            </div>
-        </div>
-        <ul class="table-top-head">
-            <li>
-                <a data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh" onclick="location.reload();">
-                    <i class="ti ti-refresh"></i>
-                </a>
-            </li>
-            <li>
-                <a data-bs-toggle="tooltip" data-bs-placement="top" title="Collapse" id="collapse-header">
-                    <i class="ti ti-chevron-up"></i>
-                </a>
-            </li>
-        </ul>
-        <div class="page-btn">
-            <a href="<?= site_url('employer/applications/export') ?>" class="btn btn-success me-2">
-                <i class="ti ti-download me-1"></i>Export CSV
-            </a>
-        </div>
+<!-- Dynamic stats block -->
+<section class="stats stats--apps" aria-label="Application statistics">
+  <div class="stat">
+    <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-users"/></svg></span></div>
+    <div class="stat-num" id="stat-total"><?= esc($stats['total'] ?? count($applications)) ?></div>
+    <div class="stat-lbl">Total</div>
+  </div>
+  <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)">
+    <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-clock"/></svg></span></div>
+    <div class="stat-num" id="stat-pending"><?= esc($stats['pending'] ?? 0) ?></div>
+    <div class="stat-lbl">Pending</div>
+  </div>
+  <div class="stat">
+    <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-eye"/></svg></span></div>
+    <div class="stat-num" id="stat-reviewed"><?= esc($stats['reviewed'] ?? 0) ?></div>
+    <div class="stat-lbl">Reviewed</div>
+  </div>
+  <div class="stat" style="--st-bar:var(--brand-dark)">
+    <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-star"/></svg></span></div>
+    <div class="stat-num" id="stat-shortlisted"><?= esc($stats['shortlisted'] ?? 0) ?></div>
+    <div class="stat-lbl">Shortlisted</div>
+  </div>
+  <div class="stat" style="--st-bar:var(--danger);--st-icbg:var(--danger-light);--st-ic:var(--danger)">
+    <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-x"/></svg></span></div>
+    <div class="stat-num" id="stat-rejected"><?= esc($stats['rejected'] ?? 0) ?></div>
+    <div class="stat-lbl">Rejected</div>
+  </div>
+  <div class="stat" style="--st-bar:var(--success);--st-icbg:var(--success-light);--st-ic:var(--success)">
+    <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span></div>
+    <div class="stat-num" id="stat-hired"><?= esc($stats['hired'] ?? 0) ?></div>
+    <div class="stat-lbl">Hired</div>
+  </div>
+</section>
+
+<!-- Filter Toolbar & Table -->
+<section class="card" aria-label="Applications list">
+  <div class="card-head">
+    <div class="toolbar" style="flex:1">
+      <div class="search-wrap">
+        <svg aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" id="app-search" type="search" placeholder="Search applications…" aria-label="Search applications">
+      </div>
+      
+      <select class="select" id="filter-job" aria-label="Filter by job">
+        <option value="all">All jobs</option>
+        <?php foreach ($jobs as $job): ?>
+          <option value="job-<?= $job->id ?>"><?= esc($job->title) ?> (<?= $job->application_count ?>)</option>
+        <?php endforeach; ?>
+      </select>
+
+      <select class="select" id="filter-status" aria-label="Filter by status">
+        <option value="all">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="reviewed">Reviewed</option>
+        <option value="shortlisted">Shortlisted</option>
+        <option value="rejected">Rejected</option>
+        <option value="hired">Hired</option>
+      </select>
+
+      <select class="select" id="bulk-actions" aria-label="Bulk actions">
+        <option value="">Bulk actions</option>
+        <option value="reviewed">Mark as reviewed</option>
+        <option value="shortlisted">Shortlist</option>
+        <option value="rejected">Reject</option>
+        <option value="delete">Delete selected</option>
+      </select>
     </div>
+  </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-2 col-md-4">
-            <div class="card custom-card stats-card bg-primary bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total</h6>
-                            <h4 class="mb-0"><?= number_format($stats['total']) ?></h4>
-                        </div>
-                        <div class="avatar bg-primary-transparent">
-                            <i class="ti ti-users fs-20"></i>
-                        </div>
+  <div class="tbl-wrap">
+    <table class="tbl tbl--apps" id="apps-table">
+      <thead>
+        <tr>
+          <th style="width: 40px; text-align: center; padding-left: 14px;">
+            <input type="checkbox" id="select-all" style="cursor: pointer; width: 16px; height: 16px;">
+          </th>
+          <th>Applicant</th>
+          <th>Job Title</th>
+          <th>Phone</th>
+          <th>Applied On</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($applications)): ?>
+          <tr>
+            <td colspan="7" class="no-lbl">
+              <div class="empty">
+                <div class="empty-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></div>
+                <h3>No applications found</h3>
+                <p>You haven't received any applications for your job posts yet.</p>
+              </div>
+            </td>
+          </tr>
+        <?php else: ?>
+          <?php foreach ($applications as $app): ?>
+            <?php
+            $firstName = $app->first_name ?? '';
+            $lastName = $app->last_name ?? '';
+            $fullName = trim($firstName . ' ' . $lastName);
+            $initials = '';
+            if (!empty($firstName) || !empty($lastName)) {
+                $initials = strtoupper(substr($firstName, 0, 1) . (strlen($lastName) > 0 ? substr($lastName, 0, 1) : ''));
+            } else {
+                $initials = 'AP';
+            }
+
+            // Map status classes
+            $statusClass = 'pill--pending';
+            $statusLower = strtolower(trim($app->status ?? 'pending'));
+            if ($statusLower === 'reviewed') {
+                $statusClass = 'pill--reviewed';
+            } elseif ($statusLower === 'shortlisted') {
+                $statusClass = 'pill--shortlisted';
+            } elseif ($statusLower === 'hired' || $statusLower === 'open' || $statusLower === 'active' || $statusLower === 'success') {
+                $statusClass = 'pill--hired';
+            } elseif ($statusLower === 'rejected' || $statusLower === 'closed' || $statusLower === 'expired') {
+                $statusClass = 'pill--rejected';
+            }
+            ?>
+            <tr data-id="<?= $app->id ?>" data-job="job-<?= $app->job_id ?>" data-status="<?= esc($statusLower) ?>">
+              <td class="no-lbl" style="text-align: center; padding-left: 14px;">
+                <input type="checkbox" class="app-checkbox" data-id="<?= $app->id ?>" style="cursor: pointer; width: 16px; height: 16px;">
+              </td>
+              <td class="no-lbl">
+                <div class="appl-cell">
+                  <span class="ava ava--round" aria-hidden="true"><?= esc($initials) ?></span>
+                  <div style="min-width:0">
+                    <div class="appl-name">
+                      <?= esc($fullName) ?>
+                      <?php if (!empty($app->is_guest)): ?>
+                        <span class="pill pill--closed" style="font-size: 0.6rem; padding: 2px 6px; margin-left: 4px;">Guest</span>
+                      <?php endif; ?>
                     </div>
+                    <div class="appl-mail"><?= esc($app->email ?? '') ?></div>
+                  </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4">
-            <div class="card custom-card stats-card bg-warning bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Pending</h6>
-                            <h4 class="mb-0 text-warning"><?= number_format($stats['pending']) ?></h4>
-                        </div>
-                        <div class="avatar bg-warning-transparent">
-                            <i class="ti ti-hourglass fs-20"></i>
-                        </div>
-                    </div>
+              </td>
+              <td data-lbl="Job"><?= esc($app->job_title) ?></td>
+              <td data-lbl="Phone"><?= esc($app->phone ?? 'N/A') ?></td>
+              <td data-lbl="Applied"><?= date('d M Y', strtotime($app->created_at)) ?></td>
+              <td data-lbl="Status">
+                <span class="pill <?= $statusClass ?>"><?= esc(ucfirst($app->status ?? 'Pending')) ?></span>
+              </td>
+              <td data-lbl="Actions">
+                <div class="row-actions">
+                  <a class="ic-btn" href="<?= site_url('employer/applications/view/' . $app->id) ?>" aria-label="View application details" title="View"><svg aria-hidden="true"><use href="#i-eye"/></svg></a>
+                  <?php if (!empty($app->cv_path)): ?>
+                    <a class="ic-btn" href="<?= base_url($app->cv_path) ?>" download aria-label="Download CV" title="Download CV"><svg aria-hidden="true"><use href="#i-download"/></svg></a>
+                  <?php endif; ?>
+                  <button class="ic-btn ic-btn--danger delete-single-btn" data-id="<?= $app->id ?>" aria-label="Delete application" title="Delete"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4">
-            <div class="card custom-card stats-card bg-info bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Reviewed</h6>
-                            <h4 class="mb-0 text-info"><?= number_format($stats['reviewed']) ?></h4>
-                        </div>
-                        <div class="avatar bg-info-transparent">
-                            <i class="ti ti-eye fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4">
-            <div class="card custom-card stats-card bg-success bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Shortlisted</h6>
-                            <h4 class="mb-0 text-success"><?= number_format($stats['shortlisted']) ?></h4>
-                        </div>
-                        <div class="avatar bg-success-transparent">
-                            <i class="ti ti-star fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4">
-            <div class="card custom-card stats-card bg-danger bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Rejected</h6>
-                            <h4 class="mb-0 text-danger"><?= number_format($stats['rejected']) ?></h4>
-                        </div>
-                        <div class="avatar bg-danger-transparent">
-                            <i class="ti ti-x fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4">
-            <div class="card custom-card stats-card bg-dark bg-opacity-10">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Hired</h6>
-                            <h4 class="mb-0"><?= number_format($stats['hired']) ?></h4>
-                        </div>
-                        <div class="avatar bg-dark-transparent">
-                            <i class="ti ti-user-check fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Delete Modal -->
+<div class="modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="del-title">
+  <div style="background:#fff; border-radius:var(--radius-lg); width:100%; max-width:400px; overflow:hidden; box-shadow:var(--shadow-lg);">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h3 id="del-title" style="font-size:1rem; font-weight:700; color:var(--brand-deep); margin:0;">Delete Application</h3>
+      <button class="close-modal-btn" style="background:none; border:none; cursor:pointer; color:var(--muted);"><svg aria-hidden="true" style="width:16px;height:16px;"><use href="#i-x"/></svg></button>
     </div>
-
-    <!-- Applications Card -->
-    <div class="card">
-        <div class="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
-
-            <!-- SEARCH -->
-            <div class="search-set">
-                <div class="search-input">
-                    <input type="text" id="search-input" class="form-control" placeholder="Search applications...">
-                    <span class="btn-searchset"><i class="ti ti-search fs-14 feather-search"></i></span>
-                </div>
-            </div>
-
-            <!-- FILTERS -->
-            <div class="d-flex table-dropdown align-items-center gap-2 flex-wrap">
-
-                <!-- Filter by Job -->
-                <div class="dropdown">
-                    <a href="#" class="dropdown-toggle btn btn-white btn-md" data-bs-toggle="dropdown">
-                        Filter by Job
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end p-3">
-                        <li><a class="dropdown-item" data-filter="all" data-type="job">All Jobs</a></li>
-                        <?php foreach ($jobs as $job): ?>
-                            <li>
-                                <a class="dropdown-item" data-filter="job-<?= $job->id ?>" data-type="job">
-                                    <?= esc($job->title) ?> (<?= $job->application_count ?>)
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-
-                <!-- Filter by Status -->
-                <div class="dropdown">
-                    <a href="#" class="dropdown-toggle btn btn-white btn-md" data-bs-toggle="dropdown">
-                        Filter by Status
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end p-3">
-                        <li><a class="dropdown-item" data-filter="all" data-type="status">All Status</a></li>
-                        <li><a class="dropdown-item" data-filter="pending" data-type="status">Pending</a></li>
-                        <li><a class="dropdown-item" data-filter="reviewed" data-type="status">Reviewed</a></li>
-                        <li><a class="dropdown-item" data-filter="shortlisted" data-type="status">Shortlisted</a></li>
-                        <li><a class="dropdown-item" data-filter="rejected" data-type="status">Rejected</a></li>
-                        <li><a class="dropdown-item" data-filter="hired" data-type="status">Hired</a></li>
-                    </ul>
-                </div>
-
-                <!-- Bulk Actions -->
-                <div class="dropdown">
-                    <a href="#" class="dropdown-toggle btn btn-white btn-md" data-bs-toggle="dropdown">
-                        Bulk Actions
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end p-3">
-                        <li><a class="dropdown-item" href="#" id="bulk-shortlist">Shortlist Selected</a></li>
-                        <li><a class="dropdown-item" href="#" id="bulk-review">Mark as Reviewed</a></li>
-                        <li><a class="dropdown-item" href="#" id="bulk-reject">Reject Selected</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item text-danger" href="#" id="bulk-delete">Delete Selected</a></li>
-                    </ul>
-                </div>
-
-                <!-- Refresh Button -->
-                <button class="btn btn-outline-secondary btn-md" onclick="location.reload();" aria-label="Action">
-    <i class="ti ti-refresh"></i>
-</button>
-            </div>
-        </div>
-
-        <div class="card-body p-0">
-            <div class="table-responsive">
-
-                <table class="table datatable" id="applications-table">
-                    <thead class="thead-light">
-                        <tr>
-                            <th class="no-sort">
-                                <label class="checkboxs">
-                                    <input type="checkbox" id="select-all">
-                                    <span class="checkmarks"></span>
-                                </label>
-                            </th>
-                            <th>Applicant</th>
-                            <th>Job Title</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Applied On</th>
-                            <th>Status</th>
-                            <th class="no-sort">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($applications as $app): ?>
-                            <tr data-id="<?= $app->id ?>"
-                                data-job="job-<?= $app->job_id ?>"
-                                data-status="<?= strtolower($app->status) ?>">
-                                <td>
-                                    <label class="checkboxs">
-                                        <input type="checkbox" class="app-checkbox" data-id="<?= $app->id ?>">
-                                        <span class="checkmarks"></span>
-                                    </label>
-                                </td>
-                                <td class="fw-semibold">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-shrink-0">
-                                            <?php if ($app->avatar): ?>
-                                                <img src="<?= base_url($app->avatar) ?>" class="rounded-circle" width="35" height="35">
-                                            <?php else: ?>
-                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
-                                                    <i class="ti ti-user fs-18 text-muted"></i>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="flex-grow-1 ms-2">
-                                            <?= esc($app->first_name . ' ' . $app->last_name) ?>
-                                            <?php if ($app->is_guest): ?>
-                                                <span class="badge bg-secondary-transparent ms-1" data-bs-toggle="tooltip" title="Guest Applicant - No account">
-                                                    <i class="ti ti-user-off"></i> Guest
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><?= esc($app->job_title) ?></td>
-                                <td><?= esc($app->email) ?></td>
-                                <td><?= esc($app->phone) ?></td>
-                                <td><?= date('M d, Y', strtotime($app->created_at)) ?></td>
-                                <td>
-                                    <?= ucwords($app->status) ?>
-                                </td>
-                                <td class="action-table-data">
-                                    <div class="edit-delete-action d-flex align-items-center gap-2">
-                                        <!-- VIEW -->
-                                        <a href="<?= site_url('employer/applications/view/' . $app->id) ?>" class="p-2" data-bs-toggle="tooltip" title="View Details">
-                                            <i data-feather="eye" class="action-eye"></i>
-                                        </a>
-
-                                        <!-- DOWNLOAD CV -->
-                                        <?php if ($app->cv_path): ?>
-                                            <a href="<?= base_url($app->cv_path) ?>" class="p-2" download data-bs-toggle="tooltip" title="Download CV">
-                                                <i data-feather="download" class="text-primary"></i>
-                                            </a>
-                                        <?php endif; ?>
-
-                                        <!-- DELETE -->
-                                        <a href="javascript:void(0);" class="p-2 text-danger delete-app" data-id="<?= $app->id ?>" data-bs-toggle="tooltip" title="Delete">
-                                            <i data-feather="trash-2"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-
-            </div>
-        </div>
+    <div style="padding:20px; color:var(--muted); font-size:.86rem; line-height:1.5;">
+      Are you sure you want to delete this application? This action cannot be undone.
     </div>
-
-    <!-- Delete Modal -->
-    <div class="modal fade" id="delete-modal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-semibold">Delete Application</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete this application? This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-danger" id="confirm-delete">Delete</button>
-                </div>
-            </div>
-        </div>
+    <div style="padding:14px 20px; border-top:1px solid var(--border); background:var(--bg); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="emp-btn emp-btn-outline emp-btn-sm close-modal-btn">Cancel</button>
+      <button class="emp-btn emp-btn-danger emp-btn-sm" id="confirm-delete-btn">Delete</button>
     </div>
+  </div>
+</div>
 
-    <!-- Bulk Delete Modal -->
-    <div class="modal fade" id="bulk-delete-modal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-semibold">Bulk Delete Applications</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete <span id="bulk-count">0</span> selected applications? This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-danger" id="confirm-bulk-delete">Delete All</button>
-                </div>
-            </div>
-        </div>
+<!-- Bulk Delete Modal -->
+<div class="modal" id="bulk-delete-modal" role="dialog" aria-modal="true" aria-labelledby="bulk-del-title">
+  <div style="background:#fff; border-radius:var(--radius-lg); width:100%; max-width:400px; overflow:hidden; box-shadow:var(--shadow-lg);">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h3 id="bulk-del-title" style="font-size:1rem; font-weight:700; color:var(--brand-deep); margin:0;">Bulk Delete Applications</h3>
+      <button class="close-modal-btn" style="background:none; border:none; cursor:pointer; color:var(--muted);"><svg aria-hidden="true" style="width:16px;height:16px;"><use href="#i-x"/></svg></button>
     </div>
-
+    <div style="padding:20px; color:var(--muted); font-size:.86rem; line-height:1.5;">
+      Are you sure you want to delete <span id="bulk-count-span">0</span> selected application(s)? This action cannot be undone.
+    </div>
+    <div style="padding:14px 20px; border-top:1px solid var(--border); background:var(--bg); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="emp-btn emp-btn-outline emp-btn-sm close-modal-btn">Cancel</button>
+      <button class="emp-btn emp-btn-danger emp-btn-sm" id="confirm-bulk-delete-btn">Delete All</button>
+    </div>
+  </div>
 </div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    toastr.options = {
-        closeButton: true,
-        progressBar: true,
-        positionClass: 'toast-top-right',
-        timeOut: 4000
-    };
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('app-search');
+  const filterJob = document.getElementById('filter-job');
+  const filterStatus = document.getElementById('filter-status');
+  const bulkActions = document.getElementById('bulk-actions');
+  const selectAllCheckbox = document.getElementById('select-all');
+  const appCheckboxes = document.querySelectorAll('.app-checkbox');
+  const tableRows = document.querySelectorAll('#apps-table tbody tr');
 
-    let dataTable;
-    let isInitialLoad = true;
+  // Search & Filter Handler
+  function filterTable() {
+    const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
+    const jobFilter = filterJob ? filterJob.value : 'all';
+    const statusFilter = filterStatus ? filterStatus.value : 'all';
 
-    $(document).ready(function() {
-        // Initialize DataTable
-        if (!$.fn.DataTable.isDataTable('#applications-table')) {
-            dataTable = $('#applications-table').DataTable({
-                order: [
-                    [5, 'desc']
-                ],
-                pageLength: 25,
-                language: {
-                    emptyTable: "No applications found"
-                },
-                drawCallback: function() {
-                    // Re-attach event handlers after table redraw
-                    attachStatusChangeHandler();
-                    attachDeleteHandlers();
-                }
-            });
+    tableRows.forEach(row => {
+      // Skip empty state row
+      if (row.querySelector('.empty')) return;
+
+      const text = row.textContent.toLowerCase();
+      const rowJob = row.getAttribute('data-job');
+      const rowStatus = row.getAttribute('data-status');
+
+      const matchesSearch = text.includes(searchValue);
+      const matchesJob = jobFilter === 'all' || rowJob === jobFilter;
+      const matchesStatus = statusFilter === 'all' || rowStatus === statusFilter;
+
+      if (matchesSearch && matchesJob && matchesStatus) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  if (searchInput) searchInput.addEventListener('input', filterTable);
+  if (filterJob) filterJob.addEventListener('change', filterTable);
+  if (filterStatus) filterStatus.addEventListener('change', filterTable);
+
+  // Select all checkbox functionality
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      const visibleCheckboxes = document.querySelectorAll('#apps-table tbody tr:not([style*="display: none"]) .app-checkbox');
+      visibleCheckboxes.forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+      });
+    });
+  }
+
+  // Get selected IDs helper
+  function getSelectedIds() {
+    const selected = [];
+    document.querySelectorAll('.app-checkbox:checked').forEach(cb => {
+      selected.push(cb.getAttribute('data-id'));
+    });
+    return selected;
+  }
+
+  // Modal Management Helpers
+  function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('show');
+  }
+  function hideModals() {
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.classList.remove('show');
+    });
+  }
+
+  document.querySelectorAll('.close-modal-btn').forEach(btn => {
+    btn.addEventListener('click', hideModals);
+  });
+
+  // Single delete configuration
+  let singleDeleteId = null;
+  document.querySelectorAll('.delete-single-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      singleDeleteId = this.getAttribute('data-id');
+      showModal('delete-modal');
+    });
+  });
+
+  // Confirm Single Delete
+  const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', function() {
+      if (!singleDeleteId) return;
+      confirmDeleteBtn.disabled = true;
+      confirmDeleteBtn.textContent = 'Deleting...';
+
+      fetch('<?= site_url("employer/applications/delete") ?>/' + singleDeleteId, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: '<?= csrf_token() ?>=<?= csrf_hash() ?>'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
         } else {
-            dataTable = $('#applications-table').DataTable();
+          alert(data.message || 'Failed to delete application.');
+          confirmDeleteBtn.disabled = false;
+          confirmDeleteBtn.textContent = 'Delete';
+          hideModals();
         }
-
-        // Attach handlers after initial load
-        setTimeout(() => {
-            attachStatusChangeHandler();
-            attachDeleteHandlers();
-            isInitialLoad = false;
-        }, 100);
+      })
+      .catch(err => {
+        alert('An error occurred. Please try again.');
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.textContent = 'Delete';
+        hideModals();
+      });
     });
+  }
 
-    // Status change handler - prevents auto-trigger on load
-    function attachStatusChangeHandler() {
-        $('.status-select').off('change').on('change', function() {
-            // Skip if this is the initial load trigger
-            if (isInitialLoad) {
-                return;
-            }
+  // Bulk actions triggers
+  if (bulkActions) {
+    bulkActions.addEventListener('change', function() {
+      const action = this.value;
+      if (!action) return;
 
-            const select = $(this);
-            const applicationId = select.data('id');
-            const status = select.val();
-            const originalStatus = select.data('original-status') || select.find('option[selected]').val();
+      const selectedIds = getSelectedIds();
+      if (selectedIds.length === 0) {
+        alert('Please select at least one application.');
+        this.value = '';
+        return;
+      }
 
-            // Store original status if not set
-            if (!select.data('original-status')) {
-                select.data('original-status', originalStatus);
-            }
-
-            // Show loading state
-            select.prop('disabled', true);
-
-            $.ajax({
-                url: '<?= site_url("employer/applications/update-status") ?>',
-                type: 'POST',
-                data: {
-                    application_id: applicationId,
-                    status: status,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message);
-                        // Update the row data-status attribute
-                        select.closest('tr').attr('data-status', status);
-                        // Update original status
-                        select.data('original-status', status);
-                        // Update selected attribute
-                        select.find('option').removeAttr('selected');
-                        select.find('option[value="' + status + '"]').attr('selected', 'selected');
-
-                        // Update stats counts without page reload
-                        updateStatsCounts(status, select.closest('tr').data('status'));
-                    } else {
-                        toastr.error(response.message);
-                        // Revert to original status
-                        select.val(select.data('original-status'));
-                    }
-                },
-                error: function() {
-                    toastr.error('Failed to update status');
-                    // Revert to original status
-                    select.val(select.data('original-status'));
-                },
-                complete: function() {
-                    select.prop('disabled', false);
-                }
-            });
-        });
-
-        // Store original status for each select
-        $('.status-select').each(function() {
-            const select = $(this);
-            select.data('original-status', select.val());
-        });
-    }
-
-    // Update stats counts dynamically
-    function updateStatsCounts(newStatus, oldStatus) {
-        // Decrement old status count
-        const oldStatusElement = $(`.stats-card:contains('${oldStatus.charAt(0).toUpperCase() + oldStatus.slice(1)}') .mb-0`);
-        if (oldStatusElement.length) {
-            let oldCount = parseInt(oldStatusElement.text()) || 0;
-            oldStatusElement.text(Math.max(0, oldCount - 1));
+      if (action === 'delete') {
+        const countSpan = document.getElementById('bulk-count-span');
+        if (countSpan) countSpan.textContent = selectedIds.length;
+        showModal('bulk-delete-modal');
+        this.value = '';
+      } else {
+        // Bulk status update
+        if (confirm(`Update ${selectedIds.length} application(s) status to "${action}"?`)) {
+          bulkUpdateStatus(selectedIds, action);
         }
-
-        // Increment new status count
-        const newStatusElement = $(`.stats-card:contains('${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}') .mb-0`);
-        if (newStatusElement.length) {
-            let newCount = parseInt(newStatusElement.text()) || 0;
-            newStatusElement.text(newCount + 1);
-        }
-
-        // Update total if needed (if status changed from/to something)
-        if (oldStatus !== newStatus) {
-            const totalElement = $(`.stats-card:contains('Total') .mb-0`);
-            // Total stays the same, no change needed
-        }
-    }
-
-    // Delete handlers
-    function attachDeleteHandlers() {
-        $('.delete-app').off('click').on('click', function() {
-            deleteId = $(this).data('id');
-            $('#delete-modal').modal('show');
-        });
-    }
-
-    // Search functionality
-    $('#search-input').on('keyup', function() {
-        dataTable.search(this.value).draw();
+        this.value = '';
+      }
     });
+  }
 
-    // Select all checkboxes
-    $('#select-all').on('change', function() {
-        const isChecked = this.checked;
-        $('.app-checkbox').prop('checked', isChecked);
-        dataTable.rows().nodes().to$().find('.app-checkbox').prop('checked', isChecked);
+  // Bulk update status AJAX
+  function bulkUpdateStatus(ids, status) {
+    const params = new URLSearchParams();
+    ids.forEach(id => params.append('ids[]', id));
+    params.append('status', status);
+    params.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+    fetch('<?= site_url("employer/applications/bulk-update-status") ?>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: params.toString()
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert(data.message || 'Failed to update statuses.');
+      }
+    })
+    .catch(err => {
+      alert('An error occurred updating statuses.');
     });
+  }
 
-    // Filter by Job
-    $('.dropdown-menu a[data-filter][data-type="job"]').on('click', function(e) {
-        e.preventDefault();
-        const filter = $(this).data('filter');
-        const filterText = $(this).text();
+  // Confirm Bulk Delete Action
+  const confirmBulkDeleteBtn = document.getElementById('confirm-bulk-delete-btn');
+  if (confirmBulkDeleteBtn) {
+    confirmBulkDeleteBtn.addEventListener('click', function() {
+      const selectedIds = getSelectedIds();
+      if (selectedIds.length === 0) return;
 
-        $(this).closest('.dropdown').find('.dropdown-toggle').html(filterText + ' <i class="ti ti-chevron-down ms-1"></i>');
+      confirmBulkDeleteBtn.disabled = true;
+      confirmBulkDeleteBtn.textContent = 'Deleting...';
 
-        if (filter === 'all') {
-            dataTable.column(2).search('').draw();
+      const params = new URLSearchParams();
+      selectedIds.forEach(id => params.append('ids[]', id));
+      params.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+      fetch('<?= site_url("employer/applications/bulk-delete") ?>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: params.toString()
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
         } else {
-            dataTable.column(2).search(filter.replace('job-', '')).draw();
+          alert(data.message || 'Failed to delete applications.');
+          confirmBulkDeleteBtn.disabled = false;
+          confirmBulkDeleteBtn.textContent = 'Delete All';
+          hideModals();
         }
+      })
+      .catch(err => {
+        alert('An error occurred during deletion.');
+        confirmBulkDeleteBtn.disabled = false;
+        confirmBulkDeleteBtn.textContent = 'Delete All';
+        hideModals();
+      });
     });
-
-    // Filter by Status
-    $('.dropdown-menu a[data-filter][data-type="status"]').on('click', function(e) {
-        e.preventDefault();
-        const filter = $(this).data('filter');
-        const filterText = $(this).text();
-
-        $(this).closest('.dropdown').find('.dropdown-toggle').html(filterText + ' <i class="ti ti-chevron-down ms-1"></i>');
-
-        if (filter === 'all') {
-            dataTable.column(6).search('').draw();
-        } else {
-            dataTable.column(6).search(filter).draw();
-        }
-    });
-
-    // Single delete
-    let deleteId = null;
-
-    $('#confirm-delete').on('click', function() {
-        const btn = $(this);
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Deleting...');
-
-        $.ajax({
-            url: '<?= site_url("employer/applications/delete") ?>/' + deleteId,
-            type: "POST",
-            data: {
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-            },
-            dataType: 'json',
-            success: (response) => {
-                btn.prop('disabled', false).html('Delete');
-                $('#delete-modal').modal('hide');
-
-                if (response.success) {
-                    toastr.success(response.message);
-                    // Remove the row from table
-                    const row = $(`.delete-app[data-id="${deleteId}"]`).closest('tr');
-                    dataTable.row(row).remove().draw();
-
-                    // Update stats
-                    const status = row.data('status');
-                    const statusElement = $(`.stats-card:contains('${status.charAt(0).toUpperCase() + status.slice(1)}') .mb-0`);
-                    if (statusElement.length) {
-                        let count = parseInt(statusElement.text()) || 0;
-                        statusElement.text(Math.max(0, count - 1));
-                    }
-                    const totalElement = $(`.stats-card:contains('Total') .mb-0`);
-                    if (totalElement.length) {
-                        let total = parseInt(totalElement.text()) || 0;
-                        totalElement.text(Math.max(0, total - 1));
-                    }
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: () => {
-                btn.prop('disabled', false).html('Delete');
-                $('#delete-modal').modal('hide');
-                toastr.error("Request failed. Try again.");
-            }
-        });
-    });
-
-    // Bulk Shortlist
-    $('#bulk-shortlist').on('click', function(e) {
-        e.preventDefault();
-        const selected = getSelectedIds();
-
-        if (selected.length === 0) {
-            toastr.warning('Please select at least one application');
-            return;
-        }
-
-        if (confirm('Shortlist ' + selected.length + ' application(s)?')) {
-            bulkUpdateStatus(selected, 'shortlisted');
-        }
-    });
-
-    // Bulk Review
-    $('#bulk-review').on('click', function(e) {
-        e.preventDefault();
-        const selected = getSelectedIds();
-
-        if (selected.length === 0) {
-            toastr.warning('Please select at least one application');
-            return;
-        }
-
-        if (confirm('Mark ' + selected.length + ' application(s) as reviewed?')) {
-            bulkUpdateStatus(selected, 'reviewed');
-        }
-    });
-
-    // Bulk Reject
-    $('#bulk-reject').on('click', function(e) {
-        e.preventDefault();
-        const selected = getSelectedIds();
-
-        if (selected.length === 0) {
-            toastr.warning('Please select at least one application');
-            return;
-        }
-
-        if (confirm('Reject ' + selected.length + ' application(s)?')) {
-            bulkUpdateStatus(selected, 'rejected');
-        }
-    });
-
-    // Bulk Delete
-    $('#bulk-delete').on('click', function(e) {
-        e.preventDefault();
-        const selected = getSelectedIds();
-
-        if (selected.length === 0) {
-            toastr.warning('Please select at least one application');
-            return;
-        }
-
-        $('#bulk-count').text(selected.length);
-        $('#bulk-delete-modal').modal('show');
-
-        $('#confirm-bulk-delete').off('click').on('click', function() {
-            const btn = $(this);
-            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Deleting...');
-
-            $.ajax({
-                url: '<?= site_url("employer/applications/bulk-delete") ?>',
-                type: 'POST',
-                data: {
-                    ids: selected,
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-                },
-                dataType: 'json',
-                success: function(response) {
-                    btn.prop('disabled', false).html('Delete All');
-                    $('#bulk-delete-modal').modal('hide');
-
-                    if (response.success) {
-                        toastr.success(response.message);
-                        // Remove selected rows from table
-                        selected.forEach(id => {
-                            const row = $(`.app-checkbox[data-id="${id}"]`).closest('tr');
-                            const status = row.data('status');
-                            dataTable.row(row).remove();
-
-                            // Update stats
-                            const statusElement = $(`.stats-card:contains('${status.charAt(0).toUpperCase() + status.slice(1)}') .mb-0`);
-                            if (statusElement.length) {
-                                let count = parseInt(statusElement.text()) || 0;
-                                statusElement.text(Math.max(0, count - 1));
-                            }
-                        });
-                        dataTable.draw();
-
-                        const totalElement = $(`.stats-card:contains('Total') .mb-0`);
-                        if (totalElement.length) {
-                            let total = parseInt(totalElement.text()) || 0;
-                            totalElement.text(Math.max(0, total - selected.length));
-                        }
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function() {
-                    btn.prop('disabled', false).html('Delete All');
-                    $('#bulk-delete-modal').modal('hide');
-                    toastr.error('Failed to delete applications');
-                }
-            });
-        });
-    });
-
-    function getSelectedIds() {
-        const selected = [];
-        $('.app-checkbox:checked').each(function() {
-            selected.push($(this).data('id'));
-        });
-        return selected;
-    }
-
-    function bulkUpdateStatus(ids, status) {
-        // Show loading state on bulk action button
-        const btn = $(`#bulk-${status}`);
-        const originalText = btn.text();
-        btn.text('Updating...').prop('disabled', true);
-
-        $.ajax({
-            url: '<?= site_url("employer/applications/bulk-update-status") ?>',
-            type: 'POST',
-            data: {
-                ids: ids,
-                status: status,
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    // Update each row's status
-                    ids.forEach(id => {
-                        const row = $(`.app-checkbox[data-id="${id}"]`).closest('tr');
-                        const select = row.find('.status-select');
-                        select.val(status);
-                        select.data('original-status', status);
-                        row.attr('data-status', status);
-
-                        // Update select option selected attribute
-                        select.find('option').removeAttr('selected');
-                        select.find('option[value="' + status + '"]').attr('selected', 'selected');
-                    });
-
-                    // Reload to update stats properly
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function() {
-                toastr.error('Failed to update statuses');
-            },
-            complete: function() {
-                btn.text(originalText).prop('disabled', false);
-            }
-        });
-    }
+  }
+});
 </script>
 <?= $this->endSection() ?>

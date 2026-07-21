@@ -1,1152 +1,501 @@
-<?= $this->extend('templates/base') ?>
+<?= $this->extend('auth/base') ?>
 
 <?= $this->section('styles') ?>
 <style>
-    :root {
-        --primary-color: #0D609E;
-        --secondary-color: #F08F1A;
-        --text-dark: #1E293B;
-        --text-muted: #64748B;
-        --bg-light: #f8f9fb;
-        --success-color: #198754;
-        --danger-color: #dc3545;
-        --warning-color: #ffc107;
-        --info-color: #0D609E;
-        --light-color: #f8f9fa;
-        --dark-color: #212529;
-        --text-primary: #212529;
-        --text-secondary: #6c757d;
-        --border-color: #dee2e6;
-        --bg-color: #ffffff;
-        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-        --border-radius: 0.5rem;
-        --transition: all 0.3s ease;
-    }
-
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        background-color: #f0f4f8;
-        color: var(--text-primary);
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
-    }
-
-    
-    /* Split Screen Layout */
-    .auth-split-wrapper {
-        min-height: 100vh;
-        display: flex;
-    }
-    .auth-brand-side {
-        background: linear-gradient(135deg, var(--primary-navy, #002D5B), var(--primary-trust-blue, #005DA8));
-        color: white;
-        padding: 4rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        position: relative;
-        overflow: hidden;
-    }
-    .auth-brand-side::after {
-        content: '';
-        position: absolute;
-        bottom: -20%;
-        right: -10%;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(245, 166, 35, 0.15), transparent 70%);
-        border-radius: 50%;
-    }
-    .auth-testimonial {
-        font-size: 1.5rem;
-        font-weight: 500;
-        line-height: 1.6;
-        margin-bottom: 2rem;
-        z-index: 1;
-    }
-    .auth-testimonial-author {
-        font-size: 1rem;
-        opacity: 0.8;
-        z-index: 1;
-    }
-    .auth-form-side {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        background: var(--bg-white, #ffffff);
-    }
-    .login-card {
-        width: 100%;
-        max-width: 440px;
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        padding: 0;
-    }
-    [data-theme="dark"] .auth-form-side {
-        background: var(--bg-white, #0F172A);
-    }
-    [data-theme="dark"] .form-control {
-        background-color: var(--bg-light-gray, #1E293B);
-        border-color: rgba(255,255,255,0.1);
-        color: #fff;
-    }
-    
-    .register-container {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem 1rem;
-        position: relative;
-        z-index: 1;
-    }
-
-    .register-card {
-        width: 100%;
-        max-width: 480px;
-        background: var(--bg-color);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-lg);
-        padding: 3rem 2.5rem;
-        border: 1px solid var(--border-color);
-        position: relative;
-        backdrop-filter: blur(10px);
-        animation: fadeInUp 0.8s ease forwards;
-    }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .register-card .logo {
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .register-card .logo img {
-        height: 50px;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-        transition: var(--transition);
-    }
-
-    .register-card .logo img:hover {
-        transform: scale(1.05);
-    }
-
-    .register-card h4 {
-        color: var(--primary-color);
-        text-align: center;
-        font-weight: 700;
-        font-size: 1.75rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .register-card p {
-        font-size: 0.95rem;
-        text-align: center;
-        color: var(--text-secondary);
-        margin-bottom: 2rem;
-    }
-
-    /* Form Controls */
-    .form-label {
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
-    }
-
-    .form-control {
-        border-radius: var(--border-radius);
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
-        border: 1px solid var(--border-color);
-        transition: var(--transition);
-        background-color: #fcfdff;
-    }
-
-    .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.2rem rgba(13, 96, 158, 0.2);
-        outline: none;
-    }
-
-    /* Social Button */
-    .social-login {
-        width: 100%;
-        border-radius: var(--border-radius);
-        padding: 0.75rem;
-        font-weight: 600;
-        font-size: 1rem;
-        border: 1px solid var(--border-color);
-        background: #fff;
-        color: var(--text-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        transition: var(--transition);
-    }
-
-    .social-login:hover {
-        background-color: #f8f9fa;
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-sm);
-    }
-
-    .social-login img {
-        width: 20px;
-        height: 20px;
-    }
-
-    /* Divider */
-    .divider-text-center {
-        position: relative;
-        text-align: center;
-        margin: 1.5rem 0;
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-    }
-
-    .divider-text-center::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: var(--border-color);
-    }
-
-    .divider-text-center span {
-        background: var(--bg-color);
-        padding: 0 1rem;
-    }
-
-    /* Company Field */
-    #company-field {
-        opacity: 0;
-        max-height: 0;
-        overflow: hidden;
-        transition: var(--transition);
-        margin-bottom: 0;
-    }
-
-    #company-field.show {
-        opacity: 1;
-        max-height: 100px;
-        margin-bottom: 1rem;
-    }
-
-    /* Checkbox */
-    .cb-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        margin-bottom: 1rem;
-    }
-
-    .cb-container input[type="checkbox"] {
-        accent-color: var(--primary-color);
-        margin-right: 0.5rem;
-    }
-
-    .cb-container a {
-        color: var(--primary-color);
-        text-decoration: none;
-        font-weight: 500;
-    }
-
-    .cb-container a:hover {
-        text-decoration: underline;
-    }
-
-    /* Submit Button */
-    .register-btn {
-        width: 100%;
-        border-radius: var(--border-radius);
-        padding: 0.85rem;
-        font-weight: 600;
-        font-size: 1rem;
-        background: var(--primary-color);
-        border: none;
-        color: white;
-        transition: var(--transition);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .register-btn:hover:not(:disabled) {
-        background: #0b5ed7;
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(13, 96, 158, 0.3);
-    }
-
-    .btn-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
-    .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
-    }
-
-    /* Errors */
-    .is-invalid {
-        border-color: var(--danger-color) !important;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-    }
-
-    .invalid-feedback {
-        font-size: 0.875rem;
-        color: var(--danger-color);
-        margin-top: 0.25rem;
-    }
-
-    /* Login Link */
-    .login-link {
-        text-align: center;
-        margin-top: 1.5rem;
-        font-size: 0.95rem;
-        color: var(--text-secondary);
-    }
-
-    .login-link a {
-        color: var(--primary-color);
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .login-link a:hover {
-        text-decoration: underline;
-    }
-
-    /* Responsive */
-    @media (max-width: 576px) {
-        .register-card {
-            padding: 2rem 1.5rem;
-            margin: 1rem;
-        }
-
-        .ribbon {
-            display: none;
-        }
-    }
-
-    /* Password Toggle Animation */
-    .password-toggle {
-        transition: transform 0.25s ease, opacity 0.25s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .password-toggle i {
-        font-size: 1.1rem;
-        color: var(--text-muted);
-        transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-
-    .password-toggle:hover i {
-        color: var(--primary-color);
-    }
-
-    /* Animate icon rotation and fade */
-    .password-toggle.active i {
-        transform: rotate(180deg);
-        opacity: 0.8;
-    }
-
-    /* Terms Modal */
-    .terms-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1050;
-        animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-
-        to {
-            opacity: 1;
-        }
-    }
-
-    .terms-content {
-        background: #fff;
-        width: 90%;
-        max-width: 600px;
-        max-height: 80vh;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-lg);
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        animation: slideUp 0.3s ease;
-    }
-
-    @keyframes slideUp {
-        from {
-            transform: translateY(40px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .terms-content h5 {
-        color: var(--primary-color);
-        margin-bottom: 1rem;
-        font-weight: 700;
-        text-align: center;
-    }
-
-    .terms-scroll {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 1rem;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius);
-        background: #f8f9fb;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
-    .terms-scroll::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .terms-scroll::-webkit-scrollbar-thumb {
-        background-color: rgba(13, 96, 158, 0.3);
-        border-radius: 5px;
-    }
-
-    .terms-actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 1rem;
-        gap: 0.5rem;
-    }
-
-    .terms-actions .btn {
-        border-radius: var(--border-radius);
-        padding: 0.6rem 1rem;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .terms-actions .btn-primary {
-        background-color: var(--primary-color);
-        color: #fff;
-        border: none;
-    }
-
-    .terms-actions .btn-primary:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-    }
-
-    .terms-actions .btn-secondary {
-        background-color: var(--text-muted);
-        color: #fff;
-        border: none;
-    }
-
-    .terms-scroll {
-        box-shadow: inset 0 -8px 10px -10px rgba(0, 0, 0, 0.3);
-        transition: box-shadow 0.3s ease;
-    }
-
-    .terms-scroll:after {
-        content: '';
-        position: sticky;
-        bottom: 0;
-        display: block;
-        height: 20px;
-        background: linear-gradient(to bottom, transparent, #f8f9fb);
-    }
-
-    .google-login-btn {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        color: #fff;
-        width: 100%;
-        overflow: hidden;
-        border-radius: 5px;
-        background-color: #d6523e;
-        cursor: pointer;
-    }
-
-    .google-login-btn .icon {
-        display: inline-flex;
-        height: 100%;
-        padding: 15px 20px;
-        align-items: center;
-        justify-content: center;
-        background-color: #cf412c;
-        margin-right: 15px;
-    }
-
-    .google-login-btn .icon svg {
-        fill: #fff;
-    }
-
-    .google-login-btn:hover {
-        background-color: #d44a36;
-    }
-
-    .google-login-btn:hover .icon {
-        background-color: #c63f2a;
-    }
+/* ── Auth Layout ── */
+.auth-shell{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 75px)}
+.auth-formcol{display:flex;align-items:flex-start;justify-content:center;padding:48px 24px 64px}
+.auth-form-inner{width:100%;max-width:440px}
+.auth-brand{background:radial-gradient(1200px 600px at 80% -10%,rgba(240,143,26,.18),transparent 55%),radial-gradient(900px 500px at -10% 110%,rgba(13,96,158,.35),transparent 55%),linear-gradient(155deg,var(--brand-deep) 0%,var(--brand-deep) 40%,var(--brand-dark) 100%);color:#fff;padding:56px 52px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.auth-brand-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 40%,#000,transparent 75%)}
+.auth-brand-inner{position:relative;z-index:1;max-width:420px}
+.auth-brand h2{font-size:1.9rem;font-weight:800;line-height:1.2;margin-bottom:16px;color:#fff}
+.auth-brand h2 span{color:var(--accent)}
+.auth-brand-lede{font-size:1rem;color:rgba(255,255,255,.82);line-height:1.6;margin-bottom:32px}
+.auth-trust{display:flex;flex-direction:column;gap:16px}
+.auth-trust-item{display:flex;align-items:flex-start;gap:12px}
+.auth-trust-item svg{width:22px;height:22px;color:var(--accent);flex-shrink:0;margin-top:1px}
+.auth-trust-item strong{display:block;font-size:.92rem;font-weight:700;margin-bottom:2px}
+.auth-trust-item span{font-size:.82rem;color:rgba(255,255,255,.72);line-height:1.5}
+.auth-brand-stats{display:flex;gap:28px;margin-top:36px;padding-top:28px;border-top:1px solid rgba(255,255,255,.14)}
+.auth-brand-stat .n{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:#fff}
+.auth-brand-stat .l{font-size:.74rem;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.auth-title{font-size:1.7rem;font-weight:800;color:var(--brand-deep);margin-bottom:6px}
+.auth-sub{font-size:.92rem;color:var(--muted);margin-bottom:26px}
+.auth-sub a{font-weight:700}
+.auth-alert{display:flex;align-items:flex-start;gap:11px;background:var(--warning-light);border:1px solid var(--warning-color);border-radius:10px;padding:13px 15px;margin-bottom:22px}
+.auth-alert svg{width:19px;height:19px;color:var(--accent-dark);flex-shrink:0;margin-top:1px}
+.auth-alert-body{display:flex;flex-direction:column;gap:2px}
+.auth-alert-body strong{font-size:.86rem;font-weight:700;color:var(--warning-dark)}
+.auth-alert-body span{font-size:.82rem;color:var(--warning-dark);line-height:1.5}
+.auth-alert-body a{font-weight:700;color:var(--brand)}
+.social-row{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.social-btn{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:48px;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:'Inter',sans-serif;font-size:.9rem;font-weight:600;color:var(--text);cursor:pointer;transition:var(--transition)}
+.social-btn:hover{border-color:var(--brand);background:var(--brand-light)}
+.social-btn svg{width:20px;height:20px;flex-shrink:0}
+.auth-divider{display:flex;align-items:center;gap:14px;margin:22px 0;color:var(--muted);font-size:.8rem}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.84rem;font-weight:600;color:var(--text);margin-bottom:7px}
+.field-input{position:relative}
+.field-input>svg.lead{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
+.field input,.field select{width:100%;min-height:48px;padding:12px 14px 12px 42px;border:1.5px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;color:var(--text);background:#fff;transition:var(--transition)}
+.field input::placeholder{color:var(--muted)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(13,96,158,.12)}
+.field input.err{border-color:var(--danger)}
+.field-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;border-radius:8px}
+.field-toggle:hover{color:var(--brand);background:var(--brand-light)}
+.field-toggle svg{width:19px;height:19px}
+.field-msg{font-size:.76rem;margin-top:6px;display:none}
+.field-msg.show{display:block}
+.field-msg.error{color:var(--danger)}
+.field-msg.hint{color:var(--muted);display:block}
+.role-cards{border:none;margin:0 0 24px;padding:0}
+.role-cards-legend{font-size:1rem;font-weight:800;color:var(--brand-deep);margin-bottom:13px;padding:0;display:flex;flex-direction:column;gap:2px;width:100%}
+.role-cards-hint{font-size:.78rem;font-weight:500;color:var(--muted)}
+.role-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.role-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:7px;padding:20px 16px;border:2px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;transition:var(--transition);font-family:'Inter',sans-serif;width:100%}
+.role-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.role-card-ic{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;margin-bottom:4px;transition:var(--transition)}
+.role-card-ic svg{width:26px;height:26px}
+.role-card-title{font-size:.95rem;font-weight:700;color:var(--text);line-height:1.2}
+.role-card-desc{font-size:.77rem;color:var(--muted);line-height:1.45}
+.role-card-check{position:absolute;top:13px;right:13px;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.5);transition:var(--transition)}
+.role-card-check svg{width:14px;height:14px}
+.rc-seeker{background:var(--brand-light);border-color:#b8d6ee}
+.rc-seeker .role-card-ic{background:var(--brand);color:#fff}
+.rc-seeker:hover{border-color:var(--brand)}
+.rc-seeker.selected{border-color:var(--brand);background:#dce9f5;box-shadow:0 0 0 3px rgba(13,96,158,.14)}
+.rc-seeker .role-card-check{background:var(--brand)}
+.rc-employer{background:#f0f2f5;border-color:#d0d6e0}
+.rc-employer .role-card-ic{background:var(--brand-deep);color:#fff}
+.rc-employer:hover{border-color:var(--brand-deep)}
+.rc-employer.selected{border-color:var(--brand-deep);background:#e2e6ec;box-shadow:0 0 0 3px rgba(7,48,79,.14)}
+.rc-employer .role-card-check{background:var(--brand-deep)}
+.role-card.selected .role-card-check{opacity:1;transform:scale(1)}
+.role-cards.err .role-card{border-color:var(--danger)}
+.form-locked{opacity:.45;pointer-events:none;filter:saturate(.5)}
+.pw-strength{margin-top:10px;display:none}
+.pw-strength.show{display:block}
+.pw-bars{display:flex;gap:5px;margin-bottom:6px}
+.pw-bar{height:5px;flex:1;background:var(--border);border-radius:3px;transition:var(--transition)}
+.pw-bar.f1{background:var(--danger)}
+.pw-bar.f2{background:var(--accent)}
+.pw-bar.f3{background:var(--brand)}
+.pw-bar.f4{background:var(--success)}
+.pw-label{font-size:.74rem;color:var(--muted)}
+.pw-label strong{font-weight:700}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin:6px 0 22px}
+.check-row input[type="checkbox"]{width:18px;height:18px;margin-top:2px;accent-color:var(--brand);flex-shrink:0;cursor:pointer}
+.check-row label{font-size:.82rem;color:var(--muted);line-height:1.5;cursor:pointer}
+.check-row a{font-weight:600}
+.auth-submit{width:100%;min-height:50px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:.96rem;font-weight:700;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 6px 18px rgba(240,143,26,.28)}
+.auth-submit:hover{background:var(--accent-dark)}
+.auth-submit:disabled{opacity:.7;cursor:not-allowed}
+.auth-submit svg{width:18px;height:18px}
+.auth-foot-note{text-align:center;font-size:.84rem;color:var(--muted);margin-top:22px}
+.auth-foot-note a{font-weight:700}
+.auth-secure{display:flex;align-items:center;justify-content:center;gap:7px;font-size:.76rem;color:var(--muted);margin-top:18px}
+.auth-secure svg{width:14px;height:14px;color:var(--success)}
+.auth-promise{display:flex;align-items:flex-start;gap:9px;background:var(--success-light);border:1px solid #86efac;border-radius:10px;padding:12px 14px;margin-top:18px}
+.auth-promise svg{width:18px;height:18px;color:var(--success);flex-shrink:0;margin-top:1px}
+.auth-promise span{font-size:.8rem;color:var(--success-dark);line-height:1.5}
+.auth-promise strong{font-weight:800}
+.auth-mobrand{display:none}
+@media(max-width:900px){
+  .auth-shell{grid-template-columns:1fr;min-height:auto}
+  .auth-brand{display:none}
+  .auth-mobrand{display:block;background:linear-gradient(135deg,var(--brand-deep),var(--brand-dark));color:#fff;padding:22px 24px;text-align:center}
+  .auth-mobrand p{font-size:.86rem;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  .auth-mobrand svg{width:16px;height:16px;color:var(--accent)}
+  .auth-formcol{padding:34px 20px 52px}
+}
+@media(max-width:580px){
+  .auth-title{font-size:1.45rem}
+  .auth-form-inner{max-width:100%}
+  input,select,textarea{font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="register-container">
-    <div class="ribbon"></div>
-    <div class="ribbon"></div>
+<div class="auth-mobrand">
+  <p><svg aria-hidden="true" width="16" height="16"><use href="#i-shield"/></svg> Verified employers only &middot; Free for job seekers</p>
+</div>
 
-    <div class="register-card">
-        <!-- <div class="logo">
-            <img src="<?= base_url('assets/imgs/template/logo.png'); ?>" alt="Company Logo" loading="lazy">
-        </div> -->
-        <h4>Sign Up for Free</h4>
-        <p>Fill in the details below to get started.</p>
+<main id="auth-main" class="auth-shell">
+  <section class="auth-formcol" aria-labelledby="auth-h">
+    <div class="auth-form-inner">
+      <h1 class="auth-title" id="auth-h">Create your free account</h1>
+      <p class="auth-sub" id="auth-sub-text">Start finding verified jobs in minutes. Already registered? <a href="<?= base_url('login') ?>">Log in here</a>.</p>
 
-        <button class="social-login" type="button" data-href="<?= base_url('auth/google'); ?>">
-            <img src="<?= base_url('assets/imgs/template/icons/icon-google.svg'); ?>" alt="Google">
-            <strong>Sign up with Google</strong>
+      <?php if (session()->getFlashdata('error')): ?>
+      <div class="auth-alert" role="alert">
+        <svg aria-hidden="true" width="19" height="19"><use href="#i-bell"/></svg>
+        <div class="auth-alert-body">
+          <strong>Registration Error</strong>
+          <span><?= esc(session()->getFlashdata('error')) ?></span>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <?php if (!empty($errors)): ?>
+      <div class="auth-alert" role="alert">
+        <svg aria-hidden="true" width="19" height="19"><use href="#i-x-circle"/></svg>
+        <div class="auth-alert-body">
+          <strong>Please fix the following errors:</strong>
+          <span><?= implode('<br>', array_map('esc', $errors)) ?></span>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <fieldset class="role-cards" id="role-cards">
+        <legend class="role-cards-legend">Who are you signing up as?<span class="role-cards-hint">Choose one to get started</span></legend>
+        <div class="role-cards-grid" role="radiogroup" aria-label="Account type" aria-required="true">
+          <button type="button" class="role-card rc-seeker" role="radio" aria-checked="false" id="role-seeker" onclick="setRole('seeker')">
+            <span class="role-card-ic"><svg aria-hidden="true" width="26" height="26"><use href="#i-user"/></svg></span>
+            <span class="role-card-title">I'm looking for a job</span>
+            <span class="role-card-desc">Find verified roles, build a CV, and apply</span>
+            <span class="role-card-check"><svg aria-hidden="true" width="14" height="14"><use href="#i-check"/></svg></span>
+          </button>
+          <button type="button" class="role-card rc-employer" role="radio" aria-checked="false" id="role-employer" onclick="setRole('employer')">
+            <span class="role-card-ic"><svg aria-hidden="true" width="26" height="26"><use href="#i-briefcase"/></svg></span>
+            <span class="role-card-title">I'm hiring</span>
+            <span class="role-card-desc">Post jobs and reach verified candidates</span>
+            <span class="role-card-check"><svg aria-hidden="true" width="14" height="14"><use href="#i-check"/></svg></span>
+          </button>
+        </div>
+        <p class="field-msg error" id="m-role">Please choose whether you're looking for a job or hiring.</p>
+      </fieldset>
+
+      <div id="form-lock" class="form-locked">
+      <div class="social-row">
+        <button type="button" class="social-btn" onclick="socialAuth('google')">
+          <svg aria-hidden="true" width="20" height="20"><use href="#i-google"/></svg> Continue with Google
         </button>
-
-        <button class="social-login" type="button" data-href="<?= base_url('auth/linkedin'); ?>">
-            <img src="<?= base_url('assets/imgs/template/icons/linkedin.svg'); ?>" alt="LinkedIn">
-            <strong>Sign up with LinkedIn</strong>
+        <button type="button" class="social-btn" onclick="socialAuth('linkedin')">
+          <svg aria-hidden="true" width="20" height="20"><use href="#i-linkedin"/></svg> Continue with LinkedIn
         </button>
+      </div>
 
-        <div class="divider-text-center">
-            <span>Or continue with</span>
+      <div class="auth-divider">or sign up with email</div>
+
+      <form id="register-form" action="<?= base_url('register') ?>" method="post" novalidate>
+        <?= csrf_field() ?>
+        <input type="hidden" name="role" id="role-input" value="">
+        <input type="hidden" name="referral_code" value="<?= esc(request()->getGet('ref')) ?>">
+
+        <div class="field" id="f-name">
+          <label for="reg-name">Full name</label>
+          <div class="field-input">
+            <svg class="lead" aria-hidden="true" width="18" height="18"><use href="#i-user"/></svg>
+            <input type="text" id="reg-name" name="full_name" placeholder="e.g. Chidi Okafor" autocomplete="name" required>
+          </div>
+          <p class="field-msg error" id="m-name">Please enter your full name.</p>
         </div>
 
-        <!-- Display Flash Error (e.g., reCAPTCHA failure) -->
-        <?php if (session()->getFlashdata('error')): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <?= esc(session()->getFlashdata('error')) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
+        <div class="field" id="f-company" style="display:none">
+          <label for="reg-company">Company name</label>
+          <div class="field-input">
+            <svg class="lead" aria-hidden="true" width="18" height="18"><use href="#i-building"/></svg>
+            <input type="text" id="reg-company" name="company_name" placeholder="e.g. Acme Technologies Ltd" autocomplete="organization">
+          </div>
+          <p class="field-msg error" id="m-company">Please enter your company name.</p>
+        </div>
 
-        <!-- Display Validation Errors -->
-        <?php if (!empty($errors)): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <ul class="mb-0">
-                    <?php foreach ($errors as $error): ?>
-                        <li><?= esc($error) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
+        <div class="field" id="f-email">
+          <label for="reg-email">Email address</label>
+          <div class="field-input">
+            <svg class="lead" aria-hidden="true" width="18" height="18"><use href="#i-mail"/></svg>
+            <input type="email" id="reg-email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <p class="field-msg error" id="m-email">Please enter a valid email address.</p>
+        </div>
 
-        <form id="registerForm" action="<?= base_url('register'); ?>" method="POST" novalidate>
-            <input type="hidden" name="referral_code" value="<?= esc(request()->getGet('ref')) ?>">
-            <div class="mb-3">
-                <label for="full_name" class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Enter your full name" required>
-                <div class="invalid-feedback"></div>
-            </div>
+        <div class="field" id="f-phone">
+          <label for="reg-phone">Phone number</label>
+          <div class="field-input">
+            <svg class="lead" aria-hidden="true" width="18" height="18"><use href="#i-phone"/></svg>
+            <input type="tel" id="reg-phone" name="phone" placeholder="0801 234 5678" autocomplete="tel" inputmode="tel" required>
+          </div>
+          <p class="field-msg hint" id="h-phone">Required so verified employers can reach you about roles.</p>
+          <p class="field-msg error" id="m-phone">Please enter a valid Nigerian phone number.</p>
+        </div>
 
-            <div class="mb-3">
-                <label for="email" class="form-label">Email Address</label>
-                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required>
-                <div class="invalid-feedback"></div>
-            </div>
-
-            <div class="mb-3">
-                <label for="phone" class="form-label">Phone Number</label>
-                <input type="tel" class="form-control" id="phone" name="phone" placeholder="Enter your phone number" required inputmode="numeric" pattern="[\+\d\s\-\(\)]+">
-                <div class="invalid-feedback"></div>
-            </div>
-
-            <div class="mb-3">
-                <label for="user_type" class="form-label">Account Type</label>
-                <select class="form-control" id="user_type" name="user_type" required>
-                    <option value="" disabled selected>-- Choose --</option>
-                    <option value="job_seeker">Job Seeker</option>
-                    <option value="employer">Employer</option>
-                </select>
-                <div class="invalid-feedback"></div>
-            </div>
-
-            <div class="mb-3" id="company-field">
-                <label for="company_name" class="form-label">Company Name</label>
-                <input type="text" class="form-control" id="company_name" name="company_name" placeholder="Enter your company name" required>
-                <div class="invalid-feedback"></div>
-            </div>
-
-            <div class="mb-3 position-relative">
-                <label for="password" class="form-label">Password</label>
-                <div class="input-group">
-                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
-                    <span class="input-group-text password-toggle" style="cursor:pointer">
-                        <i class="bi bi-eye-slash"></i>
-                    </span>
-                </div>
-                <div class="invalid-feedback"></div>
-            </div>
-
-            <div class="mb-3 position-relative">
-                <label for="password_confirm" class="form-label">Confirm Password</label>
-                <div class="input-group">
-                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" placeholder="Confirm your password" required>
-                    <span class="input-group-text password-toggle" style="cursor:pointer">
-                        <i class="bi bi-eye-slash"></i>
-                    </span>
-                </div>
-                <div class="invalid-feedback"></div>
-            </div>
-
-            <div class="cb-container">
-                <div>
-                    <input type="checkbox" id="agree_terms" name="agree_terms" required>
-                    <label for="agree_terms">Agree to our terms and policy</label>
-                </div>
-                <a href="<?= base_url('terms-of-service') ?>" target="_blank">Learn more</a>
-            </div>
-
-            <button id="registerBtn" type="submit" class="register-btn">
-                <span class="btn-text">Register</span>
-                <span class="btn-loading d-none">
-                    <span class="spinner-border spinner-border-sm" role="status"></span>
-                    Creating Account...
-                </span>
+        <div class="field" id="f-pass">
+          <label for="reg-pass">Password</label>
+          <div class="field-input">
+            <svg class="lead" aria-hidden="true" width="18" height="18"><use href="#i-lock"/></svg>
+            <input type="password" id="reg-pass" name="password" placeholder="At least 8 characters" autocomplete="new-password" required>
+            <button type="button" class="field-toggle" aria-label="Show password" onclick="togglePw('reg-pass', this)">
+              <svg aria-hidden="true" width="19" height="19"><use href="#i-eye"/></svg>
             </button>
-        </form>
-
-        <div class="login-link">
-            Already have an account? <a href="<?= base_url('login'); ?>">Sign in</a>
+          </div>
+          <div class="pw-strength" id="pw-strength">
+            <div class="pw-bars" aria-hidden="true">
+              <span class="pw-bar" id="b1"></span><span class="pw-bar" id="b2"></span><span class="pw-bar" id="b3"></span><span class="pw-bar" id="b4"></span>
+            </div>
+            <p class="pw-label">Password strength: <strong id="pw-text">&mdash;</strong></p>
+          </div>
+          <p class="field-msg error" id="m-pass">Password must be at least 8 characters.</p>
         </div>
+
+        <div class="field" id="f-pass2">
+          <label for="reg-pass2">Confirm password</label>
+          <div class="field-input">
+            <svg class="lead" aria-hidden="true" width="18" height="18"><use href="#i-lock"/></svg>
+            <input type="password" id="reg-pass2" name="password_confirm" placeholder="Re-enter your password" autocomplete="new-password" required>
+            <button type="button" class="field-toggle" aria-label="Show password" onclick="togglePw('reg-pass2', this)">
+              <svg aria-hidden="true" width="19" height="19"><use href="#i-eye"/></svg>
+            </button>
+          </div>
+          <p class="field-msg error" id="m-pass2">Passwords do not match.</p>
+        </div>
+
+        <div class="check-row">
+          <input type="checkbox" id="reg-terms" name="agree_terms" required>
+          <label for="reg-terms">I agree to JobberRecruit's <a href="<?= base_url('terms-of-service') ?>">Terms of Service</a> and <a href="<?= base_url('privacy-policy') ?>">Privacy Policy</a>.</label>
+        </div>
+
+        <button type="submit" class="auth-submit" id="register-btn">
+          Create free account <svg aria-hidden="true" width="18" height="18"><use href="#i-arrow-up"/></svg>
+        </button>
+
+        <div class="auth-promise">
+          <svg aria-hidden="true" width="18" height="18"><use href="#i-shield"/></svg>
+          <span>We will <strong>never</strong> ask you to pay for a job, an application, or an interview &mdash; ever.</span>
+        </div>
+      </form>
+      </div>
+
+      <p class="auth-foot-note">Already have an account? <a href="<?= base_url('login') ?>">Log in</a></p>
     </div>
-</div>
+  </section>
 
-<!-- Terms Modal -->
-<div id="termsModal" class="terms-modal">
-    <div class="terms-content">
-        <h5>Terms of Service & Privacy Policy</h5>
-
-        <div class="terms-scroll">
-
-            <p>
-                Welcome to <strong>JobberRecruit</strong> — a trusted platform connecting employers with talented job seekers.
-                Before proceeding, please review the following terms and privacy conditions carefully.
-            </p>
-
-            <p>
-                By clicking <strong>“Accept & Continue,”</strong> you confirm that you have read, understood,
-                and agree to abide by these Terms and our Privacy Policy.<br>
-                <strong>Please scroll to the end to activate the Accept button.</strong>
-            </p>
-
-            <p><strong>Last Updated:</strong> 01/12/2025</p>
-
-            <p>
-                JobberRecruit (“we,” “our,” or “the Platform”) provides recruitment-related services designed to help employers find qualified candidates and assist job seekers in accessing verified employment opportunities.
-                These Terms of Service & Privacy Policy (“Terms”) govern your relationship with us when accessing, registering,
-                or using our platform, whether as an employer, job seeker, or visitor.
-            </p>
-
-            <p>By using JobberRecruit, you agree to these Terms. If you do not agree, do not use the Platform.</p>
-
-            <h6>1. DEFINITIONS</h6>
-            <ul>
-                <li><strong>Platform / Service:</strong> All products, features, tools, and communication channels provided by JobberRecruit.</li>
-                <li><strong>User:</strong> Anyone accessing or using the platform.</li>
-                <li><strong>Employer:</strong> Any organization posting jobs or recruiting talent.</li>
-                <li><strong>Job Seeker:</strong> Any individual viewing or applying for jobs.</li>
-                <li><strong>Content:</strong> Job posts, CVs, profiles, messages, and all information processed through the platform.</li>
-                <li><strong>Third Parties:</strong> External tools, services, advertisers, or partners.</li>
-            </ul>
-
-            <h6>2. GENERAL TERMS (Applies to All Users)</h6>
-            <p><strong>2.1 Use of the Platform</strong></p>
-            <ul>
-                <li>You must be at least 18 years old to use JobberRecruit.</li>
-                <li>You agree to provide accurate and truthful information.</li>
-                <li>You must not use the platform for fraudulent or unlawful activity.</li>
-                <li>We may modify or discontinue services at any time.</li>
-            </ul>
-
-            <p><strong>2.2 Third-Party Content</strong></p>
-            <ul>
-                <li>Some job listings or company data are provided by employers.</li>
-                <li>We do not guarantee the accuracy of third-party information.</li>
-                <li>We are not liable for hiring decisions or external website content.</li>
-            </ul>
-
-            <p><strong>2.3 No Employment Guarantee</strong></p>
-            <ul>
-                <li>We do not guarantee job placement, interviews, or offers.</li>
-                <li>Employers control their own recruitment process.</li>
-            </ul>
-
-            <p><strong>2.4 Service Availability</strong></p>
-            <ul>
-                <li>Notifications may depend on external email or SMS providers.</li>
-                <li>We are not responsible for undelivered or delayed alerts.</li>
-            </ul>
-
-            <p><strong>2.5 Intellectual Property</strong></p>
-            <ul>
-                <li>All platform designs, trademarks, and technology belong to JobberRecruit.</li>
-                <li>Do not copy, distribute, or reproduce platform material without permission.</li>
-            </ul>
-
-            <p><strong>2.6 Termination</strong></p>
-            <ul>
-                <li>We may suspend or terminate accounts that violate these Terms.</li>
-            </ul>
-
-            <h6>3. EMPLOYER TERMS</h6>
-
-            <p><strong>3.1 Job Posting Standards</strong></p>
-            <ul>
-                <li>Job posts must be accurate, legal, and non-discriminatory.</li>
-                <li>Only real and currently available roles may be posted.</li>
-            </ul>
-
-            <p><strong>3.2 Employer Responsibilities</strong></p>
-            <ul>
-                <li>Employers are fully responsible for candidate screening and hiring decisions.</li>
-                <li>Compliance with labour laws is the employer’s responsibility.</li>
-            </ul>
-
-            <p><strong>3.3 Payments & Subscriptions</strong></p>
-            <ul>
-                <li>Paid features require full payment before activation.</li>
-                <li>Fees are non-refundable unless stated otherwise.</li>
-            </ul>
-
-            <p><strong>3.4 Prohibited Employer Activities</strong></p>
-            <ul>
-                <li>Requesting money from job seekers.</li>
-                <li>Posting deceptive, scam, or misleading opportunities.</li>
-                <li>Misusing job seeker data for non-recruitment purposes.</li>
-            </ul>
-
-            <h6>4. JOB SEEKER TERMS</h6>
-
-            <p><strong>4.1 Use of Job Alerts & Applications</strong></p>
-            <ul>
-                <li>We do not guarantee job responses or interview invitations.</li>
-            </ul>
-
-            <p><strong>4.2 CV & Profile Information</strong></p>
-            <ul>
-                <li>All information you submit must be accurate.</li>
-                <li>Employers may access this information solely for recruitment.</li>
-            </ul>
-
-            <p><strong>4.3 Prohibited Job Seeker Activities</strong></p>
-            <ul>
-                <li>Submitting false or misleading information.</li>
-                <li>Uploading harmful files.</li>
-                <li>Contacting employers for unsolicited services.</li>
-            </ul>
-
-            <h6>5. PRIVACY POLICY</h6>
-
-            <p><strong>5.1 Information We Collect</strong></p>
-            <ul>
-                <li>Personal details (name, email, phone).</li>
-                <li>CV and professional background.</li>
-                <li>Company data (for employers).</li>
-                <li>Usage data (IP address, browser type, device info).</li>
-                <li>Messages and submissions made through the platform.</li>
-            </ul>
-
-            <p><strong>5.2 How We Use Your Information</strong></p>
-            <ul>
-                <li>Deliver recruitment services and job alerts.</li>
-                <li>Improve performance, security, and user experience.</li>
-                <li>Verify activity and prevent fraud.</li>
-                <li>Allow employers to evaluate applications.</li>
-                <li>Meet legal or regulatory obligations.</li>
-            </ul>
-
-            <p><strong>5.3 Sharing of Information</strong></p>
-            <ul>
-                <li>Employers receive applicant data for hiring purposes.</li>
-                <li>Trusted third-party partners may assist service delivery.</li>
-                <li>Government agencies when required by law.</li>
-                <li>We do <strong>not</strong> sell user data.</li>
-            </ul>
-
-            <p><strong>5.4 Data Storage & Security</strong></p>
-            <ul>
-                <li>We use industry-standard security protocols.</li>
-                <li>No platform can guarantee 100% protection.</li>
-            </ul>
-
-            <p><strong>5.5 Cookies & Tracking</strong></p>
-            <ul>
-                <li>We use cookies to personalize content and analyze usage.</li>
-            </ul>
-
-            <p><strong>5.6 Data Retention</strong></p>
-            <ul>
-                <li>Data is retained as long as required for service or legal compliance.</li>
-                <li>Users may request deletion of their data.</li>
-            </ul>
-
-            <h6>6. LIMITATION OF LIABILITY</h6>
-            <ul>
-                <li>We are not responsible for employer decisions or job seeker actions.</li>
-                <li>We are not liable for indirect, special, or economic loss.</li>
-                <li>Our maximum liability is limited to fees paid in the month of the incident.</li>
-            </ul>
-
-            <h6>7. USER INDEMNITY</h6>
-            <p>
-                You agree to indemnify and hold JobberRecruit harmless from any claims arising from your misuse of the Platform or violation of these Terms.
-            </p>
-
-            <h6>8. GOVERNING LAW</h6>
-            <p>
-                These Terms are governed by the laws of the Federal Republic of Nigeria.
-            </p>
-
-            <h6>9. ACCEPTANCE OF TERMS</h6>
-            <p>
-                By clicking <strong>“Accept & Continue,”</strong> you confirm that you agree to these Terms and our Privacy Policy.
-                If you do not agree, discontinue use immediately.
-            </p>
-
+  <aside class="auth-brand" aria-label="Why join JobberRecruit">
+      <div class="auth-brand-grid" aria-hidden="true"></div>
+      <div class="auth-brand-inner">
+        <h2>Find a job that <span>actually fits</span> &mdash; free, forever.</h2>
+        <p class="auth-brand-lede">Join thousands of Nigerian professionals using JobberRecruit to discover verified roles, build standout CVs, and land their next opportunity.</p>
+        <div class="auth-trust">
+          <div class="auth-trust-item">
+            <svg aria-hidden="true" width="22" height="22"><use href="#i-shield"/></svg>
+            <div><strong>Verified employers only</strong><span>Every company is screened before they can post. No scams, no fake jobs.</span></div>
+          </div>
+          <div class="auth-trust-item">
+            <svg aria-hidden="true" width="22" height="22"><use href="#i-lock"/></svg>
+            <div><strong>We never charge job seekers</strong><span>Searching and applying for jobs is 100% free &mdash; and always will be.</span></div>
+          </div>
+          <div class="auth-trust-item">
+            <svg aria-hidden="true" width="22" height="22"><use href="#i-spark"/></svg>
+            <div><strong>Free career tools</strong><span>ATS-ready CV builder, mock interviews, and salary insights &mdash; all included.</span></div>
+          </div>
         </div>
-
-        <div class="terms-actions">
-            <button type="button" class="btn btn-secondary" id="closeTerms">Close</button>
-            <button type="button" class="btn btn-primary" id="acceptTerms" disabled>Accept & Continue</button>
+        <div class="auth-brand-stats">
+          <div class="auth-brand-stat"><div class="n"><?= $liveJobsCount ?? '12K' ?>+</div><div class="l">Live jobs</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= $employerCount ?? '2K' ?>+</div><div class="l">Employers</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= $candidateCount ?? '50K' ?>+</div><div class="l">Job seekers</div></div>
         </div>
-    </div>
-</div>
-
-
+      </div>
+    </aside>
+</main>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha_site_key'); ?>"></script>
+<?php if (env('recaptcha_site_key')): ?>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha_site_key') ?>"></script>
+<?php endif; ?>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('registerForm');
-        const fullNameInput = document.getElementById('full_name');
-        const emailInput = document.getElementById('email');
-        const phoneInput = document.getElementById('phone');
-        const userTypeSelect = document.getElementById('user_type');
-        const companyField = document.getElementById('company-field');
-        const companyInput = document.getElementById('company_name');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('password_confirm');
-        const agreeTerms = document.getElementById('agree_terms');
-        const registerBtn = document.getElementById('registerBtn');
+function setRole(role){
+  document.getElementById('role-seeker').classList.toggle('selected', role==='seeker');
+  document.getElementById('role-seeker').setAttribute('aria-checked', role==='seeker');
+  document.getElementById('role-employer').classList.toggle('selected', role==='employer');
+  document.getElementById('role-employer').setAttribute('aria-checked', role==='employer');
+  document.getElementById('role-input').value = role;
+  document.getElementById('role-cards').classList.remove('err');
+  document.getElementById('m-role').classList.remove('show');
+  var locked=document.getElementById('form-lock');
+  if(locked) locked.classList.remove('form-locked');
+  var company = document.getElementById('f-company');
+  var nameField = document.getElementById('reg-name');
+  var sub = document.getElementById('auth-sub-text');
+  if(role==='employer'){
+    company.style.display='block';
+    document.getElementById('reg-company').setAttribute('required','required');
+    nameField.placeholder='Your full name';
+    sub.innerHTML='Post jobs and reach verified candidates. Already registered? <a href="<?= base_url('login') ?>">Log in here</a>.';
+  } else {
+    company.style.display='none';
+    document.getElementById('reg-company').removeAttribute('required');
+    nameField.placeholder='e.g. Chidi Okafor';
+    sub.innerHTML='Start finding verified jobs in minutes. Already registered? <a href="<?= base_url('login') ?>">Log in here</a>.';
+  }
+}
 
-        fullNameInput.focus();
+function togglePw(id, btn){
+  var input=document.getElementById(id);
+  var show = input.type==='password';
+  input.type = show ? 'text' : 'password';
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
 
-        document.querySelectorAll('.social-login').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                window.location.href = this.dataset.href;
-            });
-        });
+function socialAuth(provider){
+  var role = document.getElementById('role-input').value;
+  window.location.href = '<?= base_url('auth/') ?>' + provider + '?role=' + role;
+}
 
-        // 1️⃣ Show/Hide Company Field
-        userTypeSelect.addEventListener('change', function() {
-            if (this.value === 'employer') {
-                companyField.classList.add('show');
-                companyInput.required = true;
-            } else {
-                companyField.classList.remove('show');
-                companyInput.required = false;
-                companyInput.value = '';
-                clearError(companyInput);
-            }
-        });
-
-        // 2️⃣ Validation Fields
-        const fields = [fullNameInput, emailInput, phoneInput, companyInput, passwordInput, confirmPasswordInput, userTypeSelect];
-
-        fields.forEach(field => {
-            field.addEventListener('input', function() {
-                clearError(this);
-                validateField(this);
-            });
-            field.addEventListener('blur', function() {
-                validateField(this);
-            });
-        });
-
-        [passwordInput, confirmPasswordInput].forEach(input => {
-            input.addEventListener('input', validatePasswordMatch);
-        });
-
-        function validateField(field) {
-            const value = field.value.trim();
-            let errorMsg = '';
-
-            if (field === fullNameInput) {
-                if (!value) {
-                    errorMsg = 'Full name is required.';
-                } else if (!/^[a-zA-Z\s]{2,}$/.test(value)) {
-                    errorMsg = 'Full name must contain only letters and spaces.';
-                } else {
-                    const names = value.split(/\s+/);
-                    if (names.length < 2) errorMsg = 'Please include both first and last names.';
-                }
-            } else if (field === emailInput) {
-                if (!value) errorMsg = 'Email address is required.';
-                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-                    errorMsg = 'Enter a valid email address.';
-            } else if (field === phoneInput) {
-                if (!value) errorMsg = 'Phone number is required.';
-                else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(value))
-                    errorMsg = 'Enter a valid phone number.';
-            } else if (field === userTypeSelect && !value) {
-                errorMsg = 'Please select an account type.';
-            } else if (field === companyInput && companyInput.required) {
-                if (!value) errorMsg = 'Company name is required.';
-            } else if (field === passwordInput) {
-                if (!value) errorMsg = 'Password is required.';
-                else if (value.length < 6)
-                    errorMsg = 'Password must be at least 6 characters.';
-            } else if (field === confirmPasswordInput) {
-                return validatePasswordMatch();
-            }
-
-            if (errorMsg) {
-                showFieldError(field, errorMsg);
-                return false;
-            } else {
-                clearError(field);
-                return true;
-            }
-        }
-
-        function validatePasswordMatch() {
-            const pwd = passwordInput.value.trim();
-            const cnf = confirmPasswordInput.value.trim();
-            clearError(confirmPasswordInput);
-
-            if (cnf && pwd !== cnf) {
-                showFieldError(confirmPasswordInput, 'Passwords do not match.');
-                return false;
-            }
-            return true;
-        }
-
-        // ------------------------------------------------------------------
-        // 🔐 FINAL RECAPTCHA v3 IMPLEMENTATION
-        // ------------------------------------------------------------------
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            async function doRecaptchaAndSubmit() {
-                let tokenInput = document.querySelector('input[name="g-recaptcha-response"]');
-                if (!tokenInput) {
-                    tokenInput = document.createElement('input');
-                    tokenInput.type = 'hidden';
-                    tokenInput.name = 'g-recaptcha-response';
-                    form.appendChild(tokenInput);
-                }
-
-                if (typeof grecaptcha !== 'undefined') {
-                    try {
-                        const token = await grecaptcha.execute('<?= env('recaptcha_site_key'); ?>', {
-                            action: 'register'
-                        });
-                        tokenInput.value = token;
-                    } catch (err) {
-                        toastr?.error("Security verification failed. Please refresh the page.");
-                        console.error(err);
-                        return;
-                    }
-                } else {
-                    tokenInput.value = 'dev-bypass';
-                }
-
-                submitRegisterForm();
-            }
-
-            doRecaptchaAndSubmit();
-        });
-
-        // ------------------------------------------------------------------
-        // 📌 AJAX REGISTRATION FUNCTION
-        // ------------------------------------------------------------------
-        async function submitRegisterForm() {
-            setLoading(true);
-
-            try {
-                const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    body: formData,
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.status === "success") {
-                    toastr.success(data.message || "Registered successfully!");
-                    setTimeout(() => {
-                        window.location.href = data.redirect_url || "<?= base_url('login'); ?>";
-                    }, 1200);
-                } else {
-                    handleServerErrors(data);
-                }
-
-            } catch (error) {
-                toastr.error("Network error. Please check your connection.");
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-
-        // 4️⃣ Helpers
-        function showFieldError(input, msg) {
-            input.classList.add('is-invalid');
-            const fb = input.parentNode.querySelector('.invalid-feedback');
-            if (fb) fb.textContent = msg;
-        }
-
-        function clearError(input) {
-            input.classList.remove('is-invalid');
-            const fb = input.parentNode.querySelector('.invalid-feedback');
-            if (fb) fb.textContent = '';
-        }
-
-        function clearErrors() {
-            form.querySelectorAll('.is-invalid').forEach(el => {
-                el.classList.remove('is-invalid');
-                const fb = el.parentNode.querySelector('.invalid-feedback');
-                if (fb) fb.textContent = '';
-            });
-        }
-
-        function handleServerErrors(data) {
-            if (data.errors) {
-                Object.entries(data.errors).forEach(([key, msg]) => {
-                    const input = form.querySelector(`[name="${key}"]`);
-                    if (input) showFieldError(input, msg);
-                });
-            }
-            toastr?.error(data.message || 'Please fix the errors.');
-        }
-
-        // ------------------------------------------------------------------
-        // 🔧 UTILITY: Button Loading State
-        // ------------------------------------------------------------------
-        function setLoading(loading) {
-            const txt = registerBtn.querySelector('.btn-text');
-            const ld = registerBtn.querySelector('.btn-loading');
-            registerBtn.disabled = loading;
-            txt.classList.toggle('d-none', loading);
-            ld.classList.toggle('d-none', !loading);
-        }
-
-        // 5️⃣ Password visibility toggle (animated)
-        document.querySelectorAll('.password-toggle').forEach(toggle => {
-            toggle.addEventListener('click', function() {
-                const input = this.previousElementSibling;
-                const icon = this.querySelector('i');
-                const isPassword = input.type === 'password';
-
-                input.type = isPassword ? 'text' : 'password';
-                toggle.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
-                icon.classList.toggle('bi-eye', isPassword);
-                icon.classList.toggle('bi-eye-slash', !isPassword);
-
-                // Add smooth animation
-                this.classList.add('active');
-                setTimeout(() => this.classList.remove('active'), 250);
-            });
-        });
-
-        // 6️⃣ Terms Modal Logic
-        const termsLink = document.querySelector('.cb-container a');
-        const termsModal = document.getElementById('termsModal');
-        const termsScroll = document.querySelector('.terms-scroll');
-        const acceptBtn = document.getElementById('acceptTerms');
-        const closeBtn = document.getElementById('closeTerms');
-        const agreeCheckbox = document.getElementById('agree_terms');
-
-        // Show modal
-        termsLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            termsModal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        });
-
-        // Enable "Accept" button after scrolling to bottom
-        termsScroll.addEventListener('scroll', function() {
-            const nearBottom = this.scrollTop + this.clientHeight >= this.scrollHeight - 5;
-            if (nearBottom) {
-                acceptBtn.disabled = false;
-                acceptBtn.textContent = 'Accept & Continue';
-            }
-        });
-
-        // Close modal (no accept)
-        closeBtn.addEventListener('click', function() {
-            termsModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        });
-
-        // Accept terms
-        acceptBtn.addEventListener('click', function() {
-            agreeCheckbox.checked = true;
-            clearError(agreeCheckbox);
-            termsModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-            toastr?.success('You have accepted the terms and policy.');
-        });
+document.addEventListener('DOMContentLoaded', function() {
+  // Password strength
+  var pwInput = document.getElementById('reg-pass');
+  if(pwInput){
+    pwInput.addEventListener('input', function(){
+      var v=this.value;
+      var strength=document.getElementById('pw-strength');
+      if(v.length>0){ strength.classList.add('show'); } else { strength.classList.remove('show'); }
+      var score=0;
+      if(v.length>=8) score++;
+      if(/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+      if(/[0-9]/.test(v)) score++;
+      if(/[^A-Za-z0-9]/.test(v)) score++;
+      var bars=['b1','b2','b3','b4'];
+      var labels=['Weak','Fair','Good','Strong'];
+      bars.forEach(function(b,i){
+        var el=document.getElementById(b);
+        el.className='pw-bar';
+        if(i<score) el.classList.add('f'+score);
+      });
+      document.getElementById('pw-text').textContent = score>0 ? labels[score-1] : '\u2014';
     });
+  }
+
+  var form = document.getElementById('register-form');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var ok=true;
+    var role=document.getElementById('role-input').value;
+    function setErr(fieldId, msgId, cond){
+      var input=document.querySelector('#'+fieldId+' input, #'+fieldId+' select');
+      var msg=document.getElementById(msgId);
+      if(cond){ input.classList.add('err'); msg.classList.add('show'); ok=false; }
+      else { input.classList.remove('err'); msg.classList.remove('show'); }
+    }
+    if(role!=='seeker' && role!=='employer'){
+      document.getElementById('role-cards').classList.add('err');
+      document.getElementById('m-role').classList.add('show');
+      document.getElementById('role-cards').scrollIntoView({behavior:'smooth', block:'center'});
+      ok=false;
+    }
+    setErr('f-name','m-name', document.getElementById('reg-name').value.trim()==='');
+    if(role==='employer') setErr('f-company','m-company', document.getElementById('reg-company').value.trim()==='');
+    var email=document.getElementById('reg-email').value.trim();
+    setErr('f-email','m-email', !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email));
+    var phone=document.getElementById('reg-phone').value.replace(/[\s-]/g,'');
+    setErr('f-phone','m-phone', !/^(0\d{10}|(\+?234)\d{10})$/.test(phone));
+    var pass=document.getElementById('reg-pass').value;
+    setErr('f-pass','m-pass', pass.length<8);
+    var pass2=document.getElementById('reg-pass2').value;
+    setErr('f-pass2','m-pass2', pass2==='' || pass2!==pass);
+    if(!document.getElementById('reg-terms').checked) ok=false;
+    if(!ok) return;
+
+    var recaptchaKey = '<?= env('recaptcha_site_key') ?>';
+    var isValidKey = recaptchaKey && recaptchaKey.trim() !== '' && recaptchaKey !== 'recaptcha_site_key' && recaptchaKey.length > 15;
+
+    if (typeof grecaptcha !== 'undefined' && isValidKey) {
+      grecaptcha.ready(function() {
+        grecaptcha.execute(recaptchaKey, {action: 'register'}).then(function(token) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'g-recaptcha-response';
+          input.value = token;
+          form.appendChild(input);
+          submitForm();
+        }).catch(function() {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'g-recaptcha-response';
+          input.value = 'dev-bypass';
+          form.appendChild(input);
+          submitForm();
+        });
+      });
+    } else {
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'g-recaptcha-response';
+      input.value = 'dev-bypass';
+      form.appendChild(input);
+      submitForm();
+    }
+
+    function submitForm() {
+      var btn = document.getElementById('register-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Creating Account...';
+      var formData = new FormData(form);
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if(data.status === 'success') {
+          toastr.success(data.message || 'Registered successfully!');
+          setTimeout(function() { window.location.href = data.redirect_url || '<?= base_url('login') ?>'; }, 1200);
+        } else {
+          if(data.errors) {
+            Object.entries(data.errors).forEach(function(e) {
+              var input = form.querySelector('[name="'+e[0]+'"]');
+              if(input) { input.classList.add('err'); var fb = input.closest('.field').querySelector('.field-msg'); if(fb) { fb.textContent = e[1]; fb.classList.add('show'); } }
+            });
+          }
+          toastr.error(data.message || 'Please fix the errors.');
+          btn.disabled = false;
+          btn.innerHTML = 'Create free account <svg aria-hidden="true" width="18" height="18"><use href="#i-arrow-up"/></svg>';
+        }
+      })
+      .catch(function() {
+        toastr.error('Network error. Please check your connection.');
+        btn.disabled = false;
+        btn.innerHTML = 'Create free account <svg aria-hidden="true" width="18" height="18"><use href="#i-arrow-up"/></svg>';
+      });
+    }
+  });
+
+  // Live validation
+  function mark(fieldId, msgId, bad){
+    var input=document.querySelector('#'+fieldId+' input, #'+fieldId+' select');
+    var msg=document.getElementById(msgId);
+    if(!input||!msg) return;
+    if(bad){ input.classList.add('err'); msg.classList.add('show'); }
+    else { input.classList.remove('err'); msg.classList.remove('show'); }
+  }
+  var emailEl=document.getElementById('reg-email');
+  var phoneEl=document.getElementById('reg-phone');
+  var nameEl=document.getElementById('reg-name');
+  var passEl=document.getElementById('reg-pass');
+  var pass2El=document.getElementById('reg-pass2');
+  var companyEl=document.getElementById('reg-company');
+  function vName(){ if(nameEl.value!=='') mark('f-name','m-name', nameEl.value.trim()===''); }
+  function vEmail(){ if(emailEl.value!=='') mark('f-email','m-email', !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailEl.value.trim())); }
+  function vPhone(){ if(phoneEl.value!=='') mark('f-phone','m-phone', !/^(0\d{10}|(\+?234)\d{10})$/.test(phoneEl.value.replace(/[\s-]/g,''))); }
+  function vPass(){ if(passEl.value!=='') mark('f-pass','m-pass', passEl.value.length<8); }
+  function vPass2(){ if(pass2El.value!=='') mark('f-pass2','m-pass2', pass2El.value!==passEl.value); }
+  function vCompany(){ if(companyEl.value!=='') mark('f-company','m-company', companyEl.value.trim()===''); }
+  nameEl.addEventListener('blur', vName);
+  emailEl.addEventListener('blur', vEmail);
+  phoneEl.addEventListener('blur', vPhone);
+  passEl.addEventListener('blur', vPass);
+  pass2El.addEventListener('blur', vPass2);
+  companyEl.addEventListener('blur', vCompany);
+  emailEl.addEventListener('input', function(){ if(emailEl.classList.contains('err')) vEmail(); });
+  phoneEl.addEventListener('input', function(){ if(phoneEl.classList.contains('err')) vPhone(); });
+  nameEl.addEventListener('input', function(){ if(nameEl.classList.contains('err')) vName(); });
+  passEl.addEventListener('input', function(){ if(passEl.classList.contains('err')) vPass(); if(pass2El.value!=='') vPass2(); });
+  pass2El.addEventListener('input', function(){ if(pass2El.classList.contains('err')) vPass2(); });
+  companyEl.addEventListener('input', function(){ if(companyEl.classList.contains('err')) vCompany(); });
+});
 </script>
 <?= $this->endSection() ?>

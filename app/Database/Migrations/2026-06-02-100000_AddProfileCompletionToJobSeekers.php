@@ -23,6 +23,8 @@ class AddProfileCompletionToJobSeekers extends Migration
 
     public function down()
     {
-        $this->forge->dropColumn('job_seekers', 'profile_completion');
+        if ($this->db->getPlatform() !== 'SQLite3') {
+            $this->forge->dropColumn('job_seekers', 'profile_completion');
+        }
     }
 }

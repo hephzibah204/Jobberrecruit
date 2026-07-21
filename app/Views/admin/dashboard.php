@@ -102,6 +102,74 @@
     </div>
     <!-- End:: row-1 -->
 
+    <!-- Start:: Quick Actions -->
+    <div class="row mb-4 gy-3">
+        <div class="col-12">
+            <h5 class="fw-semibold mb-1 fs-15 text-muted uppercase" style="letter-spacing: .5px;">Quick Actions</h5>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/jobs') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-primary border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-primary-transparent text-primary rounded-circle mx-auto mb-2">
+                        <i class="ti ti-briefcase fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Manage Jobs</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/employers') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-success border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-success-transparent text-success rounded-circle mx-auto mb-2">
+                        <i class="ti ti-building fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Verify Employers</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/cv-reviews') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-warning border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-warning-transparent text-warning rounded-circle mx-auto mb-2">
+                        <i class="ti ti-file-text fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Review CVs</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/elearning') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-info border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-info-transparent text-info rounded-circle mx-auto mb-2">
+                        <i class="ti ti-book fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Courses</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/newsletters') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-danger border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-danger-transparent text-danger rounded-circle mx-auto mb-2">
+                        <i class="ti ti-mail fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Campaigns</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/reports') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-dark border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-dark-transparent text-dark rounded-circle mx-auto mb-2">
+                        <i class="ti ti-shield fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Fraud Reports</span>
+                </div>
+            </a>
+        </div>
+    </div>
+    <!-- End:: Quick Actions -->
+
     <!-- Start:: row-2 -->
     <div class="row">
         <div class="col-xxl-6">
@@ -137,9 +205,9 @@
                                         <!-- Logo -->
                                         <div>
                                             <span class="avatar avatar-md avatar-rounded">
-                                                <img src="<?= $employer->logo
-                                                                ? base_url($employer->logo)
-                                                                : base_url('images/favicon.png') ?>"
+                                                 <img src="<?= $employer->logo
+                                                                 ? ((str_starts_with($employer->logo, 'http://') || str_starts_with($employer->logo, 'https://')) ? $employer->logo : base_url($employer->logo))
+                                                                 : base_url('images/favicon.png') ?>"
                                                     alt="<?= esc($employer->company_name) ?>">
                                             </span>
                                         </div>
@@ -235,9 +303,37 @@
                     </ul>
                 </div>
             </div>
-        </div>
     </div>
     <!-- End:: row-2 -->
+
+    <!-- Start:: User Registration and Financial Analytics Row -->
+    <div class="row">
+        <div class="col-xxl-6">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        User Registration Growth (<?= date('Y') ?>)
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="user-registration-growth"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-6">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        Financial Revenue Volume (<?= date('Y') ?>)
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="financial-transactions-volume"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End:: User Registration and Financial Analytics Row -->
 
     <!-- Start:: row-3 -->
     <div class="row">
@@ -266,9 +362,9 @@
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="avatar avatar-sm bg-light avatar-rounded">
-                                                        <img src="<?= $job->logo
-                                                                        ? base_url($job->logo)
-                                                                        : base_url('images/favicon.png') ?>"
+                                                         <img src="<?= $job->logo
+                                                                         ? ((str_starts_with($job->logo, 'http://') || str_starts_with($job->logo, 'https://')) ? $job->logo : base_url($job->logo))
+                                                                         : base_url('images/favicon.png') ?>"
                                                             alt="<?= esc($job->company_name) ?>">
                                                     </span>
                                                     <span class="fw-medium">
@@ -702,7 +798,7 @@
                 borderRadius: 2,
             },
         },
-        colors: ["var(--primary-color)", "#fdaf22", "rgb(255, 73, 205)"],
+        colors: ["#0D609E", "#F08F1A", "#0A2F57"],
         fill: {
             opacity: [1, 0.05, 1],
             gradient: {
@@ -787,5 +883,106 @@
     const chart = new ApexCharts(document.querySelector("#employees-performance"), options);
     if (chart) chart.render();
     /* Employees Performance */
+
+    /* User Registration Growth Chart */
+    const optionsUserGrowth = {
+        series: [{
+            name: 'Candidates',
+            data: <?= json_encode($userGrowth['candidates'] ?? []) ?>
+        }, {
+            name: 'Employers',
+            data: <?= json_encode($userGrowth['employers'] ?? []) ?>
+        }],
+        chart: {
+            height: 350,
+            type: 'bar',
+            toolbar: {
+                show: false
+            }
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '55%',
+                endingShape: 'rounded'
+            },
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            show: true,
+            width: 2,
+            colors: ['transparent']
+        },
+        xaxis: {
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        },
+        yaxis: {
+            title: {
+                text: 'New Registrations'
+            }
+        },
+        fill: {
+            opacity: 1
+        },
+        colors: ["#0D609E", "#F08F1A"],
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val + " users"
+                }
+            }
+        }
+    };
+    const chartUserGrowth = new ApexCharts(document.querySelector("#user-registration-growth"), optionsUserGrowth);
+    if (chartUserGrowth) chartUserGrowth.render();
+
+    /* Financial Transactions Volume Chart */
+    const optionsFinanceGrowth = {
+        series: [{
+            name: 'Revenue',
+            data: <?= json_encode($transactionGrowth ?? []) ?>
+        }],
+        chart: {
+            height: 350,
+            type: 'area',
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        xaxis: {
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        },
+        yaxis: {
+            labels: {
+                formatter: function (value) {
+                    return "$" + value.toLocaleString();
+                }
+            },
+            title: {
+                text: 'Paid Subscriptions (USD)'
+            }
+        },
+        colors: ["#0D609E"],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.2,
+                stops: [0, 90, 100]
+            }
+        }
+    };
+    const chartFinanceGrowth = new ApexCharts(document.querySelector("#financial-transactions-volume"), optionsFinanceGrowth);
+    if (chartFinanceGrowth) chartFinanceGrowth.render();
 </script>
 <?= $this->endSection() ?>

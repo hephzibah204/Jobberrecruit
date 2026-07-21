@@ -2972,4 +2972,98 @@ class Home extends BaseController
             
         return view('home/partials/categories_ajax', ['categories' => $categories]);
     }
+
+    /**
+     * E-learning Courses & Career Training page
+     */
+    public function training()
+    {
+        $courseModel = new \App\Models\CourseModel();
+        
+        $q = trim((string) ($this->request->getVar('q') ?? ''));
+        $level = trim((string) ($this->request->getVar('level') ?? ''));
+        $type = trim((string) ($this->request->getVar('type') ?? ''));
+        $price = trim((string) ($this->request->getVar('price') ?? ''));
+
+        // Total Counts (non-filtered stats for hero section)
+        $totalCourses = $courseModel->where('is_active', 1)->findAll();
+        $freeCount = count(array_filter(
+            $totalCourses,
+            static fn ($course) => (float) ($course->price ?? 0) <= 0
+        ));
+
+        // Filtered Query Builder
+        $dbBuilder = $courseModel->where('is_active', 1);
+
+        if ($q !== '') {
+            $dbBuilder->groupStart()
+                      ->like('title', $q)
+                      ->orLike('description', $q)
+                      ->orLike('instructor', $q)
+                      ->groupEnd();
+        }
+        if ($level !== '') {
+            $dbBuilder->where('level', $level);
+        }
+        if ($type !== '') {
+            $dbBuilder->where('item_type', $type);
+        }
+        if ($price !== '') {
+            if ($price === 'free') {
+                $dbBuilder->where('price <=', 0);
+            } elseif ($price === 'paid') {
+                $dbBuilder->where('price >', 0);
+            }
+        }
+
+        $courses = $dbBuilder
+            ->orderBy('is_featured', 'DESC')
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $featuredCourses = array_values(array_filter(
+            $totalCourses,
+            static fn ($course) => (int) ($course->is_featured ?? 0) === 1
+        ));
+
+        return view('home/elearning', [
+            'title'             => 'Professional E-Learning & Career Training | JobberRecruit',
+            'meta_description'  => 'Upgrade your skills with JobberRecruit E-Learning and Training Marketplace. Explore free & premium certification courses in Tech, Business Management, sales, and more.',
+            'keywords'          => 'elearning Nigeria, professional courses Lagos, online training, job skills, career development, IT certification, interview preparation, JobberRecruit',
+            'og_title'          => 'Professional E-Learning & Career Training | JobberRecruit',
+            'og_description'    => 'Upgrade your skills with JobberRecruit E-Learning and Training Marketplace. Explore free & premium certification courses.',
+            'courses'           => $courses,
+            'featuredCourses'   => array_slice($featuredCourses, 0, 3),
+            'freeCount'         => $freeCount,
+            'paidCount'         => count($totalCourses) - $freeCount,
+            'totalActive'       => count($totalCourses),
+            'q'                 => $q,
+            'level'             => $level,
+            'type'              => $type,
+            'price'             => $price,
+            'auth'              => $this->auth,
+        ]);
+    }
+
+    /**
+     * CV Review Service landing page
+     */
+    public function cvReview()
+    {
+        $paidPlan = $this->request->getGet('plan');
+        $reviewId = $this->request->getGet('review_id');
+
+        return view('cv_review', [
+            'title'           => 'Professional CV Review Service | JobberRecruit',
+            'isLoggedIn'      => $this->auth->loggedIn(),
+            'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
+            'reviewId'        => $reviewId ? (int) $reviewId : null,
+            'planPrices'      => [
+                'basic'        => 0,
+                'professional' => (int) env('cv_review_pro_price', 15000),
+                'premium'      => (int) env('cv_review_prem_price', 30000),
+            ],
+            'auth'            => $this->auth,
+        ]);
+    }
 }

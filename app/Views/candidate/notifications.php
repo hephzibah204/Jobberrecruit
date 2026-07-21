@@ -1,127 +1,132 @@
 <?= $this->extend('layouts/app') ?>
-<?= $this->section('content') ?>
 
-<div class="content">
-
-    <div class="page-header">
-        <h4 class="fw-bold">Job Alerts</h4>
-        <h6>Get notified when new jobs match your criteria</h6>
-    </div>
-
-    <div class="row">
-
-        <!-- Left: Create Alert -->
-        <div class="col-xl-4">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0 fw-bold">Create Job Alert</h6>
-                </div>
-
-                <div class="card-body">
-
-                    <form id="alert-form">
-
-                        <div class="mb-3">
-                            <label class="fw-semibold">Keyword</label>
-                            <input type="text" name="keyword" class="form-control" placeholder="e.g. Software Developer" value="<?= esc($presetKeyword ?? '') ?>">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="fw-semibold">Location</label>
-                            <select name="location_id" class="form-select" required>
-                                <option value="" disabled selected>Choose Location</option>
-                                <?php foreach ($states as $state): ?>
-                                    <option value="<?= $state->id ?>" <?= ($presetLocationId ?? '') == $state->id ? 'selected' : '' ?>><?= esc($state->name) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="fw-semibold">Frequency</label>
-                            <select name="frequency" class="form-select">
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="fw-semibold">Delivery Time</label>
-                            <input type="time" name="delivery_time" class="form-control" value="08:00">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="fw-semibold">Notification Channel</label>
-                            <select name="channel" class="form-select">
-                                <option value="email">Email (Default)</option>
-                                <option value="sms" disabled>SMS (Not Available)</option>
-                            </select>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100">
-                            Create Alert
-                        </button>
-
-                    </form>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- Right: Existing Alerts -->
-        <div class="col-xl-8">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0 fw-bold">Your Alerts</h6>
-                </div>
-
-                <div class="card-body p-0">
-
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr>
-                                <th>Keyword</th>
-                                <th>Location</th>
-                                <th>Frequency</th>
-                                <th>Time</th>
-                                <th>Channel</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (count($alerts) > 0): ?>
-                                <?php foreach ($alerts as $alert): ?>
-                                    <tr>
-                                        <td><?= esc($alert->keyword) ?></td>
-                                        <td><?= esc($alert->location_id ?: 'Any') ?></td>
-                                        <td><?= ucfirst($alert->frequency) ?></td>
-                                        <td><?= $alert->delivery_time ? date('g:i A', strtotime($alert->delivery_time)) : '—' ?></td>
-                                        <td><?= ucfirst($alert->channel) ?></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-danger delete-alert" data-id="<?= $alert->id ?>">
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">No alerts created yet.</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-</div>
-
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+.alerts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+@media (min-width: 992px) {
+    .alerts-grid {
+        grid-template-columns: 1fr 1.8fr;
+    }
+}
+</style>
 <?= $this->endSection() ?>
 
+<?= $this->section('content') ?>
+<div class="content">
+
+    <!-- Header Section -->
+    <div class="page-head">
+        <div>
+            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Job Alerts</h1>
+            <p>Get notified the moment new jobs match your criteria — never miss an opening.</p>
+        </div>
+    </div>
+
+    <div class="alerts-grid">
+
+        <!-- Left: Create Alert -->
+        <section class="card" aria-label="Create job alert">
+            <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-plus"/></svg> Create Job Alert</span></div>
+            <div class="card-body">
+                <form id="alert-form" style="display:flex; flex-direction:column; gap:14px;">
+                    <?= csrf_field() ?>
+                    <div class="form-field">
+                        <label class="lbl" for="ja-kw">Keyword</label>
+                        <input type="text" id="ja-kw" name="keyword" class="input" placeholder="e.g. Accountant, remote" value="<?= esc($presetKeyword ?? '') ?>">
+                    </div>
+                    <div class="form-field">
+                        <label class="lbl" for="ja-loc">Location</label>
+                        <select id="ja-loc" name="location_id" class="select" required>
+                            <option value="">Any location</option>
+                            <?php foreach ($states as $state): ?>
+                                <option value="<?= $state->id ?>" <?= ($presetLocationId ?? '') == $state->id ? 'selected' : '' ?>><?= esc($state->name) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="lbl" for="ja-freq">Frequency</label>
+                        <select id="ja-freq" name="frequency" class="select">
+                            <option value="instant">Instant</option>
+                            <option value="daily" selected>Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="lbl" for="ja-time">Delivery time</label>
+                        <input id="ja-time" type="time" name="delivery_time" class="input" value="08:00">
+                    </div>
+                    <div class="form-field">
+                        <label class="lbl" for="ja-ch">Notification channel</label>
+                        <select id="ja-ch" name="channel" class="select">
+                            <option value="email">Email (default)</option>
+                            <option value="inapp">In-app only</option>
+                            <option value="both">Email + in-app</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Create Alert
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Right: Existing Alerts -->
+        <section class="card" aria-label="Your alerts">
+            <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Your Alerts</span></div>
+            <?php if (!empty($alerts) && count($alerts) > 0): ?>
+            <?php
+                // Map state id -> name so alerts show "Lagos State", not a raw numeric id
+                $stateMap = [];
+                foreach (($states ?? []) as $st) { $stateMap[$st->id] = $st->name; }
+            ?>
+            <div class="tbl-wrap">
+                <table class="tbl" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Location</th>
+                            <th>Frequency</th>
+                            <th>Time</th>
+                            <th>Channel</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($alerts as $alert): ?>
+                            <tr>
+                                <td><b style="color:var(--brand-deep);"><?= esc($alert->keyword) ?></b></td>
+                                <td><?= esc($alert->location_id ? ($stateMap[$alert->location_id] ?? 'Any') : 'Any location') ?></td>
+                                <td><span class="pill pill--reviewed"><?= ucfirst($alert->frequency) ?></span></td>
+                                <td style="font-size:.8rem;color:var(--muted);"><?= $alert->delivery_time ? date('g:i A', strtotime($alert->delivery_time)) : '—' ?></td>
+                                <td><?= ucfirst($alert->channel ?? 'email') ?></td>
+                                <td>
+                                    <button class="btn btn-outline btn-sm delete-alert" data-id="<?= $alert->id ?>">
+                                        <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-trash"/></svg> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="empty">
+                <span class="empty-ic"><svg aria-hidden="true" style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg></span>
+                <h3>No alerts created yet</h3>
+                <p>Create your first alert and we'll deliver matching jobs to your inbox the moment they go live.</p>
+            </div>
+            <?php endif; ?>
+        </section>
+
+    </div>
+</div>
+<?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
@@ -164,4 +169,4 @@
         });
     });
 </script>
-<?= $this->endSection() ?>
+<?= $this->endSection() ?>

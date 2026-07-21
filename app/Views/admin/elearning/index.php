@@ -36,7 +36,7 @@
                                 <tbody>
                                     <?php if (empty($courses)): ?>
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted py-5">No courses yet. Use the add course button to create your first course.</td>
+                                            <td colspan="9" class="text-center text-muted py-5">No courses yet. Use the add course button to create your first course.</td>
                                         </tr>
                                     <?php endif; ?>
 
@@ -68,112 +68,30 @@
                                                 </span>
                                             </td>
                                             <td><?= !empty($course->is_featured) ? '<span class="badge bg-warning-transparent">Featured</span>' : '<span class="text-muted">No</span>' ?></td>
-                                            <td>
+                                            <td class="text-nowrap">
                                                 <a href="<?= base_url('admin/elearning/modules/' . $course->id) ?>" class="btn btn-sm btn-icon btn-secondary-light" title="Manage Modules">
                                                     <i class="ti ti-list"></i>
                                                 </a>
                                                 <button class="btn btn-sm btn-icon btn-info-light" data-bs-toggle="modal" data-bs-target="#editCourseModal<?= $course->id ?>" title="Edit Course">
                                                     <i class="ti ti-edit"></i>
                                                 </button>
+                                                <form method="POST" action="<?= base_url('admin/elearning/toggle-status/' . $course->id) ?>" class="d-inline" onsubmit="return confirm('<?= !empty($course->is_active) ? 'Unpublish this course?' : 'Publish this course?' ?>')">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="btn btn-sm btn-icon <?= !empty($course->is_active) ? 'btn-warning-light' : 'btn-success-light' ?>" title="<?= !empty($course->is_active) ? 'Unpublish' : 'Publish' ?>">
+                                                        <i class="ti <?= !empty($course->is_active) ? 'ti-eye-off' : 'ti-eye-check' ?>"></i>
+                                                    </button>
+                                                </form>
                                                 <a href="<?= base_url('training/course/' . $course->id) ?>" class="btn btn-sm btn-icon btn-primary-light" target="_blank" title="View Course">
                                                     <i class="ti ti-eye"></i>
                                                 </a>
+                                                <form method="POST" action="<?= base_url('admin/elearning/delete/' . $course->id) ?>" class="d-inline" onsubmit="return confirm('Delete this course permanently? This cannot be undone.')">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="btn btn-sm btn-icon btn-danger-light" title="Delete Course">
+                                                        <i class="ti ti-trash"></i>
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
-
-                                        <div class="modal fade" id="editCourseModal<?= $course->id ?>" tabindex="-1">
-                                            <div class="modal-dialog modal-lg">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Edit Course</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <form action="<?= base_url('admin/elearning/save') ?>" method="POST" enctype="multipart/form-data">
-                                                        <?= csrf_field() ?>
-                                                        <input type="hidden" name="id" value="<?= $course->id ?>">
-                                                        <div class="modal-body">
-                                                            <div class="row g-3">
-                                                                <div class="col-md-6">
-                                                                    <label class="form-label">Course Title</label>
-                                                                    <input type="text" name="title" class="form-control" value="<?= esc($course->title) ?>" required>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <label class="form-label">Instructor Name</label>
-                                                                    <input type="text" name="instructor" class="form-control" value="<?= esc($course->instructor) ?>" required>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Price (NGN)</label>
-                                                                    <input type="number" step="0.01" name="price" class="form-control" value="<?= $course->price ?>" required>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Item Type</label>
-                                                                    <select name="item_type" class="form-select">
-                                                                        <option value="course" <?= ($course->item_type ?? 'course') === 'course' ? 'selected' : '' ?>>Course</option>
-                                                                        <option value="ebook" <?= ($course->item_type ?? 'course') === 'ebook' ? 'selected' : '' ?>>eBook (PDF)</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Duration</label>
-                                                                    <input type="text" name="duration" class="form-control" value="<?= esc($course->duration) ?>" placeholder="e.g. 4 Weeks" required>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Level</label>
-                                                                    <select name="level" class="form-select">
-                                                                        <option value="beginner" <?= $course->level === 'beginner' ? 'selected' : '' ?>>Beginner</option>
-                                                                        <option value="intermediate" <?= $course->level === 'intermediate' ? 'selected' : '' ?>>Intermediate</option>
-                                                                        <option value="advanced" <?= $course->level === 'advanced' ? 'selected' : '' ?>>Advanced</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Content Source</label>
-                                                                    <select name="content_source" class="form-select">
-                                                                        <option value="none" <?= ($course->content_source ?? 'none') === 'none' ? 'selected' : '' ?>>None</option>
-                                                                        <option value="youtube" <?= ($course->content_source ?? 'none') === 'youtube' ? 'selected' : '' ?>>YouTube</option>
-                                                                        <option value="upload" <?= ($course->content_source ?? 'none') === 'upload' ? 'selected' : '' ?>>Upload</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-md-8">
-                                                                    <label class="form-label">YouTube URL</label>
-                                                                    <input type="url" name="youtube_url" class="form-control" value="<?= esc($course->youtube_url ?? '') ?>" placeholder="https://www.youtube.com/watch?v=...">
-                                                                </div>
-                                                                <div class="col-md-12">
-                                                                    <label class="form-label">Description</label>
-                                                                    <textarea name="description" class="form-control" rows="4" required><?= esc($course->description) ?></textarea>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <label class="form-label">Thumbnail</label>
-                                                                    <input type="file" name="thumbnail" class="form-control">
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <label class="form-label">Upload Course File</label>
-                                                                    <input type="file" name="content_file" class="form-control">
-                                                                    <?php if (! empty($course->content_file)): ?>
-                                                                        <small class="text-muted d-block mt-1">Existing file: <?= esc(basename((string) $course->content_file)) ?></small>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <label class="form-label">Status</label>
-                                                                    <select name="status" class="form-select">
-                                                                        <option value="active" <?= !empty($course->is_active) ? 'selected' : '' ?>>Active</option>
-                                                                        <option value="inactive" <?= empty($course->is_active) ? 'selected' : '' ?>>Inactive</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-md-12">
-                                                                    <div class="form-check form-switch">
-                                                                        <input class="form-check-input" type="checkbox" name="is_featured" value="1" <?= !empty($course->is_featured) ? 'checked' : '' ?>>
-                                                                        <label class="form-check-label">Feature this course on the landing page</label>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                                            <button type="submit" class="btn btn-primary">Update Course</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -187,7 +105,7 @@
 
 <!-- Add Modal -->
 <div class="modal fade" id="addCourseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Course</h5>
@@ -275,4 +193,102 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Modals -->
+<?php foreach ($courses as $course): ?>
+    <div class="modal fade" id="editCourseModal<?= $course->id ?>" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="<?= base_url('admin/elearning/save') ?>" method="POST" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= $course->id ?>">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Course Title</label>
+                                <input type="text" name="title" class="form-control" value="<?= esc($course->title) ?>" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Instructor Name</label>
+                                <input type="text" name="instructor" class="form-control" value="<?= esc($course->instructor) ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Price (NGN)</label>
+                                <input type="number" step="0.01" name="price" class="form-control" value="<?= $course->price ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Item Type</label>
+                                <select name="item_type" class="form-select">
+                                    <option value="course" <?= ($course->item_type ?? 'course') === 'course' ? 'selected' : '' ?>>Course</option>
+                                    <option value="ebook" <?= ($course->item_type ?? 'course') === 'ebook' ? 'selected' : '' ?>>eBook (PDF)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Duration</label>
+                                <input type="text" name="duration" class="form-control" value="<?= esc($course->duration) ?>" placeholder="e.g. 4 Weeks" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Level</label>
+                                <select name="level" class="form-select">
+                                    <option value="beginner" <?= $course->level === 'beginner' ? 'selected' : '' ?>>Beginner</option>
+                                    <option value="intermediate" <?= $course->level === 'intermediate' ? 'selected' : '' ?>>Intermediate</option>
+                                    <option value="advanced" <?= $course->level === 'advanced' ? 'selected' : '' ?>>Advanced</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Content Source</label>
+                                <select name="content_source" class="form-select">
+                                    <option value="none" <?= ($course->content_source ?? 'none') === 'none' ? 'selected' : '' ?>>None</option>
+                                    <option value="youtube" <?= ($course->content_source ?? 'none') === 'youtube' ? 'selected' : '' ?>>YouTube</option>
+                                    <option value="upload" <?= ($course->content_source ?? 'none') === 'upload' ? 'selected' : '' ?>>Upload</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">YouTube URL</label>
+                                <input type="url" name="youtube_url" class="form-control" value="<?= esc($course->youtube_url ?? '') ?>" placeholder="https://www.youtube.com/watch?v=...">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Description</label>
+                                <textarea name="description" class="form-control" rows="4" required><?= esc($course->description) ?></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Thumbnail</label>
+                                <input type="file" name="thumbnail" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Upload Course File</label>
+                                <input type="file" name="content_file" class="form-control">
+                                <?php if (! empty($course->content_file)): ?>
+                                    <small class="text-muted d-block mt-1">Existing file: <?= esc(basename((string) $course->content_file)) ?></small>
+                                <?php endif; ?>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="active" <?= !empty($course->is_active) ? 'selected' : '' ?>>Active</option>
+                                    <option value="inactive" <?= empty($course->is_active) ? 'selected' : '' ?>>Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_featured" value="1" <?= !empty($course->is_featured) ? 'checked' : '' ?>>
+                                    <label class="form-check-label">Feature this course on the landing page</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endforeach; ?>
+
 <?= $this->endSection() ?>

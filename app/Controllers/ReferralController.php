@@ -56,7 +56,7 @@ class ReferralController extends BaseController
     public function adminSettings()
     {
         // Admin only check
-        if (!auth()->user()->inGroup('admin')) {
+        if (auth()->user()->user_type !== 'admin') {
             return redirect()->to('/')->with('error', 'Unauthorized access');
         }
 
@@ -74,7 +74,7 @@ class ReferralController extends BaseController
      */
     public function updateSettings()
     {
-        if (!auth()->user()->inGroup('admin')) {
+        if (auth()->user()->user_type !== 'admin') {
             return $this->fail('Unauthorized');
         }
 

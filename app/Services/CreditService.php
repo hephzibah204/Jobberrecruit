@@ -72,9 +72,6 @@ class CreditService
         return false;
     }
 
-    /**
-     * Get current subscription plan for user
-     */
     public function getCurrentPlan(int $userId): ?object
     {
         $subscription = $this->subscriptionModel
@@ -87,7 +84,13 @@ class CreditService
             return null;
         }
 
-        return $this->planModel->find($subscription->plan_id);
+        $planId = is_array($subscription) ? ($subscription['plan_id'] ?? null) : ($subscription->plan_id ?? null);
+        if (!$planId) {
+            return null;
+        }
+
+        $plan = $this->planModel->find($planId);
+        return $plan ? (object)$plan : null;
     }
 
     /**
@@ -95,11 +98,13 @@ class CreditService
      */
     public function getCurrentSubscription(int $userId): ?object
     {
-        return $this->subscriptionModel
+        $subscription = $this->subscriptionModel
             ->where('user_id', $userId)
             ->where('is_active', 1)
             ->where('ends_at >', date('Y-m-d H:i:s'))
             ->first();
+
+        return $subscription ? (object)$subscription : null;
     }
 
     /**
@@ -214,6 +219,12 @@ class CreditService
 
         // For other actions that don't consume credits, just check feature availability
         $featureAvailable = $planFeatures[$action] ?? false;
+
+        // Custom bypass: If the action is unlock_candidate, they are paying ₦5,000 via their wallet.
+        // We should allow this action regardless of subscription plan features, as long as they pay.
+        if ($action === 'unlock_candidate') {
+            $featureAvailable = true;
+        }
 
         if ($featureAvailable) {
             return [

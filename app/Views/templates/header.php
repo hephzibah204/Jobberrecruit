@@ -56,10 +56,11 @@
                         <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
                         <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
                         <li class="has-children">
-                            <a <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'class="active"' : '' ?> href="#">Training</a>
+                            <a <?= (uri_string() == 'training' || uri_string() == 'webinars' || uri_string() == 'cv-review' || strpos(uri_string(), 'cv-review/') === 0) ? 'class="active"' : '' ?> href="#">Training</a>
                             <ul class="sub-menu">
                                 <li><a href="<?= base_url('training'); ?>">Courses</a></li>
                                 <li><a href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                                <li><a href="<?= base_url('cv-review'); ?>">CV Review</a></li>
                             </ul>
                         </li>
                         <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
@@ -111,10 +112,11 @@
                             <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
                             <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
                             <li class="has-children">
-                                <a <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'class="active"' : '' ?> href="#">Training</a>
+                                <a <?= (uri_string() == 'training' || uri_string() == 'webinars' || uri_string() == 'cv-review' || strpos(uri_string(), 'cv-review/') === 0) ? 'class="active"' : '' ?> href="#">Training</a>
                                 <ul class="sub-menu">
                                     <li><a href="<?= base_url('training'); ?>">Courses</a></li>
                                     <li><a href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                                    <li><a href="<?= base_url('cv-review'); ?>">CV Review</a></li>
                                 </ul>
                             </li>
                             <?php elseif (env('feature_elearning', 'true') == 'true'): ?>

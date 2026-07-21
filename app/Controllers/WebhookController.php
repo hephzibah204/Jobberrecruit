@@ -17,12 +17,12 @@ class WebhookController extends Controller
         $payload = file_get_contents('php://input');
 
         // --------------------------------------------------
-        // 1. HMAC-SHA256 SIGNATURE VERIFICATION
+        // 1. HMAC-SHA512 SIGNATURE VERIFICATION (Paystack signs with SHA512)
         // --------------------------------------------------
         $signature = $this->request->getHeaderLine('x-paystack-signature');
         $secretKey = env('PAYSTACK_SECRET_KEY');
         if ($secretKey) {
-            $computed = hash_hmac('sha256', $payload, $secretKey);
+            $computed = hash_hmac('sha512', $payload, $secretKey);
             if (!hash_equals($computed, $signature)) {
                 log_message('error', 'Paystack webhook: Invalid HMAC signature');
                 return $this->response->setStatusCode(401)->setBody('Unauthorized');
@@ -50,6 +50,7 @@ class WebhookController extends Controller
         $userModel    = model(UserModel::class);
         $employerModel = model(EmployerModel::class); // For company_name
 
+        $requestIp = $this->request->getIPAddress();
         log_message('info', "Paystack webhook received from {$requestIp}: {$eventType}");
 
         /*
@@ -122,6 +123,9 @@ class WebhookController extends Controller
                 return $this->response->setStatusCode(200);
             }
 
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             // Record payment
             $paymentModel->insert([
                 'user_id'          => $user->id,
@@ -153,14 +157,21 @@ class WebhookController extends Controller
             $subModel->insert([
                 'user_id'                 => $user->id,
                 'plan_id'                 => $plan->id,
-                'start_date'              => $start,
-                'end_date'                => $end,
+                'starts_at'               => $start,
+                'ends_at'                 => $end,
                 'is_active'               => 1,
                 'subscription_code' => $data['subscription']['subscription_code'] ?? null,
                 'authorization'           => isset($data['authorization']) ? json_encode($data['authorization']) : null,
                 'created_at'              => $start,
                 'updated_at'              => $start,
             ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                log_message('error', "Webhook charge.success transaction failed for user {$user->id}");
+                return $this->response->setStatusCode(500)->setBody('Internal Server Error');
+            }
 
             // --------------------------------------------------
             // SEND INVOICE EMAIL TO CUSTOMER
@@ -350,7 +361,7 @@ class WebhookController extends Controller
             ->where('is_active', 1)
             ->first();
 
-        $endDate = $subscription ? date('F j, Y', strtotime($subscription->end_date)) : 'your current billing period';
+        $endDate = $subscription ? date('F j, Y', strtotime($subscription->ends_at)) : 'your current billing period';
 
         $employerModel = model(EmployerModel::class);
         $employer = $employerModel->where('user_id', $user->id)->first();

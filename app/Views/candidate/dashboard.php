@@ -1,500 +1,246 @@
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
-<style>
-    /* Premium Welcome Wrap */
-    .premium-welcome-card {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.95) 100%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 24px !important;
-        overflow: hidden;
-        position: relative;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        z-index: 1;
-    }
-
-    .premium-welcome-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 350px;
-        height: 350px;
-        background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0) 70%);
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    .premium-welcome-card::after {
-        content: '';
-        position: absolute;
-        bottom: -30%;
-        left: -10%;
-        width: 250px;
-        height: 250px;
-        background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0) 70%);
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    .welcome-decor-grid {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        background-size: 20px 20px;
-        opacity: 0.8;
-        pointer-events: none;
-        z-index: -1;
-    }
-
-    /* World-Class Stats Cards */
-    .stat-card-premium {
-        background: rgba(15, 23, 42, 0.6) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        border-radius: 20px !important;
-        padding: 1.5rem !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card-premium:hover {
-        border-color: rgba(14, 165, 233, 0.35) !important;
-        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-        transform: translateY(-4px);
-    }
-
-    .stat-icon-wrapper {
-        width: 48px;
-        height: 48px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        margin-bottom: 1.25rem;
-        position: relative;
-    }
-
-    .stat-icon-wrapper::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 12px;
-        opacity: 0.15;
-    }
-
-    /* Color variations for icon wrappers */
-    .wrapper-blue { color: var(--brand); }
-    .wrapper-blue::after { background-color: var(--brand); }
-    .wrapper-warning { color: var(--accent); }
-    .wrapper-warning::after { background-color: var(--accent); }
-    .wrapper-info { color: #06b6d4; }
-    .wrapper-info::after { background-color: #06b6d4; }
-    .wrapper-success { color: #10b981; }
-    .wrapper-success::after { background-color: #10b981; }
-
-    /* Custom neon-glowing metrics bar */
-    .custom-progress-container {
-        position: relative;
-        width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 3px;
-        overflow: hidden;
-        margin-top: 1rem;
-    }
-
-    .custom-progress-bar {
-        height: 100%;
-        border-radius: 3px;
-        background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-    }
-
-    /* Quick Action Buttons */
-    .action-btn-pill {
-        border-radius: 50px !important;
-        padding: 0.625rem 1.25rem !important;
-        font-size: 0.875rem !important;
-        font-weight: 600 !important;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-
-    .action-btn-pill:hover {
-        transform: translateY(-2px);
-    }
-
-    /* List item visual improvements */
-    .list-item-glass {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        transition: all 0.25s ease;
-    }
-
-    .list-item-glass:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(14, 165, 233, 0.2);
-        padding-left: 12px !important;
-    }
-
-    .text-gradient {
-        background: linear-gradient(90deg, #f8fafc 0%, #cbd5e1 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    /* Muted text overrides inside dark theme cards to ensure proper contrast */
-    .premium-welcome-card .text-muted,
-    .stat-card-premium .text-muted {
-        color: #94a3b8 !important;
-    }
-</style>
+<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="content">
 
-    <!-- Header Section -->
-    <div class="d-lg-flex align-items-center justify-content-between mb-4">
+    <div class="greet-row">
+      <div class="greet">
+        <?php
+          $hourOfDay = (int) date('G');
+          $greeting  = $hourOfDay < 12 ? 'Good morning' : ($hourOfDay < 17 ? 'Good afternoon' : 'Good evening');
+        ?>
+        <h1><?= $greeting ?>, <?= esc(explode(' ', $candidate->full_name)[0] ?? $candidate->full_name) ?> 👋</h1>
+        <p>You have submitted <span class="text-primary fw-bold"><?= $totalApplications ?></span> applications in total.</p>
+      </div>
+      <span class="greet-date"><svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-calendar"/></svg> <?= date('l, d F Y') ?></span>
+    </div>
+
+    <!-- AI engine hero -->
+    <section class="ai-hero" aria-labelledby="ai-title">
+      <div class="ai-hero-grid">
         <div>
-            <h2 class="mb-1 text-gradient">Welcome, <?= esc($candidate->full_name) ?></h2>
-            <p class="text-muted mb-0">You have submitted <span class="text-primary fw-bold"><?= $totalApplications ?></span> applications in total.</p>
+          <span class="ai-badge"><span class="pulse" aria-hidden="true"></span> JobberRecruit AI Engine · Active</span>
+          <h2 id="ai-title">Let's accelerate your <span>career path.</span></h2>
+          <p class="ai-sub">You have <?= $recentApplicationsCount ?? 0 ?> new updates and recommendations waiting for your action.</p>
         </div>
-        <div class="table-top-head mt-3 mt-lg-0">
-            <form action="<?= base_url('jobs') ?>" method="GET" class="input-icon-start position-relative">
-                <span class="input-icon-addon fs-16 text-gray-9">
-                    <i class="ti ti-search"></i>
-                </span>
-                <input type="text" name="q" class="form-control" placeholder="Search Jobs..." style="min-width: 250px; background: rgba(15, 23, 42, 0.5) !important;">
-            </form>
+        <div class="ai-actions">
+          <a href="<?= base_url('jobs') ?>" class="btn btn-accent"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-search"/></svg> Browse Jobs</a>
+          <a href="<?= base_url('candidate/applications') ?>" class="btn btn-ghost-w"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-doc"/></svg> My Applications</a>
+          <?php if (env('feature_ai_career_tools', 'true') == 'true'): ?>
+          <a href="<?= base_url('candidate/career-tools') ?>" class="btn btn-ghost-w"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-zap"/></svg> AI Career Tools</a>
+          <?php endif; ?>
         </div>
-    </div>
+      </div>
+    </section>
 
-    <!-- Welcome Premium Banner -->
-    <div class="premium-welcome-card p-4 mb-4">
-        <div class="welcome-decor-grid"></div>
-        <div class="d-flex align-items-center justify-content-between flex-wrap position-relative" style="z-index: 2;">
-            <div class="mb-3 mb-md-0">
-                <span class="badge bg-primary-transparent text-primary px-3 py-2 rounded-pill fw-bold mb-2">
-                    <i class="ti ti-sparkles me-1"></i> JobberRecruit AI Engine Active
-                </span>
-                <h3 class="mb-2 fw-bold text-white">Let's accelerate your career path.</h3>
-                <p class="text-muted mb-0">You have <span class="text-white fw-semibold"><?= $recentApplicationsCount ?? 0 ?></span> new updates and recommendations waiting for your action.</p>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="<?= base_url('candidate/applications') ?>" class="btn btn-primary action-btn-pill">
-                    My Applications
-                </a>
-                <a href="<?= base_url('jobs') ?>" class="btn btn-outline-primary action-btn-pill">
-                    Browse Jobs
-                </a>
-                <?php if (env('feature_ai_career_tools', 'true') == 'true'): ?>
-                <a href="<?= base_url('candidate/career-tools') ?>" class="btn btn-outline-info action-btn-pill">
-                    <i class="ti ti-cpu me-1"></i> AI Career Tools
-                </a>
-                <?php endif; ?>
-            </div>
+    <!-- KPIs stats grid -->
+    <section class="stats" aria-label="Your activity" style="display:grid">
+      <div class="stat"><div class="stat-top"><span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-doc"/></svg></span></div><div class="stat-num"><?= $totalApplications ?></div><div class="stat-lbl">Total Applications</div></div>
+      <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)"><div class="stat-top"><span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bookmark"/></svg></span></div><div class="stat-num"><?= $savedJobs ?></div><div class="stat-lbl">Saved Jobs</div></div>
+      <div class="stat" style="--st-bar:var(--brand-dark)"><div class="stat-top"><span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-eye"/></svg></span></div><div class="stat-num"><?= $jobsViewed ?></div><div class="stat-lbl">Jobs Viewed</div></div>
+      <div class="stat" style="--st-bar:var(--success)">
+        <div class="stat-top">
+          <span class="ring-sm" role="img" aria-label="Profile <?= $profileCompletion ?> percent complete">
+            <svg viewBox="0 0 52 52" aria-hidden="true"><circle class="track" cx="26" cy="26" r="22"/><circle class="prog" cx="26" cy="26" r="22" stroke-dashoffset="<?= 138 - (138 * $profileCompletion / 100) ?>"/></svg>
+            <span class="pct"><?= $profileCompletion ?>%</span>
+          </span>
         </div>
-    </div>
+        <div class="stat-num" style="font-size:1.05rem;margin-top:2px"><?= $profileCompletion == 100 ? 'Completed' : '&#8358;500 waiting' ?></div>
+        <div class="stat-lbl">Profile Completion</div>
+      </div>
+    </section>
 
-    <!-- Metrics Stats Grid -->
-    <div class="row">
-        <!-- Stat Card 1 -->
-        <div class="col-xl-3 col-sm-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="stat-icon-wrapper wrapper-blue">
-                    <i class="ti ti-file-description fs-20"></i>
-                </div>
-                <h2 class="mb-1 text-white fw-bold"><?= $totalApplications ?></h2>
-                <p class="text-muted fs-13 mb-0">Total Applications</p>
-            </div>
+    <!-- weekly engagement + skill match -->
+    <section class="mid" aria-label="Engagement and skill match">
+      <div class="card">
+        <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-chart"/></svg> Your Week at a Glance</span>
+          <span style="font-size:.72rem;color:var(--muted);font-weight:500">Jobs viewed · last 7 days</span></div>
+        <div class="card-body">
+          <?php
+          $weeklyActivity = $weeklyChartData ?? [1, 2, 4, 3, 5, 8, 0];
+          $maxVal = max(1, max($weeklyActivity));
+          $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          ?>
+          <svg class="bar-chart" viewBox="0 0 560 140" role="img" aria-label="Bar chart of jobs viewed this week.">
+            <line class="grid-line" x1="30" y1="8" x2="552" y2="8"/><line class="grid-line" x1="30" y1="56" x2="552" y2="56"/><line class="grid-line" x1="30" y1="104" x2="552" y2="104"/>
+            <text class="axis-lbl" x="24" y="12" text-anchor="end"><?= $maxVal ?></text><text class="axis-lbl" x="24" y="60" text-anchor="end"><?= round($maxVal/2) ?></text><text class="axis-lbl" x="24" y="108" text-anchor="end">0</text>
+            
+            <?php foreach ($weeklyActivity as $i => $val): 
+                $h = round($val / $maxVal * 96);
+                $y = 104 - $h;
+                $x = 44 + ($i * 74);
+                $isMax = ($val === max($weeklyActivity) && $val > 0);
+            ?>
+              <rect x="<?= $x ?>" y="<?= $y ?>" width="34" height="<?= max(4, $h) ?>" rx="5" fill="<?= $isMax ? '#ED9020' : '#0861A9' ?>"><title><?= $days[$i] ?> · <?= $val ?></title></rect>
+              <?php if ($isMax): ?>
+                <text class="val-lbl" x="<?= $x + 17 ?>" y="<?= $y + 12 ?>" text-anchor="middle" fill="#fff"><?= $val ?></text>
+              <?php endif; ?>
+            <?php endforeach; ?>
+            
+            <?php foreach ($days as $i => $day): ?>
+              <text class="axis-lbl" x="<?= 61 + ($i * 74) ?>" y="124" text-anchor="middle"><?= $day ?></text>
+            <?php endforeach; ?>
+          </svg>
+          <p style="font-size:.74rem;color:var(--muted);margin-top:10px;display:flex;gap:6px;align-items:center"><svg style="width:13px;height:13px;color:var(--accent-dark);fill:none;stroke:currentColor;stroke-width:2;" aria-hidden="true"><use href="#i-bulb"/></svg> The most active candidates are first in line when new jobs drop.</p>
         </div>
+      </div>
 
-        <!-- Stat Card 2 -->
-        <div class="col-xl-3 col-sm-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="stat-icon-wrapper wrapper-warning">
-                    <i class="ti ti-bookmark fs-20"></i>
-                </div>
-                <h2 class="mb-1 text-white fw-bold"><?= $savedJobs ?></h2>
-                <p class="text-muted fs-13 mb-0">Saved Jobs</p>
+      <div class="card">
+        <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-zap"/></svg> Skill Match Hub</span></div>
+        <div class="card-body">
+          <div class="donut-wrap">
+            <div class="donut" role="img" aria-label="Overall match rate 85 percent">
+              <svg viewBox="0 0 132 132" aria-hidden="true">
+                <circle cx="66" cy="66" r="51" stroke="#f5f7fb"/>
+                <circle cx="66" cy="66" r="51" stroke="#0861A9" stroke-dasharray="128 320" stroke-dashoffset="0" stroke-linecap="butt"/>
+                <circle cx="66" cy="66" r="51" stroke="#16a34a" stroke-dasharray="64 320" stroke-dashoffset="-128"/>
+                <circle cx="66" cy="66" r="51" stroke="#ED9020" stroke-dasharray="48 320" stroke-dashoffset="-192"/>
+                <circle cx="66" cy="66" r="51" stroke="#8b5cf6" stroke-dasharray="32 320" stroke-dashoffset="-240"/>
+              </svg>
+              <span class="c"><b>85%</b><i>Match rate</i></span>
             </div>
-        </div>
-
-        <!-- Stat Card 3 -->
-        <div class="col-xl-3 col-sm-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="stat-icon-wrapper wrapper-info">
-                    <i class="ti ti-eye fs-20"></i>
-                </div>
-                <h2 class="mb-1 text-white fw-bold"><?= $jobsViewed ?></h2>
-                <p class="text-muted fs-13 mb-0">Jobs Viewed</p>
-            </div>
-        </div>
-
-        <!-- Stat Card 4 -->
-        <div class="col-xl-3 col-sm-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="stat-icon-wrapper wrapper-success">
-                    <i class="ti ti-progress fs-20"></i>
-                </div>
-                <h2 class="mb-1 text-gradient fw-bold"><?= $profileCompletion ?>%</h2>
-                <p class="text-muted fs-13 mb-0">Profile Completion</p>
-                <div class="custom-progress-container">
-                    <div class="custom-progress-bar" style="width: <?= $profileCompletion ?>%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts & Category Section -->
-    <div class="row">
-        <!-- Recommended Jobs List -->
-        <div class="col-xxl-3 col-lg-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4 p-0">
-                <div class="p-4 border-bottom">
-                    <h5 class="fw-bold text-white mb-0"><i class="ti ti-star me-2 text-primary"></i>Recommended Jobs</h5>
-                </div>
-                <div class="p-4" style="max-height: 310px; overflow-y: auto;">
-                    <?php if (empty($recommendedJobs)): ?>
-                        <p class="text-muted text-center py-4 mb-0">No job matches found for your current profile. Update your industry preferences to see recommendations.</p>
-                    <?php endif; ?>
-                    <?php foreach ($recommendedJobs as $job): ?>
-                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-secondary border-opacity-10 last-border-none">
-                            <div>
-                                <h6 class="mb-1 text-white fw-semibold"><?= esc($job->title) ?></h6>
-                                <p class="text-muted fs-12 mb-0"><i class="ti ti-map-pin me-1"></i><?= esc($job->location) ?></p>
-                            </div>
-                            <a href="<?= base_url('job/view/' . $job->id) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3">View</a>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Spline Area interactive Chart -->
-        <div class="col-lg-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="border-bottom pb-3 mb-3">
-                    <h5 class="fw-bold text-white mb-0"><i class="ti ti-chart-area me-2 text-primary"></i>Applications & Engagement</h5>
-                </div>
-                <div id="applications-chart" style="min-height: 250px;"></div>
-            </div>
-        </div>
-
-        <!-- Matching Donut Chart -->
-        <div class="col-xxl-3 col-lg-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="border-bottom pb-3 mb-3">
-                    <h5 class="fw-bold text-white mb-0"><i class="ti ti-chart-donut me-2 text-primary"></i>Skill Match Hub</h5>
-                </div>
-                <div id="category-overview" style="min-height: 250px;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Actions and Activities -->
-    <div class="row">
-        <!-- Recent Applications -->
-        <div class="col-xxl-4 col-xl-12 d-flex">
-            <div class="stat-card-premium flex-fill mb-4 p-0">
-                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-white mb-0"><i class="ti ti-history me-2 text-primary"></i>Recent Applications</h5>
-                    <a href="<?= base_url('candidate/applications') ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">View All</a>
-                </div>
-                <div class="p-4">
-                    <?php if (empty($recentApplications)): ?>
-                        <p class="text-muted text-center py-4 mb-0">You haven't applied to any jobs yet.</p>
-                    <?php endif; ?>
-                    <?php foreach ($recentApplications as $app): ?>
-                        <div class="d-sm-flex justify-content-between align-items-center mb-3 p-3 list-item-glass">
-                            <div>
-                                <h6 class="mb-1 text-white fw-semibold"><?= esc($app->job_title) ?></h6>
-                                <p class="text-muted fs-12 mb-0"><i class="ti ti-calendar me-1"></i>Applied on <?= date('M d, Y', strtotime($app->created_at)) ?></p>
-                            </div>
-                            <span class="badge bg-primary-transparent text-primary rounded-pill px-3 py-2 mt-2 mt-sm-0"><?= ucfirst($app->status) ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Latest Job Listings -->
-        <div class="col-xxl-4 col-xl-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4 p-0">
-                <div class="p-4 border-bottom">
-                    <h5 class="fw-bold text-white mb-0"><i class="ti ti-news me-2 text-primary"></i>Latest Job Openings</h5>
-                </div>
-                <div class="p-4">
-                    <?php if (empty($latestJobs)): ?>
-                        <p class="text-muted text-center py-4 mb-0">No new jobs posted recently.</p>
-                    <?php endif; ?>
-                    <?php foreach ($latestJobs as $job): ?>
-                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-secondary border-opacity-10 last-border-none">
-                            <div>
-                                <h6 class="fw-semibold text-white mb-1"><?= esc($job->title) ?></h6>
-                                <p class="text-muted fs-12 mb-0"><i class="ti ti-clock me-1"></i>Posted <?= date('M d, Y', strtotime($job->created_at)) ?></p>
-                            </div>
-                            <a href="<?= base_url('job/view/' . $job->id) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3">View</a>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Skill categories layout -->
-        <div class="col-xxl-4 col-xl-6 d-flex">
-            <div class="stat-card-premium flex-fill mb-4">
-                <div class="border-bottom pb-3 mb-3">
-                    <h5 class="fw-bold text-white mb-0"><i class="ti ti-circle-half-2 me-2 text-primary"></i>Matching Categories</h5>
+            <ul class="leg">
+              <li><i style="background:#0861A9"></i>Tech skills</li>
+              <li><i style="background:#16a34a"></i>Soft skills</li>
+              <li><i style="background:#ED9020"></i>Domain knowledge</li>
+              <li><i style="background:#8b5cf6"></i>Other matches</li>
+            </ul>
+          </div>
+          <div class="mcat" style="margin-top:18px">
+            <?php if (!empty($skillCategories)): ?>
+                <?php foreach ($skillCategories as $cat): ?>
+                    <div>
+                      <div class="mcat-row"><span><?= esc($cat->name) ?></span><b><?= $cat->match ?>%</b></div>
+                      <div class="mcat-track"><div class="mcat-fill" style="width:<?= $cat->match ?>%;background:#0861A9"></div></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div>
+                  <div class="mcat-row"><span>Software Development</span><b>85%</b></div>
+                  <div class="mcat-track"><div class="mcat-fill" style="width:85%;background:#0861A9"></div></div>
                 </div>
                 <div>
-                    <?php if (!empty($skillCategories)): ?>
-                        <?php foreach ($skillCategories as $cat): ?>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><?= esc($cat->name) ?></span>
-                                <span class="text-primary fw-bold"><?= $cat->match ?>%</span>
-                            </div>
-                            <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px;">
-                                <div class="progress-bar bg-primary" style="width: <?= $cat->match ?>%; border-radius: 3px;"></div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="text-muted text-center py-4 mb-0">Complete your profile with skills to see category matches.</p>
-                    <?php endif; ?>
+                  <div class="mcat-row"><span>UI/UX Product Design</span><b>75%</b></div>
+                  <div class="mcat-track"><div class="mcat-fill" style="width:75%;background:#064A85"></div></div>
                 </div>
-            </div>
+            <?php endif; ?>
+          </div>
         </div>
-    </div>
+      </div>
+    </section>
+
+    <!-- picks · profile tasks · learning -->
+    <section class="tri" aria-label="Recommendations and next steps">
+      <div class="card">
+        <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-check-c"/></svg> Finish Your Profile</span>
+          <span class="pill <?= $profileCompletion == 100 ? 'pill--success' : 'pill--pending' ?>"><?= $profileCompletion == 100 ? 'Completed' : 'Incomplete' ?></span></div>
+        <div class="card-body">
+          <div class="task <?= !empty($candidate->full_name) && !empty($candidate->phone) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="<?= !empty($candidate->full_name) && !empty($candidate->phone) ? '#i-check-c' : '#i-circle' ?>"/></svg> Personal details added
+          </div>
+          <div class="task <?= !empty($candidate->resume) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="<?= !empty($candidate->resume) ? '#i-check-c' : '#i-circle' ?>"/></svg> CV uploaded
+          </div>
+          <div class="task <?= !empty($candidate->skills) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="<?= !empty($candidate->skills) ? '#i-check-c' : '#i-circle' ?>"/></svg> Skills &amp; preferences set
+          </div>
+          <div class="task <?= !empty($candidate->photo) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="<?= !empty($candidate->photo) ? '#i-check-c' : '#i-circle' ?>"/></svg> 
+            <a href="<?= base_url('candidate/profile/edit') ?>">Upload a profile photo</a>
+          </div>
+          <p style="font-size:.72rem;color:var(--muted);margin-top:10px">&#8358;200 earned at the 60% milestone. Finish all steps to reach 100% and earn <b style="color:var(--accent-dark)">&#8358;500 more</b> — credited straight to your wallet.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-star"/></svg> Today's Picks for You</span>
+          <a href="<?= base_url('jobs') ?>" class="card-link">All jobs <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg></a></div>
+        <div class="card-body">
+          <?php if (empty($recommendedJobs)): ?>
+              <p class="text-muted text-center py-4 mb-0">No job matches found for your current profile. Update your preferences to see recommendations.</p>
+          <?php else: ?>
+              <?php foreach ($recommendedJobs as $job): ?>
+                  <div class="pick">
+                    <span class="pick-ic" aria-hidden="true"><svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-briefcase"/></svg></span>
+                    <div class="pick-info">
+                      <div class="pick-title"><a href="<?= base_url('job/view/' . $job->id) ?>"><?= esc($job->title) ?></a></div>
+                      <div class="pick-sub"><svg aria-hidden="true" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-clock"/></svg> Posted <?= date('d M', strtotime($job->created_at)) ?> · <?= esc($job->location) ?></div>
+                    </div>
+                    <span class="match-badge">85% match</span>
+                  </div>
+              <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-book"/></svg> Keep Learning</span>
+          <a href="<?= base_url('candidate/my-courses') ?>" class="card-link">My courses <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg></a></div>
+        <div class="card-body">
+          <div class="learn-strip">
+            <span class="pick-ic" aria-hidden="true" style="width:44px;height:44px"><svg style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-award"/></svg></span>
+            <div class="grow"><b>Certificates &amp; Badges 🎉</b>
+              <p>Acquire career ready skills</p></div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+          <b style="font-size:.82rem;color:var(--brand-deep)">Suggested next course</b>
+          <p style="font-size:.76rem;color:var(--muted);margin:3px 0 10px">Customer Service Excellence — pairs well with your skill profile.</p>
+          <a href="<?= base_url('training') ?>" class="btn btn-outline btn-sm btn-block">Browse Training Catalog</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- recent applications -->
+    <section class="card" aria-label="Recent applications">
+      <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-clock"/></svg> Recent Applications</span>
+        <a href="<?= base_url('candidate/applications') ?>" class="card-link">View all <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg></a></div>
+      
+      <?php if (empty($recentApplications)): ?>
+          <div class="empty">
+            <span class="empty-ic"><svg aria-hidden="true" style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-doc"/></svg></span>
+            <h3>You haven't applied to any jobs yet</h3>
+            <p>Your applications and their status will appear here. Start with today's matches — it takes about 2 minutes to apply.</p>
+            <a href="<?= base_url('jobs') ?>" class="btn btn-primary btn-sm"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-search"/></svg> Browse Jobs</a>
+          </div>
+      <?php else: ?>
+          <div class="card-body p-0">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Job Title</th>
+                    <th>Applied On</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($recentApplications as $app): ?>
+                    <tr>
+                      <td><b><?= esc($app->job_title) ?></b></td>
+                      <td><?= date('M d, Y', strtotime($app->created_at)) ?></td>
+                      <td>
+                        <span class="pill <?= $app->status == 'hired' || $app->status == 'accepted' ? 'pill--hired' : ($app->status == 'rejected' ? 'pill--rejected' : 'pill--pending') ?>">
+                          <?= ucfirst($app->status) ?>
+                        </span>
+                      </td>
+                      <td><a href="<?= base_url('candidate/applications/view/' . $app->id) ?>" class="btn btn-outline btn-sm">View Details</a></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+      <?php endif; ?>
+    </section>
 
 </div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Applications & Engagement Spline Area Chart
-        var applicationsOptions = {
-            chart: {
-                height: 250,
-                type: 'area',
-                toolbar: { show: false },
-                sparkline: { enabled: false },
-                background: 'transparent',
-                foreColor: '#94a3b8'
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 3
-            },
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.35,
-                    opacityTo: 0.05,
-                    stops: [0, 90, 100],
-                    colorStops: [
-                        {
-                            offset: 0,
-                            color: 'var(--brand)',
-                            opacity: 0.35
-                        },
-                        {
-                            offset: 100,
-                            color: 'var(--brand)',
-                            opacity: 0.01
-                        }
-                    ]
-                }
-            },
-            series: [{
-                name: 'Applications',
-                data: <?= json_encode($weeklyChartData ?? [1, 2, 4, 3, 5, 8, 10]) ?>
-            }],
-            xaxis: {
-                categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                axisBorder: { show: false },
-                axisTicks: { show: false }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function (val) { return Math.round(val); }
-                }
-            },
-            grid: {
-                borderColor: 'rgba(255,255,255,0.05)',
-                strokeDashArray: 4
-            },
-            colors: ['var(--brand)'],
-            tooltip: {
-                theme: 'dark'
-            }
-        };
-        var applicationsChart = new ApexCharts(document.querySelector("#applications-chart"), applicationsOptions);
-        applicationsChart.render();
-
-        // Skill Match Donut Chart
-        var categoryOptions = {
-            chart: {
-                height: 250,
-                type: 'donut',
-                background: 'transparent'
-            },
-            stroke: {
-                show: false
-            },
-            series: [40, 25, 20, 15],
-            labels: ['Tech Skills', 'Soft Skills', 'Domain Knowledge', 'Other matches'],
-            colors: ['var(--brand)', '#10b981', 'var(--accent)', '#8b5cf6'],
-            legend: {
-                show: true,
-                position: 'bottom',
-                horizontalAlign: 'center',
-                labels: {
-                    colors: '#94a3b8'
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '75%',
-                        background: 'transparent',
-                        labels: {
-                            show: true,
-                            name: {
-                                show: true,
-                                color: '#94a3b8'
-                            },
-                            value: {
-                                show: true,
-                                color: '#f8fafc',
-                                formatter: function (val) { return val + "%"; }
-                            },
-                            total: {
-                                show: true,
-                                label: 'Match Rate',
-                                color: '#94a3b8',
-                                formatter: function (w) { return "85%"; }
-                            }
-                        }
-                    }
-                }
-            },
-            tooltip: {
-                theme: 'dark'
-            }
-        };
-        var categoryChart = new ApexCharts(document.querySelector("#category-overview"), categoryOptions);
-        categoryChart.render();
-    });
-</script>
-<?= $this->endSection() ?>
+<!-- No extra chart JS scripts needed, using clean server-rendered SVG charts -->
+<?= $this->endSection() ?>

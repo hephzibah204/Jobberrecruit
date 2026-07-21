@@ -9,6 +9,7 @@ class AiImageModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = ['origin_url','proxied_path','checksum','mime','size','status','error','created_at','processed_at'];
     protected $useTimestamps = false;
+    protected $returnType = 'object';
 
     public function findPending($limit = 20)
     {

@@ -159,8 +159,79 @@
                                         <div class="file-size" id="file-size"></div>
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="remove-file" aria-label="Close">
-    <i class="ti ti-x"></i>
-</button>
+                                        <i class="ti ti-x"></i>
+                                    </button>
+                                </div>
+
+                                <!-- ATS CV Scanner Widget -->
+                                <div class="card bg-light border-0 rounded-4 p-4 mt-3 d-none shadow-sm" id="cv-scanner-card">
+                                    <div id="cv-scanning-loader" class="text-center py-4">
+                                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                            <span class="visually-hidden">Scanning...</span>
+                                        </div>
+                                        <h5 class="fw-bold mb-1 text-dark" id="scanning-step-text">Initializing CV Scan...</h5>
+                                        <div class="progress mt-3 mx-auto" style="height: 8px; max-width: 300px; border-radius: 4px;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="scanning-progress" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="cv-scanner-results" class="d-none">
+                                        <div class="d-flex flex-column flex-md-row align-items-center justify-content-between border-bottom pb-3 mb-3 gap-3">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="position-relative d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                                    <svg viewBox="0 0 36 36" style="width: 80px; height: 80px;" class="circular-chart text-warning">
+                                                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="fill: none; stroke: #e2e8f0; stroke-width: 2.8;" />
+                                                        <path class="circle" id="ats-score-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="fill: none; stroke: var(--accent); stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 1.5s ease-out;" />
+                                                    </svg>
+                                                    <div class="position-absolute fs-4 fw-bold text-dark" id="ats-score-num" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">0%</div>
+                                                </div>
+                                                <div>
+                                                    <h5 class="fw-bold mb-0 text-dark">Simulated ATS Score</h5>
+                                                    <p class="text-muted small mb-0">Score falls below recruitment average (80%+)</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-md-end">
+                                                <span class="badge bg-danger text-white px-3 py-2 rounded-2" style="font-size: 0.8rem;">Optimization Needed</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-4">
+                                                <div class="border rounded p-3 text-center bg-white shadow-xs">
+                                                    <div class="fw-bold fs-5 text-success" id="score-formatting">0%</div>
+                                                    <div class="small text-muted" style="font-size: 0.75rem;">Layout & Font</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="border rounded p-3 text-center bg-white shadow-xs">
+                                                    <div class="fw-bold fs-5 text-warning" id="score-readability">0%</div>
+                                                    <div class="small text-muted" style="font-size: 0.75rem;">Readability</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="border rounded p-3 text-center bg-white shadow-xs">
+                                                    <div class="fw-bold fs-5 text-danger" id="score-keywords">0%</div>
+                                                    <div class="small text-muted" style="font-size: 0.75rem;">Keywords</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-warning border-0 bg-warning bg-opacity-10 d-flex gap-3 mb-0" style="color: #664d03; border-radius: 12px;">
+                                            <i class="ti ti-alert-triangle text-warning fs-3 mt-1" style="font-size: 1.5rem;"></i>
+                                            <div>
+                                                <h6 class="fw-bold mb-1 text-warning-darker" style="color: #664d03;">Warning: Potential ATS rejections detected</h6>
+                                                <p class="small mb-2 text-muted-darker" style="font-size: 0.85rem; line-height: 1.5;">Our quick scan flagged issues with keywords and experience formatting which could cause automated screening tools to reject your CV. Let our experts optimize it for you.</p>
+                                                <div class="d-flex flex-wrap gap-2 mt-3">
+                                                    <button type="button" class="btn btn-sm btn-accent py-2 px-3 fw-semibold choose-plan" data-plan="professional" id="scanner-upgrade-btn">
+                                                        <i class="ti ti-crown me-1"></i> Upgrade to Professional Human Review
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-2 px-3 text-dark border-secondary bg-white" id="scanner-keep-free-btn">
+                                                        Keep Free Basic Review
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -240,11 +311,79 @@ document.addEventListener('DOMContentLoaded', function() {
         fileName.textContent = file.name;
         fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
         filePreview.classList.add('show');
+        
+        startSimulatedScan(file);
+    }
+
+    function startSimulatedScan(file) {
+        const scannerCard = document.getElementById('cv-scanner-card');
+        const loader = document.getElementById('cv-scanning-loader');
+        const results = document.getElementById('cv-scanner-results');
+        const stepText = document.getElementById('scanning-step-text');
+        const progressBar = document.getElementById('scanning-progress');
+
+        scannerCard.classList.remove('d-none');
+        loader.classList.remove('d-none');
+        results.classList.add('d-none');
+        progressBar.style.width = '0%';
+
+        const steps = [
+            { time: 0, text: 'Scanning file structure...', pct: 15 },
+            { time: 600, text: 'Testing ATS parser compatibility...', pct: 35 },
+            { time: 1200, text: 'Analyzing header contact formats...', pct: 60 },
+            { time: 1800, text: 'Scanning keyword density...', pct: 85 },
+            { time: 2400, text: 'Generating final report...', pct: 100 }
+        ];
+
+        steps.forEach(step => {
+            setTimeout(() => {
+                stepText.textContent = step.text;
+                progressBar.style.width = step.pct + '%';
+                
+                if (step.pct === 100) {
+                    setTimeout(() => {
+                        loader.classList.add('d-none');
+                        results.classList.remove('d-none');
+                        displayAtsResults(file);
+                    }, 300);
+                }
+            }, step.time);
+        });
+    }
+
+    function displayAtsResults(file) {
+        let seed = (file.name.length * 3 + file.size) % 17;
+        let baseScore = 58 + seed; // range: 58% to 74%
+        
+        let scoreFormatting = baseScore + 6;
+        let scoreReadability = baseScore - 3;
+        let scoreKeywords = baseScore - 9;
+
+        const circle = document.getElementById('ats-score-circle');
+        const scoreNum = document.getElementById('ats-score-num');
+        
+        circle.style.strokeDasharray = `${baseScore}, 100`;
+        
+        let current = 0;
+        const interval = setInterval(() => {
+            if (current >= baseScore) {
+                scoreNum.textContent = baseScore + '%';
+                clearInterval(interval);
+            } else {
+                current++;
+                scoreNum.textContent = current + '%';
+            }
+        }, 15);
+
+        document.getElementById('score-formatting').textContent = scoreFormatting + '%';
+        document.getElementById('score-readability').textContent = scoreReadability + '%';
+        document.getElementById('score-keywords').textContent = scoreKeywords + '%';
     }
 
     removeFileBtn.addEventListener('click', () => {
         fileInput.value = '';
         filePreview.classList.remove('show');
+        document.getElementById('cv-scanner-card').classList.add('d-none');
     });
 
     form.addEventListener('submit', function(e) {
@@ -353,6 +492,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnEl.style.pointerEvents = 'auto';
             });
         });
+    });
+
+    document.getElementById('scanner-upgrade-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        const proBtn = document.querySelector('.choose-plan[data-plan="professional"]');
+        if (proBtn) {
+            proBtn.click();
+        }
+    });
+
+    document.getElementById('scanner-keep-free-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('plan-select').value = 'basic';
+        toastr.info('Selected Basic Review (Free)');
+        document.getElementById('cv-scanner-card').scrollIntoView({ behavior: 'smooth' });
     });
 });
 </script>

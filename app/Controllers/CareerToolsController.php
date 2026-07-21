@@ -301,6 +301,10 @@ class CareerToolsController extends BaseController
      */
     protected function cleanMarkdown($text)
     {
+        // Escape raw HTML first so only the tags we intentionally introduce below
+        // are rendered. AI output is seeded from user-supplied bio/skills, so this
+        // prevents any HTML/script injection from reaching the view.
+        $text = esc((string) $text);
         // Convert **bold** to <strong>
         $text = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
         // Convert *italic* to <em>

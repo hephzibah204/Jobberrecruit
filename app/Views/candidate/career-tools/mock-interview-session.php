@@ -1059,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnListen.disabled = true;
         btnStop.disabled = true;
         btnSkip.disabled = true;
-        btnSend.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btnSend.innerHTML = '<span class="spinner"></span>';
 
         const formData = new FormData();
         formData.append('type', 'interview');
@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setVoiceStatus('Generating final evaluation');
         setMicStatus('Idle');
         updateButtons();
-        btnEnd.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btnEnd.innerHTML = '<span class="spinner"></span>';
 
         const formData = new FormData();
         formData.append('history', JSON.stringify(history));

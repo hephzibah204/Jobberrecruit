@@ -1,0 +1,386 @@
+/* ── JobberRecruit Admin Brand Stylesheet Overlay ── */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Ynex Template Core Variable Overrides */
+  --primary-color: 13, 96, 158; /* #0D609E */
+  --primary: #0D609E;
+  --primary-hover: #0A4D7E;
+  --secondary: #F08F1A;
+  
+  /* Brand specific colors */
+  --jr-navy: #0A2F57;
+  --jr-navy-deep: #07304F;
+  --jr-blue: #0D609E;
+  --jr-gold: #F08F1A;
+  --jr-gold-hover: #D47E0F;
+  --jr-light-blue: #E6F0F9;
+  --jr-text: #141926;
+  --jr-muted: #5b6577;
+  --jr-border: #e2e8f2;
+  --jr-bg: #f5f7fb;
+}
+
+/* ── Typography & Global Elements ── */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  color: var(--jr-text) !important;
+  background-color: var(--jr-bg) !important;
+}
+
+h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
+  font-family: 'Sora', 'Inter', system-ui, sans-serif !important;
+  color: var(--jr-navy) !important;
+  font-weight: 600 !important;
+}
+
+/* ── Sidebar Redesign (Double Menu Navy & Gold Theme) ── */
+.app-sidebar {
+  background: linear-gradient(180deg, var(--jr-navy) 0%, var(--jr-navy-deep) 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.main-sidebar-header {
+  background: var(--jr-navy) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 15px 20px !important;
+  height: auto !important;
+}
+
+.main-sidebar-header .desktop-logo {
+  filter: brightness(0) invert(1); /* Ensure logo is cleanly visible on dark bg */
+  max-height: 38px;
+}
+
+/* Sidebar category dividers */
+.slide__category {
+  padding: 15px 20px 5px !important;
+}
+
+.slide__category .category-name {
+  color: var(--jr-gold) !important;
+  font-family: 'Sora', sans-serif !important;
+  text-transform: uppercase !important;
+  font-size: 10px !important;
+  letter-spacing: 1px !important;
+  font-weight: 700 !important;
+  opacity: 0.8;
+}
+
+/* Sidebar menu items */
+.side-menu__item {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-weight: 500 !important;
+  padding: 11px 20px !important;
+  border-radius: 0 !important;
+  border-left: 3px solid transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+.side-menu__item:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #fff !important;
+}
+
+.side-menu__item:hover .side-menu__icon,
+.side-menu__item:hover .side-menu__angle {
+  color: var(--jr-gold) !important;
+}
+
+/* Active sidebar item state */
+.slide.active > .side-menu__item,
+.side-menu__item.active {
+  background: rgba(13, 96, 158, 0.15) !important;
+  color: #fff !important;
+  border-left: 3px solid var(--jr-gold) !important;
+  font-weight: 600 !important;
+}
+
+.slide.active > .side-menu__item .side-menu__icon,
+.side-menu__item.active .side-menu__icon {
+  color: var(--jr-gold) !important;
+}
+
+.side-menu__icon {
+  color: rgba(255, 255, 255, 0.55) !important;
+  width: 20px !important;
+  height: 20px !important;
+  margin-right: 12px !important;
+  transition: color 0.2s ease !important;
+  stroke-width: 1.8 !important;
+}
+
+/* Second level menu (Double Menu sub-navigation) */
+.slide-menu.child1 {
+  background: rgba(0, 0, 0, 0.15) !important;
+  padding: 5px 0 !important;
+}
+
+.slide-menu.child1 .side-menu__item {
+  padding-left: 52px !important;
+  font-size: 13.5px !important;
+}
+
+.slide-menu.child1 .side-menu__item.active {
+  border-left: 3px solid var(--jr-gold) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Bottom elements inside sidebar */
+.doublemenu_bottom-menu {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ── Header Bar ── */
+.app-header {
+  background-color: #fff !important;
+  border-bottom: 1px solid var(--jr-border) !important;
+  box-shadow: 0 1px 3px rgba(10, 47, 87, 0.04) !important;
+}
+
+.header-link-icon {
+  color: var(--jr-navy) !important;
+}
+
+.header-link:hover .header-link-icon {
+  color: var(--jr-gold) !important;
+}
+
+/* ── UI Components Restyling ── */
+
+/* Card component styles */
+.card.custom-card {
+  border: 1px solid var(--jr-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 12px rgba(10, 47, 87, 0.03) !important;
+  background-color: #fff !important;
+  margin-bottom: 24px !important;
+}
+
+.card-header {
+  border-bottom: 1px solid var(--jr-border) !important;
+  background-color: transparent !important;
+  padding: 18px 24px !important;
+}
+
+.card-body {
+  padding: 24px !important;
+}
+
+/* Branded KPI Dashboard cards */
+.dashboard-main-card.kpi-card {
+  border-left: 4px solid var(--jr-blue) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-main-card.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(13, 96, 158, 0.02) 100%);
+  pointer-events: none;
+}
+
+.dashboard-main-card.kpi-card .d-block {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: var(--jr-muted) !important;
+}
+
+.dashboard-main-card.kpi-card h3 {
+  font-size: 26px !important;
+  color: var(--jr-navy) !important;
+}
+
+/* Quick Actions Cards */
+.hover-up {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease !important;
+  cursor: pointer;
+}
+
+.hover-up:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 20px rgba(10, 47, 87, 0.08) !important;
+}
+
+/* Tables styling */
+.table {
+  color: var(--jr-text) !important;
+}
+
+.table thead th {
+  background-color: var(--jr-light-blue) !important;
+  color: var(--jr-navy) !important;
+  font-family: 'Sora', sans-serif !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 2px solid var(--jr-border) !important;
+  padding: 12px 18px !important;
+}
+
+.table tbody td {
+  padding: 14px 18px !important;
+  border-bottom: 1px solid var(--jr-border) !important;
+  vertical-align: middle !important;
+}
+
+/* Badges styling */
+.badge.bg-success-transparent {
+  background-color: rgba(22, 163, 74, 0.1) !important;
+  color: #16a34a !important;
+}
+
+.badge.bg-warning-transparent {
+  background-color: rgba(240, 143, 26, 0.1) !important;
+  color: var(--jr-gold) !important;
+}
+
+.badge.bg-danger-transparent {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+.badge.bg-info-transparent {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  color: #3b82f6 !important;
+}
+
+/* Buttons styling */
+.btn-primary {
+  background-color: var(--jr-blue) !important;
+  border-color: var(--jr-blue) !important;
+  color: #fff !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+.btn-secondary {
+  background-color: var(--jr-gold) !important;
+  border-color: var(--jr-gold) !important;
+  color: #fff !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--jr-gold-hover) !important;
+  border-color: var(--jr-gold-hover) !important;
+}
+
+/* Dark theme specific overrides */
+[data-theme="dark"] {
+  --jr-bg: #0f172a;
+  --jr-border: #1e293b;
+  --jr-text: #e2e8f0;
+  
+  body {
+    background-color: #0b0f19 !important;
+  }
+  
+  .app-header {
+    background-color: #111827 !important;
+    border-bottom: 1px solid var(--jr-border) !important;
+  }
+  
+  .card.custom-card {
+    background-color: #111827 !important;
+    border-color: var(--jr-border) !important;
+  }
+  
+  .table thead th {
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
+    color: #f3f4f6 !important;
+  }
+}
+
+/* Footer styling */
+.footer {
+  background-color: var(--jr-navy-deep) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 20px 0 !important;
+}
+.footer a, .footer span, .footer .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+.footer a:hover {
+  color: var(--jr-gold) !important;
+}
+
+/* Accessibility & Color Contrast Enhancements */
+.text-muted, 
+.card-footer .text-muted, 
+.description, 
+p.text-muted, 
+span.text-muted,
+.side-menu__item .badge {
+  color: #4b5563 !important; /* High contrast gray (4.5:1 ratio on white backgrounds) */
+}
+
+/* Sidebar label & element colors on dark background */
+.app-sidebar a, 
+.app-sidebar span, 
+.app-sidebar i,
+.app-sidebar .side-menu__label,
+.app-sidebar .side-menu__angle {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.app-sidebar .side-menu__item:hover,
+.app-sidebar .side-menu__item:hover * {
+  color: var(--jr-gold) !important;
+}
+
+.app-sidebar .side-menu__item.active,
+.app-sidebar .side-menu__item.active * {
+  color: #ffffff !important;
+}
+
+/* Button & Badge Contrast Overrides */
+.btn-primary {
+  color: #ffffff !important;
+}
+.btn-primary:hover, 
+.btn-primary:focus, 
+.btn-primary:active, 
+.btn-primary.active {
+  color: #ffffff !important;
+  background-color: var(--primary-hover) !important;
+}
+
+/* Alert/Status Badges (Darken text for light-translucent backgrounds) */
+.badge.bg-success-transparent {
+  background-color: #dcfce7 !important;
+  color: #14532d !important;
+}
+.badge.bg-warning-transparent {
+  background-color: #fef3c7 !important;
+  color: #78350f !important;
+}
+.badge.bg-danger-transparent {
+  background-color: #fee2e2 !important;
+  color: #7f1d1d !important;
+}
+.badge.bg-info-transparent {
+  background-color: #dbeafe !important;
+  color: #1e3a8a !important;
+}
+

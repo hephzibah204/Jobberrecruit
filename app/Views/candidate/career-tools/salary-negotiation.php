@@ -1,123 +1,126 @@
 <?= $this->extend('layouts/app') ?>
 
-<?= $this->section('content') ?>
-<div class="content">
-    <div class="page-header">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold">Salary Negotiation Simulator</h4>
-                <h6>Practice the art of closing the deal.</h6>
-            </div>
-        </div>
-        <div class="page-btn">
-            <a href="<?= base_url('candidate/career-tools') ?>" class="btn btn-secondary btn-sm">
-                <i class="ti ti-arrow-left me-1"></i> Back to Tools
-            </a>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-xl-8 mx-auto">
-            <div class="card custom-card border-0 shadow-sm overflow-hidden">
-                <div class="card-header bg-success py-3">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-md bg-white-transparent me-3">
-                            <i class="ti ti-coin text-white fs-20"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-white fw-bold mb-0">HR Representative AI</h6>
-                            <p class="text-white-50 fs-12 mb-0">Salary Negotiation Session</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body chat-container p-0" style="height: 450px; overflow-y: auto;" id="chat-window">
-                    <div class="p-4" id="chat-messages">
-                        <div class="chat-message model-message mb-4">
-                            <div class="d-flex">
-                                <div class="avatar avatar-sm bg-success-transparent me-2 flex-shrink-0">
-                                    <i class="ti ti-user"></i>
-                                </div>
-                                <div class="message-content p-3 bg-light rounded-3">
-                                    <p class="mb-0">Hello! I'm here to help you practice your salary negotiation. To start, please provide the Current Offer Details (Job Title, Base Salary, and any benefits offered).</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer border-top p-3">
-                    <form id="chat-form">
-                        <div class="input-group">
-                            <input type="text" id="chat-input" class="form-control border-0 bg-light" placeholder="Type your response here..." autocomplete="off">
-                            <button class="btn btn-success text-white" type="submit" id="btn-send" aria-label="Action">
-    <i class="ti ti-send"></i>
-</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
 <style>
-.chat-container::-webkit-scrollbar {
-    width: 5px;
+.chat-messages-container {
+    height: 400px;
+    overflow-y: auto;
+    padding: 24px;
+    background: rgba(245, 249, 254, 0.5);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
-.chat-container::-webkit-scrollbar-thumb {
-    background: #e0e0e0;
-    border-radius: 10px;
+.chat-messages-container::-webkit-scrollbar {
+    width: 4px;
 }
-.message-content {
-    max-width: 85%;
-    font-size: 14px;
+.chat-messages-container::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+.chat-bubble {
+    max-width: 80%;
+    padding: 14px 18px;
+    border-radius: 18px;
+    font-size: 0.86rem;
     line-height: 1.6;
+    position: relative;
+    animation: bubbleIn 0.3s ease;
 }
-.user-message .d-flex {
-    flex-direction: row-reverse;
+@keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-.user-message .message-content {
-    background-color: #198754 !important;
-    color: white;
-    margin-right: 0;
-    margin-left: 10px;
+.chat-bubble--model {
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
 }
-.user-message .avatar {
-    margin-right: 0 !important;
-    margin-left: 8px;
+.chat-bubble--user {
+    background: var(--brand);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+    align-self: flex-end;
 }
 </style>
+<?= $this->endSection() ?>
 
+<?= $this->section('content') ?>
+<div class="content">
+    
+    <!-- Hero -->
+    <section class="nego-hero" aria-labelledby="studio-title" style="margin-bottom: 24px; border-radius: var(--radius-lg); color: #fff; padding: 34px; background: radial-gradient(ellipse 60% 90% at 88% 8%,rgba(237,144,32,.22) 0%,transparent 55%),linear-gradient(150deg,#0A2F57 0%,#064A85 55%,#0861A9 100%);">
+        <div class="hero-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;">
+            <div>
+                <div class="hero-badges" style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <span class="hb hb--premium" style="background: rgba(237,144,32,.18); border: 1px solid rgba(237,144,32,.45); color: #ffd9a8; font-size: 0.66rem; font-weight: 700; padding: 5px 12px; border-radius: 20px;">
+                        <svg aria-hidden="true" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;fill:currentColor;"><use href="#i-crown"/></svg> Premium Simulation
+                    </span>
+                </div>
+                <h1 id="studio-title" style="font-family:'Sora',sans-serif; font-size:clamp(1.5rem,3.4vw,2.15rem); font-weight:800; color:#fff; margin:0 0 8px;">Salary Negotiation Simulator</h1>
+                <p class="hero-sub" style="font-size:0.92rem; color:rgba(255,255,255,0.85); line-height:1.6; max-width:560px;">Master the art of negotiation. Practice with our AI HR representative to secure the compensation you deserve.</p>
+            </div>
+            <div class="page-actions" style="margin-top: 10px;">
+                <a href="<?= base_url('candidate/career-tools') ?>" class="btn btn-ghost-w btn-sm">
+                    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-l"/></svg> Back to Tools
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simulator Glass Card -->
+    <div style="max-width: 800px; margin: 0 auto;">
+        <section class="card" aria-label="Salary negotiation simulator interaction" style="padding: 24px;">
+            <div class="sim-head" style="display:flex; align-items:center; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+                <div class="sim-head-ic" style="width:40px; height:40px; border-radius:10px; background:var(--brand-light); color:var(--brand); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg>
+                </div>
+                <div>
+                    <h2 style="font-family:'Sora',sans-serif; font-size:1rem; font-weight:800; color:var(--brand-deep); margin:0;">AI HR Representative</h2>
+                    <p style="font-size:0.76rem; color:var(--muted); margin:0;">Active Practice Session</p>
+                </div>
+            </div>
+
+            <!-- Chat messages -->
+            <div class="chat-messages-container" id="chat-window">
+                <div class="chat-bubble chat-bubble--model">
+                    Hello! I'm here to help you practice your salary negotiation. To start, please provide the <strong>Current Offer Details</strong> (Job Title, Base Salary, and any benefits offered).
+                </div>
+            </div>
+
+            <!-- Chat Input form -->
+            <form id="chat-form" style="display:flex; gap:12px; margin-top:20px;">
+                <input type="text" id="chat-input" class="input" placeholder="Type your response here..." autocomplete="off" style="flex:1;">
+                <button type="submit" class="btn btn-primary" id="btn-send" style="min-width:100px;">
+                    Send
+                </button>
+            </form>
+        </section>
+    </div>
+</div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
     const chatWindow = document.getElementById('chat-window');
-    const chatMessages = document.getElementById('chat-messages');
     const btnSend = document.getElementById('btn-send');
     
     let history = [];
     let offerDetails = '';
     
     function appendMessage(role, message) {
-        const div = document.createElement('div');
-        div.className = `chat-message ${role === 'user' ? 'user-message' : 'model-message'} mb-4`;
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble chat-bubble--${role === 'user' ? 'user' : 'model'}`;
+        bubble.innerHTML = message.replace(/\n/g, '<br>');
         
-        const isUser = role === 'user';
-        const icon = isUser ? 'ti-user' : 'ti-user-check';
-        const bg = isUser ? 'bg-success' : 'bg-success-transparent';
-        
-        div.innerHTML = `
-            <div class="d-flex">
-                <div class="avatar avatar-sm ${bg} me-2 flex-shrink-0">
-                    <i class="ti ${icon}"></i>
-                </div>
-                <div class="message-content p-3 bg-light rounded-3 shadow-xs">
-                    ${message.replace(/\n/g, '<br>')}
-                </div>
-            </div>
-        `;
-        
-        chatMessages.appendChild(div);
+        chatWindow.appendChild(bubble);
         chatWindow.scrollTop = chatWindow.scrollHeight;
         
         if (message !== "Hello! I'm here to help you practice your salary negotiation. To start, please provide the **Current Offer Details** (Job Title, Base Salary, and any benefits offered).") {
@@ -142,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         appendMessage('user', msg);
         
         btnSend.disabled = true;
-        btnSend.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btnSend.innerHTML = '<span class="spinner"></span>';
         
         const formData = new FormData();
         formData.append('type', 'negotiation');
@@ -167,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .finally(() => {
             btnSend.disabled = false;
-            btnSend.innerHTML = '<i class="ti ti-send"></i>';
+            btnSend.innerHTML = 'Send';
         });
     });
 });

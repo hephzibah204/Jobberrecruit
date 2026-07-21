@@ -1,4 +1,4 @@
-<?= $this->extend('templates/base') ?>
+<?= $this->extend('auth/base') ?>
 
 <?= $this->section('styles') ?>
 <style>

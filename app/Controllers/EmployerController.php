@@ -167,6 +167,22 @@ class EmployerController extends BaseController
             ->countAllResults();
 
         // ============================
+        // 🔹 PENDING APPS (for sidebar badge)
+        // ============================
+        $pendingApps = $appModel
+            ->where('status', 'pending')
+            ->whereIn('job_id', function ($builder) use ($employer) {
+                return $builder->select('id')->from('jobs')->where('employer_id', $employer->id);
+            })
+            ->countAllResults();
+
+        // ============================
+        // 🔹 WALLET BALANCE
+        // ============================
+        $walletRow     = model(WalletModel::class)->where('user_id', $user->id)->first();
+        $walletBalance = $walletRow ? (float) $walletRow->balance : 0;
+
+        // ============================
         // 🔹 RECENT APPLICATIONS (limit 5)
         // ============================
 
@@ -231,29 +247,113 @@ class EmployerController extends BaseController
         }
 
         // ============================
+        // 🔹 HIRING PIPELINE COUNTS
+        // ============================
+        $shortlisted = $appModel
+            ->where('status', 'shortlisted')
+            ->whereIn('job_id', function ($builder) use ($employer) {
+                return $builder->select('id')->from('jobs')->where('employer_id', $employer->id);
+            })
+            ->countAllResults();
+
+        $pipeline = [
+            'posted'      => $totalJobs,
+            'applicants'  => $totalApplicants,
+            'shortlisted' => $shortlisted,
+            'hired'       => $totalHires,
+        ];
+
+        // ============================
+        // 🔹 PROFILE COMPLETION (%)
+        // ============================
+        $profileFields = [
+            !empty($employer->company_name),
+            !empty($employer->contact_email),
+            !empty($employer->company_size),
+            !empty($employer->description),
+            !empty($employer->website),
+            !empty($employer->logo),
+            $totalJobs > 0,
+            $hasCACDocument,
+        ];
+        $profileCompletion = (int) round(
+            (array_sum(array_map('intval', $profileFields)) / count($profileFields)) * 100
+        );
+
+        // ============================
+        // 🔹 JOBS CLOSING SOON (within 14 days)
+        // ============================
+        $closingSoon = $jobModel
+            ->select('id, title, application_deadline as deadline')
+            ->where('employer_id', $employer->id)
+            ->where('status', 'open')
+            ->where('application_deadline IS NOT NULL')
+            ->where('application_deadline >=', date('Y-m-d'))
+            ->where('application_deadline <=', date('Y-m-d', strtotime('+14 days')))
+            ->orderBy('application_deadline', 'ASC')
+            ->limit(5)
+            ->findAll();
+
+        // ============================
+        // 🔹 JOB PERFORMANCE INSIGHTS (top 3 jobs by views)
+        // ============================
+        $jobInsights = $jobModel
+            ->select('id, title, views, status')
+            ->where('employer_id', $employer->id)
+            ->orderBy('views', 'DESC')
+            ->limit(3)
+            ->findAll();
+
+        // Attach application count to each insight job
+        foreach ($jobInsights as &$insightJob) {
+            $insightJob->app_count = $appModel
+                ->where('job_id', $insightJob->id)
+                ->countAllResults();
+        }
+        unset($insightJob);
+
+        // ============================
         // 🔹 RETURN VIEW
         // ============================
 
         return view('employers/dashboard', [
-            'title'             => 'Dashboard',
-            'user'              => $this->auth->user(),
-            'employer'          => $employer,
-            'hasCACDocument'    => $hasCACDocument,
+            'title'              => 'Dashboard',
+            'user'               => $user,
+            'employer'           => $employer,
+            'hasCACDocument'     => $hasCACDocument,
 
             // Stats
-            'totalJobs'         => $totalJobs,
-            'activeJobs'        => $activeJobs,
-            'totalApplicants'   => $totalApplicants,
-            'totalHires'        => $totalHires,
+            'totalJobs'          => $totalJobs,
+            'activeJobs'         => $activeJobs,
+            'totalApplicants'    => $totalApplicants,
+            'totalHires'         => $totalHires,
+
+            // Wallet
+            'walletBalance'      => $walletBalance,
+
+            // Sidebar badge
+            'pendingApps'        => $pendingApps,
 
             // Lists
             'recentApplications' => $recentApplications,
-            'recentJobs'        => $recentJobs,
-            'categoryCounts'    => $categoryCounts,
+            'recentJobs'         => $recentJobs,
+            'categoryCounts'     => $categoryCounts,
 
             // Charts
-            'jobsChart'         => $jobsChart,
-            'appsChart'         => $appsChart,
+            'jobsChart'          => $jobsChart,
+            'appsChart'          => $appsChart,
+
+            // Pipeline
+            'pipeline'           => $pipeline,
+
+            // Profile completion
+            'profileCompletion'  => $profileCompletion,
+
+            // Closing soon
+            'closingSoon'        => $closingSoon,
+
+            // Job insights
+            'jobInsights'        => $jobInsights,
         ]);
     }
 
@@ -270,6 +370,9 @@ class EmployerController extends BaseController
         // Check if user has an active subscription with featured feature
         if ($plan && $plan->features) {
             $features = is_string($plan->features) ? json_decode($plan->features, true) : $plan->features;
+            if (is_object($features)) {
+                $features = (array) $features;
+            }
             if (isset($features['featured']) && $features['featured'] === true) {
                 return true;
             }
@@ -294,6 +397,9 @@ class EmployerController extends BaseController
 
         if ($plan && $plan->features) {
             $features = is_string($plan->features) ? json_decode($plan->features, true) : $plan->features;
+            if (is_object($features)) {
+                $features = (array) $features;
+            }
             return isset($features['anonymous']) && $features['anonymous'] === true;
         }
 
@@ -319,6 +425,9 @@ class EmployerController extends BaseController
 
         if ($plan && $plan->features) {
             $features = is_string($plan->features) ? json_decode($plan->features, true) : $plan->features;
+            if (is_object($features)) {
+                $features = (array) $features;
+            }
             return isset($features['network_blast']) && $features['network_blast'] === true;
         }
 
@@ -861,6 +970,7 @@ class EmployerController extends BaseController
             'willBeFeatured' => $willBeFeatured,
             'canPostAnonymous' => $canPostAnonymous,
             'canUseNetworkBlast' => $canUseNetworkBlast,
+            'job' => null,
         ];
 
         return view('employers/post-job', $data);
@@ -1235,6 +1345,9 @@ class EmployerController extends BaseController
             $features = $activeSub['features_array'];
         } elseif ($subscription && $currentPlan) {
             $features = is_string($currentPlan->features) ? json_decode($currentPlan->features, true) : ($currentPlan->features ?? []);
+            if (is_object($features)) {
+                $features = (array) $features;
+            }
             $canFeature = $features['featured'] ?? false;
 
             if ($canFeature) {
@@ -1560,21 +1673,15 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // Update status
-        $applicationModel->update($applicationId, [
-            'status' => $status,
-            'reviewed_at' => date('Y-m-d H:i:s')
-        ]);
+        $db = \Config\Database::connect();
+        $db->transStart();
 
-        // Send email notification to job seeker (works for both authenticated and guest)
-        $emailService = new \App\Services\EmailNotificationService();
-        $emailSent = $emailService->sendApplicationStatusEmail(
-            $application,
-            $status,
-            $job->title,
-            $employer->company_name,
-            $messageToCandidate
-        );
+        // Update status (status_message is shown to the candidate in their portal)
+        $applicationModel->update($applicationId, [
+            'status'         => $status,
+            'status_message' => $messageToCandidate,
+            'reviewed_at'    => date('Y-m-d H:i:s')
+        ]);
 
         // Add a note for internal record
         $noteModel = model(ApplicationNoteModel::class);
@@ -1584,6 +1691,22 @@ class EmployerController extends BaseController
             "Status changed to " . ucfirst($status) . ".\nMessage to candidate: " . ($messageToCandidate ?? 'No additional message'),
             $user->id,
             'feedback'
+        );
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to update application status. Database error.']);
+        }
+
+        // Send email notification to job seeker (works for both authenticated and guest)
+        $emailService = new \App\Services\EmailNotificationService();
+        $emailSent = $emailService->sendApplicationStatusEmail(
+            $application,
+            $status,
+            $job->title,
+            $employer->company_name,
+            $messageToCandidate
         );
 
         return $this->response->setJSON([
@@ -2666,6 +2789,16 @@ class EmployerController extends BaseController
             return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
         }
 
+        // First open marks the application as reviewed so the candidate sees it was looked at
+        if ($application->status === 'pending') {
+            $applicationModel->update($application->id, [
+                'status'      => 'reviewed',
+                'reviewed_at' => date('Y-m-d H:i:s'),
+            ]);
+            $application->status      = 'reviewed';
+            $application->reviewed_at = date('Y-m-d H:i:s');
+        }
+
         // Get notes for this application
         $noteModel = model(ApplicationNoteModel::class);
         $notes = $noteModel->where('application_id', $id)->orderBy('created_at', 'DESC')->findAll();
@@ -2954,6 +3087,9 @@ class EmployerController extends BaseController
 
             // REMOVED: verification_doc handling entirely
 
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             // === Update Employer record ===
             $employerModel->update($employer->id, $data);
 
@@ -2965,6 +3101,15 @@ class EmployerController extends BaseController
                     'employer_id' => $employer->id,
                     'industry_id' => $industryId
                 ]);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to update company profile. Database error.'
+                ])->setStatusCode(500);
             }
 
             return $this->response->setJSON([
@@ -3246,6 +3391,9 @@ class EmployerController extends BaseController
 
             $documentModel = model(EmployerDocumentModel::class);
 
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             $existingDoc = $documentModel
                 ->where('employer_id', $employer->id)
                 ->where('document_type', 'cac_certificate')
@@ -3285,6 +3433,12 @@ class EmployerController extends BaseController
                 'verification_status' => 'pending',
                 'is_verified'         => 0
             ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->back()->with('error', 'Database write error while saving upload record');
+            }
 
             return redirect()->to('employer/profile')
                 ->with('success', 'CAC certificate uploaded successfully. It will be reviewed by our team.');
@@ -3395,6 +3549,10 @@ class EmployerController extends BaseController
             ->where('is_active', 1)
             ->where('ends_at >', date('Y-m-d H:i:s'))
             ->first();
+
+        if ($userSubscription) {
+            $userSubscription = (object) $userSubscription;
+        }
 
         $currentPlan = $userSubscription ? $planModel->find($userSubscription->plan_id) : null;
 
@@ -3559,6 +3717,20 @@ class EmployerController extends BaseController
                 'bundle_id'   => (int)$bundle->id,
                 'bundle_code' => $bundle->code,
                 'credits'     => $bundle->job_credits,
+            ];
+        } elseif ($type === 'unlock') {
+            $candidateId = $payload['candidate_id'] ?? null;
+            if (!$candidateId) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Candidate ID missing'
+                ]);
+            }
+            $amount = 5000.00;
+            $description = "Candidate Profile Unlock Fee (ID: " . $candidateId . ")";
+            $metadata = [
+                'type'         => 'unlock',
+                'candidate_id' => (int)$candidateId,
             ];
         } else {
             return $this->response->setJSON([
@@ -3958,7 +4130,7 @@ class EmployerController extends BaseController
 
         $planModel        = model(PlanModel::class);
         $subscriptionModel = model(UserSubscriptionModel::class);
-        $bundleModel      = model(BundlePackageModel::class);
+        $bundleModel      = model(PlanBundleModel::class);
         $creditWalletModel = model(JobCreditWalletModel::class);
 
         /* -------------------------------------------------
@@ -3976,8 +4148,21 @@ class EmployerController extends BaseController
         $plans = $planModel
             ->whereIn('billing_type', ['free', 'subscription'])
             ->where('is_active', 1)
-            ->orderBy('price', 'ASC')
+            ->orderBy('base_price', 'ASC')
             ->findAll();
+
+        // Get the single subscription plan
+        $subscriptionPlan = $planModel
+            ->where('plan_type', 'subscription')
+            ->where('is_active', 1)
+            ->first();
+
+        $pricingTiers = [];
+        if ($subscriptionPlan && $subscriptionPlan->pricing_tiers) {
+            $pricingTiers = is_string($subscriptionPlan->pricing_tiers)
+                ? json_decode($subscriptionPlan->pricing_tiers, true)
+                : $subscriptionPlan->pricing_tiers;
+        }
 
         /* -------------------------------------------------
      * JOB CREDIT BALANCE (SOURCE OF TRUTH)
@@ -4029,15 +4214,17 @@ class EmployerController extends BaseController
      * PASS TO VIEW
      * ------------------------------------------------- */
         return view('employers/bundles', [
-            'title'          => 'Job Bundles',
-            'user'           => $user,
-            'employer'       => $employer,
-            'plans'          => $plans,
-            'bundles'        => $bundles,
-            'user_plan'      => $userPlan,
-            'creditBalance'  => (int) $creditBalance,
-            'bundleHistory' => $bundleHistory,
+            'title'            => 'Job Bundles',
+            'user'             => $user,
+            'employer'         => $employer,
+            'plans'            => $plans,
+            'bundles'          => $bundles,
+            'user_plan'        => $userPlan,
+            'creditBalance'    => (int) $creditBalance,
+            'bundleHistory'    => $bundleHistory,
             'recommendedBundle' => $recommendedBundle,
+            'subscriptionPlan' => $subscriptionPlan,
+            'pricingTiers'     => $pricingTiers,
         ]);
     }
 
@@ -4062,8 +4249,8 @@ class EmployerController extends BaseController
 
         $user = auth()->user();
 
-        $bundle = model(BundlePackageModel::class)
-            ->where('code', $bundleCode)
+        $bundle = model(PlanBundleModel::class)
+            ->where('slug', $bundleCode)
             ->where('is_active', 1)
             ->first();
 
@@ -4079,11 +4266,11 @@ class EmployerController extends BaseController
             'paystack'    => true,
             'public_key'  => env('paystack_public_key'),
             'email'       => $user->email,
-            'amount'      => (int) ($bundle['price'] * 100),
+            'amount'      => (int) ($bundle->price * 100),
             'reference'   => 'bundle_' . uniqid(),
             'metadata'    => [
                 'type'      => 'bundle',
-                'bundle_id' => $bundle['id'],
+                'bundle_id' => $bundle->id,
                 'user_id'   => $user->id,
                 'wallet_used' => 0
             ]
@@ -4098,8 +4285,8 @@ class EmployerController extends BaseController
 
         $user = auth()->user();
 
-        $bundle = model(BundlePackageModel::class)
-            ->where('code', $bundleCode)
+        $bundle = model(PlanBundleModel::class)
+            ->where('slug', $bundleCode)
             ->where('is_active', 1)
             ->first();
 
@@ -4115,7 +4302,7 @@ class EmployerController extends BaseController
             ->first();
 
         $walletBalance = (float) ($wallet->balance ?? 0);
-        $bundlePrice   = (float) $bundle['price'];
+        $bundlePrice   = (float) $bundle->price;
 
         // FULL WALLET PAYMENT
         if ($walletBalance >= $bundlePrice) {
@@ -4127,13 +4314,13 @@ class EmployerController extends BaseController
                 amount: $bundlePrice,
                 source: 'bundle_purchase',
                 reference: $reference,
-                sourceId: $bundle['id'],
+                sourceId: $bundle->id,
                 description: 'Bundle purchase'
             );
 
             (new \App\Services\BundleService())->credit(
                 userId: $user->id,
-                bundleId: $bundle['id'],
+                bundleId: $bundle->id,
                 reference: $reference,
                 source: 'wallet'
             );
@@ -4156,7 +4343,7 @@ class EmployerController extends BaseController
             'reference'   => 'bundle_hybrid_' . uniqid(),
             'metadata'    => [
                 'type'        => 'bundle',
-                'bundle_id'   => $bundle['id'],
+                'bundle_id'   => $bundle->id,
                 'user_id'     => $user->id,
                 'wallet_used' => $walletBalance
             ]
@@ -4319,6 +4506,9 @@ class EmployerController extends BaseController
 
         $subscriptionModel = model(UserSubscriptionModel::class);
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         // Deactivate existing subscriptions
         $subscriptionModel
             ->where('user_id', $meta['user_id'])
@@ -4342,6 +4532,15 @@ class EmployerController extends BaseController
             'ends_at'                     => date('Y-m-d H:i:s', strtotime('+30 days')),
             'is_active'                   => 1,
         ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Transaction failed during subscription activation.'
+            ]);
+        }
 
         // Reward referrer for employer first payment
         $this->triggerEmployerReferralReward((int) $meta['user_id']);
@@ -4388,6 +4587,10 @@ class EmployerController extends BaseController
             ->where('is_active', 1)
             ->first();
 
+        if ($currentSub) {
+            $currentSub = (object) $currentSub;
+        }
+
         if (!$currentSub || empty($currentSub->paystack_subscription_id)) {
             return redirect()->back()->with('error', 'No active paid subscription to cancel.');
         }
@@ -4399,14 +4602,14 @@ class EmployerController extends BaseController
             return redirect()->back()->with('error', 'Failed to cancel subscription with Paystack. Please try again or contact support.');
         }
 
-        // Mark locally as will_not_renew (access continues until end_date)
+        // Mark locally as will_not_renew (access continues until ends_at)
         $subModel->update($currentSub->id, [
             'will_not_renew' => 1,
             'updated_at'     => date('Y-m-d H:i:s')
         ]);
 
         return redirect()->to('employer/pricing')
-            ->with('success', 'Your subscription has been cancelled. You will keep access until ' . date('F j, Y', strtotime($currentSub->end_date)) . '.');
+            ->with('success', 'Your subscription has been cancelled. You will keep access until ' . date('F j, Y', strtotime($currentSub->ends_at)) . '.');
     }
 
     /**
@@ -4424,6 +4627,10 @@ class EmployerController extends BaseController
             ->where('user_id', $user->id)
             ->where('is_active', 1)
             ->first();
+
+        if ($currentSub) {
+            $currentSub = (object) $currentSub;
+        }
 
         if (!$currentSub) {
             return redirect()->back()->with('error', 'No active subscription found.');
@@ -4469,12 +4676,12 @@ class EmployerController extends BaseController
             'user'       => $user,
             'employer'   => $employer,
             'plan'       => $plan,
-            'endDate'    => $currentSub->end_date,
+            'endDate'    => $currentSub->ends_at,
         ]);
 
         return redirect()->to('employer/pricing')
             ->with('success', 'Your subscription has been successfully reactivated! Monthly billing will resume on ' .
-                date('F j, Y', strtotime($currentSub->end_date)) . '.');
+                date('F j, Y', strtotime($currentSub->ends_at)) . '.');
     }
 
     /**
@@ -4503,6 +4710,9 @@ class EmployerController extends BaseController
         }
 
         $currentSub = $userPlanModel->where('user_id', $user->id)->first();
+        if ($currentSub) {
+            $currentSub = (object) $currentSub;
+        }
 
         // FREE PLAN → assign instantly
         if ($plan->slug === 'free' && (float)$plan->price == 0) {
@@ -4551,7 +4761,7 @@ class EmployerController extends BaseController
         $oldPlan = $planModel->find($currentSub->plan_id);
 
         $today = new DateTime();
-        $end = new DateTime($currentSub->end_date);
+        $end = new DateTime($currentSub->ends_at);
         $daysLeft = (int)$today->diff($end)->format('%a');
         if ($daysLeft < 0) $daysLeft = 0;
 
@@ -5002,8 +5212,16 @@ class EmployerController extends BaseController
 
         // If existing plan is not free, deactivate it on paystack
         $existingPlan = $userPlanModel->where('user_id', $userId)->where('is_active', 1)->first();
-        if ($existingPlan && $existingPlan->plan_slug !== 'free') {
-            $this->deactivatePaystackSubscription($existingPlan->paystack_subscription_id);
+        if ($existingPlan) {
+            $existingPlan = (object) $existingPlan;
+            $planModel = model(SubscriptionPlanModel::class);
+            $planDetail = $planModel->find($existingPlan->plan_id);
+            if ($planDetail) {
+                $planDetail = (object) $planDetail;
+                if ($planDetail->slug !== 'free') {
+                    $this->deactivatePaystackSubscription($existingPlan->paystack_subscription_id);
+                }
+            }
         }
 
         // Deactivate any existing active subscriptions
@@ -5039,8 +5257,8 @@ class EmployerController extends BaseController
         $inserted = $userPlanModel->insert([
             'user_id'       => $userId,
             'plan_id'       => $planId,
-            'start_date'    => $start,
-            'end_date'      => $end,
+            'starts_at'     => $start,
+            'ends_at'       => $end,
             'is_active'     => 1,
             'authorization' => $authData,
             'created_at'    => $start,
@@ -5601,6 +5819,10 @@ class EmployerController extends BaseController
             ->where('job_seeker_id', $id)
             ->findAll();
 
+        // Wallet balance
+        $walletRow = model(WalletModel::class)->where('user_id', $this->auth->user()->id)->first();
+        $walletBalance = $walletRow ? (float) $walletRow->balance : 0;
+
         return view('employers/candidate-detail', [
             'title'      => $candidate->full_name,
             'user'       => $this->auth->user(),
@@ -5608,7 +5830,8 @@ class EmployerController extends BaseController
             'candidate'  => $candidate,
             'industries' => $industries,
             'isUnlocked' => $isUnlocked || $hasUnlimited,
-            'hasUnlimited' => $hasUnlimited
+            'hasUnlimited' => $hasUnlimited,
+            'walletBalance' => $walletBalance
         ]);
     }
 
@@ -5620,19 +5843,24 @@ class EmployerController extends BaseController
 
         $candidateId = $this->request->getPost('candidate_id');
         $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found.']);
+        }
 
-        $creditService = new CreditService();
-        
-        // Deduct 1 credit for unlocking a candidate
-        $result = $creditService->deductCredits(
-            $this->auth->user()->id,
-            1,
-            'unlock_' . $candidateId,
-            'Unlocked candidate: ' . $candidateId,
-            'unlock_candidate'
-        );
+        $walletService = new \App\Services\WalletService();
+        $unlockFee = 5000.00; // ₦5,000 one-time unlock fee
 
-        if ($result['success']) {
+        try {
+            $reference = 'unlock_' . $employer->id . '_' . $candidateId . '_' . time();
+            $walletService->debit(
+                $this->auth->user()->id,
+                $unlockFee,
+                'candidate_unlock',
+                $reference,
+                (int)$candidateId,
+                'Unlocked candidate: ' . $candidateId
+            );
+
             $db = db_connect();
             $db->table('candidate_unlocks')->insert([
                 'employer_id' => $employer->id,
@@ -5644,11 +5872,88 @@ class EmployerController extends BaseController
                 'success' => true,
                 'message' => 'Candidate unlocked successfully'
             ]);
+        } catch (\RuntimeException $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Insufficient wallet balance. Please fund your wallet with ₦' . number_format($unlockFee, 2) . ' to unlock.'
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Candidate unlock failed: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to unlock candidate: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function verifyUnlockAjax()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $reference = $this->request->getPost('reference');
+        $candidateId = $this->request->getPost('candidate_id');
+
+        if (! $reference || ! $candidateId) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Missing reference or candidate ID'
+            ]);
+        }
+
+        // Verify with Paystack
+        $verify = $this->verifyPaystackTransaction($reference);
+
+        if (empty($verify['data']) || $verify['data']['status'] !== 'success') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Payment verification failed'
+            ]);
+        }
+
+        $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found.']);
+        }
+
+        // Insert into candidate_unlocks
+        $db = db_connect();
+        
+        // Check if already unlocked
+        $exists = $db->table('candidate_unlocks')
+            ->where('employer_id', $employer->id)
+            ->where('job_seeker_id', $candidateId)
+            ->countAllResults();
+
+        if (!$exists) {
+            $db->table('candidate_unlocks')->insert([
+                'employer_id' => $employer->id,
+                'job_seeker_id' => $candidateId,
+                'unlocked_at' => date('Y-m-d H:i:s')
+            ]);
+            
+            // Also log payment in payments table
+            $paymentModel = model(PaymentModel::class);
+            $paymentModel->insert([
+                'user_id' => $this->auth->user()->id,
+                'employer_id' => $employer->id,
+                'reference' => $reference,
+                'amount' => 5000.00,
+                'status' => 'paid',
+                'payment_method' => $verify['data']['channel'] ?? 'card',
+                'metadata' => json_encode([
+                    'type' => 'unlock',
+                    'candidate_id' => (int)$candidateId,
+                    'gateway_response' => $verify
+                ]),
+                'paid_at' => date('Y-m-d H:i:s')
+            ]);
         }
 
         return $this->response->setJSON([
-            'success' => false,
-            'message' => $result['message']
+            'success' => true,
+            'message' => 'Candidate unlocked successfully via Paystack'
         ]);
     }
 
@@ -5707,6 +6012,11 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Missing required parameters']);
         }
 
+        $allowedStatuses = ['pending', 'reviewed', 'shortlisted', 'rejected', 'hired'];
+        if (!in_array($status, $allowedStatuses)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid status']);
+        }
+
         $user = $this->auth->user();
         $employerModel = model(\App\Models\EmployerModel::class);
         $employer = $employerModel->where('user_id', $user->id)->first();
@@ -5726,7 +6036,10 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'No valid applications found']);
         }
 
-        $applicationModel->whereIn('id', $allowedIds)->set(['status' => $status])->update();
+        $applicationModel->whereIn('id', $allowedIds)->set([
+            'status'      => $status,
+            'reviewed_at' => date('Y-m-d H:i:s'),
+        ])->update();
 
         return $this->response->setJSON(['success' => true, 'message' => 'Applications updated successfully']);
     }
@@ -5811,4 +6124,56 @@ class EmployerController extends BaseController
 
         return $this->response->setJSON(['success' => true, 'message' => 'Note deleted successfully']);
     }
+
+    /**
+     * AJAX: Generate job description using AI
+     */
+    public function generateJobDescription()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Direct access forbidden']);
+        }
+
+        $title = $this->request->getPost('title');
+        $industry = $this->request->getPost('industry');
+        $experience = $this->request->getPost('experience');
+        $skills = $this->request->getPost('skills');
+
+        if (empty($title)) {
+            return $this->response->setJSON(['error' => 'Job title is required to generate a description.']);
+        }
+
+        $prompt = "Write a comprehensive, professional job description for the role of '{$title}'. ";
+        if (!empty($industry)) {
+            $prompt .= "The company operates in the '{$industry}' industry. ";
+        }
+        if (!empty($experience)) {
+            $prompt .= "The ideal candidate should have '{$experience}' experience level. ";
+        }
+        if (!empty($skills)) {
+            $prompt .= "Key required skills: '{$skills}'. ";
+        }
+        $prompt .= "\n\nPlease write a professional description structured with these sections:\n" .
+                   "1. About the Role\n" .
+                   "2. Key Responsibilities (use clean bullet points)\n" .
+                   "3. Requirements & Qualifications (use clean bullet points)\n" .
+                   "4. What We Offer (use clean bullet points)\n" .
+                   "Return only clean HTML (paragraphs and lists). Do not include markdown code block syntax (like ```html). Use standard HTML formatting tags like <p>, <ul>, <li>, <strong>.";
+
+        try {
+            $aiService = new \App\Services\AiService();
+            $result = $aiService->generate($prompt);
+            
+            // Clean markdown code blocks if the AI returned it inside triple backticks
+            if (str_starts_with($result, '```')) {
+                $result = preg_replace('/^```(?:html)?\s*/i', '', $result);
+                $result = preg_replace('/\s*```$/', '', $result);
+            }
+
+            return $this->response->setJSON(['status' => 'success', 'description' => trim($result)]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['error' => 'AI Generation failed: ' . $e->getMessage()]);
+        }
+    }
 }
+

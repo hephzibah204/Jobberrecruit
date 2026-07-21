@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\BundlePackageModel;
+use App\Models\PlanBundleModel;
 use App\Models\JobCreditWalletModel;
 
 
@@ -16,15 +16,16 @@ class BundleRecommendationService
             ->get()
             ->getRow()->credits ?? 0;
 
-        $bundles = model(BundlePackageModel::class)
+        $bundles = model(PlanBundleModel::class)
             ->where('is_active', 1)
-            ->orderBy('credits', 'ASC')
+            ->orderBy('job_credits', 'ASC')
             ->findAll();
 
         // Low credits → recommend best value
-        return model(BundlePackageModel::class)
+        return model(PlanBundleModel::class)
             ->where('is_active', 1)
-            ->orderBy('cost_per_credit', 'ASC')
+            ->orderBy('price_per_credit', 'ASC')
             ->first();
     }
 }
+

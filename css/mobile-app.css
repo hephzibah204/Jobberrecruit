@@ -343,3 +343,102 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
     height: 22px;
     fill: currentColor;
 }
+
+/* ==========================================================================
+   PWA Installation Banner
+   ========================================================================== */
+.pwa-install-banner {
+    position: fixed;
+    bottom: -150px;
+    left: 15px;
+    right: 15px;
+    background: var(--surface-1, #ffffff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border-radius: 16px;
+    padding: 15px;
+    z-index: 1050;
+    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: var(--text-primary, #1e293b);
+}
+
+[data-theme="dark"] .pwa-install-banner {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    color: #f8fafc;
+}
+
+.pwa-install-banner.active {
+    bottom: calc(var(--safe-bottom, 0px) + 85px);
+}
+
+@media (min-width: 768px) {
+    .pwa-install-banner {
+        display: none !important;
+    }
+}
+
+.pwa-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    margin-right: 15px;
+}
+
+.pwa-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 28px;
+    height: 28px;
+    background: var(--surface-2, #f1f5f9);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 50%;
+    color: var(--text-secondary, #64748b);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 0;
+    padding-bottom: 2px; /* optical alignment */
+}
+
+[data-theme="dark"] .pwa-close {
+    background: #334155;
+    border-color: #475569;
+    color: #cbd5e1;
+}
+@media (max-width: 900px) {
+  .footer-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+  }
+  .footer-brand {
+    grid-column: 1 / -1 !important;
+    margin-bottom: 16px;
+  }
+  .footer .footer-logo {
+    display: flex !important;
+  }
+  .footer .footer-brand p {
+    display: block !important;
+  }
+  .footer .footer-brand {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 16px !important;
+  }
+  .footer-col, .footer {
+    text-align: left !important;
+  }
+  .footer .footer-brand .footer-socials,
+  .footer-col-1 .footer-social {
+    justify-content: flex-start !important;
+  }
+}

@@ -168,10 +168,15 @@ class JobSeekerController extends BaseController
                 ->with('error', 'Please create your profile first.');
         }
 
+        // Earned JobberRecruit certificates (auto-attach to profile, like the mockup)
+        $certificates = model(\App\Models\CourseCertificateModel::class)
+            ->getUserCertificates($this->auth->user()->id);
+
         $data = [
-            'title'     => 'Profile',
-            'user'      => $this->auth->user(),
-            'candidate' => $candidate
+            'title'        => 'Profile',
+            'user'         => $this->auth->user(),
+            'candidate'    => $candidate,
+            'certificates' => $certificates,
         ];
 
         return view('candidate/profile', $data);
@@ -187,7 +192,11 @@ class JobSeekerController extends BaseController
         $candidate = $candidateModel->where('user_id', $user->id)->first();
 
         if (!$candidate) {
-            return redirect()->to('candidate/profile/edit')->with('error', 'Please create your profile first.');
+            $candidateModel->insert([
+                'user_id'   => $user->id,
+                'full_name' => $user->username ?? 'Candidate',
+            ]);
+            $candidate = $candidateModel->where('user_id', $user->id)->first();
         }
 
         // If POST, handle update immediately
@@ -307,6 +316,9 @@ class JobSeekerController extends BaseController
             /**
              * UPDATE CANDIDATE
              */
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             $candidateModel->update($candidate->id, $data);
 
             /**
@@ -319,6 +331,15 @@ class JobSeekerController extends BaseController
                 $candidateIndustryModel->insert([
                     'job_seeker_id' => $candidate->id,
                     'industry_id'   => $industryId
+                ]);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to update profile. Database transaction error.'
                 ]);
             }
 

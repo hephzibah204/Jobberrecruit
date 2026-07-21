@@ -282,6 +282,44 @@ class AdminController extends BaseController
                 'weekly'  => array_values($weekly),
                 'monthly' => array_values($monthly),
             ],
+            'userGrowth' => (function() use ($year) {
+                $db = db_connect();
+                $userStats = $db->table('users')
+                    ->select('MONTH(created_at) AS month, user_type, COUNT(id) AS total')
+                    ->where('YEAR(created_at)', $year)
+                    ->groupBy('MONTH(created_at), user_type')
+                    ->get()->getResultArray();
+
+                $monthlyCandidates = array_fill(1, 12, 0);
+                $monthlyEmployers = array_fill(1, 12, 0);
+                foreach ($userStats as $row) {
+                    $m = (int)$row['month'];
+                    if (($row['user_type'] ?? '') === 'candidate') {
+                        $monthlyCandidates[$m] = (int)$row['total'];
+                    } elseif (($row['user_type'] ?? '') === 'employer') {
+                        $monthlyEmployers[$m] = (int)$row['total'];
+                    }
+                }
+                return [
+                    'candidates' => array_values($monthlyCandidates),
+                    'employers'  => array_values($monthlyEmployers),
+                ];
+            })(),
+            'transactionGrowth' => (function() use ($year) {
+                $db = db_connect();
+                $paymentStats = $db->table('payments')
+                    ->select('MONTH(created_at) AS month, SUM(amount_paid) AS total')
+                    ->where('YEAR(created_at)', $year)
+                    ->where('status', 'paid')
+                    ->groupBy('MONTH(created_at)')
+                    ->get()->getResultArray();
+
+                $monthlyTransactions = array_fill(1, 12, 0);
+                foreach ($paymentStats as $row) {
+                    $monthlyTransactions[(int)$row['month']] = (float)$row['total'];
+                }
+                return array_values($monthlyTransactions);
+            })(),
         ];
         return view('admin/dashboard', $data);
     }
@@ -2427,20 +2465,29 @@ class AdminController extends BaseController
             $monthlyCredits = (int) ($this->request->getPost('monthly_job_credits') ?? 0);
             $duration = (int) ($this->request->getPost('duration') ?? 30);
 
-            $features = [
-                'featured' => (bool) $this->request->getPost('feat_featured'),
-                'network_blast' => (bool) $this->request->getPost('feat_network_blast'),
-                'anonymous' => (bool) $this->request->getPost('feat_anonymous'),
-                'trust_badge' => (bool) $this->request->getPost('feat_trust_badge'),
-                'priority_support' => (bool) $this->request->getPost('feat_priority_support'),
-                'url_redirect' => (bool) $this->request->getPost('feat_url_redirect'),
-                'ai_resume' => (bool) $this->request->getPost('feat_ai_resume'),
-                'ai_cover_letter' => (bool) $this->request->getPost('feat_ai_cover_letter'),
-                'ai_career_tools' => (bool) $this->request->getPost('feat_ai_career_tools'),
-                'unlimited_applications' => (bool) $this->request->getPost('feat_unlimited_applications'),
-                'candidate_messaging' => (bool) $this->request->getPost('feat_candidate_messaging'),
-                'profile_highlight' => (bool) $this->request->getPost('feat_profile_highlight'),
-            ];
+            if ($planType === 'candidate') {
+                $candidateFeaturesRaw = $this->request->getPost('candidate_features') ?? '';
+                $candidateFeaturesList = array_filter(array_map('trim', explode(',', $candidateFeaturesRaw)));
+                $features = [];
+                foreach ($candidateFeaturesList as $f) {
+                    $features[$f] = true;
+                }
+            } else {
+                $features = [
+                    'featured' => (bool) $this->request->getPost('feat_featured'),
+                    'network_blast' => (bool) $this->request->getPost('feat_network_blast'),
+                    'anonymous' => (bool) $this->request->getPost('feat_anonymous'),
+                    'trust_badge' => (bool) $this->request->getPost('feat_trust_badge'),
+                    'priority_support' => (bool) $this->request->getPost('feat_priority_support'),
+                    'url_redirect' => (bool) $this->request->getPost('feat_url_redirect'),
+                    'ai_resume' => (bool) $this->request->getPost('feat_ai_resume'),
+                    'ai_cover_letter' => (bool) $this->request->getPost('feat_ai_cover_letter'),
+                    'ai_career_tools' => (bool) $this->request->getPost('feat_ai_career_tools'),
+                    'unlimited_applications' => (bool) $this->request->getPost('feat_unlimited_applications'),
+                    'candidate_messaging' => (bool) $this->request->getPost('feat_candidate_messaging'),
+                    'profile_highlight' => (bool) $this->request->getPost('feat_profile_highlight'),
+                ];
+            }
 
             $data = [
                 'name' => $name,
@@ -2839,6 +2886,33 @@ class AdminController extends BaseController
         return view('admin/blogs', $data);
     }
 
+    public function createBlog()
+    {
+        $data = [
+            'title' => 'Create Blog',
+            'user' => $this->auth->user(),
+            'admin' => $this->admin,
+            'blog' => null
+        ];
+        return view('admin/blog_editor', $data);
+    }
+
+    public function editBlog($id)
+    {
+        $model = new BlogModel();
+        $blog = $model->find($id);
+        if (!$blog) {
+            return redirect()->to('admin/blogs')->with('error', 'Blog not found');
+        }
+        $data = [
+            'title' => 'Edit Blog',
+            'user' => $this->auth->user(),
+            'admin' => $this->admin,
+            'blog' => $blog
+        ];
+        return view('admin/blog_editor', $data);
+    }
+
     public function saveBlog()
     {
         if (! $this->request->isAJAX()) {
@@ -2991,8 +3065,8 @@ class AdminController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        return view('blog_show', [
-            'blog' => $blog,
+        return view('blog-post', [
+            'blog'      => $blog,
             'isPreview' => true,
         ]);
     }
@@ -3095,7 +3169,239 @@ class AdminController extends BaseController
             'success' => true,
             'url'     => $url,
         ]);
+     }
+
+    public function uploadEditorImageCk4()
+    {
+        $file = $this->request->getFile('upload'); // CKEditor sends file as 'upload'
+        if (!$file || !$file->isValid() || !$file->isImage()) {
+            $funcNum = $this->request->getGet('CKEditorFuncNum');
+            return $this->response->setBody("<script type='text/javascript'>window.parent.CKEDITOR.tools.callFunction($funcNum, '', 'Invalid image upload');</script>");
+        }
+
+        if ($file->getSizeByUnit('mb') > 2) {
+            $funcNum = $this->request->getGet('CKEditorFuncNum');
+            return $this->response->setBody("<script type='text/javascript'>window.parent.CKEDITOR.tools.callFunction($funcNum, '', 'Image size must not exceed 2MB');</script>");
+        }
+
+        // ---------------- CLOUDINARY ----------------
+        if (
+            env('CLOUDINARY_NAME') &&
+            env('CLOUDINARY_API_KEY') &&
+            env('CLOUDINARY_API_SECRET')
+        ) {
+            $cloudinary = new \Cloudinary\Cloudinary([
+                'cloud' => [
+                    'cloud_name' => env('CLOUDINARY_NAME'),
+                    'api_key'    => env('CLOUDINARY_API_KEY'),
+                    'api_secret' => env('CLOUDINARY_API_SECRET'),
+                ],
+            ]);
+
+            $upload = $cloudinary->uploadApi()->upload(
+                $file->getRealPath(),
+                [
+                    'folder' => 'blogs/editor',
+                    'resource_type' => 'image',
+                    'quality' => 'auto',
+                    'format' => 'webp',
+                ]
+            );
+
+            $url = $upload['secure_url'];
+        } else {
+            // Local fallback
+            $path = FCPATH . 'uploads/blogs/editor';
+            if (! is_dir($path)) {
+                mkdir($path, 0777, true);
+            }
+
+            $name = $file->getRandomName();
+            $file->move($path, $name);
+            $url = base_url('uploads/blogs/editor/' . $name);
+        }
+
+        $funcNum = $this->request->getGet('CKEditorFuncNum');
+        return $this->response->setBody("<script type='text/javascript'>window.parent.CKEDITOR.tools.callFunction($funcNum, '$url', 'Image uploaded successfully');</script>");
     }
+
+    /**
+     * Generate a full blog post draft using AI (two-step).
+     * Step 1 – metadata JSON (title, slug, excerpt, meta fields).
+     * Step 2 – HTML body content as plain text (avoids JSON-encoding HTML).
+     * Accepts POST: prompt (string), tone (string).
+     * Returns JSON: { success, title, slug, excerpt, content, meta_title, meta_description }
+     */
+    public function aiGenerateBlog()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $prompt = trim((string) ($this->request->getPost('prompt') ?? ''));
+        $tone   = trim((string) ($this->request->getPost('tone')   ?? 'professional'));
+
+        if (empty($prompt)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Please provide a topic or prompt for the blog post.',
+            ]);
+        }
+
+        $aiService = new \App\Services\AiService();
+
+        // ── STEP 1: Generate metadata only (small, clean JSON) ──────────────
+        $metaPrompt  = "You are an SEO and content expert. Given the blog topic below, produce ONLY a raw JSON object (no markdown fences, no extra text) with exactly these keys:\n";
+        $metaPrompt .= '{"title":"","slug":"","excerpt":"","meta_title":"","meta_description":""}' . "\n\n";
+        $metaPrompt .= "Rules:\n";
+        $metaPrompt .= "- title: compelling blog title, max 70 characters\n";
+        $metaPrompt .= "- slug: lowercase, hyphens only, max 80 characters\n";
+        $metaPrompt .= "- excerpt: 1-2 sentence teaser, max 180 characters, plain text\n";
+        $metaPrompt .= "- meta_title: SEO title, max 60 characters\n";
+        $metaPrompt .= "- meta_description: SEO description, max 160 characters, plain text\n";
+        $metaPrompt .= "- Tone: {$tone}\n";
+        $metaPrompt .= "Topic: {$prompt}";
+
+        $metaRaw = $aiService->generate($metaPrompt);
+
+        // Parse the metadata JSON
+        $meta = null;
+        if (is_string($metaRaw)) {
+            // Strip any markdown code fences
+            $cleaned = preg_replace('/^```(?:json)?\s*/i', '', trim($metaRaw));
+            $cleaned = preg_replace('/\s*```\s*$/i', '', trim($cleaned));
+            $meta    = json_decode(trim($cleaned), true);
+
+            // Fallback: extract first {...} object from response
+            if (! is_array($meta)) {
+                if (preg_match('/\{[^{}]*\}/s', $cleaned, $m)) {
+                    $meta = json_decode($m[0], true);
+                }
+            }
+        }
+
+        if (! is_array($meta) || empty($meta['title'])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'AI could not generate blog metadata. Please try a different topic.',
+            ]);
+        }
+
+        // Sanitise metadata fields
+        $title           = trim(strip_tags((string) ($meta['title']            ?? '')));
+        $slug            = trim(strip_tags((string) ($meta['slug']             ?? '')));
+        $excerpt         = trim(strip_tags((string) ($meta['excerpt']          ?? '')));
+        $metaTitle       = trim(strip_tags((string) ($meta['meta_title']       ?? $title)));
+        $metaDescription = trim(strip_tags((string) ($meta['meta_description'] ?? $excerpt)));
+
+        // Auto-generate slug from title if empty
+        if (empty($slug) && ! empty($title)) {
+            $slug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($title)), '-');
+        }
+
+        // ── STEP 2: Generate the full HTML body separately ───────────────────
+        $bodyPrompt  = "You are a professional content writer. Write a complete blog post body in clean HTML.\n";
+        $bodyPrompt .= "Topic: {$prompt}\n";
+        $bodyPrompt .= "Title: {$title}\n";
+        $bodyPrompt .= "Tone: {$tone}\n\n";
+        $bodyPrompt .= "Requirements:\n";
+        $bodyPrompt .= "- Output ONLY the HTML body — no <html>, <head>, or <body> tags\n";
+        $bodyPrompt .= "- Use h2, h3, p, ul, ol, li, strong, em tags only\n";
+        $bodyPrompt .= "- No inline styles, no class attributes, no script or style tags\n";
+        $bodyPrompt .= "- Aim for 600–900 words, engaging and well-structured\n";
+        $bodyPrompt .= "- Start directly with an <h2> or <p> — no introduction like 'Here is your blog post:'";
+
+        $content = $aiService->generate($bodyPrompt);
+
+        // Strip any accidental markdown fences from the HTML body
+        if (is_string($content)) {
+            $content = preg_replace('/^```(?:html)?\s*/i', '', trim($content));
+            $content = preg_replace('/\s*```\s*$/i', '', trim($content));
+            $content = trim($content);
+        }
+
+        if (empty($content) || ! is_string($content)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'AI could not generate the blog body. Metadata was created — please try again.',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success'          => true,
+            'title'            => $title,
+            'slug'             => $slug,
+            'excerpt'          => $excerpt,
+            'content'          => $content,
+            'meta_title'       => $metaTitle,
+            'meta_description' => $metaDescription,
+        ]);
+    }
+
+    /**
+     * Generate an image using AI or fallback service based on a prompt.
+     * Returns JSON with 'success' and 'url' fields.
+     */
+    public function aiGenerateImage()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $prompt = trim((string) ($this->request->getPost('prompt') ?? ''));
+        $style  = trim((string) ($this->request->getPost('style') ?? 'photo'));
+
+        if (empty($prompt)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Please provide an image description.'
+            ]);
+        }
+
+        // Try Gemini image generation if key is set (placeholder – actual endpoint may differ)
+        $geminiKey = env('GEMINI_API_KEY');
+        if ($geminiKey) {
+            try {
+                $client = \Config\Services::curlrequest();
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" . $geminiKey;
+                $payload = [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => "Generate a $style image URL for the following description: $prompt. Respond ONLY with a direct HTTPS image URL."]
+                            ]
+                        ]
+                    ]
+                ];
+                $response = $client->post($url, [
+                    'headers' => ['Content-Type' => 'application/json'],
+                    'json'    => $payload
+                ]);
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getBody(), true);
+                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    $imageUrl = trim($text);
+                    if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                        return $this->response->setJSON([
+                            'success' => true,
+                            'url'     => $imageUrl
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                // fall back to Unsplash
+            }
+        }
+
+        // Fallback: Unsplash random image based on search terms extracted from prompt
+        $search = urlencode($prompt);
+        $unsplashUrl = "https://source.unsplash.com/800x600/?" . $search;
+        return $this->response->setJSON([
+            'success' => true,
+            'url'     => $unsplashUrl
+        ]);
+    }
+
 
     public function checkTitle()
     {
@@ -3739,11 +4045,12 @@ class AdminController extends BaseController
         $reviewModel = model(\App\Models\CvReviewModel::class);
         $review = $reviewModel->find($id);
 
-        if (!$review || !$review->file_path) {
+        $filePathVal = is_array($review) ? ($review['file_path'] ?? null) : ($review->file_path ?? null);
+        if (!$review || !$filePathVal) {
             return redirect()->to('admin/cv-reviews')->with('error', 'File not found.');
         }
 
-        $filePath = FCPATH . $review->file_path;
+        $filePath = FCPATH . $filePathVal;
         if (!is_file($filePath)) {
             return redirect()->to('admin/cv-reviews')->with('error', 'File does not exist on disk.');
         }
@@ -3760,10 +4067,11 @@ class AdminController extends BaseController
             return redirect()->to('admin/cv-reviews')->with('error', 'CV Review not found.');
         }
 
-        $filePath = FCPATH . ($review->file_path ?? '');
+        $filePathVal = is_array($review) ? ($review['file_path'] ?? '') : ($review->file_path ?? '');
+        $filePath = FCPATH . $filePathVal;
         $cvContent = '';
 
-        if ($review->file_path && is_file($filePath)) {
+        if ($filePathVal && is_file($filePath)) {
             $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
             $cvContent = file_get_contents($filePath);
 
@@ -3776,14 +4084,20 @@ class AdminController extends BaseController
             $cvContent = '[No CV file content available — review based on candidate info]';
         }
 
+        $fullNameVal = is_array($review) ? ($review['full_name'] ?? 'Candidate') : ($review->full_name ?? 'Candidate');
+        $targetRoleVal = is_array($review) ? ($review['target_role'] ?? '') : ($review->target_role ?? '');
+        $industryVal = is_array($review) ? ($review['industry'] ?? '') : ($review->industry ?? '');
+        $feedbackRequestVal = is_array($review) ? ($review['feedback_request'] ?? '') : ($review->feedback_request ?? '');
+        $planVal = is_array($review) ? ($review['plan'] ?? 'basic') : ($review->plan ?? 'basic');
+
         $aiService = new \App\Services\AiService();
         $aiReview = $aiService->generateCvReview([
-            'full_name'        => $review->full_name ?? 'Candidate',
-            'target_role'      => $review->target_role ?? '',
-            'industry'         => $review->industry ?? '',
-            'feedback_request' => $review->feedback_request ?? '',
+            'full_name'        => $fullNameVal,
+            'target_role'      => $targetRoleVal,
+            'industry'         => $industryVal,
+            'feedback_request' => $feedbackRequestVal,
             'cv_content'       => $cvContent,
-            'plan'             => $review->plan ?? 'basic',
+            'plan'             => $planVal,
         ]);
 
         $reviewModel->update($id, [
@@ -3810,9 +4124,23 @@ class AdminController extends BaseController
 
     public function cvReviewComplete($id)
     {
-        model(\App\Models\CvReviewModel::class)->update($id, [
+        $reviewModel = model(\App\Models\CvReviewModel::class);
+        $reviewModel->update($id, [
             'status' => 'completed',
         ]);
+
+        $review = $reviewModel->find($id);
+        if ($review && !empty($review['email'])) {
+            $emailService = service('mailer');
+            $emailService->sendTemplate(
+                $review['email'],
+                'Your CV Review is Ready!',
+                'emails/cv_review_completed',
+                [
+                    'user_name' => $review['full_name'] ?? 'Candidate',
+                ]
+            );
+        }
 
         return redirect()->to('admin/cv-reviews/view/' . $id)
             ->with('success', 'Review marked as completed.');

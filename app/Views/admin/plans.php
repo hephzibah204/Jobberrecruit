@@ -43,7 +43,7 @@
                             <thead><tr><th>Plan</th><th>Code</th><th>Price</th><th>Credits</th><th>Features</th><th>Status</th><th class="text-center">Actions</th></tr></thead>
                             <tbody>
                                 <?php foreach ($employerPlans as $plan): ?>
-                                    <?php $features = json_decode($plan->features ?? '[]', true) ?? []; ?>
+                                    <?php $features = is_string($plan->features ?? null) ? (json_decode($plan->features, true) ?? []) : (array)($plan->features ?? []); ?>
                                     <tr>
                                         <td><strong><?= esc($plan->name) ?></strong></td>
                                         <td><code><?= esc($plan->code) ?></code></td>
@@ -74,7 +74,7 @@
                             <thead><tr><th>Plan</th><th>Code</th><th>Price</th><th>Features</th><th>Status</th><th class="text-center">Actions</th></tr></thead>
                             <tbody>
                                 <?php foreach ($candidatePlans as $plan): ?>
-                                    <?php $features = json_decode($plan->features ?? '[]', true) ?? []; ?>
+                                    <?php $features = is_string($plan->features ?? null) ? (json_decode($plan->features, true) ?? []) : (array)($plan->features ?? []); ?>
                                     <tr>
                                         <td><strong><?= esc($plan->name) ?></strong></td>
                                         <td><code><?= esc($plan->code) ?></code></td>
@@ -223,10 +223,14 @@
                 <div class="col-md-6"><label class="form-label">Monthly Job Credits</label><input type="number" name="monthly_job_credits" id="plan_monthly_job_credits" class="form-control" min="0" value="0"></div>
                 <div class="col-md-6"><label class="form-label">Duration (days)</label><input type="number" name="duration" id="plan_duration" class="form-control" min="1" value="30"></div>
                 <div class="col-md-6"><label class="form-label">Status</label><select name="is_active" id="plan_is_active" class="form-select"><option value="1">Active</option><option value="0">Inactive</option></select></div>
-                <div class="col-12"><label class="form-label fw-semibold">Features</label><div class="row g-2">
+                <div class="col-12" id="employer_features_wrapper"><label class="form-label fw-semibold">Employer Features</label><div class="row g-2">
                     <?php $featList = ['featured'=>'Featured Jobs','network_blast'=>'Network Blast','anonymous'=>'Anonymous Posting','trust_badge'=>'Trust Badge','priority_support'=>'Priority Support','url_redirect'=>'URL Redirect','ai_resume'=>'AI Resume Builder','ai_cover_letter'=>'AI Cover Letter','ai_career_tools'=>'AI Career Tools','unlimited_applications'=>'Unlimited Applications','candidate_messaging'=>'Candidate Messaging','profile_highlight'=>'Profile Highlight']; ?>
                     <?php foreach ($featList as $key => $label): ?><div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="feat_<?= $key ?>" id="feat_<?= $key ?>" value="1"><label class="form-check-label" for="feat_<?= $key ?>"><?= $label ?></label></div></div><?php endforeach; ?>
                 </div></div>
+                <div class="col-12" id="candidate_features_wrapper" style="display:none;"><label class="form-label fw-semibold">Candidate Features (Comma separated)</label>
+                    <textarea class="form-control" name="candidate_features" id="candidate_features" rows="3" placeholder="e.g. AI Resume Builder, Priority Support, 3 Mock Interviews"></textarea>
+                    <small class="text-muted">Enter features separated by commas. These will be displayed on the candidate pricing page.</small>
+                </div>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Plan</button></div>
         </form>
@@ -239,7 +243,9 @@
 function openCreateModal() {
     document.getElementById('planForm').reset();
     document.getElementById('plan_id').value = '';
-    document.getElementById('modalTitle').textContent = 'Add Plan';
+    document.getElementById('modalTitle').textContent = 'Add Employer Plan';
+    document.getElementById('candidate_features').value = '';
+    toggleFeaturesWrapper();
 }
 function editPlan(plan) {
     document.getElementById('plan_id').value = plan.id || '';
@@ -250,11 +256,46 @@ function editPlan(plan) {
     document.getElementById('plan_monthly_job_credits').value = plan.monthly_job_credits || 0;
     document.getElementById('plan_duration').value = 30;
     document.getElementById('plan_is_active').value = plan.is_active ? '1' : '0';
-    document.getElementById('modalTitle').textContent = 'Edit: ' + (plan.name || '');
+    const typeLabel = plan.plan_type === 'candidate' ? 'Candidate' : 'Employer';
+    document.getElementById('modalTitle').textContent = 'Edit ' + typeLabel + ' Plan: ' + (plan.name || '');
     const features = typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || {});
-    Object.keys(features).forEach(k => { const el = document.getElementById('feat_' + k); if (el) el.checked = !!features[k]; });
+    
+    // Reset all checkboxes
+    document.querySelectorAll('#employer_features_wrapper .form-check-input').forEach(el => el.checked = false);
+    
+    if (plan.plan_type === 'candidate') {
+        document.getElementById('candidate_features').value = Object.keys(features).join(', ');
+    } else {
+        Object.keys(features).forEach(k => { const el = document.getElementById('feat_' + k); if (el) el.checked = !!features[k]; });
+    }
+    
+    toggleFeaturesWrapper();
     new bootstrap.Modal('#planModal').show();
 }
+
+function toggleFeaturesWrapper() {
+    const pType = document.getElementById('plan_type').value;
+    const typeLabel = pType === 'candidate' ? 'Candidate' : 'Employer';
+    
+    // Update modal title dynamically if adding or editing plan
+    const planId = document.getElementById('plan_id').value;
+    const planName = document.getElementById('plan_name').value;
+    if (planId) {
+        document.getElementById('modalTitle').textContent = 'Edit ' + typeLabel + ' Plan: ' + planName;
+    } else {
+        document.getElementById('modalTitle').textContent = 'Add ' + typeLabel + ' Plan';
+    }
+
+    if (pType === 'candidate') {
+        document.getElementById('employer_features_wrapper').style.display = 'none';
+        document.getElementById('candidate_features_wrapper').style.display = 'block';
+    } else {
+        document.getElementById('employer_features_wrapper').style.display = 'block';
+        document.getElementById('candidate_features_wrapper').style.display = 'none';
+    }
+}
+
+document.getElementById('plan_type').addEventListener('change', toggleFeaturesWrapper);
 function deletePlan(id) {
     if (!confirm('Delete this plan? Active subscriptions will not be affected.')) return;
     fetch('<?= base_url("admin/plans/delete") ?>/' + id, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })

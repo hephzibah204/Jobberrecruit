@@ -26,7 +26,7 @@ class ConversationModel extends Model
 
     public function getConversationsForEmployer(int $employerId): array
     {
-        return $this->select('conversations.*, job_seekers.full_name as seeker_name, job_seekers.profile_photo, jobs.title as job_title')
+        return $this->select('conversations.*, job_seekers.full_name as seeker_name, job_seekers.profile_picture as profile_photo, jobs.title as job_title')
             ->join('job_seekers', 'job_seekers.id = conversations.job_seeker_id', 'left')
             ->join('jobs', 'jobs.id = conversations.job_id', 'left')
             ->where('conversations.employer_id', $employerId)

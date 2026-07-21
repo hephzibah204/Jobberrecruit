@@ -74,7 +74,86 @@ class CronController extends BaseController
             'jobs_processed' => $processed,
             'jobs_failed' => $failed
         ]);
+    public function processEmailQueue()
+    {
+        $token = $this->request->getGet('token');
+        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
+        
+        if ($token !== $expectedToken) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        }
+
+        $queueModel = new JobQueueModel();
+        // Smart rate limiting: pull 100 emails per batch to avoid overwhelming the SMTP server in a 1-minute cron
+        $limit = 100;
+        
+        $jobs = $queueModel->where('status', 'pending')
+                           ->where('type', 'campaign_email')
+                           ->groupStart()
+                               ->where('available_at <=', date('Y-m-d H:i:s'))
+                               ->orWhere('available_at', null)
+                           ->groupEnd()
+                           ->orderBy('id', 'ASC')
+                           ->findAll($limit);
+                           
+        if (empty($jobs)) {
+            return $this->response->setJSON(['status' => 'success', 'message' => 'No pending campaign emails.']);
+        }
+
+        $processed = 0;
+        $failed = 0;
+
+        foreach ($jobs as $job) {
+            $queueModel->update($job->id, ['status' => 'processing']);
+            
+            $payload = json_decode($job->payload, true);
+            $data = $payload['data'];
+            
+            $success = false;
+            $error = null;
+
+            try {
+                $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
+                
+                if ($success && isset($data['log_id'])) {
+                    $emailLogModel = new \App\Models\EmailLogModel();
+                    $emailLogModel->update($data['log_id'], ['delivered_at' => date('Y-m-d H:i:s')]);
+                }
+            } catch (\Exception $e) {
+                $error = $e->getMessage();
+            }
+
+            if ($success) {
+                $queueModel->update($job->id, ['status' => 'completed']);
+                $processed++;
+            } else {
+                $attempts = $job->attempts + 1;
+                // Soft bounce retry logic
+                $status = ($attempts >= 3) ? 'failed' : 'pending';
+                
+                $queueModel->update($job->id, [
+                    'status' => $status,
+                    'attempts' => $attempts,
+                    'error' => $error ?? 'SMTP Delivery Failed',
+                    'available_at' => date('Y-m-d H:i:s', time() + (300 * pow(2, $attempts))) // Exponential backoff (5m, 10m)
+                ]);
+                
+                if ($status === 'failed' && isset($data['log_id'])) {
+                    $emailLogModel = new \App\Models\EmailLogModel();
+                    $emailLogModel->update($data['log_id'], ['bounce_reason' => $error ?? 'Hard bounce after 3 attempts']);
+                }
+                
+                $failed++;
+            }
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success', 
+            'jobs_processed' => $processed,
+            'jobs_failed' => $failed
+        ]);
     }
+
 
     /**
      * Archive accounts that haven't updated their profile in 3 months

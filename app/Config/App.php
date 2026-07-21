@@ -16,20 +16,25 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = '';
+    public string $baseURL = 'http://example.com/';
 
     public function __construct()
     {
         parent::__construct();
-
-        // Set baseURL based on environment
-        if (ENVIRONMENT === 'development') {
-            $this->baseURL = 'http://localhost:8081/';
-        } else {
-            // Production: use the actual request host
-            $this->baseURL = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'jobberrecruit.ng') . '/';
+        
+        // Dynamically detect base URL on live/dev servers if not defined in .env
+        if (empty($this->baseURL) || $this->baseURL === 'http://localhost:8085/') {
+            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $this->baseURL = $protocol . $host . '/';
+        }
+        
+        if (ENVIRONMENT === 'testing' && ($this->baseURL === 'http://localhost/' || empty($this->baseURL))) {
+            $this->baseURL = 'http://example.com/';
         }
     }
+
+
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.

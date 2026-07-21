@@ -80,8 +80,10 @@ class CreateCourseModules extends Migration
 
     public function down()
     {
-        if ($this->db->fieldExists('item_type', 'courses')) {
-            $this->forge->dropColumn('courses', 'item_type');
+        if ($this->db->getPlatform() !== 'SQLite3') {
+            if ($this->db->fieldExists('item_type', 'courses')) {
+                $this->forge->dropColumn('courses', 'item_type');
+            }
         }
         $this->forge->dropTable('course_modules', true);
     }
