@@ -28,6 +28,7 @@ use App\Services\JobCreditService;
 use App\Services\CreditService;
 use App\Models\JobSeekerModel;
 use App\Models\JobSeekerIndustryModel;
+use App\Models\CandidateAlertModel;
 use DateTime;
 
 class EmployerController extends BaseController
@@ -5695,9 +5696,7 @@ class EmployerController extends BaseController
             'unreadCount' => $unreadCount,
             'totalNotifications' => $totalNotifications,
             'typeStats' => $typeStats,
-            // Candidate-alert feature has no backend yet; the view needs the
-            // variable to render its empty state instead of a fatal.
-            'alerts' => [],
+            'alerts' => $this->buildCandidateAlerts($employer->id),
             'categories' => model(JobCategoryModel::class)->orderBy('name')->findAll(),
             'currentPage' => $page,
             'perPage' => $perPage,
@@ -5706,6 +5705,172 @@ class EmployerController extends BaseController
         ];
 
         return view('employers/notifications', $data);
+    }
+
+    /**
+     * Resolve the current employer record or return null.
+     */
+    private function currentEmployer()
+    {
+        $user = $this->auth->user();
+        if (!$user) {
+            return null;
+        }
+        return model(EmployerModel::class)->where('user_id', $user->id)->first();
+    }
+
+    /**
+     * Load an employer's candidate alerts and enrich each with live
+     * matching-candidate data for the notifications view.
+     */
+    private function buildCandidateAlerts(int $employerId): array
+    {
+        $alerts = model(CandidateAlertModel::class)->forEmployer($employerId);
+
+        foreach ($alerts as &$alert) {
+            $criteria = json_decode($alert['criteria'] ?? '', true) ?: [];
+            $alert['criteria'] = $criteria;
+            $alert['matches']  = $this->matchingCandidates($criteria, 4);
+        }
+        unset($alert);
+
+        return $alerts;
+    }
+
+    /**
+     * Find candidates matching an alert's criteria. Returns a shape the
+     * notifications view expects (first_name, last_name, title, experience).
+     */
+    private function matchingCandidates(array $criteria, int $limit = 4): array
+    {
+        $filters = [];
+        if (!empty($criteria['keyword'])) {
+            $filters['keyword'] = $criteria['keyword'];
+        }
+        if (!empty($criteria['experience'])) {
+            $filters['experience_years'] = (int) $criteria['experience'];
+        }
+
+        // Nothing to match on → no candidates surfaced.
+        if (empty($filters)) {
+            return [];
+        }
+
+        try {
+            $rows = model(JobSeekerModel::class)->getCandidates($filters, $limit) ?? [];
+        } catch (\Throwable $e) {
+            log_message('error', 'Candidate alert match failed: ' . $e->getMessage());
+            return [];
+        }
+
+        $matches = [];
+        foreach ($rows as $row) {
+            $fullName = trim($row->full_name ?? '');
+            $parts    = $fullName !== '' ? explode(' ', $fullName, 2) : ['Candidate', ''];
+            $matches[] = [
+                'first_name' => $parts[0] ?? 'Candidate',
+                'last_name'  => $parts[1] ?? '',
+                'title'      => $row->job_title ?? 'Candidate',
+                'experience' => $row->experience_years ?? 0,
+            ];
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Create a candidate alert (POST /employer/candidate-alerts).
+     */
+    public function createCandidateAlert()
+    {
+        $employer = $this->currentEmployer();
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $name = trim((string) $this->request->getPost('name'));
+        if ($name === '') {
+            return redirect()->back()->with('error', 'Please give your alert a name.');
+        }
+
+        $criteria = [
+            'keyword'    => trim((string) $this->request->getPost('keyword')),
+            'category'   => trim((string) $this->request->getPost('category')),
+            'location'   => trim((string) $this->request->getPost('location')),
+            'experience' => trim((string) $this->request->getPost('experience')),
+        ];
+        // Drop empty criteria for a clean stored payload.
+        $criteria = array_filter($criteria, static fn ($v) => $v !== '');
+
+        model(CandidateAlertModel::class)->insert([
+            'employer_id'  => $employer->id,
+            'name'         => $name,
+            'criteria'     => json_encode($criteria),
+            'frequency'    => 'daily',
+            'email_active' => 1,
+            'active'       => 1,
+        ]);
+
+        return redirect()->to('employer/notifications')->with('success', 'Alert created successfully.');
+    }
+
+    /**
+     * Update a candidate alert's settings (AJAX).
+     */
+    public function updateCandidateAlert($id)
+    {
+        $employer = $this->currentEmployer();
+        $alertModel = model(CandidateAlertModel::class);
+        $alert = $alertModel->find((int) $id);
+
+        if (!$employer || !$alert || (int) $alert['employer_id'] !== (int) $employer->id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Alert not found.',
+                'csrf'    => csrf_hash(),
+            ]);
+        }
+
+        $frequency = $this->request->getPost('frequency');
+        $allowed   = ['instant', 'daily', 'weekly'];
+
+        $alertModel->update((int) $id, [
+            'frequency'    => in_array($frequency, $allowed, true) ? $frequency : 'daily',
+            'email_active' => $this->request->getPost('email_active') ? 1 : 0,
+            'active'       => $this->request->getPost('active') ? 1 : 0,
+        ]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Alert updated.',
+            'csrf'    => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * Delete a candidate alert (AJAX).
+     */
+    public function deleteCandidateAlert($id)
+    {
+        $employer = $this->currentEmployer();
+        $alertModel = model(CandidateAlertModel::class);
+        $alert = $alertModel->find((int) $id);
+
+        if (!$employer || !$alert || (int) $alert['employer_id'] !== (int) $employer->id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Alert not found.',
+                'csrf'    => csrf_hash(),
+            ]);
+        }
+
+        $alertModel->delete((int) $id);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Alert deleted.',
+            'csrf'    => csrf_hash(),
+        ]);
     }
 
     /**
@@ -6254,5 +6419,91 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['error' => 'AI Generation failed: ' . $e->getMessage()]);
         }
     }
+
+    // ------------------------------------------------------------------
+    // Extend a job's closing / deadline date (Dashboard "Closing Soon")
+    // ------------------------------------------------------------------
+    /**
+     * Extend a job's closing date by N days (default 30).
+     * Accepts optional POST field `days` (int, 7–90).
+     * Falls back to GET redirect-back on success so the standard
+     * "Closing Soon" Extend button works without JS.
+     */
+    public function extendJob($jobId)
+    {
+        $user     = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+
+        if (! $employer) {
+            return redirect()->to('employer/dashboard')->with('error', 'Employer profile not found.');
+        }
+
+        $jobModel = model(JobModel::class);
+        $job      = $jobModel->find($jobId);
+
+        if (! $job || (int) $job->employer_id !== (int) ($employer->id ?? 0)) {
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or access denied.');
+        }
+
+        // How many days to extend (1–90, default 30)
+        $days = (int) ($this->request->getPost('days') ?? 30);
+        $days = max(1, min(90, $days));
+
+        // Current expiry — prefer closing_date, fall back to deadline / application_deadline
+        $currentExpiry = $job->closing_date ?? $job->deadline ?? $job->application_deadline ?? null;
+        $baseTimestamp = ($currentExpiry && strtotime($currentExpiry) > time())
+            ? strtotime($currentExpiry)
+            : time();
+
+        $newExpiry = date('Y-m-d', strtotime("+{$days} days", $baseTimestamp));
+
+        // Update whichever column(s) exist — try closing_date first, then deadline
+        $updateData = [];
+        if (property_exists($job, 'closing_date') || isset($job->closing_date)) {
+            $updateData['closing_date'] = $newExpiry;
+        }
+        if (property_exists($job, 'deadline') || isset($job->deadline)) {
+            $updateData['deadline'] = $newExpiry;
+        }
+        if (property_exists($job, 'application_deadline') || isset($job->application_deadline)) {
+            $updateData['application_deadline'] = $newExpiry;
+        }
+
+        if (! empty($updateData)) {
+            $jobModel->update($jobId, $updateData);
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success'   => true,
+                'message'   => "Job extended by {$days} days. New closing date: {$newExpiry}.",
+                'new_date'  => $newExpiry,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Job extended by {$days} days. New closing date: " . date('d M Y', strtotime($newExpiry)) . '.');
+    }
+
+    // ------------------------------------------------------------------
+    // General Settings (Account / notification preferences)
+    // ------------------------------------------------------------------
+    /**
+     * Show the General Settings page.
+     * Handles password change and notification preference sub-forms.
+     */
+    public function settings()
+    {
+        $user     = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+
+        $data = [
+            'title'    => 'General Settings',
+            'user'     => $user,
+            'employer' => $employer,
+        ];
+
+        return view('employers/settings', $data);
+    }
 }
+
 

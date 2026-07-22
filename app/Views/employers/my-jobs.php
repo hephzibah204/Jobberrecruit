@@ -51,6 +51,11 @@
     text-transform: uppercase;
     letter-spacing: .05em;
 }
+.pill--paused {
+    background: #f0f4f8;
+    color: var(--muted);
+    border: 1px solid var(--border);
+}
 @media (max-width: 760px) {
     .tbl--jobs {
         min-width: 0;
@@ -154,7 +159,14 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                 <option value="all">All statuses</option>
                 <option value="open">Open</option>
                 <option value="closed">Closed</option>
+                <option value="paused">Paused</option>
                 <option value="pending">Pending</option>
+            </select>
+            <select class="select" id="sort-filter" aria-label="Sort jobs">
+                <option value="newest">Newest first</option>
+                <option value="views">Most views</option>
+                <option value="applicants">Most applicants</option>
+                <option value="closing">Closing soon</option>
             </select>
         </div>
     </div>
@@ -199,6 +211,8 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                             $pillClass = 'pill--shortlisted';
                         } elseif (in_array($status, ['hired', 'open', 'active', 'success'])) {
                             $pillClass = 'pill--open';
+                        } elseif (in_array($status, ['paused'])) {
+                            $pillClass = 'pill--paused';
                         } elseif (in_array($status, ['rejected', 'closed', 'expired'])) {
                             $pillClass = 'pill--closed';
                         }
@@ -267,32 +281,54 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
 (function(){
     'use strict';
     
-    // Client-side quick filter
+    // Client-side quick filter + sort
     var q = document.getElementById('job-search');
     var statusSelect = document.getElementById('status-filter');
-    var rows = document.querySelectorAll('#jobs-table tbody tr');
+    var sortSelect = document.getElementById('sort-filter');
+    var tbody = document.querySelector('#jobs-table tbody');
+    var rows = Array.from(document.querySelectorAll('#jobs-table tbody tr'));
     
-    function filterTable() {
+    function filterAndSort() {
         var queryValue = q ? q.value.toLowerCase() : '';
         var statusValue = statusSelect ? statusSelect.value.toLowerCase() : 'all';
+        var sortValue = sortSelect ? sortSelect.value : 'newest';
         
-        rows.forEach(function(row) {
+        // Filter
+        var visible = rows.filter(function(row) {
             var text = row.textContent.toLowerCase();
             var rowStatus = row.getAttribute('data-status') || '';
-            
             var matchesQuery = text.indexOf(queryValue) > -1;
             var matchesStatus = statusValue === 'all' || rowStatus === statusValue;
-            
-            if (matchesQuery && matchesStatus) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (matchesQuery && matchesStatus) ? '' : 'none';
+            return matchesQuery && matchesStatus;
         });
+
+        // Sort visible rows in the DOM
+        var sorted = visible.slice().sort(function(a, b) {
+            if (sortValue === 'views') {
+                var va = parseInt(a.querySelector('[data-lbl="Views"] .metric') ? a.querySelector('[data-lbl="Views"] .metric').textContent.replace(/,/g,'') : 0, 10) || 0;
+                var vb = parseInt(b.querySelector('[data-lbl="Views"] .metric') ? b.querySelector('[data-lbl="Views"] .metric').textContent.replace(/,/g,'') : 0, 10) || 0;
+                return vb - va;
+            } else if (sortValue === 'applicants') {
+                var aa = parseInt(a.querySelector('[data-lbl="Applicants"] .metric') ? a.querySelector('[data-lbl="Applicants"] .metric').textContent.replace(/,/g,'') : 0, 10) || 0;
+                var ab = parseInt(b.querySelector('[data-lbl="Applicants"] .metric') ? b.querySelector('[data-lbl="Applicants"] .metric').textContent.replace(/,/g,'') : 0, 10) || 0;
+                return ab - aa;
+            } else if (sortValue === 'closing') {
+                var da = Date.parse((a.querySelector('[data-lbl="Closes"]') || {}).textContent || '2099') || Infinity;
+                var db = Date.parse((b.querySelector('[data-lbl="Closes"]') || {}).textContent || '2099') || Infinity;
+                return da - db;
+            }
+            // Default: newest first — preserve original DOM order
+            return rows.indexOf(a) - rows.indexOf(b);
+        });
+
+        // Re-append in sorted order
+        sorted.forEach(function(row) { tbody.appendChild(row); });
     }
     
-    if (q) q.addEventListener('input', filterTable);
-    if (statusSelect) statusSelect.addEventListener('change', filterTable);
+    if (q) q.addEventListener('input', filterAndSort);
+    if (statusSelect) statusSelect.addEventListener('change', filterAndSort);
+    if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
 })();
 </script>
 <?= $this->endSection() ?>

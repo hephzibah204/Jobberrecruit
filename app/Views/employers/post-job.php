@@ -141,6 +141,7 @@ textarea { resize: vertical; min-height: 110px; line-height: 1.65; }
   .form-grid.cols-3 { grid-template-columns: 1fr; }
   .skill-row { grid-template-columns: 1fr; }
   .bottom-actions { flex-direction: column; }
+  #salary-range-wrap, .form-grid { grid-template-columns: 1fr !important; }
 }
 .cv-card, .entry-item, .skill-row, .bottom-actions { background: #ffffff; }
 .entry-item, .skill-row { background: #f5f7fb; }

@@ -157,6 +157,7 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->post('jobs/stop-featured/(:num)', 'EmployerController::stopFeatured/$1');
     $routes->post('jobs/toggle-anonymous/(:num)', 'EmployerController::toggleAnonymous/$1');
     $routes->post('jobs/pause/(:num)', 'EmployerController::toggleJobStatus/$1');
+    $routes->post('jobs/extend/(:num)', 'EmployerController::extendJob/$1');
     $routes->get('jobs/export', 'EmployerController::exportJobs');
 
     // Applications
@@ -213,9 +214,15 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('wallet', 'WalletController::employerWallet');
 
     $routes->get('notifications', 'EmployerController::notifications');
+    $routes->get('candidate-alerts', 'EmployerController::notifications');
     $routes->post('notifications/mark-read', 'EmployerController::markNotificationRead');
     $routes->post('notifications/mark-all-read', 'EmployerController::markAllNotificationsRead');
     $routes->post('notifications/delete', 'EmployerController::deleteNotification');
+
+    // Candidate Alerts
+    $routes->post('candidate-alerts', 'EmployerController::createCandidateAlert');
+    $routes->post('candidate-alerts/update/(:num)', 'EmployerController::updateCandidateAlert/$1');
+    $routes->post('candidate-alerts/delete/(:num)', 'EmployerController::deleteCandidateAlert/$1');
 
     // Candidate Search (Paid Feature)
     $routes->get('candidates', 'EmployerController::candidates');
@@ -232,6 +239,11 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     // GDPR Data Export
     $routes->get('settings/export-data', 'EmployerController::exportData');
+
+    // General Settings
+    $routes->get('settings', 'EmployerController::settings');
+    // Convenience redirect: sidebar links /employer/settings
+    $routes->get('settings/account', 'EmployerController::settings');
 
     // AI generation
     $routes->post('jobs/ai-generate', 'EmployerController::generateJobDescription');

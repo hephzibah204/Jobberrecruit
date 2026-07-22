@@ -249,8 +249,8 @@ $pendingCount = $pendingApps ?? 0;
       <!-- SETTINGS -->
       <div class="sb-group">
         <div class="sb-label">Settings</div>
-        <a class="sb-link" href="<?= base_url('employer/settings/security') ?>"
-           <?= empIsActiveStart('employer/settings') ? 'aria-current="page"' : '' ?>>
+        <a class="sb-link" href="<?= base_url('employer/settings') ?>"
+           <?= empIsActive('employer/settings') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings
         </a>
         <a class="sb-link" href="<?= base_url('logout') ?>">
@@ -333,7 +333,7 @@ $pendingCount = $pendingApps ?? 0;
               <a href="<?= base_url('employer/pricing') ?>" role="menuitem">
                 <svg aria-hidden="true"><use href="#i-card"/></svg> Billing &amp; Plans
               </a>
-              <a href="<?= base_url('employer/settings/security') ?>" role="menuitem">
+              <a href="<?= base_url('employer/settings') ?>" role="menuitem">
                 <svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings
               </a>
               <hr>

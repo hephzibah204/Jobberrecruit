@@ -1,4 +1,17 @@
 <header class="navbar" role="banner">
+      <style>
+      @media (max-width: 860px) {
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .nav-actions { margin-left: auto !important; display: flex; align-items: center; justify-content: flex-end; }
+        .hamburger { margin-left: auto !important; display: block; }
+      }
+      @media (max-width: 580px) {
+        .nav-actions .btn { display: none !important; }
+        .nav-logo img { height: 44px !important; }
+        .nav-actions { margin-left: auto !important; justify-content: flex-end !important; }
+        .hamburger { margin-left: auto !important; margin-right: 0 !important; }
+      }
+      </style>
       <div class="container">
         <nav class="nav-inner" role="navigation" aria-label="Main navigation">
           <a href="<?= base_url('/') ?>" class="nav-logo" aria-label="JobberRecruit Home">

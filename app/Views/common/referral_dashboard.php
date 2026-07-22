@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend(auth()->loggedIn() && auth()->user()->user_type === 'employer' ? 'layouts/employer' : 'layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">

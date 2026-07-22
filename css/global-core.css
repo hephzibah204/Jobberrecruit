@@ -1766,6 +1766,9 @@ a:hover {
       #back-to-top.show { display: flex; }
       #back-to-top:hover { background: var(--brand-dark,var(--brand-dark)); }
       @media (max-width: 860px) { .nav-links, .nav-actions .btn-outline { display: none; } .hamburger { display: block; } .footer-grid { grid-template-columns: 1fr 1fr; } }
+      /* On phones the navbar CTA is redundant (it lives in the hamburger menu),
+         and the wide logo + CTA overflow narrow viewports — hide it here. */
+      @media (max-width: 480px) { .nav-actions .btn { display: none; } .nav-logo img { max-height: 32px; width: auto; } }
       @media (max-width: 580px) { .footer-grid { grid-template-columns: 1fr; gap: 24px; } .footer-bottom { flex-direction: column; text-align: center; } .footer-links { justify-content: center; } }
       @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
     

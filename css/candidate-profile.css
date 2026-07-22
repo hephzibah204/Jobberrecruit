@@ -723,3 +723,80 @@ html, body { background: #f5f7fb; }
   border-radius: 20px;
   text-transform: uppercase;
 }
+
+/* ════════════════════════════════════════════════════════════
+   CANDIDATE DASHBOARD COMPONENTS
+   (ported from mockup; these classes had no live CSS before)
+   ════════════════════════════════════════════════════════════ */
+
+/* Weekly + skill-match two-column row */
+.mid { display: grid; grid-template-columns: 1.55fr 1fr; gap: clamp(12px, 1.6vw, 18px); align-items: start; }
+
+/* Profile-completion ring inside the stat card */
+.ring-sm { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
+.ring-sm svg { width: 52px; height: 52px; transform: rotate(-90deg); }
+.ring-sm .track { fill: none; stroke: var(--bg); stroke-width: 6; }
+.ring-sm .prog { fill: none; stroke: var(--success); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 138; }
+.ring-sm .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Sora', sans-serif; font-weight: 800; font-size: .7rem; color: var(--brand-deep); }
+
+/* Skill Match Hub donut */
+.donut-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.donut { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+.donut svg { width: 132px; height: 132px; transform: rotate(-90deg); }
+.donut circle { fill: none; stroke-width: 14; }
+.donut .c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut .c b { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.25rem; color: var(--brand-deep); line-height: 1; }
+.donut .c i { font-style: normal; font-size: .62rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
+.leg { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: .76rem; color: var(--text); padding: 0; margin: 0; }
+.leg i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 7px; vertical-align: -1px; }
+
+/* Skill category bars */
+.mcat { display: flex; flex-direction: column; gap: 12px; }
+.mcat-row { display: flex; align-items: center; justify-content: space-between; font-size: .8rem; font-weight: 600; color: var(--text); }
+.mcat-row b { font-family: 'Sora', sans-serif; color: var(--brand-deep); }
+.mcat-track { height: 7px; border-radius: 20px; background: var(--bg); overflow: hidden; margin-top: 5px; }
+.mcat-fill { height: 100%; border-radius: 20px; }
+
+/* Today's Picks rows */
+.pick { display: flex; align-items: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.pick:first-child { padding-top: 2px; }
+.pick:last-child { border-bottom: none; padding-bottom: 2px; }
+.pick-ic { width: 38px; height: 38px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--brand); flex-shrink: 0; }
+.pick-ic svg { width: 16px; height: 16px; }
+.pick-info { flex: 1; min-width: 0; }
+.pick-title { font-weight: 600; font-size: .82rem; color: var(--text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pick-title a { color: inherit; }
+.pick-title a:hover { color: var(--brand); }
+.pick-sub { font-size: .7rem; color: var(--muted); display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+.pick-sub svg { width: 11px; height: 11px; }
+.match-badge { flex-shrink: 0; font-family: 'Sora', sans-serif; font-weight: 700; font-size: .72rem; padding: 4px 10px; border-radius: 20px; background: var(--brand-light); color: var(--brand); }
+.match-badge--hot { background: var(--accent-light); color: var(--accent-dark); }
+
+/* Finish-Your-Profile task list */
+.task { display: flex; align-items: center; gap: 8px; font-size: .8rem; padding: 8px 0; }
+.task svg { width: 15px; height: 15px; flex-shrink: 0; }
+.task.done { color: var(--muted); text-decoration: line-through; }
+.task.done svg { color: var(--success); }
+.task.todo svg { color: var(--accent-dark); }
+.task a { font-weight: 600; }
+
+/* Keep Learning strip */
+.learn-strip { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.learn-strip .grow { flex: 1; min-width: 200px; }
+.learn-strip b { font-size: .86rem; color: var(--brand-deep); display: block; }
+.learn-strip p { font-size: .74rem; color: var(--muted); }
+
+/* Toolbar (search + filter rows on list pages) */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.toolbar .select { width: auto; min-width: 150px; }
+
+/* ── Dashboard mobile: collapse the weekly + skill row ── */
+@media (max-width: 860px) {
+  .mid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .donut-wrap { justify-content: center; }
+  .donut { margin: 0 auto; }
+  .match-badge { font-size: .66rem; padding: 3px 8px; }
+  .pick { gap: 10px; }
+}

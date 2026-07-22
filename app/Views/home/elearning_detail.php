@@ -271,6 +271,25 @@
               </div>
             </div>
 
+            <!-- What you'll gain -->
+            <div class="card side-card">
+              <h2 style="font-size:1.15rem;font-weight:800;color:var(--text);margin-bottom:16px;">What you'll gain</h2>
+              <ul style="list-style:none;display:flex;flex-direction:column;gap:13px;padding:0;margin:0;">
+                <li style="display:flex;gap:11px;align-items:flex-start;font-size:.88rem;color:var(--text);line-height:1.5;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="color:var(--brand);flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span>Practical, job-ready skills tailored for Nigerian employers</span>
+                </li>
+                <li style="display:flex;gap:11px;align-items:flex-start;font-size:.88rem;color:var(--text);line-height:1.5;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="color:var(--brand);flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span>Step-by-step video modules &amp; downloadable resources</span>
+                </li>
+                <li style="display:flex;gap:11px;align-items:flex-start;font-size:.88rem;color:var(--text);line-height:1.5;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="color:var(--brand);flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span>Verified certificate linked directly to your JobberRecruit profile</span>
+                </li>
+              </ul>
+            </div>
+
             <!-- Requirements -->
             <div class="card">
               <h2 class="card-title">
@@ -314,6 +333,31 @@
                 </li>
               </ul>
             </div>
+
+            <?php if (!empty($relatedCourses)): ?>
+              <div class="card side-card">
+                <h2 style="font-size:1.15rem;font-weight:800;color:var(--text);margin-bottom:16px;">Related courses</h2>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <?php foreach ($relatedCourses as $rel): ?>
+                    <a href="<?= base_url('training/' . esc($rel->slug ?? $rel->id)) ?>" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:var(--transition);" onmouseover="this.style.borderColor='var(--brand)'" onmouseout="this.style.borderColor='var(--border)'">
+                      <div style="width:52px;height:52px;flex-shrink:0;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,#0A2F57,#0861A9);display:flex;align-items:center;justify-content:center;color:#fff;">
+                        <?php if (!empty($rel->thumbnail)): ?>
+                          <img src="<?= base_url($rel->thumbnail) ?>" alt="<?= esc($rel->title) ?>" style="width:100%;height:100%;object-fit:cover;">
+                        <?php else: ?>
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+                        <?php endif; ?>
+                      </div>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                        <div style="font-weight:700;font-size:.86rem;color:var(--text);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= esc($rel->title) ?></div>
+                        <div style="font-size:.78rem;font-weight:700;color:<?= (float)($rel->price ?? 0) > 0 ? 'var(--brand)' : 'var(--success)' ?>;">
+                          <?= (float)($rel->price ?? 0) > 0 ? '₦' . number_format((float)$rel->price, 2) : 'Free' ?>
+                        </div>
+                      </div>
+                    </a>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            <?php endif; ?>
           </aside>
         </div>
       </div>
@@ -495,6 +539,7 @@
 /* Course Facts */
 .course-facts {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 560px;
+  min-width: 0;
 }
 .fact-card {
   background: rgba(10,30,55,.8);
@@ -502,6 +547,7 @@
   border-radius: 10px;
   padding: 14px 16px;
   backdrop-filter: blur(6px);
+  min-width: 0;
 }
 .fact-label {
   display: flex; align-items: center; gap: 6px;
@@ -518,6 +564,11 @@
 .course-layout {
   display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start;
 }
+/* Prevent grid blowout: 1fr items default to min-width:auto and stretch to
+   their content's min-content width, overflowing the viewport on mobile. */
+.course-layout, .course-main, .course-sidebar { min-width: 0; }
+.course-hero-inner, .course-hero-inner > * { min-width: 0; }
+.course-main img, .course-sidebar img, .enrol-media img { max-width: 100%; height: auto; }
 
 /* Cards */
 .card {
@@ -649,6 +700,13 @@
   .course-facts { max-width: 100%; }
   .course-layout { grid-template-columns: 1fr; }
   .course-sidebar { position: static; }
+}
+@media (max-width: 580px) {
+  .course-facts { grid-template-columns: 1fr; }
+  .card { padding: 20px 16px; }
+  .cur-preview { flex-direction: column; gap: 12px; }
+  .lesson summary { gap: 8px; padding: 12px; }
+  .enrol-body { padding: 16px; }
 }
 </style>
 <?= $this->endSection() ?>

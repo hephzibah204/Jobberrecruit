@@ -98,32 +98,36 @@ $taskLogo = !empty($employer->logo);
   <div class="stat stat--jobs">
     <div class="stat-top">
       <span class="stat-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+      <span class="trend trend--up"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg> +<?= max(0, (int)($totalJobs ?? 0)) ?> total</span>
     </div>
-    <div class="stat-num"><?= number_format($totalJobs) ?></div>
+    <div class="stat-num"><?= number_format($totalJobs ?? 0) ?></div>
     <div class="stat-lbl">Total Jobs Posted</div>
     <svg class="stat-spark" viewBox="0 0 74 26" aria-hidden="true"><polyline points="2,20 14,17 26,18 38,12 50,13 62,7 72,4" fill="none" stroke="#0861A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
   <div class="stat stat--active">
     <div class="stat-top">
       <span class="stat-ic"><svg aria-hidden="true"><use href="#i-spark"/></svg></span>
+      <span class="trend trend--flat"><?= ($activeJobs ?? 0) === ($totalJobs ?? 0) && ($totalJobs ?? 0) > 0 ? 'All live' : (($activeJobs ?? 0) . ' active') ?></span>
     </div>
-    <div class="stat-num"><?= number_format($activeJobs) ?></div>
+    <div class="stat-num"><?= number_format($activeJobs ?? 0) ?></div>
     <div class="stat-lbl">Active Jobs</div>
     <svg class="stat-spark" viewBox="0 0 74 26" aria-hidden="true"><polyline points="2,16 14,16 26,12 38,12 50,8 62,8 72,5" fill="none" stroke="#ED9020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
   <div class="stat stat--apps">
     <div class="stat-top">
       <span class="stat-ic"><svg aria-hidden="true"><use href="#i-users"/></svg></span>
+      <span class="trend trend--up"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg> +<?= max(0, (int)($totalApplicants ?? 0)) ?> applicants</span>
     </div>
-    <div class="stat-num"><?= number_format($totalApplicants) ?></div>
+    <div class="stat-num"><?= number_format($totalApplicants ?? 0) ?></div>
     <div class="stat-lbl">Total Applicants</div>
     <svg class="stat-spark" viewBox="0 0 74 26" aria-hidden="true"><polyline points="2,22 14,22 26,18 38,19 50,14 62,10 72,6" fill="none" stroke="#064A85" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
   <div class="stat stat--hires">
     <div class="stat-top">
       <span class="stat-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span>
+      <span class="trend trend--flat"><?= ($totalHires ?? 0) > 0 ? ($totalHires . ' hired') : 'Awaiting first hire' ?></span>
     </div>
-    <div class="stat-num"><?= number_format($totalHires) ?></div>
+    <div class="stat-num"><?= number_format($totalHires ?? 0) ?></div>
     <div class="stat-lbl">Total Hires</div>
   </div>
 </section>
@@ -313,7 +317,11 @@ $taskLogo = !empty($employer->logo);
                 <?php endif; ?>
               </div>
             </div>
-            <a href="<?= base_url('employer/jobs/extend/' . $jobId) ?>" class="emp-btn emp-btn-outline emp-btn-sm">Extend</a>
+            <form action="<?= base_url('employer/jobs/extend/' . $jobId) ?>" method="post" style="display:inline" onsubmit="return confirm('Extend this job by 30 days?');">
+              <?= csrf_field() ?>
+              <input type="hidden" name="days" value="30">
+              <button type="submit" class="emp-btn emp-btn-outline emp-btn-sm">Extend</button>
+            </form>
           </div>
         <?php endforeach; ?>
       <?php endif; ?>

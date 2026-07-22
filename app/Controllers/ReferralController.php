@@ -42,12 +42,31 @@ class ReferralController extends BaseController
             'total_earned' => $this->referralModel->where('referrer_id', $user->id)->selectSum('reward_amount')->get()->getRow()->reward_amount ?? 0
         ];
 
-        return view('common/referral_dashboard', [
+        $data = [
             'title' => 'Referral & Affiliate Program',
             'referralCode' => $referralCode,
             'referrals' => $referrals,
-            'stats' => $stats
-        ]);
+            'stats' => $stats,
+            'user' => $user,
+        ];
+
+        // When an employer views this page it renders inside the employer
+        // layout, which shows the company name/logo and a pending-apps badge.
+        if ($user->user_type === 'employer') {
+            $employer = model(\App\Models\EmployerModel::class)
+                ->where('user_id', $user->id)->first();
+            $data['employer'] = $employer;
+            if ($employer) {
+                $data['pendingApps'] = model(\App\Models\JobApplicationModel::class)
+                    ->where('status', 'pending')
+                    ->whereIn('job_id', function ($builder) use ($employer) {
+                        return $builder->select('id')->from('jobs')->where('employer_id', $employer->id);
+                    })
+                    ->countAllResults();
+            }
+        }
+
+        return view('common/referral_dashboard', $data);
     }
 
     /**

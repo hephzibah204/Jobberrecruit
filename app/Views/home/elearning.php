@@ -794,9 +794,12 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
 
     @media (max-width: 768px) {
       .tr-stats { flex: 1 1 100%; }
-      .course-grid { grid-template-columns: 1fr; }
+      .feat-course-grid, .course-grid { grid-template-columns: 1fr; }
       .dual-cta { grid-template-columns: 1fr; }
       .cta-panel { padding: 24px; }
+      .cert-band { flex-direction: column; text-align: center; justify-content: center; padding: 20px 16px; }
+      .cert-band-text { flex-direction: column; text-align: center; flex: 1 1 100%; }
+      .filter-bar > button { width: 100%; justify-content: center; }
     }
 </style>
 <?= $this->endSection() ?>
