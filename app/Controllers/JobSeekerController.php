@@ -1219,10 +1219,9 @@ class JobSeekerController extends BaseController
         }
 
         $transactions = [];
-
         $db = \Config\Database::connect();
 
-        // Get course enrollments with payments
+        // 1. Get course enrollments with payments
         if ($db->tableExists('course_enrollments') && $db->tableExists('courses')) {
             $enrollments = model(\App\Models\CourseEnrollmentModel::class)
                 ->select('course_enrollments.*, courses.title as course_name')
@@ -1232,19 +1231,22 @@ class JobSeekerController extends BaseController
                 ->findAll();
 
             foreach ($enrollments as $enr) {
+                $enrObj = (object)$enr;
                 $transactions[] = [
-                    'type' => 'course',
-                    'description' => 'Course: ' . ($enr->course_name ?? 'Unknown'),
-                    'reference' => $enr->payment_reference ?? 'FREE-' . $enr->id,
-                    'amount' => (float) ($enr->amount ?? 0),
-                    'status' => $enr->payment_reference ? 'paid' : ($enr->amount > 0 ? 'pending' : 'free'),
-                    'date' => $enr->created_at ?? '',
-                    'icon' => 'ti ti-book',
+                    'type'        => 'course',
+                    'description' => 'Course: ' . ($enrObj->course_name ?? 'Unknown'),
+                    'reference'   => $enrObj->payment_reference ?? 'FREE-' . ($enrObj->id ?? ''),
+                    'amount'      => (float) ($enrObj->amount ?? 0),
+                    'status'      => $enrObj->payment_reference ? 'success' : ($enrObj->amount > 0 ? 'pending' : 'success'),
+                    'date'        => $enrObj->created_at ?? '',
+                    'created_at'  => $enrObj->created_at ?? '',
+                    'icon'        => 'ti ti-book',
+                    'receipt_url' => '',
                 ];
             }
         }
 
-        // Get subscription payments
+        // 2. Get subscription payments
         if ($db->tableExists('payments')) {
             $payments = model(\App\Models\PaymentModel::class)
                 ->where('user_id', $user->id)
@@ -1252,38 +1254,81 @@ class JobSeekerController extends BaseController
                 ->findAll();
 
             foreach ($payments as $pay) {
-                $metadata = is_string($pay['metadata']) ? json_decode($pay['metadata'], true) : ($pay['metadata'] ?? []);
+                $payObj = (object)$pay;
+                $metadata = is_string($payObj->metadata) ? json_decode($payObj->metadata, true) : (array)($payObj->metadata ?? []);
                 $desc = 'Subscription Payment';
                 if (!empty($metadata['plan_id']) && $db->tableExists('plans')) {
                     $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
                     $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
                 }
                 $transactions[] = [
-                    'type' => 'subscription',
+                    'type'        => 'subscription',
                     'description' => $desc,
-                    'reference' => $pay['reference'] ?? '',
-                    'amount' => (float) ($pay['amount'] ?? 0),
-                    'status' => $pay['status'] ?? 'pending',
-                    'date' => $pay['paid_at'] ?? $pay['created_at'] ?? '',
-                    'icon' => 'ti ti-credit-card',
+                    'reference'   => $payObj->reference ?? '',
+                    'amount'      => (float) ($payObj->amount ?? 0),
+                    'status'      => $payObj->status ?? 'pending',
+                    'date'        => $payObj->paid_at ?? $payObj->created_at ?? '',
+                    'created_at'  => $payObj->paid_at ?? $payObj->created_at ?? '',
+                    'icon'        => 'ti ti-credit-card',
+                    'receipt_url' => '',
                 ];
+            }
+        }
+
+        // 3. Get wallet transactions (funding, rewards, etc.)
+        if ($db->tableExists('wallets') && $db->tableExists('wallet_transactions')) {
+            $walletModel = model(\App\Models\WalletModel::class);
+            $wallet = $walletModel->where('user_id', $user->id)->first();
+            if ($wallet) {
+                $walletObj = (object)$wallet;
+                $walletTxns = model(\App\Models\WalletTransactionModel::class)
+                    ->where('wallet_id', $walletObj->id)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+                foreach ($walletTxns as $wt) {
+                    $wtObj = (object)$wt;
+                    $transactions[] = [
+                        'type'        => $wtObj->type ?? 'wallet',
+                        'description' => $wtObj->description ?? 'Wallet Transaction',
+                        'reference'   => $wtObj->reference ?? 'WTX-' . ($wtObj->id ?? ''),
+                        'amount'      => (float) ($wtObj->amount ?? 0),
+                        'status'      => 'success',
+                        'date'        => $wtObj->created_at ?? '',
+                        'created_at'  => $wtObj->created_at ?? '',
+                        'icon'        => 'ti ti-wallet',
+                        'receipt_url' => '',
+                    ];
+                }
             }
         }
 
         // Sort by date desc
         usort($transactions, function ($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
-        $totalSpent = array_sum(array_column(
-            array_filter($transactions, fn($t) => in_array($t['status'], ['paid', 'completed'])),
-            'amount'
-        ));
+        // Compute totals safely from completed/success status
+        $totalSpent = 0;
+        $successCount = 0;
+        foreach ($transactions as $t) {
+            $statusLow = strtolower($t['status'] ?? '');
+            $typeLow   = strtolower($t['type'] ?? '');
+            $isSuccess = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']);
+            
+            if ($isSuccess) {
+                $successCount++;
+                // If it is a debit (spent), increment totalSpent. 
+                // Wallet credits (e.g. credit/reward) are not "spent".
+                if ($typeLow !== 'credit' && !str_contains(strtolower($t['description']), 'reward')) {
+                    $totalSpent += $t['amount'];
+                }
+            }
+        }
 
         return view('candidate/transactions', [
-            'title' => 'Transaction History',
+            'title'        => 'Transaction History',
             'transactions' => $transactions,
-            'totalSpent' => $totalSpent,
+            'totalSpent'   => $totalSpent,
         ]);
     }
 }

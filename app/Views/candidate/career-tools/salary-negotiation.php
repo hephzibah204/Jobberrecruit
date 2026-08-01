@@ -1380,17 +1380,6 @@ function sendTurn(){
   var roleInfo=matchRole(S.job);
   var ctx={job:S.job,offer:S.offer,target:S.target,num:u.num,mid:Math.round((S.offer+S.target)/2/1000)*1000,pctOver:pctOver,benefits:S.benefits,orgNote:ORG_NOTE[S.org]||'',marketMedian:roleInfo.matched?fmtNaira(roleInfo.median):''};
 
-  var lineFn,variantKey=reaction+'-'+S.style;
-  if(reaction==='followup'){
-    S.followupCount=(S.followupCount||0)+1;
-    lineFn=(S.followupCount>=2&&LINES.followup.repeat[S.style])?LINES.followup.repeat[S.style][0]:pickVariant(LINES.followup[S.style],variantKey);
-  }else{
-    lineFn=pickVariant((LINES[reaction]&&LINES[reaction][S.style])||LINES.followup[S.style],variantKey);
-  }
-  var line=lineFn(ctx);
-  if(reaction==='challenge'||reaction==='followup'||reaction==='tradeBenefits'||reaction==='strongCase')line=pickAck(S.style)+line;
-  logTactic('ai',AI_TACTIC[reaction]);
-
   if(reaction==='strongCase'&&!S.aiConcededBase){S.aiConcededBase=true;S.lastAiNumber=ctx.mid;logConcession('them','Moved from '+fmtNaira(S.offer)+' to '+fmtNaira(ctx.mid));}
   if(reaction==='tradeBenefits'&&!S.aiConcededBenefits){S.aiConcededBenefits=true;logConcession('them','Opened flexibility on bonus, review timing and leave structure');}
   if(u.accepts&&S.lastAiNumber&&!S.userAccepted){S.userAccepted=true;logConcession('you','Accepted the revised figure of '+fmtNaira(S.lastAiNumber));}
@@ -1401,12 +1390,63 @@ function sendTurn(){
   S.round++;
   $('round-pill').textContent='Round '+(S.round+1)+' of '+MAX_ROUNDS;
   renderSugs([]);
+
+  // Fetch AI recruiter response from server endpoint
+  const formData = new FormData();
+  formData.append('type', 'negotiation');
+  formData.append('message', text);
+  formData.append('history', JSON.stringify(S.turns.map(function(t, idx) {
+      return {
+          sender: idx % 2 === 0 ? 'user' : 'model',
+          message: t.len > 0 ? text : 'Hello'
+      };
+  })));
+  formData.append('extra', `Job: ${S.job}. Offer: ${S.offer}. Target: ${S.target}. Recruiter Stance: ${S.style}.`);
+
   var opts=reaction==='interrupt'?{interrupt:true}:{};
-  aiSay(line,function(){
-    if(reaction==='close'){renderSugs(['End & get my report']);$('composer-input').disabled=true;$('send-btn').disabled=true;}
-    else renderSugs(SUGS[reaction]||[]);
-  },opts);
-  if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+
+  fetch('<?= base_url('candidate/career-tools/send-message') ?>', {
+      method: 'POST',
+      body: formData,
+      headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+      }
+  })
+  .then(res => res.json())
+  .then(data => {
+      var line = data.message;
+      logTactic('ai', AI_TACTIC[reaction] || 'Negotiation Stance');
+      aiSay(line, function(){
+          if(reaction==='close' || S.round >= MAX_ROUNDS - 1){
+              renderSugs(['End & get my report']);
+              $('composer-input').disabled=true;
+              $('send-btn').disabled=true;
+          } else {
+              renderSugs(SUGS[reaction] || SUGS.followup);
+          }
+      }, opts);
+      if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+  })
+  .catch(err => {
+      // Graceful local fallback if offline or network times out
+      var lineFn, variantKey=reaction+'-'+S.style;
+      if(reaction==='followup'){
+        S.followupCount=(S.followupCount||0)+1;
+        lineFn=(S.followupCount>=2&&LINES.followup.repeat[S.style])?LINES.followup.repeat[S.style][0]:pickVariant(LINES.followup[S.style],variantKey);
+      }else{
+        lineFn=pickVariant((LINES[reaction]&&LINES[reaction][S.style])||LINES.followup[S.style],variantKey);
+      }
+      var line=lineFn(ctx);
+      if(reaction==='challenge'||reaction==='followup'||reaction==='tradeBenefits'||reaction==='strongCase')line=pickAck(S.style)+line;
+      logTactic('ai',AI_TACTIC[reaction]);
+
+      aiSay(line,function(){
+        if(reaction==='close'){renderSugs(['End & get my report']);$('composer-input').disabled=true;$('send-btn').disabled=true;}
+        else renderSugs(SUGS[reaction]||[]);
+      },opts);
+      if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+  });
 }
 $('send-btn').addEventListener('click',sendTurn);
 $('composer-input').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTurn()}});

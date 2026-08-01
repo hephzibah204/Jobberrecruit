@@ -358,6 +358,78 @@
 .ring-sm .track { fill: none; stroke: var(--border); stroke-width: 6; }
 .ring-sm .prog { fill: none; stroke: var(--success); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 138; transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1); }
 .ring-sm .pct { position: absolute; font-family: 'Sora', sans-serif; font-weight: 800; font-size: .9rem; color: var(--brand-deep); line-height: 1; }
+
+/* Tri section (3-column cards: Finish Profile, Picks, Keep Learning) */
+.tri {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 1.8vw, 20px);
+  margin-bottom: 24px;
+}
+@media (max-width: 1100px) { .tri { grid-template-columns: 1fr; } }
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: .82rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  transition: var(--transition);
+}
+.task svg { width: 16px; height: 16px; flex-shrink: 0; }
+.task.done { background: var(--success-light); color: var(--success); font-weight: 600; }
+.task.done svg { color: var(--success); }
+.task.todo { background: var(--bg); color: var(--text); border: 1px dashed var(--border); }
+.task.todo svg { color: var(--muted); }
+.task.todo a { color: var(--brand); font-weight: 600; text-decoration: underline; }
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pick:last-child { border-bottom: none; }
+.pick-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--brand-light);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pick-ic svg { width: 18px; height: 18px; }
+.pick-info { flex: 1; min-width: 0; }
+.pick-title { font-size: .84rem; font-weight: 700; line-height: 1.35; }
+.pick-title a { color: var(--brand-deep); }
+.pick-title a:hover { color: var(--brand); }
+.pick-sub { font-size: .72rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.pick-sub svg { width: 12px; height: 12px; }
+
+.match-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .66rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: var(--brand-light);
+  color: var(--brand);
+  white-space: nowrap;
+}
+.match-badge--hot { background: var(--accent-light); color: var(--accent-dark); }
+
+.learn-strip { display: flex; align-items: center; gap: 12px; }
+.grow { flex: 1; min-width: 0; }
+.grow b { display: block; font-size: .84rem; color: var(--brand-deep); }
+.grow p { font-size: .74rem; color: var(--muted); margin: 1px 0 0; }
 </style>
 <?= $this->endSection() ?>
 

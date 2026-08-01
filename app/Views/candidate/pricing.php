@@ -99,12 +99,39 @@
 
     <div class="prem-grid">
         <?php if (empty($plans)): ?>
-            <div class="card" style="grid-column: 1 / -1; text-align:center; padding:48px;">
-                <div class="empty">
-                    <span class="empty-ic"><svg aria-hidden="true" style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg></span>
-                    <h3>No plans available</h3>
-                    <p>Check back later for premium plans.</p>
-                </div>
+            <!-- Fallback Static Free Plan matching candidate-premium.html -->
+            <div class="plan">
+                <h3>Free</h3>
+                <p class="plan-sub">Everything you need to start your job search.</p>
+                <div class="price"><span class="amt">₦0</span><span class="per">/month</span></div>
+                <p class="price-note">Always free</p>
+                <ul class="plan-features">
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <span>Browse &amp; apply to jobs</span></li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <span>Build your candidate profile</span></li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <span>Employer-invited aptitude tests</span></li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <span>2 free practice tests / month</span></li>
+                    <li class="no"><svg aria-hidden="true"><use href="#i-x"/></svg> <span>AI Resume Builder</span></li>
+                    <li class="no"><svg aria-hidden="true"><use href="#i-x"/></svg> <span>AI Career Tools</span></li>
+                    <li class="no"><svg aria-hidden="true"><use href="#i-x"/></svg> <span>Unlimited practice tests</span></li>
+                </ul>
+                <button class="btn btn-outline" disabled>Your current plan</button>
+            </div>
+
+            <!-- Fallback Static Premium Plan matching candidate-premium.html -->
+            <div class="plan featured">
+                <h3>Premium</h3>
+                <p class="plan-sub">The complete AI-powered career advantage.</p>
+                <div class="price"><span class="amt">₦5,000</span><span class="per">/month</span></div>
+                <p class="price-note">Cancel anytime · billed monthly</p>
+                <ul class="plan-features">
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <b>Everything in Free</b></li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <b>AI Resume Builder</b> — 7 templates, ATS score, recruiter review</li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <b>AI Career Tools</b> — interview prep, salary guidance</li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> <b>Unlimited practice tests</b> across all skills</li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> Priority profile in employer searches</li>
+                    <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> Detailed skill analytics</li>
+                </ul>
+                <a href="<?= base_url('candidate/subscription/checkout') ?>" class="btn btn-primary" id="subscribe-btn"><svg aria-hidden="true"><use href="#i-crown"/></svg> Upgrade to Premium</a>
             </div>
         <?php else: ?>
             <?php foreach ($plans as $plan): ?>
@@ -117,10 +144,6 @@
                     $isPopular = in_array(strtolower($plan->name), ['pro', 'professional', 'gold', 'premium']);
                 ?>
                 <div class="plan <?= $isPopular ? 'featured' : '' ?> <?= $isCurrent ? 'current' : '' ?>">
-                    <?php if ($isPopular): ?>
-                        <!-- Recommended badge is added via ::before in CSS on .featured -->
-                    <?php endif; ?>
-
                     <div>
                         <h3><?= esc($plan->name) ?></h3>
                         <p class="plan-sub"><?= esc($plan->code ?? 'Standard Access') ?></p>

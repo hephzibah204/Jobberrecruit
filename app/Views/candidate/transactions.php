@@ -187,20 +187,25 @@ foreach ($transactions ?? [] as $t) {
                 <tbody>
                     <?php foreach ($transactions as $txn): ?>
                     <?php
-                        $isCredit = in_array(strtolower($txn->type ?? ''), ['credit', 'reward']) || str_contains(strtolower($txn->description ?? ''), 'reward');
+                        $txn = (object)$txn;
+                        $txnType = $txn->type ?? '';
+                        $txnDesc = $txn->description ?? 'Transaction';
+                        $txnDate = $txn->created_at ?? $txn->date ?? '';
+                        $txnAmount = $txn->amount ?? 0;
+                        $isCredit = in_array(strtolower($txnType), ['credit', 'reward']) || str_contains(strtolower($txnDesc), 'reward');
                         $statusLow = strtolower($txn->status ?? '');
-                        $pillClass = in_array($statusLow, ['success', 'successful', 'completed', 'credited']) ? 'pill--success' : ($statusLow === 'failed' ? 'pill--rejected' : 'pill--pending');
-                        $statusLabel = ucfirst($txn->status ?? 'Pending');
+                        $pillClass = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']) ? 'pill--success' : ($statusLow === 'failed' ? 'pill--rejected' : 'pill--pending');
+                        $statusLabel = ($statusLow === 'paid' || $statusLow === 'success' || $statusLow === 'successful') ? 'Success' : ucfirst($txn->status ?? 'Pending');
                     ?>
-                    <tr data-type="<?= esc($txn->type ?? '') ?>">
+                    <tr data-type="<?= esc($txnType) ?>">
                         <td data-lbl="Reference">
-                            <span class="txn-ref"><?= esc($txn->reference ?? $txn->id) ?></span>
+                            <span class="txn-ref"><?= esc($txn->reference ?? $txn->id ?? 'N/A') ?></span>
                         </td>
-                        <td data-lbl="Description"><?= esc($txn->description ?? 'Transaction') ?></td>
-                        <td data-lbl="Date"><?= esc(date('d M Y', strtotime($txn->created_at))) ?></td>
+                        <td data-lbl="Description"><?= esc($txnDesc) ?></td>
+                        <td data-lbl="Date"><?= !empty($txnDate) ? esc(date('d M Y', strtotime($txnDate))) : 'N/A' ?></td>
                         <td data-lbl="Amount">
                             <b style="font-family:'Sora',sans-serif;color:<?= $isCredit ? 'var(--success)' : 'var(--brand-deep)' ?>">
-                                <?= $isCredit ? '+' : '' ?>&#8358;<?= number_format((float)$txn->amount, 2) ?>
+                                <?= $isCredit ? '+' : '' ?>&#8358;<?= number_format((float)$txnAmount, 2) ?>
                             </b>
                         </td>
                         <td data-lbl="Status"><span class="pill <?= $pillClass ?>"><?= $statusLabel ?></span></td>
