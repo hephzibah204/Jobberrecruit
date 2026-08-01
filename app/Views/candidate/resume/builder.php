@@ -1,3 +1,4 @@
+<?php $page_title = 'AI Resume Builder'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
@@ -6,6 +7,704 @@
         --primary-color: #0D609E;
         --primary-color-dark: var(--brand-dark);
         --accent-color: var(--accent);
+        --brand:#0861A9;
+        --brand-light:#E6F0F8;
+        --accent:#ED9020;
+        --accent-dark:#C8770E;
+        --accent-light:#FDF1E0;
+        --success:#16a34a;
+        --success-light:#e8f7ee;
+        --danger:#dc2626;
+        --danger-light:#fdeaea;
+        --border:#e2e8f2;
+    }
+
+    /* Side-by-side design layout & controls */
+    .design-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 14px;
+        margin-bottom: 16px;
+    }
+    .design-bar .lbl {
+        margin: 0;
+        white-space: nowrap;
+    }
+    .dens {
+        display: flex;
+        gap: 4px;
+        background: #f5f7fb;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 3px;
+    }
+    .dens button {
+        border: none;
+        background: transparent;
+        font-size: .72rem;
+        font-weight: 600;
+        color: #5b6577;
+        padding: 6px 12px;
+        border-radius: 7px;
+        cursor: pointer;
+        min-height: 32px;
+        transition: all 0.2s;
+    }
+    .dens button.on {
+        background: #fff;
+        color: var(--brand);
+        box-shadow: 0 2px 14px rgba(10,47,87,.08);
+    }
+    .wm-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .68rem;
+        font-weight: 600;
+        color: #5b6577;
+        margin-left: auto;
+        white-space: nowrap;
+    }
+    .wm-note svg {
+        width: 13px;
+        height: 13px;
+        color: var(--brand);
+    }
+
+    /* Score Card & Gauge */
+    .score-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 15px;
+    }
+    .score-top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .gauge {
+        position: relative;
+        width: 74px;
+        height: 74px;
+        flex-shrink: 0;
+    }
+    .gauge svg {
+        width: 74px;
+        height: 74px;
+        transform: rotate(-90deg);
+    }
+    .gauge circle.t {
+        fill: none;
+        stroke: #f5f7fb;
+        stroke-width: 8;
+    }
+    .gauge circle.p {
+        fill: none;
+        stroke: var(--success);
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-dasharray: 207;
+        transition: stroke-dashoffset .5s ease, stroke .3s;
+    }
+    .gauge b {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Sora', sans-serif;
+        font-weight: 800;
+        font-size: 1rem;
+        color: #0A2F57;
+    }
+    .score-info b {
+        font-size: .86rem;
+        color: #0A2F57;
+        display: block;
+    }
+    .score-info p {
+        font-size: .72rem;
+        color: #5b6577;
+    }
+    .score-list {
+        list-style: none;
+        margin-top: 12px;
+        padding-left: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+    .score-list li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: .76rem;
+        color: #141926;
+    }
+    .score-list li i {
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+    .score-list li.ok i {
+        color: var(--success);
+    }
+    .score-list li.no i {
+        color: var(--accent-dark);
+    }
+    .score-list button {
+        margin-left: auto;
+        border: none;
+        background: none;
+        color: var(--brand);
+        font-weight: 700;
+        font-size: .7rem;
+        cursor: pointer;
+        padding: 4px;
+        white-space: nowrap;
+    }
+    .score-list button:hover {
+        text-decoration: underline;
+    }
+
+    /* Live Preview Document shell styling */
+    .pv-shell {
+        background: #e8ecf3;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        max-height: calc(100vh - 170px);
+        overflow-y: auto;
+    }
+    .doc {
+        background: #fff;
+        max-width: 100%;
+        margin: 0 auto;
+        box-shadow: 0 8px 30px rgba(10,47,87,.14);
+        padding: 30px;
+        font-size: .84rem;
+        line-height: 1.62;
+        color: #212836;
+        position: relative;
+        min-height: 842px; /* standard proportion check */
+        transition: font-size 0.2s, line-height 0.2s, padding 0.2s;
+    }
+    .doc h1 {
+        font-size: 1.95rem;
+        letter-spacing: -.02em;
+        line-height: 1.1;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+    .doc .d-title {
+        font-size: .8rem;
+        font-weight: 600;
+        color: #4b5568;
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: .14em;
+    }
+    .doc .d-contact {
+        font-size: .72rem;
+        color: #4b5568;
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .doc .d-contact span {
+        display: inline-flex;
+        align-items: center;
+    }
+    .doc .d-contact span + span::before {
+        content: '';
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #b7c1cf;
+        margin: 0 10px;
+        display: inline-block;
+    }
+    .doc .d-head {
+        padding-bottom: 18px;
+        margin-bottom: 4px;
+    }
+    .doc .d-sec {
+        margin-top: 22px;
+    }
+    .doc .d-sec h2 {
+        font-size: .72rem;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding-bottom: 6px;
+        margin-bottom: 11px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .doc .d-xp {
+        margin-bottom: 14px;
+    }
+    .doc .d-xp-h {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .doc .d-xp-h b {
+        font-size: .9rem;
+        font-weight: 700;
+    }
+    .doc .d-xp-h i {
+        font-style: normal;
+        font-size: .7rem;
+        font-weight: 600;
+        color: #5b6577;
+        white-space: nowrap;
+        letter-spacing: .03em;
+    }
+    .doc .d-xp p.co {
+        font-size: .76rem;
+        font-weight: 500;
+        color: #5b6577;
+        margin: 1px 0 6px;
+    }
+    .doc ul {
+        padding-left: 17px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 4px;
+        margin-bottom: 8px;
+    }
+    .doc ul li {
+        padding-left: 2px;
+    }
+    .doc .d-skills {
+        display: flex;
+        gap: 7px 8px;
+        flex-wrap: wrap;
+        list-style: none;
+        padding: 0;
+        margin: 4px 0 0;
+    }
+    .doc .d-skills li {
+        font-size: .71rem;
+        font-weight: 600;
+        border: 1px solid #dbe2ec;
+        border-radius: 4px;
+        padding: 3px 10px;
+        color: #33415c;
+        background: #f8fafd;
+    }
+
+    /* Metric progress bar styles */
+    .met {
+        display: flex;
+        flex-direction: column;
+    }
+    .met .met-h {
+        display: flex;
+        justify-content: space-between;
+        font-size: .68rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+    .met .met-h b {
+        color: #0f172a;
+        font-family: 'Sora', sans-serif;
+    }
+    .met .met-t {
+        height: 5px;
+        border-radius: 20px;
+        background: #edf2f7;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+    .met .met-f {
+        height: 100%;
+        border-radius: 20px;
+        background: var(--primary-color, #0861a9);
+        transition: width .4s ease;
+    }
+    .met.warn .met-f {
+        background: #c8770e;
+    }
+    .met.bad .met-f {
+        background: #ef4444;
+    }
+
+    /* ── Watermark: vertical right-margin brand mark ── */
+    .doc { position: relative; }
+    .doc .wm {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        opacity: .5;
+        pointer-events: none;
+        user-select: none;
+    }
+    .doc .wm .wm-ic { width: 12px; height: 16px; flex-shrink: 0; }
+    .doc .wm .wm-tx {
+        writing-mode: vertical-rl;
+        font-family: 'Inter', sans-serif;
+        font-size: .56rem;
+        font-weight: 600;
+        letter-spacing: .16em;
+        color: #9aa4b5;
+        line-height: 1;
+    }
+    /* Diagonal tile watermark (anti-copy visual signal on preview) */
+    .doc.wm-tile {
+        background-image: repeating-linear-gradient(
+            -30deg,
+            transparent 0 78px,
+            rgba(8,97,169,.028) 78px 79px
+        );
+    }
+    /* A4 page-break guide line (preview only) */
+    .doc.guides:not(.onepage) {
+        background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 1074px,
+            #f0b35c 1074px,
+            #f0b35c 1075px
+        );
+    }
+    @media (max-width:1024px) { .doc.guides { background-image: none !important; } }
+    /* Hide page-break guides in print — browser renders real breaks */
+    @media print { .doc.guides { background-image: none; } }
+
+    /* ── @media print — full print architecture ── */
+    @media print {
+        html { font-size: 13pt; }
+        body { background: #fff !important; }
+        body > * { display: none !important; }
+        #print-root { display: block !important; }
+        #print-root .doc {
+            position: static;
+            width: 100%;
+            max-width: none;
+            box-shadow: none;
+            margin: 0;
+            padding: 0 9mm 0 0;
+            font-size: .84rem;
+            line-height: 1.5;
+        }
+        #print-root .doc.t-exec  { display: grid; padding: 0 9mm 0 0; }
+        #print-root .doc.guides  { background-image: none; }
+        #print-root .doc .wm     { position: fixed; right: 3.5mm; top: 50%; transform: translateY(-50%); }
+        .doc.t-modern::before    { display: block; top: 0; height: 6px; }
+        #print-root .doc.t-modern { padding-top: 14px; }
+    }
+
+    /* Template: Modern */
+    .doc.t-modern {
+        font-family: 'Inter', sans-serif;
+    }
+    .doc.t-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 7px;
+        background: linear-gradient(90deg, var(--acc, #0861A9) 45%, var(--acc2, #ED9020));
+    }
+    .doc.t-modern h1 {
+        font-family: 'Sora', sans-serif;
+        color: #141c2b;
+    }
+    .doc.t-modern .d-title {
+        color: var(--acc, #0861A9);
+    }
+    .doc.t-modern .d-head {
+        border-bottom: 1px solid #e6ebf2;
+    }
+    .doc.t-modern .d-sec h2 {
+        color: #141c2b;
+        border: none;
+        border-bottom: 2px solid var(--acc, #0861A9);
+        padding-bottom: 3px;
+    }
+
+    /* Template: Classic */
+    .doc.t-classic, .doc.t-classic h1, .doc.t-classic h2 {
+        font-family: Georgia, 'Times New Roman', serif;
+    }
+    .doc.t-classic .d-head {
+        text-align: center;
+        border-bottom: 3px double #c8d1dd;
+    }
+    .doc.t-classic h1 {
+        color: var(--acc, #0861A9);
+        font-weight: 700;
+        letter-spacing: .02em;
+        font-size: 2.15rem;
+        font-variant: small-caps;
+    }
+    .doc.t-classic .d-title {
+        letter-spacing: .22em;
+    }
+    .doc.t-classic .d-contact {
+        justify-content: center;
+    }
+    .doc.t-classic .d-sec h2 {
+        color: var(--acc, #0861A9);
+        border-bottom: none;
+        letter-spacing: .24em;
+        font-weight: 700;
+        justify-content: center;
+        font-variant: small-caps;
+        font-size: .8rem;
+        position: relative;
+        padding-bottom: 9px;
+    }
+    .doc.t-classic .d-sec h2::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 46px;
+        height: 2px;
+        background: var(--acc, #0861A9);
+        transform: translateX(-50%);
+    }
+    .doc.t-classic .d-xp-h b {
+        font-style: italic;
+        font-weight: 700;
+    }
+    .doc.t-classic .d-skills {
+        gap: 0;
+        display: block;
+    }
+    .doc.t-classic .d-skills li {
+        display: inline;
+        border: none;
+        background: none;
+        padding: 0;
+        font-size: .8rem;
+        font-weight: 400;
+        color: #212836;
+    }
+    .doc.t-classic .d-skills li + li::before {
+        content: '  ·  ';
+    }
+
+    /* Template: Minimal */
+    .doc.t-minimal {
+        font-family: 'Inter', sans-serif;
+    }
+    .doc.t-minimal h1 {
+        font-weight: 700;
+        color: #171d29;
+        letter-spacing: -.03em;
+        font-size: 2.05rem;
+    }
+    .doc.t-minimal .d-head {
+        border-bottom: none;
+    }
+    .doc.t-minimal .d-title {
+        color: #6b7688;
+    }
+    .doc.t-minimal h1 {
+        border-bottom: 2px solid var(--acc, #0861A9);
+        padding-bottom: 6px;
+        display: inline-block;
+    }
+    .doc.t-minimal .d-sec h2 {
+        color: #8a94a6;
+        border-bottom: 1px solid #edf0f5;
+        font-weight: 700;
+        letter-spacing: .2em;
+    }
+    .doc.t-minimal .d-skills li {
+        border: none;
+        background: #f3f5f9;
+        border-radius: 3px;
+    }
+
+    /* Template: Executive */
+    .doc.t-exec {
+        display: grid;
+        grid-template-columns: 32% 68%;
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    .doc.t-exec .d-head {
+        grid-column: 1/-1;
+        padding: 30px 30px 18px;
+        border-bottom: 3px solid var(--acc, #0861A9);
+    }
+    .doc.t-exec h1 {
+        font-family: 'Sora', sans-serif;
+        color: #141c2b;
+        font-size: 1.9rem;
+    }
+    .doc.t-exec .d-title {
+        color: var(--acc, #0861A9);
+        font-weight: 600;
+    }
+    .doc.t-exec .exec-side {
+        background: #f4f7fb;
+        padding: 20px;
+    }
+    .doc.t-exec .exec-main {
+        padding: 20px;
+    }
+    .doc.t-exec .d-sec {
+        margin-top: 0;
+        margin-bottom: 18px;
+    }
+    .doc.t-exec .d-sec h2 {
+        font-size: .66rem;
+        font-weight: 700;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--acc, #0861A9);
+        border: none;
+        border-left: 3px solid var(--acc, #0861A9);
+        padding: 1px 0 1px 9px;
+        margin-bottom: 9px;
+    }
+    .doc.t-exec .exec-side .d-skills {
+        flex-direction: column;
+        gap: 6px;
+    }
+    .doc.t-exec .exec-side .d-skills li {
+        width: 100%;
+        background: #fff;
+        border-color: #dde5ef;
+    }
+
+    /* Template: Creative */
+    .doc.t-creative {
+        font-family: 'Inter', sans-serif;
+        padding: 0;
+    }
+    .doc.t-creative .d-head {
+        background: linear-gradient(135deg, #4c1d95, #6d28d9, #7c3aed);
+        padding: 26px 30px 22px 30px;
+        color: #ffffff !important;
+        border-bottom: none;
+        margin: 0;
+    }
+    .doc.t-creative .d-head h1 {
+        color: #ffffff !important;
+        font-family: 'Sora', sans-serif;
+        font-weight: 800;
+        margin: 0;
+        font-size: 2rem;
+    }
+    .doc.t-creative .d-head .d-title {
+        color: #c4b5fd !important;
+        font-weight: 500;
+        margin-top: 2px;
+        font-size: .95rem;
+    }
+    .doc.t-creative .d-head .d-contact {
+        color: #ddd6fe !important;
+        margin-top: 10px;
+        display: flex;
+        gap: 12px;
+    }
+    .doc.t-creative .d-head .d-contact span {
+        color: #ddd6fe !important;
+    }
+    .doc.t-creative .d-sec {
+        padding: 0 30px;
+    }
+    .doc.t-creative .d-sec h2 {
+        color: #4c1d95;
+        border-bottom: 2.5px solid #7c3aed;
+        padding-bottom: 3px;
+        margin-bottom: 12px;
+    }
+
+    /* Spacing & Tile effects */
+    .doc.spacing-tight {
+        font-size: .72rem;
+        line-height: 1.34;
+        padding: 20px;
+    }
+    .doc.spacing-tight h1 { font-size: 1.7rem; }
+    .doc.spacing-tight .d-title { font-size: .72rem; margin-top: 1px; }
+    .doc.spacing-tight .d-contact { margin-top: 5px; }
+    .doc.spacing-tight .d-head { padding-bottom: 7px; }
+    .doc.spacing-tight .d-sec { margin-top: 8px; }
+    .doc.spacing-tight .d-sec h2 { font-size: .68rem; padding-bottom: 3px; margin-bottom: 5px; }
+    .doc.spacing-tight .d-xp { margin-bottom: 5px; }
+    .doc.spacing-tight .d-xp-h b { font-size: .8rem; }
+    .doc.spacing-tight ul { gap: 1px; }
+    .doc.spacing-tight .d-skills li { padding: 1.5px 7px; font-size: .68rem; }
+
+    .doc.spacing-roomy {
+        font-size: .84rem;
+        line-height: 1.62;
+        padding: 30px;
+    }
+
+    /* Watermark vertical right column styling */
+    .doc .wm {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        opacity: .5;
+        pointer-events: none;
+        user-select: none;
+    }
+    .doc .wm .wm-ic {
+        width: 12px;
+        height: 16px;
+        flex-shrink: 0;
+        fill: #F08F1C;
+    }
+    .doc .wm .wm-tx {
+        writing-mode: vertical-rl;
+        font-family: 'Inter', sans-serif;
+        font-size: .56rem;
+        font-weight: 600;
+        letter-spacing: .16em;
+        color: #9aa4b5;
+        line-height: 1;
+    }
+    .doc.wm-tile {
+        background-image: repeating-linear-gradient(-30deg, transparent 0 78px, rgba(8,97,169,.028) 78px 79px);
+    }
+
+    /* Pagebreaks */
+    .doc.guides {
+        background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 1074px, #f0b35c 1074px, #f0b35c 1075px);
+    }
+    .pv-hint {
+        font-size: .68rem;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 9px;
+    }
+    .pv-hint b {
+        color: var(--accent-dark);
     }
 
     .builder-step-nav {
@@ -34,7 +733,6 @@
         font-size: 1.2rem;
     }
     .ai-assist-btn {
-        /* Use site brand primary color for AI buttons */
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
         color: white;
         border: none;
@@ -55,7 +753,6 @@
         margin-right: 5px;
     }
     
-    /* Interactive template choice styling */
     .template-choice {
         transition: all 0.25s ease-in-out;
         background-color: #fff;
@@ -90,7 +787,6 @@
         }
     }
 
-    /* Export Buttons Hover effects */
     .download-pdf-btn, .download-docx-btn {
         transition: all 0.2s ease-in-out !important;
     }
@@ -103,7 +799,6 @@
         box-shadow: 0 8px 24px rgba(13, 96, 158, 0.25) !important;
     }
 
-    /* AI Coach Floating Button */
     .ai-coach-fab {
         position: fixed;
         bottom: 30px;
@@ -112,7 +807,6 @@
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        /* brand primary gradient */
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
         border: none;
         box-shadow: 0 10px 25px rgba(13, 96, 158, 0.4);
@@ -139,26 +833,15 @@
         border: 3px solid rgba(13, 96, 158, 0.5);
         animation: fab-pulse 2s infinite;
     }
-
     @keyframes fab-pulse {
-        0% {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
-        50% {
-            transform: scale(1.3);
-            opacity: 0;
-        }
-        100% {
-            transform: scale(0.95);
-            opacity: 0;
-        }
+        0% { transform: scale(0.95); opacity: 0.8; }
+        50% { transform: scale(1.3); opacity: 0; }
+        100% { transform: scale(0.95); opacity: 0; }
     }
 
-    /* Offcanvas Styling */
     .custom-coach-offcanvas {
         width: 480px !important;
-        background-color: #0f172a; /* Premium dark theme */
+        background-color: #0f172a;
         color: #f8fafc;
         border-left: 1px solid #1e293b;
         box-shadow: -10px 0 30px rgba(0,0,0,0.25);
@@ -197,6 +880,7 @@
         font-size: 0.9rem;
     }
     .coach-bubble.coach {
+        background-color: #1e293b;
         background-color: #1e293b;
         border-top-left-radius: 4px;
         color: #cbd5e1;
@@ -760,37 +1444,36 @@
     </div>
 
     <div class="row">
-        <!-- Navigation Sidebar -->
-        <div class="col-xl-3 col-lg-4 mb-4">
-            <div class="card custom-card">
+        <!-- Left Side: Form Controls -->
+        <div class="col-lg-5 col-xl-5 mb-4">
+            <div class="card custom-card mb-3">
                 <div class="card-body p-2">
-                    <div class="builder-step-nav">
-                        <div class="step-item active" data-step="info">
-                            <i class="ti ti-user"></i> Basic Information
+                    <div class="builder-step-nav d-flex flex-wrap gap-1 border-0 justify-content-between">
+                        <div class="step-item active py-2 px-3 mb-0" data-step="info" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-user me-1"></i> Info
                         </div>
-                        <div class="step-item" data-step="experience">
-                            <i class="ti ti-briefcase"></i> Work Experience
+                        <div class="step-item py-2 px-3 mb-0" data-step="experience" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-briefcase me-1"></i> Exp
                         </div>
-                        <div class="step-item" data-step="education">
-                            <i class="ti ti-school"></i> Education
+                        <div class="step-item py-2 px-3 mb-0" data-step="education" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-school me-1"></i> Edu
                         </div>
-                        <div class="step-item" data-step="skills">
-                            <i class="ti ti-tool"></i> Skills
+                        <div class="step-item py-2 px-3 mb-0" data-step="skills" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-tool me-1"></i> Skills
                         </div>
-                        <div class="step-item" data-step="summary">
-                            <i class="ti ti-file-description"></i> Professional Summary
+                        <div class="step-item py-2 px-3 mb-0" data-step="summary" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-file-description me-1"></i> Summary
                         </div>
-                        <div class="step-item" data-step="templates">
-                            <i class="ti ti-layout-template"></i> Choose Template
+                        <div class="step-item py-2 px-3 mb-0" data-step="jd-match" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-target me-1"></i> Tailor
+                        </div>
+                        <div class="step-item py-2 px-3 mb-0" data-step="templates" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
+                            <i class="ti ti-layout-template me-1"></i> Layout
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Builder Form -->
-        <div class="col-xl-9 col-lg-8">
-            <form id="resume-form" onsubmit="return false;" class="pb-5 mb-5">
+            <form id="resume-form" onsubmit="return false;" class="pb-3 mb-3">
                 <input type="hidden" name="id" value="<?= $resume->id ?? '' ?>">
                 
                 <!-- Step: Basic Information -->
@@ -807,19 +1490,23 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold text-dark">Full Name</label>
-                                    <input type="text" name="full_name" class="form-control" value="<?= esc(auth()->user()->username ?? '') ?>" placeholder="Your Full Name">
+                                    <input type="text" name="full_name" class="form-control" value="<?= esc($resume->full_name ?? $candidate->full_name ?? auth()->user()->username ?? '') ?>" placeholder="Your Full Name">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold text-dark">Email Address</label>
-                                    <input type="email" name="email" class="form-control" value="<?= esc(auth()->user()->email ?? '') ?>" placeholder="Your Email Address">
+                                    <input type="email" name="email" class="form-control" value="<?= esc($resume->email ?? auth()->user()->email ?? '') ?>" placeholder="Your Email Address">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold text-dark">Phone Number</label>
-                                    <input type="text" name="phone" class="form-control" placeholder="e.g. +1 234 567 890">
+                                    <input type="text" name="phone" class="form-control" value="<?= esc($resume->phone ?? $candidate->phone ?? '') ?>" placeholder="e.g. +1 234 567 890">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold text-dark">Location</label>
-                                    <input type="text" name="location" class="form-control" placeholder="e.g. New York, USA">
+                                    <input type="text" name="location" class="form-control" value="<?= esc($resume->location ?? $candidate->location ?? '') ?>" placeholder="e.g. New York, USA">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold text-dark">LinkedIn Profile URL</label>
+                                    <input type="text" name="linkedin" class="form-control" value="<?= esc($linkedin ?? '') ?>" placeholder="e.g. https://linkedin.com/in/yourprofile">
                                 </div>
                             </div>
                             <div class="mt-4 d-flex justify-content-end">
@@ -980,6 +1667,14 @@
                                 ?>
                                 <input type="text" name="skills" class="form-control tags-input" value="<?= esc($skillsVal) ?>" placeholder="e.g. PHP, JavaScript, Project Management">
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark">Certifications (One per line)</label>
+                                <textarea name="certs" class="form-control" rows="3" placeholder="e.g. Project Management Professional (PMP)&#10;ICAN Chartered Accountant"><?= esc($certs ?? '') ?></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark">Languages (Comma separated)</label>
+                                <input type="text" name="languages" class="form-control" value="<?= esc($languages ?? '') ?>" placeholder="e.g. English, French, Spanish">
+                            </div>
                             <div class="mt-4 d-flex justify-content-between">
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                                 <button type="button" class="btn btn-primary next-step" data-step-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
@@ -1002,6 +1697,55 @@
                             <div class="mt-4 d-flex justify-content-between">
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                                 <button type="button" class="btn btn-primary next-step" data-step-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step: Tailor to a Job -->
+                <div class="step-content d-none" id="step-jd-match">
+                    <div class="card custom-card">
+                        <div class="card-header d-flex align-items-center gap-2">
+                            <i class="ti ti-target text-primary"></i>
+                            <h5 class="card-title mb-0">Tailor to a Job</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3" style="font-size: 0.85rem;">Paste a job description and we'll score your resume's keyword match, then surface missing skills you can add with one click.</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark" for="job-pick">Pick a JobberRecruit listing</label>
+                                <select class="form-select" id="job-pick" aria-label="Tailor to a listed job">
+                                    <option value="">— Choose a live job on JobberRecruit —</option>
+                                    <option value="senior-accountant">Senior Accountant — Renaissance Africa Energy (Lagos)</option>
+                                    <option value="finance-officer">Finance Officer — HR/People & Operations (Lagos)</option>
+                                    <option value="grad-trainee">Graduate Trainee — AP Programme 2026 (Nigeria)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark" for="jd">Or paste any job description</label>
+                                <textarea class="form-control" id="jd" rows="5" placeholder="Paste the job advert here and we'll score the match and surface missing keywords…" style="font-size: 0.85rem; resize: vertical;"></textarea>
+                            </div>
+                            
+                            <div id="match-wrap" class="d-none">
+                                <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-3" style="background: #f8fafd; border: 1px solid #e2e8f0;">
+                                    <div class="gauge position-relative flex-shrink-0" style="width: 64px; height: 64px;">
+                                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;" aria-hidden="true">
+                                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
+                                            <circle class="p" id="match-p" cx="37" cy="37" r="33" style="fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset .4s ease;"></circle>
+                                        </svg>
+                                        <b id="match-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0%</b>
+                                    </div>
+                                    <div>
+                                        <b style="font-family: 'Sora', sans-serif; font-size: 0.95rem; color: #0a192f; display: block;">Job Match Score</b>
+                                        <p class="mb-0 text-muted" style="font-size: 0.78rem;">Keyword overlap between your resume and the job description.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2" style="font-size: .68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em;">
+                                    Missing Keywords — click to add to Skills
+                                </div>
+                                <div id="kw-chips" class="d-flex flex-wrap gap-2 mb-3"></div>
                             </div>
                         </div>
                     </div>
@@ -1158,6 +1902,69 @@
                 </div>
             </form>
         </div>
+
+        <!-- Right Side: Live Premium Preview -->
+        <div class="col-lg-7 col-xl-7 d-none d-lg-block">
+            <!-- Customization Bar -->
+            <div class="design-bar shadow-sm">
+                <span class="lbl fw-bold text-dark">Template:</span>
+                <select class="form-select form-select-sm select border-secondary" id="tpl-select" style="min-width:130px; font-weight: 600;">
+                    <option value="t-classic">Classic Professional</option>
+                    <option value="t-creative">Creative & Bold</option>
+                    <option value="t-exec">Executive Serif</option>
+                    <option value="t-minimal">Minimalist Clean</option>
+                    <option value="t-modern">Modern & Sleek</option>
+                </select>
+
+                <span class="lbl fw-bold text-dark ms-2">Spacing:</span>
+                <div class="dens border border-secondary rounded p-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 border-0 on" id="spacing-roomy-btn" data-spacing="roomy">Roomy</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 border-0" id="spacing-tight-btn" data-spacing="tight">Tight</button>
+                </div>
+
+                <div class="wm-note ms-auto">
+                    <i class="ti ti-shield-check text-success"></i> Anti-Crop Protection
+                </div>
+            </div>
+
+            <!-- ATS Score panel -->
+            <div class="score-card shadow-sm mb-3" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
+                <div class="score-top d-flex align-items-center gap-3">
+                    <div class="gauge position-relative" id="gauge-wrap" aria-label="ATS score 0 out of 100" style="width: 74px; height: 74px;">
+                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
+                            <circle class="p" id="gauge-p" cx="37" cy="37" r="33" style="fill: none; stroke: rgb(220, 38, 38); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;"></circle>
+                        </svg>
+                        <b id="ats-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0</b>
+                    </div>
+                    <div class="score-info">
+                        <b style="font-family: 'Sora', sans-serif; font-size: 1.05rem; color: #0a192f; display: block;">Resume Intelligence</b>
+                        <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">ATS readiness plus recruiter-grade writing checks — all recalculated as you type.</p>
+                    </div>
+                </div>
+                
+                <!-- 6 Metric Gauges Grid -->
+                <div class="met-grid" id="met-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px; margin-top: 18px; border-top: 1px solid #edf2f7; padding-top: 15px;">
+                    <!-- Dynamically populated from JS -->
+                </div>
+                
+                <!-- Writing review issues header -->
+                <div class="mt-4 pt-3 border-top">
+                    <b style="font-family: 'Sora', sans-serif; font-size: 0.9rem; color: #0a192f; display: block; margin-bottom: 8px;">Detailed Audit & Checklist</b>
+                    <ul class="score-list" id="ats-list" style="list-style: none; padding-left: 0; margin-bottom: 0;">
+                        <!-- Dynamic Checklist items go here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Live Rendering Shell -->
+            <div class="pv-shell shadow-sm mb-3">
+                <div id="doc" class="doc t-classic spacing-roomy wm-tile guides">
+                    <!-- Live Document Compiled Here -->
+                </div>
+            </div>
+            <div class="pv-hint">A4 Page-break guidance shown above. Adjust text spacing to fit exactly <b>1 Page</b>.</div>
+        </div>
     </div>
 </div>
 
@@ -1249,6 +2056,541 @@
                 return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]);
             });
         }
+
+        // ── LIVE PREVIEW GENERATION ──
+        function renderLivePreview() {
+            var name = $('input[name="full_name"]').val() || '';
+            var title = $('input[name="title"]').val() || '';
+            var email = $('input[name="email"]').val() || '';
+            var phone = $('input[name="phone"]').val() || '';
+            var locationStr = $('input[name="location"]').val() || '';
+            var summary = $('#resume-summary').val() || '';
+            
+            // Selected layout & density
+            var tpl = $('#tpl-select').val() || 't-classic';
+            var spacing = $('#spacing-roomy-btn').hasClass('on') ? 'spacing-roomy' : 'spacing-tight';
+            
+            // Container update
+            var $doc = $('#doc');
+            $doc.removeClass().addClass('doc ' + tpl + ' ' + spacing + ' wm-tile guides');
+            
+            var linkedin = $('input[name="linkedin"]').val() || '';
+            var contactHtml = '';
+            if (email) contactHtml += '<span>' + escapeHtml(email) + '</span>';
+            if (phone) contactHtml += '<span>' + escapeHtml(phone) + '</span>';
+            if (locationStr) contactHtml += '<span>' + escapeHtml(locationStr) + '</span>';
+            if (linkedin) contactHtml += '<span>' + escapeHtml(linkedin.replace(/^https?:\/\/(www\.)?/, '')) + '</span>';
+            
+            var html = '<header class="d-head"><h1>' + escapeHtml(name) + '</h1>';
+            if (title) html += '<div class="d-title">' + escapeHtml(title) + '</div>';
+            if (contactHtml) html += '<div class="d-contact">' + contactHtml + '</div>';
+            html += '</header>';
+            
+            // Professional Summary
+            if (summary.trim()) {
+                html += '<div class="d-sec"><h2>Professional Summary</h2><p>' + escapeHtml(summary).replace(/\n/g, '<br>') + '</p></div>';
+            }
+            
+            // Experience List
+            var experienceHtml = '';
+            $('.experience-item').each(function() {
+                var role = $(this).find('input[name="exp_position[]"]').val() || '';
+                var company = $(this).find('input[name="exp_company[]"]').val() || '';
+                var start = $(this).find('input[name="exp_start_date[]"]').val() || '';
+                var end = $(this).find('input[name="exp_end_date[]"]').val() || '';
+                var current = $(this).find('.exp-current-check').is(':checked');
+                var desc = $(this).find('textarea[name="exp_description[]"]').val() || '';
+                
+                var dates = start + (current ? ' - Present' : (end ? ' - ' + end : ''));
+                if (role || company || desc) {
+                    var bulletPoints = desc.split('\n').map(s => s.trim()).filter(Boolean);
+                    var bulletsUl = '';
+                    if (bulletPoints.length) {
+                        bulletsUl = '<ul>' + bulletPoints.map(b => '<li>' + escapeHtml(b) + '</li>').join('') + '</ul>';
+                    }
+                    experienceHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml(role) + '</b><i>' + escapeHtml(dates) + '</i></div>' +
+                        (company ? '<p class="co">' + escapeHtml(company) + '</p>' : '') + bulletsUl + '</div>';
+                }
+            });
+            if (experienceHtml) {
+                html += '<div class="d-sec"><h2>Work Experience</h2>' + experienceHtml + '</div>';
+            }
+            
+            // Education List
+            var educationHtml = '';
+            $('.education-item').each(function() {
+                var school = $(this).find('input[name="edu_school[]"]').val() || '';
+                var degree = $(this).find('select[name="edu_degree[]"]').val() || '';
+                var field = $(this).find('input[name="edu_field[]"]').val() || '';
+                var year = $(this).find('input[name="edu_year[]"]').val() || '';
+                
+                if (school || degree || field) {
+                    educationHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml((degree ? degree + ' in ' : '') + field) + '</b><i>' + escapeHtml(year) + '</i></div>' +
+                        '<p class="co">' + escapeHtml(school) + '</p></div>';
+                }
+            });
+            if (educationHtml) {
+                html += '<div class="d-sec"><h2>Education</h2>' + educationHtml + '</div>';
+            }
+            
+            // Skills List
+            var skillsStr = $('input[name="skills"]').val() || '';
+            var skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+            if (skills.length) {
+                var skillsLi = skills.map(s => '<li>' + escapeHtml(s) + '</li>').join('');
+                html += '<div class="d-sec"><h2>Skills</h2><ul class="d-skills">' + skillsLi + '</ul></div>';
+            }
+
+            // Certifications List
+            var certsStr = $('textarea[name="certs"]').val() || '';
+            var certs = certsStr.split('\n').map(s => s.trim()).filter(Boolean);
+            if (certs.length) {
+                var certsLi = certs.map(c => '<li>' + escapeHtml(c) + '</li>').join('');
+                html += '<div class="d-sec"><h2>Certifications</h2><ul class="d-skills">' + certsLi + '</ul></div>';
+            }
+
+            // Languages List
+            var languagesStr = $('input[name="languages"]').val() || '';
+            var languages = languagesStr.split(',').map(s => s.trim()).filter(Boolean);
+            if (languages.length) {
+                var languagesLi = languages.map(l => '<li>' + escapeHtml(l) + '</li>').join('');
+                html += '<div class="d-sec"><h2>Languages</h2><ul class="d-skills">' + languagesLi + '</ul></div>';
+            }
+            
+            // Watermark anti-crop element
+            html += '<div class="wm" aria-hidden="true">' +
+                '<svg class="wm-ic" viewBox="0 0 925.5 1269.15"><use href="#jr-mark"/></svg>' +
+                '<span class="wm-tx">www.JobberRecruit.com</span>' +
+                '</div>';
+                
+            $doc.html(html);
+            
+            // Adjust layout for Executive template
+            if (tpl === 't-exec') {
+                var head = $doc.find('.d-head')[0];
+                var wm = $doc.find('.wm')[0];
+                var secs = $doc.find('.d-sec').toArray();
+                var sideKeys = ["Certifications", "Skills", "Languages"];
+                
+                var side = document.createElement("div"); side.className = "exec-side";
+                var main = document.createElement("div"); main.className = "exec-main";
+                
+                secs.forEach(function(sec) {
+                    var titleText = $(sec).find('h2').text() || '';
+                    if (sideKeys.indexOf(titleText.trim()) > -1) {
+                        side.appendChild(sec);
+                    } else {
+                        main.appendChild(sec);
+                    }
+                });
+                
+                $doc.html('');
+                if (head) $doc.append(head);
+                $doc.append(side); $doc.append(main);
+                if (wm) $doc.append(wm);
+            }
+            
+            // Check fit pages
+            var scrollHeight = $doc[0].scrollHeight;
+            var maxOnePageHeight = 1074;
+            var fitDot = $('.fit-dot');
+            if (scrollHeight > maxOnePageHeight) {
+                fitDot.removeClass('ok').addClass('over');
+                $('.pv-hint').html('Currently spanning multiple pages. Switch Spacing to <b>Tight</b> or shorten text.');
+            } else {
+                fitDot.removeClass('over').addClass('ok');
+                $('.pv-hint').html('Perfect! Fits cleanly on <b>1 Page</b>.');
+            }
+        }
+        
+        var STOP = "the and for with our you your this that will have has are was were from into able out not can may all any per who what when they them their its it's more than been being to of in on at as by an or a is be we do if so".split(" ");
+        var GENERIC = ("finance financial expense expenses reporting compliance vendor vendors monthly "
+          + "leadership statutory filings operations operation duties duty support seeking seek strong "
+          + "willingness encouraged provided discipline graduate graduates trainee programme role roles "
+          + "team teams company companies business businesses department departments process processes "
+          + "environment environments candidate candidates requirement requirements responsibility "
+          + "responsibilities experience experienced years year work working ability abilities knowledge "
+          + "understanding including related general overall various multiple wide range level high "
+          + "excellent good great proven demonstrated across throughout applicants applicant apply "
+          + "position positions salary benefits location office hours schedule").split(" ");
+
+        function explicitSkillList(txt) {
+            var m = String(txt).match(/(?:skills|requirements|competencies)\s*[:\-]\s*([^.]+)\./i);
+            if (!m) return [];
+            return m[1].split(/,|;|\u2022|\u00b7/).map(function(s){ return s.trim().toLowerCase(); })
+                .filter(function(s){ return s.length > 2 && s.length < 40; });
+        }
+
+        function skillBigrams(txt) {
+            var words = String(txt).toLowerCase().replace(/[^a-z\s-]/g," ").split(/\s+/).filter(Boolean);
+            var out = {};
+            for (var i = 0; i < words.length - 1; i++){
+                var a = words[i], b = words[i+1];
+                if (a.length > 3 && b.length > 3 && STOP.indexOf(a) === -1 && STOP.indexOf(b) === -1
+                    && GENERIC.indexOf(a) === -1 && GENERIC.indexOf(b) === -1){
+                    var phrase = a + " " + b;
+                    out[phrase] = (out[phrase]||0) + 1;
+                }
+            }
+            return Object.keys(out).sort(function(x,y){return out[y]-out[x]});
+        }
+
+        function keywords(txt) {
+            var explicit = explicitSkillList(txt);
+            if (explicit.length) return explicit.slice(0, 14);
+
+            var bigrams = skillBigrams(txt).slice(0, 8);
+
+            var f = {};
+            String(txt).toLowerCase().replace(/[^a-z\s-]/g," ").split(/\s+/).forEach(function(w){
+                if (w.length > 3 && STOP.indexOf(w) === -1 && GENERIC.indexOf(w) === -1) f[w] = (f[w]||0)+1;
+            });
+            var singles = Object.keys(f).sort(function(a,b){return f[b]-f[a]});
+
+            var combined = bigrams.concat(singles).slice(0, 14);
+            return combined;
+        }
+
+        // ── ATS SCAN CHECKLIST & INTELLIGENCE ENGINE ──
+        var SYN = {
+            reconciliation:["reconcile","reconciled","reconciling","bank reconciliation"],
+            accounting:["accounts","accountant","bookkeeping","ledger"],
+            reporting:["reports","management accounts","financial reporting"],
+            payroll:["paye","salaries","wages"], tax:["vat","paye","firs","taxation","filings"],
+            excel:["spreadsheet","spreadsheets","microsoft excel"],
+            audit:["auditing","audits","auditor"], budgeting:["budget","budgets","forecasting"],
+            compliance:["regulatory","statutory","filings","firs","lirs"], invoicing:["invoices","billing","receivables"],
+            nysc:["national youth service","corps member","youth service"],
+            ican:["chartered accountant","aca","icaen"], acca:["chartered certified accountant"],
+            qualification:["b.sc","bsc","hnd","ond","degree","certified"],
+            payables:["payable","vendors","suppliers"], leadership:["led","managed","supervised","mentored"],
+            communication:["stakeholder","presented","liaised"], analysis:["analysed","analyzed","analytical","insights"]
+        };
+        var CLICHES = ["results-driven","results driven","highly motivated","dynamic professional","proven track record","passionate professional","detail-oriented","detail oriented","team player","self-starter","self starter","go-getter","go getter","hardworking individual","think outside the box","synergy"];
+        var STRONG_VERBS = ["led","built","cut","grew","launched","delivered","reduced","improved","designed","owned","negotiated","recovered","streamlined","automated","prepared","produced","rebuilt","cleared","processed","reconciled","managed","implemented","run","ran","handle","handled","maintain","maintained","supported","created","trained"];
+        var IMPACT_WORDS = ["cut","reduced","grew","saved","improved","increased","delivered","cleared","recovered","shortened","eliminated","doubled"];
+        
+        function pct(n, d) { return d ? Math.round(n / d * 100) : 0; }
+        
+        function semHit(kw, txt) {
+            if (txt.indexOf(kw) > -1) return true;
+            if (SYN[kw]) {
+                for (var i = 0; i < SYN[kw].length; i++) {
+                    if (txt.indexOf(SYN[kw][i]) > -1) return true;
+                }
+            }
+            for (var base in SYN) {
+                if (SYN[base].indexOf(kw) > -1 && (txt.indexOf(base) > -1 || SYN[base].some(s => txt.indexOf(s) > -1))) return true;
+            }
+            return false;
+        }
+
+        function metBar(label, val) {
+            var cls = val === null ? "" : (val >= 70 ? "" : (val >= 45 ? " warn" : " bad"));
+            return '<div class="met' + cls + '"><div class="met-h"><span>' + label + '</span><b>' + (val === null ? "—" : val + "%") + '</b></div>'
+                + '<div class="met-t"><div class="met-f" style="width:' + (val || 0) + '%"></div></div></div>';
+        }
+
+        function refreshAts() {
+            var name = $('input[name="full_name"]').val() || '';
+            var email = $('input[name="email"]').val() || '';
+            var phone = $('input[name="phone"]').val() || '';
+            var locationStr = $('input[name="location"]').val() || '';
+            var linkedin = $('input[name="linkedin"]').val() || '';
+            var summary = $('#resume-summary').val() || '';
+            var certsStr = $('textarea[name="certs"]').val() || '';
+            var languagesStr = $('input[name="languages"]').val() || '';
+            var skillsStr = $('input[name="skills"]').val() || '';
+            
+            var skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+            
+            var experiences = [];
+            $('.experience-item').each(function() {
+                experiences.push({
+                    role: $(this).find('input[name="exp_position[]"]').val() || '',
+                    company: $(this).find('input[name="exp_company[]"]').val() || '',
+                    start_date: $(this).find('input[name="exp_start_date[]"]').val() || '',
+                    end_date: $(this).find('input[name="exp_end_date[]"]').val() || '',
+                    is_current: $(this).find('.exp-current-check').is(':checked'),
+                    bullets: $(this).find('textarea[name="exp_description[]"]').val() || ''
+                });
+            });
+
+            var education = [];
+            $('.education-item').each(function() {
+                education.push({
+                    school: $(this).find('input[name="edu_school[]"]').val() || '',
+                    degree: $(this).find('select[name="edu_degree[]"]').val() || '',
+                    field: $(this).find('input[name="edu_field[]"]').val() || '',
+                    year: $(this).find('input[name="edu_year[]"]').val() || ''
+                });
+            });
+
+            var allB = experiences.map(x => x.bullets).join('\n');
+            var bullets = allB.split('\n').map(s => s.trim()).filter(Boolean);
+            var txt = (summary + ' ' + allB + ' ' + skills.join(' ') + ' ' + certsStr).toLowerCase();
+
+            // Perform 17 checklist audits
+            var checks = [];
+
+            // 1. Contact details complete
+            var okContact = !!(name && email && phone && locationStr);
+            checks.push({ ok: okContact, pts: 15, label: "Contact details complete", section: "info" });
+
+            // 2. Summary length (35-120 words)
+            var sw = summary.trim().split(/\s+/).filter(Boolean).length;
+            checks.push({ ok: sw >= 35 && sw <= 120, pts: 15, label: "Summary is 35–120 words (" + sw + ")", section: "summary" });
+
+            // 3. Achievements include numbers
+            var hasNumbers = /\d/.test(allB);
+            checks.push({ ok: hasNumbers, pts: 15, label: "Achievements include numbers", section: "experience" });
+
+            // 4. 5+ achievement bullets
+            checks.push({ ok: bullets.length >= 5, pts: 10, label: "5+ achievement bullets listed", section: "experience" });
+
+            // 5. 6+ skills listed
+            checks.push({ ok: skills.length >= 6, pts: 15, label: "6+ skills listed", section: "skills" });
+
+            // 6. Education included
+            var hasEdu = education.some(e => e.school.trim());
+            checks.push({ ok: hasEdu, pts: 10, label: "Education included", section: "education" });
+
+            // 7. Certifications included
+            checks.push({ ok: certsStr.trim().length > 0, pts: 10, label: "Certifications included", section: "skills" });
+
+            // 8. Substantive content length
+            var totalContentWords = (summary + ' ' + allB).trim().split(/\s+/).filter(Boolean).length;
+            checks.push({ ok: totalContentWords >= 120, pts: 10, label: "Enough content to rank (>120 words)", section: "experience" });
+
+            // Calculate ATS Score
+            var atsScoreValue = checks.reduce((a, c) => a + (c.ok ? c.pts : 0), 0);
+
+            // 9. Missing LinkedIn URL
+            checks.push({ ok: linkedin.trim().length > 0, pts: 0, label: "LinkedIn profile link added", section: "info" });
+
+            // 10. Missing Location
+            checks.push({ ok: locationStr.trim().length > 0, pts: 0, label: "Location city added", section: "info" });
+
+            // 11. Overlong summary
+            checks.push({ ok: sw <= 60, pts: 0, label: "Summary is concise (<=60 words)", section: "summary" });
+
+            // 12. Filler words
+            var FILLER = ["very","really","various","several","successfully","effectively","in order to","a number of","responsible for"];
+            var fhit = FILLER.filter(f => txt.indexOf(f) > -1);
+            checks.push({ ok: fhit.length === 0, pts: 0, label: "No generic filler words used", section: "experience" });
+
+            // 13. Buzzword overload
+            var BUZZ = ["synergy","leverage","spearheaded","utilize","utilized","facilitate","streamline"];
+            var bz = BUZZ.filter(w => txt.indexOf(w) > -1);
+            checks.push({ ok: bz.length < 2, pts: 0, label: "No corporate buzzword overload", section: "experience" });
+
+            // 14. Consistent Date Format (Always consistent since forms enforce date picker)
+            checks.push({ ok: true, pts: 0, label: "Consistent date formats", section: "experience" });
+
+            // 15. Capitalization of bullets
+            var lowerStart = bullets.filter(x => { var c=x.trim()[0]; return c && c===c.toLowerCase() && c!==c.toUpperCase(); }).length;
+            checks.push({ ok: lowerStart === 0, pts: 0, label: "All bullets capitalized", section: "experience" });
+
+            // 16. Punctuation consistency
+            var withDot = bullets.filter(x => /[.]$/.test(x.trim())).length;
+            var okPunct = (bullets.length < 3 || withDot === 0 || withDot === bullets.length);
+            checks.push({ ok: okPunct, pts: 0, label: "Consistent bullet punctuation", section: "experience" });
+
+            // 17. Current role tense consistency
+            var okTense = true;
+            if (experiences.length >= 2) {
+                var cur0 = experiences[0];
+                var isCurrent = cur0.is_current || /present|current/i.test(cur0.end_date);
+                var pastVerbs = /(ed|led|built|ran|made|kept)\b/i;
+                if (isCurrent && cur0.bullets.trim() && cur0.bullets.split('\n').filter(Boolean).every(l => pastVerbs.test(l.trim().split(/\s+/)[0] || ""))) {
+                    okTense = false;
+                }
+            }
+            checks.push({ ok: okTense, pts: 0, label: "Current role uses present tense", section: "experience" });
+
+            // Calculate Intel sub-metrics
+            var cl = CLICHES.filter(c => txt.indexOf(c) > -1);
+            var leads = {};
+            var rep = [];
+            bullets.forEach(x => { var v = x.toLowerCase().split(/\s+/)[0]; leads[v] = (leads[v] || 0) + 1; });
+            for (var v in leads) {
+                if (leads[v] >= 3) rep.push(v);
+            }
+            var human = Math.max(0, 100 - cl.length * 18 - rep.length * 12);
+
+            var av = bullets.filter(x => STRONG_VERBS.indexOf(x.toLowerCase().split(/\s+/)[0]) > -1);
+            var verbs = pct(av.length, bullets.length);
+
+            var imp = bullets.filter(x => { var l = x.toLowerCase(); return /\d/.test(x) || IMPACT_WORDS.some(w => l.indexOf(w) > -1); });
+            var impact = pct(imp.length, bullets.length);
+
+            var rd = bullets.filter(x => { var w = x.split(/\s+/).length; return w >= 4 && w <= 24; });
+            var read = pct(rd.length, bullets.length);
+
+            var cover = null;
+            var jd = $('#jd').length ? $('#jd').val().trim() : '';
+            if (jd.length >= 60) {
+                var kws = keywords(jd);
+                cover = pct(kws.filter(k => semHit(k, txt)).length, kws.length);
+            }
+
+            var parts = [atsScoreValue, human, verbs, impact, read];
+            if (cover !== null) parts.push(cover);
+            var recruiterScore = Math.round(parts.reduce((a, x) => a + x, 0) / parts.length);
+
+            // Update gauges & checklist UI
+            $('#ats-num').text(atsScoreValue);
+            var g = $('#gauge-p');
+            if (g.length) {
+                g.css('stroke-dashoffset', 207 * (1 - atsScoreValue / 100));
+                g.css('stroke', atsScoreValue >= 75 ? 'var(--success)' : (atsScoreValue >= 50 ? 'var(--accent)' : 'var(--danger)'));
+            }
+
+            // Render 6 metrics grid
+            $('#met-grid').html(
+                metBar("Recruiter Score", recruiterScore) +
+                metBar("Human Writing", human) +
+                metBar("Impact", impact) +
+                metBar("Action Verbs", verbs) +
+                metBar("Readability", read) +
+                (cover !== null ? metBar("Keyword Coverage", cover) : "")
+            );
+
+            // Render Checklist items
+            var listHtml = '';
+            checks.forEach(function(c) {
+                var icon = c.ok ? 'ti-circle-check-filled text-success' : 'ti-circle text-muted';
+                var btn = c.ok ? '' : '<button type="button" class="fix-ats btn-link text-decoration-none border-0 bg-transparent text-primary ms-auto" data-target="' + c.section + '" style="font-size: 0.74rem; font-weight:600;">Fix</button>';
+                listHtml += '<li class="' + (c.ok ? 'ok' : 'no') + ' d-flex align-items-center mb-2" style="font-size: 0.8rem;"><i class="ti ' + icon + ' me-2 fs-5"></i><span>' + c.label + '</span>' + btn + '</li>';
+            });
+            $('#ats-list').html(listHtml);
+
+            $('.fix-ats').on('click', function() {
+                var target = $(this).data('target');
+                $('.step-item[data-step="' + target + '"]').trigger('click');
+            });
+        }
+
+        // Input change listeners
+        $(document).on('input change keyup', '#resume-form input, #resume-form textarea, #resume-form select', function() {
+            renderLivePreview();
+            refreshAts();
+        });
+
+        // ── TAILOR TO JOB — pre-set job descriptions for demo listings ──
+        var JOBS = {
+            'senior-accountant': "Senior Accountant needed. Responsibilities: month-end close, management reporting, budgeting and forecasting, VAT and PAYE compliance, bank reconciliation, fixed asset management, audit preparation. Requirements: B.Sc Accounting, 4+ years experience, strong Excel, ICAN is an advantage. Tools: accounting software, spreadsheets.",
+            'finance-officer': "Finance Officer to support operations. Duties: invoicing, accounts payable, payroll processing, expense reporting, vendor management, compliance with statutory filings, monthly reports for leadership. Skills: accounting, communication, attention to accuracy, Excel, budgeting.",
+            'grad-trainee': "Graduate trainee programme. We seek graduates with strong analysis skills, communication, teamwork, willingness to learn, Excel proficiency. Any discipline; finance and accounting graduates encouraged. Training provided in reporting, compliance and operations."
+        };
+
+        function resumeTextForMatch() {
+            var summary = $('#resume-summary').val() || '';
+            var skills = ($('input[name="skills"]').val() || '').split(',').map(s => s.trim()).filter(Boolean);
+            var certs = $('textarea[name="certs"]').val() || '';
+            var allBullets = [];
+            $('textarea[name="exp_description[]"]').each(function() { allBullets.push($(this).val() || ''); });
+            return (summary + ' ' + allBullets.join(' ') + ' ' + skills.join(' ') + ' ' + certs).toLowerCase();
+        }
+
+        function runMatch() {
+            var jd = $('#jd').val().trim();
+            var matchWrap = $('#match-wrap');
+            if (jd.length < 60) { matchWrap.addClass('d-none'); refreshAts(); return; }
+            matchWrap.removeClass('d-none');
+            var kws = keywords(jd);
+            var rt = resumeTextForMatch();
+            var hit = kws.filter(k => semHit(k, rt));
+            var score = kws.length ? Math.round(hit.length / kws.length * 100) : 0;
+            $('#match-num').text(score + '%');
+            $('#match-p').css('stroke-dashoffset', 207 * (1 - score / 100));
+            var miss = kws.filter(k => !semHit(k, rt)).slice(0, 8);
+            $('#kw-chips').html(miss.length
+                ? miss.map(k => '<button class="btn btn-sm rounded-pill kw-chip" data-kw="' + k + '" style="border:1.5px solid var(--primary,#0861a9);color:var(--primary,#0861a9);background:#f0f6ff;font-size:.74rem;padding:3px 12px;transition:all .2s;">+ ' + k + '</button>').join('')
+                : '<span class="text-success fw-semibold" style="font-size:.78rem;">Great coverage — no obvious keyword gaps.</span>');
+            // keyword chip click-to-add
+            $('.kw-chip').off('click').on('click', function() {
+                var kw = $(this).data('kw');
+                var pretty = kw.replace(/\b\w/g, c => c.toUpperCase());
+                var skillsInput = $('input[name="skills"]');
+                var current = skillsInput.val().split(',').map(s => s.trim()).filter(Boolean);
+                if (current.indexOf(pretty) === -1) {
+                    current.push(pretty);
+                    skillsInput.val(current.join(', '));
+                }
+                $(this).css({background:'#d1fae5', borderColor:'#10b981', color:'#065f46'}).text('✓ ' + pretty).prop('disabled', true);
+                renderLivePreview(); refreshAts(); runMatch();
+            });
+            // also re-run refreshAts so cover metric updates
+            refreshAts();
+        }
+
+        // JD textarea auto-run match
+        $('#jd').on('input', function() {
+            clearTimeout(window._jdTimer);
+            window._jdTimer = setTimeout(runMatch, 400);
+        });
+
+        // Job picker pre-fill JD
+        $('#job-pick').on('change', function() {
+            var val = $(this).val();
+            if (val && JOBS[val]) {
+                $('#jd').val(JOBS[val]);
+                runMatch();
+            } else {
+                $('#jd').val('');
+                $('#match-wrap').addClass('d-none');
+            }
+        });
+
+        // Template Selection mapping
+        var tplMap = {
+            'classic': 't-classic',
+            'modern': 't-modern',
+            'creative': 't-creative',
+            'executive': 't-exec',
+            'minimalist': 't-minimal'
+        };
+        var revTplMap = {
+            't-classic': 'classic',
+            't-modern': 'modern',
+            't-creative': 'creative',
+            't-exec': 'executive',
+            't-minimal': 'minimalist'
+        };
+
+        // Template Selection changes
+        $('#tpl-select').on('change', function() {
+            var selected = $(this).val();
+            var rawTpl = revTplMap[selected] || selected.replace('t-', '');
+            $('#template_id').val(rawTpl);
+            // trigger active template card highlight
+            $('.template-choice').removeClass('active border-primary border-2 shadow-sm');
+            $('.template-choice[data-template="' + rawTpl + '"]').addClass('active border-primary border-2 shadow-sm');
+            renderLivePreview();
+        });
+
+        $('.template-choice').on('click', function() {
+            var tpl = $(this).data('template');
+            var selectVal = tplMap[tpl] || 't-' + tpl;
+            $('#tpl-select').val(selectVal).trigger('change');
+        });
+
+        // Spacing Selection changes
+        $('#spacing-roomy-btn, #spacing-tight-btn').on('click', function() {
+            $('#spacing-roomy-btn, #spacing-tight-btn').removeClass('on');
+            $(this).addClass('on');
+            renderLivePreview();
+        });
+
+        // Trigger on load
+        setTimeout(function() {
+            var dbTpl = $('#template_id').val() || 'classic';
+            var selectVal = tplMap[dbTpl] || 't-' + dbTpl;
+            $('#tpl-select').val(selectVal).trigger('change');
+            renderLivePreview();
+            refreshAts();
+        }, 300);
 
         // Step Navigation
         $('.step-item').on('click', function() {
@@ -1609,6 +2951,9 @@
                             snapshot.summary = $('#resume-summary').val() || '';
                             snapshot.template_id = $('#template_id').val() || 'classic';
                             snapshot.skills = $('input[name="skills"]').val() || '';
+                            snapshot.linkedin = $('input[name="linkedin"]').val() || '';
+                            snapshot.certs = $('textarea[name="certs"]').val() || '';
+                            snapshot.languages = $('input[name="languages"]').val() || '';
 
                             $('.experience-item').each(function() {
                                 snapshot.experiences.push({
@@ -1637,7 +2982,6 @@
                             });
                         } catch (e) {
                             // ignore autosave snapshot errors
-                            console.error('snapshot error', e);
                         }
                         window.restoreSavePending = false;
                         // Visual confirmation for restore+save
@@ -1673,7 +3017,10 @@
                 template_id: $('#template_id').val() || 'classic',
                 experiences: [],
                 education: [],
-                skills: $('input[name="skills"]').val() || ''
+                skills: $('input[name="skills"]').val() || '',
+                linkedin: $('input[name="linkedin"]').val() || '',
+                certs: $('textarea[name="certs"]').val() || '',
+                languages: $('input[name="languages"]').val() || ''
             };
 
             $('.experience-item').each(function() {
@@ -1820,6 +3167,9 @@
                         if (snap.summary !== undefined) $('#resume-summary').val(snap.summary);
                         if (snap.template_id !== undefined) $('#template_id').val(snap.template_id);
                         if (snap.skills !== undefined) $('input[name="skills"]').val(snap.skills);
+                        if (snap.linkedin !== undefined) $('input[name="linkedin"]').val(snap.linkedin);
+                        if (snap.certs !== undefined) $('textarea[name="certs"]').val(snap.certs);
+                        if (snap.languages !== undefined) $('input[name="languages"]').val(snap.languages);
 
                         // Rebuild experiences section
                         const $expContainer = $('#experience-container');
@@ -2448,6 +3798,58 @@
 
             toastr.info('Nothing to undo');
         });
+    });
+
+    // ── PRINT ARCHITECTURE ──
+    // beforeprint moves #doc out of the preview wrappers (which may have
+    // transforms / overflow: hidden that clip the printed output).
+    // afterprint restores the DOM to its live state.
+    var _printRoot = document.createElement('div');
+    _printRoot.id = 'print-root';
+    _printRoot.style.display = 'none';
+    document.body.appendChild(_printRoot);
+    var _docHome = null;
+
+    function _toPrintRoot() {
+        var doc = document.getElementById('doc');
+        if (doc && doc.parentElement !== _printRoot) {
+            _docHome = doc.parentElement;
+            _printRoot.appendChild(doc);
+        }
+    }
+    function _fromPrintRoot() {
+        var doc = document.getElementById('doc');
+        if (_docHome && doc && doc.parentElement === _printRoot) {
+            _docHome.appendChild(doc);
+            _docHome = null;
+        }
+    }
+
+    window.addEventListener('beforeprint', function () {
+        _toPrintRoot();
+        window._prevDocTitle = document.title;
+        // Use candidate's full name as the print-dialog/PDF filename
+        var nameInput = document.querySelector('input[name="full_name"]');
+        if (nameInput && nameInput.value.trim()) {
+            document.title = nameInput.value.trim() + ' — Resume';
+        }
+    });
+    window.addEventListener('afterprint', function () {
+        _fromPrintRoot();
+        if (window._prevDocTitle) { document.title = window._prevDocTitle; }
+    });
+
+    // Download-as-PDF shortcut via browser print dialog
+    $(document).on('click', '.btn-print-pdf', function () {
+        // Brief toast advising how to save cleanly
+        if (typeof toastr !== 'undefined') {
+            toastr.info(
+                'In the print dialog: set <b>Destination → Save as PDF</b>, ' +
+                'open <b>More settings</b> and untick <b>Headers and footers</b>.',
+                'Saving as PDF', { timeOut: 6000, extendedTimeOut: 2000 }
+            );
+        }
+        setTimeout(function () { window.print(); }, 650);
     });
 </script>
 <?= $this->endSection() ?>

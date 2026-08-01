@@ -35,7 +35,7 @@
     <?php else: ?>
         <a href="<?= base_url('login') ?>" class="nav-item <?= strpos(current_url(), 'login') !== false ? 'active' : '' ?>">
             <i class="bi bi-person"></i>
-            <span>Login</span>
+            <span>Get Started</span>
         </a>
     <?php endif; ?>
 

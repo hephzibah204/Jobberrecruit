@@ -20,28 +20,29 @@ use CodeIgniter\Shield\Authentication\AuthenticatorInterface;
 use CodeIgniter\Shield\Config\Auth as AuthConfig;
 use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Models\UserModel;
+use InvalidArgumentException;
 
 /**
  * Facade for Authentication
  *
- * @method Result    attempt(array{email?: string, username?: string, password?: string, token?: string} $credentials)
- * @method Result    check(array{email?: string, username?: string, password?: string, token?: string} $credentials)
- * @method bool      checkAction(string $token, string $type)                                                          [Session]
- * @method void      forget(?User $user = null)                                                                        [Session]
+ * @method Result    attempt(array{email?: string, username?: string, password?: string, token?: string, ...<string, string>} $credentials)
+ * @method Result    check(array{email?: string, username?: string, password?: string, token?: string, ...<string, string>} $credentials)
+ * @method bool      checkAction(string $token, string $type)                                                                               [Session]
+ * @method void      forget(?User $user = null)                                                                                             [Session]
  * @method User|null getUser()
  * @method bool      loggedIn()
  * @method bool      login(User $user)
  * @method void      loginById($userId)
  * @method bool      logout()
  * @method void      recordActiveDate()
- * @method $this     remember(bool $shouldRemember = true)                                                             [Session]
+ * @method $this     remember(bool $shouldRemember = true)                                                                                  [Session]
  */
 class Auth
 {
     /**
      * The current version of CodeIgniter Shield
      */
-    public const SHIELD_VERSION = '1.2.0';
+    public const SHIELD_VERSION = '1.4.0';
 
     protected ?Authentication $authenticate = null;
 
@@ -70,8 +71,6 @@ class Auth
 
     /**
      * Sets the Authenticator alias that should be used for this request.
-     *
-     * @return $this
      */
     public function setAuthenticator(?string $alias = null): self
     {
@@ -134,13 +133,27 @@ class Auth
      */
     public function routes(RouteCollection &$routes, array $config = []): void
     {
+        if (isset($config['only'], $config['except'])) {
+            throw new InvalidArgumentException(
+                'The "only" and "except" options cannot be used at the same time.',
+            );
+        }
+
         $authRoutes = config('AuthRoutes')->routes;
 
         $namespace = $config['namespace'] ?? 'CodeIgniter\Shield\Controllers';
 
         $routes->group('/', ['namespace' => $namespace], static function (RouteCollection $routes) use ($authRoutes, $config): void {
             foreach ($authRoutes as $name => $row) {
-                if (! isset($config['except']) || ! in_array($name, $config['except'], true)) {
+                $shouldInclude = true;
+
+                if (isset($config['only'])) {
+                    $shouldInclude = in_array($name, $config['only'], true);
+                } elseif (isset($config['except'])) {
+                    $shouldInclude = ! in_array($name, $config['except'], true);
+                }
+
+                if ($shouldInclude) {
                     foreach ($row as $params) {
                         $options = isset($params[3])
                             ? ['as' => $params[3]]

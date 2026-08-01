@@ -1,15 +1,8 @@
+<?php $page_title = 'AI Resume Builder'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
-<style>
-    .resumes-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>

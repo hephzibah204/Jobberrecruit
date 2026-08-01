@@ -1,67 +1,7 @@
+<?php $page_title = 'Application Details'; ?>
 <?= $this->extend('layouts/employer') ?>
 
-<?= $this->section('styles') ?>
-<style>
-.detail-grid{display:grid;grid-template-columns:1fr 340px;gap:clamp(14px,1.8vw,20px);align-items:start}
-@media (max-width:1024px){.detail-grid{grid-template-columns:1fr}}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}
-@media (max-width:560px){.info-grid{grid-template-columns:1fr}}
-.info-lbl{font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
-.info-val{font-size:.88rem;font-weight:600;color:var(--brand-deep);overflow-wrap:anywhere}
-.info-val a{font-weight:600}
-.cand-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
-.cand-head .ava{width:56px;height:56px;font-size:1.05rem;border-radius:14px}
-.cand-head h2{font-size:1.12rem;font-weight:800;color:var(--brand-deep)}
-.cand-head p{font-size:.78rem;color:var(--muted)}
-.status-select{display:inline-flex;align-items:center;gap:8px;margin-left:auto}
-.status-select .select{min-height:40px;font-size:.8rem;width:auto}
-.cover{font-size:.86rem;color:var(--text);line-height:1.75;white-space:pre-line}
-.qa-stack{display:flex;flex-direction:column;gap:9px}
-.qa-note{font-size:.72rem;color:var(--muted);text-align:center;margin-top:2px}
-.jd{font-size:.85rem;line-height:1.75}
-.jd h4{font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;color:var(--brand-deep);margin:14px 0 6px}
-.jd ul{padding-left:20px;display:flex;flex-direction:column;gap:4px}
-.note-input{display:flex;flex-direction:column;gap:9px;margin-top:12px}
-.note-item{border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:.8rem;background:var(--bg);position:relative}
-.sticky-col{position:sticky;top:82px;display:flex;flex-direction:column;gap:clamp(14px,1.8vw,20px)}
-@media (max-width:1024px){.sticky-col{position:static}}
 
-/* ══ STATUS ACTION MODAL ══ */
-.modal-scrim{position:fixed;inset:0;background:rgba(10,25,45,.55);backdrop-filter:blur(2px);z-index:1400;display:none;align-items:flex-end;justify-content:center;padding:0}
-@media (min-width:641px){.modal-scrim{align-items:center;padding:24px}}
-.modal-scrim.show{display:flex}
-.modal{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:var(--shadow-lg);animation:modal-in .22s ease}
-@media (min-width:641px){.modal{border-radius:16px}}
-@keyframes modal-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@media (prefers-reduced-motion:reduce){.modal{animation:none}}
-.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border)}
-.modal-title{font-family:'Sora',sans-serif;font-weight:800;font-size:1.05rem;color:var(--brand-deep);display:inline-flex;align-items:center;gap:9px}
-.modal-title svg{width:18px;height:18px}
-.modal-title.t-reject svg{color:var(--danger)}
-.modal-title.t-shortlist svg,.modal-title.t-reviewed svg{color:var(--brand)}
-.modal-title.t-hired svg{color:var(--success)}
-.modal-close{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition);flex-shrink:0}
-.modal-close:hover{border-color:var(--danger);color:var(--danger)}
-.modal-close svg{width:16px;height:16px}
-.modal-body{padding:18px 22px;overflow-y:auto}
-.modal-body .notice{margin-bottom:14px}
-.modal-hint{font-size:.74rem;color:var(--muted);margin-top:8px}
-.modal-body textarea{min-height:150px;resize:vertical;line-height:1.6}
-.req{color:var(--danger)}
-.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;padding-bottom:max(14px,env(safe-area-inset-bottom,0));border-top:1px solid var(--border);flex-wrap:wrap}
-@media (max-width:480px){.modal-foot .btn{flex:1}}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);background:var(--brand-deep);color:#fff;font-size:.82rem;font-weight:600;padding:11px 20px;border-radius:10px;box-shadow:var(--shadow-lg);z-index:1500;opacity:0;visibility:hidden;transition:opacity .22s ease,transform .22s ease,visibility .22s;display:inline-flex;align-items:center;gap:8px;max-width:calc(100vw - 32px);text-align:center}
-.toast svg{width:15px;height:15px;color:#7ee2a8;flex-shrink:0}
-.toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-
-/* Custom status badge styles matching status pill mapping */
-.status-pill {
-    text-transform: capitalize;
-}
-</style>
-<?= $this->endSection() ?>
-
-<?php
 $fullName = trim(($applicant->first_name ?? $application->first_name ?? '') . ' ' . ($applicant->last_name ?? $application->last_name ?? ''));
 if (empty($fullName)) {
     $fullName = 'Guest Applicant';
@@ -360,6 +300,23 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#i-check-c"/></svg><span id="toast-text"></span></div>
+
+<!-- Delete Note Confirmation Modal -->
+<div class="modal-scrim" id="delete-note-scrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-note-title">
+    <div class="modal-head">
+      <span class="modal-title" id="del-note-title"><svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Note</span>
+      <button class="modal-close" id="del-note-close" aria-label="Close dialog"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.9rem; color:var(--text); line-height:1.6;">Are you sure you want to delete this internal note? This action cannot be undone.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="emp-btn emp-btn-outline" id="del-note-cancel">Cancel</button>
+      <button class="emp-btn emp-btn-danger" id="del-note-confirm"><svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Note</button>
+    </div>
+  </div>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
@@ -427,13 +384,79 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
         noteCount.textContent = parseInt(noteCount.textContent || 0) + 1;
         attachDeleteHandler(div.querySelector('.delete-note'));
       } else {
-        alert(response.message || 'Failed to add note');
+        toastr.error(response.message || 'Failed to add note');
       }
     })
     .catch(function(err) {
       noteAdd.disabled = false;
       noteAdd.innerHTML = '<svg aria-hidden="true"><use href="#i-plus"/></svg> Add Note';
-      alert('Error connecting to the server');
+      toastr.error('Error connecting to the server');
+    });
+  });
+
+  // Delete note modal state
+  var deleteNoteScrim = document.getElementById('delete-note-scrim'),
+      deleteNoteConfirm = document.getElementById('del-note-confirm'),
+      deleteNoteCancel = document.getElementById('del-note-cancel'),
+      deleteNoteClose = document.getElementById('del-note-close'),
+      pendingDeleteId = null;
+
+  function closeDeleteModal() {
+    deleteNoteScrim.classList.remove('show');
+    document.body.style.overflow = '';
+    pendingDeleteId = null;
+  }
+
+  function openDeleteModal(noteId) {
+    pendingDeleteId = noteId;
+    deleteNoteScrim.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  deleteNoteCancel.addEventListener('click', closeDeleteModal);
+  deleteNoteClose.addEventListener('click', closeDeleteModal);
+  deleteNoteScrim.addEventListener('click', function(e) { if (e.target === deleteNoteScrim) closeDeleteModal(); });
+
+  deleteNoteConfirm.addEventListener('click', function() {
+    if (!pendingDeleteId) return;
+    var id = pendingDeleteId;
+    deleteNoteConfirm.disabled = true;
+    deleteNoteConfirm.innerHTML = 'Deleting...';
+
+    var data = new URLSearchParams();
+    data.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+    fetch('<?= site_url("employer/applications/delete-note") ?>/' + id, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: data
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(response) {
+      deleteNoteConfirm.disabled = false;
+      deleteNoteConfirm.innerHTML = '<svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Note';
+      if (response.success) {
+        closeDeleteModal();
+        showToast('Note deleted.');
+        var item = document.querySelector('.note-item[data-id="' + id + '"]');
+        if (item) {
+          item.remove();
+        }
+        var count = Math.max(0, parseInt(noteCount.textContent || 0) - 1);
+        noteCount.textContent = count;
+        if (count === 0) {
+          noteEmpty.style.display = 'block';
+        }
+      } else {
+        toastr.error(response.message || 'Failed to delete note');
+      }
+    })
+    .catch(function() {
+      deleteNoteConfirm.disabled = false;
+      deleteNoteConfirm.innerHTML = '<svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Note';
+      toastr.error('Error connecting to server');
     });
   });
 
@@ -442,38 +465,8 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       var id = btn.getAttribute('data-id');
-      if (!confirm('Are you sure you want to delete this note?')) return;
-
-      var data = new URLSearchParams();
-      data.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
-
-      fetch('<?= site_url("employer/applications/delete-note") ?>/' + id, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: data
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(response) {
-        if (response.success) {
-          showToast('Note deleted.');
-          var item = btn.closest('.note-item');
-          if (item) {
-            item.remove();
-          }
-          var count = Math.max(0, parseInt(noteCount.textContent || 0) - 1);
-          noteCount.textContent = count;
-          if (count === 0) {
-            noteEmpty.style.display = 'block';
-          }
-        } else {
-          alert(response.message || 'Failed to delete note');
-        }
-      })
-      .catch(function() {
-        alert('Error connecting to server');
-      });
+      if (!id) return;
+      openDeleteModal(id);
     });
   }
 
@@ -594,7 +587,7 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
         showToast('Status updated to Pending.');
         setTimeout(function() { location.reload(); }, 1200);
       } else {
-        alert(response.message || 'Failed to update status');
+        toastr.error(response.message || 'Failed to update status');
       }
     });
   }
@@ -633,13 +626,13 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
         closeModal();
         setTimeout(function() { location.reload(); }, 1200);
       } else {
-        alert(response.message || 'Failed to update status');
+        toastr.error(response.message || 'Failed to update status');
       }
     })
     .catch(function() {
       sendB.disabled = false;
       sendB.innerHTML = '<svg aria-hidden="true"><use href="#i-send"/></svg> Send &amp; Update Status';
-      alert('Error updating status');
+      toastr.error('Error updating status');
     });
   });
 

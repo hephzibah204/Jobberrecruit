@@ -7,9 +7,11 @@ use App\Models\MessageModel;
 use App\Models\EmployerModel;
 use App\Models\JobSeekerModel;
 use App\Services\CreditService;
+use CodeIgniter\API\ResponseTrait;
 
 class MessageController extends BaseController
 {
+    use ResponseTrait;
     protected $conversationModel;
     protected $messageModel;
 
@@ -29,7 +31,8 @@ class MessageController extends BaseController
             $employer = $employerModel->where('user_id', $user->id)->first();
             $conversations = $employer ? $this->conversationModel->getConversationsForEmployer($employer->id) : [];
         } else {
-            $conversations = $this->conversationModel->getConversationsForSeeker($user->id);
+            $seekerId = $this->getSeekerId($user->id);
+            $conversations = $seekerId ? $this->conversationModel->getConversationsForSeeker($seekerId) : [];
         }
 
         return view('messages/inbox', [

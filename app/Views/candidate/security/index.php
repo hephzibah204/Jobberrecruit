@@ -1,25 +1,8 @@
+<?php $page_title = 'Security · Settings'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
-<style>
-.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
-.switch input{opacity:0;width:0;height:0}
-.switch .sl{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.2s}
-.switch .sl::before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.switch input:checked + .sl{background:var(--brand)}
-.switch input:checked + .sl::before{transform:translateX(20px)}
-.pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
-.pref-row:last-child{border-bottom:none}
-.pref-row b{font-size:.86rem;color:var(--brand-deep);font-family:'Sora',sans-serif}
-.pref-row p{font-size:.76rem;color:var(--muted);margin:2px 0 0}
-.danger-card{border:1px solid #f3c2c2 !important}
-.btn-danger{background:#dc2626;color:#fff;border:1.5px solid #dc2626}
-.btn-danger:hover{background:#b91c1c;border-color:#b91c1c}
-.modal-scrim{position:fixed;inset:0;background:rgba(10,25,40,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
-.modal-scrim.show{display:flex}
-.modal-card{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -141,7 +124,7 @@
                 <svg aria-hidden="true" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-trash"/></svg> Delete account
             </h3>
             <p style="font-size:0.8rem; color:var(--muted); margin-bottom:16px;">Permanently delete your account and all associated data — applications, saved jobs, alerts, resumes, certificates and wallet. <b style="color:#b91c1c;">This cannot be undone.</b></p>
-            <button type="button" class="btn btn-danger" id="openDeleteModal">
+            <button type="button" class="btn btn-danger-solid" id="openDeleteModal">
                 <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-trash"/></svg> Delete my account
             </button>
         </section>
@@ -168,7 +151,7 @@
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
                 <button type="button" class="btn btn-outline" id="cancelDelete">Cancel</button>
-                <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>Delete permanently</button>
+                <button type="submit" class="btn btn-danger-solid" id="confirmDeleteBtn" disabled>Delete permanently</button>
             </div>
         </form>
     </div>

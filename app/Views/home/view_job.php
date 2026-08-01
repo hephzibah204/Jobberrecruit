@@ -1833,8 +1833,8 @@ main, .section, .jobs-layout, .container,
   <?php if (($job->application_method ?? 'form') === 'form'): ?>
   <!-- Apply Job Modal -->
   <div class="modal fade" id="ModalApplyJobForm" tabindex="-1" aria-labelledby="ModalApplyJobFormLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content" style="border:none;border-radius:12px;overflow:hidden;box-shadow:0 14px 40px rgba(10,47,87,.16)">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+      <div class="modal-content" style="border:none;border-radius:12px;box-shadow:0 14px 40px rgba(10,47,87,.16)">
         <div class="modal-header" style="background:var(--brand-light);color:var(--brand);padding:18px 22px">
           <h5 class="modal-title fw-bold" id="ModalApplyJobFormLabel">Apply for this Job</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

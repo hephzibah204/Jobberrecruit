@@ -1,364 +1,5 @@
+<?php $page_title = 'Candidates Search'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.cand-layout {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 20px;
-    align-items: start;
-}
-@media (max-width: 1024px) {
-    .cand-layout {
-        grid-template-columns: 1fr;
-    }
-}
-.filters-card {
-    position: sticky;
-    top: 86px;
-    z-index: 10;
-}
-@media (max-width: 1024px) {
-    .filters-card {
-        position: fixed;
-        inset: 0 auto 0 0;
-        width: min(320px, 86vw);
-        z-index: 1300;
-        border-radius: 0;
-        overflow-y: auto;
-        transform: translateX(-100%);
-        transition: transform .26s ease;
-        box-shadow: var(--shadow-lg);
-        padding-bottom: env(safe-area-inset-bottom, 0);
-    }
-    .filters-card.open {
-        transform: translateX(0);
-    }
-}
-.f-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border);
-}
-.f-head b {
-    font-family: 'Sora', sans-serif;
-    font-size: .94rem;
-    color: var(--brand-deep);
-    display: inline-flex;
-    gap: 8px;
-    align-items: center;
-}
-.f-head b svg {
-    width: 15px;
-    height: 15px;
-    color: var(--brand);
-}
-.f-close {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 8px;
-    line-height: 0;
-}
-.f-close svg {
-    width: 18px;
-    height: 18px;
-}
-@media (max-width: 1024px) {
-    .f-close {
-        display: block;
-    }
-}
-.f-group {
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-}
-.f-group:last-child {
-    border-bottom: none;
-}
-.f-label {
-    font-size: .68rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-}
-.f-opt {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    font-size: .82rem;
-    padding: 7px 0;
-    cursor: pointer;
-    color: var(--text);
-    min-height: 36px;
-}
-.f-opt input {
-    width: 17px;
-    height: 17px;
-    accent-color: var(--brand);
-    flex-shrink: 0;
-    cursor: pointer;
-}
-.f-opt .n {
-    margin-left: auto;
-    font-size: .66rem;
-    font-weight: 700;
-    color: var(--muted);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 1px 8px;
-}
-.f-clear {
-    margin: 14px 18px;
-    width: calc(100% - 36px);
-}
-.cand-card {
-    display: grid;
-    grid-template-columns: auto 1.2fr 1fr 1fr auto;
-    gap: 16px;
-    align-items: center;
-    padding: 18px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--white);
-    transition: var(--transition);
-}
-.cand-card:last-child {
-    border-bottom: none;
-}
-.cand-card:hover {
-    background: #fafbfe;
-}
-@media (max-width: 900px) {
-    .cand-card {
-        grid-template-columns: auto 1fr;
-        grid-template-areas: 
-            "ava id" 
-            "meta meta" 
-            "skill skill" 
-            "act act";
-    }
-    .cc-id { grid-area: id; }
-    .cc-ava { grid-area: ava; }
-    .cc-meta { grid-area: meta; margin-top: 8px; }
-    .cc-skill { grid-area: skill; margin-top: 8px; }
-    .cc-act { grid-area: act; margin-top: 12px; justify-content: stretch; }
-    .cc-act .emp-btn { flex: 1; }
-}
-.cc-name {
-    font-weight: 700;
-    font-size: .94rem;
-    color: var(--brand-deep);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.cc-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--success);
-    flex-shrink: 0;
-}
-.cc-role {
-    font-size: .78rem;
-    color: var(--muted);
-}
-.cc-meta {
-    font-size: .78rem;
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.cc-meta span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--muted);
-}
-.cc-meta svg {
-    width: 13px;
-    height: 13px;
-    flex-shrink: 0;
-    color: var(--brand);
-}
-.cc-meta b {
-    color: var(--brand-deep);
-    font-weight: 600;
-}
-.cc-act {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.cand-list-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-.result-count {
-    font-size: .84rem;
-    color: var(--muted);
-}
-.result-count b {
-    color: var(--brand-deep);
-    font-family: 'Sora', sans-serif;
-}
-.mob-filter-btn {
-    display: none;
-}
-@media (max-width: 1024px) {
-    .mob-filter-btn {
-        display: inline-flex;
-    }
-}
-.unlock-price {
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-}
-.modal-scrim {
-    position: fixed;
-    inset: 0;
-    background: rgba(10, 25, 45, .55);
-    backdrop-filter: blur(2px);
-    z-index: 1400;
-    display: none;
-    align-items: flex-end;
-    justify-content: center;
-    padding: 0;
-}
-@media (min-width: 641px) {
-    .modal-scrim {
-        align-items: center;
-        padding: 24px;
-    }
-}
-.modal-scrim.show {
-    display: flex;
-}
-.modal {
-    background: var(--white);
-    border-radius: 16px 16px 0 0;
-    width: 100%;
-    max-width: 480px;
-    max-height: calc(100vh - 40px);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-lg);
-}
-@media (min-width: 641px) {
-    .modal {
-        border-radius: 16px;
-    }
-}
-.modal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--border);
-}
-.modal-title {
-    font-family: 'Sora', sans-serif;
-    font-weight: 800;
-    font-size: 1.02rem;
-    color: var(--brand-deep);
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-}
-.modal-title svg {
-    width: 18px;
-    height: 18px;
-    color: var(--brand);
-}
-.modal-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-    border: 1.5px solid var(--border);
-    background: var(--white);
-    color: var(--muted);
-    cursor: pointer;
-    transition: var(--transition);
-}
-.modal-close:hover {
-    border-color: var(--danger);
-    color: var(--danger);
-}
-.modal-close svg {
-    width: 16px;
-    height: 16px;
-}
-.modal-body {
-    padding: 18px 22px;
-    overflow-y: auto;
-}
-.modal-foot {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 14px 22px;
-    padding-bottom: max(14px, env(safe-area-inset-bottom, 0));
-    border-top: 1px solid var(--border);
-    flex-wrap: wrap;
-}
-@media (max-width: 480px) {
-    .modal-foot .emp-btn {
-        flex: 1;
-    }
-}
-.unlock-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 14px 0;
-}
-.unlock-list li {
-    display: flex;
-    gap: 9px;
-    align-items: center;
-    font-size: .82rem;
-    color: var(--text);
-}
-.unlock-list svg {
-    width: 15px;
-    height: 15px;
-    color: var(--brand);
-    flex-shrink: 0;
-}
-.unlock-total {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 15px;
-    font-size: .84rem;
-    font-weight: 600;
-    color: var(--brand-deep);
-}
-.unlock-total b {
-    font-family: 'Sora', sans-serif;
-    font-size: 1.05rem;
-}
-</style>
-<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php
@@ -382,8 +23,8 @@ $walletBalanceValue = $walletRow ? (float)$walletRow->balance : 0;
 $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
 ?>
 
-<div class="page-hd">
-    <div class="page-hd-left">
+<div class="page-head">
+    <div class="page-head-left">
         <h1><svg aria-hidden="true"><use href="#i-search-user"/></svg> Find Candidates</h1>
         <p>Search verified candidates ready to work.</p>
     </div>
@@ -499,6 +140,11 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                             <svg aria-hidden="true"><use href="#i-search"/></svg>
                             <input class="input" type="search" name="keyword" value="<?= esc(request()->getGet('keyword') ?? '') ?>" placeholder="Search by name, skills, or job title…" aria-label="Search candidates">
                         </div>
+                        <select class="select" name="sort" aria-label="Sort candidates">
+                            <option value="best_match" <?= request()->getGet('sort') === 'best_match' ? 'selected' : '' ?>>Best match</option>
+                            <option value="most_experienced" <?= request()->getGet('sort') === 'most_experienced' ? 'selected' : '' ?>>Most experienced</option>
+                            <option value="recently_active" <?= request()->getGet('sort') === 'recently_active' ? 'selected' : '' ?>>Recently active</option>
+                        </select>
                         <button type="submit" class="emp-btn emp-btn-primary">Search</button>
                     </div>
                 </form>
@@ -585,7 +231,7 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 <div class="pager">
                     <span>Showing results</span>
                     <div class="pager-nav">
-                        <?= $pager->links('default', 'admin_pagination') ?>
+                        <?= $pager->links('default', 'employer_pagination') ?>
                     </div>
                 </div>
             <?php else: ?>
@@ -622,7 +268,6 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 </div>
             <?php endif; ?>
             <p style="font-size:.72rem;color:var(--muted);margin-top:12px">The fee is deducted from your wallet. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
-        </div>
         </div>
         <div class="modal-foot" style="flex-direction: column; gap: 10px; align-items: stretch; width: 100%;">
             <div style="display: flex; gap: 8px; justify-content: flex-end; width: 100%;">
@@ -729,13 +374,13 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 if (res.success) {
                     location.reload();
                 } else {
-                    alert(res.message || 'Failed to unlock candidate.');
+                    toastr.error(res.message || 'Failed to unlock candidate.');
                     confirmB.disabled = false;
                     confirmB.innerHTML = '<svg aria-hidden="true"><use href="#i-wallet"/></svg> Confirm Unlock (₦5,000)';
                 }
             })
             .catch(function(err) {
-                alert('An error occurred. Please try again.');
+                toastr.error('An error occurred. Please try again.');
                 confirmB.disabled = false;
                 confirmB.innerHTML = '<svg aria-hidden="true"><use href="#i-wallet"/></svg> Confirm Unlock (₦5,000)';
             });
@@ -788,13 +433,13 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                                 if (vres.success) {
                                     location.reload();
                                 } else {
-                                    alert(vres.message || 'Payment verification failed.');
+                                    toastr.error(vres.message || 'Payment verification failed.');
                                     paystackB.disabled = false;
                                     paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
                                 }
                             })
                             .catch(function() {
-                                alert('Error verifying transaction.');
+                                toastr.error('Error verifying transaction.');
                                 paystackB.disabled = false;
                                 paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
                             });
@@ -806,13 +451,13 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                     });
                     handler.openIframe();
                 } else {
-                    alert(res.message || 'Failed to initialize payment.');
+                    toastr.error(res.message || 'Failed to initialize payment.');
                     paystackB.disabled = false;
                     paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
                 }
             })
             .catch(function(err) {
-                alert('Connection error.');
+                toastr.error('Connection error.');
                 paystackB.disabled = false;
                 paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
             });
@@ -836,13 +481,18 @@ function startMessage(candidateId) {
         if (res.success && res.redirect) {
             window.location.href = res.redirect;
         } else {
-            alert(res.message || 'Failed to start conversation');
+            toastr.error(res.message || 'Failed to start conversation');
         }
     })
     .catch(function(err) {
-        alert('Error starting conversation');
+        toastr.error('Error starting conversation');
         console.error(err);
     });
 }
 </script>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<a href="<?= base_url('employer/candidates') ?>?view=favorites" class="emp-btn emp-btn-outline"><svg aria-hidden="true"><use href="#i-star"/></svg> Favorites</a>
+<a href="<?= base_url('employer/candidates') ?>" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-search-user"/></svg> Search</a>
 <?= $this->endSection() ?>

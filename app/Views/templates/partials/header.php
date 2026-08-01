@@ -6,7 +6,8 @@
         .hamburger { margin-left: auto !important; display: block; }
       }
       @media (max-width: 580px) {
-        .nav-actions .btn { display: none !important; }
+        .nav-actions .btn:not(.btn-dashboard) { display: none !important; }
+        .nav-actions .btn-dashboard { display: inline-flex !important; font-size: 13px; padding: 6px 12px; margin-right: 8px; }
         .nav-logo img { height: 44px !important; }
         .nav-actions { margin-left: auto !important; justify-content: flex-end !important; }
         .hamburger { margin-left: auto !important; margin-right: 0 !important; }
@@ -43,11 +44,11 @@
               <a href="<?= base_url('register') ?>" class="btn btn-primary">Get started free</a>
             <?php else : ?>
               <?php if (auth()->user()->user_type == 'employer'): ?>
-                <a href="<?= base_url('employer/dashboard') ?>" class="btn btn-primary">Dashboard</a>
+                <a href="<?= base_url('employer/dashboard') ?>" class="btn btn-primary btn-dashboard">Dashboard</a>
               <?php elseif (auth()->user()->user_type == 'job_seeker'): ?>
-                <a href="<?= base_url('candidate/dashboard') ?>" class="btn btn-primary">Dashboard</a>
+                <a href="<?= base_url('candidate/dashboard') ?>" class="btn btn-primary btn-dashboard">Dashboard</a>
               <?php else: ?>
-                <a href="<?= base_url('admin/dashboard') ?>" class="btn btn-primary">Dashboard</a>
+                <a href="<?= base_url('admin/dashboard') ?>" class="btn btn-primary btn-dashboard">Dashboard</a>
               <?php endif; ?>
               <a href="<?= base_url('logout') ?>" class="btn btn-outline">Logout</a>
             <?php endif; ?>
@@ -62,8 +63,19 @@
           <div class="mob-group"><p class="mob-group-label">Training</p><a href="<?= base_url('training') ?>">Courses</a><a href="<?= base_url('webinars') ?>">Webinars</a><a href="<?= base_url('cv-review') ?>">CV Review</a></div>
           <div class="mob-group"><p class="mob-group-label">Recruitment</p><a href="<?= base_url('recruitment') ?>">Recruitment services</a><a href="<?= base_url('job-ads') ?>">Job ad pricing</a></div>
           <a href="<?= base_url('employer/post-job') ?>">Post a job</a>
-          <a href="<?= base_url('login') ?>">Log in</a>
-          <a href="<?= base_url('register') ?>" class="mobile-nav-cta">Get started free →</a>
+          <?php if (!auth()->user()) : ?>
+            <a href="<?= base_url('login') ?>">Get Started</a>
+            <a href="<?= base_url('register') ?>" class="mobile-nav-cta">Get started free →</a>
+          <?php else : ?>
+            <?php if (auth()->user()->user_type == 'employer'): ?>
+              <a href="<?= base_url('employer/dashboard') ?>">Dashboard</a>
+            <?php elseif (auth()->user()->user_type == 'job_seeker'): ?>
+              <a href="<?= base_url('candidate/dashboard') ?>">Dashboard</a>
+            <?php else: ?>
+              <a href="<?= base_url('admin/dashboard') ?>">Dashboard</a>
+            <?php endif; ?>
+            <a href="<?= base_url('logout') ?>" class="mobile-nav-cta">Logout →</a>
+          <?php endif; ?>
         </nav>
       </div>
     </header>

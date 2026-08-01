@@ -1,3 +1,4 @@
+<?php $page_title = 'Messages'; ?>
 <?= $this->extend(auth()->user()->user_type === 'employer' ? 'layouts/employer' : 'layouts/app') ?>
 
 <?= $this->section('styles') ?>
@@ -118,6 +119,20 @@
     font-size: .7rem;
     color: var(--muted);
 }
+.conv-unread {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--brand-deep);
+    font-size: .6rem;
+    font-weight: 700;
+    line-height: 1;
+}
 .thread {
     display: flex;
     flex-direction: column;
@@ -159,7 +174,7 @@
         <?php endif; ?>
     </div>
 
-    <section class="inbox" id="inbox" aria-label="Inbox">
+    <section class="card inbox" id="inbox" aria-label="Inbox">
         
         <!-- Left: Conversations List -->
         <div class="conv-pane">
@@ -229,6 +244,9 @@
                                 </span>
                                 <span class="conv-side">
                                     <span class="conv-time"><?= $lastAt ?></span>
+                                    <?php if (!empty($conv['unread_count'])): ?>
+                                        <span class="conv-unread"><?= (int)$conv['unread_count'] ?></span>
+                                    <?php endif; ?>
                                 </span>
                             </a>
                         </li>

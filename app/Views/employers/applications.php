@@ -1,97 +1,10 @@
+<?php $page_title = 'Applications'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.stats--apps {
-  grid-template-columns: repeat(6, 1fr);
-}
-@media (max-width: 1250px) {
-  .stats--apps {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-@media (max-width: 560px) {
-  .stats--apps {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.appl-cell {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-width: 0;
-}
-.appl-name {
-  font-weight: 700;
-  font-size: .85rem;
-  color: var(--brand-deep);
-}
-.appl-mail {
-  font-size: .72rem;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 220px;
-}
-@media (max-width: 860px) {
-  .tbl--apps {
-    min-width: 0;
-  }
-  .tbl--apps thead {
-    display: none;
-  }
-  .tbl--apps tr {
-    display: block;
-    border-bottom: 1px solid var(--border);
-    padding: 14px 4px;
-  }
-  .tbl--apps td {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: none;
-    padding: 5px 0;
-    gap: 10px;
-  }
-  .tbl--apps td::before {
-    content: attr(data-lbl);
-    font-size: .66rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--muted);
-  }
-  .tbl--apps td.no-lbl::before {
-    display: none;
-  }
-  .appl-mail {
-    max-width: 55vw;
-  }
-}
-
-/* Modal Styling */
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1050;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(10, 25, 45, 0.5);
-  backdrop-filter: blur(4px);
-  padding: 16px;
-}
-.modal.show {
-  display: flex;
-}
-</style>
-<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
 <div class="page-head">
-  <div class="page-head-left">
+  <div>
     <h1><svg aria-hidden="true"><use href="#i-doc"/></svg> Applications</h1>
     <p>View and manage applications for your job postings.</p>
   </div>
@@ -265,6 +178,22 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Pagination -->
+  <div class="pager">
+    <span style="display:inline-flex;align-items:center;gap:8px">Per page
+      <select class="select" id="per-page" style="min-height:38px;width:auto;font-size:.8rem;padding:6px 32px 6px 12px" aria-label="Entries per page">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+      </select>
+    </span>
+    <div class="pager-nav" id="pagination-controls">
+      <a class="pager-btn" href="#" aria-disabled="true" aria-label="Previous page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-l"/></svg></a>
+      <a class="pager-btn on" href="#" aria-current="page">1</a>
+      <a class="pager-btn" href="#" aria-disabled="true" aria-label="Next page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+    </div>
+  </div>
 </section>
 
 <!-- Delete Modal -->
@@ -408,14 +337,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.success) {
           location.reload();
         } else {
-          alert(data.message || 'Failed to delete application.');
+          toastr.error(data.message || 'Failed to delete application.');
           confirmDeleteBtn.disabled = false;
           confirmDeleteBtn.textContent = 'Delete';
           hideModals();
         }
       })
       .catch(err => {
-        alert('An error occurred. Please try again.');
+        toastr.error('An error occurred. Please try again.');
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.textContent = 'Delete';
         hideModals();
@@ -431,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const selectedIds = getSelectedIds();
       if (selectedIds.length === 0) {
-        alert('Please select at least one application.');
+        toastr.warning('Please select at least one application.');
         this.value = '';
         return;
       }
@@ -471,11 +400,11 @@ document.addEventListener('DOMContentLoaded', function() {
       if (data.success) {
         location.reload();
       } else {
-        alert(data.message || 'Failed to update statuses.');
+        toastr.error(data.message || 'Failed to update statuses.');
       }
     })
     .catch(err => {
-      alert('An error occurred updating statuses.');
+      toastr.error('An error occurred updating statuses.');
     });
   }
 
@@ -506,14 +435,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.success) {
           location.reload();
         } else {
-          alert(data.message || 'Failed to delete applications.');
+          toastr.error(data.message || 'Failed to delete applications.');
           confirmBulkDeleteBtn.disabled = false;
           confirmBulkDeleteBtn.textContent = 'Delete All';
           hideModals();
         }
       })
       .catch(err => {
-        alert('An error occurred during deletion.');
+        toastr.error('An error occurred during deletion.');
         confirmBulkDeleteBtn.disabled = false;
         confirmBulkDeleteBtn.textContent = 'Delete All';
         hideModals();
@@ -522,4 +451,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<a href="<?= base_url('employer/jobs') ?>" class="emp-btn emp-btn-outline"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> My Jobs</a>
+<a href="<?= base_url('employer/candidates') ?>" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-search-user"/></svg> Find Candidates</a>
 <?= $this->endSection() ?>

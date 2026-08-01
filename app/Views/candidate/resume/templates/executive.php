@@ -147,10 +147,12 @@
     <?php endif; ?>
     <div class="contact">
         <?php if (!empty($resume->email)): ?><?= esc($resume->email) ?><?php endif; ?>
-        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location))): ?><span class="sep">|</span><?php endif; ?>
+        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location) || !empty($resume->linkedin))): ?><span class="sep">|</span><?php endif; ?>
         <?php if (!empty($resume->phone)): ?><?= esc($resume->phone) ?><?php endif; ?>
-        <?php if (!empty($resume->phone) && !empty($resume->location)): ?><span class="sep">|</span><?php endif; ?>
+        <?php if (!empty($resume->phone) && (!empty($resume->location) || !empty($resume->linkedin))): ?><span class="sep">|</span><?php endif; ?>
         <?php if (!empty($resume->location)): ?><?= esc($resume->location) ?><?php endif; ?>
+        <?php if (!empty($resume->location) && !empty($resume->linkedin)): ?><span class="sep">|</span><?php endif; ?>
+        <?php if (!empty($resume->linkedin)): ?><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?><?php endif; ?>
     </div>
 </div>
 
@@ -199,6 +201,30 @@
     $skillNames = array_map(function($s) { return $s->skill_name ?? ''; }, $skills);
     $skillNames = array_filter($skillNames);
     echo esc(implode('  &nbsp;·&nbsp;  ', $skillNames));
+    ?>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($resume->certs)): ?>
+<div class="section-title">Certifications</div>
+<div class="skill-items">
+    <?php 
+        $certs = explode("\n", $resume->certs);
+        $certs = array_map('trim', $certs);
+        $certs = array_filter($certs);
+        echo esc(implode('  &nbsp;·&nbsp;  ', $certs));
+    ?>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($resume->languages)): ?>
+<div class="section-title">Languages</div>
+<div class="skill-items">
+    <?php 
+        $langs = explode(",", $resume->languages);
+        $langs = array_map('trim', $langs);
+        $langs = array_filter($langs);
+        echo esc(implode('  &nbsp;·&nbsp;  ', $langs));
     ?>
 </div>
 <?php endif; ?>

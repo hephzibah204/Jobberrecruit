@@ -1,84 +1,7 @@
+<?php $page_title = 'Checkout'; ?>
 <?= $this->extend('layouts/employer') ?>
 
-<?= $this->section('styles') ?>
-<style>
-.checkout-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: clamp(16px, 2vw, 24px);
-    align-items: start;
-}
-@media (max-width: 960px) {
-    .checkout-grid {
-        grid-template-columns: 1fr;
-    }
-}
-.checkout-summary-card {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-}
-.summary-list {
-    list-style: none;
-    margin: 16px 0;
-    padding: 0;
-}
-.summary-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px dashed var(--border);
-    font-size: 0.88rem;
-}
-.summary-item:last-child {
-    border-bottom: none;
-}
-.checkout-wallet-box {
-    background: var(--brand-light);
-    border: 1px solid rgba(8, 97, 169, 0.2);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.checkout-wallet-icon {
-    width: 40px;
-    height: 40px;
-    background: var(--white);
-    color: var(--brand);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.checkout-wallet-icon svg {
-    width: 20px;
-    height: 20px;
-}
-.wallet-details {
-    flex: 1;
-}
-.wallet-details-lbl {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--brand-dark);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.wallet-details-val {
-    font-family: 'Sora', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: var(--brand-deep);
-}
-</style>
-<?= $this->endSection() ?>
 
-<?php
 // Resolve item / plan attributes dynamically
 $itemName = '';
 $itemDesc = '';
@@ -117,7 +40,7 @@ $canPayWithWallet = ($walletBal >= $finalAmount && $finalAmount > 0);
 ?>
 
 <?= $this->section('content') ?>
-<div class="page-hd">
+<div class="page-head">
     <div class="page-title">
         <h1><svg aria-hidden="true"><use href="#i-card"/></svg> Checkout</h1>
         <p>Confirm your subscription or bundle purchase details</p>

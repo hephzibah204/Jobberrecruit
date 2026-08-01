@@ -1,3 +1,4 @@
+<?php $page_title = 'Referral Program'; ?>
 <?= $this->extend(auth()->loggedIn() && auth()->user()->user_type === 'employer' ? 'layouts/employer' : 'layouts/app') ?>
 
 <?= $this->section('styles') ?>
@@ -38,6 +39,23 @@
 .btn-xs:hover { background: #2c3640; border-color: #2c3640; }
 .btn-li { background: #0077b5; border-color: #0077b5; }
 .btn-li:hover { background: #004b73; border-color: #004b73; }
+.copied-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--success, #16a34a);
+    background: var(--success-light, #dcfce7);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity .2s;
+}
+.copied-toast.show {
+    opacity: 1;
+}
 
 ol.how {
     list-style: none;
@@ -86,13 +104,13 @@ ol.how li p {
 <div class="content">
     <div class="page-head">
         <div>
-            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-gift"/></svg> Referral Program</h1>
-            <p>Invite friends and earn wallet rewards to spend on courses and premium features.</p>
+            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-gift"/></svg> Referral &amp; Affiliate Program</h1>
+            <p>Invite friends and earn wallet rewards when they join and use JobberRecruit.</p>
         </div>
     </div>
 
     <!-- Referral Stats Grid -->
-    <section class="stats" aria-label="Referral statistics" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+    <section class="stats stats--ref" aria-label="Referral statistics" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
         <div class="stat">
             <div class="stat-top">
                 <span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-users"/></svg></span>
@@ -133,6 +151,7 @@ ol.how li p {
                     <button class="btn btn-accent" id="copy-btn">
                         <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-copy"/></svg> Copy Link
                     </button>
+                    <span class="copied-toast" id="copied" role="status"><svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-check"/></svg> Link copied to clipboard</span>
                 </div>
 
                 <div class="lbl" style="margin-top:18px">Share on social media</div>
@@ -163,21 +182,21 @@ ol.how li p {
             <div class="card-body">
                 <ol class="how">
                     <li>
-                        <span class="how-n" aria-hidden="true">1</span>
+                        <span class="how-n" aria-hidden="true"></span>
                         <div>
                             <b>Share your link</b>
                             <p>Invite friends to join JobberRecruit with your unique referral link.</p>
                         </div>
                     </li>
                     <li>
-                        <span class="how-n" aria-hidden="true">2</span>
+                        <span class="how-n" aria-hidden="true"></span>
                         <div>
                             <b>They sign up</b>
                             <p>Your friend creates a free account and starts exploring jobs.</p>
                         </div>
                     </li>
                     <li>
-                        <span class="how-n" aria-hidden="true">3</span>
+                        <span class="how-n" aria-hidden="true"></span>
                         <div>
                             <b>Earn rewards</b>
                             <p>When they complete a qualifying action, your wallet is credited instantly — enough referrals can cover a full training course.</p>
@@ -255,6 +274,12 @@ $(document).ready(function() {
         copyText.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyText.value);
         toastr.success('Referral link copied to clipboard!');
+        // Show the copied toast
+        var copied = document.getElementById('copied');
+        if (copied) {
+            copied.classList.add('show');
+            setTimeout(function() { copied.classList.remove('show'); }, 2000);
+        }
     });
 });
 </script>

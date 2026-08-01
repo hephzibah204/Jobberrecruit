@@ -86,7 +86,7 @@ $hasUnlimitedAccess = $user ? $creditService->hasUnlimitedAccess($user->id) : fa
     <div class="pager">
         <span>Showing results</span>
         <div class="pager-nav">
-            <?= $pager->links('default', 'admin_pagination') ?>
+            <?= $pager->links('default', 'employer_pagination') ?>
         </div>
     </div>
 <?php else: ?>

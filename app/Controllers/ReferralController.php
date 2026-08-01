@@ -5,9 +5,11 @@ namespace App\Controllers;
 use App\Models\ReferralModel;
 use App\Models\UserModel;
 use App\Services\ReferralService;
+use CodeIgniter\API\ResponseTrait;
 
 class ReferralController extends BaseController
 {
+    use ResponseTrait;
     protected $referralModel;
     protected $userModel;
     protected $referralService;

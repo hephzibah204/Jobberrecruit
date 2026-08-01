@@ -25,6 +25,7 @@ $routes->get('training/course/(:num)', 'ElearningController::show/$1');
 $routes->get('training/content/(:num)', 'ElearningController::content/$1');
 $routes->get('training/enroll/(:num)', 'ElearningController::enroll/$1');
 $routes->get('training/verify/(:num)', 'ElearningController::verify/$1');
+$routes->get('training/certificate/view/(:num)', 'ElearningController::viewCertificate/$1');
 $routes->get('training/certificate/download/(:num)', 'ElearningController::downloadCertificate/$1');
 $routes->get('training/certificates', 'ElearningController::myCertificates');
 $routes->post('training/complete/(:num)', 'ElearningController::completeCourse/$1');
@@ -269,6 +270,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('profile/edit', 'JobSeekerController::edit_profile');
     $routes->post('profile/edit', 'JobSeekerController::edit_profile');
     $routes->post('profile/visibility', 'JobSeekerController::toggleVisibility');
+    $routes->get('settings', 'JobSeekerController::security');
     $routes->get('settings/security', 'JobSeekerController::security');
     // $routes->get('security/edit', 'JobSeekerController::edit_security');
     $routes->post('settings/security/change-password', 'JobSeekerController::changePassword');
@@ -323,9 +325,10 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
         $routes->post('evaluate-interview', 'CareerToolsController::evaluateInterview');
     });
 
-    // My Courses
+    // My Courses & Certificates
     $routes->get('my-courses', 'ElearningController::myCourses');
     $routes->get('my-courses/(:num)', 'ElearningController::classroom/$1');
+    $routes->get('certificates', 'ElearningController::myCertificates');
 
     // Transactions
     $routes->get('transactions', 'JobSeekerController::transactions');
@@ -341,6 +344,7 @@ $routes->post('pricing/webhook', 'EmployerController::webhook'); // webhook endp
 // Global Wallet Routes
 $routes->post('wallet/initialize', 'WalletController::initializeFunding', ['filter' => 'auth']);
 $routes->get('wallet/callback', 'WalletController::paymentCallback');
+$routes->post('employer/wallet/pay-with-wallet', 'WalletController::payWithWallet', ['filter' => 'auth']);
 
 
 // Admin

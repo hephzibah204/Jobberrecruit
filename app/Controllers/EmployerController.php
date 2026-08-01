@@ -3647,6 +3647,9 @@ class EmployerController extends BaseController
 
         $creditBalance = $creditService->getAvailableCredits($user->id);
 
+        $wallet = (new \App\Services\WalletService())->getOrCreateWallet($user->id);
+        $walletBalance = (float) ($wallet->balance ?? 0.0);
+
         return view('employers/pricing', [
             'title'            => 'Pricing & Plans',
             'user'           => $user,
@@ -3655,7 +3658,8 @@ class EmployerController extends BaseController
             'bundles'          => $bundles,
             'creditBalance'    => $creditBalance,
             'pricingTiers'     => $pricingTiers,           // ← Important
-            'subscriptionPlan' => $subscriptionPlan        // optional
+            'subscriptionPlan' => $subscriptionPlan,        // optional
+            'walletBalance'    => $walletBalance,
         ]);
     }
 

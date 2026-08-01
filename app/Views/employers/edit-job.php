@@ -1,8 +1,9 @@
+<?php $page_title = 'Edit Job'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('content') ?>
-<div class="page-hd">
-  <div class="page-hd-left">
+<div class="page-head">
+  <div class="page-head-left">
     <h1><svg aria-hidden="true" width="22" height="22"><use href="#i-edit"/></svg> Edit Job</h1>
     <p>Update your job posting details to keep it accurate and attract the best candidates.</p>
   </div>
@@ -440,35 +441,7 @@
 <button type="submit" class="emp-btn emp-btn-accent" form="edit-job-form">Update Job</button>
 <?= $this->endSection() ?>
 
-<?= $this->section('styles') ?>
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<style>
-  .select2-container--bootstrap-5 {
-    width: 100% !important;
-  }
-  .select2-container--bootstrap-5 .select2-selection {
-    height: 44px !important;
-    min-height: 44px !important;
-    border: 1.5px solid var(--border) !important;
-    border-radius: 9px !important;
-    background-color: #fff !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-    display: flex !important;
-    align-items: center !important;
-    height: 100% !important;
-    padding-left: 14px !important;
-    color: var(--text) !important;
-  }
-  .select2-container--bootstrap-5.select2-container--focus .select2-selection,
-  .select2-container--bootstrap-5.select2-container--open .select2-selection {
-    border-color: var(--brand) !important;
-    box-shadow: 0 0 0 3px rgba(8,97,169,.12) !important;
-  }
-</style>
-<?= $this->endSection() ?>
+
 
 <?= $this->section('scripts') ?>
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>

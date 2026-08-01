@@ -1,64 +1,5 @@
+<?php $page_title = 'Candidate Profile'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.cp-grid{display:grid;grid-template-columns:330px 1fr;gap:clamp(14px,1.8vw,20px);align-items:start}
-@media (max-width:1024px){.cp-grid{grid-template-columns:1fr}}
-.cp-col{display:flex;flex-direction:column;gap:clamp(14px,1.8vw,20px)}
-.cp-sticky{position:sticky;top:82px}
-@media (max-width:1024px){.cp-sticky{position:static}}
-.cp-id{text-align:center;padding:26px 22px 22px}
-.cp-ava{width:96px;height:96px;border-radius:50%;margin:0 auto 14px;background:var(--brand-light);border:4px solid #fff;box-shadow:var(--shadow);color:var(--brand);font-family:'Sora',sans-serif;font-weight:800;font-size:1.6rem;display:flex;align-items:center;justify-content:center;position:relative}
-.cp-ava .dot{position:absolute;right:5px;bottom:5px;width:15px;height:15px;border-radius:50%;background:var(--success);border:3px solid #fff}
-.cp-name{font-family:'Sora',sans-serif;font-weight:800;font-size:1.15rem;color:var(--brand-deep)}
-.cp-role{font-size:.84rem;color:var(--muted);margin:1px 0 12px}
-.cp-pills{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
-.lock-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:.84rem}
-.lock-row:last-of-type{border-bottom:none}
-.lock-row svg{width:15px;height:15px;color:var(--brand);flex-shrink:0}
-.lock-row .lbl2{font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block}
-.lock-row b{font-weight:600;color:var(--brand-deep);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;letter-spacing:.04em}
-.lock-tag{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;color:var(--accent-dark);background:var(--accent-light);border-radius:20px;padding:3px 10px;flex-shrink:0}
-.lock-tag svg{width:10px;height:10px;color:var(--accent-dark)}
-.cp-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}
-.sec-title2{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
-.sec-title2:first-child{margin-top:0}
-.cp-empty{font-size:.84rem;color:var(--muted);font-style:italic}
-.kv{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px}
-@media (max-width:560px){.kv{grid-template-columns:1fr}}
-.kv .k{font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
-.kv .v{font-size:.88rem;font-weight:600;color:var(--brand-deep)}
-.xp{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--border)}
-.xp:first-of-type{padding-top:2px}
-.xp:last-of-type{border-bottom:none;padding-bottom:2px}
-.xp-ic{width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0}
-.xp-ic svg{width:16px;height:16px}
-.xp b{font-size:.86rem;color:var(--brand-deep);display:block}
-.xp i{font-style:normal;font-size:.74rem;color:var(--muted)}
-.xp p{font-size:.8rem;color:var(--text);margin-top:4px;line-height:1.6}
-
-/* unlock modal */
-.modal-scrim{position:fixed;inset:0;background:rgba(10,25,45,.55);backdrop-filter:blur(2px);z-index:1400;display:none;align-items:flex-end;justify-content:center;padding:0}
-@media (min-width:641px){.modal-scrim{align-items:center;padding:24px}}
-.modal-scrim.show{display:flex}
-.modal{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
-@media (min-width:641px){.modal{border-radius:16px}}
-.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border)}
-.modal-title{font-family:'Sora',sans-serif;font-weight:800;font-size:1.02rem;color:var(--brand-deep);display:inline-flex;align-items:center;gap:9px}
-.modal-title svg{width:18px;height:18px;color:var(--brand)}
-.modal-close{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition)}
-.modal-close:hover{border-color:var(--danger);color:var(--danger)}
-.modal-close svg{width:16px;height:16px}
-.modal-body{padding:18px 22px;overflow-y:auto}
-.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;padding-bottom:max(14px,env(safe-area-inset-bottom,0));border-top:1px solid var(--border);flex-wrap:wrap}
-@media (max-width:480px){.modal-foot .btn{flex:1}}
-.unlock-list{list-style:none;display:flex;flex-direction:column;gap:8px;margin:14px 0}
-.unlock-list li{display:flex;gap:9px;align-items:center;font-size:.82rem;color:var(--text)}
-.unlock-list svg{width:15px;height:15px;color:var(--brand);flex-shrink:0}
-.unlock-total{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 15px;font-size:.84rem;font-weight:600;color:var(--brand-deep)}
-.unlock-total b{font-family:'Sora',sans-serif;font-size:1.05rem}
-</style>
-<?= $this->endSection() ?>
 
 <?php
 // Normalize the unlocked variable
@@ -111,7 +52,7 @@ if (isset($user)) {
 ?>
 
 <?= $this->section('content') ?>
-<div class="page-hd">
+<div class="page-head">
   <div>
     <h1><svg aria-hidden="true"><use href="#i-users"/></svg> Candidate Profile</h1>
     <p>Review this candidate's full profile.</p>
@@ -409,17 +350,16 @@ if (isset($user)) {
       
       <p style="font-size:.72rem;color:var(--muted);margin-top:12px">The fee is deducted from your wallet. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
     </div>
-    </div>
-    <div class="modal-foot" style="flex-direction: column; gap: 10px; align-items: stretch; width: 100%;">
-      <div style="display: flex; gap: 8px; justify-content: flex-end; width: 100%;">
-        <button class="emp-btn emp-btn-outline" id="unlock-cancel" style="flex: 1;">Cancel</button>
+    <div class="modal-foot modal-foot--stacked">
+      <div class="modal-foot-row">
+        <button class="emp-btn emp-btn-outline" id="unlock-cancel">Cancel</button>
         <?php if ($walletBalance >= 5000): ?>
-          <button class="emp-btn emp-btn-primary" id="confirm-unlock-btn" onclick="executeUnlock(<?= (int)$candidate->id ?>)" style="flex: 2;">
+          <button class="emp-btn emp-btn-primary" id="confirm-unlock-btn" onclick="executeUnlock(<?= (int)$candidate->id ?>)">
             <svg aria-hidden="true"><use href="#i-wallet"/></svg> Use Wallet (₦5,000)
           </button>
         <?php endif; ?>
       </div>
-      <button class="emp-btn emp-btn-accent" id="unlock-paystack-btn" style="width: 100%;">
+      <button class="emp-btn emp-btn-accent" id="unlock-paystack-btn">
         <svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)
       </button>
     </div>
@@ -475,7 +415,6 @@ if (isset($user)) {
   if (scrim) {
     scrim.addEventListener('click',function(e){if(e.target===scrim)close()});
   }
-  });
   
   const paystackB = document.getElementById('unlock-paystack-btn');
   if (paystackB) {

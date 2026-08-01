@@ -220,7 +220,7 @@ $pendingCount = $pendingApps ?? 0;
           <?php if ($savedJobsCount > 0): ?><span class="sb-count"><?= $savedJobsCount ?></span><?php endif; ?>
         </a>
         <a class="sb-link" href="<?= base_url('candidate/profile') ?>"
-           <?= dashIsActive('candidate/profile') ? 'aria-current="page"' : '' ?>>
+           <?= dashIsActiveStart('candidate/profile') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-user"/></svg> My Profile
         </a>
         <?php if (env('feature_messaging', 'true') == 'true'): ?>
@@ -430,10 +430,19 @@ $pendingCount = $pendingApps ?? 0;
           <svg aria-hidden="true"><use href="#i-menu"/></svg>
         </button>
 
-        <form class="tb-search" role="search" action="<?= base_url('jobs') ?>" method="get">
-          <svg aria-hidden="true"><use href="#i-search"/></svg>
-          <input type="search" name="keywords" placeholder="Search jobs…" aria-label="Search jobs">
-        </form>
+        <!-- Breadcrumb (tb-crumb) shown when page_title is set, otherwise fallback to search -->
+        <?php if (!empty($page_title)): ?>
+          <nav class="tb-crumb" aria-label="Breadcrumb">
+            <a href="<?= $isEmployer ? base_url('employer/dashboard') : base_url('candidate/dashboard') ?>">Dashboard</a>
+            <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
+            <b><?= esc($page_title) ?></b>
+          </nav>
+        <?php else: ?>
+          <form class="tb-search" role="search" action="<?= base_url('jobs') ?>" method="get">
+            <svg aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" name="keywords" placeholder="Search jobs…" aria-label="Search jobs">
+          </form>
+        <?php endif; ?>
 
         <div class="tb-right">
           <!-- Wallet chip -->

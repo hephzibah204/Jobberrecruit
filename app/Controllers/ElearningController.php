@@ -722,30 +722,77 @@ class ElearningController extends BaseController
         }
         $pdfPath = $tempPath . 'certificate-' . $certificate['certificate_code'] . '-' . time() . '.pdf';
 
-        try {
-            // Browsershot needs Node + Chrome on the host; not available on shared hosting
-            Browsershot::html($html)
-                ->format('A4')
-                ->landscape()
-                ->margins(0, 0, 0, 0)
-                ->showBackground()
-                ->noSandbox()
-                ->save($pdfPath);
-        } catch (\Throwable $e) {
-            log_message('warning', 'Browsershot unavailable, falling back to Dompdf: ' . $e->getMessage());
+        // Browsershot needs Node + Chrome on the host
+        $browsershot = Browsershot::html($html)
+            ->format('A4')
+            ->landscape()
+            ->margins(0, 0, 0, 0)
+            ->showBackground()
+            ->noSandbox();
 
-            $dompdf = new \Dompdf\Dompdf([
-                'isRemoteEnabled'      => true,
-                'isHtml5ParserEnabled' => true,
-            ]);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'landscape');
-            $dompdf->render();
-            file_put_contents($pdfPath, $dompdf->output());
+        // On Windows, explicitly set node/npm paths to resolve environment PATH lookup failures in web requests
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $nodePath = 'C:\\Program Files\\nodejs\\node.exe';
+            $npmPath  = 'C:\\Program Files\\nodejs\\npm.cmd';
+            if (file_exists($nodePath)) {
+                $browsershot->setNodeBinary($nodePath);
+            }
+            if (file_exists($npmPath)) {
+                $browsershot->setNpmBinary($npmPath);
+            }
         }
+
+        $browsershot->save($pdfPath);
 
         return $this->response->download($pdfPath, null)
             ->setFileName('certificate-' . $certificate['certificate_code'] . '.pdf');
+    }
+
+    /**
+     * View certificate as HTML page in browser (no PDF conversion)
+     */
+    public function viewCertificate($certificateId)
+    {
+        if (!auth()->loggedIn()) {
+            return redirect()->to('login')->with('error', 'Please login');
+        }
+
+        $user = auth()->user();
+        $certModel = model(CourseCertificateModel::class);
+
+        // Admins can view any certificate; candidates can only view their own
+        if ($user->inGroup('admin')) {
+            $certificate = $certModel->find($certificateId);
+        } else {
+            $certificate = $certModel
+                ->where('id', $certificateId)
+                ->where('user_id', $user->id)
+                ->first();
+        }
+
+        if (!$certificate) {
+            return redirect()->back()->with('error', 'Certificate not found');
+        }
+
+        $course    = $this->courseModel->find($certificate['course_id']);
+        $targetUser = ($user->id === (int)$certificate['user_id'])
+            ? $user
+            : model(UserModel::class)->find($certificate['user_id']);
+
+        // Resolve full_name from job_seekers if not on user object
+        if (empty($targetUser->full_name)) {
+            $seekerModel = model(\App\Models\JobSeekerModel::class);
+            $seeker = $seekerModel->where('user_id', $targetUser->id)->first();
+            if ($seeker) {
+                $targetUser->full_name = $seeker['full_name'] ?? $seeker['first_name'] . ' ' . $seeker['last_name'];
+            }
+        }
+
+        return view('certificates/course_certificate', [
+            'certificate' => $certificate,
+            'course'      => $course,
+            'user'        => $targetUser,
+        ]);
     }
 
     /**

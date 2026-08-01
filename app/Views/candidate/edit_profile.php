@@ -1,82 +1,8 @@
+<?php $page_title = 'My Profile · Edit'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
-<style>
-/* ── Profile-Edit page additional styles ── */
-.edit-wrap { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-.cv-card { border: 1px solid var(--border); border-radius: 14px; background: var(--card); overflow: hidden; transition: box-shadow .2s; }
-.cv-card:focus-within { box-shadow: 0 0 0 3px rgba(var(--brand-rgb),.12); }
-.cv-card.is-complete { border-color: #22c55e55; }
-.cv-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; cursor: pointer; list-style: none; user-select: none; }
-.cv-card-header::-webkit-details-marker, .cv-card-header::marker { display: none; }
-.cv-card-header:hover { background: #fafbfd; }
-.cv-card-title { display: inline-flex; align-items: center; gap: 8px; font-family:'Sora',sans-serif; font-weight: 700; font-size: .94rem; color: var(--brand-deep); }
-.cv-card-title svg { width:18px; height:18px; flex-shrink:0; }
-.cv-card-done { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
-.cv-card-done.complete   { background: #dcfce7; color: #166534; }
-.cv-card-done.incomplete { background: #fef9c3; color: #92400e; }
-.cv-card-done.optional   { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
-.cv-chev { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; transition: transform .25s; flex-shrink:0; color: var(--muted); }
-details[open] .cv-chev { transform: rotate(90deg); }
-.cv-card-body { padding: 6px 22px 22px; border-top: 1px solid var(--border); }
-.rep-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
-.rep-row { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #fafbfd; position: relative; }
-.rep-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-@media (max-width: 620px) { .rep-grid { grid-template-columns: 1fr; } }
-.rep-current { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--text); margin: 10px 0; cursor: pointer; }
-.rep-remove { margin-top: 10px; color: #b91c1c; border-color: #f3c2c2; }
-.rep-remove:hover { background: #fef2f2; }
-.cv-card-hint { font-size: .82rem; color: var(--muted); margin-bottom: 16px; margin-top: 12px; line-height: 1.6; }
-.form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
-.autosave-note { font-size: .76rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
-.autosave-note svg { width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2; }
-.ai-action { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.ai-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--brand), #7c3aed); color: #fff; font-size: .78rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-.ai-btn svg { width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2; }
-.ai-btn:hover { opacity: .88; }
-.char-count { font-size: .74rem; color: var(--muted); text-align: right; margin-top: 4px; }
-.pref-pill-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.pref-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; font-size: .82rem; transition: all .15s; }
-.pref-pill input { accent-color: var(--brand); }
-.pref-pill:has(input:checked) { border-color: var(--brand); background: rgba(var(--brand-rgb),.06); color: var(--brand); }
-.salary-range { display: flex; align-items: center; gap: 10px; }
-.salary-range select { flex: 1; }
-.salary-range span { color: var(--muted); font-size: .82rem; }
-.skill-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-.skill-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-.skill-row-inner { display: flex; align-items: center; gap: 8px; }
-.skill-dots { display: flex; gap: 4px; }
-.skill-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); background: transparent; cursor: pointer; transition: all .15s; }
-.skill-dot.active { background: var(--brand); border-color: var(--brand); }
-.skill-level-label { font-size: .72rem; color: var(--muted); white-space: nowrap; }
-.entry-remove { background: none; border: none; cursor: pointer; color: var(--muted); padding: 6px; border-radius: 6px; line-height: 0; }
-.entry-remove:hover { color: #ef4444; }
-.lang-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; }
-.social-row { display: grid; grid-template-columns: 160px 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; }
-.remove-lang, .remove-social { background: none; border: none; cursor: pointer; color: var(--muted); padding: 8px; border-radius: 6px; line-height: 0; }
-.remove-lang:hover, .remove-social:hover { color: #ef4444; }
-.ref-entry { background: var(--bg); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
-.ref-entry-header { font-size: .82rem; font-weight: 700; color: var(--brand-deep); margin-bottom: 12px; }
-.ref-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; font-size: .84rem; }
-.jr-auto-certs { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; }
-.jr-auto-header { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: .84rem; color: var(--brand-deep); margin-bottom: 12px; }
-.jr-auto-header svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; }
-.jr-cert-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #bfdbfe44; }
-.jr-cert-item:last-of-type { border-bottom: none; }
-.jr-cert-icon { width: 36px; height: 36px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.jr-cert-icon svg { width:16px; height:16px; fill:none; stroke:#3b82f6; stroke-width:2; }
-.jr-cert-body { flex: 1; }
-.jr-cert-body strong { display: block; font-size: .84rem; color: var(--brand-deep); }
-.jr-cert-body span { font-size: .74rem; color: var(--muted); }
-.jr-verified-tag { display: inline-flex; align-items: center; gap: 4px; font-size: .68rem; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 20px; padding: 2px 8px; }
-.jr-verified-tag svg { width:10px; height:10px; fill:none; stroke:currentColor; stroke-width:2.5; }
-.jr-auto-link { display: block; font-size: .76rem; color: var(--brand); margin-top: 10px; }
-@media (max-width: 600px) {
-  .lang-row { grid-template-columns: 1fr 1fr auto; }
-  .social-row { grid-template-columns: 1fr; }
-}
-</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -105,12 +31,12 @@ $langsDone      = !empty($candidate->languages);
 $portfolioDone  = !empty($candidate->portfolio);
 ?>
 
-<div class="content">
+<main class="content" id="main-content">
 
     <!-- Header -->
     <div class="page-head">
         <div>
-            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-edit"/></svg> Edit Profile</h1>
+            <h1><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile</h1>
             <p>Update your personal, career, and document information</p>
         </div>
         <div class="page-actions">
@@ -129,7 +55,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
                 <span class="progress-text"><?= $completion ?>% Completed</span>
                 <span class="progress-tip">
-                    <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-zap"/></svg>
+                    <svg aria-hidden="true"><use href="#i-zap"/></svg>
                     <span>
                         <?php if ($completion < 60): ?>Complete <?= 60 - $completion ?>% more to unlock ₦200
                         <?php elseif ($completion < 80): ?>Complete <?= 80 - $completion ?>% more to unlock ₦500
@@ -140,7 +66,7 @@ $portfolioDone  = !empty($candidate->portfolio);
             </div>
             <div class="progress-actions">
                 <span class="wallet-chip <?= $walletBalance > 0 ? 'has-balance' : '' ?>">
-                    <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg>
+                    <svg aria-hidden="true"><use href="#i-wallet"/></svg>
                     <span class="wallet-label">Wallet:</span>
                     <span>₦<?= number_format($walletBalance, 2) ?></span>
                 </span>
@@ -174,7 +100,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                             <?php if (!empty($candidate->profile_picture)): ?>
                                 <img src="<?= base_url($candidate->profile_picture) ?>" id="currentProfilePic" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
                             <?php else: ?>
-                                <svg aria-hidden="true" style="width:30px;height:30px;color:var(--muted);fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-users"/></svg>
+                                <svg aria-hidden="true"><use href="#i-users"/></svg>
                             <?php endif; ?>
                             <img id="profilePreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;" alt="">
                         </div>
@@ -244,7 +170,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary btn-sm">
-                            <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-check"/></svg> Save personal info
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> Save personal info
                         </button>
                         <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Saved when you click Update Profile at the bottom</span>
                     </div>
@@ -363,11 +289,11 @@ $portfolioDone  = !empty($candidate->portfolio);
                             <label class="rep-current"><input type="checkbox" class="exp-current-toggle" <?= !empty($xp->is_current) ? 'checked' : '' ?>> I currently work here</label>
                             <input type="hidden" name="exp_is_current[]" value="<?= !empty($xp->is_current) ? '1' : '0' ?>">
                             <div class="form-field"><label>Description</label><textarea name="exp_description[]" class="input" rows="2" placeholder="What you did / achieved"><?= esc($xp->description ?? '') ?></textarea></div>
-                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm" id="add-exp"><svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-plus"/></svg> Add work experience</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="add-exp"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add work experience</button>
                 </div>
             </details>
 
@@ -391,11 +317,11 @@ $portfolioDone  = !empty($candidate->portfolio);
                                 <div class="form-field"><label>End year</label><input type="text" name="edu_end_year[]" class="input" maxlength="4" value="<?= esc($ed->end_year ?? '', 'attr') ?>" placeholder="2018"></div>
                                 <div class="form-field"><label>Grade (optional)</label><input type="text" name="edu_grade[]" class="input" value="<?= esc($ed->grade ?? '', 'attr') ?>" placeholder="e.g. Second Class Upper"></div>
                             </div>
-                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm" id="add-edu"><svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-plus"/></svg> Add education</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="add-edu"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add education</button>
                 </div>
             </details>
 
@@ -412,7 +338,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                     <label class="rep-current"><input type="checkbox" class="exp-current-toggle"> I currently work here</label>
                     <input type="hidden" name="exp_is_current[]" value="0">
                     <div class="form-field"><label>Description</label><textarea name="exp_description[]" class="input" rows="2" placeholder="What you did / achieved"></textarea></div>
-                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
                 </div>
             </template>
             <template id="edu-template">
@@ -425,7 +351,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                         <div class="form-field"><label>End year</label><input type="text" name="edu_end_year[]" class="input" maxlength="4" placeholder="2018"></div>
                         <div class="form-field"><label>Grade (optional)</label><input type="text" name="edu_grade[]" class="input" placeholder="e.g. Second Class Upper"></div>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-x"/></svg> Remove</button>
+                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
                 </div>
             </template>
 
@@ -539,7 +465,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                             <?php if (!empty($candidate->resume)): ?>
                                 <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
                                     <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline btn-sm">
-                                        <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-eye"/></svg> View Current CV
+                                        <svg aria-hidden="true"><use href="#i-eye"/></svg> View Current CV
                                     </a>
                                     <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;">
                                         <input type="checkbox" name="remove_resume" value="1"> Remove CV
@@ -548,7 +474,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                             <?php endif; ?>
                             <div id="resumePreview" style="display:none;margin-top:8px;">
                                 <div style="background:#f5f7fb;border-radius:8px;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;">
-                                    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:var(--brand);stroke-width:2;"><use href="#i-doc"/></svg>
+                                    <svg aria-hidden="true"><use href="#i-doc"/></svg>
                                     <span id="resumePreviewText" style="font-size:.8rem;"></span>
                                 </div>
                             </div>
@@ -569,7 +495,7 @@ $portfolioDone  = !empty($candidate->portfolio);
         </div>
 
     </form>
-</div>
+</main>
 
 <?= $this->endSection() ?>
 
@@ -620,7 +546,7 @@ $(document).ready(function () {
     // ── AI Summary Generate ──
     $('#aiSummaryBtn').on('click', function () {
         const btn = $(this);
-        btn.prop('disabled', true).html('<svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-refresh"/></svg> Generating…');
+        btn.prop('disabled', true).html('<svg aria-hidden="true"><use href="#i-refresh"/></svg> Generating…');
 
         const skills = $('textarea[name="skills"]').val();
         const jobTitle = $('input[name="job_title"]').val();
@@ -645,7 +571,7 @@ $(document).ready(function () {
                 toastr.warning('AI generation failed — please try again.');
             },
             complete: function () {
-                btn.prop('disabled', false).html('<svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-zap"/></svg> AI generate');
+                btn.prop('disabled', false).html('<svg aria-hidden="true"><use href="#i-zap"/></svg> AI generate');
             }
         });
     });

@@ -1,3 +1,4 @@
+<?php $page_title = 'Messages'; ?>
 <?= $this->extend(auth()->user()->user_type === 'employer' ? 'layouts/employer' : 'layouts/app') ?>
 
 <?= $this->section('styles') ?>
@@ -269,7 +270,7 @@ if (auth()->user()->user_type === 'employer') {
         </div>
     </div>
 
-    <section class="inbox chat-open" id="inbox" aria-label="Inbox">
+    <section class="card inbox chat-open" id="inbox" aria-label="Inbox">
         
         <!-- Left: Conversations List -->
         <div class="conv-pane">
@@ -440,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('message', msg);
         formData.append('recipient_id', this.querySelector('[name="recipient_id"]').value);
         formData.append('job_id', this.querySelector('[name="job_id"]').value);
+        formData.append('<?= csrf_token() ?>', csrfToken);
 
         var sendUrl = '<?= base_url(auth()->user()->user_type === "employer" ? "employer/messages/send" : "candidate/messages/send") ?>';
 

@@ -1,99 +1,5 @@
+<?php $page_title = 'Job Details'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.job-detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
-}
-@media (max-width: 991px) {
-  .job-detail-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.detail-card {
-  margin-bottom: 20px;
-}
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.88rem;
-}
-.detail-item:last-child {
-  border-bottom: none;
-}
-.detail-label {
-  font-weight: 600;
-  color: var(--muted);
-}
-.detail-val {
-  color: var(--text);
-  text-align: right;
-}
-.appl-cell {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-width: 0;
-}
-.appl-name {
-  font-weight: 700;
-  font-size: .85rem;
-  color: var(--brand-deep);
-}
-.appl-mail {
-  font-size: .72rem;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 220px;
-}
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1050;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(10, 25, 45, 0.5);
-  backdrop-filter: blur(4px);
-  padding: 16px;
-}
-.modal.show {
-  display: flex;
-}
-.modal-content {
-  background: #fff;
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 440px;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-.modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.modal-body {
-  padding: 20px;
-}
-.modal-footer {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-</style>
-<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
@@ -553,13 +459,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (res.success) {
         location.reload();
       } else {
-        alert(res.message || 'Failed to promote job.');
+        toastr.error(res.message || 'Failed to promote job.');
         btn.disabled = false;
         btn.textContent = 'Yes, Promote Job';
       }
     })
     .catch(() => {
-      alert('Network error. Please try again.');
+      toastr.error('Network error. Please try again.');
       btn.disabled = false;
       btn.textContent = 'Yes, Promote Job';
     });
@@ -597,13 +503,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (res.success) {
         location.reload();
       } else {
-        alert(res.message || 'Failed to stop featuring job.');
+        toastr.error(res.message || 'Failed to stop featuring job.');
         btn.disabled = false;
         btn.textContent = 'Yes, Stop Featuring';
       }
     })
     .catch(() => {
-      alert('Network error. Please try again.');
+      toastr.error('Network error. Please try again.');
       btn.disabled = false;
       btn.textContent = 'Yes, Stop Featuring';
     });
@@ -655,13 +561,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (res.success) {
         location.reload();
       } else {
-        alert(res.message || 'Failed to update anonymous status.');
+        toastr.error(res.message || 'Failed to update anonymous status.');
         btn.disabled = false;
         btn.textContent = 'Confirm';
       }
     })
     .catch(() => {
-      alert('Network error. Please try again.');
+      toastr.error('Network error. Please try again.');
       btn.disabled = false;
       btn.textContent = 'Confirm';
     });
@@ -695,13 +601,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (res.success) {
         location.reload();
       } else {
-        alert(res.message || 'Failed to delete application.');
+        toastr.error(res.message || 'Failed to delete application.');
         btn.disabled = false;
         btn.textContent = 'Delete';
       }
     })
     .catch(() => {
-      alert('Network error. Please try again.');
+      toastr.error('Network error. Please try again.');
       btn.disabled = false;
       btn.textContent = 'Delete';
     });

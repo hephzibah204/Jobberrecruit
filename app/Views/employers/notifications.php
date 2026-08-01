@@ -1,224 +1,17 @@
+<?php $page_title = 'Candidate Alerts'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('styles') ?>
-<style>
-.alert-card {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 18px;
-    background: #fff;
-    transition: var(--transition);
-}
-.alert-card:hover {
-    box-shadow: var(--shadow);
-}
-.alert-card + .alert-card {
-    margin-top: 14px;
-}
-.alert-top {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.alert-ic {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: var(--brand-light);
-    color: var(--brand);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.alert-ic svg {
-    width: 18px;
-    height: 18px;
-}
-.alert-name {
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    font-size: .92rem;
-    color: var(--brand-deep);
-}
-.alert-meta {
-    font-size: .72rem;
-    color: var(--muted);
-    margin-top: 1px;
-}
-.alert-new {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: .74rem;
-    font-weight: 700;
-    color: var(--accent-dark);
-    background: var(--accent-light);
-    border-radius: 20px;
-    padding: 5px 13px;
-    text-decoration: none;
-}
-.alert-new:hover {
-    background: #f8e3c4;
-    text-decoration: none;
-}
-.alert-new svg {
-    width: 12px;
-    height: 12px;
-}
-.alert-chips {
-    margin: 12px 0 14px;
-}
-.alert-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding-top: 13px;
-    border-top: 1px dashed var(--border);
-}
-.alert-controls .select {
-    min-height: 38px;
-    width: auto;
-    font-size: .8rem;
-    padding-top: 6px;
-    padding-bottom: 6px;
-}
-.ctl {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: .78rem;
-    font-weight: 600;
-    color: var(--text);
-}
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-}
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-.switch .sl {
-    position: absolute;
-    inset: 0;
-    background: var(--border);
-    border-radius: 20px;
-    transition: var(--transition);
-    cursor: pointer;
-}
-.switch .sl::before {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    left: 3px;
-    top: 3px;
-    transition: var(--transition);
-    box-shadow: 0 1px 3px rgba(0,0,0,.2);
-}
-.switch input:checked + .sl {
-    background: var(--brand);
-}
-.switch input:checked + .sl::before {
-    transform: translateX(18px);
-}
-.switch input:focus-visible + .sl {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-}
-.alert-del {
-    margin-left: auto;
-}
-.match-strip {
-    display: flex;
-    gap: 9px;
-    margin-top: 13px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    -webkit-overflow-scrolling: touch;
-}
-.match {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 12px;
-    flex-shrink: 0;
-    background: var(--bg);
-}
-.match .ava {
-    width: 32px;
-    height: 32px;
-    font-size: .66rem;
-    border-radius: 50%;
-}
-.match b {
-    font-size: .76rem;
-    color: var(--brand-deep);
-    display: block;
-    line-height: 1.3;
-    white-space: nowrap;
-}
-.match i {
-    font-style: normal;
-    font-size: .64rem;
-    color: var(--muted);
-    white-space: nowrap;
-}
-.new-alert-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 14px;
-}
-@media (max-width: 1200px) {
-    .new-alert-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-@media (max-width: 768px) {
-    .new-alert-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-@media (max-width: 480px) {
-    .new-alert-grid {
-        grid-template-columns: 1fr;
-    }
-}
-.na-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 16px;
-}
-.na-foot p {
-    font-size: .74rem;
-    color: var(--muted);
-}
-</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="page-head">
-    <div class="page-head-left">
+    <div>
         <h1>
             <svg aria-hidden="true"><use href="#i-bell"/></svg> 
             Candidate Alerts
         </h1>
-        <p>Save search criteria once — we'll notify you when matching candidates join or update their profiles.</p>
+        <p>Save a search once — we'll notify you whenever a matching candidate joins or updates their profile.</p>
     </div>
     <div class="page-actions">
         <a href="#new-alert" class="emp-btn emp-btn-primary emp-btn-sm">
@@ -398,6 +191,28 @@
     <svg aria-hidden="true"><use href="#i-bulb"/></svg>
     <span>Alerts power your AI Recruiter matches on the dashboard. The more specific your criteria, the better the matches — you can create as many alerts as you need.</span>
 </div>
+
+<!-- Delete Alert Confirmation Modal -->
+<div class="modal-scrim" id="delete-alert-scrim" style="display:none; position:fixed; inset:0; background:rgba(10,25,45,.55); backdrop-filter:blur(2px); z-index:1400; align-items:center; justify-content:center; padding:24px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:420px; overflow:hidden; box-shadow:var(--shadow-lg); animation:modal-in .22s ease;" role="dialog" aria-modal="true" aria-labelledby="del-alert-title">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px; border-bottom:1px solid var(--border);">
+      <span style="font-family:'Sora',sans-serif; font-weight:800; font-size:1.05rem; color:var(--brand-deep); display:inline-flex; align-items:center; gap:9px;">
+        <svg aria-hidden="true" style="width:16px;height:16px;color:var(--danger);"><use href="#i-trash"/></svg> Delete Alert
+      </span>
+      <button id="del-alert-close" style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:8px; border:1.5px solid var(--border); background:#fff; color:var(--muted); cursor:pointer; flex-shrink:0;" aria-label="Close dialog">
+        <svg aria-hidden="true" style="width:16px;height:16px;"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div style="padding:18px 22px;">
+      <p style="font-size:0.9rem; color:var(--text); line-height:1.6; margin:0;">Are you sure you want to delete this candidate alert? You will no longer receive matching candidate notifications for this search criteria.</p>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; padding:14px 22px; border-top:1px solid var(--border);">
+      <button class="emp-btn emp-btn-outline" id="del-alert-cancel">Cancel</button>
+      <button class="emp-btn emp-btn-danger" id="del-alert-confirm"><svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Alert</button>
+    </div>
+  </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -443,46 +258,107 @@ $(document).ready(function() {
                 if (response.success) {
                     // Option to show a toast or highlight success
                 } else {
-                    alert(response.message || 'Failed to update alert settings.');
+                    toastr.error(response.message || 'Failed to update alert settings.');
                 }
             },
             error: function() {
-                alert('An error occurred. Please try again.');
+                toastr.error('An error occurred. Please try again.');
             }
         });
     });
 
     // Delete alert
-    $('.btn-delete-alert').on('click', function(e) {
-        e.preventDefault();
-        if (!confirm('Are you sure you want to delete this alert?')) return;
+    let deleteAlertScrim, deleteAlertConfirm, deleteAlertCancel, deleteAlertClose, pendingAlertId;
 
-        const card = $(this).closest('.alert-card');
-        const alertId = card.data('id');
+    function initDeleteAlertModal() {
+      deleteAlertScrim = document.getElementById('delete-alert-scrim');
+      deleteAlertConfirm = document.getElementById('del-alert-confirm');
+      deleteAlertCancel = document.getElementById('del-alert-cancel');
+      deleteAlertClose = document.getElementById('del-alert-close');
+
+      function closeDelAlert() {
+        deleteAlertScrim.style.display = 'none';
+        document.body.style.overflow = '';
+        pendingAlertId = null;
+      }
+
+      function openDelAlert(alertId) {
+        pendingAlertId = alertId;
+        deleteAlertScrim.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      }
+
+      deleteAlertCancel.addEventListener('click', closeDelAlert);
+      deleteAlertClose.addEventListener('click', closeDelAlert);
+      deleteAlertScrim.addEventListener('click', function(e) { if (e.target === deleteAlertScrim) closeDelAlert(); });
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && deleteAlertScrim.style.display === 'flex') closeDelAlert(); });
+
+      deleteAlertConfirm.addEventListener('click', function() {
+        if (!pendingAlertId) return;
+        const id = pendingAlertId;
+        deleteAlertConfirm.disabled = true;
+        deleteAlertConfirm.innerHTML = 'Deleting...';
 
         $.ajax({
-            url: '<?= site_url("employer/candidate-alerts/delete") ?>/' + alertId,
+            url: '<?= site_url("employer/candidate-alerts/delete") ?>/' + id,
             type: 'POST',
             data: getAjaxData(),
             dataType: 'json',
             success: function(response) {
+                deleteAlertConfirm.disabled = false;
+                deleteAlertConfirm.innerHTML = '<svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Alert';
                 if (response.csrf) updateCsrf(response.csrf);
                 if (response.success) {
-                    card.fadeOut(300, function() {
-                        $(this).remove();
-                        if ($('.alert-card').length === 0) {
-                            location.reload();
+                    closeDelAlert();
+                    const card = document.querySelector('.alert-card[data-id="' + id + '"]');
+                    if (card) {
+                      card.style.transition = 'opacity .3s, transform .3s';
+                      card.style.opacity = '0';
+                      card.style.transform = 'scale(.96)';
+                      setTimeout(function() {
+                        card.remove();
+                        if (document.querySelectorAll('.alert-card').length === 0) {
+                          location.reload();
                         }
-                    });
+                      }, 300);
+                    }
                 } else {
-                    alert(response.message || 'Failed to delete alert.');
+                    toastr.error(response.message || 'Failed to delete alert.');
                 }
             },
             error: function() {
-                alert('An error occurred. Please try again.');
+                deleteAlertConfirm.disabled = false;
+                deleteAlertConfirm.innerHTML = '<svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Alert';
+                toastr.error('An error occurred. Please try again.');
             }
         });
-    });
+      });
+
+      // Hook into existing delete buttons
+      document.querySelectorAll('.btn-delete-alert').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const card = btn.closest('.alert-card');
+          if (!card) return;
+          const alertId = card.dataset.id;
+          if (!alertId) return;
+          openDelAlert(alertId);
+        });
+      });
+    }
+
+    // Re-init on dynamic content changes
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initDeleteAlertModal);
+    } else {
+      initDeleteAlertModal();
+    }
+
 });
 </script>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<a href="#new-alert" class="emp-btn emp-btn-outline"><svg aria-hidden="true"><use href="#i-bell"/></svg> View Alerts</a>
+<a href="#new-alert" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-plus"/></svg> New Alert</a>
 <?= $this->endSection() ?>

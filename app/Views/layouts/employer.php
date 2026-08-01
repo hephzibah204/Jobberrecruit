@@ -201,7 +201,7 @@ $pendingCount = $pendingApps ?? 0;
       <div class="sb-group">
         <div class="sb-label">Organization Space</div>
         <a class="sb-link" href="<?= base_url('employer/profile') ?>"
-           <?= empIsActive('employer/profile') ? 'aria-current="page"' : '' ?>>
+           <?= empIsActiveStart('employer/profile') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-building"/></svg> Company Profile
         </a>
         <?php if (env('feature_messaging', 'true') == 'true'): ?>
@@ -281,10 +281,19 @@ $pendingCount = $pendingApps ?? 0;
           <svg aria-hidden="true"><use href="#i-menu"/></svg>
         </button>
 
-        <div class="tb-search" role="search">
-          <svg aria-hidden="true"><use href="#i-search"/></svg>
-          <input type="search" placeholder="Search jobs, applicants, candidates…" aria-label="Search dashboard">
-        </div>
+        <!-- Breadcrumb (tb-crumb) shown when page_title is set, otherwise fallback to search -->
+        <?php if (!empty($page_title)): ?>
+          <nav class="tb-crumb" aria-label="Breadcrumb">
+            <a href="<?= base_url('employer/dashboard') ?>">Dashboard</a>
+            <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
+            <b><?= esc($page_title) ?></b>
+          </nav>
+        <?php else: ?>
+          <div class="tb-search" role="search">
+            <svg aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" placeholder="Search jobs, applicants, candidates…" aria-label="Search dashboard">
+          </div>
+        <?php endif; ?>
 
         <div class="tb-right">
           <!-- Wallet chip -->

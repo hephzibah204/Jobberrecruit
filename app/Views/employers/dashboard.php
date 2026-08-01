@@ -1,15 +1,7 @@
+<?php $page_title = ''; ?>
 <?= $this->extend('layouts/employer') ?>
 
-<?= $this->section('styles') ?>
-<style>
-/* Page-specific overrides or adjustments if needed */
-.ins-title {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-}
-</style>
-<?= $this->endSection() ?>
+
 
 <?= $this->section('content') ?>
 <?php
@@ -539,8 +531,7 @@ $taskLogo = !empty($employer->logo);
   </div>
 </section>
 
-<!-- onboarded hires -->
-<?php
+<!-- onboarded hires --><?php
 $hiredApps = [];
 if (!empty($recentApplications)) {
     foreach ($recentApplications as $app) {
@@ -588,6 +579,9 @@ if (!empty($recentApplications)) {
     </div>
   <?php endif; ?>
 </section>
+
+
+
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>

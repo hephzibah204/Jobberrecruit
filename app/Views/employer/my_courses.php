@@ -1,3 +1,4 @@
+<?php $page_title = 'My Courses'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('content') ?>

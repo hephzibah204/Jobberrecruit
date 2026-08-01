@@ -1,8 +1,9 @@
+<?php $page_title = 'Access Restricted'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('content') ?>
-<div class="page-hd">
-    <div class="page-hd-left">
+<div class="page-head">
+    <div class="page-head-left">
         <h1>Post Job Authorization</h1>
         <p>Manage your active plan subscriptions and job posting credits</p>
     </div>

@@ -2879,6 +2879,120 @@ class Home extends BaseController
         return view('recruitment', $data);
     }
 
+    public function submitRecruitmentInquiry()
+    {
+        if ($this->request->getMethod() !== 'post') {
+            return redirect()->to(base_url('recruitment'));
+        }
+
+        // ── Rate limiting ──────────────────────────────────────────────
+        $throttler = service('throttler');
+        if ($throttler->check('recruitment_inquiry', 3, 300) === false) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Too many submissions. Please wait a few minutes and try again.',
+                ]);
+            }
+            return redirect()->back()->with('error', 'Too many submissions. Please wait a few minutes and try again.');
+        }
+
+        // ── Validation ─────────────────────────────────────────────────
+        $rules = [
+            'fullName'    => 'required|min_length[2]|max_length[100]',
+            'companyName' => 'required|min_length[2]|max_length[150]',
+            'email'       => 'required|valid_email',
+            'phone'       => 'required|min_length[7]|max_length[20]',
+            'role'        => 'required|min_length[2]|max_length[150]',
+            'message'     => 'required|min_length[5]',
+        ];
+
+        if (! $this->validate($rules)) {
+            $errors = implode(' ', $this->validator->getErrors());
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $errors,
+                ]);
+            }
+            return redirect()->back()->withInput()->with('error', $errors);
+        }
+
+        $fullName    = $this->request->getPost('fullName');
+        $companyName = $this->request->getPost('companyName');
+        $email       = $this->request->getPost('email');
+        $phone       = $this->request->getPost('phone');
+        $role        = $this->request->getPost('role');
+        $experience  = $this->request->getPost('experience') ?? 'Not specified';
+        $budget      = $this->request->getPost('budget')     ?? 'Not specified';
+        $schedule    = $this->request->getPost('schedule')   ?? 'Not specified';
+        $location    = $this->request->getPost('location')   ?? 'Not specified';
+        $message     = $this->request->getPost('message');
+
+        // ── Send admin notification ─────────────────────────────────────
+        $mailer = service('mailer');
+
+        $adminBody = "
+            <h2 style='font-family:sans-serif;color:#062E52'>New Recruitment Inquiry</h2>
+            <table style='font-family:sans-serif;font-size:14px;border-collapse:collapse;width:100%'>
+                <tr><td style='padding:6px 0;color:#666;width:160px'><b>Name</b></td><td>" . esc($fullName) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Company</b></td><td>" . esc($companyName) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Email</b></td><td><a href='mailto:" . esc($email) . "'>" . esc($email) . "</a></td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Phone</b></td><td>" . esc($phone) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Role to Hire</b></td><td>" . esc($role) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Experience Level</b></td><td>" . esc($experience) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Budget / Salary</b></td><td>" . esc($budget) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Schedule</b></td><td>" . esc($schedule) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Location</b></td><td>" . esc($location) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666;vertical-align:top'><b>Message</b></td><td>" . nl2br(esc($message)) . "</td></tr>
+            </table>
+        ";
+
+        $mailer->clear();
+        $mailer->setTo('support@jobberrecruit.com');
+        $mailer->setReplyTo($email, $fullName);
+        $mailer->setSubject('[Recruitment Inquiry] ' . $role . ' — ' . $companyName);
+        $mailer->setMessage($adminBody);
+        $mailer->setMailType('html');
+
+        if (! $mailer->send()) {
+            log_message('error', 'Recruitment inquiry email failed: ' . print_r($mailer->printDebugger(), true));
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Unable to submit your inquiry. Please try again later.',
+                ]);
+            }
+            return redirect()->back()->withInput()->with('error', 'Unable to submit your inquiry. Please try again later.');
+        }
+
+        // ── Auto-reply to the client ────────────────────────────────────
+        $autoReply = "
+            <p style='font-family:sans-serif;font-size:15px'>Hi " . esc($fullName) . ",</p>
+            <p style='font-family:sans-serif;font-size:15px'>Thank you for reaching out to <strong>JobberRecruit</strong>. We have received your inquiry for the <strong>" . esc($role) . "</strong> role and our recruitment team will get back to you within <strong>one business day</strong>.</p>
+            <p style='font-family:sans-serif;font-size:15px'>In the meantime, feel free to browse available candidates on our platform.</p>
+            <p style='font-family:sans-serif;font-size:15px'>Warm regards,<br><strong>The JobberRecruit Team</strong></p>
+        ";
+
+        $mailer->clear();
+        $mailer->setTo($email);
+        $mailer->setSubject('We received your recruitment inquiry — JobberRecruit');
+        $mailer->setMessage($autoReply);
+        $mailer->setMailType('html');
+        $mailer->send(); // silent fail — auto-reply is best-effort
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Thank you! Your inquiry has been submitted. We will contact you within one business day.',
+            ]);
+        }
+
+        return redirect()->to(base_url('recruitment') . '#inquiry')
+            ->with('success', 'Thank you! Your inquiry has been submitted. We will contact you within one business day.');
+    }
+
     public function adPage()
     {
         $data = [

@@ -127,12 +127,14 @@
                             <li><a <?= (uri_string() == 'blog') ? 'class="active"' : '' ?> href="<?= base_url('blog'); ?>">Blog</a></li>
                             <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                             <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
-                            <?php if ($auth->user()) : ?>
+                             <?php if ($auth->user()) : ?>
                                 <?php if ($auth->user()->user_type == 'employer'): ?>
                                     <li><a href="<?= base_url('employer/dashboard') ?>">Dashboard</a></li>
                                 <?php else: ?>
                                     <li><a href="<?= base_url('candidate/dashboard') ?>">Dashboard</a></li>
                                 <?php endif; ?>
+                            <?php else: ?>
+                                <li><a href="<?= base_url('login') ?>">Get Started</a></li>
                             <?php endif; ?>
                         </ul>
                     </nav>

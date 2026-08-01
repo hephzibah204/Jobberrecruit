@@ -354,7 +354,7 @@
                     <div class="ctrl-section">
                         <div class="alert alert-warning p-2 fs-11 mb-3">
                             <strong>HTML Mode Tips:</strong><br>
-                            Engine: Dompdf — avoid Flexbox/Grid; use Tables or absolute positioning.<br>
+                            Engine: Spatie Browsershot (Headless Chrome) — modern CSS (Flexbox, Grid) is fully supported!<br>
                             Dimensions: A4 Landscape ≈ 1120 × 794 px.<br>
                             Use <code>base_url()</code> for image paths.
                         </div>

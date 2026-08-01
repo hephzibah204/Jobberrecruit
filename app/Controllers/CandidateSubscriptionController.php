@@ -32,6 +32,7 @@ class CandidateSubscriptionController extends BaseController
             ->findAll();
 
         $currentPlan = null;
+        $walletBalance = 0.0;
         if (auth()->loggedIn()) {
             $currentPlan = $this->subModel
                 ->select('user_subscriptions.*, plans.name as plan_name')
@@ -39,6 +40,9 @@ class CandidateSubscriptionController extends BaseController
                 ->where('user_subscriptions.user_id', auth()->id())
                 ->where('user_subscriptions.is_active', 1)
                 ->first();
+
+            $wallet = (new \App\Services\WalletService())->getOrCreateWallet(auth()->id());
+            $walletBalance = (float) ($wallet->balance ?? 0.0);
         }
 
         $isFreeMode = env('site_free_mode') === 'true';
@@ -48,6 +52,7 @@ class CandidateSubscriptionController extends BaseController
             'plans' => $plans,
             'currentPlan' => $currentPlan,
             'isFreeMode' => $isFreeMode,
+            'walletBalance' => $walletBalance,
         ]);
     }
 

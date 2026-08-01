@@ -472,8 +472,8 @@ class JobSeekerController extends BaseController
             ->where('user_id', $this->auth->user()->id)
             ->first();
 
-        return view('candidate/security/index', [
-            'title' => 'Security Settings',
+        return view('candidate/settings', [
+            'title' => 'General Settings',
             'user'  => $this->auth->user(),
             'candidate' => $candidate,
         ]);

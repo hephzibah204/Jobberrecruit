@@ -1,3 +1,4 @@
+<?php $page_title = 'Security'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('content') ?>
@@ -104,7 +105,7 @@
 
         var formData = new FormData(this);
 
-        fetch('<?= base_url('employer/security/change-password') ?>', {
+        fetch('<?= base_url('employer/settings/security/change-password') ?>', {
             method: 'POST',
             body: formData,
             headers: {
@@ -114,14 +115,14 @@
         .then(response => response.json())
         .then(res => {
             if (res.success) {
-                alert(res.message);
+                toastr.success(res.message);
                 document.getElementById('changePasswordForm').reset();
             } else {
-                alert(res.message || 'Something went wrong');
+                toastr.error(res.message || 'Something went wrong');
             }
         })
         .catch(err => {
-            alert('Network error. Please try again.');
+            toastr.error('Network error. Please try again.');
         })
         .finally(() => {
             btn.disabled = false;
@@ -130,4 +131,13 @@
         });
     });
 </script>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<a href="<?= base_url('employer/settings') ?>" class="emp-btn emp-btn-outline">
+    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-l"/></svg> Settings
+</a>
+<a href="<?= base_url('employer/profile') ?>" class="emp-btn emp-btn-accent">
+    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-building"/></svg> Profile
+</a>
 <?= $this->endSection() ?>

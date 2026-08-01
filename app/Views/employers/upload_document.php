@@ -1,8 +1,9 @@
+<?php $page_title = 'Upload Document'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('content') ?>
-<div class="page-hd">
-    <div class="page-hd-left">
+<div class="page-head">
+    <div class="page-head-left">
         <h1>Upload CAC Certificate</h1>
         <p>Verify your company registration documents with Corporate Affairs Commission</p>
     </div>

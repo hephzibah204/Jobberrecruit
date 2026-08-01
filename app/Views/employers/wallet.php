@@ -1,12 +1,5 @@
+<?php $page_title = 'Wallet'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.stats--txn { grid-template-columns: repeat(3, 1fr); }
-@media (max-width: 800px) { .stats--txn { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 520px) { .stats--txn { grid-template-columns: 1fr; } }
-</style>
-<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php

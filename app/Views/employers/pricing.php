@@ -1,193 +1,86 @@
+<?php $page_title = 'Billing & Plans'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('styles') ?>
 <style>
-.plans {
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: clamp(14px, 1.8vw, 20px);
-    align-items: start;
-}
-@media (max-width: 960px) {
-    .plans {
-        grid-template-columns: 1fr;
-    }
-}
-.bundle {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 15px 16px;
-    transition: var(--transition);
-    background: #fff;
-}
-.bundle:hover {
-    border-color: var(--brand);
-    box-shadow: var(--shadow);
-}
-.bundle + .bundle {
-    margin-top: 12px;
-}
-.bundle-ic {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: #fff;
-}
-.bundle-ic svg {
-    width: 20px;
-    height: 20px;
-}
-.bundle-info {
-    flex: 1;
-    min-width: 0;
-}
-.bundle-name {
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    font-size: .9rem;
-    color: var(--brand-deep);
-}
-.bundle-posts {
-    font-size: .74rem;
-    color: var(--muted);
-}
-.bundle-price {
-    font-family: 'Sora', sans-serif;
-    font-weight: 800;
-    font-size: 1.05rem;
-    color: var(--brand-deep);
-    text-align: right;
-}
-.bundle-price i {
-    display: block;
-    font-style: normal;
-    font-size: .62rem;
-    font-weight: 600;
-    color: var(--muted);
-}
-.bundle .btn {
-    flex-shrink: 0;
-}
-@media (max-width: 560px) {
-    .bundle {
-        flex-wrap: wrap;
-    }
-    .bundle .btn {
-        width: 100%;
-    }
-}
-.pro-card {
-    border: 1.5px solid var(--brand);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    position: relative;
-    background: #fff;
-}
-.pro-head {
-    background: radial-gradient(ellipse 60% 90% at 88% 10%, rgba(237, 144, 32, .2) 0%, transparent 55%), linear-gradient(150deg, #0A2F57 0%, #064A85 55%, #0861A9 100%);
-    color: #fff;
-    padding: 22px 24px;
-    position: relative;
-}
-.pro-badge {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: var(--accent);
-    color: var(--brand-deep);
-    font-size: .62rem;
-    font-weight: 800;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 20px;
-}
-.pro-head h2 {
-    font-size: 1.25rem;
-    font-weight: 800;
-}
-.pro-head p {
-    font-size: .8rem;
-    color: rgba(255, 255, 255, .85);
-    margin-top: 3px;
-}
-.pro-body {
-    padding: 22px 24px;
-}
-.pro-price {
-    font-family: 'Sora', sans-serif;
-    font-weight: 800;
-    font-size: clamp(1.9rem, 4vw, 2.5rem);
-    color: var(--brand-deep);
-    text-align: center;
-    line-height: 1.1;
-}
-.pro-price i {
-    display: block;
-    font-style: normal;
-    font-size: .76rem;
-    font-weight: 500;
-    color: var(--muted);
-    margin-top: 2px;
-}
-.feat {
-    list-style: none;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 9px 16px;
-    margin: 20px 0 22px;
-}
-@media (max-width: 560px) {
-    .feat {
-        grid-template-columns: 1fr;
-    }
-}
-.feat li {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    font-size: .8rem;
-    color: var(--text);
-}
-.feat li svg {
-    width: 15px;
-    height: 15px;
-    color: var(--success);
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-.feat li b {
-    font-weight: 700;
-}
-
-.payment-loader {
+/* Custom lightweight modal overlay */
+.custom-modal {
     position: fixed;
     inset: 0;
-    background: rgba(255, 255, 255, 0.96);
-    z-index: 99999;
+    z-index: 1050;
     display: none;
     align-items: center;
     justify-content: center;
+    background: rgba(10, 47, 87, 0.45);
+    backdrop-filter: blur(4px);
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.custom-modal.show {
+    display: flex;
+    opacity: 1;
+}
+.custom-modal-dialog {
+    background: #fff;
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 10px 30px rgba(10, 47, 87, 0.18);
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
     flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.loader-logo {
-    width: 120px;
-    animation: floatUp 2.2s ease-in-out infinite;
+.custom-modal.show .custom-modal-dialog {
+    transform: translateY(0);
 }
-@keyframes floatUp {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-8px);
-    }
+.custom-modal-dialog.modal-lg {
+    max-width: 700px;
+}
+.custom-modal-dialog.modal-xl {
+    max-width: 900px;
+}
+.custom-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border, #e2e8f2);
+}
+.custom-modal-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--brand-deep, #0A2F57);
+    margin: 0;
+}
+.custom-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--muted, #5b6577);
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.15s ease;
+}
+.custom-close-btn:hover {
+    color: var(--brand, #0861A9);
+}
+.custom-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+.custom-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border, #e2e8f2);
+    background: var(--bg, #f5f7fb);
 }
 </style>
 <?= $this->endSection() ?>
@@ -237,7 +130,7 @@
                             &#8358;<?= number_format($bundle->price) ?>
                             <i>&#8358;<?= number_format($bundle->price_per_credit ?? ($bundle->price / $bundle->job_credits)) ?> / post</i>
                         </div>
-                        <button type="button" class="btn btn-outline btn-sm js-bundle-purchase" data-bundle='<?= esc(json_encode($bundle, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), 'attr') ?>'>Buy Bundle</button>
+                        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm js-bundle-purchase" data-bundle='<?= esc(json_encode($bundle, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), 'attr') ?>'>Buy Bundle</button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -307,9 +200,9 @@
             $activePlan = $myPlan ?? $currentPlan ?? null;
             if ($activePlan && $activePlan->plan_type === 'subscription'): 
             ?>
-                <button class="btn btn-accent btn-block" disabled>Active Subscription</button>
+                <button class="emp-btn emp-btn-accent emp-btn-block" disabled>Active Subscription</button>
             <?php else: ?>
-                <button onclick="showPurchaseModal('subscription')" class="btn btn-accent btn-block">
+                <button onclick="showPurchaseModal('subscription')" class="emp-btn emp-btn-accent emp-btn-block">
                     <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
                 </button>
             <?php endif; ?>
@@ -324,79 +217,74 @@
 </div>
 
 <!-- PURCHASE DETAILS MODAL -->
-<div class="modal fade" id="purchaseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);">
-            <div class="modal-header" style="border-bottom: 1px solid var(--border); padding: 16px 20px;">
-                <h5 class="modal-title fw-bold" id="modalTitle" style="font-family: 'Sora', sans-serif; color: var(--brand-deep);">Complete Your Purchase</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; color: var(--muted);">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <form id="purchaseForm">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="type" id="purchase_type">
-                    <input type="hidden" name="bundle_id" id="bundle_id">
-                    <input type="hidden" name="bundle_data" id="bundle_data">
-                    <input type="hidden" name="duration_months" id="duration_months">
+<div class="custom-modal" id="purchaseModal">
+    <div class="custom-modal-dialog modal-lg">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title" id="modalTitle">Complete Your Purchase</h5>
+            <button type="button" class="custom-close-btn" onclick="closeModal('purchaseModal')">&times;</button>
+        </div>
+        <div class="custom-modal-body">
+            <form id="purchaseForm">
+                <?= csrf_field() ?>
+                <input type="hidden" name="type" id="purchase_type">
+                <input type="hidden" name="bundle_id" id="bundle_id">
+                <input type="hidden" name="bundle_data" id="bundle_data">
+                <input type="hidden" name="duration_months" id="duration_months">
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div>
-                            <label class="lbl">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="full_name" id="full_name" class="input" required style="font-size: 14px;">
-                        </div>
-                        <div>
-                            <label class="lbl">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" name="email" id="email" class="input" required style="font-size: 14px;">
-                        </div>
-                        <div>
-                            <label class="lbl">Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" id="phone" class="input" required style="font-size: 14px;">
-                        </div>
-                        <div>
-                            <label class="lbl">Invoice Number</label>
-                            <input type="text" id="invoice_number" class="input" readonly style="background: var(--bg); font-size: 14px;">
-                        </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label class="lbl">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="full_name" id="full_name" class="input" required style="font-size: 14px;">
                     </div>
+                    <div>
+                        <label class="lbl">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" id="email" class="input" required style="font-size: 14px;">
+                    </div>
+                    <div>
+                        <label class="lbl">Phone Number <span class="text-danger">*</span></label>
+                        <input type="tel" name="phone" id="phone" class="input" required style="font-size: 14px;">
+                    </div>
+                    <div>
+                        <label class="lbl">Invoice Number</label>
+                        <input type="text" id="invoice_number" class="input" readonly style="background: var(--bg); font-size: 14px;">
+                    </div>
+                </div>
 
-                    <div style="margin-top: 16px;">
-                        <label class="lbl">Payment Method</label>
-                        <select name="payment_method" id="payment_method" class="select" required style="font-size: 14px;">
-                            <option value="card">Card Payment (Instant)</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="ussd">USSD</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer" style="border-top: 1px solid var(--border); padding: 16px 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
-                <button onclick="generateInvoice()" class="btn btn-primary">Generate Invoice & Continue</button>
-            </div>
+                <div style="margin-top: 16px;">
+                    <label class="lbl">Payment Method</label>
+                    <select name="payment_method" id="payment_method" class="select" required style="font-size: 14px;">
+                        <option value="card">Card Payment (Instant)</option>
+                        <option value="wallet">Wallet Balance (₦<?= number_format($walletBalance ?? 0, 2) ?>)</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="ussd">USSD</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="emp-btn emp-btn-outline" onclick="closeModal('purchaseModal')">Cancel</button>
+            <button onclick="generateInvoice()" class="emp-btn emp-btn-primary">Generate Invoice & Continue</button>
         </div>
     </div>
 </div>
 
 <!-- INVOICE PREVIEW MODAL -->
-<div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);">
-            <div class="modal-header bg-primary text-white" style="background: var(--brand); color: #white; padding: 16px 20px;">
-                <h5 class="modal-title fw-bold" style="font-family: 'Sora', sans-serif; color: #fff;">
-                    INVOICE
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #fff;">&times;</button>
-            </div>
+<div class="custom-modal" id="invoiceModal">
+    <div class="custom-modal-dialog modal-xl">
+        <div class="custom-modal-header" style="background: var(--brand); color: #fff;">
+            <h5 class="custom-modal-title" style="color: #fff;">INVOICE</h5>
+            <button type="button" class="custom-close-btn" onclick="closeModal('invoiceModal')" style="color: #fff;">&times;</button>
+        </div>
 
-            <div class="modal-body p-0" id="invoiceContent" style="padding: 0;">
-                <!-- Filled dynamically by JavaScript -->
-            </div>
+        <div class="custom-modal-body" id="invoiceContent" style="padding: 0;">
+            <!-- Filled dynamically by JavaScript -->
+        </div>
 
-            <div class="modal-footer" style="border-top: 1px solid var(--border); padding: 16px 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Close</button>
-                <button onclick="proceedToPayment()" class="btn btn-primary" style="background: var(--success); border-color: var(--success);">
-                    Pay Now
-                </button>
-            </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="emp-btn emp-btn-outline" onclick="closeModal('invoiceModal')">Close</button>
+            <button onclick="proceedToPayment()" class="emp-btn emp-btn-primary" style="background: var(--success); border-color: var(--success);">
+                Pay Now
+            </button>
         </div>
     </div>
 </div>
@@ -408,21 +296,14 @@
     <p class="mt-3 fw-semibold" style="margin-top: 15px; font-weight: 600; color: var(--brand-deep);">Processing payment…</p>
 </div>
 
-<style>
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-</style>
-
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
-<button class="btn btn-outline" onclick="document.querySelector('.plans').scrollIntoView({behavior:'smooth'})">View Bundles</button>
+<button class="emp-btn emp-btn-outline" onclick="document.querySelector('.plans').scrollIntoView({behavior:'smooth'})">View Bundles</button>
 <?php if ($activePlan && $activePlan->plan_type === 'subscription'): ?>
-    <button class="btn btn-accent" disabled>Active Subscription</button>
+    <button class="emp-btn emp-btn-accent" disabled>Active Subscription</button>
 <?php else: ?>
-    <button class="btn btn-accent" onclick="showPurchaseModal('subscription')">
+    <button class="emp-btn emp-btn-accent" onclick="showPurchaseModal('subscription')">
         <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
     </button>
 <?php endif; ?>
@@ -431,6 +312,22 @@
 <?= $this->section('scripts') ?>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 200);
+        }
+    }
+
     let currentPurchase = {};
 
     document.querySelectorAll('.js-bundle-purchase').forEach((button) => {
@@ -469,19 +366,19 @@
             const months = parseInt(document.getElementById('duration').value);
             currentPurchase.duration_months = months;
             document.getElementById('duration_months').value = months;
-            document.getElementById('modalTitle').textContent = 'Subscribe to <?= esc($subscriptionPlan->name ?? "Business Pro") ?>';
+            document.getElementById('modalTitle').textContent = 'Subscribe to ' + <?= json_encode($subscriptionPlan->name ?? "Business Pro") ?>;
         } else {
             document.getElementById('modalTitle').textContent = 'Purchase Bundle';
         }
 
-        document.getElementById('full_name').value = "<?= esc($user->fullname ?? $user->username ?? '') ?>";
-        document.getElementById('email').value = "<?= esc($user->email ?? '') ?>";
+        document.getElementById('full_name').value = <?= json_encode($user->fullname ?? $user->username ?? '') ?>;
+        document.getElementById('email').value = <?= json_encode($user->email ?? '') ?>;
         document.getElementById('phone').value = "";
 
         const invoiceNo = 'INV-' + Date.now().toString().slice(-8);
         document.getElementById('invoice_number').value = invoiceNo;
 
-        new bootstrap.Modal(document.getElementById('purchaseModal')).show();
+        openModal('purchaseModal');
     }
 
     function generateInvoice() {
@@ -539,7 +436,7 @@
             <div style="background: linear-gradient(135deg, #0861A9, #064A85); color: white; padding: 25px 30px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h2 style="margin: 0; font-size: 28px;">${'<?= esc($companyName ?? "Jobber Recruit") ?>'}</h2>
+                        <h2 style="margin: 0; font-size: 28px;">${<?= json_encode($companyName ?? "Jobber Recruit") ?>}</h2>
                         <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">
                             The new face of job hunting • Lagos, Nigeria
                         </p>
@@ -608,12 +505,55 @@
 
         document.getElementById('invoiceContent').innerHTML = html;
 
-        bootstrap.Modal.getInstance(document.getElementById('purchaseModal')).hide();
-        new bootstrap.Modal(document.getElementById('invoiceModal')).show();
+        closeModal('purchaseModal');
+        openModal('invoiceModal');
     }
 
     function proceedToPayment() {
-        bootstrap.Modal.getInstance(document.getElementById('invoiceModal')).hide();
+        closeModal('invoiceModal');
+
+        if (currentPurchase.payment_method === 'wallet') {
+            const walletBalance = <?= (float)($walletBalance ?? 0.0) ?>;
+            if (walletBalance < currentPurchase.amount) {
+                toastr.warning('Insufficient wallet balance. Please select another payment method.');
+                return;
+            }
+
+            document.getElementById('payment-loader').style.display = 'flex';
+            
+            // Build key value body parameters to align with WalletController API expectation
+            const walletPayload = {
+                type: currentPurchase.type === 'subscription' ? 'subscription' : 'bundle',
+                plan_id: currentPurchase.type === 'subscription' ? <?= (int)($subscriptionPlan->id ?? 0) ?> : currentPurchase.bundle_id,
+                bundle_id: currentPurchase.bundle_id,
+                duration_months: currentPurchase.duration_months
+            };
+
+            fetch('<?= base_url('employer/wallet/pay-with-wallet') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(walletPayload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('payment-loader').style.display = 'none';
+                if (data.success) {
+                    toastr.success(data.message || 'Payment successful!');
+                    window.location.reload();
+                } else {
+                    toastr.error(data.message || 'Wallet payment failed.');
+                }
+            })
+            .catch(() => {
+                document.getElementById('payment-loader').style.display = 'none';
+                toastr.error('An error occurred processing payment.');
+            });
+            return;
+        }
+
         document.getElementById('payment-loader').style.display = 'flex';
 
         const payload = {
@@ -631,7 +571,8 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="<?= csrf_token() ?>"]').value
                 },
                 body: JSON.stringify(payload)
             })
@@ -651,17 +592,17 @@
                             window.location.href = "<?= base_url('employer/verify-payment') ?>?reference=" + response.reference;
                         },
                         onClose: function() {
-                            alert('Payment cancelled');
+                            toastr.warning('Payment cancelled');
                         }
                     });
                     handler.openIframe();
                 } else {
-                    alert(res.message || 'Payment initiation failed');
+                    toastr.error(res.message || 'Payment initiation failed');
                 }
             })
             .catch(() => {
                 document.getElementById('payment-loader').style.display = 'none';
-                alert('Network error');
+                toastr.error('Network error');
             });
     }
 

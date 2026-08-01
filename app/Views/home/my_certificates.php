@@ -1,3 +1,4 @@
+<?php $page_title = 'Certificates'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
@@ -131,6 +132,12 @@
                         <?= esc($cert['certificate_code']) ?>
                     </div>
                     <div class="cert-actions">
+                        <a href="<?= base_url('training/certificate/view/' . $cert['id']) ?>"
+                           class="btn btn-outline btn-sm"
+                           target="_blank" rel="noopener">
+                            <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-eye"/></svg>
+                            View Certificate
+                        </a>
                         <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>"
                            class="btn btn-primary btn-sm"
                            target="_blank">
@@ -143,6 +150,10 @@
                             <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-shield"/></svg>
                             Verify Online
                         </a>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="copyVerifyLink('<?= base_url('certificates/verify?id=' . rawurlencode($cert['certificate_code'])) ?>')">
+                            <svg aria-hidden="true" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-copy"/></svg>
+                            Copy Link
+                        </button>
                     </div>
                     <p class="share-hint">Add the verify link to your CV or LinkedIn — employers can confirm it instantly.</p>
                 </div>
@@ -156,4 +167,22 @@
         <span>Every JobberRecruit certificate carries a unique code and a public verification page, so employers can trust it at a glance. Earn more certificates in the <a href="<?= base_url('training') ?>">Training Catalog</a>.</span>
     </div>
 </div>
+
+<script>
+function copyVerifyLink(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Verify link copied to clipboard!');
+        });
+    } else {
+        var inp = document.createElement('input');
+        inp.value = url;
+        document.body.appendChild(inp);
+        inp.select();
+        document.execCommand('copy');
+        document.body.removeChild(inp);
+        alert('Verify link copied!');
+    }
+}
+</script>
 <?= $this->endSection() ?>

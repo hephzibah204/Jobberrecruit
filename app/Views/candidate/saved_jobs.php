@@ -1,3 +1,4 @@
+<?php $page_title = 'Saved Jobs'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>

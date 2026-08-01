@@ -8,8 +8,7 @@ use App\Models\ResumeEducationModel;
 use App\Models\ResumeSkillModel;
 use App\Services\AiService;
 use CodeIgniter\API\ResponseTrait;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use Spatie\Browsershot\Browsershot;
 
 class ResumeController extends BaseController
 {
@@ -187,10 +186,17 @@ class ResumeController extends BaseController
             $skills = $this->skillModel->where('resume_id', $id)->findAll();
         }
 
-        // Fetch candidate profile and existing resumes for the onboarding modal
-        $candidateModel = model(\App\Models\JobSeekerModel::class);
-        $candidate = $candidateModel->where('user_id', $user->id)->first();
-        $allResumes = $this->resumeModel->where('user_id', $user->id)->orderBy('updated_at', 'DESC')->findAll();
+        $linkedin = $candidate?->linkedin_url ?? '';
+        $certs = '';
+        $languages = '';
+        if ($resume && !empty($resume->ai_optimization_meta)) {
+            $meta = json_decode($resume->ai_optimization_meta, true);
+            if (is_array($meta)) {
+                $linkedin = $meta['linkedin'] ?? $linkedin;
+                $certs = $meta['certs'] ?? '';
+                $languages = $meta['languages'] ?? '';
+            }
+        }
 
         return view('candidate/resume/builder', [
             'title'      => $resume ? 'Edit Resume' : 'Create Resume',
@@ -200,6 +206,9 @@ class ResumeController extends BaseController
             'skills'     => $skills,
             'candidate'  => $candidate,
             'allResumes' => $allResumes,
+            'linkedin'   => $linkedin,
+            'certs'      => $certs,
+            'languages'  => $languages,
         ]);
     }
 
@@ -593,13 +602,29 @@ class ResumeController extends BaseController
     public function save()
     {
         $user = auth()->user();
-        $id = $this->request->getPost('id');
+        $title = $this->request->getPost('title');
+        if (empty(trim($title ?? ''))) {
+            $title = 'My Professional Resume';
+        }
+
+        $id = $this->request->getPost('id') ?: null;
+        $metaData = [];
+        if ($id) {
+            $existing = $this->resumeModel->where('user_id', $user->id)->find($id);
+            if ($existing && !empty($existing->ai_optimization_meta)) {
+                $metaData = json_decode($existing->ai_optimization_meta, true) ?: [];
+            }
+        }
+        $metaData['linkedin'] = $this->request->getPost('linkedin') ?? '';
+        $metaData['certs'] = $this->request->getPost('certs') ?? '';
+        $metaData['languages'] = $this->request->getPost('languages') ?? '';
 
         $resumeData = [
             'user_id' => $user->id,
-            'title' => $this->request->getPost('title'),
+            'title' => $title,
             'summary' => $this->request->getPost('summary'),
-            'template_id' => $this->request->getPost('template_id') ?? 'classic'
+            'template_id' => $this->request->getPost('template_id') ?? 'classic',
+            'ai_optimization_meta' => json_encode($metaData)
         ];
 
         $db = \Config\Database::connect();
@@ -638,7 +663,7 @@ class ResumeController extends BaseController
                 'company' => $company,
                 'position' => $expPositions[$index] ?? '',
                 'description' => $expDescriptions[$index] ?? '',
-                'start_date' => $expStartDates[$index] ?? date('Y-m-d'),
+                'start_date' => !empty($expStartDates[$index]) ? $expStartDates[$index] : date('Y-m-d'),
                 'end_date' => !empty($expEndDates[$index]) ? $expEndDates[$index] : null,
                 'is_current' => in_array($index, $expCurrent) ? 1 : 0,
             ]);
@@ -709,6 +734,22 @@ class ResumeController extends BaseController
         $resume->phone = $candidate?->phone ?? '';
         $resume->location = $candidate?->location ?? '';
 
+        // Inject metadata onto the resume entity
+        $linkedin = '';
+        $certs = '';
+        $languages = '';
+        if (!empty($resume->ai_optimization_meta)) {
+            $meta = json_decode($resume->ai_optimization_meta, true);
+            if (is_array($meta)) {
+                $linkedin = $meta['linkedin'] ?? '';
+                $certs = $meta['certs'] ?? '';
+                $languages = $meta['languages'] ?? '';
+            }
+        }
+        $resume->linkedin = $linkedin;
+        $resume->certs = $certs;
+        $resume->languages = $languages;
+
         $experiences = $this->experienceModel->where('resume_id', $id)->findAll();
         $education = $this->educationModel->where('resume_id', $id)->findAll();
         $skills = $this->skillModel->where('resume_id', $id)->findAll();
@@ -720,17 +761,21 @@ class ResumeController extends BaseController
             'skills' => $skills
         ]);
 
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
+        $tempPath = WRITEPATH . 'temp/';
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+        $pdfPath = $tempPath . 'resume-' . $id . '-' . time() . '.pdf';
 
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        Browsershot::html($html)
+            ->format('A4')
+            ->margins(0, 0, 0, 0)
+            ->showBackground()
+            ->noSandbox()
+            ->save($pdfPath);
 
-        $dompdf->stream(url_title($resume->title) . ".pdf", ["Attachment" => true]);
-        exit();
+        return $this->response->download($pdfPath, null)
+            ->setFileName(url_title($resume->title) . ".pdf");
     }
 
     /**
@@ -754,6 +799,22 @@ class ResumeController extends BaseController
         $resume->email = $user->email ?? '';
         $resume->phone = $candidate?->phone ?? '';
         $resume->location = $candidate?->location ?? '';
+
+        // Inject metadata onto the resume entity
+        $linkedin = '';
+        $certs = '';
+        $languages = '';
+        if (!empty($resume->ai_optimization_meta)) {
+            $meta = json_decode($resume->ai_optimization_meta, true);
+            if (is_array($meta)) {
+                $linkedin = $meta['linkedin'] ?? '';
+                $certs = $meta['certs'] ?? '';
+                $languages = $meta['languages'] ?? '';
+            }
+        }
+        $resume->linkedin = $linkedin;
+        $resume->certs = $certs;
+        $resume->languages = $languages;
 
         $experiences = $this->experienceModel->where('resume_id', $id)->findAll();
         $education = $this->educationModel->where('resume_id', $id)->findAll();

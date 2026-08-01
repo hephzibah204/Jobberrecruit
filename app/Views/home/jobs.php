@@ -448,6 +448,34 @@ main, .container { background-color: transparent !important; }
 .search-card > button svg { width: 17px; height: 17px; }
 .search-card > button:hover { background: var(--accent-dark); }
 
+@media (max-width: 767.98px) {
+  .search-card {
+    flex-direction: column !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  .search-field {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+  .search-card input, .search-card select {
+    font-size: 0.9rem !important;
+    min-height: 42px !important;
+    padding: 8px 12px 8px 36px !important;
+  }
+  .search-card select {
+    padding-left: 36px !important;
+  }
+  .search-card > button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    padding: 8px 16px !important;
+    font-size: 0.9rem !important;
+  }
+}
+
 /* Trending */
 .trending { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .8rem; }
 .trending strong { color: rgba(255,255,255,0.8); }

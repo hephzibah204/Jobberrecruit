@@ -1,6 +1,5 @@
+<?php $page_title = 'Aptitude Tests'; ?>
 <?= $this->extend('layouts/app') ?>
-
-<?= $this->section('page_title') ?>Aptitude Tests<?= $this->endSection() ?>
 
 <?php
 /* ── helpers for this view ── */
@@ -107,6 +106,12 @@ $flashError = session()->getFlashdata('error');
 .sec-head h2{font-size:clamp(1.05rem,2vw,1.3rem);font-weight:800;color:var(--brand-deep);display:flex;align-items:center;gap:10px}
 .sec-head h2 svg{width:20px;height:20px;color:var(--brand)}
 .sec-head p{font-size:.8rem;color:var(--muted);margin-top:2px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+html.anim-ready .apt-page>*{animation:rise .34s ease both}
+html.anim-ready .apt-page>*:nth-child(2){animation-delay:.05s}
+html.anim-ready .apt-page>*:nth-child(3){animation-delay:.1s}
+html.anim-ready .apt-page>*:nth-child(4){animation-delay:.15s}
+html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
 
 /* hero */
 .apt-hero{position:relative;overflow:hidden;border-radius:var(--radius-lg);color:#fff;padding:clamp(22px,3.2vw,34px);background:radial-gradient(ellipse 60% 90% at 88% 8%,rgba(237,144,32,.22) 0%,transparent 55%),linear-gradient(150deg,#0A2F57 0%,#064A85 55%,#0861A9 100%);box-shadow:var(--shadow)}
@@ -144,7 +149,9 @@ $flashError = session()->getFlashdata('error');
 .entry--official .entry-ic{background:rgba(10,47,87,.14);color:var(--brand-deep)}
 .entry--official b,.entry--official p{color:var(--brand-deep)}.entry--official p{opacity:.85}
 .entry--official .entry-arrow{background:rgba(10,47,87,.14);color:var(--brand-deep)}
-.entry-tag{position:absolute;top:10px;right:12px;font-size:.6rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:var(--brand-deep);color:#fff;border-radius:20px;padding:4px 11px}
+.entry--official::after{content:'';position:absolute;top:0;bottom:0;left:0;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-160%) skewX(-18deg);animation:shine 3.4s ease-in-out infinite;will-change:transform}
+@keyframes shine{0%,55%{transform:translateX(-160%) skewX(-18deg)}85%,100%{transform:translateX(290%) skewX(-18deg)}}
+.entry-tag{position:absolute;top:10px;right:12px;font-size:.6rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:var(--brand-deep);color:#fff;border-radius:20px;padding:4px 11px;box-shadow:0 3px 8px rgba(10,47,87,.35);z-index:1}
 
 /* daily */
 .daily{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:linear-gradient(135deg,#fdf6ea,#fff 55%);border:1px solid #f3d9ae;border-radius:var(--radius-lg);padding:18px 20px;position:relative;overflow:hidden}
@@ -169,6 +176,7 @@ $flashError = session()->getFlashdata('error');
 @media(max-width:620px){.trk-grid{grid-template-columns:1fr}}
 .trk{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;transition:var(--transition);display:flex;flex-direction:column;gap:11px}
 .trk:hover{box-shadow:var(--shadow);transform:translateY(-3px);border-color:#cfe2f2}
+.trk .btn{margin-top:auto}
 .role-tags{display:flex;gap:7px;flex-wrap:wrap}
 .role-name{font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep);display:block}
 .role-desc{font-size:.74rem;color:var(--muted);line-height:1.55;margin-top:3px}
@@ -223,6 +231,8 @@ $flashError = session()->getFlashdata('error');
 .trend-svg .area{fill:url(#trendfill);opacity:.6}
 .trend-svg .pt{fill:#fff;stroke:var(--brand);stroke-width:2.5}
 .trend-svg .pt--hi{fill:var(--accent);stroke:var(--accent-dark)}
+.focus-note{display:flex;gap:9px;align-items:flex-start;font-size:.76rem;border-radius:10px;padding:11px 13px;background:var(--accent-light);border:1px solid #f3d9ae;color:#8a5a10;line-height:1.55;margin-top:4px}
+.focus-note svg{width:14px;height:14px;flex-shrink:0;margin-top:2px;color:var(--accent-dark)}
 
 /* history */
 .hist-list{display:flex;flex-direction:column}
@@ -292,6 +302,10 @@ $flashError = session()->getFlashdata('error');
 .official-strip ul{list-style:none;display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding:0}
 .official-strip li{display:inline-flex;align-items:center;gap:7px;font-size:.74rem;font-weight:600;color:rgba(255,255,255,.92)}
 .official-strip li svg{width:14px;height:14px;color:var(--accent)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);z-index:1400;display:flex;align-items:center;gap:10px;background:var(--brand-deep);color:#fff;font-size:.82rem;font-weight:600;padding:13px 20px;border-radius:12px;box-shadow:var(--shadow-lg);opacity:0;visibility:hidden;transition:opacity .25s ease,transform .25s ease,visibility .25s;max-width:min(420px,calc(100vw - 32px))}
+.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.toast svg{width:17px;height:17px;color:var(--accent);flex-shrink:0}
+@media(pointer:coarse){.btn-sm{min-height:44px}}
 </style>
 <?= $this->endSection() ?>
 
@@ -491,12 +505,34 @@ $flashError = session()->getFlashdata('error');
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
+      <?php
+        $focusLabel = '';
+        if (!empty($summary['byCategory'])) {
+          $worst = null;
+          foreach ($summary['byCategory'] as $cat) {
+            if ($worst === null || $cat['score'] < $worst['score']) $worst = $cat;
+          }
+          if ($worst) $focusLabel = esc($worst['label']);
+        }
+      ?>
+      <?php if ($focusLabel): ?>
+      <p class="focus-note"><svg aria-hidden="true"><use href="#apt-bulb"/></svg><span><b>Focus area:</b> <?= $focusLabel ?> is your weakest category. Two beginner sessions this week would lift your overall average fastest.</span></p>
+      <?php endif; ?>
     </div>
   </section>
 
   <section class="card" aria-labelledby="trend-title">
     <div class="card-head"><span class="card-title" id="trend-title"><svg aria-hidden="true"><use href="#apt-trend-up"/></svg> Progress Over Time</span>
-      <span class="pill pill--muted">Weekly average</span></div>
+      <?php if (count($trend) >= 2): ?>
+      <?php
+        $first = null; $last = null;
+        foreach ($trend as $v) { if ($v !== null) { if ($first === null) $first = $v; $last = $v; } }
+        $diff = $last !== null && $first !== null ? $last - $first : 0;
+      ?>
+      <span class="pill <?= $diff >= 0 ? 'pill--success' : 'pill--muted' ?>"><svg aria-hidden="true"><use href="#apt-trend-up"/></svg> <?= $diff >= 0 ? '+' : '' ?><?= (int) $diff ?> pts</span>
+      <?php else: ?>
+      <span class="pill pill--muted">Weekly average</span>
+      <?php endif; ?></div>
     <div class="card-body">
       <?php if (count($pts) >= 2): ?>
       <svg class="trend-svg" viewBox="0 0 560 250" role="img" aria-label="Weekly average score trend">
@@ -530,6 +566,7 @@ $flashError = session()->getFlashdata('error');
       <button type="button" class="fchip" data-filter="all" aria-pressed="true">All</button>
       <button type="button" class="fchip" data-filter="practice" aria-pressed="false">Practice</button>
       <button type="button" class="fchip" data-filter="official" aria-pressed="false">Official</button>
+      <button type="button" class="fchip" data-filter="daily" aria-pressed="false">Daily</button>
     </div>
     <?php endif; ?>
   </div>
@@ -571,10 +608,10 @@ $flashError = session()->getFlashdata('error');
     <div class="card-body">
       <div class="streak-big">
         <span class="flame" aria-hidden="true"><svg><use href="#apt-flame"/></svg></span>
-        <div><b><?= (int) $summary['streak'] ?> day<?= $summary['streak'] === 1 ? '' : 's' ?></b><i>Keep practising to grow it</i></div>
+        <div><b><span class="countup" data-to="<?= (int) $summary['streak'] ?>">0</span> day<?= $summary['streak'] === 1 ? '' : 's' ?></b><i>Best streak: <?= (int) ($summary['bestStreak'] ?? $summary['streak']) ?> days</i></div>
       </div>
       <div class="week-dots" id="week-dots" aria-label="This week's practice days"></div>
-      <p style="font-size:.76rem;color:var(--muted)">One practice test or daily challenge a day keeps the streak alive.</p>
+      <p style="font-size:.76rem;color:var(--muted);margin-top:14px;line-height:1.55">One practice test or daily challenge keeps the streak alive. Today's not done yet — the Daily Challenge takes 8 minutes.</p>
     </div>
   </section>
 
@@ -616,7 +653,7 @@ $flashError = session()->getFlashdata('error');
 <section class="official-strip" aria-labelledby="off-title">
   <div>
     <h2 id="off-title">Ready to make it count?</h2>
-    <p>Official assessments run under exam conditions — tab-switch detection and a verified result you can attach to job applications on JobberRecruit.</p>
+    <p>Official assessments run under exam conditions — identity watermark, tab-switch detection, and a verified result you can attach to job applications on JobberRecruit.</p>
     <ul>
       <li><svg aria-hidden="true"><use href="#apt-shield"/></svg> Proctored &amp; anti-cheat</li>
       <li><svg aria-hidden="true"><use href="#apt-check-c"/></svg> Verified result</li>
@@ -627,6 +664,7 @@ $flashError = session()->getFlashdata('error');
 </section>
 
 </div><!-- /.apt-page -->
+<div class="toast" id="toast" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#apt-check-c"/></svg><span id="toast-txt"></span></div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -634,6 +672,11 @@ $flashError = session()->getFlashdata('error');
 (function(){
   'use strict';
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var toastT;
+  function toast(msg){var t=document.getElementById('toast');document.getElementById('toast-txt').textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show')},3200);}
+
+  /* content rise animation */
+  requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 
   /* count-up numbers */
   document.querySelectorAll('.apt-page .countup').forEach(function(el){
@@ -660,16 +703,39 @@ $flashError = session()->getFlashdata('error');
   }
   tick();setInterval(tick,1000);
 
-  /* week dots — last 7 days, today marked (no fake ticks) */
-  var wd=document.getElementById('week-dots');
-  if(wd){
-    var labels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],html='';
-    for(var i=6;i>=0;i--){
-      var d=new Date();d.setDate(d.getDate()-i);
-      var isToday=i===0;
-      html+='<div class="wd'+(isToday?' today':'')+'"><i>'+labels[d.getDay()]+'</i><b>'+(isToday?'·':'')+'</b></div>';
-    }
-    wd.innerHTML=html;
+  /* ── localStorage progress tracking (streaks, achievements) ── */
+  var PROG_KEY='jr_apt_progress_v1';
+  var SKILL_CATS=['numerical','verbal','logical','abstract','ict','general-aptitude'];
+  function loadProgress(){try{var raw=localStorage.getItem(PROG_KEY);if(raw){var p=JSON.parse(raw);p.practiceDates=p.practiceDates||[];p.categories=p.categories||[];return p;}}catch(e){}return{lastDate:null,currentStreak:0,bestStreak:0,practiceDates:[],totalStarted:0,categories:[]};}
+  function saveProgress(p){try{localStorage.setItem(PROG_KEY,JSON.stringify(p))}catch(e){}}
+  function todayStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function daysBetween(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);}
+  function recordAttempt(categorySlug){
+    var p=loadProgress(),today=todayStr();
+    if(p.lastDate!==today){p.currentStreak=p.lastDate&&daysBetween(p.lastDate,today)===1?p.currentStreak+1:1;p.bestStreak=Math.max(p.bestStreak||0,p.currentStreak);p.lastDate=today;p.practiceDates.push(today);p.practiceDates=p.practiceDates.slice(-30);}
+    p.totalStarted=(p.totalStarted||0)+1;
+    if(categorySlug&&p.categories.indexOf(categorySlug)===-1)p.categories.push(categorySlug);
+    saveProgress(p);renderProgress(p);
+  }
+  function renderProgress(p){
+    p=p||loadProgress();var today=todayStr(),doneToday=p.lastDate===today;
+    var streakEl=document.querySelector('.streak-big b'),bestEl=document.querySelector('.streak-big i');
+    if(streakEl&&p.totalStarted>0){var serverStreak=parseInt(streakEl.textContent)||0;if((p.currentStreak||0)>serverStreak)streakEl.textContent=p.currentStreak+(p.currentStreak===1?' day':' days');}
+    if(bestEl&&p.totalStarted>0){var serverBest=parseInt(bestEl.textContent.replace(/\D/g,''))||0;if((p.bestStreak||0)>serverBest)bestEl.textContent='Best streak: '+p.bestStreak+(p.bestStreak===1?' day':' days');}
+    var wd=document.getElementById('week-dots');
+    if(wd){var labels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],html='';
+      for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var ds=todayStr(d);var isToday=ds===today;var isDone=p.practiceDates.indexOf(ds)>-1;
+        html+='<div class="wd'+(isDone?' done':isToday?' today':'')+'"><i>'+labels[d.getDay()]+'</i><b>'+(isDone?'<svg aria-hidden="true"><use href="#apt-check"/></svg>':(isToday?'\u00B7':''))+'</b></div>';
+      }wd.innerHTML=html;}
+    var noteEl=document.querySelector('#streak-title');if(noteEl){var noteText=noteEl.closest('section').querySelector('.card-body>p');if(noteText)noteText.textContent=doneToday?'Nice \u2014 you\u2019ve practiced today. Come back tomorrow to keep the streak alive.':'One practice test or daily challenge keeps the streak alive. Today\u2019s not done yet \u2014 the Daily Challenge takes 8 minutes.';}
+    var earned={'First Test':(p.totalStarted||0)>=1,'3-Day Streak':(p.bestStreak||0)>=3,'All-Rounder':SKILL_CATS.every(function(c){return p.categories.indexOf(c)>-1}),'7-Day Streak':(p.bestStreak||0)>=7};
+    var iconMap={'First Test':'#apt-play','3-Day Streak':'#apt-flame','Score 80+':'#apt-star','All-Rounder':'#apt-pie','Score 90+':'#apt-star','7-Day Streak':'#apt-flame','Speed Solver':'#apt-clock','Verified':'#apt-shield'};
+    document.querySelectorAll('.ach').forEach(function(el){var label=el.querySelector('span').textContent;var won=(label in earned)?earned[label]:false;el.classList.toggle('ach--won',won);el.classList.toggle('ach--locked',!won);var icon=won?(iconMap[label]||'#apt-flame'):'#apt-lock';el.querySelector('svg use').setAttribute('href',icon);});
+    var totalWon=document.querySelectorAll('.ach--won').length;var pill=document.querySelector('#badge-title').closest('.card-head').querySelector('.pill');if(pill)pill.textContent=totalWon+' of '+document.querySelectorAll('.ach').length;
+  }
+  /* Only render progress from localStorage if user has started at least one test this session */
+  var _progInit=loadProgress();
+  if(_progInit.totalStarted>0)renderProgress(_progInit);
   }
 
   /* skill difficulty pills rewrite the practice link's ?level= */

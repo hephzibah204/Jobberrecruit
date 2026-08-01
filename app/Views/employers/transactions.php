@@ -1,12 +1,5 @@
+<?php $page_title = 'Transactions'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.stats--txn{grid-template-columns:repeat(3,1fr)}
-@media (max-width:800px){.stats--txn{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.stats--txn{grid-template-columns:1fr}}
-</style>
-<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php
@@ -31,7 +24,7 @@ if (!empty($transactions)) {
     <p>Your wallet funding and payment history.</p>
   </div>
   <div class="page-actions">
-    <a href="<?= base_url('employer/wallet') ?>" class="btn btn-accent">
+    <a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-accent">
       <svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet
     </a>
   </div>
@@ -81,10 +74,10 @@ if (!empty($transactions)) {
       <h3>No transactions yet</h3>
       <p>Your transaction history will appear here once you make a payment. Fund your wallet or buy a job bundle to get started.</p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">
-        <a href="<?= base_url('employer/wallet') ?>" class="btn btn-primary btn-sm">
+        <a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-primary emp-btn-sm">
           <svg aria-hidden="true"><use href="#i-plus"/></svg> Make Your First Payment
         </a>
-        <a href="<?= base_url('employer/pricing') ?>" class="btn btn-outline btn-sm">View Plans</a>
+        <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline emp-btn-sm">View Plans</a>
       </div>
     </div>
   <?php else: ?>
@@ -144,8 +137,8 @@ if (!empty($transactions)) {
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
-<a href="<?= base_url('employer/pricing') ?>" class="btn btn-outline">View Plans</a>
-<a href="<?= base_url('employer/wallet') ?>" class="btn btn-accent">
+<a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline"><svg aria-hidden="true"><use href="#i-receipt"/></svg> View Plans</a>
+<a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-accent">
   <svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet
 </a>
 <?= $this->endSection() ?>

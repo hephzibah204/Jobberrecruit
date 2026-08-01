@@ -54,7 +54,6 @@ class AuthController extends BaseController
             $oldUser = $this->auth->user();
             $this->auth->logout();
             $this->auth->forgetUser($oldUser->id);
-            session()->destroy();
         }
 
         // 2️⃣ Validate input

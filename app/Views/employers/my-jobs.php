@@ -1,95 +1,5 @@
+<?php $page_title = 'My Jobs'; ?>
 <?= $this->extend('layouts/employer') ?>
-
-<?= $this->section('styles') ?>
-<style>
-.stats--jobs {
-    grid-template-columns: repeat(4, 1fr);
-}
-@media (max-width: 1100px) {
-    .stats--jobs {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-.job-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-}
-.job-cell-title {
-    font-weight: 600;
-    font-size: .85rem;
-    color: var(--brand-deep);
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-.job-cell-title a {
-    color: inherit;
-}
-.job-cell-title a:hover {
-    color: var(--brand);
-}
-.job-cell-sub {
-    font-size: .7rem;
-    color: var(--muted);
-    margin-top: 2px;
-}
-.metric {
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    color: var(--brand-deep);
-}
-.metric i {
-    font-style: normal;
-    display: block;
-    font-size: .62rem;
-    color: var(--muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-}
-.pill--paused {
-    background: #f0f4f8;
-    color: var(--muted);
-    border: 1px solid var(--border);
-}
-@media (max-width: 760px) {
-    .tbl--jobs {
-        min-width: 0;
-    }
-    .tbl--jobs thead {
-        display: none;
-    }
-    .tbl--jobs tr {
-        display: block;
-        border-bottom: 1px solid var(--border);
-        padding: 14px 4px;
-    }
-    .tbl--jobs td {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border: none;
-        padding: 5px 0;
-        gap: 10px;
-    }
-    .tbl--jobs td::before {
-        content: attr(data-lbl);
-        font-size: .66rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .06em;
-        color: var(--muted);
-    }
-    .tbl--jobs td.no-lbl::before {
-        display: none;
-    }
-}
-</style>
-<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php
@@ -115,7 +25,7 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
 ?>
 
 <div class="page-head">
-    <div class="page-head-left">
+    <div>
         <h1><svg aria-hidden="true"><use href="#i-briefcase"/></svg> My Jobs</h1>
         <p>Manage all your job postings in one place.</p>
     </div>
@@ -268,6 +178,16 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
             </table>
         </div>
     <?php endif; ?>
+
+    <!-- Pagination -->
+    <div class="pager">
+        <span>Showing <b><?= count($jobs) ?></b> of <b><?= count($jobs) ?></b> jobs</span>
+        <div class="pager-nav" id="pagination-controls">
+            <a class="pager-btn" href="#" aria-disabled="true" aria-label="Previous page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-l"/></svg></a>
+            <a class="pager-btn on" href="#" aria-current="page">1</a>
+            <a class="pager-btn" href="#" aria-disabled="true" aria-label="Next page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+        </div>
+    </div>
 </section>
 <?= $this->endSection() ?>
 
