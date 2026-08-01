@@ -711,7 +711,7 @@ svg { flex-shrink: 0; }
 
 /* ══ VERIFY PAGE ══ */
 .vrf-hero{background:radial-gradient(1000px 500px at 80% -10%,rgba(237,144,32,.16),transparent 55%),linear-gradient(155deg,#0A2F57,#064A85);color:#fff;padding:48px 0;text-align:center}
-.vrf-hero h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.vrf-hero h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px;color:#fff}
 .vrf-hero p{font-size:.98rem;color:rgba(255,255,255,.82);max-width:520px;margin:0 auto}
 .vrf-wrap{max-width:720px;margin:-32px auto 0;padding:0 20px 64px;position:relative;z-index:2}
 

@@ -97,7 +97,7 @@ svg{flex-shrink:0}
 .hero-tag{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 14px;color:rgba(255,255,255,.92);margin-bottom:18px}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
-.hero h1{font-size:clamp(2rem,4vw,3rem);font-weight:800;line-height:1.1;margin-bottom:16px}
+.hero h1{font-size:clamp(2rem,4vw,3rem);font-weight:800;line-height:1.1;margin-bottom:16px;color:#fff}
 .hero h1 em{font-style:normal;color:var(--accent)}
 .hero-sub{font-size:.95rem;color:rgba(255,255,255,.68);max-width:460px;line-height:1.72;margin-bottom:30px}
 .hero-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}

@@ -80,6 +80,7 @@
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 9px;
+  color: #fff;
 }
 .ai-hero h2 span { color: var(--accent); }
 .ai-sub {

@@ -831,9 +831,9 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
           mask-image: radial-gradient(ellipse 90% 90% at 30% 30%, #000 30%, transparent 85%);
 }
 .jobs-hero-inner { position: relative; z-index: 1; }
-.jobs-hero h1 { font-size: clamp(1.7rem, 3.6vw, 2.5rem); font-weight: 800; line-height: 1.12; margin-bottom: 10px; }
+.jobs-hero h1 { font-size: clamp(1.7rem, 3.6vw, 2.5rem); font-weight: 800; line-height: 1.12; margin-bottom: 10px; color: #fff; }
 .jobs-hero h1 em { font-style: normal; color: var(--accent); }
-.jobs-hero p { font-size: .94rem; opacity: .9; max-width: 560px; margin-bottom: 24px; }
+.jobs-hero p { font-size: .94rem; color: #fff; opacity: .9; max-width: 560px; margin-bottom: 24px; }
 .jobs-hero .search-card { margin-bottom: 16px; }
 .jobs-hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .jobs-hero-alert {

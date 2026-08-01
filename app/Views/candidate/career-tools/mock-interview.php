@@ -133,6 +133,7 @@
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 9px;
+  color: #fff;
 }
 .studio-hero h1 span { color: var(--accent); }
 .hero-sub { font-size: .9rem; color: rgba(255,255,255,.85); max-width: 520px; }

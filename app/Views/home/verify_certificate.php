@@ -145,6 +145,7 @@
   font-weight: 800;
   letter-spacing: -.02em;
   margin-bottom: 8px;
+  color: #fff;
 }
 .vrf-hero p {
   font-size: .98rem;

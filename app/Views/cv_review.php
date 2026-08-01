@@ -777,7 +777,7 @@ svg { flex-shrink: 0; }
 .cvr-hero-inner{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
 .cvr-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 15px;color:rgba(255,255,255,.92);margin-bottom:20px}
 .cvr-eyebrow svg{width:14px;height:14px;color:var(--accent)}
-.cvr-hero h1{font-size:2.5rem;font-weight:800;line-height:1.12;letter-spacing:-.02em;margin-bottom:16px}
+.cvr-hero h1{font-size:2.5rem;font-weight:800;line-height:1.12;letter-spacing:-.02em;margin-bottom:16px;color:#fff}
 .cvr-hero h1 span{color:var(--accent)}
 .cvr-hero-lede{font-size:1.05rem;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:28px;max-width:520px}
 .cvr-hero-ct

@@ -69,6 +69,7 @@
   line-height: 1.12;
   letter-spacing: -.02em;
   margin-bottom: 16px;
+  color: #fff;
 }
 
 .cvr-hero h1 span { color: var(--accent); }

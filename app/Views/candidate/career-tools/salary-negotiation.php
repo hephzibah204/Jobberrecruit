@@ -43,7 +43,7 @@
 .hb--live{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#d8ecff}
 .pulse{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.6);animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.55)}70%{box-shadow:0 0 0 8px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
-.nego-hero h1{font-size:clamp(1.5rem,3.4vw,2.15rem);font-weight:800;line-height:1.15;margin:2px 0 8px}
+.nego-hero h1{font-size:clamp(1.5rem,3.4vw,2.15rem);font-weight:800;line-height:1.15;margin:2px 0 8px;color:#fff}
 .nego-hero h1 span{color:var(--accent)}
 .hero-sub{font-size:clamp(.84rem,1.4vw,.95rem);color:rgba(255,255,255,.82);max-width:560px;line-height:1.65}
 .hero-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}

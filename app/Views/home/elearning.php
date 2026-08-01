@@ -568,7 +568,7 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
       text-transform: uppercase; color: var(--accent) !important; margin-bottom: 16px;
     }
     .tr-hero-tag svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
-    .tr-hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(1.9rem, 4.4vw, 2.85rem); font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+    .tr-hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(1.9rem, 4.4vw, 2.85rem); font-weight: 800; line-height: 1.15; margin-bottom: 16px; color: #fff !important; }
     .tr-hero-sub { font-size: 1rem; color: rgba(255, 255, 255, 0.95) !important; max-width: 520px; margin-bottom: 28px; }
     .tr-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
