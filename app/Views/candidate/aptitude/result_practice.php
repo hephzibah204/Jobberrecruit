@@ -1,6 +1,14 @@
-<?= $this->extend('templates/base') ?>
-
-
+<?php
+$scorePct = (int) round($scorePct ?? ($attempt['score_pct'] ?? 0));
+$numCorrect = (int) ($attempt['num_correct'] ?? 0);
+$numTotal   = (int) ($attempt['num_total'] ?? 0);
+$numWrong   = max(0, $numTotal - $numCorrect);
+$circumference = 439.8;
+$ringOffset = round($circumference - ($circumference * $scorePct / 100), 1);
+$testSlug = $test['slug'] ?? '';
+$page_title = ($test['title'] ?? 'Aptitude Test') . ' Practice Results';
+?>
+<?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <style>
@@ -224,67 +232,51 @@ svg { flex-shrink: 0; }
   <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3Z"/></symbol>
 </defs>
 </svg>
-<main>
 <section class="res-hero">
   <div class="container">
     <span class="res-verdict pass"><svg aria-hidden="true"><use href="#i-book"/></svg> Practice complete</span>
     <div class="res-score-ring">
   <svg viewBox="0 0 160 160">
     <circle cx="80" cy="80" r="70" fill="none" stroke="#e2e8f2" stroke-width="14"/>
-    <circle cx="80" cy="80" r="70" fill="none" stroke="#0D609E" stroke-width="14" stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="145.1"/>
+    <circle cx="80" cy="80" r="70" fill="none" stroke="#0D609E" stroke-width="14" stroke-linecap="round" stroke-dasharray="<?= $circumference ?>" stroke-dashoffset="<?= $ringOffset ?>"/>
   </svg>
-  <div class="pct"><div class="n">67%</div><div class="l">Score</div></div>
+  <div class="pct"><div class="n"><?= $scorePct ?>%</div><div class="l">Score</div></div>
 </div>
-    <h1>Software Developer Aptitude</h1>
+    <h1><?= esc($test['title'] ?? 'Aptitude Test') ?></h1>
     <p class="sub">Practice mode · Review your answers below</p>
     <div class="res-stats">
-      <div class="res-stat"><div class="n ok">2</div><div class="l">Correct</div></div>
-      <div class="res-stat"><div class="n no">1</div><div class="l">Incorrect</div></div>
-      <div class="res-stat"><div class="n">3</div><div class="l">Total</div></div>
+      <div class="res-stat"><div class="n ok"><?= $numCorrect ?></div><div class="l">Correct</div></div>
+      <div class="res-stat"><div class="n no"><?= $numWrong ?></div><div class="l">Incorrect</div></div>
+      <div class="res-stat"><div class="n"><?= $numTotal ?></div><div class="l">Total</div></div>
     </div>
     <div class="res-actions">
-      <a href="/aptitude/software-developer/practice" class="btn btn-outline">Practice again</a>
-      <a href="/aptitude/software-developer/start" class="btn btn-accent">Take official test</a>
+      <a href="<?= base_url('aptitude/' . $testSlug . '/practice') ?>" class="btn btn-outline">Practice again</a>
+      <a href="<?= base_url('aptitude/' . $testSlug . '/start') ?>" class="btn btn-accent">Take official test</a>
     </div>
   </div>
 </section>
 <div class="res-wrap">
   <h2 class="res-sec-title">Answer breakdown</h2>
+  <?php foreach ($breakdown as $q): ?>
   <div class="res-q">
-  <div class="res-q-head">
-    <span class="res-q-badge ok"><svg aria-hidden="true"><use href="#i-check"/></svg></span>
-    <div class="res-q-body">1. Which data structure uses Last-In-First-Out (LIFO) ordering?</div>
+    <div class="res-q-head">
+      <span class="res-q-badge <?= $q['is_correct'] ? 'ok' : 'no' ?>"><svg aria-hidden="true"><use href="<?= $q['is_correct'] ? '#i-check' : '#i-x-circle' ?>"/></svg></span>
+      <div class="res-q-body"><?= $q['number'] ?>. <?= esc($q['body']) ?></div>
+    </div>
+    <div class="res-q-opts">
+      <?php foreach ($q['options'] as $i => $opt): ?>
+        <div class="res-q-opt<?= $opt['correct'] ? ' correct' : ($opt['chosen'] ? ' chosen-wrong' : '') ?>">
+          <span class="k"><?= chr(65 + $i) ?></span><?= esc($opt['body']) ?>
+          <?php if ($opt['correct']): ?><span class="tag">Correct</span>
+          <?php elseif ($opt['chosen']): ?><span class="tag">Your answer</span><?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <?php if (!empty($q['explanation'])): ?>
+    <div class="res-q-exp"><svg aria-hidden="true"><use href="#i-bulb"/></svg><div><b>Why:</b> <?= esc($q['explanation']) ?></div></div>
+    <?php endif; ?>
   </div>
-  <div class="res-q-opts"><div class="res-q-opt"><span class="k">A</span>Queue</div><div class="res-q-opt correct"><span class="k">B</span>Stack<span class="tag">Correct</span></div><div class="res-q-opt"><span class="k">C</span>Linked List</div><div class="res-q-opt"><span class="k">D</span>Binary Tree</div></div>
-  <div class="res-q-exp"><svg aria-hidden="true"><use href="#i-bulb"/></svg><div><b>Why:</b> A stack adds and removes elements from the same end (the top), making the last item added the first removed — LIFO.</div></div>
+  <?php endforeach; ?>
 </div>
-<div class="res-q">
-  <div class="res-q-head">
-    <span class="res-q-badge ok"><svg aria-hidden="true"><use href="#i-check"/></svg></span>
-    <div class="res-q-body">2. What is the time complexity of binary search on a sorted array?</div>
-  </div>
-  <div class="res-q-opts"><div class="res-q-opt"><span class="k">A</span>O(n)</div><div class="res-q-opt"><span class="k">B</span>O(n log n)</div><div class="res-q-opt correct"><span class="k">C</span>O(log n)<span class="tag">Correct</span></div><div class="res-q-opt"><span class="k">D</span>O(1)</div></div>
-  <div class="res-q-exp"><svg aria-hidden="true"><use href="#i-bulb"/></svg><div><b>Why:</b> Binary search halves the search space each step, giving logarithmic O(log n) time.</div></div>
-</div>
-<div class="res-q">
-  <div class="res-q-head">
-    <span class="res-q-badge no"><svg aria-hidden="true"><use href="#i-x-circle"/></svg></span>
-    <div class="res-q-body">3. In SQL, which clause is used to filter grouped records?</div>
-  </div>
-  <div class="res-q-opts"><div class="res-q-opt chosen-wrong"><span class="k">A</span>WHERE<span class="tag">Your answer</span></div><div class="res-q-opt correct"><span class="k">B</span>HAVING<span class="tag">Correct</span></div><div class="res-q-opt"><span class="k">C</span>GROUP BY</div><div class="res-q-opt"><span class="k">D</span>ORDER BY</div></div>
-  <div class="res-q-exp"><svg aria-hidden="true"><use href="#i-bulb"/></svg><div><b>Why:</b> WHERE filters rows before grouping; HAVING filters after grouping. To filter grouped/aggregated records, use HAVING.</div></div>
-</div>
-</div>
-</main>
-
-<script>
-function toggleMenu(btn){var n=document.getElementById('mob-nav');if(!n)return;var o=n.classList.toggle('open');btn.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';}
-var mn=document.getElementById('mob-nav');if(mn)mn.addEventListener('click',function(e){if(e.target.tagName==='A'){this.classList.remove('open');var b=document.querySelector('.hamburger');if(b)b.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
-document.querySelectorAll('.nav-dropdown-toggle').forEach(function(t){t.addEventListener('click',function(e){e.stopPropagation();var o=t.getAttribute('aria-expanded')==='true';document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(x){x.setAttribute('aria-expanded','false');});t.setAttribute('aria-expanded',String(!o));});});
-document.addEventListener('click',function(){document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t){t.setAttribute('aria-expanded','false');});});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t){t.setAttribute('aria-expanded','false');});});
-function toggleFaq(btn){var i=btn.parentElement;var o=i.classList.toggle('open');btn.setAttribute('aria-expanded',String(o));}
-function goSearch(e){e.preventDefault();var q=document.getElementById('ch-q').value.trim();window.location.href='/jobs'+(q?('?q='+encodeURIComponent(q)):'');return false;}
-</script>
 
 <?= $this->endSection() ?>

@@ -11,7 +11,7 @@
 .prem-hero .ph-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:30px;padding:7px 16px;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px}
 .prem-hero .ph-badge svg{width:14px;height:14px;color:#ffd27a}
 .prem-hero h1{font-family:'Sora',sans-serif;font-size:clamp(1.6rem,3vw,2.3rem);margin-bottom:10px;color:#fff}
-.prem-hero p{font-size:1rem;opacity:.92;max-width:520px;margin:0 auto}
+.prem-hero p{font-size:1rem;color:#fff;opacity:.92;max-width:520px;margin:0 auto}
 .prem-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;margin:0 auto}
 @media(max-width:720px){.prem-grid{grid-template-columns:1fr}}
 .plan{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:clamp(20px,3vw,30px);display:flex;flex-direction:column}

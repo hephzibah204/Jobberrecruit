@@ -297,22 +297,100 @@ class AptitudeController extends BaseController
         $testModel = new TestModel();
         $test = $testModel->find($attempt['test_id']);
 
-        return view('candidate/aptitude/test_engine', ['attempt' => $attempt, 'test' => $test]);
+        return view('candidate/aptitude/test_engine', [
+            'title'   => ($test['title'] ?? 'Aptitude Test') . ' — Test in progress',
+            'attempt' => $attempt,
+            'test'    => $test,
+        ]);
     }
 
     public function result($attemptId)
     {
         $attemptModel = new TestAttemptModel();
         $attempt = $attemptModel->find($attemptId);
-        
+
         if (!$attempt || $attempt['candidate_id'] != auth()->id()) {
             return redirect()->to('/aptitude')->with('error', 'Test result not found.');
         }
 
+        if ($attempt['status'] !== 'submitted') {
+            return redirect()->to('/aptitude/test/' . $attemptId);
+        }
+
+        $testModel = new TestModel();
+        $test = $testModel->find($attempt['test_id']);
+
+        $scorePct = (float) ($attempt['score_pct'] ?? 0);
+        $passed   = (bool) ($attempt['passed'] ?? false);
+
+        // Build per-question breakdown (question body, options, correct answer, what the candidate picked)
+        $questionModel   = new QuestionModel();
+        $optionModel     = new QuestionOptionModel();
+        $answerModel     = new AttemptAnswerModel();
+
+        $answersByQ = [];
+        foreach ($answerModel->where('attempt_id', $attemptId)->findAll() as $a) {
+            $answersByQ[(int) $a['question_id']] = $a;
+        }
+
+        $breakdown = [];
+        foreach (json_decode($attempt['question_ids'], true) as $i => $qId) {
+            $q = $questionModel->find($qId);
+            if (!$q) continue;
+
+            $options = $optionModel->where('question_id', $qId)->orderBy('id', 'ASC')->findAll();
+            $selectedIds = [];
+            if (isset($answersByQ[$qId]['selected_option_ids'])) {
+                $selectedIds = json_decode($answersByQ[$qId]['selected_option_ids'], true) ?: [];
+            }
+
+            $breakdown[] = [
+                'number'      => $i + 1,
+                'body'        => $q['body'],
+                'explanation' => $q['explanation'] ?? '',
+                'is_correct'  => (bool) ($answersByQ[$qId]['is_correct'] ?? false),
+                'options'     => array_map(static function ($opt) use ($selectedIds) {
+                    return [
+                        'body'      => $opt['body'],
+                        'correct'   => (bool) $opt['is_correct'],
+                        'chosen'    => in_array((int) $opt['id'], array_map('intval', $selectedIds), true),
+                    ];
+                }, $options),
+            ];
+        }
+
+        // Percentile among other candidates who took this test (official mode only)
+        $percentile = null;
+        if ($attempt['mode'] === 'official') {
+            $db = db_connect();
+            $totalPeers = (int) $db->table('test_attempts')
+                ->where('test_id', $attempt['test_id'])
+                ->where('status', 'submitted')
+                ->countAllResults();
+            $lowerOrEqual = (int) $db->table('test_attempts')
+                ->where('test_id', $attempt['test_id'])
+                ->where('status', 'submitted')
+                ->where('score_pct <=', $scorePct)
+                ->countAllResults();
+            // Percentile is only meaningful with a reasonable peer sample; otherwise a single
+            // low-scoring attempt can mathematically compute as "top 1%".
+            $percentile = $totalPeers >= 5 ? (int) round(($lowerOrEqual / $totalPeers) * 100) : null;
+        }
+
+        $viewData = [
+            'title'      => ($test['title'] ?? 'Aptitude Test') . ' Results',
+            'attempt'    => $attempt,
+            'test'       => $test,
+            'scorePct'   => $scorePct,
+            'passed'     => $passed,
+            'breakdown'  => $breakdown,
+            'percentile' => $percentile,
+        ];
+
         if ($attempt['mode'] === 'practice') {
-            return view('candidate/aptitude/result_practice', ['attempt' => $attempt]);
+            return view('candidate/aptitude/result_practice', $viewData);
         } else {
-            return view('candidate/aptitude/result_official', ['attempt' => $attempt]);
+            return view('candidate/aptitude/result_official', $viewData);
         }
     }
 

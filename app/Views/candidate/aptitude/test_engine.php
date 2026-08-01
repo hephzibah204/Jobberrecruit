@@ -1,4 +1,4 @@
-<?= $this->extend('templates/base') ?>
+<?= $this->extend('layouts/minimal') ?>
 
 <?= $this->section('styles') ?>
 <style>
@@ -577,7 +577,7 @@ body.tst-blurred .tst-blur-notice { display: flex; }
           return {
             id: q.id,
             q: q.body,
-            opts: q.options.map(function(o){ return o.text; }),
+            opts: q.options.map(function(o){ return o.body; }),
             option_ids: q.options.map(function(o){ return o.id; })
           };
         });

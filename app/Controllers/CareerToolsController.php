@@ -329,9 +329,49 @@ class CareerToolsController extends BaseController
             $candidate['targetPosition'] = $candidateObj->job_title ?? '';
         }
 
+        // Reuse streak/XP helpers from mock interview
+        $negoModel = new \App\Models\SalaryNegotiationSessionModel();
+        $recentSessions = $negoModel->getRecentSessions($userId, 10);
+        $streak = $negoModel->calculateStreak($userId);
+        $xp = $this->calculateXp($userId);
+
+        // Weekly negotiation goal (target: 2 per week)
+        $weeklyGoalTarget = 2;
+        $weeklyDone = $negoModel->weeklySessionsCount($userId);
+        $weeklyPct = $weeklyGoalTarget > 0 ? min(100, (int) round(($weeklyDone / $weeklyGoalTarget) * 100)) : 0;
+
+        // Best score and averages
+        $bestScore = $negoModel->bestScore($userId);
+        $avgScores = $negoModel->averageScores($userId);
+        $persuasionTrend = $negoModel->persuasionTrend($userId);
+
+        // Format recent sessions for the history rail
+        $history = array_map(static function (object $s) use ($userId): array {
+            $eval = json_decode((string) ($s->evaluation_json ?? ''), true) ?: [];
+            return [
+                'id'               => (int) $s->id,
+                'job_title'        => (string) ($s->job_title ?? 'Negotiation'),
+                'difficulty'       => (string) ($s->difficulty ?? 'medium'),
+                'overall_score'    => (int) ($s->overall_score ?? 0),
+                'persuasion_score' => (int) ($s->persuasion_score ?? 0),
+                'confidence_score' => (int) ($s->confidence_score ?? 0),
+                'outcome'          => (string) ($s->outcome ?? ''),
+                'created_at'       => date('d M', strtotime($s->created_at)),
+            ];
+        }, $recentSessions);
+
         return view('candidate/career-tools/salary-negotiation', [
-            'title' => 'Salary Negotiation Simulator',
-            'candidate' => $candidate
+            'title'            => 'Salary Negotiation Simulator',
+            'candidate'        => $candidate,
+            'recentSessions'   => $history,
+            'streak'           => $streak,
+            'xp'               => $xp,
+            'weeklyDone'       => $weeklyDone,
+            'weeklyGoalTarget' => $weeklyGoalTarget,
+            'weeklyPct'        => $weeklyPct,
+            'bestScore'        => $bestScore,
+            'avgScores'        => $avgScores,
+            'persuasionTrend'  => $persuasionTrend,
         ]);
     }
 
@@ -467,16 +507,21 @@ class CareerToolsController extends BaseController
             ->where('user_id', $userId)
             ->countAllResults();
 
-        // 100 XP per job application
-        $jobApplicationModel = new \App\Models\JobApplicationModel();
-        $appsCount = $jobApplicationModel
-            ->where('user_id', $userId)
-            ->countAllResults();
+        $candidateId = (int) ($this->candidateModel->where('user_id', $userId)->first()->id ?? 0);
 
-        // 150 XP per aptitude test attempt
+        // 100 XP per job application (job_applications is keyed by job_seeker_id, not user_id)
+        $appsCount = 0;
+        if ($candidateId > 0) {
+            $jobApplicationModel = new \App\Models\JobApplicationModel();
+            $appsCount = $jobApplicationModel
+                ->where('job_seeker_id', $candidateId)
+                ->countAllResults();
+        }
+
+        // 150 XP per aptitude test attempt (test_attempts.candidate_id actually stores the auth user id, see AptitudeController)
         $testAttemptModel = new \App\Models\TestAttemptModel();
         $attemptsCount = $testAttemptModel
-            ->where('user_id', $userId)
+            ->where('candidate_id', $userId)
             ->countAllResults();
 
         return ($sessionsCount * 200) + ($appsCount * 100) + ($attemptsCount * 150);

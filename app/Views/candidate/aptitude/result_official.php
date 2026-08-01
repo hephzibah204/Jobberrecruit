@@ -1,6 +1,12 @@
-<?= $this->extend('templates/base') ?>
-
-
+<?php
+$passed = $passed ?? (bool) ($attempt['passed'] ?? false);
+$scorePct = (int) round($scorePct ?? ($attempt['score_pct'] ?? 0));
+$passThreshold = (int) ($test['pass_threshold'] ?? 60);
+$circumference = 439.8;
+$ringOffset = round($circumference - ($circumference * $scorePct / 100), 1);
+$page_title = ($test['title'] ?? 'Aptitude Test') . ' Results';
+?>
+<?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <style>
@@ -224,24 +230,26 @@ svg { flex-shrink: 0; }
   <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3Z"/></symbol>
 </defs>
 </svg>
-<main>
-<section class="res-hero pass">
+<section class="res-hero <?= $passed ? 'pass' : 'fail' ?>">
   <div class="container">
-    <span class="res-verdict pass"><svg aria-hidden="true"><use href="#i-check-circle"/></svg> Passed</span>
+    <span class="res-verdict <?= $passed ? 'pass' : 'fail' ?>">
+      <svg aria-hidden="true"><use href="<?= $passed ? '#i-check-circle' : '#i-x-circle' ?>"/></svg> <?= $passed ? 'Passed' : 'Not passed' ?>
+    </span>
     <div class="res-score-ring">
   <svg viewBox="0 0 160 160">
     <circle cx="80" cy="80" r="70" fill="none" stroke="#e2e8f2" stroke-width="14"/>
-    <circle cx="80" cy="80" r="70" fill="none" stroke="#16a34a" stroke-width="14" stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="79.2"/>
+    <circle cx="80" cy="80" r="70" fill="none" stroke="<?= $passed ? '#16a34a' : '#b45309' ?>" stroke-width="14" stroke-linecap="round" stroke-dasharray="<?= $circumference ?>" stroke-dashoffset="<?= $ringOffset ?>"/>
   </svg>
-  <div class="pct"><div class="n">82%</div><div class="l">Score</div></div>
+  <div class="pct"><div class="n"><?= $scorePct ?>%</div><div class="l">Score</div></div>
 </div>
-    <h1>Software Developer Aptitude</h1>
-    <p class="sub">Official test · Completed 27 June 2026</p>
+    <h1><?= esc($test['title'] ?? 'Aptitude Test') ?></h1>
+    <p class="sub">Official test · Completed <?= $attempt['submitted_at'] ? date('j F Y', strtotime($attempt['submitted_at'])) : '' ?></p>
     <div class="res-stats">
-      <div class="res-stat"><div class="n ok">82%</div><div class="l">Your score</div></div>
-      <div class="res-stat"><div class="n">60%</div><div class="l">Pass mark</div></div>
-      <div class="res-stat"><div class="n">Top 18%</div><div class="l">Percentile</div></div>
+      <div class="res-stat"><div class="n <?= $passed ? 'ok' : 'no' ?>"><?= $scorePct ?>%</div><div class="l">Your score</div></div>
+      <div class="res-stat"><div class="n"><?= $passThreshold ?>%</div><div class="l">Pass mark</div></div>
+      <div class="res-stat"><div class="n"><?= $percentile !== null ? 'Top ' . max(1, 100 - $percentile) . '%' : '—' ?></div><div class="l">Percentile</div></div>
     </div>
+    <?php if ($passed): ?>
     <div class="res-verified">
       <div class="vic"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg></div>
       <div>
@@ -249,22 +257,36 @@ svg { flex-shrink: 0; }
         <p>This badge is shown on your profile by default — you can hide or show it anytime in your profile settings. Re-sit in 30 days to improve your score.</p>
       </div>
     </div>
+    <?php endif; ?>
     <div class="res-actions">
-      <a href="/dashboard/profile" class="btn btn-primary">View my profile</a>
-      <a href="/aptitude" class="btn btn-outline">Back to tests</a>
+      <a href="<?= base_url('candidate/profile') ?>" class="btn btn-primary">View my profile</a>
+      <a href="<?= base_url('aptitude') ?>" class="btn btn-outline">Back to tests</a>
     </div>
   </div>
 </section>
-</main>
 
-<script>
-function toggleMenu(btn){var n=document.getElementById('mob-nav');if(!n)return;var o=n.classList.toggle('open');btn.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';}
-var mn=document.getElementById('mob-nav');if(mn)mn.addEventListener('click',function(e){if(e.target.tagName==='A'){this.classList.remove('open');var b=document.querySelector('.hamburger');if(b)b.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
-document.querySelectorAll('.nav-dropdown-toggle').forEach(function(t){t.addEventListener('click',function(e){e.stopPropagation();var o=t.getAttribute('aria-expanded')==='true';document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(x){x.setAttribute('aria-expanded','false');});t.setAttribute('aria-expanded',String(!o));});});
-document.addEventListener('click',function(){document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t){t.setAttribute('aria-expanded','false');});});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-dropdown-toggle[aria-expanded="true"]').forEach(function(t){t.setAttribute('aria-expanded','false');});});
-function toggleFaq(btn){var i=btn.parentElement;var o=i.classList.toggle('open');btn.setAttribute('aria-expanded',String(o));}
-function goSearch(e){e.preventDefault();var q=document.getElementById('ch-q').value.trim();window.location.href='/jobs'+(q?('?q='+encodeURIComponent(q)):'');return false;}
-</script>
+<div class="res-wrap">
+  <h2 class="res-sec-title">Answer breakdown</h2>
+  <?php foreach ($breakdown as $q): ?>
+  <div class="res-q">
+    <div class="res-q-head">
+      <span class="res-q-badge <?= $q['is_correct'] ? 'ok' : 'no' ?>"><svg aria-hidden="true"><use href="<?= $q['is_correct'] ? '#i-check' : '#i-x-circle' ?>"/></svg></span>
+      <div class="res-q-body"><?= $q['number'] ?>. <?= esc($q['body']) ?></div>
+    </div>
+    <div class="res-q-opts">
+      <?php foreach ($q['options'] as $i => $opt): ?>
+        <div class="res-q-opt<?= $opt['correct'] ? ' correct' : ($opt['chosen'] ? ' chosen-wrong' : '') ?>">
+          <span class="k"><?= chr(65 + $i) ?></span><?= esc($opt['body']) ?>
+          <?php if ($opt['correct']): ?><span class="tag">Correct</span>
+          <?php elseif ($opt['chosen']): ?><span class="tag">Your answer</span><?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <?php if (!empty($q['explanation'])): ?>
+    <div class="res-q-exp"><svg aria-hidden="true"><use href="#i-bulb"/></svg><div><b>Why:</b> <?= esc($q['explanation']) ?></div></div>
+    <?php endif; ?>
+  </div>
+  <?php endforeach; ?>
+</div>
 
 <?= $this->endSection() ?>

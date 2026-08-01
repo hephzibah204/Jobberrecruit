@@ -126,6 +126,12 @@ class JobSeekerController extends BaseController
         // (Optional) recent applications count for the welcome banner
         $recentApplicationsCount = count($recentApplications);
 
+        // ====== Weekly Chart Data (job clicks per day, Mon → Sun) ======
+        $weeklyChartData = $this->getWeeklyJobClicks($this->auth->user()->id);
+
+        // ====== Skill Categories (from candidate profile skills string) ======
+        $skillCategories = $this->buildSkillCategories($candidate, $recommendedJobs);
+
         // Profile Completion
         $fields = [
             'full_name',
@@ -163,6 +169,8 @@ class JobSeekerController extends BaseController
             'recentApplicationsCount' => $recentApplicationsCount,
             'latestJobs'             => $latestJobs,
             'profileCompletion'      => $profileCompletion,
+            'weeklyChartData'        => $weeklyChartData,
+            'skillCategories'        => $skillCategories,
         ]);
     }
 
@@ -1135,6 +1143,99 @@ class JobSeekerController extends BaseController
         $candidate = $candidateModel->where('user_id', $userId)->first();
 
         return $candidate ? $candidate->id : null;
+    }
+
+    /**
+     * Build an array of 7 integers: job-click counts per day (Mon → Sun) for the current week.
+     */
+    private function getWeeklyJobClicks(int $userId): array
+    {
+        $db = \Config\Database::connect();
+
+        // Monday of this week 00:00:00
+        $weekStart = date('Y-m-d 00:00:00', strtotime('monday this week'));
+        $weekEnd   = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+
+        $rows = $db->table('job_clicks')
+            ->select('DAYOFWEEK(created_at) as dow, COUNT(*) as cnt')
+            ->where('user_id', $userId)
+            ->where('created_at >=', $weekStart)
+            ->where('created_at <=', $weekEnd)
+            ->groupBy('DAYOFWEEK(created_at)')
+            ->get()
+            ->getResultArray();
+
+        // DAYOFWEEK returns: 1=Sun, 2=Mon, 3=Tue, … 7=Sat
+        // We want Mon→Sun (indices 0–6).
+        $map = [];
+        foreach ($rows as $r) {
+            // Convert DAYOFWEEK to 0-based Mon index
+            $dow = (int) $r['dow'];           // 1=Sun..7=Sat
+            $monIdx = ($dow + 5) % 7;          // Mon=0 … Sun=6
+            $map[$monIdx] = (int) $r['cnt'];
+        }
+
+        $result = [];
+        for ($i = 0; $i < 7; $i++) {
+            $result[] = $map[$i] ?? 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Parse the candidate's comma-separated skills string and compute a
+     * match percentage for each skill based on how often it appears in
+     * recommended job listings.
+     *
+     * Returns an array of objects with →name and →match properties.
+     */
+    private function buildSkillCategories(object $candidate, array $recommendedJobs): array
+    {
+        $rawSkills = trim((string) ($candidate->skills ?? ''));
+        if ($rawSkills === '') {
+            return [];
+        }
+
+        // Split on commas, semicolons, or newlines; trim each; deduplicate
+        $candidateSkills = array_values(array_unique(
+            array_map('trim', preg_split('/[,;\n]+/', $rawSkills))
+        ));
+
+        if (empty($candidateSkills)) {
+            return [];
+        }
+
+        // Build a combined text blob from recommended job titles + descriptions
+        $jobText = strtolower(implode(' ', array_map(
+            fn($j) => ($j->title ?? '') . ' ' . ($j->description ?? ''),
+            $recommendedJobs
+        )));
+
+        $jobCount = max(1, count($recommendedJobs));
+
+        $categories = [];
+        foreach ($candidateSkills as $skill) {
+            $lower = strtolower($skill);
+            // Count how many recommended jobs mention this skill
+            $matches = 0;
+            foreach ($recommendedJobs as $job) {
+                $haystack = strtolower(($job->title ?? '') . ' ' . ($job->description ?? '') . ' ' . ($job->skills ?? ''));
+                if (str_contains($haystack, $lower)) {
+                    $matches++;
+                }
+            }
+            $pct = (int) round(($matches / $jobCount) * 100);
+
+            $obj = new \stdClass();
+            $obj->name  = $skill;
+            $obj->match = $pct;
+            $categories[] = $obj;
+        }
+
+        // Sort by match descending, keep top 6
+        usort($categories, fn($a, $b) => $b->match <=> $a->match);
+        return array_slice($categories, 0, 6);
     }
 
     /**

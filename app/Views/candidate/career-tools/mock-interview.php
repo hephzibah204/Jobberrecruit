@@ -1367,8 +1367,6 @@ if ($avgScore >= 8.0) {
     <span>Every score in the Studio comes from your actual answers in scored sessions. We never estimate your chances with an employer — no tool honestly can.</span>
   </div>
 
-</div>
-
 <!-- Mobile sticky bar -->
 <div class="mobile-cta" id="mobile-cta">
   <button type="button" class="btn btn-accent" id="m-launch"><svg aria-hidden="true"><use href="#i-play"/></svg> Start AI Interview</button>

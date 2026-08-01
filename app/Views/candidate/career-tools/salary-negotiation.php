@@ -428,24 +428,34 @@
             <span class="hb hb--premium"><svg aria-hidden="true"><use href="#i-crown"/></svg> Premium</span>
             <span class="hb hb--live"><span class="pulse" aria-hidden="true"></span> AI Recruiter · Online</span>
           </div>
+          <?php $negoTrend = $persuasionTrend ?? 0; ?>
           <p style="font-size:.82rem;font-weight:600;color:rgba(255,255,255,.92);margin-bottom:6px">
-            Welcome back<?= isset($candidate['firstName']) ? ', ' . esc($candidate['firstName']) : '' ?> 👋 <span style="opacity:.85;font-weight:500">· Your persuasion score rose <b style="color:#7ce29b">+9 pts</b> across your last 3 negotiations</span>
+            Welcome back<?= isset($candidate['firstName']) ? ', ' . esc($candidate['firstName']) : '' ?> 👋 <?php if ($negoTrend > 0): ?><span style="opacity:.85;font-weight:500">· Your persuasion score rose <b style="color:#7ce29b">+<?= $negoTrend ?> pts</b> across your last sessions</span><?php elseif (count($recentSessions ?? []) > 0): ?><span style="opacity:.85;font-weight:500">· <?= count($recentSessions) ?> negotiation<?= count($recentSessions) !== 1 ? 's' : '' ?> completed</span><?php else: ?><span style="opacity:.85;font-weight:500">· Start your first negotiation to track progress</span><?php endif; ?>
           </p>
           <h1 id="nego-title">Salary Negotiation <span>Coach</span></h1>
-          <p class="hero-sub">Practice the deal before it's real. Negotiate against an AI recruiter that pushes back like the real thing — then get a full report on how you performed.</p>
-          <div class="hero-chips">
+          <p class="hero-sub">Practice the deal before it's real. Negotiate against an AI recruiter that pushes back like the real thing — then get a full report on how you performed.</p>            <?php
+              $negoStreak = $streak ?? 0;
+              $negoXp = $xp ?? 0;
+              $negoXpLevel = floor($negoXp / 500) + 1;
+              $negoXpRemain = max(0, ($negoXpLevel * 500) - $negoXp);
+              $negoWeeklyDone = $weeklyDone ?? 0;
+              $negoWeeklyGoal = $weeklyGoalTarget ?? 2;
+              $negoWeeklyPct = $weeklyPct ?? 0;
+              $recentSessions = $recentSessions ?? [];
+            ?>
+            <div class="hero-chips">
             <div class="hchip">
               <span class="hchip-lbl"><svg aria-hidden="true"><use href="#i-flame"/></svg> Practice Streak</span>
-              <div class="hchip-val">2 days <small>· best 4</small></div>
+              <div class="hchip-val"><?= $negoStreak ?> day<?= $negoStreak !== 1 ? 's' : '' ?> <small>· best <?= $bestScore ?></small></div>
             </div>
             <div class="hchip">
               <span class="hchip-lbl"><svg aria-hidden="true"><use href="#i-zap"/></svg> Career XP</span>
-              <div class="hchip-val">1,240 XP <small>· 260 to Level 5</small></div>
+              <div class="hchip-val"><?= number_format($negoXp) ?> XP <small>· <?= number_format($negoXpRemain) ?> to Level <?= $negoXpLevel + 1 ?></small></div>
             </div>
             <div class="hchip">
               <span class="hchip-lbl"><svg aria-hidden="true"><use href="#i-target"/></svg> This Week's Goal</span>
-              <div class="hchip-val">1 of 2 <small>negotiations done</small></div>
-              <div class="goal-track"><div class="goal-fill" style="width:50%"></div></div>
+              <div class="hchip-val"><?= $negoWeeklyDone ?> of <?= $negoWeeklyGoal ?> <small>negotiations done</small></div>
+              <div class="goal-track"><div class="goal-fill" style="width:<?= $negoWeeklyPct ?>%"></div></div>
             </div>
           </div>
         </div>
@@ -475,22 +485,22 @@
       <div class="stat">
         <button type="button" class="stat-edit" id="edit-offer" aria-label="Add your current offer"><svg aria-hidden="true"><use href="#i-cog"/></svg></button>
         <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-naira"/></svg></span></div>
-        <div class="stat-num stat-num--empty" id="st-offer">Not set yet</div><div class="stat-lbl" id="st-offer-lbl">Current Offer · add it in the form below</div>
+        <div class="stat-num" id="st-offer"><?= $avgScores['overall'] > 0 ? $avgScores['overall'] . '<small style="font-size:.6em;font-weight:600;color:var(--muted)">/100</small>' : '<span class="stat-num--empty">Not set yet</span>' ?></div><div class="stat-lbl" id="st-offer-lbl">Avg Session Score · <?= $avgScores['overall'] > 0 ? 'across recent sessions' : 'complete a session to see this' ?></div>
       </div>
       <div class="stat" style="--st-bar:var(--brand-dark)">
         <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-chart"/></svg></span>
-          <span class="trend trend--up"><svg aria-hidden="true"><use href="#i-trend-up"/></svg> +6% YoY</span></div>
-        <div class="stat-num stat-num--empty" id="mm-value">Not set yet</div><div class="stat-lbl" id="mm-label">Market Median · add a job title below</div>
+          <?php if ($persuasionTrend > 0): ?><span class="trend trend--up"><svg aria-hidden="true"><use href="#i-trend-up"/></svg> +<?= $persuasionTrend ?> pts</span><?php endif; ?></div>
+        <div class="stat-num" id="mm-value"><?= $bestScore > 0 ? $bestScore . '/100' : '<span class="stat-num--empty">Not set yet</span>' ?></div><div class="stat-lbl" id="mm-label">Best Score · <?= $bestScore > 0 ? 'Personal best' : 'add a job title below' ?></div>
       </div>
       <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)">
         <button type="button" class="stat-edit" id="edit-target" aria-label="Add your target salary"><svg aria-hidden="true"><use href="#i-cog"/></svg></button>
         <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-target"/></svg></span></div>
-        <div class="stat-num stat-num--empty" id="st-target">Not set yet</div><div class="stat-lbl" id="st-target-lbl">Your Target · add it in the form below</div>
+        <div class="stat-num" id="st-target"><?= $avgScores['persuasion'] > 0 ? $avgScores['persuasion'] . '/100' : '<span class="stat-num--empty">Not set yet</span>' ?></div><div class="stat-lbl" id="st-target-lbl">Persuasion Avg · <?= $avgScores['persuasion'] > 0 ? 'across recent sessions' : 'add it in the form below' ?></div>
       </div>
       <div class="stat" style="--st-bar:var(--success)" id="stat-readiness">
         <div class="stat-top"><span class="stat-ic" style="background:var(--success-light);color:var(--success)"><svg aria-hidden="true"><use href="#i-shield"/></svg></span>
-          <span class="pill pill--muted" id="readiness-pill">New here</span></div>
-        <div class="stat-num" style="font-size:1.15rem;margin-top:6px" id="readiness-text">Practice Your First Negotiation</div><div class="stat-lbl" id="readiness-lbl">Negotiation Readiness · appears after your first scored session</div>
+          <span class="pill <?= ($bestScore >= 70) ? 'pill--success' : (($bestScore > 0) ? 'pill--pending' : 'pill--muted') ?>" id="readiness-pill"><?= ($bestScore >= 70) ? 'Strong' : (($bestScore > 0) ? 'Growing' : 'New here') ?></span></div>
+        <div class="stat-num" style="font-size:1.15rem;margin-top:6px" id="readiness-text"><?= $bestScore > 0 ? 'Score: ' . $bestScore . '/100' : 'Practice Your First Negotiation' ?></div><div class="stat-lbl" id="readiness-lbl">Negotiation Readiness · <?= $bestScore > 0 ? 'based on your sessions' : 'appears after your first scored session' ?></div>
         <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" role="img" aria-label="Readiness band progress" id="readiness-spark">
           <rect x="2" y="12" width="36" height="8" rx="4" fill="#e2e8f2" id="spark-1"/>
           <rect x="42" y="12" width="36" height="8" rx="4" fill="#e2e8f2" id="spark-2"/>
@@ -505,30 +515,27 @@
       <aside class="rail" aria-label="Your negotiation history">
         <section class="card">
           <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-clock"/></svg> Your Negotiations</span>
-            <span class="pill pill--muted">Sample data</span></div>
+<?php if (!empty($histSessions)): ?><span class="pill pill--brand"><?= count($histSessions) ?> session<?= count($histSessions) !== 1 ? 's' : '' ?></span><?php else: ?><span class="pill pill--muted">No data yet</span><?php endif; ?></div>
           <div class="card-body">
-            <p class="hint" style="margin-bottom:10px">Illustrative examples of what your history will look like — practice a session below to start building your own.</p>
+<?php $histSessions = $recentSessions; ?>
+            <?php if (empty($histSessions)): ?><p class="hint" style="margin-bottom:10px">No sessions yet — practice a negotiation below to start building your history.</p><?php endif; ?>
             <div class="rail-tabs" role="tablist" aria-label="History filters">
               <button class="rail-tab" role="tab" id="tab-hist" aria-selected="true" aria-controls="pane-hist">History</button>
               <button class="rail-tab" role="tab" id="tab-saved" aria-selected="false" aria-controls="pane-saved">Saved</button>
               <button class="rail-tab" role="tab" id="tab-fav" aria-selected="false" aria-controls="pane-fav">Favorites</button>
             </div>
             <div id="pane-hist" role="tabpanel" aria-labelledby="tab-hist" style="margin-top:6px">
-              <button type="button" class="hist-item" data-load="pm-corp">
-                <span class="hi-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
-                <span class="hi-body"><span class="hi-title">Product Manager · Corporate HR</span><i class="hi-meta">Jul 12 · Hard · 6 rounds</i></span>
-                <span class="hi-score">74</span>
-              </button>
-              <button type="button" class="hist-item" data-load="pm-startup">
-                <span class="hi-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></span>
-                <span class="hi-body"><span class="hi-title">Product Manager · Startup Founder</span><i class="hi-meta">Jul 9 · Medium · 5 rounds</i></span>
-                <span class="hi-score">68</span>
-              </button>
-              <button type="button" class="hist-item" data-load="ba-bank">
-                <span class="hi-ic"><svg aria-hidden="true"><use href="#i-naira"/></svg></span>
-                <span class="hi-body"><span class="hi-title">Business Analyst · Banking</span><i class="hi-meta">Jul 4 · Medium · 7 rounds</i></span>
-                <span class="hi-score">61</span>
-              </button>
+              <?php if (!empty($histSessions)): ?>
+                <?php foreach ($histSessions as $histS): ?>
+                  <button type="button" class="hist-item" data-load="nego-<?= (int)$histS['id'] ?>">
+                    <span class="hi-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+                    <span class="hi-body"><span class="hi-title"><?= esc($histS['job_title'] ?? 'Negotiation') ?></span><i class="hi-meta"><?= esc($histS['created_at'] ?? '') ?> · <?= ucfirst(esc($histS['difficulty'] ?? 'medium')) ?></i></span>
+                    <span class="hi-score"><?= (int)($histS['overall_score'] ?? 0) ?></span>
+                  </button>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <p style="font-size:.76rem;color:var(--muted);text-align:center;padding:16px 0">Complete your first negotiation to see history here.</p>
+              <?php endif; ?>
             </div>
             <div id="pane-saved" role="tabpanel" aria-labelledby="tab-saved" hidden style="margin-top:6px">
               <button type="button" class="hist-item" data-load="saved-1">

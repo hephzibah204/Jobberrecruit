@@ -1010,12 +1010,124 @@
         0%, 80%, 100% { transform: scale(0); }
         40% { transform: scale(1); }
     }
+
+    /* ═══ MOCKUP: rb-bar (sticky toolbar) ═══ */
+    .rb-bar{position:sticky;top:0;z-index:900;display:flex;align-items:center;gap:12px;padding:10px 18px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .rb-bar .rb-title{flex:1;min-width:120px;font-family:'Sora',sans-serif;font-weight:800;font-size:1rem;color:var(--brand-deep);display:flex;align-items:center;gap:8px}
+    .rb-bar .rb-title input{flex:1;min-width:100px;border:none;background:transparent;font-family:inherit;font-size:inherit;font-weight:inherit;color:inherit;padding:4px 0;border-bottom:2px solid transparent;transition:border-color .15s}
+    .rb-bar .rb-title input:focus{outline:none;border-bottom-color:var(--brand)}
+    .rb-bar .rb-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .rb-bar .rb-actions select{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem;font-weight:600;background:#fff;color:var(--text);cursor:pointer}
+    .rb-bar .rb-chip{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;padding:5px 11px;border-radius:20px;background:var(--brand-light);color:var(--brand)}
+    .rb-bar .rb-chip.green{background:var(--success-light);color:var(--success)}
+
+    /* ═══ MOCKUP: rb-design-bar (top toolbar — distinct from preview inner design-bar) ═══ */
+    .rb-design-bar{display:flex;align-items:center;gap:14px;padding:8px 18px;background:#fafbfe;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .rb-design-bar .db-label{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+    .rb-design-bar .swatches{display:flex;gap:6px}
+    .rb-design-bar .swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s}
+    .rb-design-bar .swatch:hover{transform:scale(1.2)}
+    .rb-design-bar .swatch.active{border-color:var(--brand-deep);box-shadow:0 0 0 2px rgba(10,47,87,.2)}
+    .rb-design-bar select{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;background:#fff}
+    .rb-design-bar .spacing-btns{display:flex;gap:4px}
+    .rb-design-bar .spacing-btn{border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:all .15s}
+    .rb-design-bar .spacing-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .rb-design-bar .verified-chip{display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--success-light);color:var(--success);margin-left:auto}
+
+    /* ═══ MOCKUP: rb-tabs (mobile edit/preview toggle) ═══ */
+    .rb-tabs{display:none;gap:4px;padding:6px 18px;background:#fff;border-bottom:1px solid var(--border)}
+    .rb-tabs button{flex:1;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:.78rem;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:all .15s}
+    .rb-tabs button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+    @media(max-width:992px){.rb-tabs{display:flex}}
+
+    /* ═══ MOCKUP: rb-split grid ═══ */
+    .rb-split{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:start}
+    .rb-editor-col{min-width:0;padding:18px;border-right:1px solid var(--border)}
+    .rb-preview-col{min-width:0;padding:18px;position:sticky;top:60px;max-height:calc(100vh - 60px);overflow-y:auto}
+    @media(max-width:992px){
+      .rb-split{grid-template-columns:1fr}
+      .rb-editor-col{display:block}
+      .rb-preview-col{display:none;position:static;max-height:none}
+      .rb-editor-col.preview-active{display:none}
+      .rb-preview-col.show-mobile{display:block}
+    }
+
+    /* ═══ MOCKUP: ed-sec (accordion sections) ═══ */
+    .ed-sec{border:1px solid var(--border);border-radius:12px;background:#fff;margin-bottom:12px;overflow:hidden;transition:box-shadow .2s}
+    .ed-sec:hover{box-shadow:0 2px 8px rgba(10,47,87,.06)}
+    .ed-head{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;user-select:none;transition:background .15s}
+    .ed-head:hover{background:var(--bg)}
+    .ed-grip{color:var(--muted);display:flex;align-items:center;cursor:grab;flex-shrink:0}
+    .ed-grip svg{width:16px;height:16px}
+    .ed-title{flex:1;font-size:.88rem;font-weight:700;color:var(--brand-deep);display:flex;align-items:center;gap:8px}
+    .ed-title svg{width:15px;height:15px;color:var(--brand)}
+    .ed-title .ed-tag{font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--brand-light);color:var(--brand);letter-spacing:.04em}
+    .ed-chev{color:var(--muted);flex-shrink:0;transition:transform .2s}
+    .ed-chevron svg{width:16px;height:16px}
+    .ed-sec.open .ed-chevron svg{transform:rotate(180deg)}
+    .ed-body{display:none;padding:0 16px 16px}
+    .ed-sec.open .ed-body{display:block;animation:ed-fade .2s ease}
+    @keyframes ed-fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+    .ed-body .custom-card{border:none;margin:0}
+    .ed-body .custom-card .card-header{padding:12px 0;border-bottom-color:var(--border)}
+    .ed-body .custom-card .card-body{padding:14px 0}
 </style>
 <?= $this->include('candidate/resume/ai_replies_css') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
+<!-- ═══════ MOCKUP LAYOUT: rb-bar + design-bar + rb-tabs + rb-split ═══════ -->
+<div class="rb-bar">
+  <div class="rb-title">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+    <input type="text" value="<?= esc($resume->title ?? 'Untitled Resume') ?>" id="resume-name-input" aria-label="Resume name">
+  </div>
+  <div class="rb-actions">
+    <span class="rb-chip green" id="autosave-chip">✓ Saved</span>
+    <span class="rb-chip"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/></svg> 1 page</span>
+    <select id="template-select-top" aria-label="Template" onchange="selectTemplate(this.value)">
+      <option value="t-classic" selected>Classic</option>
+      <option value="t-creative">Creative</option>
+      <option value="t-exec">Executive</option>
+      <option value="t-minimal">Minimal</option>
+      <option value="t-modern">Modern</option>
+    </select>
+    <a href="#" class="btn btn-sm btn-primary" style="font-size:.76rem" onclick="return false;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Word</a>
+    <a href="#" class="btn btn-sm btn-outline download-pdf-btn" style="font-size:.76rem" onclick="return false;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF</a>
+  </div>
+</div>
+
+<div class="rb-design-bar">
+  <span class="db-label">Design</span>
+  <div class="swatches">
+    <span class="swatch active" style="background:#0861A9" onclick="setAccentColor('#0861A9',this)"></span>
+    <span class="swatch" style="background:#0A2F57" onclick="setAccentColor('#0A2F57',this)"></span>
+    <span class="swatch" style="background:#16a34a" onclick="setAccentColor('#16a34a',this)"></span>
+    <span class="swatch" style="background:#7c3aed" onclick="setAccentColor('#7c3aed',this)"></span>
+    <span class="swatch" style="background:#dc2626" onclick="setAccentColor('#dc2626',this)"></span>
+    <span class="swatch" style="background:#ED9020" onclick="setAccentColor('#ED9020',this)"></span>
+  </div>
+  <select id="font-select" aria-label="Font" onchange="setFontFamily(this.value)" style="font-size:.72rem">
+    <option value="Inter">Inter</option>
+    <option value="Georgia">Georgia</option>
+    <option value="Garamond">Garamond</option>
+    <option value="Roboto">Roboto</option>
+  </select>
+  <div class="spacing-btns">
+    <button class="spacing-btn active" onclick="setSpacing('roomy',this)">Roomy</button>
+    <button class="spacing-btn" onclick="setSpacing('tight',this)">Tight</button>
+  </div>
+  <span class="verified-chip"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Verified by JobberRecruit</span>
+</div>
+
+<div class="rb-tabs" role="tablist">
+  <button class="active" onclick="switchMobileTab('edit',this)" role="tab">Edit</button>
+  <button onclick="switchMobileTab('preview',this)" role="tab">Preview</button>
+</div>
+
+<div class="rb-split">
+  <div class="rb-editor-col" id="rb-editor-col">
 <?php if (!$resume): ?>
 <!-- =================== RESUME ONBOARDING GATEWAY MODAL =================== -->
 <style>
@@ -1448,7 +1560,7 @@
         <div class="col-lg-5 col-xl-5 mb-4">
             <div class="card custom-card mb-3">
                 <div class="card-body p-2">
-                    <div class="builder-step-nav d-flex flex-wrap gap-1 border-0 justify-content-between">
+                    <div class="builder-step-nav d-flex flex-wrap gap-1 border-0 justify-content-between" style="display:none">
                         <div class="step-item active py-2 px-3 mb-0" data-step="info" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
                             <i class="ti ti-user me-1"></i> Info
                         </div>
@@ -1477,7 +1589,13 @@
                 <input type="hidden" name="id" value="<?= $resume->id ?? '' ?>">
                 
                 <!-- Step: Basic Information -->
-                <div class="step-content" id="step-info">
+                <div class="ed-sec open" id="sec-info" data-step="info">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Personal Information <span class="ed-tag">Required</span></span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                     <div class="card custom-card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Basic Information</h5>
@@ -1512,15 +1630,22 @@
                             <div class="mt-4 d-flex justify-content-end">
                                 <button type="button" class="btn btn-primary next-step" data-step-target="experience">Next: Experience <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec info -->
 
                 <!-- NOTE: Professional Summary is intentionally shown after Experience/Education/Skills in the input flow
                      so AI generation can use the entered data. The summary will still appear at the top in exported resumes. -->
 
                 <!-- Step: Experience -->
-                <div class="step-content d-none" id="step-experience">
+                <div class="ed-sec" id="sec-experience" data-step="experience">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Work Experience</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                     <div class="card custom-card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Work Experience</h5>
@@ -1583,12 +1708,19 @@
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="info"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                                 <button type="button" class="btn btn-primary next-step" data-step-target="education">Next: Education <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec experience -->
 
                 <!-- Step: Education -->
-                <div class="step-content d-none" id="step-education">
+                <div class="ed-sec" id="sec-education" data-step="education">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Education</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                     <div class="card custom-card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Education</h5>
@@ -1643,12 +1775,19 @@
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="experience"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                                 <button type="button" class="btn btn-primary next-step" data-step-target="skills">Next: Skills <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec education -->
 
                 <!-- Step: Skills -->
-                <div class="step-content d-none" id="step-skills">
+                <div class="ed-sec" id="sec-skills" data-step="skills">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 11-13h-8Z"/></svg> Skills</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                 <div class="card custom-card">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Skills</h5>
@@ -1679,12 +1818,19 @@
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                                 <button type="button" class="btn btn-primary next-step" data-step-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec skills -->
 
                 <!-- Step: Summary (moved after Skills so AI can use experience/education/skills) -->
-                <div class="step-content d-none" id="step-summary">
+                <div class="ed-sec" id="sec-summary" data-step="summary">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg> Professional Summary</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                     <div class="card custom-card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Professional Summary</h5>
@@ -1698,12 +1844,19 @@
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                                 <button type="button" class="btn btn-primary next-step" data-step-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec summary -->
 
                 <!-- Step: Tailor to a Job -->
-                <div class="step-content d-none" id="step-jd-match">
+                <div class="ed-sec" id="sec-jd-match" data-step="jd-match">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg> Tailor to Job</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                     <div class="card custom-card">
                         <div class="card-header d-flex align-items-center gap-2">
                             <i class="ti ti-target text-primary"></i>
@@ -1747,12 +1900,19 @@
                                 </div>
                                 <div id="kw-chips" class="d-flex flex-wrap gap-2 mb-3"></div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec jd-match -->
 
                 <!-- Step: Choose World-Class Template -->
-                <div class="step-content d-none" id="step-templates">
+                <div class="ed-sec" id="sec-templates" data-step="templates">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Layout & Template</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
                     <div class="card custom-card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Choose Resume Template</h5>
@@ -1871,6 +2031,10 @@
                             <div class="mt-4 d-flex justify-content-start">
                                 <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="summary"><i class="ti ti-arrow-left me-1"></i> Previous</button>
                             </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec templates -->
 
                             <!-- Download Section -->
                             <div class="mt-4 pt-4 border-top text-center">
@@ -1896,17 +2060,17 @@
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
+                            </div><!-- /Download Section -->
+                        </form><!-- /resume-form -->
+                    </div><!-- /col-lg-5 -->
+                </div><!-- /row -->
+            </div><!-- /content -->
+        </div><!-- /rb-editor-col -->
 
         <!-- Right Side: Live Premium Preview -->
-        <div class="col-lg-7 col-xl-7 d-none d-lg-block">
-            <!-- Customization Bar -->
-            <div class="design-bar shadow-sm">
+        <div class="rb-preview-col" id="rb-preview-col">
+            <!-- Customization Bar (hidden — controls moved to top toolbar) -->
+            <div class="design-bar shadow-sm" style="display:none">
                 <span class="lbl fw-bold text-dark">Template:</span>
                 <select class="form-select form-select-sm select border-secondary" id="tpl-select" style="min-width:130px; font-weight: 600;">
                     <option value="t-classic">Classic Professional</option>
@@ -1964,9 +2128,8 @@
                 </div>
             </div>
             <div class="pv-hint">A4 Page-break guidance shown above. Adjust text spacing to fit exactly <b>1 Page</b>.</div>
-        </div>
-    </div>
-</div>
+        </div><!-- /rb-preview-col -->
+    </div><!-- /rb-split -->
 
 <!-- AI Modal Loader -->
 <div class="modal fade" id="aiLoaderModal" data-bs-backdrop="static" tabindex="-1">
@@ -2039,9 +2202,9 @@
 </button>
                 </div>
             </form>
-        </div>
-    </div>
-</div>
+        </div><!-- /rb-preview-col -->
+    </div><!-- /rb-split -->
+</div><!-- /rb-layout -->
 
 <?= $this->include('candidate/resume/partials/revisions_modal') ?>
 
@@ -2049,6 +2212,63 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    // ═══ MOCKUP: Accordion toggle ═══
+    function toggleEdSec(head) {
+        var sec = head.closest('.ed-sec');
+        if (sec) {
+            sec.classList.toggle('open');
+        }
+    }
+
+    // ═══ MOCKUP: Mobile tabs (edit / preview) ═══
+    function switchMobileTab(mode, btn) {
+        var editor = document.getElementById('rb-editor-col');
+        var preview = document.getElementById('rb-preview-col');
+        var tabs = document.querySelectorAll('.rb-tabs button');
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        btn.classList.add('active');
+        if (mode === 'preview') {
+            editor.classList.add('preview-active');
+            preview.classList.add('show-mobile');
+        } else {
+            editor.classList.remove('preview-active');
+            preview.classList.remove('show-mobile');
+        }
+    }
+
+    // ═══ MOCKUP: Design-bar accent color ═══
+    function setAccentColor(hex, el) {
+        document.documentElement.style.setProperty('--primary-color', hex);
+        document.querySelectorAll('.design-bar .swatch').forEach(function(s) { s.classList.remove('active'); });
+        if (el) el.classList.add('active');
+    }
+
+    // ═══ MOCKUP: Design-bar font family ═══
+    function setFontFamily(family) {
+        var doc = document.querySelector('.doc');
+        if (doc) doc.style.fontFamily = family;
+    }
+
+    // ═══ MOCKUP: Design-bar spacing toggle ═══
+    function setSpacing(mode, el) {
+        document.querySelectorAll('.design-bar .spacing-btn').forEach(function(b) { b.classList.remove('active'); });
+        if (el) el.classList.add('active');
+        var doc = document.querySelector('.doc');
+        if (doc) {
+            doc.classList.remove('spacing-roomy', 'spacing-tight');
+            doc.classList.add('spacing-' + mode);
+        }
+    }
+
+    // ═══ MOCKUP: Accordion open on next/prev click ═══
+    function openEdSec(step) {
+        var sec = document.querySelector('.ed-sec[data-step="' + step + '"]');
+        if (sec && !sec.classList.contains('open')) {
+            sec.classList.add('open');
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
     $(document).ready(function() {
         // Utility: escape HTML for safe insertion into preview
         function escapeHtml(str) {
@@ -2467,7 +2687,7 @@
 
             $('.fix-ats').on('click', function() {
                 var target = $(this).data('target');
-                $('.step-item[data-step="' + target + '"]').trigger('click');
+                openEdSec(target);
             });
         }
 
@@ -2592,14 +2812,13 @@
             refreshAts();
         }, 300);
 
-        // Step Navigation
+        // Step Navigation (accordion-aware)
         $('.step-item').on('click', function() {
             const step = $(this).data('step');
             $('.step-item').removeClass('active');
             $(this).addClass('active');
-            $('.step-content').addClass('d-none');
-            $('#step-' + step).removeClass('d-none');
-
+            // Open the target accordion section
+            openEdSec(step);
             // On mobile, scroll to the form so the user sees it
             if (window.innerWidth < 992) {
                 const formEl = $('#resume-form');

@@ -186,6 +186,14 @@ class ResumeController extends BaseController
             $skills = $this->skillModel->where('resume_id', $id)->findAll();
         }
 
+        $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+
+        $allResumesQuery = $this->resumeModel->where('user_id', $user->id);
+        if ($id) {
+            $allResumesQuery->where('id !=', $id);
+        }
+        $allResumes = $allResumesQuery->orderBy('updated_at', 'DESC')->findAll();
+
         $linkedin = $candidate?->linkedin_url ?? '';
         $certs = '';
         $languages = '';
