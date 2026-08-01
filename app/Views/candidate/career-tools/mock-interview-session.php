@@ -1504,6 +1504,16 @@ document.addEventListener('DOMContentLoaded', function() {
     $('meta-title').textContent = (jobTitle && jobTitle !== 'This Role') ? jobTitle + ' Mock Interview' : 'AI Mock Interview';
     $('meta-sub').textContent = `${contextPreset.interview_type || 'General'} · ${contextPreset.difficulty || 'Medium'} · ${countdownMinutes} min`;
     $('lobby-fmt').textContent = `${contextPreset.interview_type || 'General'} · ${contextPreset.difficulty || 'Medium'} · ${totalQuestions} Questions`;
+
+    // The lobby "Preparing…" state is only a brief settling moment before the
+    // room is ready — flip the button to its ready label once setup completes
+    // so it doesn't look permanently disabled.
+    const lobbyEnterBtn = $('lobby-enter');
+    lobbyEnterBtn.disabled = true;
+    setTimeout(function() {
+        lobbyEnterBtn.disabled = false;
+        $('lobby-enter-txt').textContent = 'Enter Interview Room';
+    }, 900);
     
     // Setup question tracker circles on question map
     function buildQuestionMap() {

@@ -1929,29 +1929,6 @@ main, .section, .jobs-layout, .container,
       </div>
     </div>
   </div>
-  <div class="modal fade" id="reportJobModal" tabindex="-1" aria-labelledby="reportJobModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content" style="border:none;border-radius:12px;overflow:hidden;box-shadow:0 14px 40px rgba(10,47,87,.16)">
-        <div class="modal-header" style="background:var(--accent);color:var(--brand-deep);padding:18px 22px">
-          <h5 class="modal-title fw-bold" id="reportJobModalLabel">Report this Job</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="report-job-form">
-          <input type="hidden" name="job_id" value="<?= $job->id ?>">
-          <div class="modal-body" style="padding:22px">
-            <p style="color:var(--muted);font-size:.87rem;margin-bottom:16px">Is there something wrong with this job post? Let us know â€” your report helps keep JobberRecruit safe.</p>
-            <div class="form-group" style="margin-bottom:16px">
-              <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.88rem">Reason <span style="color:#b91c1c">*</span></label>
-              <select name="reason" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text)">
-                <option value="">Select a reason</option>
-                <option value="scam">It's a scam or fraudulent</option>
-                <option value="offensive">Offensive or inappropriate content</option>
-                <option value="misleading">Misleading or inaccurate information</option>
-                <option value="expired">Job is already expired/filled</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="form-group">
 </main>
 <?= $this->endSection() ?>
 
