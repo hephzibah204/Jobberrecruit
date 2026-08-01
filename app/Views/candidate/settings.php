@@ -2,7 +2,22 @@
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+html.anim-ready .content>*{animation:rise .34s ease both}
+html.anim-ready .content>*:nth-child(2){animation-delay:.05s}
+html.anim-ready .content>*:nth-child(3){animation-delay:.1s}
+html.anim-ready .content>*:nth-child(4){animation-delay:.15s}
+html.anim-ready .content>*:nth-child(5){animation-delay:.2s}
+html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
+.card{box-shadow:0 1px 3px rgba(10,47,87,.06);transition:var(--transition)}
+.card:hover{box-shadow:0 2px 10px rgba(10,47,87,.07)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.btn:active{transform:scale(.97)}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){.btn{transition:background-color .12s ease,border-color .12s ease!important}.btn:active,.btn:hover{transform:none!important}}
+</style>
 <style>
 /* ── Settings layout ──────────────────────────────────────────── */
 .set-wrap { display: flex; flex-direction: column; gap: 24px; max-width: 680px; }
@@ -196,9 +211,7 @@
 
     <div class="set-wrap" style="margin-top: 20px;">
 
-        <!-- ══════════════════════════════════════════════
-             SECTION 1 · CHANGE PASSWORD
-        ══════════════════════════════════════════════ -->
+        <!-- SECTION 1 · CHANGE PASSWORD -->
         <section class="set-card" aria-labelledby="pw-heading">
             <h3 id="pw-heading">
                 <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
@@ -299,9 +312,7 @@
         </section>
 
 
-        <!-- ══════════════════════════════════════════════
-             SECTION 2 · NOTIFICATIONS
-        ══════════════════════════════════════════════ -->
+        <!-- SECTION 2 · NOTIFICATIONS -->
         <section class="set-card" aria-labelledby="notif-heading">
             <h3 id="notif-heading">
                 <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
@@ -384,9 +395,7 @@
         </section>
 
 
-        <!-- ══════════════════════════════════════════════
-             SECTION 3 · DANGER ZONE
-        ══════════════════════════════════════════════ -->
+        <!-- SECTION 3 · DANGER ZONE -->
         <section class="set-card danger-card" aria-labelledby="danger-heading">
             <h3 id="danger-heading">
                 <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
@@ -414,9 +423,7 @@
 </div><!-- /.content -->
 
 
-<!-- ════════════════════════════════════════════════════════════
-     DELETE ACCOUNT MODAL
-════════════════════════════════════════════════════════════ -->
+<!-- DELETE ACCOUNT MODAL -->
 <div class="modal-overlay"
      id="delete-modal"
      role="dialog"
@@ -489,6 +496,7 @@
 
 <?= $this->section('scripts') ?>
 <script>
+requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 (function () {
     'use strict';
 

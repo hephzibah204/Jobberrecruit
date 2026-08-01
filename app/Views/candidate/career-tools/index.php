@@ -131,7 +131,7 @@
 
     <div class="page-head">
         <div>
-            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-zap"/></svg> AI Career Tools</h1>
+            <h1><svg aria-hidden="true"><use href="#i-zap"/></svg> AI Career Tools</h1>
             <p>Accelerate your career growth with AI-powered professional development.</p>
         </div>
     </div>
@@ -147,7 +147,7 @@
             <h2>AI Mock Interview</h2>
             <p>Practice with our AI hiring manager. Get real-time feedback, challenging questions, and a confidence score after every session.</p>
             <a href="<?= base_url('candidate/career-tools/mock-interview') ?>" class="btn btn-primary btn-block">
-                Start Practice <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg>
+                Start Practice <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
             </a>
         </section>
 
@@ -158,7 +158,7 @@
             <h2>Salary Negotiation Simulator</h2>
             <p>Master the art of negotiation. Practice with our AI HR representative and learn to secure the compensation you deserve.</p>
             <a href="<?= base_url('candidate/career-tools/salary-negotiation') ?>" class="btn btn-primary btn-block">
-                Start Simulation <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg>
+                Start Simulation <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
             </a>
         </section>
 
@@ -169,7 +169,7 @@
             <h2>Personalized Career Advice</h2>
             <p>Receive tailored advice based on your profile, skills, and goals — a clear plan to reach the next milestone in your career.</p>
             <a href="<?= base_url('candidate/career-tools/career-advice') ?>" class="btn btn-primary btn-block">
-                Get Advice <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-r"/></svg>
+                Get Advice <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
             </a>
         </section>
 

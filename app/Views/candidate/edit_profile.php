@@ -2,7 +2,90 @@
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+html.anim-ready .content>*{animation:rise .34s ease both}
+html.anim-ready .content>*:nth-child(2){animation-delay:.05s}
+html.anim-ready .content>*:nth-child(3){animation-delay:.1s}
+html.anim-ready .content>*:nth-child(4){animation-delay:.15s}
+html.anim-ready .content>*:nth-child(5){animation-delay:.2s}
+html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
+.card{box-shadow:0 1px 3px rgba(10,47,87,.06);transition:var(--transition)}
+.card:hover{box-shadow:0 2px 10px rgba(10,47,87,.07)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.btn:active{transform:scale(.97)}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){.btn{transition:background-color .12s ease,border-color .12s ease!important}.btn:active,.btn:hover{transform:none!important}}
+.cv-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;transition:var(--transition)}
+.cv-card:hover{box-shadow:0 2px 10px rgba(10,47,87,.07)}
+.cv-card[open]{box-shadow:0 2px 12px rgba(10,47,87,.08)}
+.cv-card-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;list-style:none;min-height:52px}
+.cv-card-header::-webkit-details-marker{display:none}
+.cv-card-title{flex:1;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep);display:flex;align-items:center;gap:9px}
+.cv-card-title svg{width:16px;height:16px;color:var(--brand)}
+.cv-card-done{font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:20px}
+.cv-card-done.complete{background:var(--success-light);color:var(--success)}
+.cv-card-done.incomplete{background:var(--accent-light);color:var(--accent-dark)}
+.cv-card-done.optional{background:var(--bg);color:var(--muted)}
+.cv-chev{width:16px;height:16px;color:var(--muted);transition:transform .22s ease;flex-shrink:0}
+.cv-card[open] .cv-chev{transform:rotate(90deg)}
+.cv-card-body{padding:4px 20px 20px}
+.cv-card-hint{font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.55}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){.form-grid{grid-template-columns:1fr}}
+.form-field.full{grid-column:1/-1}
+.form-field label{display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.form-field .input,.form-field .select{width:100%}
+.form-actions{display:flex;align-items:center;gap:12px;margin-top:16px}
+.autosave-note{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+.autosave-note svg{width:13px;height:13px;color:var(--brand)}
+.text-danger{color:var(--danger)}
+.progress-bar{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:4px}
+.progress-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.progress-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap;flex:1}
+.progress-track{position:relative;width:200px;height:8px;background:var(--bg);border-radius:20px;overflow:visible}
+.progress-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--brand-dark),var(--brand));transition:width .6s ease}
+.milestone-marker{position:absolute;top:-6px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:#fff;transform:translateX(-50%);transition:all .3s ease}
+.milestone-marker.achieved{background:var(--success);border-color:var(--success)}
+.milestone-marker.next{border-color:var(--accent);border-style:dashed}
+.milestone-label{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.6rem;font-weight:700;white-space:nowrap;color:var(--muted)}
+.milestone-marker.achieved .milestone-label{color:var(--success)}
+.progress-text{font-family:'Sora',sans-serif;font-weight:800;font-size:.86rem;color:var(--brand-deep)}
+.progress-tip{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--muted)}
+.progress-tip svg{width:14px;height:14px;color:var(--accent)}
+.wallet-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px solid var(--border);border-radius:9px;background:#fff;font-size:.8rem;font-weight:600;color:var(--brand-deep)}
+.wallet-chip svg{width:16px;height:16px;color:var(--brand)}
+.wallet-label{color:var(--muted)}
+.rep-list{display:flex;flex-direction:column;gap:14px}
+.rep-row{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative}
+.rep-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px}
+@media(max-width:800px){.rep-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.rep-grid{grid-template-columns:1fr}}
+.rep-current{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);margin:10px 0}
+.rep-current input{accent-color:var(--brand)}
+.rep-remove{position:absolute;top:12px;right:12px}
+.ai-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ai-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid var(--brand);border-radius:8px;background:var(--brand-light);color:var(--brand);font-size:.78rem;font-weight:700;cursor:pointer;transition:var(--transition);white-space:nowrap}
+.ai-btn:hover{background:var(--brand);color:#fff}
+.ai-btn svg{width:14px;height:14px}
+.char-count{text-align:right;font-size:.68rem;color:var(--muted);margin-top:4px}
+.jr-auto-certs{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.jr-auto-header{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:700;color:var(--brand-deep);margin-bottom:10px}
+.jr-auto-header svg{width:16px;height:16px;color:var(--brand)}
+.jr-cert-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.jr-cert-item:last-child{border-bottom:none}
+.jr-cert-icon{width:36px;height:36px;border-radius:10px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.jr-cert-icon svg{width:16px;height:16px}
+.jr-cert-body{flex:1;min-width:0}
+.jr-cert-body strong{display:block;font-size:.82rem;color:var(--brand-deep)}
+.jr-cert-body span{font-size:.72rem;color:var(--muted)}
+.jr-verified-tag{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:12px;background:var(--success-light);color:var(--success)}
+.jr-verified-tag svg{width:11px;height:11px}
+.jr-auto-link{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:var(--brand);margin-top:10px}
+.bottom-actions{display:flex;justify-content:flex-end;gap:12px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -31,7 +114,7 @@ $langsDone      = !empty($candidate->languages);
 $portfolioDone  = !empty($candidate->portfolio);
 ?>
 
-<main class="content" id="main-content">
+<div class="content">
 
     <!-- Header -->
     <div class="page-head">
@@ -495,12 +578,13 @@ $portfolioDone  = !empty($candidate->portfolio);
         </div>
 
     </form>
-</main>
+</div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
+requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 $(document).ready(function () {
 
     // ── Select2 for industries ──

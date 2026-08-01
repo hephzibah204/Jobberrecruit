@@ -2,7 +2,73 @@
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+html.anim-ready .content>*{animation:rise .34s ease both}
+html.anim-ready .content>*:nth-child(2){animation-delay:.05s}
+html.anim-ready .content>*:nth-child(3){animation-delay:.1s}
+html.anim-ready .content>*:nth-child(4){animation-delay:.15s}
+html.anim-ready .content>*:nth-child(5){animation-delay:.2s}
+html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
+.card{box-shadow:0 1px 3px rgba(10,47,87,.06);transition:var(--transition)}
+.card:hover{box-shadow:0 2px 10px rgba(10,47,87,.07)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.btn:active{transform:scale(.97)}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){.btn{transition:background-color .12s ease,border-color .12s ease!important}.btn:active,.btn:hover{transform:none!important}}
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.sl{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.3s}
+.sl::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.switch input:checked+.sl{background:var(--brand)}
+.switch input:checked+.sl::before{transform:translateX(20px)}
+.switch input:focus-visible+.sl{outline:3px solid var(--accent);outline-offset:2px}
+.prof-grid{display:grid;grid-template-columns:300px 1fr;gap:clamp(16px,2vw,24px);align-items:start}
+@media(max-width:960px){.prof-grid{grid-template-columns:1fr}}
+.prof-sticky{position:sticky;top:90px}
+.id-card{text-align:center;padding:24px}
+.id-ava{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:1.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;position:relative}
+.id-ava .dot{position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:var(--success);border:3px solid #fff}
+.id-name{font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:var(--brand-deep)}
+.id-mail{font-size:.78rem;color:var(--muted);margin-top:2px}
+.id-badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.id-actions{margin-top:12px}
+.pf{display:flex;gap:16px;align-items:center}
+.pf-ring{position:relative;width:88px;height:88px;flex-shrink:0}
+.pf-ring svg{width:88px;height:88px;transform:rotate(-90deg)}
+.pf-ring .track{fill:none;stroke:var(--bg);stroke-width:8}
+.pf-ring .prog{fill:none;stroke:var(--brand);stroke-width:8;stroke-linecap:round;stroke-dasharray:239}
+.pf-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:1rem;color:var(--brand-deep)}
+.pf-body b{display:block;font-size:.86rem;color:var(--brand-deep)}
+.pf-body p{font-size:.76rem;color:var(--muted);line-height:1.6;margin-top:4px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:560px){.info-grid{grid-template-columns:1fr}}
+.info-full{grid-column:1/-1}
+.info-lbl{display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.info-lbl svg{width:13px;height:13px;color:var(--brand)}
+.info-val{font-size:.86rem;color:var(--brand-deep);font-weight:500}
+.priv-note{display:flex;align-items:center;gap:6px;font-size:.64rem;color:var(--muted);margin-top:4px}
+.priv-note svg{width:11px;height:11px;color:var(--brand);flex-shrink:0}
+.xp{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.xp:last-child{border-bottom:none;padding-bottom:2px}
+.xp:first-child{padding-top:2px}
+.xp-ic{width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0}
+.xp-ic svg{width:16px;height:16px}
+.xp b{display:block;font-size:.84rem;color:var(--brand-deep);line-height:1.35}
+.xp i{font-style:normal;font-size:.72rem;color:var(--muted);display:block;margin-top:2px}
+.xp p{font-size:.74rem;color:var(--text);line-height:1.55;margin-top:4px}
+.doc-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.doc-row:last-child{border-bottom:none}
+.doc-ic{width:44px;height:44px;border-radius:12px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-ic svg{width:20px;height:20px}
+.doc-info{flex:1;min-width:0}
+.doc-info b{display:block;font-size:.84rem;color:var(--brand-deep)}
+.doc-info i{font-style:normal;font-size:.72rem;color:var(--muted)}
+.doc-actions{display:flex;gap:8px;flex-shrink:0}
+.duo2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2vw,24px)}
+@media(max-width:760px){.duo2{grid-template-columns:1fr}}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -35,7 +101,7 @@ $totalFields = count($fields) + 1;
 $completion = round(($completed / $totalFields) * 100);
 ?>
 
-<main class="content" id="main-content">
+<div class="content">
     
     <!-- Breadcrumbs / Top header style -->
     <div class="page-head">
@@ -334,11 +400,12 @@ $completion = round(($completed / $totalFields) * 100);
       </div>
     </div>
 
-</main>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
+requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 $(function () {
     $('#visibility-toggle').on('change', function () {
         var input = $(this);

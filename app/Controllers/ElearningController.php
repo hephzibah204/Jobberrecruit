@@ -587,6 +587,11 @@ class ElearningController extends BaseController
             $certificate = $certModel->getCertificateForUser($userId, $courseId);
         }
 
+        // Get candidate name
+        $seekerModel = model(\App\Models\JobSeekerModel::class);
+        $seeker = $seekerModel->where('user_id', $userId)->first();
+        $candidateName = $seeker ? ($seeker['full_name'] ?? $seeker['first_name'] . ' ' . $seeker['last_name']) : (auth()->user()->username ?? 'Student');
+
         return view('candidate/classroom', [
             'title' => esc($course->title) . ' - Learning Portal',
             'course' => $course,
@@ -594,6 +599,7 @@ class ElearningController extends BaseController
             'modules' => $modules,
             'activeModule' => $activeModule,
             'certificate' => $certificate,
+            'candidateName' => $candidateName,
             'youtubeEmbedUrl' => $activeModule ? $this->getYoutubeEmbedUrl($activeModule->youtube_url ?? null) : null
         ]);
     }

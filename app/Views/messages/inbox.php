@@ -4,6 +4,43 @@
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
 <style>
+/* Premium Polish Layer */
+:root{
+  --shadow-xs:0 1px 3px rgba(10,47,87,.06);
+  --shadow-sm:0 2px 10px rgba(10,47,87,.07);
+  --shadow-md:0 6px 24px rgba(10,47,87,.10);
+  --shadow-lg-p:0 16px 44px rgba(10,47,87,.16);
+  --border-c:#e2e8f2;
+}
+.card,.dash-card,.set-card,.plan,.info-card,.job-card,.les-detail,.cur-card,
+.at-card,.faq-item,.modal,.q-block{
+  box-shadow:var(--shadow-xs);
+  border-color:var(--border-c);
+}
+.card:hover,.dash-card:hover,.job-card:hover,.cs-tool:hover,.res-item:hover{
+  box-shadow:var(--shadow-sm);
+}
+.modal{box-shadow:var(--shadow-lg-p)}
+.btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.tpl-swatch,
+.les,.res-item,.faq-item,.plan .btn,.icon-btn{
+  transition:transform .12s cubic-bezier(.2,.8,.2,1),
+             box-shadow .18s ease,
+             background-color .18s ease,
+             border-color .18s ease,
+             opacity .18s ease;
+}
+.btn:active,.at-pal:active,.at-opt:active,.q-opt:active,.cs-tool:active,
+.les:active,.res-item:active{
+  transform:scale(.97);
+}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){
+  .btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.les,.res-item{
+    transition:background-color .12s ease,border-color .12s ease!important;
+  }
+  .btn:active,.btn:hover{transform:none!important}
+}
 /* ── Inbox Split Layout styling ── */
 .inbox {
     display: grid;

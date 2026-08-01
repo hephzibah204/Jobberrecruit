@@ -561,7 +561,7 @@ body {
   background: var(--success);
 }
 
-/* recruiter notes list */
+/* recruiter's notes list */
 .rnotes-list {
   display: none;
   flex-direction: column;
@@ -1459,23 +1459,21 @@ body.finished .done-wrap {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Hidden options configuration from controller
     const $ = function(id) { return document.getElementById(id); };
     
     // Parse Context configuration passed from PHP
     const contextPreset = <?= json_encode($contextPreset) ?>;
     const applicationId = parseInt(contextPreset.application_id || 0);
     const jobTitle = contextPreset.job_title || 'This Role';
-    const initialPrompt = contextPreset.summary_note || 'Setting up practice parameters...';
 
     // Persona Configurations
     const personas = {
-        'corporate-hr': { name: 'Sarah', role: 'Corporate HR Recruiter', open: 'Hello. I\'m Sarah. I\'ll be guiding you through a structured set of questions today. Let\'s get started.' },
-        'big4-partner': { name: 'Arthur', role: 'Audit Partner', open: 'Good day. Arthur here. I value precision and clarity. Let\'s see how you structure your experience.' },
-        'startup-founder': { name: 'Kai', role: 'Startup Founder', open: 'Hey! Kai here. We move fast. I\'d love to hear your direct impact and what gets you excited.' },
-        'technical-lead': { name: 'Elena', role: 'Technical Lead Manager', open: 'Hi. Elena here. I want to see the details of how you handle problem-solving and technical challenges.' },
-        'gov-recruiter': { name: 'Commissioner Williams', role: 'Civil Service Interviewer', open: 'Welcome. I am Commissioner Williams. We will conduct this interview under strict standard protocols. Proceed.' },
-        'banking-recruiter': { name: 'Victoria', role: 'Corporate Investment Director', open: 'Greetings. Victoria here. We expect quantified value and systematic execution. Introduce yourself.' }
+        'corporate-hr': { name: 'Chioma Nwachukwu', role: 'HR Business Partner', open: 'Hello, I\'m Chioma from HR. Thank you for making time today — I\'ll walk you through a structured set of questions about your experience and fit for the role. Let\'s get started.' },
+        'big4-partner': { name: 'Mr. Bankole Adisa', role: 'Partner, Professional Services', open: 'Good day. I\'m Bankole — I lead engagements at partner level, and I hold every candidate to the standard I hold my own team. Let\'s begin; I expect precision in your answers.' },
+        'startup-founder': { name: 'Tomiwa', role: 'Founder & CEO', open: 'Hey, I\'m Tomiwa — I run the company, so this is just me, no HR script. I move fast and I like people who move fast too. Let\'s dive in.' },
+        'technical-lead': { name: 'Emeka Okafor', role: 'Engineering / Technical Lead', open: 'Hi, I\'m Emeka — I\'ll be going deep on the technical side today. I care less about buzzwords and more about how you actually think through problems. Let\'s start.' },
+        'gov-recruiter': { name: 'Alhaji Musa Ibrahim', role: 'Civil Service Interview Panel', open: 'Good day. I am Alhaji Musa Ibrahim, and I will conduct this interview in line with standard civil service procedure. Please answer each question fully, in the order presented.' },
+        'banking-recruiter': { name: 'Ngozi Adebayo-Williams', role: 'Talent Recruiter, Banking & Financial Services', open: 'Hello, I\'m Ngozi, and I recruit for banking and financial services roles. We move efficiently here, and we care about precision — especially with numbers. Let\'s begin.' }
     };
 
     const P = personas[contextPreset.personality] || personas['corporate-hr'];
@@ -1485,45 +1483,17 @@ document.addEventListener('DOMContentLoaded', function() {
     $('p-rec-role').textContent = P.role;
     $('rec-avatar').textContent = P.name[0];
 
-    // Local Question Bank
-    const BANK = {
-        behavioral: [
-            "Tell me about a time you had to resolve a conflict within a project team.",
-            "Describe a major project setback you experienced and how you managed it.",
-            "Tell me about a time you had to work under tight pressure to meet a critical deadline.",
-            "How do you handle prioritizing tasks when everything is high urgency?"
-        ],
-        technical: [
-            "Explain the technical challenges of scale and how you tackle system bottlenecks.",
-            "Walk me through a time you had to debug a critical production bug. How did you diagnose it?",
-            "What criteria do you use to evaluate architectural decisions and choose platforms?",
-            "Describe how you structure code optimization tasks to maintain system performance."
-        ],
-        leadership: [
-            "Tell me about a time you led a team through major technical organizational changes.",
-            "How do you mentor and develop skills for junior engineers on your team?",
-            "Describe a time you had to disagree with a major product direction and steer it.",
-            "How do you balance high quality standards with shipping timelines?"
-        ],
-        mixed: [
-            "Introduce yourself and highlight why you are a great fit for this position.",
-            "Tell me about a time you had to learn a complex framework/tool on tight timelines.",
-            "Walk me through your most impactful technical achievement and how you measured success.",
-            "An employer offers you a salary below what you expected. Walk me through how you’d handle that conversation."
-        ]
-    };
-
-    // Formulate active questions list based on configuration
-    const activeQuestions = BANK[contextPreset.question_pack] || BANK.mixed;
     let currentIdx = 0;
     let elapsedSeconds = 0;
     let countdownMinutes = parseInt(contextPreset.duration || 10);
     let remainSeconds = countdownMinutes * 60;
     let timerInterval = null;
     let isSpeaking = false;
-    let isEvaluating = false;
     let interviewStarted = false;
     let history = [];
+    
+    // Total questions is derived from time limit divided by complexity pacing
+    const totalQuestions = Math.max(3, Math.min(9, Math.round(countdownMinutes / 2.5)));
 
     // Setup speech support checks
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1533,23 +1503,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Live UI updates
     $('meta-title').textContent = (jobTitle && jobTitle !== 'This Role') ? jobTitle + ' Mock Interview' : 'AI Mock Interview';
     $('meta-sub').textContent = `${contextPreset.interview_type || 'General'} · ${contextPreset.difficulty || 'Medium'} · ${countdownMinutes} min`;
-    $('lobby-fmt').textContent = `${contextPreset.interview_type || 'General'} · ${contextPreset.difficulty || 'Medium'} · ${activeQuestions.length} Questions`;
+    $('lobby-fmt').textContent = `${contextPreset.interview_type || 'General'} · ${contextPreset.difficulty || 'Medium'} · ${totalQuestions} Questions`;
     
     // Setup question tracker circles on question map
     function buildQuestionMap() {
         const qmap = $('qmap');
         qmap.innerHTML = '';
-        activeQuestions.forEach((q, i) => {
+        for (let i = 0; i < totalQuestions; i++) {
             const div = document.createElement('div');
             div.className = 'qm';
             div.id = `qm-${i}`;
-            div.innerHTML = `<span class="n">${i+1}</span><span>${q.substring(0, 40)}...</span>`;
+            div.innerHTML = `<span class="n">${i+1}</span><span>Question ${i+1}</span>`;
             qmap.appendChild(div);
-        });
+        }
     }
 
     function setPill() {
-        $('q-count-pill').textContent = `${Math.min(currentIdx + 1, activeQuestions.length)} of ${activeQuestions.length}`;
+        $('q-count-pill').textContent = `${Math.min(currentIdx + 1, totalQuestions)} of ${totalQuestions}`;
     }
 
     // TTS Voice synthesis logic
@@ -1843,41 +1813,6 @@ document.addEventListener('DOMContentLoaded', function() {
         turnDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Ask next active question
-    function askQuestion() {
-        if (currentIdx >= activeQuestions.length) {
-            finishSession(false);
-            return;
-        }
-        
-        // Remove active marker on other map points
-        document.querySelectorAll('.qm').forEach(m => m.classList.remove('now'));
-        const activeMapPoint = $(`qm-${currentIdx}`);
-        if (activeMapPoint) activeMapPoint.classList.add('now');
-
-        setPill();
-
-        const q = activeQuestions[currentIdx];
-        const tag = `<span class="q-tag">Question ${currentIdx + 1} of ${activeQuestions.length}</span><br>`;
-        
-        speakText(q, () => {
-            appendBubble('model', tag + q);
-        });
-
-        // Set coaching tips
-        const coachingTips = [
-            "Structure using STAR: outline the Situation, task, Action you executed, and final Result.",
-            "Quantify results. Metrics, scale of impact, percentages, or timeline benchmarks build strength.",
-            "Keep delivery clean. Avoid filler phrases and highlight specific direct tasks you managed.",
-            "Clearly distinguish between collaborative group outcomes and individual performance tasks."
-        ];
-        $('live-tip-txt').textContent = coachingTips[currentIdx % coachingTips.length];
-        
-        // update progress rail
-        const pct = Math.round((currentIdx / activeQuestions.length) * 100);
-        $('prog-fill').style.width = `${pct}%`;
-    }
-
     // Submit user answer to controller API and get next dynamic response
     function submitAnswer() {
         const answer = $('answer').value.trim();
@@ -1885,7 +1820,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         appendBubble('user', answer);
         
-        // Save answers into memory local structure
+        // Save answers into memory local history
         history.push({ sender: 'user', message: answer });
         
         $('answer').value = '';
@@ -1935,12 +1870,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Record model responses to transcript history
             history.push({ sender: 'model', message: data.message });
 
+            // Display dynamic AI question response in chat
+            const tag = `<span class="q-tag">Question ${currentIdx + 2} of ${totalQuestions}</span><br>`;
+            appendBubble('model', tag + data.message);
+            speakText(data.message);
+
             // Extract quality metrics dynamically
             const feedback = data.feedback || {};
-            updateSTARIndicators(feedback);
-            writeNotesPill(currentIdx, answer, feedback);
+            updateSTARIndicators(data);
+            writeNotesPill(currentIdx, answer, data);
 
-            // Move pointer forward
+            // Move pointer forward on sidebar question map
             const currentPoint = $(`qm-${currentIdx}`);
             if (currentPoint) {
                 currentPoint.classList.remove('now');
@@ -1948,7 +1888,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             currentIdx++;
-            askQuestion();
+            if (currentIdx >= totalQuestions) {
+                finishSession(false);
+                return;
+            }
+
+            const nextPoint = $(`qm-${currentIdx}`);
+            if (nextPoint) {
+                nextPoint.classList.add('now');
+            }
+            setPill();
+
+            // Set coaching tip based on feedback
+            $('live-tip-txt').textContent = data.star_tip || "Structure your answer highlighting Situation, Task, Action, and Result.";
+            
+            // Update progress rail
+            const pct = Math.round((currentIdx / totalQuestions) * 100);
+            $('prog-fill').style.width = `${pct}%`;
+
+            resetRecordingUI();
         })
         .catch(err => {
             thinkDiv.remove();
@@ -1968,7 +1926,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle skipped actions
     $('skip-btn').addEventListener('click', function() {
-        const skippedQuestion = activeQuestions[currentIdx];
         history.push({ sender: 'user', message: "[Candidate Skipped Question]" });
         
         const skippedPoint = $(`qm-${currentIdx}`);
@@ -1978,22 +1935,89 @@ document.addEventListener('DOMContentLoaded', function() {
             skippedPoint.style.borderLeft = '3px solid #EF4444';
         }
 
-        currentIdx++;
-        resetRecordingUI();
-        askQuestion();
+        // Request next question turn from backend to keep AI in sync
+        submitAnswerText("[Candidate Skipped Question. Please ask the next question.]");
     });
 
+    function submitAnswerText(textStr) {
+        // Render AI analysis/thinking animation
+        const thinkDiv = document.createElement('div');
+        thinkDiv.className = 'turn turn--ai';
+        thinkDiv.innerHTML = `
+            <span class="turn-ava">${P.name[0]}</span>
+            <div class="bubble">
+                <div class="who">${P.name} · AI Recruiter</div>
+                <div class="think">
+                    <span class="think-dots"><i></i><i></i><i></i></span>
+                    <span>Fetching next question...</span>
+                </div>
+            </div>
+        `;
+        $('convo').appendChild(thinkDiv);
+        thinkDiv.scrollIntoView({ behavior: 'smooth' });
+
+        const formData = new FormData();
+        formData.append('type', 'interview');
+        formData.append('message', textStr);
+        formData.append('history', JSON.stringify(history));
+        formData.append('extra', jobTitle);
+        formData.append('difficulty', contextPreset.difficulty);
+        formData.append('questionPack', contextPreset.question_pack);
+        formData.append('interviewMode', activeMode);
+        formData.append('webcamEnabled', activeMode === 'video' ? '1' : '0');
+        formData.append('applicationId', String(applicationId));
+
+        fetch('<?= base_url('candidate/career-tools/send-message') ?>', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            thinkDiv.remove();
+            history.push({ sender: 'model', message: data.message });
+
+            const tag = `<span class="q-tag">Question ${currentIdx + 2} of ${totalQuestions}</span><br>`;
+            appendBubble('model', tag + data.message);
+            speakText(data.message);
+
+            currentIdx++;
+            if (currentIdx >= totalQuestions) {
+                finishSession(false);
+                return;
+            }
+
+            const nextPoint = $(`qm-${currentIdx}`);
+            if (nextPoint) {
+                nextPoint.classList.add('now');
+            }
+            setPill();
+
+            const pct = Math.round((currentIdx / totalQuestions) * 100);
+            $('prog-fill').style.width = `${pct}%`;
+
+            resetRecordingUI();
+        })
+        .catch(err => {
+            thinkDiv.remove();
+            toast("Connection timeout. Please retry.");
+        });
+    }
+
     // Populate dynamic Recruiter note items
-    function writeNotesPill(qNum, responseText, feedbackObj) {
+    function writeNotesPill(qNum, responseText, dataObj) {
         const list = $('rnotes-list');
         $('rnotes-empty').style.display = 'none';
         list.classList.add('show');
 
         const li = document.createElement('li');
         
-        let commentText = feedbackObj.recruiter_observation || "Detailed responses provided. Clear ownership of technical metrics.";
+        let commentText = dataObj.feedback || "Detailed response provided.";
         if (responseText.split(/\s+/).length < 25) {
-            commentText = "Brief answer. Lacked supporting specific execution details.";
+            commentText = "Brief answer. Lacked supporting specific details.";
         }
 
         li.innerHTML = `<b>Question ${qNum + 1} Note</b>${commentText}`;
@@ -2002,13 +2026,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // STAR Coach metrics
-    function updateSTARIndicators(feedbackObj) {
+    function updateSTARIndicators(dataObj) {
+        const breakdown = dataObj.star_breakdown || {};
         const rating = {
-            len: feedbackObj.length_score || 80,
-            star: feedbackObj.star_score || 75,
-            spec: feedbackObj.specificity_score || 70,
-            conf: feedbackObj.confidence_score || 85,
-            prof: feedbackObj.professionalism_score || 90
+            len: Math.round((dataObj.message || '').split(/\s+/).length / 2), // rough estimate
+            star: dataObj.star_score ? dataObj.star_score * 10 : 70,
+            spec: breakdown.result ? breakdown.result * 10 : 70,
+            conf: breakdown.action ? breakdown.action * 10 : 80,
+            prof: breakdown.situation ? breakdown.situation * 10 : 90
         };
 
         Object.keys(rating).forEach(key => {
@@ -2046,7 +2071,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('finished');
         
         $('d-answered').textContent = currentIdx;
-        $('d-skipped').textContent = activeQuestions.length - currentIdx;
+        $('d-skipped').textContent = totalQuestions - currentIdx;
         $('d-time').textContent = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`;
 
         // Send payload data to final assessment API controller
@@ -2224,9 +2249,10 @@ document.addEventListener('DOMContentLoaded', function() {
         buildQuestionMap();
         
         appendBubble('model', P.open);
-        speakText(P.open, () => {
-            askQuestion();
-        });
+        history.push({ sender: 'model', message: P.open });
+        
+        // Retrieve initial question dynamically from AI service to start the interview
+        submitAnswerText(`Starting mock interview for ${jobTitle}. Mode: ${activeMode}. Difficulty: ${contextPreset.difficulty}.`);
     });
 
     document.body.classList.add('in-lobby');
