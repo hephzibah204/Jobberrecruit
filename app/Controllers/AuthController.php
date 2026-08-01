@@ -105,6 +105,13 @@ class AuthController extends BaseController
             ]);
         }
 
+        if (!$user->active) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Your account has been suspended. Please contact support.',
+            ]);
+        }
+
         // Skip verification gates locally so development can proceed without mail setup.
         if (ENVIRONMENT !== 'development' && !($user->email_verified_at)) {
             log_message('info', 'Verified: ' . json_encode($user->email_verified_at));

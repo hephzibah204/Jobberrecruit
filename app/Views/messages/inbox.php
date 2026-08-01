@@ -204,7 +204,11 @@
     <div class="page-head">
         <div>
             <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-chat"/></svg> Messages</h1>
-            <p>Chat with employers directly — replying quickly improves your chances.</p>
+            <?php if (auth()->user()->user_type === 'employer'): ?>
+              <p>Communicate with candidates directly on the platform.</p>
+            <?php else: ?>
+              <p>Chat with employers directly — replying quickly improves your chances.</p>
+            <?php endif; ?>
         </div>
         <?php if ($unreadCount > 0): ?>
             <span class="pill pill--rejected"><?= $unreadCount ?> unread</span>
@@ -297,7 +301,11 @@
             <div class="thread-empty">
                 <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 <h3>Select a conversation</h3>
-                <p>Choose an employer from the list on the left to read and send messages.</p>
+                <?php if (auth()->user()->user_type === 'employer'): ?>
+                  <p>Choose a candidate from the list on the left to read and send messages.</p>
+                <?php else: ?>
+                  <p>Choose an employer from the list on the left to read and send messages.</p>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -305,7 +313,11 @@
 
     <div class="notice notice--info" style="margin-top: 20px;">
         <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bulb"/></svg>
-        <span>Only verified employers you've applied to or who found your profile can message you. Never share payment details in chat — legitimate employers will not ask you to pay for a job.</span>
+        <?php if (auth()->user()->user_type === 'employer'): ?>
+          <span>Only candidates who applied to your jobs or whose profile you unlocked can be messaged. Never request payment details in chat.</span>
+        <?php else: ?>
+          <span>Only verified employers you've applied to or who found your profile can message you. Never share payment details in chat — legitimate employers will not ask you to pay for a job.</span>
+        <?php endif; ?>
     </div>
 </div>
 <?= $this->endSection() ?>

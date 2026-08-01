@@ -1,7 +1,7 @@
 <?php $page_title = 'Application Details'; ?>
 <?= $this->extend('layouts/employer') ?>
 
-
+<?php
 $fullName = trim(($applicant->first_name ?? $application->first_name ?? '') . ' ' . ($applicant->last_name ?? $application->last_name ?? ''));
 if (empty($fullName)) {
     $fullName = 'Guest Applicant';
@@ -45,7 +45,7 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
             <p>Applied for <b><?= esc($application->job_title ?? '') ?></b> · <?= esc($appliedDate) ?></p>
           </div>
           <div class="status-select">
-            <label class="form-label" for="status" style="margin:0">Status</label>
+            <label class="lbl" for="status" style="margin:0">Status</label>
             <select class="select" id="status" aria-label="Application status">
               <option value="pending" <?= ($application->status ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
               <option value="reviewed" <?= ($application->status ?? '') === 'reviewed' ? 'selected' : '' ?>>Reviewed</option>
@@ -232,7 +232,9 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
           <?php if (!empty($application->cv_path)): ?>
             <a href="<?= base_url($application->cv_path) ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm" download><svg aria-hidden="true"><use href="#i-download"/></svg> Download CV/Resume</a>
           <?php endif; ?>
-          <a href="<?= base_url('employer/messages') ?>?candidate=<?= esc($applicant->id ?? $application->user_id ?? '') ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-chat"/></svg> Message Candidate</a>
+          <?php if (!empty($application->job_seeker_id)): ?>
+            <a href="<?= base_url('employer/messages') ?>?candidate=<?= esc($application->job_seeker_id) ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-chat"/></svg> Message Candidate</a>
+          <?php endif; ?>
         </div>
       </div>
     </section>
@@ -288,7 +290,7 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
     <div class="modal-body">
       <div class="notice notice--info"><svg aria-hidden="true"><use href="#i-bulb"/></svg>
         <span><b>Note:</b> the candidate will receive an email with your message below.</span></div>
-      <label class="form-label" for="modal-msg" style="margin-top:12px; display:block;">Message to candidate <span class="req" aria-hidden="true">*</span></label>
+      <label class="lbl" for="modal-msg" style="margin-top:12px; display:block;">Message to candidate <span class="req" aria-hidden="true">*</span></label>
       <textarea class="input" id="modal-msg" rows="6" required aria-describedby="modal-hint"></textarea>
       <p class="modal-hint" id="modal-hint">This message will be included in the email sent to the candidate.</p>
     </div>

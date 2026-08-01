@@ -25,7 +25,7 @@ if (!empty($transactions)) {
     <p>Your wallet funding and payment history.</p>
   </div>
   <div class="page-actions">
-    <a href="#" data-bs-toggle="modal" data-bs-target="#fundWalletModal" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</a>
+    <button type="button" onclick="openFundWalletModal()" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</button>
   </div>
 </div>
 
@@ -75,7 +75,7 @@ if (!empty($transactions)) {
       <h3>No transactions yet</h3>
       <p>Your transaction history will appear here once you make a payment. Fund your wallet or buy a job bundle to get started.</p>
       <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">
-        <a href="#" data-bs-toggle="modal" data-bs-target="#fundWalletModal" class="emp-btn emp-btn-primary emp-btn-sm"><svg aria-hidden="true"><use href="#i-plus"/></svg> Make Your First Payment</a>
+        <button type="button" onclick="openFundWalletModal()" class="emp-btn emp-btn-primary emp-btn-sm"><svg aria-hidden="true"><use href="#i-plus"/></svg> Make Your First Payment</button>
         <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline emp-btn-sm">View Plans</a>
       </div>
     </div>
@@ -120,9 +120,9 @@ if (!empty($transactions)) {
                 </span>
               </td>
               <td>
-                <a href="<?= base_url('employer/wallet/receipt/' . esc($tx->reference)) ?>" class="emp-btn emp-btn-outline emp-btn-sm" aria-label="Download receipt" target="_blank">
+                <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" aria-label="Receipt download not yet available" title="Receipt download coming soon" disabled>
                   <svg aria-hidden="true"><use href="#i-download"/></svg>
-                </a>
+                </button>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -133,84 +133,92 @@ if (!empty($transactions)) {
 </section>
 
 <!-- Fund Wallet Modal -->
-<div class="modal fade" id="fundWalletModal" tabindex="-1" aria-labelledby="fundWalletModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="background: #white; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
-      <div class="modal-header border-bottom p-4" style="border-color: var(--border) !important; display: flex; align-items: center; justify-content: space-between;">
-        <h5 class="modal-title fw-bold text-main" id="fundWalletModalLabel" style="font-family:'Sora',sans-serif;font-weight:700;color:var(--brand-deep)">
-          <svg aria-hidden="true" style="width:18px;height:18px;margin-right:8px;vertical-align:middle"><use href="#i-wallet"/></svg>Fund Wallet Balance
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">
-          <svg aria-hidden="true" style="width:16px;height:16px"><use href="#i-x"/></svg>
-        </button>
-      </div>
-      <form action="<?= base_url('wallet/initialize') ?>" method="POST" id="fundWalletForm">
-        <?= csrf_field() ?>
-        <div class="modal-body p-4">
-          <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px;">Select or enter the amount you wish to deposit. You will be redirected to Paystack to complete your payment.</p>
-          
-          <!-- Predefined values -->
-          <div class="row g-2 mb-3" style="display: flex; gap: 8px; margin-bottom: 16px;">
-            <div style="flex: 1;">
-              <button type="button" class="emp-btn emp-btn-outline w-100 preset-amount-btn" data-val="10000">₦10,000</button>
-            </div>
-            <div style="flex: 1;">
-              <button type="button" class="emp-btn emp-btn-outline w-100 preset-amount-btn" data-val="25000">₦25,000</button>
-            </div>
-            <div style="flex: 1;">
-              <button type="button" class="emp-btn emp-btn-outline w-100 preset-amount-btn" data-val="50000">₦50,000</button>
-            </div>
-          </div>
-
-          <div class="form-group mb-0">
-            <label class="form-label" style="display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:6px">CUSTOM DEPOSIT AMOUNT (NGN)</label>
-            <div style="position: relative; display: flex; align-items: center;">
-              <span style="position: absolute; left: 14px; font-weight: 600; color: var(--muted);">₦</span>
-              <input type="number" name="amount" id="depositAmount" class="input" min="100" step="100" placeholder="Minimum 100" required style="padding-left: 30px; width: 100%; min-height: 44px; border: 1.5px solid var(--border); border-radius: 9px;">
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer p-4" style="border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px;">
-          <button type="button" class="emp-btn emp-btn-outline" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="emp-btn emp-btn-primary"><svg aria-hidden="true" style="width:16px;height:16px;margin-right:6px"><use href="#i-card"/></svg> Proceed to Pay</button>
-        </div>
-      </form>
+<div class="modal-scrim" id="fund-wallet-scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fundWalletModalLabel">
+    <div class="modal-head">
+      <span class="modal-title" id="fundWalletModalLabel"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet Balance</span>
+      <button type="button" class="modal-close" id="fund-wallet-close" aria-label="Close dialog"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
+    <form action="<?= base_url('wallet/initialize') ?>" method="POST" id="fundWalletForm">
+      <?= csrf_field() ?>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px;">Select or enter the amount you wish to deposit. You will be redirected to Paystack to complete your payment.</p>
+
+        <!-- Predefined values -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <div style="flex: 1;">
+            <button type="button" class="emp-btn emp-btn-outline" style="width:100%" data-val="10000">₦10,000</button>
+          </div>
+          <div style="flex: 1;">
+            <button type="button" class="emp-btn emp-btn-outline" style="width:100%" data-val="25000">₦25,000</button>
+          </div>
+          <div style="flex: 1;">
+            <button type="button" class="emp-btn emp-btn-outline" style="width:100%" data-val="50000">₦50,000</button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="lbl" for="depositAmount">Custom deposit amount (NGN)</label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <span style="position: absolute; left: 14px; font-weight: 600; color: var(--muted);">₦</span>
+            <input type="number" name="amount" id="depositAmount" class="input" min="100" step="100" placeholder="Minimum 100" required style="padding-left: 30px; width: 100%; min-height: 44px; border: 1.5px solid var(--border); border-radius: 9px;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="emp-btn emp-btn-outline" id="fund-wallet-cancel">Cancel</button>
+        <button type="submit" class="emp-btn emp-btn-primary"><svg aria-hidden="true"><use href="#i-card"/></svg> Proceed to Pay</button>
+      </div>
+    </form>
   </div>
 </div>
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
 <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline">View Plans</a>
-<a href="#" data-bs-toggle="modal" data-bs-target="#fundWalletModal" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</a>
+<button type="button" onclick="openFundWalletModal()" class="emp-btn emp-btn-accent"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</button>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const presetBtns = document.querySelectorAll(".preset-amount-btn");
-    const amountInput = document.getElementById("depositAmount");
+(function() {
+  var scrim = document.getElementById('fund-wallet-scrim');
+  var presetBtns = scrim.querySelectorAll('[data-val]');
+  var amountInput = document.getElementById('depositAmount');
 
-    presetBtns.forEach(btn => {
-        btn.addEventListener("click", function () {
-            presetBtns.forEach(b => {
-                b.classList.remove("emp-btn-primary");
-                b.classList.add("emp-btn-outline");
-            });
+  window.openFundWalletModal = function() {
+    scrim.hidden = false;
+    requestAnimationFrame(function() { scrim.classList.add('show'); });
+  };
 
-            this.classList.remove("emp-btn-outline");
-            this.classList.add("emp-btn-primary");
-            
-            amountInput.value = this.getAttribute("data-val");
-        });
+  function close() {
+    scrim.classList.remove('show');
+    setTimeout(function() { if (!scrim.classList.contains('show')) scrim.hidden = true; }, 240);
+  }
+
+  document.getElementById('fund-wallet-close').addEventListener('click', close);
+  document.getElementById('fund-wallet-cancel').addEventListener('click', close);
+  scrim.addEventListener('click', function(e) { if (e.target === scrim) close(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && scrim.classList.contains('show')) close(); });
+
+  presetBtns.forEach(function(btn) {
+    btn.addEventListener('click', function () {
+      presetBtns.forEach(function(b) {
+        b.classList.remove('emp-btn-primary');
+        b.classList.add('emp-btn-outline');
+      });
+      btn.classList.remove('emp-btn-outline');
+      btn.classList.add('emp-btn-primary');
+      amountInput.value = btn.getAttribute('data-val');
     });
+  });
 
-    amountInput.addEventListener("input", function() {
-        presetBtns.forEach(b => {
-            b.classList.remove("emp-btn-primary");
-            b.classList.add("emp-btn-outline");
-        });
+  amountInput.addEventListener('input', function() {
+    presetBtns.forEach(function(b) {
+      b.classList.remove('emp-btn-primary');
+      b.classList.add('emp-btn-outline');
     });
-});
+  });
+})();
 </script>
 <?= $this->endSection() ?>

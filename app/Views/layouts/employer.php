@@ -91,6 +91,8 @@ $pendingCount = $pendingApps ?? 0;
 <link rel="stylesheet" href="<?= base_url('css/employer-shell.css') ?>">
 <!-- Tabler Icons (needed for some CI4 view remnants) -->
 <link rel="stylesheet" href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css') ?>">
+<!-- toastr (used by AJAX-driven employer forms) -->
+<link rel="stylesheet" href="<?= base_url('auth/css/toastr.min.css') ?>">
 
 <!-- Page-level styles -->
 <?= $this->renderSection('styles') ?>
@@ -152,6 +154,10 @@ $pendingCount = $pendingApps ?? 0;
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
     <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+    <symbol id="i-x-social" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16zM4 20l6.768 -6.768M20 4l-6.768 6.768"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></symbol>
   </defs>
 </svg>
 
@@ -262,7 +268,7 @@ $pendingCount = $pendingApps ?? 0;
       <div class="sb-wallet">
         <div class="sb-wallet-label">Wallet balance</div>
         <div class="sb-wallet-amt"><?= esc($walletFormatted) ?></div>
-        <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-ghost-w emp-btn-sm">
+        <a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-ghost-w emp-btn-sm">
           <svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet
         </a>
       </div>
@@ -297,7 +303,7 @@ $pendingCount = $pendingApps ?? 0;
 
         <div class="tb-right">
           <!-- Wallet chip -->
-          <a href="<?= base_url('employer/pricing') ?>" class="tb-wallet" aria-label="Wallet balance <?= esc($walletFormatted) ?>">
+          <a href="<?= base_url('employer/wallet') ?>" class="tb-wallet" aria-label="Wallet balance <?= esc($walletFormatted) ?>">
             <svg aria-hidden="true"><use href="#i-wallet"/></svg>
             <span class="lbl">Wallet</span> <b><?= esc($walletFormatted) ?></b>
           </a>
@@ -457,6 +463,10 @@ $pendingCount = $pendingApps ?? 0;
   });
 })();
 </script>
+
+<!-- jQuery + toastr (required by AJAX-driven employer forms: edit-job, profile-edit, etc.) -->
+<script src="<?= base_url('auth/js/jquery-3.7.1.min.js') ?>"></script>
+<script src="<?= base_url('auth/js/toastr.min.js') ?>"></script>
 
 <!-- Page-level scripts -->
 <?= $this->renderSection('scripts') ?>

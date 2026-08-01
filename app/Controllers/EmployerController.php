@@ -761,7 +761,7 @@ class EmployerController extends BaseController
                 'experience_level' => 'required',
                 'application_method' => 'required|in_list[form,whatsapp,email,external]',
                 'application_access' => 'required|in_list[guest,authenticated,general]',
-                'accommodation' => 'required|in_list[available,not_available]',
+                'accommodation' => 'permit_empty',
                 'contact_email' => 'required|valid_email',
                 'notification_email' => 'permit_empty|valid_email',
             ];
@@ -806,7 +806,7 @@ class EmployerController extends BaseController
             $canUseNetworkBlast = $this->canUseNetworkBlast($currentPlan, $hasUnlimitedAccess);
 
             /* ====================== PREPARE JOB DATA ====================== */
-            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
             $postData = $this->request->getPost($allowed);
             $postData['employer_id'] = $employer->id;
             $postData['status'] = 'pending_approval';
@@ -863,12 +863,18 @@ class EmployerController extends BaseController
                         if (!empty($q['text'])) {
                             $allowedTypes = ['text', 'yes_no', 'multiple_choice', 'select', 'radio', 'checkbox'];
                             $qType = in_array($q['type'] ?? 'text', $allowedTypes) ? $q['type'] : 'text';
+                            $qOptions = null;
+                            if (!empty($q['options'])) {
+                                $qOptions = is_array($q['options'])
+                                    ? implode(',', array_filter(array_map('trim', $q['options'])))
+                                    : trim($q['options']);
+                            }
                             $questionModel->insert([
                                 'job_id'        => $jobId,
                                 'question_text' => trim($q['text']),
                                 'question_type' => $qType,
-                                'is_required'   => isset($q['is_required']) ? 1 : 0,
-                                'options'       => !empty($q['options']) ? trim($q['options']) : null,
+                                'is_required'   => !empty($q['is_required']) ? 1 : 0,
+                                'options'       => $qOptions ?: null,
                             ]);
                         }
                     }
@@ -1403,11 +1409,13 @@ class EmployerController extends BaseController
 
         // Get all jobs with relations
         $jobs = $jobModel
-            ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location')
+            ->select('jobs.*, jobs.application_deadline as deadline, job_categories.name as category_name, industries.name as industry_name, states.name as location, COUNT(job_applications.id) as applicants_count')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
+            ->join('job_applications', 'job_applications.job_id = jobs.id', 'left')
             ->where('jobs.employer_id', $employer->id)
+            ->groupBy('jobs.id')
             ->orderBy('jobs.created_at', 'DESC')
             ->findAll();
 
@@ -2978,6 +2986,22 @@ class EmployerController extends BaseController
 
         $canShowTrustBadge = ($features['trust_badge'] ?? false) && !empty($employer->is_verified);
 
+        // Profile completion % — mirrors dashboard()'s calculation
+        $totalJobs = model(JobModel::class)->where('employer_id', $employer->id)->countAllResults();
+        $profileFields = [
+            !empty($employer->company_name),
+            !empty($employer->contact_email),
+            !empty($employer->company_size),
+            !empty($employer->description),
+            !empty($employer->website),
+            !empty($employer->logo),
+            $totalJobs > 0,
+            $hasCACDocument,
+        ];
+        $profileCompletion = (int) round(
+            (array_sum(array_map('intval', $profileFields)) / count($profileFields)) * 100
+        );
+
         $data = [
             'title' => 'Company Profile',
             'user' => $user,
@@ -2991,6 +3015,7 @@ class EmployerController extends BaseController
             'cacDocument' => $cacDocumentArray,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
             'creditBalance' => $creditBalance,  // ← Add this
+            'profileCompletion' => $profileCompletion,
         ];
 
         return view('employers/profile', $data);
@@ -5977,15 +6002,16 @@ class EmployerController extends BaseController
     public function candidates()
     {
         $jobSeekerModel = model(JobSeekerModel::class);
+        $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
         $filters = [
             'keyword'          => $this->request->getGet('keyword'),
             'state_id'         => $this->request->getGet('state'),
-            'employment_type'  => $this->request->getGet('job_type'),
+            'employment_type'  => (array) $this->request->getGet('employment_type'),
             'experience_years' => $this->request->getGet('experience'),
             'job_title'        => (array) $this->request->getGet('job_title'),
             'availability'     => (array) $this->request->getGet('availability'),
-            'employment_type'  => (array) $this->request->getGet('employment_type'),
             'education_level'  => (array) $this->request->getGet('education_level'),
+            'sort'             => $this->request->getGet('sort'),
         ];
 
         $candidates = $jobSeekerModel->getCandidates($filters, 20);
@@ -5993,10 +6019,11 @@ class EmployerController extends BaseController
         $data = [
             'title'      => 'Find Candidates',
             'user'       => $this->auth->user(),
-            'employer'   => model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first(),
+            'employer'   => $employer,
             'candidates' => $candidates,
             'pager'      => $jobSeekerModel->pager,
             'total'      => $jobSeekerModel->pager->getTotal(),
+            'hasUnlimitedAccess' => $employer ? $this->hasUnlimitedAccess($employer->id) : false,
 
             // sidebar counts
             'jobTitleCounts'      => $jobSeekerModel->countByJobTitle(),

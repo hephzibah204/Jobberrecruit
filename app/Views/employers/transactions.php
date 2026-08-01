@@ -117,9 +117,9 @@ if (!empty($transactions)) {
                 <span class="pill <?= $statusClass ?>"><?= esc(ucfirst($txn['status'] ?? 'pending')) ?></span>
               </td>
               <td>
-                <a href="<?= base_url('employer/transactions/receipt/' . esc($txn['id'] ?? $txn['reference'] ?? '')) ?>" class="ic-btn" title="Download Receipt" download>
+                <button type="button" class="ic-btn" title="Receipt download coming soon" aria-label="Receipt download not yet available" disabled>
                   <svg aria-hidden="true"><use href="#i-download"/></svg>
-                </a>
+                </button>
               </td>
             </tr>
           <?php endforeach; ?>

@@ -66,7 +66,7 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
       </div>
       <div class="id-name"><?= esc($displayName) ?></div>
       <div class="id-mail"><?= esc($employer->contact_email ?? '') ?></div>
-      <?php if ($employer->is_verified ?? false): ?>
+      <?php if ($canShowTrustBadge ?? false): ?>
         <span class="badge-verified"><svg aria-hidden="true"><use href="#i-shield"/></svg> Verified Employer</span>
       <?php endif; ?>
       <div class="id-actions">

@@ -54,7 +54,7 @@
                     <div style="margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                         <div>
                             <small style="font-size: 0.68rem; color: var(--muted); display: block;">Desired Salary</small>
-                            <b style="font-family: 'Sora', sans-serif; font-size: 0.84rem; color: var(--success);">₦<?= number_format((float)($c->desired_salary ?? 0)) ?></b>
+                            <b style="font-family: 'Sora', sans-serif; font-size: 0.84rem; color: var(--brand-deep);">₦<?= number_format((float)($c->desired_salary ?? 0)) ?></b>
                         </div>
                         <div style="display: flex; gap: 6px;">
                             <a href="<?= base_url('employer/candidates/view/' . $c->id) ?>" class="emp-btn emp-btn-outline emp-btn-sm" style="padding: 6px 12px; min-height: 32px;">

@@ -70,7 +70,7 @@
                                     <div class="text-muted fs-12"><?= esc($user->email) ?></div>
                                 </td>
                                 <td>
-                                    <?php 
+                                    <?php
                                     $displayRole = !empty($user->role) ? $msgRole = $user->role : (!empty($user->user_type) ? $user->user_type : '');
                                     if($displayRole === 'employer'): ?>
                                         <span class="badge bg-primary-transparent">Employer</span>

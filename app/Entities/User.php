@@ -15,15 +15,6 @@ class User extends ShieldUser
         'email' => null,
     ];
 
-    protected $datamap = [
-        'user_type' => 'user_type',
-        'status' => 'status',
-        'status_message' => 'status_message',
-        'email_verified_at' => 'email_verified_at',
-        'paystack_customer_code' => 'paystack_customer_code',
-        'email' => 'email',
-    ];
-
     protected $casts = [
         'id'        => 'integer',
         'active'    => 'boolean',

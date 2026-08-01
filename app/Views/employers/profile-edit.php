@@ -94,28 +94,27 @@
               <label for="company-tagline">Company tagline <span class="opt">(optional — shown below your name on listings)</span></label>
               <input type="text" id="company-tagline" name="tagline" autocomplete="off" placeholder="e.g. Africa's leading technology platform" maxlength="120" value="<?= esc($employer->tagline ?? '') ?>">
             </div>
-            <div class="form-field">
-              <label for="industry">Industry</label>
-              <select id="industry" name="industry">
-                <option value="">Select industry</option>
+            <div class="form-field full">
+              <label>Industry <span class="required-star">*</span></label>
+              <div class="pref-pill-group">
                 <?php if (!empty($industries)): ?>
                   <?php foreach ($industries as $parentInd): ?>
-                    <optgroup label="<?= esc($parentInd->name) ?>">
-                      <?php if (!empty($parentInd->children)): ?>
-                        <?php foreach ($parentInd->children as $childInd): ?>
-                          <option value="<?= $childInd->id ?>" <?= (isset($employer->industry) && $employer->industry == $childInd->id) ? 'selected' : '' ?>>
-                            <?= esc($childInd->name) ?>
-                          </option>
-                        <?php endforeach; ?>
-                      <?php else: ?>
-                        <option value="<?= $parentInd->id ?>" <?= (isset($employer->industry) && $employer->industry == $parentInd->id) ? 'selected' : '' ?>>
-                          <?= esc($parentInd->name) ?>
-                        </option>
-                      <?php endif; ?>
-                    </optgroup>
+                    <?php if (!empty($parentInd->children)): ?>
+                      <?php foreach ($parentInd->children as $childInd): ?>
+                        <label class="pref-pill">
+                          <input type="checkbox" name="industry_ids[]" value="<?= $childInd->id ?>" <?= in_array($childInd->id, $employerIndustryIds ?? []) ? 'checked' : '' ?>>
+                          <?= esc($childInd->name) ?>
+                        </label>
+                      <?php endforeach; ?>
+                    <?php else: ?>
+                      <label class="pref-pill">
+                        <input type="checkbox" name="industry_ids[]" value="<?= $parentInd->id ?>" <?= in_array($parentInd->id, $employerIndustryIds ?? []) ? 'checked' : '' ?>>
+                        <?= esc($parentInd->name) ?>
+                      </label>
+                    <?php endif; ?>
                   <?php endforeach; ?>
                 <?php endif; ?>
-              </select>
+              </div>
             </div>
             <div class="form-field">
               <label for="company-type">Company type</label>
@@ -145,13 +144,13 @@
               </select>
             </div>
             <div class="form-field">
-              <label for="num-employees">Number of employees</label>
-              <select id="num-employees" name="num_employees">
+              <label for="num-employees">Number of employees <span class="required-star">*</span></label>
+              <select id="num-employees" name="company_size" required>
                 <option value="">Select range</option>
                 <?php
                 $ranges = ['1–5', '6–10', '11–50', '51–200', '201–500', '501–1,000', '1,001–5,000', '5,000+'];
                 foreach ($ranges as $range):
-                  $sel = (isset($employer->num_employees) && $employer->num_employees == $range) ? 'selected' : '';
+                  $sel = (isset($employer->company_size) && $employer->company_size == $range) ? 'selected' : '';
                 ?>
                   <option value="<?= esc($range) ?>" <?= $sel ?>><?= esc($range) ?></option>
                 <?php endforeach; ?>
@@ -204,17 +203,16 @@
           <div class="cv-card-hint">Candidates verify companies are real and legitimate using this information. A complete contact section increases trust.</div>
           <div class="form-grid">
             <div class="form-field">
-              <label for="company-phone">Phone number <span class="opt">(not published publicly)</span></label>
-              <input type="tel" id="company-phone" name="phone" placeholder="e.g. 07038399120" value="<?= esc($employer->phone ?? '') ?>">
-              <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">🔒 Used for internal verification only — not shown to candidates</span>
+              <label for="contact-name">Contact person name <span class="required-star">*</span></label>
+              <input type="text" id="contact-name" name="contact_name" placeholder="e.g. Jane Doe" value="<?= esc($employer->contact_name ?? '') ?>">
             </div>
             <div class="form-field">
-              <label for="company-whatsapp">WhatsApp Business <span class="opt">(optional)</span></label>
-              <input type="tel" id="company-whatsapp" name="whatsapp" autocomplete="tel" placeholder="e.g. 08012345678" value="<?= esc($employer->whatsapp ?? '') ?>">
+              <label for="contact-phone">Contact phone <span class="required-star">*</span></label>
+              <input type="tel" id="contact-phone" name="contact_phone" placeholder="e.g. 07038399120" value="<?= esc($employer->contact_phone ?? '') ?>">
             </div>
             <div class="form-field">
-              <label for="company-email">Company email <span class="opt">(for correspondence)</span></label>
-              <input type="email" id="company-email" name="company_email" placeholder="e.g. hr@company.com" value="<?= esc($employer->company_email ?? '') ?>">
+              <label for="contact-email">Contact email <span class="required-star">*</span></label>
+              <input type="email" id="contact-email" name="contact_email" placeholder="e.g. hr@company.com" value="<?= esc($employer->contact_email ?? '') ?>">
             </div>
             <div class="form-field">
               <label for="company-website">Website</label>
@@ -222,23 +220,15 @@
             </div>
             <div class="form-field full">
               <label for="company-address">Office address</label>
-              <input type="text" id="company-address" name="address" placeholder="e.g. 3rd Floor, 123 Broad Street, Lagos Island" value="<?= esc($employer->address ?? '') ?>">
+              <input type="text" id="company-address" name="company_address" placeholder="e.g. 3rd Floor, 123 Broad Street, Lagos Island" value="<?= esc($employer->company_address ?? '') ?>">
             </div>
             <div class="form-field">
-              <label for="company-state">State</label>
-              <select id="company-state" name="state">
+              <label for="company-state">State <span class="required-star">*</span></label>
+              <select id="company-state" name="state_id">
                 <option value="">Select state</option>
                 <?php if (isset($states) && is_array($states)): ?>
                   <?php foreach ($states as $s): ?>
-                    <option value="<?= esc($s->name) ?>" <?= (isset($employer->state) && $employer->state == $s->name) ? 'selected' : '' ?>><?= esc($s->name) ?></option>
-                  <?php endforeach; ?>
-                <?php else: ?>
-                  <?php
-                  $nigerianStates = ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'];
-                  foreach ($nigerianStates as $stateName):
-                    $sel = (isset($employer->state) && $employer->state == $stateName) ? 'selected' : '';
-                  ?>
-                    <option value="<?= esc($stateName) ?>" <?= $sel ?>><?= esc($stateName) ?></option>
+                    <option value="<?= $s->id ?>" <?= (isset($employer->state_id) && $employer->state_id == $s->id) ? 'selected' : '' ?>><?= esc($s->name) ?></option>
                   <?php endforeach; ?>
                 <?php endif; ?>
               </select>
@@ -538,8 +528,8 @@ var SECTION_TIPS = {
 };
 
 var completedSections = {
-    identity: <?= (!empty($employer->company_name) && !empty($employer->industry) && !empty($employer->company_type) && !empty($employer->num_employees)) ? 'true' : 'false' ?>,
-    contact: <?= (!empty($employer->phone) && !empty($employer->company_email) && !empty($employer->website) && !empty($employer->address) && !empty($employer->state)) ? 'true' : 'false' ?>,
+    identity: <?= (!empty($employer->company_name) && !empty($employerIndustryIds) && !empty($employer->company_size)) ? 'true' : 'false' ?>,
+    contact: <?= (!empty($employer->contact_name) && !empty($employer->contact_phone) && !empty($employer->contact_email) && !empty($employer->company_address) && !empty($employer->state_id)) ? 'true' : 'false' ?>,
     about: <?= (!empty($employer->description)) ? 'true' : 'false' ?>,
     verify: <?= (!empty($employer->rc_number) || !empty($employer->cac_document)) ? 'true' : 'false' ?>,
     social: <?= (!empty($employer->linkedin) || !empty($employer->twitter) || !empty($employer->facebook) || !empty($employer->instagram)) ? 'true' : 'false' ?>

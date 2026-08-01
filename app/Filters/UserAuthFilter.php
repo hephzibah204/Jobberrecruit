@@ -69,6 +69,21 @@ class UserAuthFilter implements FilterInterface
             return redirect()->to('login')->with('error', 'Your account is not active. Please contact support.');
         }
 
+        // Check if an admin has suspended this account (separate from the dormancy `status` field above)
+        if (!$user->active) {
+            $auth->logout();
+
+            if ($request->isAJAX()) {
+                return $response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Your account has been suspended. Please contact support.',
+                    'redirect_url' => base_url('login')
+                ])->setStatusCode(403);
+            }
+
+            return redirect()->to('login')->with('error', 'Your account has been suspended. Please contact support.');
+        }
+
         if (ENVIRONMENT !== 'development' && empty($user->email_verified_at)) {
             // Redirect to verify page
             return redirect()->to('/auth/verify-email')->with('error', 'Please verify your email to continue.');

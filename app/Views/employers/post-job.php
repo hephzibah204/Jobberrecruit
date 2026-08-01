@@ -94,7 +94,7 @@ $hasBenefit = function($value) use ($job, $isEdit) {
 <?php endif; ?>
 
 <div class="post-wrap">
-  <form id="post-job-form" method="POST" action="<?= $isEdit ? base_url('employer/jobs/edit/' . (is_array($job) ? $job['id'] : $job->id)) : base_url('employer/jobs/post') ?>" novalidate>
+  <form id="post-job-form" method="POST" action="<?= $isEdit ? base_url('employer/jobs/edit/' . (is_array($job) ? $job['id'] : $job->id)) : base_url('employer/post-job') ?>" novalidate>
     <?= csrf_field() ?>
     
     <!-- ══ 1. JOB OVERVIEW ══ -->
@@ -117,17 +117,14 @@ $hasBenefit = function($value) use ($job, $isEdit) {
               <option value="part-time" <?= $val('job_type') == 'part-time' ? 'selected' : '' ?>>Part-time</option>
               <option value="contract" <?= $val('job_type') == 'contract' ? 'selected' : '' ?>>Contract</option>
               <option value="internship" <?= $val('job_type') == 'internship' ? 'selected' : '' ?>>Internship</option>
-              <option value="temporary" <?= $val('job_type') == 'temporary' ? 'selected' : '' ?>>Temporary</option>
-              <option value="volunteer" <?= $val('job_type') == 'volunteer' ? 'selected' : '' ?>>Volunteer</option>
               <option value="freelance" <?= $val('job_type') == 'freelance' ? 'selected' : '' ?>>Freelance</option>
             </select>
           </div>
           <div class="form-field">
             <label for="job-location">Location <span class="required-star">*</span></label>
             <select id="job-location" name="state_id" required>
-              <option value="">Select state / Remote</option>
-              <option value="remote" <?= $val('state_id') == 'remote' ? 'selected' : '' ?>>Remote (Nigeria-wide)</option>
-              <?php foreach ($states as $state): 
+              <option value="">Select state</option>
+              <?php foreach ($states as $state):
                 $stateId = is_object($state) ? $state->id : ($state['id'] ?? '');
                 $stateName = is_object($state) ? $state->name : ($state['name'] ?? '');
               ?>
@@ -214,8 +211,7 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             <div class="method-group" style="gap:8px">
               <label class="method-pill"><input type="radio" name="salary_type" value="range" onchange="showSalaryFields(this.value)" <?= $val('salary_type', 'range') == 'range' ? 'checked' : '' ?>> Salary range</label>
               <label class="method-pill"><input type="radio" name="salary_type" value="fixed" onchange="showSalaryFields(this.value)" <?= $val('salary_type') == 'fixed' ? 'checked' : '' ?>> Fixed amount</label>
-              <label class="method-pill"><input type="radio" name="salary_type" value="negotiable" onchange="showSalaryFields(this.value)" <?= $val('salary_type') == 'negotiable' ? 'checked' : '' ?>> Negotiable</label>
-              <label class="method-pill"><input type="radio" name="salary_type" value="undisclosed" onchange="showSalaryFields(this.value)" <?= $val('salary_type') == 'undisclosed' ? 'checked' : '' ?>> Undisclosed</label>
+              <label class="method-pill"><input type="radio" name="salary_type" value="negotiable" onchange="showSalaryFields(this.value)" <?= ($val('salary_type') == 'negotiable' || $val('salary_type') == 'undisclosed') ? 'checked' : '' ?>> Negotiable / Undisclosed</label>
             </div>
           </div>
 
@@ -237,12 +233,14 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             <input type="number" id="salary-fixed" name="salary_fixed" placeholder="e.g. 350000" min="0" step="1000" value="<?= esc($val('salary_fixed')) ?>">
           </div>
 
+          <!-- Combined salary string actually persisted by the backend (jobs.salary) -->
+          <input type="hidden" id="salary-final" name="salary">
+
           <div class="form-field" id="salary-period-wrap">
             <label for="salary-period">Pay period</label>
             <select id="salary-period" name="salary_period">
               <option value="monthly" <?= $val('salary_period', 'monthly') == 'monthly' ? 'selected' : '' ?>>Per month</option>
-              <option value="annually" <?= $val('salary_period') == 'annually' ? 'selected' : '' ?>>Per annum</option>
-              <option value="daily" <?= $val('salary_period') == 'daily' ? 'selected' : '' ?>>Per day</option>
+              <option value="yearly" <?= $val('salary_period') == 'yearly' ? 'selected' : '' ?>>Per annum</option>
               <option value="hourly" <?= $val('salary_period') == 'hourly' ? 'selected' : '' ?>>Per hour</option>
             </select>
           </div>
@@ -299,18 +297,18 @@ $hasBenefit = function($value) use ($job, $isEdit) {
         <div class="form-grid">
           <div class="form-field">
             <label for="min-edu">Minimum education <span class="required-star">*</span></label>
-            <select id="min-edu" name="min_education" required>
+            <select id="min-edu" name="education_level" required>
               <option value="">Select minimum</option>
-              <option value="No formal education required" <?= $val('min_education') == 'No formal education required' ? 'selected' : '' ?>>No formal education required</option>
-              <option value="WAEC / SSCE" <?= $val('min_education') == 'WAEC / SSCE' ? 'selected' : '' ?>>WAEC / SSCE</option>
-              <option value="OND" <?= $val('min_education') == 'OND' ? 'selected' : '' ?>>OND</option>
-              <option value="HND" <?= $val('min_education') == 'HND' ? 'selected' : '' ?>>HND</option>
-              <option value="Bachelor's Degree" <?= ($val('min_education') == "Bachelor's Degree" || $val('min_education') == 'B.Sc / B.A / B.Eng') ? 'selected' : '' ?>>B.Sc / B.A / B.Eng</option>
-              <option value="MBBS / B.Pharm" <?= $val('min_education') == 'MBBS / B.Pharm' ? 'selected' : '' ?>>MBBS / B.Pharm</option>
-              <option value="PGD" <?= $val('min_education') == 'PGD' ? 'selected' : '' ?>>PGD</option>
-              <option value="Master's Degree" <?= ($val('min_education') == "Master's Degree" || $val('min_education') == 'M.Sc / MBA / M.A') ? 'selected' : '' ?>>M.Sc / MBA / M.A</option>
-              <option value="PhD" <?= ($val('min_education') == 'PhD' || $val('min_education') == 'Ph.D') ? 'selected' : '' ?>>Ph.D</option>
-              <option value="Professional Certification" <?= $val('min_education') == 'Professional Certification' ? 'selected' : '' ?>>Professional Certification</option>
+              <option value="No formal education required" <?= $val('education_level') == 'No formal education required' ? 'selected' : '' ?>>No formal education required</option>
+              <option value="WAEC / SSCE" <?= $val('education_level') == 'WAEC / SSCE' ? 'selected' : '' ?>>WAEC / SSCE</option>
+              <option value="OND" <?= $val('education_level') == 'OND' ? 'selected' : '' ?>>OND</option>
+              <option value="HND" <?= $val('education_level') == 'HND' ? 'selected' : '' ?>>HND</option>
+              <option value="Bachelor's Degree" <?= ($val('education_level') == "Bachelor's Degree" || $val('education_level') == 'B.Sc / B.A / B.Eng') ? 'selected' : '' ?>>B.Sc / B.A / B.Eng</option>
+              <option value="MBBS / B.Pharm" <?= $val('education_level') == 'MBBS / B.Pharm' ? 'selected' : '' ?>>MBBS / B.Pharm</option>
+              <option value="PGD" <?= $val('education_level') == 'PGD' ? 'selected' : '' ?>>PGD</option>
+              <option value="Master's Degree" <?= ($val('education_level') == "Master's Degree" || $val('education_level') == 'M.Sc / MBA / M.A') ? 'selected' : '' ?>>M.Sc / MBA / M.A</option>
+              <option value="PhD" <?= ($val('education_level') == 'PhD' || $val('education_level') == 'Ph.D') ? 'selected' : '' ?>>Ph.D</option>
+              <option value="Professional Certification" <?= $val('education_level') == 'Professional Certification' ? 'selected' : '' ?>>Professional Certification</option>
             </select>
           </div>
           <div class="form-field">
@@ -569,6 +567,16 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             </div>
           </div>
 
+          <div class="form-field">
+            <label for="contact-email">Contact email <span class="required-star">*</span></label>
+            <input type="email" id="contact-email" name="contact_email" autocomplete="off" placeholder="jobs@company.com" required value="<?= esc($val('contact_email', $employer->contact_email ?? '')) ?>">
+            <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">Used for internal application notifications — not shown to candidates.</span>
+          </div>
+          <div class="form-field">
+            <label for="contact-phone">Contact phone <span class="opt">(optional)</span></label>
+            <input type="tel" id="contact-phone" name="contact_phone" autocomplete="off" placeholder="e.g. 08012345678" value="<?= esc($val('contact_phone', $employer->contact_phone ?? '')) ?>">
+          </div>
+
           <div class="form-field full">
             <label>Application method <span class="required-star">*</span></label>
             <div class="method-group" id="app-method-group">
@@ -693,21 +701,21 @@ $hasBenefit = function($value) use ($job, $isEdit) {
           <div class="question-item" id="q-1">
             <div class="question-item-header">
               <span class="question-num">Q1</span>
-              <input type="text" name="q_text[]" placeholder="e.g. Do you have experience with Python?" style="flex:1;border:none;background:transparent;font-size:.88rem;font-family:'Inter',sans-serif;outline:none;color:var(--text)">
+              <input type="text" name="questions[1][text]" placeholder="e.g. Do you have experience with Python?" style="flex:1;border:none;background:transparent;font-size:.88rem;font-family:'Inter',sans-serif;outline:none;color:var(--text)">
               <button type="button" class="question-remove" onclick="removeQuestion(this)" aria-label="Remove question"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
             </div>
             <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px">
               <div class="form-field">
                 <label style="font-size:.76rem">Answer type</label>
-                <select name="q_type[]" onchange="toggleMCOptions(this)">
+                <select name="questions[1][type]" onchange="toggleMCOptions(this)">
                   <option value="yes_no">Yes / No</option>
-                  <option value="short_text">Short text</option>
+                  <option value="text">Short text</option>
                   <option value="multiple_choice">Multiple choice</option>
                 </select>
               </div>
               <div class="form-field">
                 <label style="font-size:.76rem">Required?</label>
-                <select name="q_required[]">
+                <select name="questions[1][is_required]">
                   <option value="1">Required</option>
                   <option value="0">Optional</option>
                 </select>
@@ -719,13 +727,13 @@ $hasBenefit = function($value) use ($job, $isEdit) {
               <p class="mc-options-label">Answer options</p>
               <div class="mc-option-rows">
                 <div class="mc-option-row">
-                  <input type="text" name="q_options[]" placeholder="Option 1" aria-label="Option 1">
+                  <input type="text" name="questions[1][options][]" placeholder="Option 1" aria-label="Option 1">
                   <button type="button" class="mc-remove-opt" onclick="removeMCOption(this)" aria-label="Remove option">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><use href="#i-x"/></svg>
                   </button>
                 </div>
                 <div class="mc-option-row">
-                  <input type="text" name="q_options[]" placeholder="Option 2" aria-label="Option 2">
+                  <input type="text" name="questions[1][options][]" placeholder="Option 2" aria-label="Option 2">
                   <button type="button" class="mc-remove-opt" onclick="removeMCOption(this)" aria-label="Remove option">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><use href="#i-x"/></svg>
                   </button>
@@ -907,7 +915,7 @@ function addQuestion() {
 
   var qInput = document.createElement('input');
   qInput.type = 'text';
-  qInput.name = 'q_text[]';
+  qInput.name = 'questions[' + qCount + '][text]';
   qInput.placeholder = 'Type your screening question...';
   qInput.style.cssText = 'flex:1;border:none;background:transparent;font-size:.88rem;font-family:Inter,sans-serif;outline:none;color:var(--text)';
 
@@ -940,16 +948,16 @@ function addQuestion() {
     ff.appendChild(la); ff.appendChild(sel);
     return ff;
   }
-  grid.appendChild(makeField('Answer type', 'q_type[]', ['Yes / No','Short text','Multiple choice'], true));
-  grid.appendChild(makeField('Required?',   'q_required[]', [{v:'1',t:'Required'},{v:'0',t:'Optional'}], false));
+  grid.appendChild(makeField('Answer type', 'questions[' + qCount + '][type]', [{v:'yes_no',t:'Yes / No'},{v:'text',t:'Short text'},{v:'multiple_choice',t:'Multiple choice'}], true));
+  grid.appendChild(makeField('Required?',   'questions[' + qCount + '][is_required]', [{v:'1',t:'Required'},{v:'0',t:'Optional'}], false));
 
   var mcWrap = document.createElement('div');
   mcWrap.className = 'mc-options-wrap';
   mcWrap.innerHTML =
     '<p class="mc-options-label">Answer options</p>' +
     '<div class="mc-option-rows">' +
-      buildMCOptionRow('Option 1') +
-      buildMCOptionRow('Option 2') +
+      buildMCOptionRow('Option 1', qCount) +
+      buildMCOptionRow('Option 2', qCount) +
     '</div>' +
     '<button type="button" class="mc-add-opt" onclick="addMCOption(this)">' +
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
@@ -960,7 +968,7 @@ function addQuestion() {
   div.appendChild(mcWrap);
   list.appendChild(div);
 
-  var typeSelect = grid.querySelector('select[name="q_type[]"]');
+  var typeSelect = grid.querySelector('select[name="questions[' + qCount + '][type]"]');
   if (typeSelect) typeSelect.addEventListener('change', function() { toggleMCOptions(this); });
   mcWrap.querySelectorAll('.mc-remove-opt').forEach(function(btn) {
     btn.addEventListener('click', function() { removeMCOption(btn); });
@@ -970,9 +978,9 @@ function removeQuestion(btn) {
   btn.closest('.question-item').remove();
 }
 
-function buildMCOptionRow(placeholder) {
+function buildMCOptionRow(placeholder, n) {
   return '<div class="mc-option-row">' +
-    '<input type="text" name="q_options[]" placeholder="' + placeholder + '" aria-label="' + placeholder + '">' +
+    '<input type="text" name="questions[' + n + '][options][]" placeholder="' + placeholder + '" aria-label="' + placeholder + '">' +
     '<button type="button" class="mc-remove-opt" onclick="removeMCOption(this)" aria-label="Remove option">' +
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
     '</button></div>';
@@ -988,8 +996,10 @@ function toggleMCOptions(select) {
 function addMCOption(btn) {
   var rows = btn.previousElementSibling;
   if (rows.children.length >= 6) return;
-  var n = rows.children.length + 1;
-  rows.insertAdjacentHTML('beforeend', buildMCOptionRow('Option ' + n));
+  var optNum = rows.children.length + 1;
+  var qItem = btn.closest('.question-item');
+  var qNum = qItem ? qItem.id.replace('q-', '') : '1';
+  rows.insertAdjacentHTML('beforeend', buildMCOptionRow('Option ' + optNum, qNum));
   rows.lastElementChild.querySelector('input').focus();
 }
 
@@ -1029,26 +1039,72 @@ function handleAnonToggle(cb) {
   if (note) note.style.display = cb.checked ? 'flex' : 'none';
 }
 
-/* ── Form submit ── */
-function publishJob(e) {
-  var title = document.getElementById('job-title');
-  if (!title || !title.value.trim()) { 
-    e.preventDefault();
-    title.focus(); 
-    alert('Please enter a job title.'); 
-    return; 
+/* ── Build the single `salary` string the backend actually persists ── */
+function computeSalaryField() {
+  var type = (document.querySelector('input[name="salary_type"]:checked') || {}).value || '';
+  var out = '';
+  if (type === 'range') {
+    var min = document.getElementById('salary-min').value.trim();
+    var max = document.getElementById('salary-max').value.trim();
+    out = max ? (min + ' - ' + max) : min;
+  } else if (type === 'fixed') {
+    out = document.getElementById('salary-fixed').value.trim();
   }
-  document.getElementById('post-job-form').submit();
+  document.getElementById('salary-final').value = out;
+}
+
+/* ── Form submit (AJAX — the controller always responds with JSON) ── */
+function publishJob(e) {
+  e.preventDefault();
+  var title = document.getElementById('job-title');
+  if (!title || !title.value.trim()) {
+    title.focus();
+    alert('Please enter a job title.');
+    return;
+  }
+  computeSalaryField();
+  submitJobForm(e.target.closest('button'));
 }
 
 function saveDraft() {
+  computeSalaryField();
+  submitJobForm(null);
+}
+
+function submitJobForm(btn) {
   var form = document.getElementById('post-job-form');
-  var input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'status';
-  input.value = 'draft';
-  form.appendChild(input);
-  form.submit();
+  var orig = btn ? btn.innerHTML : null;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Posting...'; }
+
+  $.ajax({
+    url: form.getAttribute('action'),
+    type: 'POST',
+    data: $(form).serialize(),
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        if (typeof toastr !== 'undefined') toastr.success(response.message);
+        setTimeout(function() {
+          window.location.href = '<?= base_url('employer/jobs') ?>';
+        }, 1200);
+      } else {
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+        var msg = response.message || 'Failed to post job.';
+        if (typeof toastr !== 'undefined') toastr.error(msg); else alert(msg);
+        if (response.errors) {
+          Object.keys(response.errors).forEach(function(field) {
+            if (typeof toastr !== 'undefined') toastr.error(response.errors[field]);
+          });
+        }
+      }
+    },
+    error: function(xhr) {
+      if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+      var message = 'An error occurred while posting the job.';
+      if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message;
+      if (typeof toastr !== 'undefined') toastr.error(message); else alert(message);
+    }
+  });
 }
 
 /* ── Hybrid days conditional field ── */

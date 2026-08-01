@@ -3,7 +3,7 @@
 
 :root {
   /* Ynex Template Core Variable Overrides */
-  --primary-color: 13, 96, 158; /* #0D609E */
+  --primary-color: rgb(13, 96, 158); /* #0D609E */
   --primary: #0D609E;
   --primary-hover: #0A4D7E;
   --secondary: #F08F1A;
