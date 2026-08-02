@@ -2,7 +2,7 @@
     <div class="container py-5">
         <div class="row">
             <div class="col-lg-4 mb-4 mb-lg-0">
-                <img src="<?= base_url('assets/imgs/template/logo.png'); ?>" alt="Logo" class="mb-3" style="max-height: 40px;">
+                <img src="<?= base_url('assets/imgs/template/logo.png'); ?>" alt="Logo" class="mb-3 footer-logo-img" style="max-height: 40px;">
                 <p class="text-muted">JobberRecruit is your ultimate destination for career growth and recruitment excellence. We connect top talent with the best employers.</p>
                 <div class="social-links mt-3">
                     <a href="https://facebook.com/jobberrecruit" target="_blank" rel="noopener" class="me-2 text-primary"><i class="ti ti-brand-facebook fs-20"></i></a>
@@ -36,21 +36,99 @@
                     <div class="input-group">
                         <input type="email" name="email" class="form-control" placeholder="Enter your email" required>
                         <button class="btn btn-primary" type="submit" id="btn-subscribe" aria-label="Action">
-    <i class="ti ti-send"></i>
-</button>
+                            <i class="ti ti-send"></i>
+                        </button>
                     </div>
                 </form>
                 <div id="newsletter-msg" class="mt-2 small"></div>
             </div>
         </div>
     </div>
-    <div class="border-top p-3 bg-light">
+    <div class="border-top p-3 bg-light footer-bottom-bar">
         <div class="container d-sm-flex align-items-center justify-content-between">
             <p class="mb-0 text-muted">&copy; <?= date('Y') ?> JobberRecruit. All Rights Reserved.</p>
             <p class="mb-0">Powered by <a href="https://bitbiz.ng" class="text-primary fw-semibold">BITBIZ</a></p>
         </div>
     </div>
 </footer>
+
+<style>
+    /* Premium dark dashboard footer styling */
+    .footer {
+        background-color: #0A2F57 !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    .footer p.text-muted, 
+    .footer .text-muted {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+    .footer a.text-muted {
+        color: rgba(255, 255, 255, 0.65) !important;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    .footer a.text-muted:hover {
+        color: #F08F1A !important;
+    }
+    .footer h6 {
+        color: #ffffff !important;
+    }
+    /* Make the logo white for dark background */
+    .footer .footer-logo-img {
+        filter: brightness(0) invert(1);
+    }
+    /* Center and format social links */
+    .footer .social-links a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        background-color: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        color: rgba(255, 255, 255, 0.8) !important;
+        transition: all 0.2s ease;
+    }
+    .footer .social-links a:hover {
+        background-color: #F08F1A;
+        color: #ffffff !important;
+        transform: translateY(-2px);
+    }
+    .footer-bottom-bar {
+        background-color: rgba(0, 0, 0, 0.15) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+    .footer-bottom-bar a {
+        color: #F08F1A !important;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 767.98px) {
+        .footer {
+            text-align: center;
+        }
+        .footer .col-lg-4, 
+        .footer .col-lg-2,
+        .footer .col-md-4 {
+            margin-bottom: 30px;
+        }
+        /* Hide the logo and brand description text on mobile to match public footer */
+        .footer img.footer-logo-img,
+        .footer p.text-muted:first-of-type {
+            display: none !important;
+        }
+        .footer .social-links {
+            justify-content: center;
+            display: flex;
+            gap: 8px;
+        }
+        .footer-bottom-bar .container {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

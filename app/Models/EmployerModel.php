@@ -172,7 +172,7 @@ class EmployerModel extends Model
     /**
      * Verify an employer
      */
-    public function verifyEmployer(int $employerId, int $adminId, string $notes = null): bool
+    public function verifyEmployer(int $employerId, int $adminId, ?string $notes = null): bool
     {
         $data = [
             'verification_status' => 'verified',
@@ -231,7 +231,7 @@ class EmployerModel extends Model
     /**
      * Log verification actions
      */
-    private function logVerification(int $employerId, int $adminId, string $action, string $notes = null)
+    private function logVerification(int $employerId, int $adminId, string $action, ?string $notes = null)
     {
         $logModel = model(EmployerVerificationLogModel::class);
         $logModel->insert([

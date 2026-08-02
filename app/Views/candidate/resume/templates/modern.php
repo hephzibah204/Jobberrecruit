@@ -185,6 +185,9 @@
             <?php if (!empty($resume->location)): ?>
             <div class="contact-item"><strong>Location</strong><br><?= esc($resume->location) ?></div>
             <?php endif; ?>
+            <?php if (!empty($resume->linkedin)): ?>
+            <div class="contact-item"><strong>LinkedIn</strong><br><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?></div>
+            <?php endif; ?>
         </div>
 
         <?php if (!empty($skills)): ?>
@@ -194,6 +197,34 @@
                 <?php if (!empty($skill->skill_name)): ?>
                 <span class="skill-tag"><?= esc($skill->skill_name) ?></span>
                 <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($resume->certs)): ?>
+        <div class="sidebar-section">
+            <h3>Certifications</h3>
+            <?php 
+                $certs = explode("\n", $resume->certs);
+                foreach ($certs as $cert): 
+                    $cert = trim($cert);
+                    if (empty($cert)) continue;
+            ?>
+                <span class="skill-tag"><?= esc($cert) ?></span>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($resume->languages)): ?>
+        <div class="sidebar-section">
+            <h3>Languages</h3>
+            <?php 
+                $langs = explode(",", $resume->languages);
+                foreach ($langs as $lang): 
+                    $lang = trim($lang);
+                    if (empty($lang)) continue;
+            ?>
+                <span class="skill-tag"><?= esc($lang) ?></span>
             <?php endforeach; ?>
         </div>
         <?php endif; ?>

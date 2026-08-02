@@ -8,8 +8,7 @@ use App\Models\ResumeEducationModel;
 use App\Models\ResumeSkillModel;
 use App\Services\AiService;
 use CodeIgniter\API\ResponseTrait;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use Spatie\Browsershot\Browsershot;
 
 class ResumeController extends BaseController
 {
@@ -41,11 +40,11 @@ class ResumeController extends BaseController
     {
         $origin = $this->request->getJSON(true)['origin_url'] ?? $this->request->getPost('origin_url');
         if (empty($origin) || !filter_var($origin, FILTER_VALIDATE_URL)) {
-            return $this->fail('origin_url is required and must be a valid URL');
+            return $this->fail('origin_url is required and must be a valid URL', 400);
         }
 
         if (stripos($origin, 'https://') !== 0) {
-            return $this->fail('Only https URLs are allowed for proxied images');
+            return $this->fail('Only https URLs are allowed for proxied images', 400);
         }
 
         $model = model(\App\Models\AiImageModel::class);
@@ -59,7 +58,7 @@ class ResumeController extends BaseController
         // Download, validate, store (shared logic used by spark command too)
         $result = $this->downloadAndStoreImage($origin, $model, $existing);
         if (isset($result['error'])) {
-            return $this->fail($result['error']);
+            return $this->fail($result['error'], 400);
         }
 
         return $this->respondCreated(['url' => $result['url']]);
@@ -187,10 +186,25 @@ class ResumeController extends BaseController
             $skills = $this->skillModel->where('resume_id', $id)->findAll();
         }
 
-        // Fetch candidate profile and existing resumes for the onboarding modal
-        $candidateModel = model(\App\Models\JobSeekerModel::class);
-        $candidate = $candidateModel->where('user_id', $user->id)->first();
-        $allResumes = $this->resumeModel->where('user_id', $user->id)->orderBy('updated_at', 'DESC')->findAll();
+        $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+
+        $allResumesQuery = $this->resumeModel->where('user_id', $user->id);
+        if ($id) {
+            $allResumesQuery->where('id !=', $id);
+        }
+        $allResumes = $allResumesQuery->orderBy('updated_at', 'DESC')->findAll();
+
+        $linkedin = $candidate?->linkedin_url ?? '';
+        $certs = '';
+        $languages = '';
+        if ($resume && !empty($resume->ai_optimization_meta)) {
+            $meta = json_decode($resume->ai_optimization_meta, true);
+            if (is_array($meta)) {
+                $linkedin = $meta['linkedin'] ?? $linkedin;
+                $certs = $meta['certs'] ?? '';
+                $languages = $meta['languages'] ?? '';
+            }
+        }
 
         return view('candidate/resume/builder', [
             'title'      => $resume ? 'Edit Resume' : 'Create Resume',
@@ -200,6 +214,9 @@ class ResumeController extends BaseController
             'skills'     => $skills,
             'candidate'  => $candidate,
             'allResumes' => $allResumes,
+            'linkedin'   => $linkedin,
+            'certs'      => $certs,
+            'languages'  => $languages,
         ]);
     }
 
@@ -216,6 +233,9 @@ class ResumeController extends BaseController
             return redirect()->to('candidate/resumes/build')->with('error', 'Profile not found. Please complete your profile first.');
         }
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         // Create a new resume pre-seeded from profile
         $resumeId = $this->resumeModel->insert([
             'user_id'     => $user->id,
@@ -225,6 +245,7 @@ class ResumeController extends BaseController
         ]);
 
         if (!$resumeId) {
+            $db->transRollback();
             return redirect()->to('candidate/resumes/build')->with('error', 'Could not create resume. Please try again.');
         }
 
@@ -253,6 +274,12 @@ class ResumeController extends BaseController
             ]);
         }
 
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->to('candidate/resumes/build')->with('error', 'Failed to create resume from profile. Database error.');
+        }
+
         return redirect()->to('candidate/resumes/build/' . $resumeId)
             ->with('success', 'Resume created from your profile! Complete the remaining details below.');
     }
@@ -269,6 +296,9 @@ class ResumeController extends BaseController
             return redirect()->to('candidate/resumes')->with('error', 'Resume not found.');
         }
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         // Clone the parent resume record
         $newResumeId = $this->resumeModel->insert([
             'user_id'     => $user->id,
@@ -278,6 +308,7 @@ class ResumeController extends BaseController
         ]);
 
         if (!$newResumeId) {
+            $db->transRollback();
             return redirect()->to('candidate/resumes')->with('error', 'Could not clone resume. Please try again.');
         }
 
@@ -315,6 +346,12 @@ class ResumeController extends BaseController
                 'skill_name'        => $skill->skill_name,
                 'proficiency_level' => $skill->proficiency_level,
             ]);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->to('candidate/resumes')->with('error', 'Failed to clone resume. Database error.');
         }
 
         return redirect()->to('candidate/resumes/build/' . $newResumeId)
@@ -515,7 +552,7 @@ class ResumeController extends BaseController
     {
         $user = auth()->user();
         $autosaveId = $this->request->getPost('autosave_id');
-        if (empty($autosaveId)) return $this->fail('autosave_id is required');
+        if (empty($autosaveId)) return $this->fail('autosave_id is required', 400);
         $row = $this->autosaveModel->where('id', $autosaveId)->where('user_id', $user->id)->first();
         if (!$row) return $this->failNotFound('Autosave not found');
 
@@ -573,24 +610,49 @@ class ResumeController extends BaseController
     public function save()
     {
         $user = auth()->user();
-        $id = $this->request->getPost('id');
+        $title = $this->request->getPost('title');
+        if (empty(trim($title ?? ''))) {
+            $title = 'My Professional Resume';
+        }
+
+        $id = $this->request->getPost('id') ?: null;
+        $metaData = [];
+        if ($id) {
+            $existing = $this->resumeModel->where('user_id', $user->id)->find($id);
+            if ($existing && !empty($existing->ai_optimization_meta)) {
+                $metaData = json_decode($existing->ai_optimization_meta, true) ?: [];
+            }
+        }
+        $metaData['linkedin'] = $this->request->getPost('linkedin') ?? '';
+        $metaData['certs'] = $this->request->getPost('certs') ?? '';
+        $metaData['languages'] = $this->request->getPost('languages') ?? '';
 
         $resumeData = [
             'user_id' => $user->id,
-            'title' => $this->request->getPost('title'),
+            'title' => $title,
             'summary' => $this->request->getPost('summary'),
-            'template_id' => $this->request->getPost('template_id') ?? 'classic'
+            'template_id' => $this->request->getPost('template_id') ?? 'classic',
+            'ai_optimization_meta' => json_encode($metaData)
         ];
+
+        $db = \Config\Database::connect();
+        $db->transStart();
 
         if ($id) {
             $existing = $this->resumeModel->where('user_id', $user->id)->find($id);
             if (!$existing) {
+                $db->transRollback();
                 return $this->fail('Resume not found', 404);
             }
             $this->resumeModel->update($id, $resumeData);
             $resumeId = $id;
         } else {
             $resumeId = $this->resumeModel->insert($resumeData);
+        }
+
+        if (!$resumeId) {
+            $db->transRollback();
+            return $this->fail('Failed to save resume metadata', 500);
         }
 
         // Handle Experiences
@@ -609,7 +671,7 @@ class ResumeController extends BaseController
                 'company' => $company,
                 'position' => $expPositions[$index] ?? '',
                 'description' => $expDescriptions[$index] ?? '',
-                'start_date' => $expStartDates[$index] ?? date('Y-m-d'),
+                'start_date' => !empty($expStartDates[$index]) ? $expStartDates[$index] : date('Y-m-d'),
                 'end_date' => !empty($expEndDates[$index]) ? $expEndDates[$index] : null,
                 'is_current' => in_array($index, $expCurrent) ? 1 : 0,
             ]);
@@ -649,6 +711,12 @@ class ResumeController extends BaseController
             }
         }
 
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->fail('Failed to save resume. Database transaction error.', 500);
+        }
+
         return $this->respondCreated(['id' => $resumeId, 'message' => 'Resume saved successfully']);
     }
 
@@ -674,6 +742,22 @@ class ResumeController extends BaseController
         $resume->phone = $candidate?->phone ?? '';
         $resume->location = $candidate?->location ?? '';
 
+        // Inject metadata onto the resume entity
+        $linkedin = '';
+        $certs = '';
+        $languages = '';
+        if (!empty($resume->ai_optimization_meta)) {
+            $meta = json_decode($resume->ai_optimization_meta, true);
+            if (is_array($meta)) {
+                $linkedin = $meta['linkedin'] ?? '';
+                $certs = $meta['certs'] ?? '';
+                $languages = $meta['languages'] ?? '';
+            }
+        }
+        $resume->linkedin = $linkedin;
+        $resume->certs = $certs;
+        $resume->languages = $languages;
+
         $experiences = $this->experienceModel->where('resume_id', $id)->findAll();
         $education = $this->educationModel->where('resume_id', $id)->findAll();
         $skills = $this->skillModel->where('resume_id', $id)->findAll();
@@ -685,17 +769,21 @@ class ResumeController extends BaseController
             'skills' => $skills
         ]);
 
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
+        $tempPath = WRITEPATH . 'temp/';
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+        $pdfPath = $tempPath . 'resume-' . $id . '-' . time() . '.pdf';
 
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        Browsershot::html($html)
+            ->format('A4')
+            ->margins(0, 0, 0, 0)
+            ->showBackground()
+            ->noSandbox()
+            ->save($pdfPath);
 
-        $dompdf->stream(url_title($resume->title) . ".pdf", ["Attachment" => true]);
-        exit();
+        return $this->response->download($pdfPath, null)
+            ->setFileName(url_title($resume->title) . ".pdf");
     }
 
     /**
@@ -719,6 +807,22 @@ class ResumeController extends BaseController
         $resume->email = $user->email ?? '';
         $resume->phone = $candidate?->phone ?? '';
         $resume->location = $candidate?->location ?? '';
+
+        // Inject metadata onto the resume entity
+        $linkedin = '';
+        $certs = '';
+        $languages = '';
+        if (!empty($resume->ai_optimization_meta)) {
+            $meta = json_decode($resume->ai_optimization_meta, true);
+            if (is_array($meta)) {
+                $linkedin = $meta['linkedin'] ?? '';
+                $certs = $meta['certs'] ?? '';
+                $languages = $meta['languages'] ?? '';
+            }
+        }
+        $resume->linkedin = $linkedin;
+        $resume->certs = $certs;
+        $resume->languages = $languages;
 
         $experiences = $this->experienceModel->where('resume_id', $id)->findAll();
         $education = $this->educationModel->where('resume_id', $id)->findAll();
@@ -755,5 +859,35 @@ class ResumeController extends BaseController
         </body>
         </html>";
         exit();
+    }
+
+    public function delete($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
+        }
+
+        $resume = $this->resumeModel->where('id', $id)->where('user_id', $user->id)->first();
+        if (!$resume) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Resume not found or access denied']);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // Clean up related sub-items before deleting parent
+        $this->experienceModel->where('resume_id', $id)->delete();
+        $this->educationModel->where('resume_id', $id)->delete();
+        $this->skillModel->where('resume_id', $id)->delete();
+        $this->resumeModel->delete($id);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Could not delete resume. Please try again.']);
+        }
+
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Resume deleted successfully']);
     }
 }

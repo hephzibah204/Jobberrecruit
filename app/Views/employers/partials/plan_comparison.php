@@ -1,29 +1,28 @@
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="fw-bold">Compare Subscription Plans</h5>
-        <small class="text-muted">
-            Plans give monthly credits & features. Credits reset every month.
-        </small>
+<div class="card" style="margin-top: 24px;">
+    <div class="card-head">
+        <h2 class="card-title">
+            <svg aria-hidden="true"><use href="#i-zap"/></svg>
+            Compare Subscription Plans
+        </h2>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-bordered text-center align-middle">
-            <thead class="table-light">
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <th>Features</th>
+                    <th style="padding: 12px 16px;">Features</th>
                     <?php foreach ($plans as $plan): ?>
-                        <th><?= esc($plan->name) ?></th>
+                        <th style="padding: 12px 16px; text-align: center; font-weight: 700; color: var(--brand-deep);"><?= esc($plan->name) ?></th>
                     <?php endforeach; ?>
                 </tr>
             </thead>
 
             <tbody>
-
                 <!-- Monthly Credits -->
                 <tr>
-                    <td><strong>Monthly Job Credits</strong></td>
+                    <td style="padding: 12px 16px;"><strong>Monthly Job Credits</strong></td>
                     <?php foreach ($plans as $plan): ?>
-                        <td>
+                        <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--brand-deep);">
                             <?= $plan->monthly_job_credits ?>
                         </td>
                     <?php endforeach; ?>
@@ -31,9 +30,9 @@
 
                 <!-- Credit Reset -->
                 <tr>
-                    <td><strong>Credit Reset</strong></td>
+                    <td style="padding: 12px 16px;"><strong>Credit Reset</strong></td>
                     <?php foreach ($plans as $plan): ?>
-                        <td>Monthly</td>
+                        <td style="padding: 12px 16px; text-align: center; color: var(--muted);">Monthly</td>
                     <?php endforeach; ?>
                 </tr>
 
@@ -51,14 +50,18 @@
 
                 <?php foreach ($featureLabels as $key => $label): ?>
                     <tr>
-                        <td><strong><?= $label ?></strong></td>
+                        <td style="padding: 12px 16px;"><strong><?= $label ?></strong></td>
                         <?php foreach ($plans as $plan): ?>
                             <?php
                             $features = $plan->features;
                             $enabled  = $features->$key ?? false;
                             ?>
-                            <td>
-                                <i class="ti ti-<?= $enabled ? 'check text-success' : 'x text-muted' ?>"></i>
+                            <td style="padding: 12px 16px; text-align: center;">
+                                <?php if ($enabled): ?>
+                                    <svg aria-hidden="true" style="width: 16px; height: 16px; color: var(--success); margin: 0 auto;"><use href="#i-check-c"/></svg>
+                                <?php else: ?>
+                                    <svg aria-hidden="true" style="width: 14px; height: 14px; color: var(--muted); margin: 0 auto; opacity: 0.4;"><use href="#i-x"/></svg>
+                                <?php endif; ?>
                             </td>
                         <?php endforeach; ?>
                     </tr>
@@ -66,9 +69,9 @@
 
                 <!-- Billing Type -->
                 <tr>
-                    <td><strong>Billing Type</strong></td>
+                    <td style="padding: 12px 16px;"><strong>Billing Type</strong></td>
                     <?php foreach ($plans as $plan): ?>
-                        <td class="text-capitalize">
+                        <td style="padding: 12px 16px; text-align: center; text-transform: capitalize; color: var(--muted);">
                             <?= esc($plan->billing_type) ?>
                         </td>
                     <?php endforeach; ?>
@@ -76,18 +79,17 @@
 
                 <!-- Price -->
                 <tr>
-                    <td><strong>Price</strong></td>
+                    <td style="padding: 12px 16px;"><strong>Price</strong></td>
                     <?php foreach ($plans as $plan): ?>
-                        <td>
+                        <td style="padding: 12px 16px; text-align: center; font-weight: 700; color: var(--brand-deep);">
                             <?php if ((float)$plan->price === 0.0): ?>
-                                <span class="badge bg-success-transparent">Free</span>
+                                <span class="pill pill--success" style="font-size: 0.64rem; padding: 3px 8px;">Free</span>
                             <?php else: ?>
-                                ₦<?= number_format($plan->price) ?>/month
+                                ₦<?= number_format($plan->price) ?>/mo
                             <?php endif; ?>
                         </td>
                     <?php endforeach; ?>
                 </tr>
-
             </tbody>
         </table>
     </div>

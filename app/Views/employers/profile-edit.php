@@ -1,680 +1,826 @@
-<?= $this->extend('layouts/app') ?>
+<?php $page_title = 'Company Profile · Edit'; ?>
+<?= $this->extend('layouts/employer') ?>
+
+
 
 <?= $this->section('content') ?>
-<div class="content">
-    <!-- PAGE HEADER -->
-    <div class="page-header tr-header-band">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold text-white">Edit Company Profile</h4>
-                <h6 class="text-white-50">Update your company details and logo</h6>
-            </div>
-        </div>
-        <div class="page-btn mt-0">
-            <a href="<?= base_url('employer/profile') ?>" class="btn btn-secondary"><i data-feather="arrow-left" class="me-2"></i>Back to Profile</a>
-        </div>
+<div class="page-head">
+  <div class="page-head-left">
+    <h1><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Company Profile</h1>
+    <p>This information appears on all your job listings and your employer profile page.</p>
+  </div>
+  <div class="page-actions">
+    <a href="<?= base_url('employer/profile') ?>" class="emp-btn emp-btn-outline emp-btn-sm">
+      <svg aria-hidden="true"><use href="#i-arrow-l"/></svg> Back to Profile
+    </a>
+  </div>
+</div>
+
+<!-- STICKY PROGRESS BAR -->
+<div class="progress-bar">
+  <div class="progress-inner">
+    <div class="progress-left">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <span class="progress-text" id="progress-pct">0% Completed</span>
     </div>
-
-    <!-- STICKY PROGRESS BAR -->
-    <div class="sticky-progress-container mb-4">
-        <div class="progress-inner">
-            <div class="progress-left">
-                <div class="progress-track">
-                    <div class="progress-fill" id="completionProgressFill" style="width: 0%;"></div>
-                </div>
-                <span class="progress-text" id="completionProgressText">0% Complete</span>
-            </div>
-            <span class="progress-tip" id="completionProgressTip"><i data-feather="info" style="width: 14px; height: 14px; vertical-align: middle;"></i> Tip: Keep your profile detailed to attract top talent.</span>
-        </div>
+    <div class="progress-tip">
+      <svg aria-hidden="true"><use href="#i-bulb"/></svg>
+      <span id="progress-tip-text"></span>
     </div>
+  </div>
+</div>
 
-    <form action="<?= base_url('employer/profile/edit') ?>" method="POST" class="edit-employer-form" enctype="multipart/form-data" id="editEmployerForm">
-        <?= csrf_field() ?>
+<div class="profile-page">
+  <form id="editEmployerForm" action="<?= base_url('employer/profile/edit') ?>" method="POST" enctype="multipart/form-data">
+    <?= csrf_field() ?>
+    <div class="profile-wrap">
 
-        <div class="row">
-            <div class="col-lg-12">
-                <!-- Basic Information Card -->
-                <div class="cv-card mb-4" id="cardBasicInfo">
-                    <div class="cv-card-header">
-                        <div class="cv-card-title">
-                            <i data-feather="info" class="text-primary me-2"></i>
-                            <span>Basic Information</span>
-                        </div>
-                        <span class="cv-card-done incomplete" id="badgeBasicInfo">Incomplete</span>
-                    </div>
-                    <div class="cv-card-body">
-                        <div class="form-grid">
-                            <div class="form-field">
-                                <label class="form-label">User ID Reference <span class="opt">(Read-only)</span></label>
-                                <input type="text" value="<?= old('user_id', $employer->user_id ?? '') ?>" readonly class="form-control bg-light text-muted">
-                            </div>
+      <!-- ══ 1. COMPANY IDENTITY ══ -->
+      <details class="cv-card" aria-labelledby="h-identity" open>
+        <summary class="cv-card-header">
+          <h2 class="cv-card-title" id="h-identity">
+            <svg aria-hidden="true"><use href="#i-building"/></svg> Company Identity
+          </h2>
+          <span class="cv-card-done incomplete">Incomplete</span>
+          <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="cv-card-body">
+          <div class="cv-card-hint">Your company name and logo appear on every job listing and search result. Candidates make instant decisions based on these.</div>
 
-                            <div class="form-field">
-                                <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                                <input type="text" name="company_name" value="<?= old('company_name', $employer->company_name ?? '') ?>" required placeholder="e.g. Acme Corporation" class="form-control calculate-progress">
-                            </div>
-                        </div>
-
-                        <div class="form-grid mt-3">
-                            <div class="form-field">
-                                <label class="form-label">Industry <span class="text-danger">*</span></label>
-                                <select class="select select2-industry calculate-progress" name="industry_ids[]" multiple required id="industrySelect">
-                                    <?php foreach ($industries as $industry): ?>
-                                        <optgroup label="<?= esc($industry->name) ?>">
-                                            <?php foreach ($industry->children as $child): ?>
-                                                <option value="<?= $child->id ?>"
-                                                    <?= in_array($child->id, old('industry_ids', $employerIndustryIds ?? [])) ? 'selected' : '' ?>>
-                                                    <?= esc($child->name) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </optgroup>
-                                    <?php endforeach; ?>
-                                </select>
-                                <small class="form-text text-muted">Select one or more industries matching your sector.</small>
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">Company Size <span class="text-danger">*</span></label>
-                                <select class="select calculate-progress" name="company_size" required>
-                                    <option value="" selected disabled>Select Size</option>
-                                    <option value="1-10" <?= (old('company_size', $employer->company_size ?? '') == '1-10') ? 'selected' : '' ?>>1-10 employees</option>
-                                    <option value="11-50" <?= (old('company_size', $employer->company_size ?? '') == '11-50') ? 'selected' : '' ?>>11-50 employees</option>
-                                    <option value="51-200" <?= (old('company_size', $employer->company_size ?? '') == '51-200') ? 'selected' : '' ?>>51-200 employees</option>
-                                    <option value="201-500" <?= (old('company_size', $employer->company_size ?? '') == '201-500') ? 'selected' : '' ?>>201-500 employees</option>
-                                    <option value="501-1000" <?= (old('company_size', $employer->company_size ?? '') == '501-1000') ? 'selected' : '' ?>>501-1000 employees</option>
-                                    <option value="1000+" <?= (old('company_size', $employer->company_size ?? '') == '1000+') ? 'selected' : '' ?>>1000+ employees</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-grid mt-3">
-                            <div class="form-field">
-                                <label class="form-label">Website URL <span class="opt">(Optional)</span></label>
-                                <input type="text" name="website" value="<?= old('website', $employer->website ?? '') ?>" placeholder="https://example.com" class="form-control calculate-progress">
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">State / Location <span class="text-danger">*</span></label>
-                                <select class="select calculate-progress" name="state_id" required>
-                                    <option value="" selected disabled>Select State</option>
-                                    <?php foreach ($states as $state): ?>
-                                        <option value="<?= $state->id ?>" <?= (old('state_id', $employer->state_id ?? '') == $state->id) ? 'selected' : '' ?>>
-                                            <?= esc($state->name) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-field mt-3">
-                            <label class="form-label">Company Description <span class="opt">(Detailed background)</span></label>
-                            <textarea name="description" rows="4" placeholder="Describe your company's mission, culture, and projects..." class="form-control calculate-progress"><?= old('description', $employer->description ?? '') ?></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contact Information Card -->
-                <div class="cv-card mb-4" id="cardContactInfo">
-                    <div class="cv-card-header">
-                        <div class="cv-card-title">
-                            <i data-feather="mail" class="text-primary me-2"></i>
-                            <span>Contact Information</span>
-                        </div>
-                        <span class="cv-card-done incomplete" id="badgeContactInfo">Incomplete</span>
-                    </div>
-                    <div class="cv-card-body">
-                        <div class="form-grid">
-                            <div class="form-field">
-                                <label class="form-label">Contact Name <span class="text-danger">*</span></label>
-                                <input type="text" name="contact_name" value="<?= old('contact_name', $employer->contact_name ?? '') ?>" required placeholder="e.g. John Doe" class="form-control calculate-progress">
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">Contact Email <span class="text-danger">*</span></label>
-                                <input type="email" name="contact_email" value="<?= old('contact_email', $employer->contact_email ?? '') ?>" required placeholder="e.g. careers@company.com" class="form-control calculate-progress">
-                            </div>
-                        </div>
-
-                        <div class="form-grid mt-3">
-                            <div class="form-field">
-                                <label class="form-label">Contact Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" name="contact_phone" value="<?= old('contact_phone', $employer->contact_phone ?? '') ?>" required placeholder="e.g. +234..." class="form-control calculate-progress">
-                            </div>
-
-                            <div class="form-field">
-                                <label class="form-label">Company Physical Address <span class="text-danger">*</span></label>
-                                <input type="text" name="company_address" value="<?= old('company_address', $employer->company_address ?? '') ?>" required placeholder="e.g. Plot 15, Admiralty Way, Lekki" class="form-control calculate-progress">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Branding & Logo Card -->
-                <div class="cv-card mb-4" id="cardLogo">
-                    <div class="cv-card-header">
-                        <div class="cv-card-title">
-                            <i data-feather="image" class="text-primary me-2"></i>
-                            <span>Branding &amp; Company Logo</span>
-                        </div>
-                        <span class="cv-card-done incomplete" id="badgeLogo">Incomplete</span>
-                    </div>
-                    <div class="cv-card-body">
-                        <div class="logo-upload">
-                            <div class="logo-preview-wrapper text-center">
-                                <?php if (!empty($employer->logo)): ?>
-                                    <div class="mb-2 position-relative d-inline-block" id="currentLogoContainer">
-                                        <img src="<?= base_url($employer->logo) ?>" alt="Company Logo" class="img-thumbnail" style="max-height: 100px;" id="currentLogo">
-                                        <div class="form-check mt-2 justify-content-center">
-                                            <input class="form-check-input" type="checkbox" name="remove_logo" value="1" id="removeLogo">
-                                            <label class="form-check-label text-muted small" for="removeLogo">Remove logo</label>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <div id="logoPreview" class="mt-2" style="display: none;">
-                                    <img id="logoPreviewImg" class="img-thumbnail" style="max-height: 100px;" alt="">
-                                </div>
-                            </div>
-
-                            <div class="logo-upload-body flex-grow-1">
-                                <div class="image-upload-wrapper border rounded-3 p-3 bg-light text-center cursor-pointer" onclick="document.getElementById('logoInput').click()">
-                                    <i data-feather="upload-cloud" class="text-muted mb-2" style="width: 32px; height: 32px;"></i>
-                                    <p class="mb-1 text-dark fw-semibold small">Click to upload company logo</p>
-                                    <p class="text-muted small mb-0">Supported formats: JPG, PNG, GIF (Max 2MB)</p>
-                                    <input type="file" name="logo" accept=".jpg,.jpeg,.png,.gif" id="logoInput" class="d-none">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info mt-3 small border border-info-20">
-                            <i data-feather="info" class="me-2 text-info" style="width: 14px; height: 14px;"></i>
-                            <strong>CAC Certificate Verification:</strong> Employers are required to upload business documents to publish premium openings. Access the verification wizard <a href="<?= base_url('employer/profile/upload-document') ?>" class="alert-link fw-bold">here</a>.
-                        </div>
-                    </div>
-                </div>
+          <!-- Company Logo Upload -->
+          <div class="logo-upload">
+            <?php
+            $hasLogo = false;
+            $logoSrc = '';
+            if (!empty($employer->logo)) {
+                if (filter_var($employer->logo, FILTER_VALIDATE_URL) || str_starts_with($employer->logo, 'http')) {
+                    $hasLogo = true;
+                    $logoSrc = $employer->logo;
+                } elseif (file_exists(FCPATH . $employer->logo)) {
+                    $hasLogo = true;
+                    $logoSrc = base_url($employer->logo);
+                }
+            }
+            ?>
+            <label for="logo-input" class="logo-preview" id="logo-preview" title="Click to upload company logo">
+              <?php if ($hasLogo): ?>
+                <img src="<?= esc($logoSrc) ?>" alt="Company logo preview">
+              <?php else: ?>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              <?php endif; ?>
+              <div class="logo-overlay"><svg aria-hidden="true"><use href="#i-download"/></svg></div>
+            </label>
+            <input type="file" id="logo-input" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="sr-only" onchange="previewLogo(this)">
+            <div class="logo-upload-body">
+              <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" onclick="document.getElementById('logo-input').click()">
+                <svg aria-hidden="true"><use href="#i-download"/></svg> Upload logo
+              </button>
+              <p>PNG, JPG, or SVG · Square recommended · Max 2MB</p>
+              <p>Shown on job listings, search results, and your profile page</p>
             </div>
-        </div>
+          </div>
 
-        <div class="col-lg-12">
-            <div class="d-flex align-items-center justify-content-end gap-2 mb-5">
-                <a href="<?= base_url('employer/profile') ?>" class="btn btn-secondary px-4">Cancel</a>
-                <button type="submit" class="btn btn-primary px-4" id="submitBtn">
-                    <span class="btn-text">Update Profile</span>
-                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                </button>
+          <div class="form-grid">
+            <div class="form-field full">
+              <label for="company-name">Company name <span class="opt">(contact us to change after setting)</span></label>
+              <input type="text" id="company-name" name="company_name" autocomplete="organization" placeholder="e.g. Dangote Group Plc" value="<?= esc($employer->company_name ?? '') ?>">
+              <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">
+                🔒 Once set, <a href="<?= base_url('contact-us') ?>">contact us</a> to request a name change
+              </span>
             </div>
+            <div class="form-field full">
+              <label for="company-tagline">Company tagline <span class="opt">(optional — shown below your name on listings)</span></label>
+              <input type="text" id="company-tagline" name="tagline" autocomplete="off" placeholder="e.g. Africa's leading technology platform" maxlength="120" value="<?= esc($employer->tagline ?? '') ?>">
+            </div>
+            <div class="form-field full">
+              <label>Industry <span class="required-star">*</span></label>
+              <div class="pref-pill-group">
+                <?php if (!empty($industries)): ?>
+                  <?php foreach ($industries as $parentInd): ?>
+                    <?php if (!empty($parentInd->children)): ?>
+                      <?php foreach ($parentInd->children as $childInd): ?>
+                        <label class="pref-pill">
+                          <input type="checkbox" name="industry_ids[]" value="<?= $childInd->id ?>" <?= in_array($childInd->id, $employerIndustryIds ?? []) ? 'checked' : '' ?>>
+                          <?= esc($childInd->name) ?>
+                        </label>
+                      <?php endforeach; ?>
+                    <?php else: ?>
+                      <label class="pref-pill">
+                        <input type="checkbox" name="industry_ids[]" value="<?= $parentInd->id ?>" <?= in_array($parentInd->id, $employerIndustryIds ?? []) ? 'checked' : '' ?>>
+                        <?= esc($parentInd->name) ?>
+                      </label>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="company-type">Company type</label>
+              <select id="company-type" name="company_type">
+                <option value="">Select type</option>
+                <?php
+                $types = ['Startup', 'SME (Small & Medium Enterprise)', 'Large Corporation', 'Multinational', 'Government Agency / Parastatal', 'NGO / Non-profit', 'Recruiting / Staffing Firm', 'Cooperative', 'Other'];
+                foreach ($types as $type):
+                  $sel = (isset($employer->company_type) && $employer->company_type == $type) ? 'selected' : '';
+                ?>
+                  <option value="<?= esc($type) ?>" <?= $sel ?>><?= esc($type) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="founded-year">Year founded <span class="opt">(optional)</span></label>
+              <select id="founded-year" name="founded_year">
+                <option value="">Select year</option>
+                <?php
+                $currYear = (int) date('Y');
+                for ($y = $currYear; $y >= 1950; $y--):
+                  $sel = (isset($employer->founded_year) && $employer->founded_year == $y) ? 'selected' : '';
+                ?>
+                  <option value="<?= $y ?>" <?= $sel ?>><?= $y ?></option>
+                <?php endfor; ?>
+                <option value="Before 1950" <?= (isset($employer->founded_year) && $employer->founded_year == 'Before 1950') ? 'selected' : '' ?>>Before 1950</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="num-employees">Number of employees <span class="required-star">*</span></label>
+              <select id="num-employees" name="company_size" required>
+                <option value="">Select range</option>
+                <?php
+                $ranges = ['1–5', '6–10', '11–50', '51–200', '201–500', '501–1,000', '1,001–5,000', '5,000+'];
+                foreach ($ranges as $range):
+                  $sel = (isset($employer->company_size) && $employer->company_size == $range) ? 'selected' : '';
+                ?>
+                  <option value="<?= esc($range) ?>" <?= $sel ?>><?= esc($range) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <div class="form-field full">
+              <label>Company-wide remote work policy</label>
+              <p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">This appears on your employer profile and gives candidates an immediate sense of your working culture.</p>
+              <div class="pref-pill-group">
+                <?php
+                $policies = [
+                  'fully_remote' => 'Fully remote',
+                  'hybrid' => 'Hybrid',
+                  'fully_onsite' => 'Fully on-site',
+                  'flexible_by_role' => 'Flexible by role',
+                  'not_specified' => 'Prefer not to specify'
+                ];
+                $currentPolicy = $employer->remote_policy ?? 'not_specified';
+                foreach ($policies as $val => $lbl):
+                ?>
+                  <label class="pref-pill">
+                    <input type="radio" name="remote_policy" value="<?= esc($val) ?>" <?= ($currentPolicy == $val) ? 'checked' : '' ?>>
+                    <?= esc($lbl) ?>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="emp-btn emp-btn-primary" onclick="saveSection('identity', event)">
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Save identity
+            </button>
+            <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+          </div>
         </div>
-    </form>
+      </details>
+
+      <!-- ══ 2. CONTACT & LOCATION ══ -->
+      <details class="cv-card" aria-labelledby="h-contact">
+        <summary class="cv-card-header">
+          <h2 class="cv-card-title" id="h-contact">
+            <svg aria-hidden="true"><use href="#i-phone"/></svg> Contact &amp; Location
+          </h2>
+          <span class="cv-card-done incomplete">Incomplete</span>
+          <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="cv-card-body">
+          <div class="cv-card-hint">Candidates verify companies are real and legitimate using this information. A complete contact section increases trust.</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="contact-name">Contact person name <span class="required-star">*</span></label>
+              <input type="text" id="contact-name" name="contact_name" placeholder="e.g. Jane Doe" value="<?= esc($employer->contact_name ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="contact-phone">Contact phone <span class="required-star">*</span></label>
+              <input type="tel" id="contact-phone" name="contact_phone" placeholder="e.g. 07038399120" value="<?= esc($employer->contact_phone ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="contact-email">Contact email <span class="required-star">*</span></label>
+              <input type="email" id="contact-email" name="contact_email" placeholder="e.g. hr@company.com" value="<?= esc($employer->contact_email ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="company-website">Website</label>
+              <input type="url" id="company-website" name="website" placeholder="https://yourcompany.com" value="<?= esc($employer->website ?? '') ?>">
+            </div>
+            <div class="form-field full">
+              <label for="company-address">Office address</label>
+              <input type="text" id="company-address" name="company_address" placeholder="e.g. 3rd Floor, 123 Broad Street, Lagos Island" value="<?= esc($employer->company_address ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="company-state">State <span class="required-star">*</span></label>
+              <select id="company-state" name="state_id">
+                <option value="">Select state</option>
+                <?php if (isset($states) && is_array($states)): ?>
+                  <?php foreach ($states as $s): ?>
+                    <option value="<?= $s->id ?>" <?= (isset($employer->state_id) && $employer->state_id == $s->id) ? 'selected' : '' ?>><?= esc($s->name) ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="emp-btn emp-btn-primary" onclick="saveSection('contact', event)">
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Save contact info
+            </button>
+            <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- ══ 3. ABOUT THE COMPANY ══ -->
+      <details class="cv-card" aria-labelledby="h-about">
+        <summary class="cv-card-header">
+          <h2 class="cv-card-title" id="h-about">
+            <svg aria-hidden="true"><use href="#i-briefcase"/></svg> About the Company
+          </h2>
+          <span class="cv-card-done incomplete">Incomplete</span>
+          <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="cv-card-body">
+          <div class="cv-card-hint">Candidates read your company description before deciding whether to apply. A compelling description significantly improves application quality.</div>
+          <div class="form-grid">
+            <div class="form-field full">
+              <label for="company-desc">Company description</label>
+              <textarea id="company-desc" name="description" rows="6" maxlength="1200"
+                placeholder="Describe what your company does, your mission, values, and what makes it a great place to work."
+                oninput="updateCount('company-desc','desc-count',1200)"><?= esc($employer->description ?? '') ?></textarea>
+              <div class="char-count"><span id="desc-count"><?= strlen($employer->description ?? '') ?></span> / 1,200</div>
+            </div>
+            <div class="form-field full">
+              <label>Benefits &amp; perks</label>
+              <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Select what your company offers. Candidates filter and compare employers by these.</p>
+
+              <?php
+              $selectedBenefits = [];
+              if (isset($employer->benefits)) {
+                  if (is_array($employer->benefits)) {
+                      $selectedBenefits = $employer->benefits;
+                  } elseif (is_string($employer->benefits)) {
+                      $decoded = json_decode($employer->benefits, true);
+                      if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                          $selectedBenefits = $decoded;
+                      } else {
+                          $selectedBenefits = explode(',', $employer->benefits);
+                      }
+                  }
+              }
+              $selectedBenefits = array_map('trim', $selectedBenefits);
+              ?>
+
+              <p style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Health &amp; Insurance</p>
+              <div class="pref-pill-group" style="margin-bottom:14px">
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="hmo" <?= in_array('hmo', $selectedBenefits) ? 'checked' : '' ?>> HMO / Health Insurance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="hmo_dependants" <?= in_array('hmo_dependants', $selectedBenefits) ? 'checked' : '' ?>> HMO covers dependants</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="life_insurance" <?= in_array('life_insurance', $selectedBenefits) ? 'checked' : '' ?>> Life Insurance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="dental_vision" <?= in_array('dental_vision', $selectedBenefits) ? 'checked' : '' ?>> Dental &amp; Vision</label>
+              </div>
+
+              <p style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Financial</p>
+              <div class="pref-pill-group" style="margin-bottom:14px">
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="pension" <?= in_array('pension', $selectedBenefits) ? 'checked' : '' ?>> Contributory Pension (CPS)</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="13th_month" <?= in_array('13th_month', $selectedBenefits) ? 'checked' : '' ?>> 13th Month Salary</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="performance_bonus" <?= in_array('performance_bonus', $selectedBenefits) ? 'checked' : '' ?>> Performance Bonus</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="profit_sharing" <?= in_array('profit_sharing', $selectedBenefits) ? 'checked' : '' ?>> Profit Sharing</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="stock_options" <?= in_array('stock_options', $selectedBenefits) ? 'checked' : '' ?>> Stock Options / Equity</label>
+              </div>
+
+              <p style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Allowances</p>
+              <div class="pref-pill-group" style="margin-bottom:14px">
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="transport" <?= in_array('transport', $selectedBenefits) ? 'checked' : '' ?>> Transport Allowance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="housing" <?= in_array('housing', $selectedBenefits) ? 'checked' : '' ?>> Housing Allowance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="meal" <?= in_array('meal', $selectedBenefits) ? 'checked' : '' ?>> Meal Allowance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="airtime" <?= in_array('airtime', $selectedBenefits) ? 'checked' : '' ?>> Airtime / Data Allowance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="company_car" <?= in_array('company_car', $selectedBenefits) ? 'checked' : '' ?>> Company Car / Vehicle</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="relocation" <?= in_array('relocation', $selectedBenefits) ? 'checked' : '' ?>> Relocation Support</label>
+              </div>
+
+              <p style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Leave &amp; Time</p>
+              <div class="pref-pill-group" style="margin-bottom:14px">
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="annual_leave_15" <?= in_array('annual_leave_15', $selectedBenefits) ? 'checked' : '' ?>> Annual Leave 15+ days</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="annual_leave_21" <?= in_array('annual_leave_21', $selectedBenefits) ? 'checked' : '' ?>> Annual Leave 21+ days</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="flex_hours" <?= in_array('flex_hours', $selectedBenefits) ? 'checked' : '' ?>> Flexible Working Hours</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="parental_leave" <?= in_array('parental_leave', $selectedBenefits) ? 'checked' : '' ?>> Paid Parental Leave</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="sabbatical" <?= in_array('sabbatical', $selectedBenefits) ? 'checked' : '' ?>> Sabbatical Leave</label>
+              </div>
+
+              <p style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Growth &amp; Wellbeing</p>
+              <div class="pref-pill-group">
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="training_budget" <?= in_array('training_budget', $selectedBenefits) ? 'checked' : '' ?>> Training &amp; Development Budget</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="mentorship" <?= in_array('mentorship', $selectedBenefits) ? 'checked' : '' ?>> Mentorship Programme</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="gym" <?= in_array('gym', $selectedBenefits) ? 'checked' : '' ?>> Gym / Wellness Allowance</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="team_retreats" <?= in_array('team_retreats', $selectedBenefits) ? 'checked' : '' ?>> Team Retreats / Offsites</label>
+                <label class="pref-pill"><input type="checkbox" name="benefits[]" value="paid_certifications" <?= in_array('paid_certifications', $selectedBenefits) ? 'checked' : '' ?>> Paid Certifications</label>
+              </div>
+            </div>
+
+            <div class="form-field full">
+              <label for="hiring-process">Our hiring process <span class="opt">(optional — shown on your public profile)</span></label>
+              <textarea id="hiring-process" name="hiring_process" rows="3"
+                placeholder="e.g. Stage 1: CV review (5 days). Stage 2: 30-min video interview. Stage 3: Technical assessment."
+                oninput="updateCount('hiring-process','hiring-count',500)"><?= esc($employer->hiring_process ?? '') ?></textarea>
+              <div class="char-count"><span id="hiring-count"><?= strlen($employer->hiring_process ?? '') ?></span> / 500</div>
+              <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">Transparency here improves your application completion rate.</span>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="emp-btn emp-btn-primary" onclick="saveSection('about', event)">
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Save description
+            </button>
+            <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- ══ 4. VERIFICATION — VERIFIED EMPLOYER BADGE ══ -->
+      <details class="cv-card" aria-labelledby="h-verify">
+        <summary class="cv-card-header">
+          <h2 class="cv-card-title" id="h-verify">
+            <svg aria-hidden="true"><use href="#i-shield"/></svg> Verification
+            <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(unlocks Verified Employer badge)</span>
+          </h2>
+          <span class="cv-card-done incomplete">Incomplete</span>
+          <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="cv-card-body">
+
+          <!-- Verified Employer Badge Preview -->
+          <div class="verified-banner">
+            <svg aria-hidden="true"><use href="#i-shield"/></svg>
+            <div class="verified-banner-body">
+              <strong>Verified Employer Badge</strong>
+              <p>Once verified, a ✓ Verified badge appears on all your job listings. Candidates trust verified employers and are 3× more likely to apply.</p>
+            </div>
+            <span class="verified-tag">
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Verified
+            </span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="rc-number">RC Number / CAC Registration number</label>
+              <input type="text" id="rc-number" name="rc_number" autocomplete="off" placeholder="e.g. RC123456" value="<?= esc($employer->rc_number ?? '') ?>">
+              <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">Your Corporate Affairs Commission (CAC) registration number. We cross-reference this with the CAC public register.</span>
+            </div>
+
+            <!-- CAC Document Upload -->
+            <div class="form-field full">
+              <label>CAC Certificate / Incorporation document</label>
+              <?php
+              $hasCac = !empty($employer->cac_document);
+              $cacName = $hasCac ? basename($employer->cac_document) : 'document.pdf';
+              ?>
+              <div class="doc-upload-zone" id="cac-drop-zone"
+                   onclick="document.getElementById('cac-file-input').click()"
+                   ondragover="handleDragOver(event)"
+                   ondragleave="handleDragLeave(event)"
+                   ondrop="handleDrop(event,'cac-file-input','cac-file-info')"
+                   role="button" tabindex="0" aria-label="Upload CAC document"
+                   onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('cac-file-input').click()">
+                <input type="file" id="cac-file-input" name="cac_document"
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       class="sr-only"
+                       onchange="showFileInfo(this,'cac-file-info','cac-drop-zone')">
+                <div class="doc-upload-idle" id="cac-idle" style="<?= $hasCac ? 'display:none;' : '' ?>">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted);margin-bottom:10px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3"/></svg>
+                  <p style="font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:4px">Click to upload or drag and drop</p>
+                  <p style="font-size:.78rem;color:var(--muted)">CAC Certificate of Incorporation, Business Name Certificate, or Status Report</p>
+                  <p style="font-size:.75rem;color:var(--muted);margin-top:4px">PDF, JPG, or PNG · Max 5MB · Must be a clear, unaltered official document</p>
+                </div>
+                <div class="doc-upload-done" id="cac-file-info" style="<?= $hasCac ? 'display:flex;' : 'display:none;' ?>">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--success)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span class="doc-file-name" id="cac-file-name"><?= esc($cacName) ?></span>
+                  <span class="doc-file-size" id="cac-file-size">Uploaded</span>
+                  <button type="button" class="doc-remove-btn" onclick="removeFile('cac-file-input','cac-file-info','cac-idle',event)" aria-label="Remove uploaded document">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
+              <span style="font-size:.76rem;color:var(--muted);margin-top:6px;display:block">
+                🔒 Uploaded documents are reviewed only by the JobberRecruit verification team — never shared with candidates.
+              </span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="emp-btn emp-btn-primary" onclick="saveSection('verify', event)">
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Submit for verification
+            </button>
+            <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Verification takes up to 24 hours</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- ══ 5. SOCIAL PROFILES ══ -->
+      <details class="cv-card" aria-labelledby="h-social">
+        <summary class="cv-card-header">
+          <h2 class="cv-card-title" id="h-social">
+            <svg aria-hidden="true"><use href="#i-globe"/></svg> Social Profiles
+            <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span>
+          </h2>
+          <span class="cv-card-done optional">Optional</span>
+          <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="cv-card-body">
+          <div class="cv-card-hint">Candidates research your company on social media before applying. Adding your social links builds credibility.</div>
+          <div class="form-grid cols-1">
+            <div class="form-field">
+              <label for="social-linkedin">
+                LinkedIn company page
+              </label>
+              <input type="url" id="social-linkedin" name="linkedin" placeholder="https://linkedin.com/company/yourcompany" value="<?= esc($employer->linkedin ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="social-twitter">
+                Twitter / X
+              </label>
+              <input type="url" id="social-twitter" name="twitter" placeholder="https://x.com/yourcompany" value="<?= esc($employer->twitter ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="social-facebook">
+                Facebook page
+              </label>
+              <input type="url" id="social-facebook" name="facebook" placeholder="https://facebook.com/yourcompany" value="<?= esc($employer->facebook ?? '') ?>">
+            </div>
+            <div class="form-field">
+              <label for="social-instagram">
+                Instagram
+              </label>
+              <input type="url" id="social-instagram" name="instagram" placeholder="https://instagram.com/yourcompany" value="<?= esc($employer->instagram ?? '') ?>">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="emp-btn emp-btn-primary" onclick="saveSection('social', event)">
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Save social profiles
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <!-- BOTTOM ACTIONS -->
+      <div class="bottom-actions">
+        <a href="<?= base_url('employer/profile') ?>" class="emp-btn emp-btn-outline emp-btn-lg">
+          <svg aria-hidden="true"><use href="#i-eye"/></svg> Preview public profile
+        </a>
+        <button type="button" class="emp-btn emp-btn-primary emp-btn-lg" onclick="saveAllSections(event)">
+          <svg aria-hidden="true"><use href="#i-check"/></svg> Save all changes
+        </button>
+      </div>
+
+    </div>
+  </form>
 </div>
 <?= $this->endSection() ?>
 
-<?= $this->section('styles') ?>
-<style>
-    /* ═══════════════════════════════════════════════════════════════════
-       EMPLOYER PROFILE EDITOR STYLING — Premium Blue & Orange Accents
-       ═══════════════════════════════════════════════════════════════════ */
-    :root {
-        --brand:        #0D609E;
-        --brand-dark:   #0A4D7E;
-        --brand-deep:   #07304F;
-        --brand-light:  #E6F0F9;
-        --accent:       #F08F1A;
-        --accent-dark:  #C8750E;
-        --border:       #e2e8f0;
-        --radius:       12px;
-        --transition:   .2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .tr-header-band {
-        background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-dark) 50%, var(--brand) 100%);
-        padding: 24px 28px;
-        border-radius: 12px;
-        margin-bottom: 28px;
-        box-shadow: 0 4px 20px rgba(13, 96, 158, 0.15);
-    }
-
-    /* Sticky progress tracking */
-    .sticky-progress-container {
-        position: sticky;
-        top: 70px;
-        z-index: 900;
-        background: #ffffff;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 20px;
-        box-shadow: 0 4px 14px rgba(13, 96, 158, 0.05);
-    }
-
-    .progress-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-    .progress-left {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        flex: 1;
-        min-width: 260px;
-    }
-    .progress-track {
-        flex: 1;
-        height: 8px;
-        background: var(--border);
-        border-radius: 20px;
-        overflow: hidden;
-    }
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--brand), #1a7fd4);
-        border-radius: 20px;
-        transition: width .4s ease;
-    }
-    .progress-text {
-        font-size: .85rem;
-        font-weight: 700;
-        color: var(--brand-deep);
-        white-space: nowrap;
-    }
-    .progress-tip {
-        font-size: .78rem;
-        color: var(--accent-dark);
-        font-weight: 600;
-    }
-
-    /* Form and card configurations */
-    .cv-card {
-        background: #ffffff;
-        border: 1px solid var(--border);
-        border-left: 4px solid var(--accent);
-        border-radius: 12px;
-        overflow: hidden;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 18px rgba(13, 96, 158, 0.04);
-        transition: var(--transition);
-    }
-    .cv-card:hover {
-        border-color: var(--brand);
-    }
-    .cv-card.is-complete {
-        border-left-color: var(--brand);
-    }
-
-    .cv-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 18px 24px;
-        border-bottom: 1px solid var(--border);
-        background: #fafafa;
-    }
-    .cv-card-title {
-        display: flex;
-        align-items: center;
-        font-family: 'Sora', sans-serif;
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--brand-deep);
-    }
-    .cv-card-done {
-        font-size: .72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        padding: 3px 9px;
-        border-radius: 20px;
-    }
-    .cv-card-done.complete {
-        background: var(--brand-light);
-        color: var(--brand);
-        border: 1px solid rgba(13, 96, 158, 0.2);
-    }
-    .cv-card-done.incomplete {
-        background: #f1f5f9;
-        color: #64748b;
-        border: 1px solid var(--border);
-    }
-
-    .cv-card-body {
-        padding: 24px;
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .form-label {
-        font-size: .85rem;
-        font-weight: 600;
-        color: var(--brand-deep);
-        margin: 0;
-    }
-    .form-label .opt {
-        font-weight: 400;
-        color: #64748b;
-        font-size: .78rem;
-    }
-
-    /* Style improvements for fields */
-    .form-control, select {
-        min-height: 42px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 14px;
-        font-size: .9rem;
-        transition: var(--transition);
-        background-color: #f8fafc;
-    }
-    .form-control:focus, select:focus {
-        border-color: var(--brand);
-        background-color: #ffffff;
-        box-shadow: 0 0 0 3px rgba(13, 96, 158, 0.1);
-        outline: none;
-    }
-    textarea.form-control {
-        min-height: 120px;
-    }
-
-    /* Custom upload design */
-    .cursor-pointer {
-        cursor: pointer;
-    }
-    .image-upload-wrapper {
-        border: 2px dashed var(--border) !important;
-        transition: var(--transition);
-    }
-    .image-upload-wrapper:hover {
-        border-color: var(--brand) !important;
-        background-color: var(--brand-light) !important;
-    }
-
-    .logo-upload {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .border-info-20 {
-        border-color: rgba(6, 182, 212, 0.2) !important;
-    }
-
-    @media (max-width: 768px) {
-        .form-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-        .tr-header-band {
-            padding: 18px 20px;
-        }
-    }
-</style>
+<?= $this->section('mobile_cta') ?>
+<a href="<?= base_url('employer/profile') ?>" class="emp-btn emp-btn-outline">
+  <svg aria-hidden="true"><use href="#i-eye"/></svg> Preview
+</a>
+<button type="button" class="emp-btn emp-btn-primary" onclick="saveAllSections(event)">
+  <svg aria-hidden="true"><use href="#i-check"/></svg> Save All
+</button>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    const websiteInput = $('input[name="website"]');
+/* ── Logo preview ── */
+function previewLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('logo-preview');
+    preview.innerHTML = '<img src="' + e.target.result + '" alt="Company logo preview"><div class="logo-overlay"><svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
 
-    // Feathers icon replace helper
-    if (typeof feather !== 'undefined') {
-        feather.replace();
-    }
+/* ── Character counter ── */
+function updateCount(fieldId, countId, max) {
+  var el = document.getElementById(fieldId);
+  var counter = document.getElementById(countId);
+  if (el && counter) counter.textContent = el.value.length;
+}
 
-    // Input-level website validation on focusout
-    websiteInput.on('blur', function() {
-        let value = $(this).val().trim();
+/* ── Section ordering, weights and tips ── */
+var SECTION_ORDER = ['identity','contact','about','verify','social'];
+var sectionWeights = { identity:25, contact:20, about:20, verify:20, social:15 };
+var SECTION_TIPS = {
+  identity: 'Add your logo & company name for +25% — shown on every listing',
+  contact:  'Add contact details for +20% — candidates verify you are legitimate',
+  about:    'Add a company description for +20% — candidates read this before applying',
+  verify:   'Add RC number for +20% — unlocks the Verified Employer badge',
+  social:   'Add social profiles for +15% — builds trust with senior candidates'
+};
 
-        if (!value) {
-            $(this).removeClass('is-invalid');
-            return;
-        }
+var completedSections = {
+    identity: <?= (!empty($employer->company_name) && !empty($employerIndustryIds) && !empty($employer->company_size)) ? 'true' : 'false' ?>,
+    contact: <?= (!empty($employer->contact_name) && !empty($employer->contact_phone) && !empty($employer->contact_email) && !empty($employer->company_address) && !empty($employer->state_id)) ? 'true' : 'false' ?>,
+    about: <?= (!empty($employer->description)) ? 'true' : 'false' ?>,
+    verify: <?= (!empty($employer->rc_number) || !empty($employer->cac_document)) ? 'true' : 'false' ?>,
+    social: <?= (!empty($employer->linkedin) || !empty($employer->twitter) || !empty($employer->facebook) || !empty($employer->instagram)) ? 'true' : 'false' ?>
+};
 
-        if (!/^https?:\/\//i.test(value)) {
-            value = 'https://' + value;
-        }
+/* ── Inject gain-tip badges on load ── */
+function injectGainTips() {
+  SECTION_ORDER.forEach(function(key) {
+    var card = document.querySelector('[aria-labelledby="h-' + key + '"]');
+    if (!card) return;
+    var summary = card.querySelector('.cv-card-header');
+    var chev = summary.querySelector('.cv-chev');
+    var gain = sectionWeights[key] || 0;
+    var tip = document.createElement('span');
+    tip.className = 'cv-gain-tip';
+    tip.id = 'gain-tip-' + key;
+    tip.title = SECTION_TIPS[key];
+    tip.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11" aria-hidden="true"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> +' + gain + '%';
+    summary.insertBefore(tip, chev);
+  });
+}
 
-        try {
-            const url = new URL(value);
-            const hostname = url.hostname;
-            const hasDot = hostname.includes('.');
-            const validTld = hostname.split('.').pop().length >= 2;
+/* ── Update sticky bar tip ── */
+function updateBarTip() {
+  var el = document.getElementById('progress-tip-text');
+  if (!el) return;
+  for (var i = 0; i < SECTION_ORDER.length; i++) {
+    var k = SECTION_ORDER[i];
+    if (!completedSections[k]) { el.textContent = SECTION_TIPS[k]; return; }
+  }
+  el.textContent = 'Profile complete — ready to attract top candidates!';
+}
 
-            if (!hasDot || !validTld) {
-                throw new Error('Invalid domain');
-            }
+/* ── Auto-advance to next incomplete section ── */
+function advanceToNext(currentKey) {
+  var idx = SECTION_ORDER.indexOf(currentKey);
+  for (var i = idx + 1; i < SECTION_ORDER.length; i++) {
+    var nextKey = SECTION_ORDER[i];
+    if (completedSections[nextKey]) continue;
+    var nextCard = document.querySelector('[aria-labelledby="h-' + nextKey + '"]');
+    if (!nextCard) continue;
+    nextCard.setAttribute('open', '');
+    nextCard.classList.add('next-up');
+    setTimeout(function(c) { return function() { c.classList.remove('next-up'); }; }(nextCard), 900);
+    setTimeout(function(c) {
+      return function() {
+        var top = c.getBoundingClientRect().top + window.scrollY - 140;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      };
+    }(nextCard), 120);
+    return;
+  }
+  var bottom = document.querySelector('.bottom-actions');
+  if (bottom) setTimeout(function() { bottom.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120);
+}
 
-            $(this).val(value);
-            $(this).removeClass('is-invalid');
-        } catch (e) {
-            $(this).addClass('is-invalid');
-            toastr.error('Please enter a valid website domain.');
-        }
-    });
+/* ── Progress pulse ── */
+function pulseBar() {
+  var fill = document.getElementById('progress-fill');
+  if (!fill) return;
+  fill.classList.remove('pulse');
+  void fill.offsetWidth;
+  fill.classList.add('pulse');
+  setTimeout(function() { fill.classList.remove('pulse'); }, 1100);
+}
 
-    // Logo Upload Previews
-    $('#logoInput').on('change', function(e) {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                $('#logoPreview').show();
-                $('#logoPreviewImg').attr('src', e.target.result);
-                $('#currentLogoContainer').hide();
-                calculateFormCompletion();
-            };
-            reader.readAsDataURL(file);
-        } else {
-            toastr.warning('Please select a valid image file (JPG, PNG, or GIF).');
-            $(this).val('');
-        }
-    });
+/* ── Main save handler ── */
+function saveSection(key, event) {
+  var e = event || window.event;
+  var btn = e ? e.target.closest('button') : null;
+  if (!btn) return;
+  var orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
 
-    $('#removeLogo').on('change', function() {
-        if ($(this).is(':checked')) {
-            $('#currentLogoContainer').hide();
-            $('#logoPreview').hide();
-            $('#logoInput').val('');
-            calculateFormCompletion();
-        }
-    });
+  var form = document.getElementById('editEmployerForm');
+  var formData = new FormData(form);
+  formData.append('section', key);
 
-    // -------------------------------------------------------------
-    // PROGRESS CALCULATION LOGIC
-    // -------------------------------------------------------------
-    function calculateFormCompletion() {
-        const fields = [
-            'input[name="company_name"]',
-            'select[name="company_size"]',
-            'select[name="state_id"]',
-            'textarea[name="description"]',
-            'input[name="contact_name"]',
-            'input[name="contact_email"]',
-            'input[name="contact_phone"]',
-            'input[name="company_address"]'
-        ];
+  $.ajax({
+      url: form.getAttribute('action'),
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+      },
+      success: function(response) {
+          btn.disabled = false;
+          completedSections[key] = true;
+          var card = btn.closest('.cv-card');
+          if (card) card.classList.add('is-complete');
+          if (card) {
+              var badge = card.querySelector('.cv-card-done');
+              if (badge) {
+                  badge.className = 'cv-card-done complete';
+                  badge.innerHTML = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Done';
+              }
+          }
+          var gainTip = document.getElementById('gain-tip-' + key);
+          if (gainTip) gainTip.style.display = 'none';
 
-        let completedFields = 0;
-        let totalFields = fields.length + 3; // + industries + website + logo
+          updateProgress(); pulseBar(); updateBarTip(); advanceToNext(key);
 
-        // Standard fields
-        fields.forEach(selector => {
-            const el = $(selector);
-            if (el.val() && el.val().trim() !== '') {
-                completedFields++;
-            }
-        });
+          btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Saved';
+          btn.style.background = 'var(--brand-dark)'; btn.style.borderColor = 'var(--brand-dark)';
+          setTimeout(function() { btn.innerHTML = orig; btn.style.background = ''; btn.style.borderColor = ''; }, 2200);
+          
+          if (typeof toastr !== 'undefined') {
+              toastr.success(response.message || 'Section saved successfully.');
+          }
+      },
+      error: function(xhr) {
+          btn.disabled = false;
+          btn.innerHTML = orig;
+          var message = 'An error occurred while saving.';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+              message = xhr.responseJSON.message;
+          }
+          if (typeof toastr !== 'undefined') {
+              toastr.error(message);
+          } else {
+              alert(message);
+          }
+      }
+  });
+}
 
-        // Industry (select2 multiple check)
-        const indVal = $('#industrySelect').val();
-        if (indVal && indVal.length > 0) {
-            completedFields++;
-        }
+/* ── Save all ── */
+function saveAllSections(event) {
+  var e = event || window.event;
+  var btn = e ? e.target.closest('button') : null;
+  if (!btn) return;
+  var orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving all...';
 
-        // Optional website field counts as complete if filled
-        const webVal = websiteInput.val();
-        if (webVal && webVal.trim() !== '') {
-            completedFields++;
-        }
+  var form = document.getElementById('editEmployerForm');
+  var formData = new FormData(form);
 
-        // Logo field check
-        const hasExistingLogo = $('#currentLogoContainer').is(':visible');
-        const hasNewLogo = $('#logoInput').val() !== '';
-        if (hasExistingLogo || hasNewLogo) {
-            completedFields++;
-        }
+  $.ajax({
+      url: form.getAttribute('action'),
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+      },
+      success: function(response) {
+          btn.disabled = false;
+          btn.innerHTML = orig;
+          SECTION_ORDER.forEach(function(k) {
+              completedSections[k] = true;
+              var card = document.querySelector('[aria-labelledby="h-' + k + '"]');
+              if (card) {
+                  card.classList.add('is-complete');
+                  var badge = card.querySelector('.cv-card-done');
+                  if (badge) { badge.className = 'cv-card-done complete'; badge.innerHTML = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Done'; }
+                  var tip = document.getElementById('gain-tip-' + k);
+                  if (tip) tip.style.display = 'none';
+              }
+          });
+          updateProgress(); pulseBar(); updateBarTip();
+          if (typeof toastr !== 'undefined') {
+              toastr.success(response.message || 'All sections saved.');
+              setTimeout(function() {
+                  window.location.href = '<?= base_url('employer/profile') ?>';
+              }, 1000);
+          } else {
+              window.location.href = '<?= base_url('employer/profile') ?>';
+          }
+      },
+      error: function(xhr) {
+          btn.disabled = false;
+          btn.innerHTML = orig;
+          var message = 'An error occurred while saving.';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+              message = xhr.responseJSON.message;
+          }
+          if (typeof toastr !== 'undefined') {
+              toastr.error(message);
+          } else {
+              alert(message);
+          }
+      }
+  });
+}
 
-        const percentage = Math.round((completedFields / totalFields) * 100);
+/* ── Update progress bar ── */
+function updateProgress() {
+  var total = 0;
+  Object.keys(completedSections).forEach(function(k) { 
+      if (completedSections[k] === true) {
+          total += sectionWeights[k] || 0; 
+      }
+  });
+  total = Math.min(total, 100);
+  var fill = document.getElementById('progress-fill');
+  var pct = document.getElementById('progress-pct');
+  if (fill) fill.style.width = total + '%';
+  if (pct) pct.textContent = total + '% Completed';
+}
 
-        // Update sticky progress UI
-        $('#completionProgressFill').css('width', percentage + '%');
-        $('#completionProgressText').text(percentage + '% Complete');
+/* ── CAC document upload handlers ── */
+function showFileInfo(input, infoId, zoneId) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
 
-        // Update Card Headers Complete badges
-        // 1. Basic Info details
-        let basicDone = true;
-        ['input[name="company_name"]', 'select[name="company_size"]', 'select[name="state_id"]'].forEach(sel => {
-            if (!$(sel).val() || $(sel).val().trim() === '') basicDone = false;
-        });
-        if (!indVal || indVal.length === 0) basicDone = false;
+  /* Validate size (5MB max) */
+  if (file.size > 5 * 1024 * 1024) {
+    if (typeof toastr !== 'undefined') toastr.error('File is too large. Please upload a document under 5MB.');
+    else alert('File is too large. Please upload a document under 5MB.');
+    input.value = '';
+    return;
+  }
+  /* Validate type */
+  var allowed = ['application/pdf','image/jpeg','image/png'];
+  if (!allowed.includes(file.type)) {
+    if (typeof toastr !== 'undefined') toastr.error('Please upload a PDF, JPG, or PNG file.');
+    else alert('Please upload a PDF, JPG, or PNG file.');
+    input.value = '';
+    return;
+  }
 
-        const cardBasic = $('#cardBasicInfo');
-        const badgeBasic = $('#badgeBasicInfo');
-        if (basicDone) {
-            cardBasic.addClass('is-complete');
-            badgeBasic.text('Complete').removeClass('incomplete').addClass('complete');
-        } else {
-            cardBasic.removeClass('is-complete');
-            badgeBasic.text('Incomplete').removeClass('complete').addClass('incomplete');
-        }
+  var nameEl = document.getElementById('cac-file-name');
+  var sizeEl = document.getElementById('cac-file-size');
+  var info   = document.getElementById(infoId);
+  var idle   = document.getElementById('cac-idle');
 
-        // 2. Contact details
-        let contactDone = true;
-        ['input[name="contact_name"]', 'input[name="contact_email"]', 'input[name="contact_phone"]', 'input[name="company_address"]'].forEach(sel => {
-            if (!$(sel).val() || $(sel).val().trim() === '') contactDone = false;
-        });
+  if (nameEl) nameEl.textContent = file.name;
+  if (sizeEl) sizeEl.textContent = file.size > 1024*1024
+    ? (file.size / (1024*1024)).toFixed(1) + ' MB'
+    : Math.round(file.size / 1024) + ' KB';
+  if (info) info.style.display = 'flex';
+  if (idle) idle.style.display = 'none';
+}
 
-        const cardContact = $('#cardContactInfo');
-        const badgeContact = $('#badgeContactInfo');
-        if (contactDone) {
-            cardContact.addClass('is-complete');
-            badgeContact.text('Complete').removeClass('incomplete').addClass('complete');
-        } else {
-            cardContact.removeClass('is-complete');
-            badgeContact.text('Incomplete').removeClass('complete').addClass('incomplete');
-        }
+function removeFile(inputId, infoId, idleId, event) {
+  event.stopPropagation();
+  var input = document.getElementById(inputId);
+  var info  = document.getElementById(infoId);
+  var idle  = document.getElementById(idleId);
+  if (input) input.value = '';
+  if (info)  info.style.display = 'none';
+  if (idle)  idle.style.display = 'flex';
+}
 
-        // 3. Logo details
-        const cardLogo = $('#cardLogo');
-        const badgeLogo = $('#badgeLogo');
-        if (hasExistingLogo || hasNewLogo) {
-            cardLogo.addClass('is-complete');
-            badgeLogo.text('Complete').removeClass('incomplete').addClass('complete');
-        } else {
-            cardLogo.removeClass('is-complete');
-            badgeLogo.text('Incomplete').removeClass('complete').addClass('incomplete');
-        }
-    }
+function handleDragOver(event) {
+  event.preventDefault();
+  event.currentTarget.classList.add('drag-over');
+}
+function handleDragLeave(event) {
+  event.currentTarget.classList.remove('drag-over');
+}
+function handleDrop(event, inputId, infoId) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('drag-over');
+  var input = document.getElementById(inputId);
+  if (!input || !event.dataTransfer.files.length) return;
+  try {
+    var dt = new DataTransfer();
+    dt.items.add(event.dataTransfer.files[0]);
+    input.files = dt.files;
+  } catch(e) { }
+  showFileInfo(input, infoId, event.currentTarget.id);
+}
 
-    // Trigger calculation on input/change events
-    $(document).on('input change', '.calculate-progress, select', function() {
-        calculateFormCompletion();
-    });
+document.addEventListener('DOMContentLoaded', function() {
+  injectGainTips();
+  
+  // Set initial complete states in UI
+  SECTION_ORDER.forEach(function(k) {
+      if (completedSections[k]) {
+          const card = document.querySelector('[aria-labelledby="h-' + k + '"]');
+          if (card) {
+              card.classList.add('is-complete');
+              const badge = card.querySelector('.cv-card-done');
+              if (badge) {
+                  badge.className = 'cv-card-done complete';
+                  badge.innerHTML = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Done';
+              }
+              const tip = document.getElementById('gain-tip-' + k);
+              if (tip) tip.style.display = 'none';
+          }
+      }
+  });
 
-    // Run once on load
-    $(document).ready(function() {
-        calculateFormCompletion();
-    });
-
-    function normalizeAndValidateWebsite(rawValue) {
-        let value = rawValue.trim();
-        if (!value) return { valid: true, value: '' };
-
-        if (!/^https?:\/\//i.test(value)) {
-            value = 'https://' + value;
-        }
-
-        try {
-            const url = new URL(value);
-            const hostname = url.hostname;
-
-            if (!hostname.includes('.')) return { valid: false };
-            if (hostname.split('.').pop().length < 2) return { valid: false };
-
-            return { valid: true, value };
-        } catch {
-            return { valid: false };
-        }
-    }
-
-    // AJAX Form Submit
-    $('#editEmployerForm').on('submit', function(e) {
-        e.preventDefault();
-        const form = $(this);
-        const submitBtn = $('#submitBtn');
-        const btnText = submitBtn.find('.btn-text');
-        const spinner = submitBtn.find('.spinner-border');
-
-        submitBtn.prop('disabled', true);
-        btnText.addClass('d-none');
-        spinner.removeClass('d-none');
-
-        // Website verification
-        const websiteResult = normalizeAndValidateWebsite(websiteInput.val());
-        if (!websiteResult.valid) {
-            toastr.error('Please enter a valid website (e.g. example.com)');
-            websiteInput.addClass('is-invalid');
-            submitBtn.prop('disabled', false);
-            btnText.removeClass('d-none');
-            spinner.addClass('d-none');
-            return;
-        }
-
-        websiteInput.val(websiteResult.value);
-
-        const formData = new FormData(this);
-
-        $.ajax({
-            url: form.attr('action'),
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function(response) {
-                submitBtn.prop('disabled', false);
-                btnText.removeClass('d-none');
-                spinner.addClass('d-none');
-
-                toastr.success(response.message);
-                setTimeout(function() {
-                    window.location.href = '<?= base_url('employer/profile') ?>';
-                }, 1000);
-            },
-            error: function(xhr) {
-                submitBtn.prop('disabled', false);
-                btnText.removeClass('d-none');
-                spinner.addClass('d-none');
-
-                let message = 'An error occurred while updating the profile.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    const errors = Object.values(xhr.responseJSON.errors).flat();
-                    message = errors.join('<br>');
-                }
-                toastr.error(message);
-            }
-        });
-    });
+  updateProgress();
+  updateBarTip();
+});
 </script>
 <?= $this->endSection() ?>

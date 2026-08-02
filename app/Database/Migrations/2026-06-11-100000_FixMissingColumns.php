@@ -78,6 +78,10 @@ class FixMissingColumns extends Migration
 
     public function down()
     {
+        if ($this->db->getPlatform() === 'SQLite3') {
+            return; // SQLite has limited dropColumn support, skip on testing
+        }
+
         if ($this->db->fieldExists('paid_at', 'payments')) {
             $this->forge->dropColumn('payments', 'paid_at');
         }

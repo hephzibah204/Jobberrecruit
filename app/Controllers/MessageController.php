@@ -7,9 +7,11 @@ use App\Models\MessageModel;
 use App\Models\EmployerModel;
 use App\Models\JobSeekerModel;
 use App\Services\CreditService;
+use CodeIgniter\API\ResponseTrait;
 
 class MessageController extends BaseController
 {
+    use ResponseTrait;
     protected $conversationModel;
     protected $messageModel;
 
@@ -22,6 +24,30 @@ class MessageController extends BaseController
     public function inbox()
     {
         $user = auth()->user();
+
+        // Deep link: /employer/messages?candidate={job_seeker_id} → find_or_create conversation, then jump straight to it
+        if ($user->user_type === 'employer') {
+            $candidateId = (int) ($this->request->getGet('candidate') ?? 0);
+            if ($candidateId > 0) {
+                $employerModel = model(EmployerModel::class);
+                $employer = $employerModel->where('user_id', $user->id)->first();
+                if ($employer) {
+                    $conversation = $this->conversationModel
+                        ->where('employer_id', $employer->id)
+                        ->where('job_seeker_id', $candidateId)
+                        ->first();
+
+                    $conversationId = $conversation['id'] ?? $this->conversationModel->insert([
+                        'employer_id' => $employer->id,
+                        'job_seeker_id' => $candidateId,
+                        'is_active' => 1,
+                    ]);
+
+                    return redirect()->to(base_url('employer/messages/conversation/' . $conversationId));
+                }
+            }
+        }
+
         $unreadCount = $this->messageModel->getUnreadCount($user->id, $user->user_type);
 
         if ($user->user_type === 'employer') {
@@ -29,7 +55,8 @@ class MessageController extends BaseController
             $employer = $employerModel->where('user_id', $user->id)->first();
             $conversations = $employer ? $this->conversationModel->getConversationsForEmployer($employer->id) : [];
         } else {
-            $conversations = $this->conversationModel->getConversationsForSeeker($user->id);
+            $seekerId = $this->getSeekerId($user->id);
+            $conversations = $seekerId ? $this->conversationModel->getConversationsForSeeker($seekerId) : [];
         }
 
         return view('messages/inbox', [

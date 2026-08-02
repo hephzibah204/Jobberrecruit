@@ -66,7 +66,7 @@
             <div class="sidebar-scroll">
                 <div class="text-center rounded bg-light p-3 mb-3 border">
                     <div class="avatar avatar-lg online mb-3">
-                        <img src="assets/img/customer/customer15.jpg" alt="Img" class="img-fluid rounded-circle">
+                        <img src="<?= base_url('assets/img/customer/customer15.jpg') ?>"  alt="Img" class="img-fluid rounded-circle">
                     </div>
                     <h6 class="fs-14 fw-bold mb-1">Adrian Herman</h6>
                     <p class="fs-12 mb-0">System Admin</p>

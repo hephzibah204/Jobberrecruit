@@ -1,87 +1,76 @@
-<?= $this->extend('layouts/app') ?>
+<?php $page_title = 'Security'; ?>
+<?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('content') ?>
-<div class="content">
-    <div class="page-header">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold">Security Settings</h4>
-                <h6>Manage your account security</h6>
-            </div>
+<div class="page-hd">
+    <div class="page-hd-left">
+        <h1>Security Settings</h1>
+        <p>Manage your account password and security configuration</p>
+    </div>
+</div>
+
+<div class="duo" style="grid-template-columns: 1.2fr 1fr;">
+    <div class="card">
+        <div class="card-head">
+            <h2 class="card-title">
+                <svg aria-hidden="true"><use href="#i-shield"/></svg>
+                Change Password
+            </h2>
         </div>
-        <ul class="table-top-head">
-            <li>
-                <a data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i class="ti ti-refresh"></i></a>
-            </li>
-            <li>
-                <a data-bs-toggle="tooltip" data-bs-placement="top" title="Collapse" id="collapse-header"><i class="ti ti-chevron-up"></i></a>
-            </li>
-        </ul>
+        <div class="card-body">
+            <form id="changePasswordForm" class="form-section-body" style="padding:0;">
+                <?= csrf_field() ?>
+
+                <div class="form-group">
+                    <label class="form-label">Current Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" name="current_password" id="current_password" class="form-control" style="padding-right: 44px;" required>
+                        <button class="ic-btn toggle-password" data-pwd-target="current_password" type="button" aria-label="Toggle password" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                            <svg aria-hidden="true" style="width:16px; height:16px; color:var(--muted);"><use href="#i-eye"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">New Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" name="new_password" id="new_password" class="form-control" style="padding-right: 44px;" required>
+                        <button class="ic-btn toggle-password" data-pwd-target="new_password" type="button" aria-label="Toggle password" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                            <svg aria-hidden="true" style="width:16px; height:16px; color:var(--muted);"><use href="#i-eye"/></svg>
+                        </button>
+                    </div>
+                    <small class="form-hint">
+                        Must be at least 8 characters with uppercase, lowercase, number, and symbol.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm New Password <span class="req">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" name="confirm_new_password" id="confirm_new_password" class="form-control" style="padding-right: 44px;" required>
+                        <button class="ic-btn toggle-password" data-pwd-target="confirm_new_password" type="button" aria-label="Toggle password" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                            <svg aria-hidden="true" style="width:16px; height:16px; color:var(--muted);"><use href="#i-eye"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-end" style="margin-top: 8px;">
+                    <button type="submit" class="emp-btn emp-btn-primary" id="changePasswordBtn" style="min-height: 40px; padding: 8px 24px;">
+                        <span class="btn-text">Update Password</span>
+                        <span class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-8 col-xl-6">
-            <div class="card custom-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ti ti-shield-lock text-primary me-2"></i>
-                        Change Password
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <form id="changePasswordForm">
-                        <?= csrf_field() ?>
-
-                        <div class="mb-3">
-                            <label class="form-label">Current Password <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="password" name="current_password" class="form-control" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button" aria-label="View">
-    <i class="ti ti-eye-off"></i>
-</button>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">New Password <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="password" name="new_password" class="form-control" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button" aria-label="View">
-    <i class="ti ti-eye-off"></i>
-</button>
-                            </div>
-                            <small class="text-muted">
-                                Must be at least 8 characters with uppercase, lowercase, number, and symbol.
-                            </small>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Confirm New Password <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="password" name="confirm_new_password" class="form-control" required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button" aria-label="View">
-    <i class="ti ti-eye-off"></i>
-</button>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary" id="changePasswordBtn">
-                                <span class="btn-text">Update Password</span>
-                                <span class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
+    <div class="card">
+        <div class="card-body empty-state" style="padding: 32px 20px;">
+            <div class="empty-ic" style="background: var(--success-light); color: var(--success);">
+                <svg aria-hidden="true" style="width:24px; height:24px;"><use href="#i-shield"/></svg>
             </div>
-
-            <div class="card custom-card mt-4">
-                <div class="card-body text-center py-5">
-                    <i class="ti ti-lock fs-1 text-success mb-3"></i>
-                    <h6>Your password is protected</h6>
-                    <p class="text-muted">We use strong encryption and follow best practices to keep your account secure.</p>
-                </div>
-            </div>
+            <h3>Your password is protected</h3>
+            <p>We use strong encryption and follow security best practices to keep your account safe and secure.</p>
         </div>
     </div>
 </div>
@@ -89,68 +78,66 @@
 
 <?= $this->section('scripts') ?>
 <script>
-    toastr.options = {
-        closeButton: true,
-        progressBar: true,
-        positionClass: 'toast-top-right',
-        timeOut: 6000
-    };
-
     // Toggle password visibility
-    $('.toggle-password').on('click', function() {
-        const btn = $(this);
-        const input = btn.closest('.input-group').find('input');
-        const icon = btn.find('i');
-
-        if (input.attr('type') === 'password') {
-            input.attr('type', 'text');
-            icon.removeClass('ti-eye-off').addClass('ti-eye');
-        } else {
-            input.attr('type', 'password');
-            icon.removeClass('ti-eye').addClass('ti-eye-off');
-        }
-    });
-
-    // Change password form
-    $('#changePasswordForm').on('submit', function(e) {
-        e.preventDefault();
-
-        const btn = $('#changePasswordBtn');
-        const btnText = btn.find('.btn-text');
-        const spinner = btn.find('.spinner-border');
-
-        // Loading state
-        btn.prop('disabled', true);
-        btnText.addClass('d-none');
-        spinner.removeClass('d-none');
-
-        $.ajax({
-            url: '<?= base_url('employer/security/change-password') ?>',
-            type: 'POST',
-            data: $(this).serialize(),
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function(res) {
-                if (res.success) {
-                    toastr.success(res.message);
-                    $('#changePasswordForm')[0].reset();
-                } else {
-                    toastr.error(res.message || 'Something went wrong');
-                    if (res.errors) {
-                        Object.values(res.errors).forEach(msg => toastr.warning(msg));
-                    }
-                }
-            },
-            error: function() {
-                toastr.error('Network error. Please try again.');
-            },
-            complete: function() {
-                btn.prop('disabled', false);
-                btnText.removeClass('d-none');
-                spinner.addClass('d-none');
+    document.querySelectorAll('.toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var targetId = btn.getAttribute('data-pwd-target');
+            var input = document.getElementById(targetId);
+            if (input.getAttribute('type') === 'password') {
+                input.setAttribute('type', 'text');
+            } else {
+                input.setAttribute('type', 'password');
             }
         });
     });
+
+    // Change password form submission
+    document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var btn = document.getElementById('changePasswordBtn');
+        var btnText = btn.querySelector('.btn-text');
+        var spinner = btn.querySelector('.spinner-border');
+
+        btn.disabled = true;
+        btnText.classList.add('d-none');
+        spinner.classList.remove('d-none');
+
+        var formData = new FormData(this);
+
+        fetch('<?= base_url('employer/settings/security/change-password') ?>', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.success) {
+                toastr.success(res.message);
+                document.getElementById('changePasswordForm').reset();
+            } else {
+                toastr.error(res.message || 'Something went wrong');
+            }
+        })
+        .catch(err => {
+            toastr.error('Network error. Please try again.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btnText.classList.remove('d-none');
+            spinner.classList.add('d-none');
+        });
+    });
 </script>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<a href="<?= base_url('employer/settings') ?>" class="emp-btn emp-btn-outline">
+    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-arrow-l"/></svg> Settings
+</a>
+<a href="<?= base_url('employer/profile') ?>" class="emp-btn emp-btn-accent">
+    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-building"/></svg> Profile
+</a>
 <?= $this->endSection() ?>

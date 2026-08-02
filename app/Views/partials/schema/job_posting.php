@@ -26,9 +26,10 @@ if (! function_exists('jobPostingSchema')) {
         $employmentType = $typeMap[strtolower($job->job_type ?? '')] ?? 'FULL_TIME';
 
         // --- Dates (ISO 8601) ---
-        $datePosted   = $job->created_at ? date('c', strtotime($job->created_at)) : date('c');
-        $validThrough = ! empty($job->expiry_date)
-            ? date('Y-m-d\T23:59:59', strtotime($job->expiry_date))
+        $datePosted = $job->created_at ? date('c', strtotime($job->created_at)) : date('c');
+        $deadline   = $job->expiry_date ?? $job->application_deadline ?? null;
+        $validThrough = ! empty($deadline)
+            ? date('Y-m-d\T23:59:59', strtotime($deadline))
             : date('Y-m-d\T23:59:59', strtotime('+30 days'));
 
         // --- Description (mandatory) ---
@@ -56,22 +57,37 @@ if (! function_exists('jobPostingSchema')) {
         $locality = ! empty($job->location) ? $job->location : 'Nigeria';
 
         // --- Salary ---
+        // salary columns are VARCHAR and may contain formatting ("₦150,000") — strip to digits
+        $salaryMin = (float) preg_replace('/[^\d.]/', '', (string) ($job->salary ?? ''));
+        $salaryMax = (float) preg_replace('/[^\d.]/', '', (string) ($job->salary_max ?? ''));
+
+        // Google only accepts HOUR / DAY / WEEK / MONTH / YEAR for unitText
+        $periodMap = [
+            'hour' => 'HOUR', 'hourly' => 'HOUR',
+            'day' => 'DAY', 'daily' => 'DAY',
+            'week' => 'WEEK', 'weekly' => 'WEEK',
+            'month' => 'MONTH', 'monthly' => 'MONTH', 'per month' => 'MONTH',
+            'year' => 'YEAR', 'yearly' => 'YEAR', 'annual' => 'YEAR', 'annually' => 'YEAR', 'per annum' => 'YEAR',
+        ];
+
         $salaryData = null;
-        if (! empty($job->salary) && (float)$job->salary > 0) {
-            $salaryPeriod = strtoupper(! empty($job->salary_period) ? $job->salary_period : 'MONTH');
+        if ($salaryMin > 0) {
+            $salaryPeriod = $periodMap[strtolower(trim((string) ($job->salary_period ?? '')))] ?? 'MONTH';
             $salaryData = [
                 '@type'    => 'MonetaryAmount',
                 'currency' => 'NGN',
                 'value'    => [
                     '@type'    => 'QuantitativeValue',
-                    'minValue' => (float)$job->salary,
-                    'maxValue' => (float)(! empty($job->salary_max) ? $job->salary_max : $job->salary),
+                    'minValue' => $salaryMin,
+                    'maxValue' => max($salaryMin, $salaryMax),
                     'unitText' => $salaryPeriod,
                 ],
             ];
         }
 
         // --- Build schema ---
+        $isRemote = strtolower((string) ($job->location_type ?? '')) === 'remote';
+
         $schema = [
             '@context'          => 'https://schema.org',
             '@type'             => 'JobPosting',
@@ -94,12 +110,17 @@ if (! function_exists('jobPostingSchema')) {
                     'addressCountry'  => 'NG',
                 ],
             ],
-            'applicantLocationRequirements' => [
-                '@type' => 'Country',
-                'name'  => 'Nigeria',
-            ],
             'directApply' => true,
         ];
+
+        // Google: jobLocationType + applicantLocationRequirements only for remote jobs
+        if ($isRemote) {
+            $schema['jobLocationType'] = 'TELECOMMUTE';
+            $schema['applicantLocationRequirements'] = [
+                '@type' => 'Country',
+                'name'  => 'Nigeria',
+            ];
+        }
 
         if ($salaryData !== null) {
             $schema['baseSalary'] = $salaryData;

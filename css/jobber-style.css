@@ -579,11 +579,13 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .cta-panel.light .cta-ic { background: var(--brand-light); color: var(--brand); }
 .cta-ic svg { width: 25px; height: 25px; }
 .cta-panel h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 10px; }
+.cta-panel.blue h2 { color: var(--white) !important; }
 .cta-panel p { font-size: .87rem; margin-bottom: 22px; }
-.cta-panel.blue p { opacity: .86; }
+.cta-panel.blue p { color: var(--white) !important; opacity: .86; }
 .cta-panel.light p { color: var(--muted); }
 .cta-list { list-style: none; margin-bottom: 26px; display: flex; flex-direction: column; gap: 9px; }
 .cta-list li { display: flex; align-items: center; gap: 9px; font-size: .85rem; }
+.cta-panel.blue .cta-list li { color: var(--white) !important; }
 .cta-tag { font-size: .64rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: var(--brand-deep); padding: 1px 7px; border-radius: 20px; margin-left: 2px; }
 .cta-list li svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); }
 

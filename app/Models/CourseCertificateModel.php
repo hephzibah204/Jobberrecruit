@@ -15,6 +15,7 @@ class CourseCertificateModel extends Model
         'enrollment_id',
         'certificate_code',
         'issued_at',
+        'manual_certificate',
     ];
 
     protected $useTimestamps = true;

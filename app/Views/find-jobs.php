@@ -6,6 +6,50 @@
         width: 50px;
         height: 50px;
     }
+    /* Search Bar Mobile Optimization */
+    #job-search-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    #job-search-form > * {
+        margin: 0 !important;
+    }
+    #job-search-form .box-industry {
+        flex: 1;
+        min-width: 200px;
+    }
+    #job-search-form select {
+        flex: 1;
+        min-width: 200px;
+        height: 50px;
+        border: 1px solid #e0e6f7;
+        border-radius: 4px;
+        padding: 0 15px;
+        outline: none;
+    }
+    #job-search-form button {
+        height: 50px;
+        padding: 0 30px;
+    }
+    @media (max-width: 768px) {
+        #job-search-form {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 15px;
+        }
+        #job-search-form .box-industry,
+        #job-search-form select,
+        #job-search-form button {
+            width: 100% !important;
+        }
+    }
 </style>
 <?= $this->endSection() ?>
 

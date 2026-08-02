@@ -30,6 +30,7 @@
                                 <?= number_format($totalEmployers) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-primary-transparent text-primary rounded-circle kpi-icon"><i class="ti ti-building fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -46,6 +47,7 @@
                                 <?= number_format($totalCandidates) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-success-transparent text-success rounded-circle kpi-icon"><i class="ti ti-users fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -62,6 +64,7 @@
                                 <?= number_format($totalJobs) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-warning-transparent text-warning rounded-circle kpi-icon"><i class="ti ti-briefcase fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -78,6 +81,7 @@
                                 <?= number_format($totalApplications) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-info-transparent text-info rounded-circle kpi-icon"><i class="ti ti-file-description fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -94,6 +98,7 @@
                                 <?= number_format($activeSubscribers) ?>
                             </h3>
                         </div>
+                        <span class="avatar avatar-md bg-danger-transparent text-danger rounded-circle kpi-icon"><i class="ti ti-crown fs-20"></i></span>
                     </div>
                 </div>
             </div>
@@ -101,6 +106,116 @@
 
     </div>
     <!-- End:: row-1 -->
+
+    <!-- Start:: Needs attention queue -->
+    <?php
+    $attention = $attention ?? [];
+    $attentionTotal = array_sum(array_column($attention, 'count'));
+    ?>
+    <div class="card custom-card mb-4 attention-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="card-title mb-0">
+                <i class="ti ti-inbox me-1"></i> Needs Attention
+            </div>
+            <?php if ($attentionTotal > 0): ?>
+                <span class="badge bg-danger-transparent text-danger fw-semibold"><?= number_format($attentionTotal) ?> pending</span>
+            <?php else: ?>
+                <span class="badge bg-success-transparent text-success fw-semibold">All clear</span>
+            <?php endif; ?>
+        </div>
+        <div class="card-body py-3">
+            <?php if ($attentionTotal === 0): ?>
+                <p class="text-muted mb-0"><i class="ti ti-circle-check me-1 text-success"></i>Nothing is waiting on you — approvals, reports, and moderation queues are empty.</p>
+            <?php else: ?>
+                <div class="row gy-2">
+                    <?php foreach ($attention as $item): ?>
+                        <?php if ($item['count'] < 1) continue; ?>
+                        <div class="col-xl-2dot4 col-lg-4 col-md-6 col-12">
+                            <a href="<?= $item['url'] ?>" class="attention-item d-flex align-items-center gap-2 p-2 rounded border h-100">
+                                <span class="avatar avatar-sm bg-warning-transparent text-warning rounded-circle flex-shrink-0">
+                                    <i class="ti <?= esc($item['icon']) ?> fs-16"></i>
+                                </span>
+                                <span class="flex-fill lh-sm">
+                                    <b class="d-block fs-15"><?= number_format($item['count']) ?></b>
+                                    <span class="text-muted fs-11"><?= esc($item['label']) ?></span>
+                                </span>
+                                <i class="ti ti-chevron-right text-muted"></i>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <!-- End:: Needs attention queue -->
+
+    <!-- Start:: Quick Actions -->
+    <div class="row mb-4 gy-3">
+        <div class="col-12">
+            <h5 class="fw-semibold mb-1 fs-15 text-muted uppercase" style="letter-spacing: .5px;">Quick Actions</h5>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/jobs') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-primary border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-primary-transparent text-primary rounded-circle mx-auto mb-2">
+                        <i class="ti ti-briefcase fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Manage Jobs</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/employers') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-success border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-success-transparent text-success rounded-circle mx-auto mb-2">
+                        <i class="ti ti-building fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Verify Employers</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/cv-reviews') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-warning border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-warning-transparent text-warning rounded-circle mx-auto mb-2">
+                        <i class="ti ti-file-text fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Review CVs</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/elearning') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-info border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-info-transparent text-info rounded-circle mx-auto mb-2">
+                        <i class="ti ti-book fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Courses</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/newsletters') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-danger border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-danger-transparent text-danger rounded-circle mx-auto mb-2">
+                        <i class="ti ti-mail fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Campaigns</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <a href="<?= base_url('admin/reports') ?>" class="card custom-card text-center py-3 hover-up h-100 border-start border-dark border-3 transition">
+                <div class="card-body p-2">
+                    <div class="avatar avatar-md bg-dark-transparent text-dark rounded-circle mx-auto mb-2">
+                        <i class="ti ti-shield fs-20"></i>
+                    </div>
+                    <span class="d-block fw-semibold text-dark fs-13">Fraud Reports</span>
+                </div>
+            </a>
+        </div>
+    </div>
+    <!-- End:: Quick Actions -->
 
     <!-- Start:: row-2 -->
     <div class="row">
@@ -137,9 +252,9 @@
                                         <!-- Logo -->
                                         <div>
                                             <span class="avatar avatar-md avatar-rounded">
-                                                <img src="<?= $employer->logo
-                                                                ? base_url($employer->logo)
-                                                                : base_url('images/favicon.png') ?>"
+                                                 <img src="<?= $employer->logo
+                                                                 ? ((str_starts_with($employer->logo, 'http://') || str_starts_with($employer->logo, 'https://')) ? $employer->logo : base_url($employer->logo))
+                                                                 : base_url('images/favicon.png') ?>"
                                                     alt="<?= esc($employer->company_name) ?>">
                                             </span>
                                         </div>
@@ -235,9 +350,37 @@
                     </ul>
                 </div>
             </div>
-        </div>
     </div>
     <!-- End:: row-2 -->
+
+    <!-- Start:: User Registration and Financial Analytics Row -->
+    <div class="row">
+        <div class="col-xxl-6">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        User Registration Growth (<?= date('Y') ?>)
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="user-registration-growth"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-6">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        Financial Revenue Volume (<?= date('Y') ?>)
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="financial-transactions-volume"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End:: User Registration and Financial Analytics Row -->
 
     <!-- Start:: row-3 -->
     <div class="row">
@@ -266,9 +409,9 @@
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="avatar avatar-sm bg-light avatar-rounded">
-                                                        <img src="<?= $job->logo
-                                                                        ? base_url($job->logo)
-                                                                        : base_url('images/favicon.png') ?>"
+                                                         <img src="<?= $job->logo
+                                                                         ? ((str_starts_with($job->logo, 'http://') || str_starts_with($job->logo, 'https://')) ? $job->logo : base_url($job->logo))
+                                                                         : base_url('images/favicon.png') ?>"
                                                             alt="<?= esc($job->company_name) ?>">
                                                     </span>
                                                     <span class="fw-medium">
@@ -408,7 +551,7 @@
                                 ?>
 
                                 <li class="list-group-item border-start-0 border-end-0">
-                                    <a href="<?= base_url('admin/candidates/' . $candidate->id) ?>">
+                                    <a href="<?= base_url('admin/candidates/view/' . $candidate->id) ?>">
                                         <div class="d-flex align-items-center flex-wrap">
 
                                             <!-- Avatar -->
@@ -702,7 +845,7 @@
                 borderRadius: 2,
             },
         },
-        colors: ["var(--primary-color)", "#fdaf22", "rgb(255, 73, 205)"],
+        colors: ["#0D609E", "#F08F1A", "#0A2F57"],
         fill: {
             opacity: [1, 0.05, 1],
             gradient: {
@@ -787,5 +930,106 @@
     const chart = new ApexCharts(document.querySelector("#employees-performance"), options);
     if (chart) chart.render();
     /* Employees Performance */
+
+    /* User Registration Growth Chart */
+    const optionsUserGrowth = {
+        series: [{
+            name: 'Candidates',
+            data: <?= json_encode($userGrowth['candidates'] ?? []) ?>
+        }, {
+            name: 'Employers',
+            data: <?= json_encode($userGrowth['employers'] ?? []) ?>
+        }],
+        chart: {
+            height: 350,
+            type: 'bar',
+            toolbar: {
+                show: false
+            }
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '55%',
+                endingShape: 'rounded'
+            },
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            show: true,
+            width: 2,
+            colors: ['transparent']
+        },
+        xaxis: {
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        },
+        yaxis: {
+            title: {
+                text: 'New Registrations'
+            }
+        },
+        fill: {
+            opacity: 1
+        },
+        colors: ["#0D609E", "#F08F1A"],
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val + " users"
+                }
+            }
+        }
+    };
+    const chartUserGrowth = new ApexCharts(document.querySelector("#user-registration-growth"), optionsUserGrowth);
+    if (chartUserGrowth) chartUserGrowth.render();
+
+    /* Financial Transactions Volume Chart */
+    const optionsFinanceGrowth = {
+        series: [{
+            name: 'Revenue',
+            data: <?= json_encode($transactionGrowth ?? []) ?>
+        }],
+        chart: {
+            height: 350,
+            type: 'area',
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        xaxis: {
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        },
+        yaxis: {
+            labels: {
+                formatter: function (value) {
+                    return "$" + value.toLocaleString();
+                }
+            },
+            title: {
+                text: 'Paid Subscriptions (USD)'
+            }
+        },
+        colors: ["#0D609E"],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.2,
+                stops: [0, 90, 100]
+            }
+        }
+    };
+    const chartFinanceGrowth = new ApexCharts(document.querySelector("#financial-transactions-volume"), optionsFinanceGrowth);
+    if (chartFinanceGrowth) chartFinanceGrowth.render();
 </script>
 <?= $this->endSection() ?>

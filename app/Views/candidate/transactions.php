@@ -1,128 +1,248 @@
+<?php $page_title = 'Transaction History'; ?>
 <?= $this->extend('layouts/app') ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+.stats--txn { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.txn-ref { font-family: 'Sora', sans-serif; font-size: .72rem; font-weight: 700;
+  color: var(--muted); background: var(--bg); padding: 3px 8px; border-radius: 6px; }
+.ic-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+  border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+  cursor: pointer; transition: var(--transition); flex-shrink: 0; text-decoration: none; }
+.ic-btn:hover { border-color: var(--brand); color: var(--brand); }
+.ic-btn svg { width: 15px; height: 15px; }
+
+/* wallet summary card */
+.wallet-card { background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand) 100%);
+  color: #fff; border-radius: var(--radius-lg); padding: 24px 28px; display: flex;
+  align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.wallet-card-label { font-size: .74rem; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: rgba(255,255,255,.65); margin-bottom: 6px; }
+.wallet-card-amt { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 2rem; color: #fff; }
+.wallet-card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width:760px){
+  .tbl--txn{min-width:0}
+  .tbl--txn thead{display:none}
+  .tbl--txn tr{display:block;border-bottom:1px solid var(--border);padding:13px 4px}
+  .tbl--txn td{display:flex;align-items:center;justify-content:space-between;border:none;padding:5px 0;gap:10px}
+  .tbl--txn td::before{content:attr(data-lbl);font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+}
+@media (max-width:600px) {
+  /* .tbl { min-width: 600px; } - overridden by mobile view */
+}
+
+/* Premium Polish Layer */
+:root{
+  --shadow-xs:0 1px 3px rgba(10,47,87,.06);
+  --shadow-sm:0 2px 10px rgba(10,47,87,.07);
+  --shadow-md:0 6px 24px rgba(10,47,87,.10);
+  --shadow-lg-p:0 16px 44px rgba(10,47,87,.16);
+  --border-c:#e2e8f2;
+}
+.card,.dash-card,.set-card,.plan,.info-card,.job-card,.les-detail,.cur-card,
+.at-card,.faq-item,.modal,.q-block{
+  box-shadow:var(--shadow-xs);
+  border-color:var(--border-c);
+}
+.card:hover,.dash-card:hover,.job-card:hover,.cs-tool:hover,.res-item:hover{
+  box-shadow:var(--shadow-sm);
+}
+.modal{box-shadow:var(--shadow-lg-p)}
+.btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.tpl-swatch,
+.les,.res-item,.faq-item,.plan .btn,.icon-btn{
+  transition:transform .12s cubic-bezier(.2,.8,.2,1),
+             box-shadow .18s ease,
+             background-color .18s ease,
+             border-color .18s ease,
+             opacity .18s ease;
+}
+.btn:active,.at-pal:active,.at-opt:active,.q-opt:active,.cs-tool:active,
+.les:active,.res-item:active{
+  transform:scale(.97);
+}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){
+  .btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.les,.res-item{
+    transition:background-color .12s ease,border-color .12s ease!important;
+  }
+  .btn:active,.btn:hover{transform:none!important}
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
+<?php
+// Compute totals
+$totalSpent     = 0;
+$totalCredited  = 0;
+$totalCount     = count($transactions ?? []);
+$successCount   = 0;
+foreach ($transactions ?? [] as $t) {
+    if (strtolower($t->type ?? '') === 'credit' || str_contains(strtolower($t->description ?? ''), 'reward')) {
+        $totalCredited += (float)($t->amount ?? 0);
+    } else {
+        $totalSpent += (float)($t->amount ?? 0);
+    }
+    if (in_array(strtolower($t->status ?? ''), ['success', 'successful', 'completed', 'credited'])) {
+        $successCount++;
+    }
+}
+?>
 <div class="content">
-    <div class="page-header">
-        <div class="page-title">
-            <h4 class="fw-bold"><i class="ti ti-receipt me-2"></i>Transaction History</h4>
-            <h6>View your course purchases and subscription payments</h6>
+
+    <div class="page-head">
+        <div>
+            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-receipt"/></svg> Transaction History</h1>
+            <p>Your wallet funding and payment history.</p>
+        </div>
+        <div class="page-actions">
+            <a href="<?= base_url('candidate/wallet') ?>" class="btn btn-accent">
+                <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg> Fund Wallet
+            </a>
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card custom-card bg-primary bg-opacity-10 border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total Spent</h6>
-                            <h4 class="mb-0">₦<?= number_format($totalSpent, 2) ?></h4>
-                        </div>
-                        <div class="avatar bg-primary-transparent">
-                            <i class="ti ti-wallet fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Wallet summary banner -->
+    <?php
+    $walletModel = new \App\Models\WalletModel();
+    $wallet = $walletModel->where('user_id', session()->get('user_id'))->first();
+    $walletBalance = $wallet ? $wallet->balance : 0;
+    ?>
+    <div class="wallet-card" role="region" aria-label="Wallet balance">
+        <div>
+            <div class="wallet-card-label">Current Wallet Balance</div>
+            <div class="wallet-card-amt">&#8358;<?= number_format($walletBalance, 2) ?></div>
         </div>
-        <div class="col-md-6">
-            <div class="card custom-card bg-success bg-opacity-10 border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total Transactions</h6>
-                            <h4 class="mb-0"><?= count($transactions) ?></h4>
-                        </div>
-                        <div class="avatar bg-success-transparent">
-                            <i class="ti ti-list fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="wallet-card-actions">
+            <a href="<?= base_url('candidate/wallet') ?>" class="btn btn-ghost-w">
+                <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg> Fund Wallet
+            </a>
         </div>
     </div>
 
-    <!-- Transactions Table -->
-    <div class="card custom-card border-0 shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">All Transactions</h5>
+    <!-- KPI stats -->
+    <section class="stats stats--txn" aria-label="Transaction statistics" style="display:grid;">
+        <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)">
+            <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg></span></div>
+            <div class="stat-num">&#8358;<?= number_format($totalSpent, 2) ?></div>
+            <div class="stat-lbl">Total Spent</div>
         </div>
-        <div class="card-body p-0">
-            <?php if (empty($transactions)): ?>
-                <div class="text-center py-5">
-                    <i class="ti ti-receipt-off fs-64 text-muted mb-3"></i>
-                    <h5 class="text-muted">No transactions yet</h5>
-                    <p class="text-muted">Your transaction history will appear here when you purchase a course or subscribe to a plan.</p>
-                    <a href="<?= base_url('training') ?>" class="btn btn-primary mt-2">
-                        <i class="ti ti-plus me-1"></i>Browse Courses
-                    </a>
-                </div>
-            <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Description</th>
-                                <th>Reference</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($transactions as $txn): ?>
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold"><?= date('M d, Y', strtotime($txn['date'])) ?></div>
-                                        <small class="text-muted"><?= date('h:i A', strtotime($txn['date'])) ?></small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark">
-                                            <i class="<?= $txn['icon'] ?> me-1"></i>
-                                            <?= ucfirst($txn['type']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold"><?= esc($txn['description']) ?></div>
-                                    </td>
-                                    <td>
-                                        <code class="small"><?= esc($txn['reference']) ?></code>
-                                    </td>
-                                    <td>
-                                        <?php if ((float) $txn['amount'] > 0): ?>
-                                            <div class="fw-bold">₦<?= number_format((float) $txn['amount'], 2) ?></div>
-                                        <?php else: ?>
-                                            <span class="badge bg-success-transparent text-success">Free</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if (in_array($txn['status'], ['paid', 'completed'])): ?>
-                                            <span class="badge bg-success-transparent text-success">
-                                                <i class="ti ti-check me-1"></i>Completed
-                                            </span>
-                                        <?php elseif ($txn['status'] === 'free'): ?>
-                                            <span class="badge bg-info-transparent text-info">
-                                                <i class="ti ti-check me-1"></i>Free
-                                            </span>
-                                        <?php elseif ($txn['status'] === 'pending'): ?>
-                                            <span class="badge bg-warning-transparent text-warning">
-                                                <i class="ti ti-clock me-1"></i>Pending
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge bg-danger-transparent text-danger">
-                                                <i class="ti ti-x me-1"></i>Failed
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
+        <div class="stat" style="--st-bar:var(--success);--st-icbg:var(--success-light);--st-ic:var(--success)">
+            <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-check-c"/></svg></span></div>
+            <div class="stat-num"><?= $successCount ?></div>
+            <div class="stat-lbl">Successful Transactions</div>
         </div>
-    </div>
+        <div class="stat">
+            <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-receipt"/></svg></span></div>
+            <div class="stat-num"><?= $totalCount ?></div>
+            <div class="stat-lbl">Total Transactions</div>
+        </div>
+    </section>
+
+    <!-- Transactions table -->
+    <section class="card" aria-label="All transactions">
+        <div class="card-head">
+            <span class="card-title">
+                <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-receipt"/></svg>
+                All Transactions
+            </span>
+            <div class="toolbar">
+                <select class="select" id="txn-type-filter" aria-label="Filter by type" style="width:auto;min-width:160px;min-height:38px;font-size:.8rem;">
+                    <option value="">All types</option>
+                    <option value="wallet">Wallet funding</option>
+                    <option value="course">Course payment</option>
+                    <option value="premium">Premium plan</option>
+                    <option value="referral">Referral reward</option>
+                    <option value="reward">Profile reward</option>
+                </select>
+            </div>
+        </div>
+
+        <?php if (empty($transactions)): ?>
+        <div class="empty">
+            <span class="empty-ic"><svg aria-hidden="true" style="width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-receipt"/></svg></span>
+            <h3>No transactions yet</h3>
+            <p>Your payment history will appear here once you fund your wallet or purchase a course.</p>
+            <a href="<?= base_url('candidate/wallet') ?>" class="btn btn-primary btn-sm">
+                <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg>
+                Fund Wallet
+            </a>
+        </div>
+        <?php else: ?>
+        <div class="tbl-wrap">
+            <table class="tbl tbl--txn" id="transactions-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Description</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Receipt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($transactions as $txn): ?>
+                    <?php
+                        $txn = (object)$txn;
+                        $txnType = $txn->type ?? '';
+                        $txnDesc = $txn->description ?? 'Transaction';
+                        $txnDate = $txn->created_at ?? $txn->date ?? '';
+                        $txnAmount = $txn->amount ?? 0;
+                        $isCredit = in_array(strtolower($txnType), ['credit', 'reward']) || str_contains(strtolower($txnDesc), 'reward');
+                        $statusLow = strtolower($txn->status ?? '');
+                        $pillClass = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']) ? 'pill--success' : ($statusLow === 'failed' ? 'pill--rejected' : 'pill--pending');
+                        $statusLabel = ($statusLow === 'paid' || $statusLow === 'success' || $statusLow === 'successful') ? 'Success' : ucfirst($txn->status ?? 'Pending');
+                    ?>
+                    <tr data-type="<?= esc($txnType) ?>">
+                        <td data-lbl="Reference">
+                            <span class="txn-ref"><?= esc($txn->reference ?? $txn->id ?? 'N/A') ?></span>
+                        </td>
+                        <td data-lbl="Description"><?= esc($txnDesc) ?></td>
+                        <td data-lbl="Date"><?= !empty($txnDate) ? esc(date('d M Y', strtotime($txnDate))) : 'N/A' ?></td>
+                        <td data-lbl="Amount">
+                            <b style="font-family:'Sora',sans-serif;color:<?= $isCredit ? 'var(--success)' : 'var(--brand-deep)' ?>">
+                                <?= $isCredit ? '+' : '' ?>&#8358;<?= number_format((float)$txnAmount, 2) ?>
+                            </b>
+                        </td>
+                        <td data-lbl="Status"><span class="pill <?= $pillClass ?>"><?= $statusLabel ?></span></td>
+                        <td data-lbl="Receipt">
+                            <?php if (!empty($txn->receipt_url)): ?>
+                            <a href="<?= esc($txn->receipt_url) ?>" class="ic-btn" target="_blank" aria-label="Download receipt" title="Download receipt">
+                                <svg aria-hidden="true"><use href="#i-download"/></svg>
+                            </a>
+                            <?php else: ?>
+                            <button class="ic-btn" aria-label="No receipt available" title="No receipt" disabled style="opacity:.4;cursor:not-allowed;">
+                                <svg aria-hidden="true"><use href="#i-download"/></svg>
+                            </button>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </section>
+
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+// Type filter
+var typeFilter = document.getElementById('txn-type-filter');
+if (typeFilter) {
+    typeFilter.addEventListener('change', function() {
+        var val = this.value.toLowerCase();
+        document.querySelectorAll('#transactions-table tbody tr').forEach(function(row) {
+            var type = (row.dataset.type || '').toLowerCase();
+            row.style.display = (!val || type.includes(val)) ? '' : 'none';
+        });
+    });
+}
+</script>
 <?= $this->endSection() ?>

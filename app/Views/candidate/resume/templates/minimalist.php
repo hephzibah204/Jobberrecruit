@@ -145,10 +145,12 @@
     <?php endif; ?>
     <div class="contact">
         <?php if (!empty($resume->email)): ?><?= esc($resume->email) ?><?php endif; ?>
-        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location))): ?><span class="sep">/</span><?php endif; ?>
+        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location) || !empty($resume->linkedin))): ?><span class="sep">/</span><?php endif; ?>
         <?php if (!empty($resume->phone)): ?><?= esc($resume->phone) ?><?php endif; ?>
-        <?php if (!empty($resume->phone) && !empty($resume->location)): ?><span class="sep">/</span><?php endif; ?>
+        <?php if (!empty($resume->phone) && (!empty($resume->location) || !empty($resume->linkedin))): ?><span class="sep">/</span><?php endif; ?>
         <?php if (!empty($resume->location)): ?><?= esc($resume->location) ?><?php endif; ?>
+        <?php if (!empty($resume->location) && !empty($resume->linkedin)): ?><span class="sep">/</span><?php endif; ?>
+        <?php if (!empty($resume->linkedin)): ?><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?><?php endif; ?>
     </div>
 </div>
 <div class="header-rule"></div>
@@ -207,6 +209,34 @@
         $skillNames = array_map(function($s) { return $s->skill_name ?? ''; }, $skills);
         $skillNames = array_filter($skillNames);
         echo esc(implode(' <span class="dot">·</span> ', $skillNames));
+        ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($resume->certs)): ?>
+<div class="section-title">Certifications</div>
+<div class="section-content">
+    <div class="skill-items">
+        <?php 
+            $certs = explode("\n", $resume->certs);
+            $certs = array_map('trim', $certs);
+            $certs = array_filter($certs);
+            echo esc(implode(' <span class="dot">·</span> ', $certs));
+        ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($resume->languages)): ?>
+<div class="section-title">Languages</div>
+<div class="section-content">
+    <div class="skill-items">
+        <?php 
+            $langs = explode(",", $resume->languages);
+            $langs = array_map('trim', $langs);
+            $langs = array_filter($langs);
+            echo esc(implode(' <span class="dot">·</span> ', $langs));
         ?>
     </div>
 </div>

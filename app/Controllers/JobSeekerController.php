@@ -87,12 +87,28 @@ class JobSeekerController extends BaseController
             ->where('user_id', $this->auth->user()->id)
             ->countAllResults();
 
-        // Recommended Jobs (simple example: by industry_id)
-        $recommendedJobs = $jobModel
-            ->where('industry_id', $candidate->industry_id ?? null)
-            ->orderBy('created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
+        // Candidate industries (pivot) drive recommendations + the match score.
+        $industryIds = array_column(
+            model(JobSeekerIndustryModel::class)->where('job_seeker_id', $candidate->id)->findAll(),
+            'industry_id'
+        );
+        if (! empty($industryIds)) {
+            // Primary industry, used by MatchService for the industry-alignment signal.
+            $candidate->industry_id = $industryIds[0];
+        }
+
+        // Recommended Jobs — prefer the candidate's industries, fall back to latest openings.
+        $jobQuery = $jobModel->orderBy('created_at', 'DESC');
+        if (! empty($industryIds)) {
+            $jobQuery->whereIn('industry_id', $industryIds);
+        }
+        $recommendedJobs = $jobQuery->limit(6)->findAll();
+        if (empty($recommendedJobs)) {
+            $recommendedJobs = $jobModel->orderBy('created_at', 'DESC')->limit(6)->findAll();
+        }
+
+        // Attach a real, computed match score to each recommendation.
+        $recommendedJobs = (new \App\Services\MatchService())->scoreJobs($candidate, $recommendedJobs);
 
         // Recent Applications (limit 5)
         $recentApplications = $applicationModel
@@ -109,6 +125,12 @@ class JobSeekerController extends BaseController
 
         // (Optional) recent applications count for the welcome banner
         $recentApplicationsCount = count($recentApplications);
+
+        // ====== Weekly Chart Data (job clicks per day, Mon → Sun) ======
+        $weeklyChartData = $this->getWeeklyJobClicks($this->auth->user()->id);
+
+        // ====== Skill Categories (from candidate profile skills string) ======
+        $skillCategories = $this->buildSkillCategories($candidate, $recommendedJobs);
 
         // Profile Completion
         $fields = [
@@ -147,6 +169,8 @@ class JobSeekerController extends BaseController
             'recentApplicationsCount' => $recentApplicationsCount,
             'latestJobs'             => $latestJobs,
             'profileCompletion'      => $profileCompletion,
+            'weeklyChartData'        => $weeklyChartData,
+            'skillCategories'        => $skillCategories,
         ]);
     }
 
@@ -168,10 +192,21 @@ class JobSeekerController extends BaseController
                 ->with('error', 'Please create your profile first.');
         }
 
+        // Earned JobberRecruit certificates (auto-attach to profile, like the mockup)
+        $certificates = model(\App\Models\CourseCertificateModel::class)
+            ->getUserCertificates($this->auth->user()->id);
+
+        // Structured work experience & education history
+        $experiences = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education   = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+
         $data = [
-            'title'     => 'Profile',
-            'user'      => $this->auth->user(),
-            'candidate' => $candidate
+            'title'        => 'Profile',
+            'user'         => $this->auth->user(),
+            'candidate'    => $candidate,
+            'certificates' => $certificates,
+            'experiences'  => $experiences,
+            'education'    => $education,
         ];
 
         return view('candidate/profile', $data);
@@ -187,7 +222,11 @@ class JobSeekerController extends BaseController
         $candidate = $candidateModel->where('user_id', $user->id)->first();
 
         if (!$candidate) {
-            return redirect()->to('candidate/profile/edit')->with('error', 'Please create your profile first.');
+            $candidateModel->insert([
+                'user_id'   => $user->id,
+                'full_name' => $user->username ?? 'Candidate',
+            ]);
+            $candidate = $candidateModel->where('user_id', $user->id)->first();
         }
 
         // If POST, handle update immediately
@@ -307,6 +346,9 @@ class JobSeekerController extends BaseController
             /**
              * UPDATE CANDIDATE
              */
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             $candidateModel->update($candidate->id, $data);
 
             /**
@@ -319,6 +361,71 @@ class JobSeekerController extends BaseController
                 $candidateIndustryModel->insert([
                     'job_seeker_id' => $candidate->id,
                     'industry_id'   => $industryId
+                ]);
+            }
+
+            /**
+             * SYNC WORK EXPERIENCE (delete + reinsert posted rows)
+             */
+            $normMonth = static fn ($v) => $v ? (preg_match('/^\d{4}-\d{2}$/', $v) ? $v . '-01' : $v) : null;
+            $expModel  = model(\App\Models\JobSeekerExperienceModel::class);
+            $expModel->where('job_seeker_id', $candidate->id)->delete();
+            $expTitles  = (array) ($this->request->getPost('exp_job_title') ?? []);
+            $expCompany = (array) ($this->request->getPost('exp_company') ?? []);
+            $expLoc     = (array) ($this->request->getPost('exp_location') ?? []);
+            $expStart   = (array) ($this->request->getPost('exp_start') ?? []);
+            $expEnd     = (array) ($this->request->getPost('exp_end') ?? []);
+            $expCurrent = (array) ($this->request->getPost('exp_is_current') ?? []);
+            $expDesc    = (array) ($this->request->getPost('exp_description') ?? []);
+            foreach ($expTitles as $i => $t) {
+                $t = trim((string) $t);
+                if ($t === '') continue;
+                $isCurrent = in_array($expCurrent[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+                $expModel->insert([
+                    'job_seeker_id' => $candidate->id,
+                    'job_title'     => $t,
+                    'company'       => trim((string) ($expCompany[$i] ?? '')) ?: null,
+                    'location'      => trim((string) ($expLoc[$i] ?? '')) ?: null,
+                    'start_date'    => $normMonth(trim((string) ($expStart[$i] ?? ''))),
+                    'end_date'      => $isCurrent ? null : $normMonth(trim((string) ($expEnd[$i] ?? ''))),
+                    'is_current'    => $isCurrent,
+                    'description'   => trim((string) ($expDesc[$i] ?? '')) ?: null,
+                    'sort_order'    => $i,
+                ]);
+            }
+
+            /**
+             * SYNC EDUCATION (delete + reinsert posted rows)
+             */
+            $eduModel = model(\App\Models\JobSeekerEducationModel::class);
+            $eduModel->where('job_seeker_id', $candidate->id)->delete();
+            $eduDegree = (array) ($this->request->getPost('edu_degree') ?? []);
+            $eduField  = (array) ($this->request->getPost('edu_field') ?? []);
+            $eduSchool = (array) ($this->request->getPost('edu_school') ?? []);
+            $eduStart  = (array) ($this->request->getPost('edu_start_year') ?? []);
+            $eduEnd    = (array) ($this->request->getPost('edu_end_year') ?? []);
+            $eduGrade  = (array) ($this->request->getPost('edu_grade') ?? []);
+            foreach ($eduDegree as $i => $d) {
+                $d = trim((string) $d);
+                if ($d === '') continue;
+                $eduModel->insert([
+                    'job_seeker_id'  => $candidate->id,
+                    'degree'         => $d,
+                    'field_of_study' => trim((string) ($eduField[$i] ?? '')) ?: null,
+                    'school'         => trim((string) ($eduSchool[$i] ?? '')) ?: null,
+                    'start_year'     => trim((string) ($eduStart[$i] ?? '')) ?: null,
+                    'end_year'       => trim((string) ($eduEnd[$i] ?? '')) ?: null,
+                    'grade'          => trim((string) ($eduGrade[$i] ?? '')) ?: null,
+                    'sort_order'     => $i,
+                ]);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to update profile. Database transaction error.'
                 ]);
             }
 
@@ -346,13 +453,19 @@ class JobSeekerController extends BaseController
             ->where('job_seeker_id', $candidate->id)
             ->findColumn('industry_id') ?? [];
 
+        // Existing structured history for repeatable form sections
+        $experiences = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education   = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+
         return view('candidate/edit_profile', [
             'title' => 'Edit Profile',
             'user' => $user,
             'candidate' => $candidate,
             'industries' => $parentIndustries,
             'states' => $states,
-            'candidateIndustryIds' => $candidateIndustryIds
+            'candidateIndustryIds' => $candidateIndustryIds,
+            'experiences' => $experiences,
+            'education' => $education,
         ]);
     }
 
@@ -367,8 +480,8 @@ class JobSeekerController extends BaseController
             ->where('user_id', $this->auth->user()->id)
             ->first();
 
-        return view('candidate/security/index', [
-            'title' => 'Security Settings',
+        return view('candidate/settings', [
+            'title' => 'General Settings',
             'user'  => $this->auth->user(),
             'candidate' => $candidate,
         ]);
@@ -422,6 +535,164 @@ class JobSeekerController extends BaseController
         return $this->response->setJSON([
             'success' => false,
             'message' => 'Failed to update password. Please try again.'
+        ]);
+    }
+
+    /**
+     * Toggle the "visible to employers" flag (AJAX). Backs the profile visibility switch.
+     * When hidden, the candidate no longer appears in employer candidate search.
+     */
+    public function toggleVisibility()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
+        if (! $candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Profile not found.']);
+        }
+
+        // Use the posted value when present, otherwise flip the current state.
+        $raw = $this->request->getPost('is_visible');
+        if ($raw === null) {
+            $newValue = $candidate->is_visible ? 0 : 1;
+        } else {
+            $newValue = in_array($raw, ['1', 1, 'true', true, 'on'], true) ? 1 : 0;
+        }
+
+        $candidateModel->update($candidate->id, ['is_visible' => $newValue]);
+
+        return $this->response->setJSON([
+            'success'    => true,
+            'is_visible' => (bool) $newValue,
+            'message'    => $newValue
+                ? 'Your profile is now visible to employers.'
+                : 'Your profile is now hidden from employer search.',
+        ]);
+    }
+
+    /**
+     * Save per-channel notification preferences (AJAX).
+     */
+    public function saveNotificationPreferences()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
+        if (! $candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Profile not found.']);
+        }
+
+        $flag = fn (string $name) => in_array(
+            $this->request->getPost($name),
+            ['1', 1, 'true', true, 'on'],
+            true
+        ) ? 1 : 0;
+
+        $candidateModel->update($candidate->id, [
+            'notify_job_alerts'          => $flag('notify_job_alerts'),
+            'notify_application_updates' => $flag('notify_application_updates'),
+            'notify_messages'            => $flag('notify_messages'),
+            'notify_marketing'           => $flag('notify_marketing'),
+        ]);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Notification preferences saved.']);
+    }
+
+    /**
+     * Permanently delete the candidate's account and all associated data (GDPR erasure).
+     * Requires password confirmation. This is irreversible.
+     */
+    public function deleteAccount()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $user = $this->auth->user();
+
+        // Confirm the password before destroying anything.
+        $authenticator = auth()->getAuthenticator();
+        if (! $authenticator->check([
+            'email'    => $user->email,
+            'password' => (string) $this->request->getPost('password'),
+        ])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Password is incorrect.']);
+        }
+
+        $db = \Config\Database::connect();
+        $candidate = model(JobSeekerModel::class)->where('user_id', $user->id)->first();
+
+        // Best-effort deletion of owned rows. Each is guarded so an unexpected
+        // schema difference can never block the authoritative user deletion below.
+        $safeDelete = static function (string $table, string $column, $value) use ($db): void {
+            try {
+                if ($db->tableExists($table)) {
+                    $db->table($table)->where($column, $value)->delete();
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'deleteAccount cleanup failed on ' . $table . ': ' . $e->getMessage());
+            }
+        };
+
+        if ($candidate) {
+            $cid = $candidate->id;
+            foreach ([
+                'job_applications'        => 'job_seeker_id',
+                'job_alerts'              => 'job_seeker_id',
+                'candidate_notifications' => 'candidate_id',
+                'job_seeker_experiences'  => 'job_seeker_id',
+                'job_seeker_education'    => 'job_seeker_id',
+                'job_seeker_industries'   => 'job_seeker_id',
+            ] as $table => $column) {
+                $safeDelete($table, $column, $cid);
+            }
+        }
+
+        // Resume builder children are keyed by resume_id — clear them first.
+        try {
+            if ($db->tableExists('resumes')) {
+                $resumeIds = array_column($db->table('resumes')->select('id')->where('user_id', $user->id)->get()->getResultArray(), 'id');
+                if ($resumeIds) {
+                    foreach (['resume_autosaves', 'resume_education', 'resume_experiences', 'resume_skills'] as $child) {
+                        if ($db->tableExists($child)) {
+                            $db->table($child)->whereIn('resume_id', $resumeIds)->delete();
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'deleteAccount resume cleanup failed: ' . $e->getMessage());
+        }
+
+        foreach ([
+            'saved_jobs'          => 'user_id',
+            'job_clicks'          => 'user_id',
+            'wallets'             => 'user_id',
+            'resumes'             => 'user_id',
+            'course_certificates' => 'user_id',
+            'course_enrollments'  => 'user_id',
+            'job_seekers'         => 'user_id',
+        ] as $table => $column) {
+            $safeDelete($table, $column, $user->id);
+        }
+
+        // Authoritative removal of the identity (purges auth_identities, tokens, etc.).
+        model(\CodeIgniter\Shield\Models\UserModel::class)->delete($user->id, true);
+
+        // End the session.
+        auth()->logout();
+        session()->destroy();
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'message'  => 'Your account and all associated data have been permanently deleted.',
+            'redirect' => site_url('/'),
         ]);
     }
 
@@ -875,6 +1146,99 @@ class JobSeekerController extends BaseController
     }
 
     /**
+     * Build an array of 7 integers: job-click counts per day (Mon → Sun) for the current week.
+     */
+    private function getWeeklyJobClicks(int $userId): array
+    {
+        $db = \Config\Database::connect();
+
+        // Monday of this week 00:00:00
+        $weekStart = date('Y-m-d 00:00:00', strtotime('monday this week'));
+        $weekEnd   = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+
+        $rows = $db->table('job_clicks')
+            ->select('DAYOFWEEK(created_at) as dow, COUNT(*) as cnt')
+            ->where('user_id', $userId)
+            ->where('created_at >=', $weekStart)
+            ->where('created_at <=', $weekEnd)
+            ->groupBy('DAYOFWEEK(created_at)')
+            ->get()
+            ->getResultArray();
+
+        // DAYOFWEEK returns: 1=Sun, 2=Mon, 3=Tue, … 7=Sat
+        // We want Mon→Sun (indices 0–6).
+        $map = [];
+        foreach ($rows as $r) {
+            // Convert DAYOFWEEK to 0-based Mon index
+            $dow = (int) $r['dow'];           // 1=Sun..7=Sat
+            $monIdx = ($dow + 5) % 7;          // Mon=0 … Sun=6
+            $map[$monIdx] = (int) $r['cnt'];
+        }
+
+        $result = [];
+        for ($i = 0; $i < 7; $i++) {
+            $result[] = $map[$i] ?? 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Parse the candidate's comma-separated skills string and compute a
+     * match percentage for each skill based on how often it appears in
+     * recommended job listings.
+     *
+     * Returns an array of objects with →name and →match properties.
+     */
+    private function buildSkillCategories(object $candidate, array $recommendedJobs): array
+    {
+        $rawSkills = trim((string) ($candidate->skills ?? ''));
+        if ($rawSkills === '') {
+            return [];
+        }
+
+        // Split on commas, semicolons, or newlines; trim each; deduplicate
+        $candidateSkills = array_values(array_unique(
+            array_map('trim', preg_split('/[,;\n]+/', $rawSkills))
+        ));
+
+        if (empty($candidateSkills)) {
+            return [];
+        }
+
+        // Build a combined text blob from recommended job titles + descriptions
+        $jobText = strtolower(implode(' ', array_map(
+            fn($j) => ($j->title ?? '') . ' ' . ($j->description ?? ''),
+            $recommendedJobs
+        )));
+
+        $jobCount = max(1, count($recommendedJobs));
+
+        $categories = [];
+        foreach ($candidateSkills as $skill) {
+            $lower = strtolower($skill);
+            // Count how many recommended jobs mention this skill
+            $matches = 0;
+            foreach ($recommendedJobs as $job) {
+                $haystack = strtolower(($job->title ?? '') . ' ' . ($job->description ?? '') . ' ' . ($job->skills ?? ''));
+                if (str_contains($haystack, $lower)) {
+                    $matches++;
+                }
+            }
+            $pct = (int) round(($matches / $jobCount) * 100);
+
+            $obj = new \stdClass();
+            $obj->name  = $skill;
+            $obj->match = $pct;
+            $categories[] = $obj;
+        }
+
+        // Sort by match descending, keep top 6
+        usort($categories, fn($a, $b) => $b->match <=> $a->match);
+        return array_slice($categories, 0, 6);
+    }
+
+    /**
      * GDPR: Export all user data
      */
     public function exportData()
@@ -893,14 +1257,38 @@ class JobSeekerController extends BaseController
             'profile' => $candidate ? [
                 'full_name' => $candidate->full_name ?? '',
                 'phone' => $candidate->phone ?? '',
+                'dob' => $candidate->dob ?? '',
+                'gender' => $candidate->gender ?? '',
                 'bio' => $candidate->bio ?? '',
+                'description' => $candidate->description ?? '',
                 'skills' => $candidate->skills ?? '',
+                'languages' => $candidate->languages ?? '',
                 'experience_years' => $candidate->experience_years ?? '',
                 'education_level' => $candidate->education_level ?? '',
                 'job_title' => $candidate->job_title ?? '',
+                'employment_type' => $candidate->employment_type ?? '',
                 'location' => $candidate->location ?? '',
+                'desired_salary' => $candidate->desired_salary ?? '',
+                'salary_type' => $candidate->salary_type ?? '',
+                'availability' => $candidate->availability ?? '',
+                'portfolio' => $candidate->portfolio ?? '',
                 'resume' => $candidate->resume ?? '',
+                'is_visible' => $candidate->is_visible ?? '',
+                'notification_preferences' => [
+                    'job_alerts' => $candidate->notify_job_alerts ?? '',
+                    'application_updates' => $candidate->notify_application_updates ?? '',
+                    'messages' => $candidate->notify_messages ?? '',
+                    'marketing' => $candidate->notify_marketing ?? '',
+                ],
             ] : [],
+            'work_experience' => $candidate
+                ? model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id)
+                : [],
+            'education' => $candidate
+                ? model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id)
+                : [],
+            'certificates' => model(\App\Models\CourseCertificateModel::class)
+                ->getUserCertificates($this->auth->user()->id),
             'applications' => model(\App\Models\JobApplicationModel::class)
                 ->where('job_seeker_id', $candidate?->id)
                 ->findAll(),
@@ -932,10 +1320,9 @@ class JobSeekerController extends BaseController
         }
 
         $transactions = [];
-
         $db = \Config\Database::connect();
 
-        // Get course enrollments with payments
+        // 1. Get course enrollments with payments
         if ($db->tableExists('course_enrollments') && $db->tableExists('courses')) {
             $enrollments = model(\App\Models\CourseEnrollmentModel::class)
                 ->select('course_enrollments.*, courses.title as course_name')
@@ -945,19 +1332,22 @@ class JobSeekerController extends BaseController
                 ->findAll();
 
             foreach ($enrollments as $enr) {
+                $enrObj = (object)$enr;
                 $transactions[] = [
-                    'type' => 'course',
-                    'description' => 'Course: ' . ($enr->course_name ?? 'Unknown'),
-                    'reference' => $enr->payment_reference ?? 'FREE-' . $enr->id,
-                    'amount' => (float) ($enr->amount ?? 0),
-                    'status' => $enr->payment_reference ? 'paid' : ($enr->amount > 0 ? 'pending' : 'free'),
-                    'date' => $enr->created_at ?? '',
-                    'icon' => 'ti ti-book',
+                    'type'        => 'course',
+                    'description' => 'Course: ' . ($enrObj->course_name ?? 'Unknown'),
+                    'reference'   => $enrObj->payment_reference ?? 'FREE-' . ($enrObj->id ?? ''),
+                    'amount'      => (float) ($enrObj->amount ?? 0),
+                    'status'      => $enrObj->payment_reference ? 'success' : ($enrObj->amount > 0 ? 'pending' : 'success'),
+                    'date'        => $enrObj->created_at ?? '',
+                    'created_at'  => $enrObj->created_at ?? '',
+                    'icon'        => 'ti ti-book',
+                    'receipt_url' => '',
                 ];
             }
         }
 
-        // Get subscription payments
+        // 2. Get subscription payments
         if ($db->tableExists('payments')) {
             $payments = model(\App\Models\PaymentModel::class)
                 ->where('user_id', $user->id)
@@ -965,38 +1355,81 @@ class JobSeekerController extends BaseController
                 ->findAll();
 
             foreach ($payments as $pay) {
-                $metadata = is_string($pay['metadata']) ? json_decode($pay['metadata'], true) : ($pay['metadata'] ?? []);
+                $payObj = (object)$pay;
+                $metadata = is_string($payObj->metadata) ? json_decode($payObj->metadata, true) : (array)($payObj->metadata ?? []);
                 $desc = 'Subscription Payment';
                 if (!empty($metadata['plan_id']) && $db->tableExists('plans')) {
                     $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
                     $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
                 }
                 $transactions[] = [
-                    'type' => 'subscription',
+                    'type'        => 'subscription',
                     'description' => $desc,
-                    'reference' => $pay['reference'] ?? '',
-                    'amount' => (float) ($pay['amount'] ?? 0),
-                    'status' => $pay['status'] ?? 'pending',
-                    'date' => $pay['paid_at'] ?? $pay['created_at'] ?? '',
-                    'icon' => 'ti ti-credit-card',
+                    'reference'   => $payObj->reference ?? '',
+                    'amount'      => (float) ($payObj->amount ?? 0),
+                    'status'      => $payObj->status ?? 'pending',
+                    'date'        => $payObj->paid_at ?? $payObj->created_at ?? '',
+                    'created_at'  => $payObj->paid_at ?? $payObj->created_at ?? '',
+                    'icon'        => 'ti ti-credit-card',
+                    'receipt_url' => '',
                 ];
+            }
+        }
+
+        // 3. Get wallet transactions (funding, rewards, etc.)
+        if ($db->tableExists('wallets') && $db->tableExists('wallet_transactions')) {
+            $walletModel = model(\App\Models\WalletModel::class);
+            $wallet = $walletModel->where('user_id', $user->id)->first();
+            if ($wallet) {
+                $walletObj = (object)$wallet;
+                $walletTxns = model(\App\Models\WalletTransactionModel::class)
+                    ->where('wallet_id', $walletObj->id)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+                foreach ($walletTxns as $wt) {
+                    $wtObj = (object)$wt;
+                    $transactions[] = [
+                        'type'        => $wtObj->type ?? 'wallet',
+                        'description' => $wtObj->description ?? 'Wallet Transaction',
+                        'reference'   => $wtObj->reference ?? 'WTX-' . ($wtObj->id ?? ''),
+                        'amount'      => (float) ($wtObj->amount ?? 0),
+                        'status'      => 'success',
+                        'date'        => $wtObj->created_at ?? '',
+                        'created_at'  => $wtObj->created_at ?? '',
+                        'icon'        => 'ti ti-wallet',
+                        'receipt_url' => '',
+                    ];
+                }
             }
         }
 
         // Sort by date desc
         usort($transactions, function ($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
-        $totalSpent = array_sum(array_column(
-            array_filter($transactions, fn($t) => in_array($t['status'], ['paid', 'completed'])),
-            'amount'
-        ));
+        // Compute totals safely from completed/success status
+        $totalSpent = 0;
+        $successCount = 0;
+        foreach ($transactions as $t) {
+            $statusLow = strtolower($t['status'] ?? '');
+            $typeLow   = strtolower($t['type'] ?? '');
+            $isSuccess = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']);
+            
+            if ($isSuccess) {
+                $successCount++;
+                // If it is a debit (spent), increment totalSpent. 
+                // Wallet credits (e.g. credit/reward) are not "spent".
+                if ($typeLow !== 'credit' && !str_contains(strtolower($t['description']), 'reward')) {
+                    $totalSpent += $t['amount'];
+                }
+            }
+        }
 
         return view('candidate/transactions', [
-            'title' => 'Transaction History',
+            'title'        => 'Transaction History',
             'transactions' => $transactions,
-            'totalSpent' => $totalSpent,
+            'totalSpent'   => $totalSpent,
         ]);
     }
 }

@@ -9,6 +9,11 @@ Disallow: /login
 Disallow: /register
 Disallow: /signin
 Disallow: /auth/
+Allow: /auth/plugins/
+Allow: /auth/css/
+Allow: /auth/js/
+Allow: /auth/fonts/
+Allow: /auth/img/
 Disallow: /candidate/
 Disallow: /employer/dashboard
 Disallow: /employer/settings

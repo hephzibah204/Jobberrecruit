@@ -31,7 +31,12 @@ class JobSeekerModel extends Model
         'salary_type',
         'availability',
         'state_id',
-        'is_verified'
+        'is_verified',
+        'is_visible',
+        'notify_job_alerts',
+        'notify_application_updates',
+        'notify_messages',
+        'notify_marketing',
     ];
 
     protected $useTimestamps = true;
@@ -109,7 +114,9 @@ class JobSeekerModel extends Model
             'job_seekers.availability',
             'states.name AS state_name',
         ])
-            ->join('states', 'states.id = job_seekers.state_id', 'left');
+            ->join('states', 'states.id = job_seekers.state_id', 'left')
+            /* Only candidates who have kept their profile visible to employers */
+            ->where('job_seekers.is_visible', 1);
 
         /* Keyword search */
         if (!empty($filters['keyword'])) {
@@ -134,9 +141,28 @@ class JobSeekerModel extends Model
             $builder->where('job_seekers.experience_years >=', (int)$filters['experience_years']);
         }
 
-        return $builder
-            ->orderBy('job_seekers.created_at', 'DESC')
-            ->paginate($perPage);
+        /* Desired role / job title */
+        if (!empty($filters['job_title'])) {
+            $builder->whereIn('job_seekers.job_title', (array) $filters['job_title']);
+        }
+
+        /* Education level */
+        if (!empty($filters['education_level'])) {
+            $builder->whereIn('job_seekers.education_level', (array) $filters['education_level']);
+        }
+
+        switch ($filters['sort'] ?? '') {
+            case 'most_experienced':
+                $builder->orderBy('job_seekers.experience_years', 'DESC');
+                break;
+            case 'recently_active':
+                $builder->orderBy('job_seekers.updated_at', 'DESC');
+                break;
+            default:
+                $builder->orderBy('job_seekers.created_at', 'DESC');
+        }
+
+        return $builder->paginate($perPage);
     }
 
     public function filter(array $filters)

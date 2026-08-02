@@ -53,7 +53,7 @@
                                         <div class="fw-semibold"><?= esc($subscriber->email) ?></div>
                                     </td>
                                     <td>
-                                        <?php if ($subscriber->user_id): ?>
+                                        <?php if ($subscriber->user_id ?? null): ?>
                                             <span class="badge bg-info">User #<?= $subscriber->user_id ?></span>
                                         <?php else: ?>
                                             <span class="badge bg-secondary">Guest</span>

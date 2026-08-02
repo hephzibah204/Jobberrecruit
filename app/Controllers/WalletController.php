@@ -148,6 +148,9 @@ class WalletController extends BaseController
             $txExists = $this->paymentModel->where('reference', $reference)->where('status', 'paid')->first();
             
             if (!$txExists && $type === 'wallet_funding') {
+                $db = \Config\Database::connect();
+                $db->transStart();
+
                 // 1. Record payment ledger
                 $this->paymentModel->insert([
                     'user_id'          => $userId,
@@ -167,6 +170,14 @@ class WalletController extends BaseController
                     reference: $reference,
                     description: 'Wallet funded successfully via Paystack.'
                 );
+
+                $db->transComplete();
+
+                if ($db->transStatus() === false) {
+                    log_message('error', 'Database transaction failed in paymentCallback for reference: ' . $reference);
+                    return redirect()->to(($userType === 'employer') ? base_url('employer/wallet') : base_url('candidate/wallet'))
+                        ->with('error', 'Payment processed but recording transaction failed. Please contact support.');
+                }
             }
 
             session()->remove('pending_wallet_funding');
@@ -296,6 +307,9 @@ class WalletController extends BaseController
 
         $reference = 'wallet_pay_' . uniqid();
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         // 3. Debit Wallet
         $this->walletService->debit(
             userId: $user->id,
@@ -374,6 +388,15 @@ class WalletController extends BaseController
                 reference: $reference,
                 source: 'wallet'
             );
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Transaction failed during wallet payment process.'
+            ]);
         }
 
         return $this->response->setJSON([

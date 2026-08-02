@@ -2,44 +2,63 @@
 Options -Indexes
 
 # ----------------------------------------------------------------------
+# Deny access to sensitive files by name
+# ----------------------------------------------------------------------
+<FilesMatch "^(\.env|env|\.gitignore|\.gitattributes|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|spark|preload\.php)$">
+	Require all denied
+</FilesMatch>
+
+# Deny access to sensitive files by extension
+<FilesMatch "\.(sql|md|py|bak|log|zip|skill|lock)$">
+	Require all denied
+</FilesMatch>
+
+# ----------------------------------------------------------------------
 # Rewrite engine
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# Block direct access to any PHP or HTML file except index.php
-# ----------------------------------------------------------------------
-
-# Block all .php files except index.php
-# Allow index.php only
-RewriteRule ^index\.php$ - [L]
-
-# Block any .php or .html file in public_html
-RewriteCond %{THE_REQUEST} \s/.*\.(php|html)\s [NC]
-RewriteRule .* https://jobberrecruit.com [R=301,L]
-
-# Turning on the rewrite engine is necessary for the following rules and features.
-# FollowSymLinks must be enabled for this to work.
 <IfModule mod_rewrite.c>
 	Options +FollowSymlinks
 	RewriteEngine On
 
-	# If you installed CodeIgniter in a subfolder, you will need to
-	# change the following line to match the subfolder you need.
-	# http://httpd.apache.org/docs/current/mod/mod_rewrite.html#rewritebase
-	# RewriteBase /
+	# Block framework internals and non-public directories
+	RewriteRule ^(app|writable|writable_old|tests|vendor|database|scratch|Doc|node_modules|chrome-profile)(/|$) - [F,L]
+
+	# Block dotfiles and dot-directories (.env, .git, .claude, ...)
+	RewriteRule (^|/)\.(?!well-known) - [F,L]
+
+	# Allow the front controller
+	RewriteRule ^index\.php$ - [L]
+
+	# Allow PWA offline page and site-verification files
+	RewriteRule ^(offline\.html|google[a-z0-9]+\.html)$ - [L]
+
+	# Block direct access to any other .php or .html file
+	RewriteCond %{THE_REQUEST} \s/[^?\s]*\.(php|html)[\s?] [NC]
+	RewriteRule .* https://jobberrecruit.com [R=301,L]
+
+	# Rewrite "www.example.com -> example.com" (keep HTTPS)
+	RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+	RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+	# Force HTTPS
+	RewriteCond %{HTTPS} !=on
+	RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1) [NC]
+	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
 	# Redirect Trailing Slashes...
 	RewriteCond %{REQUEST_FILENAME} !-d
 	RewriteCond %{REQUEST_URI} (.+)/$
 	RewriteRule ^ %1 [L,R=301]
 
-	# Rewrite "www.example.com -> example.com"
-	RewriteCond %{HTTPS} !=on
-	RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-	RewriteRule ^ http://%1%{REQUEST_URI} [R=301,L]
+	# Force-route specific app paths to index.php regardless of physical directories
+	RewriteRule ^(training|training/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(cv-review|cv-review/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(aptitude|aptitude/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(webinars|webinars/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(career-advice|career-advice/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(job-ads|employers|recruitment|about-us|contact-us|blog|faq|candidates|career)(/.*)?$ index.php/$1$2 [L,NC,QSA]
 
-	# Checks to see if the user is attempting to access a valid file,
-	# such as an image or css document, if this isn't true it sends the
-	# request to the front controller, index.php
+	# General catch-all: if not a real file or directory, route to index.php
 	RewriteCond %{REQUEST_FILENAME} !-f
 	RewriteCond %{REQUEST_FILENAME} !-d
 	RewriteRule ^([\s\S]*)$ index.php/$1 [L,NC,QSA]

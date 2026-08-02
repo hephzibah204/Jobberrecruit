@@ -20,7 +20,7 @@
     <div id="preloader-active">
       <div class="preloader d-flex align-items-center justify-content-center">
         <div class="preloader-inner position-relative">
-          <div class="text-center"><img src="assets/imgs/template/loading.gif" alt="jobBox"></div>
+          <div class="text-center"><img src="<?= base_url('assets/imgs/template/loading.gif') ?>"  alt="jobBox"></div>
         </div>
       </div>
     </div>
@@ -73,7 +73,7 @@
       <div class="container">
         <div class="main-header">
           <div class="header-left">
-            <div class="header-logo"><a class="d-flex" href="index.html"><img alt="jobBox" src="assets/imgs/template/jobhub-logo.svg"></a></div>
+            <div class="header-logo"><a class="d-flex" href="index.html"><img alt="jobBox" src="<?= base_url('assets/imgs/template/jobhub-logo.svg') ?>" ></a></div>
           </div>
           <div class="header-nav">
             <nav class="nav-main-menu">
@@ -580,7 +580,7 @@
               </div>
               <div class="col-xl-5 col-lg-12 d-none d-xl-block col-md-6">
                 <div class="banner-imgs">
-                  <div class="block-1 shape-1"><img class="img-responsive" alt="jobBox" src="assets/imgs/page/homepage4/banner.png"></div>
+                  <div class="block-1 shape-1"><img class="img-responsive" alt="jobBox" src="<?= base_url('assets/imgs/page/homepage4/banner.png') ?>" ></div>
                 </div>
               </div>
             </div>
@@ -595,14 +595,14 @@
               <p class="font-lg color-text-paragraph-2 wow animate__animated animate__fadeInUp">Explore the different types of available jobs to apply<br class="d-none d-lg-block">discover which is right for you.</p>
               <div class="list-tabs list-tabs-2 mt-30">
                 <ul class="nav nav-tabs" role="tablist">
-                  <li><a class="active" id="nav-tab-job-1" href="#tab-job-1" data-bs-toggle="tab" role="tab" aria-controls="tab-job-1" aria-selected="true"><img src="assets/imgs/page/homepage1/management.svg" alt="jobBox"> Management</a></li>
-                  <li><a id="nav-tab-job-2" href="#tab-job-2" data-bs-toggle="tab" role="tab" aria-controls="tab-job-2" aria-selected="false"><img src="assets/imgs/page/homepage1/marketing.svg" alt="jobBox"> Marketing &amp; Sale</a></li>
-                  <li><a id="nav-tab-job-3" href="#tab-job-3" data-bs-toggle="tab" role="tab" aria-controls="tab-job-3" aria-selected="false"><img src="assets/imgs/page/homepage1/finance.svg" alt="jobBox"> Finance</a></li>
-                  <li><a id="nav-tab-job-4" href="#tab-job-4" data-bs-toggle="tab" role="tab" aria-controls="tab-job-4" aria-selected="false"><img src="assets/imgs/page/homepage1/human.svg" alt="jobBox"> Human Resource</a></li>
-                  <li><a id="nav-tab-job-5" href="#tab-job-5" data-bs-toggle="tab" role="tab" aria-controls="tab-job-5" aria-selected="false"><img src="assets/imgs/page/homepage1/retail.svg" alt="jobBox"> Retail &amp; Products</a></li>
-                  <li><a id="nav-tab-job-6" href="#tab-job-6" data-bs-toggle="tab" role="tab" aria-controls="tab-job-6" aria-selected="false"><img src="assets/imgs/page/homepage1/content.svg" alt="jobBox"> Content Writer</a></li>
-                  <li><a id="nav-tab-job-7" href="#tab-job-7" data-bs-toggle="tab" role="tab" aria-controls="tab-job-7" aria-selected="false"><img src="assets/imgs/page/homepage1/content.svg" alt="jobBox"> Funiture Design</a></li>
-                  <li><a id="nav-tab-job-8" href="#tab-job-8" data-bs-toggle="tab" role="tab" aria-controls="tab-job-8" aria-selected="false"><img src="assets/imgs/page/homepage1/content.svg" alt="jobBox"> Other</a></li>
+                  <li><a class="active" id="nav-tab-job-1" href="#tab-job-1" data-bs-toggle="tab" role="tab" aria-controls="tab-job-1" aria-selected="true"><img src="<?= base_url('assets/imgs/page/homepage1/management.svg') ?>"  alt="jobBox"> Management</a></li>
+                  <li><a id="nav-tab-job-2" href="#tab-job-2" data-bs-toggle="tab" role="tab" aria-controls="tab-job-2" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/marketing.svg') ?>"  alt="jobBox"> Marketing &amp; Sale</a></li>
+                  <li><a id="nav-tab-job-3" href="#tab-job-3" data-bs-toggle="tab" role="tab" aria-controls="tab-job-3" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/finance.svg') ?>"  alt="jobBox"> Finance</a></li>
+                  <li><a id="nav-tab-job-4" href="#tab-job-4" data-bs-toggle="tab" role="tab" aria-controls="tab-job-4" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/human.svg') ?>"  alt="jobBox"> Human Resource</a></li>
+                  <li><a id="nav-tab-job-5" href="#tab-job-5" data-bs-toggle="tab" role="tab" aria-controls="tab-job-5" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/retail.svg') ?>"  alt="jobBox"> Retail &amp; Products</a></li>
+                  <li><a id="nav-tab-job-6" href="#tab-job-6" data-bs-toggle="tab" role="tab" aria-controls="tab-job-6" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/content.svg') ?>"  alt="jobBox"> Content Writer</a></li>
+                  <li><a id="nav-tab-job-7" href="#tab-job-7" data-bs-toggle="tab" role="tab" aria-controls="tab-job-7" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/content.svg') ?>"  alt="jobBox"> Funiture Design</a></li>
+                  <li><a id="nav-tab-job-8" href="#tab-job-8" data-bs-toggle="tab" role="tab" aria-controls="tab-job-8" aria-selected="false"><img src="<?= base_url('assets/imgs/page/homepage1/content.svg') ?>"  alt="jobBox"> Other</a></li>
                 </ul>
               </div>
             </div>
@@ -614,7 +614,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -635,7 +635,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -656,7 +656,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -677,7 +677,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -698,7 +698,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -719,7 +719,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -745,7 +745,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -766,7 +766,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -787,7 +787,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -808,7 +808,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -829,7 +829,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -850,7 +850,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -876,7 +876,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -897,7 +897,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -918,7 +918,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -939,7 +939,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -960,7 +960,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -981,7 +981,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1007,7 +1007,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1028,7 +1028,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1049,7 +1049,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1070,7 +1070,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1091,7 +1091,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1112,7 +1112,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1138,7 +1138,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1159,7 +1159,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1180,7 +1180,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1201,7 +1201,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1222,7 +1222,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1243,7 +1243,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1269,7 +1269,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1290,7 +1290,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1311,7 +1311,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1332,7 +1332,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1353,7 +1353,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1374,7 +1374,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1400,7 +1400,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1421,7 +1421,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1442,7 +1442,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1463,7 +1463,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1484,7 +1484,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1505,7 +1505,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1531,7 +1531,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img4.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img4.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1552,7 +1552,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot bg-green"><span>Freelancer</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img1.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img1.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1573,7 +1573,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img2.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img2.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1594,7 +1594,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img3.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img3.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1615,7 +1615,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img5.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img5.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1636,7 +1636,7 @@
                       <div class="card-grid-2 grid-bd-16 hover-up">
                         <div class="card-grid-2-image"><span class="lbl-hot"><span>Full time</span></span>
                           <div class="image-box">
-                            <figure><img src="assets/imgs/page/homepage2/img6.png" alt="jobBox"></figure>
+                            <figure><img src="<?= base_url('assets/imgs/page/homepage2/img6.png') ?>"  alt="jobBox"></figure>
                           </div>
                         </div>
                         <div class="card-block-info">
@@ -1673,14 +1673,14 @@
                 <div class="swiper-wrapper pb-70 pt-5">
                   <div class="swiper-slide hover-up"><a href="jobs-list">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/marketing.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/marketing.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Marketing &amp; Sale</h4>
                           <p class="font-xs">1526<span> Jobs Available</span></p>
                         </div>
                       </div></a><a href="jobs-grid">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/customer.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/customer.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Customer Help</h4>
                           <p class="font-xs">185<span> Jobs Available</span></p>
@@ -1689,14 +1689,14 @@
                   </div>
                   <div class="swiper-slide hover-up"><a href="jobs-grid">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/finance.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/finance.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Finance</h4>
                           <p class="font-xs">168<span> Jobs Available</span></p>
                         </div>
                       </div></a><a href="jobs-list">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/lightning.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/lightning.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Software</h4>
                           <p class="font-xs">1856<span> Jobs Available</span></p>
@@ -1705,14 +1705,14 @@
                   </div>
                   <div class="swiper-slide hover-up"><a href="jobs-grid">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/human.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/human.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Human Resource</h4>
                           <p class="font-xs">165<span> Jobs Available</span></p>
                         </div>
                       </div></a><a href="jobs-grid">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/management.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/management.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Management</h4>
                           <p class="font-xs">965<span> Jobs Available</span></p>
@@ -1721,14 +1721,14 @@
                   </div>
                   <div class="swiper-slide hover-up"><a href="jobs-list">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/retail.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/retail.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Retail &amp; Products</h4>
                           <p class="font-xs">563<span> Jobs Available</span></p>
                         </div>
                       </div></a><a href="jobs-grid">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/security.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/security.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Security Analyst</h4>
                           <p class="font-xs">254<span> Jobs Available</span></p>
@@ -1737,14 +1737,14 @@
                   </div>
                   <div class="swiper-slide hover-up"><a href="jobs-grid">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/content.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/content.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Content Writer</h4>
                           <p class="font-xs">142<span> Jobs Available</span></p>
                         </div>
                       </div></a><a href="jobs-list">
                       <div class="item-logo">
-                        <div class="image-left"><img alt="jobBox" src="assets/imgs/page/homepage1/research.svg"></div>
+                        <div class="image-left"><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/research.svg') ?>" ></div>
                         <div class="text-info-right">
                           <h4>Market Research</h4>
                           <p class="font-xs">532<span> Jobs Available</span></p>
@@ -1771,60 +1771,60 @@
                 <div class="swiper-wrapper pb-70 pt-5">
                   <div class="swiper-slide hover-up">
                     <div class="card-review-1"> 
-                      <div class="image-review"> <img src="assets/imgs/page/homepage4/user.png" alt="jobBox"></div>
+                      <div class="image-review"> <img src="<?= base_url('assets/imgs/page/homepage4/user.png') ?>"  alt="jobBox"></div>
                       <div class="review-info">
                         <div class="review-name"> 
                           <h5>Ellis Kim</h5><span class="font-xs">Digital Artist</span>
                         </div>
-                        <div class="review-rating"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"></div>
+                        <div class="review-rating"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"></div>
                         <div class="review-comment">Sit amet, consectetur adipiscing elit, sed do eiusmod tempor incidid unt. Labore et dolore nostrud temp exercitation.</div>
                       </div>
                     </div>
                   </div>
                   <div class="swiper-slide hover-up">
                     <div class="card-review-1"> 
-                      <div class="image-review"> <img src="assets/imgs/page/homepage4/user2.png" alt="jobBox"></div>
+                      <div class="image-review"> <img src="<?= base_url('assets/imgs/page/homepage4/user2.png') ?>"  alt="jobBox"></div>
                       <div class="review-info">
                         <div class="review-name"> 
                           <h5>John Smith</h5><span class="font-xs">Product designer</span>
                         </div>
-                        <div class="review-rating"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"></div>
+                        <div class="review-rating"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"></div>
                         <div class="review-comment">Sit amet, consectetur adipiscing elit, sed do eiusmod tempor incidid unt. Labore et dolore nostrud temp exercitation.</div>
                       </div>
                     </div>
                   </div>
                   <div class="swiper-slide hover-up">
                     <div class="card-review-1"> 
-                      <div class="image-review"> <img src="assets/imgs/page/homepage4/user3.png" alt="jobBox"></div>
+                      <div class="image-review"> <img src="<?= base_url('assets/imgs/page/homepage4/user3.png') ?>"  alt="jobBox"></div>
                       <div class="review-info">
                         <div class="review-name"> 
                           <h5>Sayen Ahmod</h5><span class="font-xs">Developer</span>
                         </div>
-                        <div class="review-rating"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"></div>
+                        <div class="review-rating"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"></div>
                         <div class="review-comment">Sit amet, consectetur adipiscing elit, sed do eiusmod tempor incidid unt. Labore et dolore nostrud temp exercitation.</div>
                       </div>
                     </div>
                   </div>
                   <div class="swiper-slide hover-up">
                     <div class="card-review-1"> 
-                      <div class="image-review"> <img src="assets/imgs/page/homepage4/user4.png" alt="jobBox"></div>
+                      <div class="image-review"> <img src="<?= base_url('assets/imgs/page/homepage4/user4.png') ?>"  alt="jobBox"></div>
                       <div class="review-info">
                         <div class="review-name"> 
                           <h5>Tayla Swef</h5><span class="font-xs">Graphic designer</span>
                         </div>
-                        <div class="review-rating"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"></div>
+                        <div class="review-rating"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"></div>
                         <div class="review-comment">Sit amet, consectetur adipiscing elit, sed do eiusmod tempor incidid unt. Labore et dolore nostrud temp exercitation.</div>
                       </div>
                     </div>
                   </div>
                   <div class="swiper-slide hover-up">
                     <div class="card-review-1"> 
-                      <div class="image-review"> <img src="assets/imgs/page/homepage4/user.png" alt="jobBox"></div>
+                      <div class="image-review"> <img src="<?= base_url('assets/imgs/page/homepage4/user.png') ?>"  alt="jobBox"></div>
                       <div class="review-info">
                         <div class="review-name"> 
                           <h5>Ellis Kim</h5><span class="font-xs">Digital Artist</span>
                         </div>
-                        <div class="review-rating"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"> <img src="assets/imgs/template/icons/star.svg" alt="jobBox"></div>
+                        <div class="review-rating"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"> <img src="<?= base_url('assets/imgs/template/icons/star.svg') ?>"  alt="jobBox"></div>
                         <div class="review-comment">Sit amet, consectetur adipiscing elit, sed do eiusmod tempor incidid unt. Labore et dolore nostrud temp exercitation.</div>
                       </div>
                     </div>
@@ -1847,13 +1847,13 @@
                 <div class="box-swiper">
                   <div class="swiper-container swiper-group-7 swiper">
                     <div class="swiper-wrapper">
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/microsoft.svg" alt="jobBox"></a></div>
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/sony.svg" alt="jobBox"></a></div>
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/acer.svg" alt="jobBox"></a></div>
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/nokia.svg" alt="jobBox"></a></div>
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/asus.svg" alt="jobBox"></a></div>
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/casio.svg" alt="jobBox"></a></div>
-                      <div class="swiper-slide"><a href="#"><img src="assets/imgs/page/homepage3/dell.svg" alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/microsoft.svg') ?>"  alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/sony.svg') ?>"  alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/acer.svg') ?>"  alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/nokia.svg') ?>"  alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/asus.svg') ?>"  alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/casio.svg') ?>"  alt="jobBox"></a></div>
+                      <div class="swiper-slide"><a href="#"><img src="<?= base_url('assets/imgs/page/homepage3/dell.svg') ?>"  alt="jobBox"></a></div>
                     </div>
                   </div>
                 </div>
@@ -2033,7 +2033,7 @@
                   <div class="swiper-slide">
                     <div class="card-grid-3 hover-up wow animate__animated animate__fadeIn">
                       <div class="text-center card-grid-3-image"><a href="#">
-                          <figure><img alt="jobBox" src="assets/imgs/page/homepage1/img-news1.png"></figure></a></div>
+                          <figure><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/img-news1.png') ?>" ></figure></a></div>
                       <div class="card-block-info">
                         <div class="tags mb-15"><a class="btn btn-tag" href="blog-grid">News</a></div>
                         <h5><a href="blog-details">21 Job Interview Tips: How To Make a Great Impression</a></h5>
@@ -2041,7 +2041,7 @@
                         <div class="card-2-bottom mt-20">
                           <div class="row">
                             <div class="col-lg-6 col-6">
-                              <div class="d-flex"><img class="img-rounded" src="assets/imgs/page/homepage1/user1.png" alt="jobBox">
+                              <div class="d-flex"><img class="img-rounded" src="<?= base_url('assets/imgs/page/homepage1/user1.png') ?>"  alt="jobBox">
                                 <div class="info-right-img"><span class="font-sm font-bold color-brand-1 op-70">Sarah Harding</span><br><span class="font-xs color-text-paragraph-2">06 September</span></div>
                               </div>
                             </div>
@@ -2054,7 +2054,7 @@
                   <div class="swiper-slide">
                     <div class="card-grid-3 hover-up wow animate__animated animate__fadeIn">
                       <div class="text-center card-grid-3-image"><a href="#">
-                          <figure><img alt="jobBox" src="assets/imgs/page/homepage1/img-news2.png"></figure></a></div>
+                          <figure><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/img-news2.png') ?>" ></figure></a></div>
                       <div class="card-block-info">
                         <div class="tags mb-15"><a class="btn btn-tag" href="blog-grid">Events</a></div>
                         <h5><a href="blog-details">39 Strengths and Weaknesses To Discuss in a Job Interview</a></h5>
@@ -2062,7 +2062,7 @@
                         <div class="card-2-bottom mt-20">
                           <div class="row">
                             <div class="col-lg-6 col-6">
-                              <div class="d-flex"><img class="img-rounded" src="assets/imgs/page/homepage1/user2.png" alt="jobBox">
+                              <div class="d-flex"><img class="img-rounded" src="<?= base_url('assets/imgs/page/homepage1/user2.png') ?>"  alt="jobBox">
                                 <div class="info-right-img"><span class="font-sm font-bold color-brand-1 op-70">Steven Jobs</span><br><span class="font-xs color-text-paragraph-2">06 September</span></div>
                               </div>
                             </div>
@@ -2075,7 +2075,7 @@
                   <div class="swiper-slide">
                     <div class="card-grid-3 hover-up wow animate__animated animate__fadeIn">
                       <div class="text-center card-grid-3-image"><a href="#">
-                          <figure><img alt="jobBox" src="assets/imgs/page/homepage1/img-news3.png"></figure></a></div>
+                          <figure><img alt="jobBox" src="<?= base_url('assets/imgs/page/homepage1/img-news3.png') ?>" ></figure></a></div>
                       <div class="card-block-info">
                         <div class="tags mb-15"><a class="btn btn-tag" href="blog-grid">News</a></div>
                         <h5><a href="blog-details">Interview Question: Why Dont You Have a Degree?</a></h5>
@@ -2083,7 +2083,7 @@
                         <div class="card-2-bottom mt-20">
                           <div class="row">
                             <div class="col-lg-6 col-6">
-                              <div class="d-flex"><img class="img-rounded" src="assets/imgs/page/homepage1/user3.png" alt="jobBox">
+                              <div class="d-flex"><img class="img-rounded" src="<?= base_url('assets/imgs/page/homepage1/user3.png') ?>"  alt="jobBox">
                                 <div class="info-right-img"><span class="font-sm font-bold color-brand-1 op-70">Wiliam Kend</span><br><span class="font-xs color-text-paragraph-2">06 September</span></div>
                               </div>
                             </div>
@@ -2106,7 +2106,7 @@
         <div class="box-newsletter box-newsletter-2">
           <div class="container">
             <div class="row">
-              <div class="col-xl-4 col-12 text-center d-none d-xl-block"><img src="assets/imgs/page/homepage4/img-newsletter.png" alt="joxBox"></div>
+              <div class="col-xl-4 col-12 text-center d-none d-xl-block"><img src="<?= base_url('assets/imgs/page/homepage4/img-newsletter.png') ?>"  alt="joxBox"></div>
               <div class="col-xl-8 col-lg-12 col-12 text-center">
                 <div class="d-inline-block text-start">
                   <h2 class="color-white">Subscribe our newsletter</h2>
@@ -2127,7 +2127,7 @@
     <footer class="footer mt-50">
       <div class="container">
         <div class="row">
-          <div class="footer-col-1 col-md-3 col-sm-12"><a href="index.html"><img alt="jobBox" src="assets/imgs/template/jobhub-logo.svg"></a>
+          <div class="footer-col-1 col-md-3 col-sm-12"><a href="index.html"><img alt="jobBox" src="<?= base_url('assets/imgs/template/jobhub-logo.svg') ?>" ></a>
             <div class="mt-20 mb-20 font-xs color-text-paragraph-2">JobBox is the heart of the design community and the best resource to discover and connect with designers and jobs worldwide.</div>
             <div class="footer-social"><a class="icon-socials icon-facebook" href="#"></a><a class="icon-socials icon-twitter" href="#"></a><a class="icon-socials icon-linkedin" href="#"></a></div>
           </div>
@@ -2170,7 +2170,7 @@
           <div class="footer-col-6 col-md-3 col-sm-12">
             <h6 class="mb-20">Download App</h6>
             <p class="color-text-paragraph-2 font-xs">Download our Apps and get extra 15% Discount on your first Order&mldr;!</p>
-            <div class="mt-15"><a class="mr-5" href="#"><img src="assets/imgs/template/icons/app-store.png" alt="joxBox"></a><a href="#"><img src="assets/imgs/template/icons/android.png" alt="joxBox"></a></div>
+            <div class="mt-15"><a class="mr-5" href="#"><img src="<?= base_url('assets/imgs/template/icons/app-store.png') ?>"  alt="joxBox"></a><a href="#"><img src="<?= base_url('assets/imgs/template/icons/android.png') ?>"  alt="joxBox"></a></div>
           </div>
         </div>
         <div class="footer-bottom mt-50">
@@ -2183,18 +2183,18 @@
         </div>
       </div>
     </footer>
-    <script src="assets/js/vendor/modernizr-3.6.0.min.js"></script>
-    <script src="assets/js/vendor/jquery-3.6.0.min.js"></script>
-    <script src="assets/js/vendor/jquery-migrate-3.3.0.min.js"></script>
-    <script src="assets/js/vendor/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/plugins/waypoints.js"></script>
-    <script src="assets/js/plugins/wow.js"></script>
-    <script src="assets/js/plugins/magnific-popup.js"></script>
-    <script src="assets/js/plugins/perfect-scrollbar.min.js"></script>
-    <script src="assets/js/plugins/select2.min.js"></script>
-    <script src="assets/js/plugins/isotope.js"></script>
-    <script src="assets/js/plugins/scrollup.js"></script>
-    <script src="assets/js/plugins/swiper-bundle.min.js"></script>
-    <script src="assets/js/main8c94.js?v=4.1"></script>
+    <script src="<?= base_url('assets/js/vendor/modernizr-3.6.0.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/vendor/jquery-3.6.0.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/vendor/jquery-migrate-3.3.0.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/vendor/bootstrap.bundle.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/waypoints.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/wow.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/magnific-popup.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/perfect-scrollbar.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/select2.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/isotope.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/scrollup.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/plugins/swiper-bundle.min.js') ?>" ></script>
+    <script src="<?= base_url('assets/js/main8c94.js?v=4.1') ?>" ></script>
   </body>
 </html>

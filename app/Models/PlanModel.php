@@ -24,10 +24,11 @@ class PlanModel extends Model
         'is_active'
     ];
 
-    // Optional: Helper to get decoded features
+    // Helper to get decoded features. The entity cast already returns
+    // an associative array, so just hand it back.
     public function getFeatures($planId)
     {
         $plan = $this->find($planId);
-        return $plan ? json_decode($plan->features ?? '{}', true) : [];
+        return $plan && is_array($plan->features) ? $plan->features : [];
     }
 }

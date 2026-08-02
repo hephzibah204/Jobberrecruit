@@ -60,65 +60,6 @@
                                                     </form>
                                                 </td>
                                             </tr>
-
-                                            <!-- Edit Module Modal -->
-                                            <div class="modal fade" id="editModuleModal<?= $module->id ?>" tabindex="-1">
-                                                <div class="modal-dialog modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Edit Module</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <form action="<?= base_url('admin/elearning/modules/save') ?>" method="POST" enctype="multipart/form-data">
-                                                            <?= csrf_field() ?>
-                                                            <input type="hidden" name="id" value="<?= $module->id ?>">
-                                                            <input type="hidden" name="course_id" value="<?= $course->id ?>">
-                                                            
-                                                            <div class="modal-body">
-                                                                <div class="row g-3">
-                                                                    <div class="col-md-8">
-                                                                        <label class="form-label">Module Title</label>
-                                                                        <input type="text" name="title" class="form-control" value="<?= esc($module->title) ?>" required>
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Order Index</label>
-                                                                        <input type="number" name="order_index" class="form-control" value="<?= $module->order_index ?>" required>
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Content Source</label>
-                                                                        <select name="content_source" class="form-select">
-                                                                            <option value="none" <?= $module->content_source === 'none' ? 'selected' : '' ?>>None</option>
-                                                                            <option value="youtube" <?= $module->content_source === 'youtube' ? 'selected' : '' ?>>YouTube</option>
-                                                                            <option value="upload" <?= $module->content_source === 'upload' ? 'selected' : '' ?>>Upload Video/File</option>
-                                                                            <option value="text" <?= $module->content_source === 'text' ? 'selected' : '' ?>>Text Only</option>
-                                                                        </select>
-                                                                    </div>
-                                                                    <div class="col-md-8">
-                                                                        <label class="form-label">YouTube URL</label>
-                                                                        <input type="url" name="youtube_url" class="form-control" value="<?= esc($module->youtube_url) ?>" placeholder="https://www.youtube.com/watch?v=...">
-                                                                    </div>
-                                                                    <div class="col-md-12">
-                                                                        <label class="form-label">Description (Optional)</label>
-                                                                        <textarea name="description" class="form-control" rows="3"><?= esc($module->description) ?></textarea>
-                                                                    </div>
-                                                                    <div class="col-md-12">
-                                                                        <label class="form-label">Upload Content File (Video or PDF)</label>
-                                                                        <input type="file" name="content_file" class="form-control">
-                                                                        <?php if (!empty($module->content_file)): ?>
-                                                                            <small class="text-muted d-block mt-1">Existing file: <?= esc(basename((string) $module->content_file)) ?></small>
-                                                                        <?php endif; ?>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-primary">Update Module</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
@@ -133,7 +74,7 @@
 
 <!-- Add Module Modal -->
 <div class="modal fade" id="addModuleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Module</h5>
@@ -184,4 +125,65 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Module Modals -->
+<?php foreach ($modules as $module): ?>
+    <div class="modal fade" id="editModuleModal<?= $module->id ?>" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Module</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="<?= base_url('admin/elearning/modules/save') ?>" method="POST" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= $module->id ?>">
+                    <input type="hidden" name="course_id" value="<?= $course->id ?>">
+                    
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Module Title</label>
+                                <input type="text" name="title" class="form-control" value="<?= esc($module->title) ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Order Index</label>
+                                <input type="number" name="order_index" class="form-control" value="<?= $module->order_index ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Content Source</label>
+                                <select name="content_source" class="form-select">
+                                    <option value="none" <?= $module->content_source === 'none' ? 'selected' : '' ?>>None</option>
+                                    <option value="youtube" <?= $module->content_source === 'youtube' ? 'selected' : '' ?>>YouTube</option>
+                                    <option value="upload" <?= $module->content_source === 'upload' ? 'selected' : '' ?>>Upload Video/File</option>
+                                    <option value="text" <?= $module->content_source === 'text' ? 'selected' : '' ?>>Text Only</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">YouTube URL</label>
+                                <input type="url" name="youtube_url" class="form-control" value="<?= esc($module->youtube_url) ?>" placeholder="https://www.youtube.com/watch?v=...">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Description (Optional)</label>
+                                <textarea name="description" class="form-control" rows="3"><?= esc($module->description) ?></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Upload Content File (Video or PDF)</label>
+                                <input type="file" name="content_file" class="form-control">
+                                <?php if (!empty($module->content_file)): ?>
+                                    <small class="text-muted d-block mt-1">Existing file: <?= esc(basename((string) $module->content_file)) ?></small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Module</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endforeach; ?>
+
 <?= $this->endSection() ?>

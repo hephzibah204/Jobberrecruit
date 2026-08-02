@@ -1,257 +1,333 @@
-<?= $this->extend('layouts/app') ?>
+<?php $page_title = 'Billing & Plans'; ?>
+<?= $this->extend('layouts/employer') ?>
+
+<?= $this->section('styles') ?>
+<style>
+/* Custom lightweight modal overlay */
+.custom-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 47, 87, 0.45);
+    backdrop-filter: blur(4px);
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.custom-modal.show {
+    display: flex;
+    opacity: 1;
+}
+.custom-modal-dialog {
+    background: #fff;
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 10px 30px rgba(10, 47, 87, 0.18);
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.custom-modal.show .custom-modal-dialog {
+    transform: translateY(0);
+}
+.custom-modal-dialog.modal-lg {
+    max-width: 700px;
+}
+.custom-modal-dialog.modal-xl {
+    max-width: 900px;
+}
+.custom-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border, #e2e8f2);
+}
+.custom-modal-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--brand-deep, #0A2F57);
+    margin: 0;
+}
+.custom-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--muted, #5b6577);
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.15s ease;
+}
+.custom-close-btn:hover {
+    color: var(--brand, #0861A9);
+}
+.custom-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+.custom-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border, #e2e8f2);
+    background: var(--bg, #f5f7fb);
+}
+</style>
+<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
-<style>
-    .pricing-card {
-        transition: all .3s ease-in-out;
-    }
-
-    .pricing-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
-    }
-
-    .price-display {
-        font-size: 2.8rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .payment-loader {
-        position: fixed;
-        inset: 0;
-        background: rgba(255, 255, 255, 0.96);
-        z-index: 99999;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-    }
-
-    .loader-logo {
-        width: 120px;
-        animation: floatUp 2.2s ease-in-out infinite;
-    }
-
-    @keyframes floatUp {
-
-        0%,
-        100% {
-            transform: translateY(0);
-        }
-
-        50% {
-            transform: translateY(-8px);
-        }
-    }
-</style>
-
-<div class="content">
-    <div class="page-header">
-        <div class="page-title">
-            <h4 class="fw-bold">Choose Your Hiring Plan</h4>
-            <h6 class="text-muted">Unlimited postings with <?= esc($subscriptionPlan->name ?? 'Business Pro') ?> • Flexible durations</h6>
-
-            <p class="text-dark mt-3">
-                <span class="text-danger fw-bold">Note:</span> We do not publish scam jobs. No refunds after successful payment.
-            </p>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-body pb-5">
-
-            <div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <strong>Available Job Credits:</strong>
-                    <span class="fw-bold"><?= number_format($creditBalance ?? 0) ?></span>
-                </div>
-            </div>
-
-            <div class="row justify-content-center g-4">
-
-                <!-- Bundles -->
-                <div class="col-xl-6">
-                    <div class="card h-100 pricing-card shadow-sm border-warning">
-                        <div class="card-header bg-warning text-white text-center py-4">
-                            <h4>Growth Bundles (Pay-As-You-Go)</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-3">
-                                <?php foreach ($bundles as $bundle): ?>
-                                    <button
-                                        type="button"
-                                        class="btn btn-outline-primary py-3 text-start js-bundle-purchase"
-                                        data-bundle='<?= esc(json_encode($bundle, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), 'attr') ?>'>
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                                <strong><?= esc($bundle->name) ?></strong><br>
-                                                <small><?= (int)$bundle->job_credits ?> Job Posts</small>
-                                            </div>
-                                            <strong>₦<?= number_format($bundle->price) ?></strong>
-                                        </div>
-                                    </button>
-                                <?php endforeach ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Subscription -->
-                <div class="col-xl-6">
-                    <div class="card h-100 pricing-card shadow <?= ($currentPlan && $currentPlan->plan_type === 'subscription') ? 'current-plan-card' : '' ?>">
-                        <div class="card-header bg-primary text-white text-center py-4">
-                            <h4><?= esc($subscriptionPlan->name ?? 'Business Pro') ?></h4>
-                            <p>Unlimited Job Postings + Premium Features</p>
-                        </div>
-                        <div class="card-body">
-
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Select Duration</label>
-                                <select id="durationSelect" class="form-select form-select-lg" onchange="updatePrice()">
-                                    <?php
-                                    $tiers = is_string($pricingTiers) ? json_decode($pricingTiers, true) : ($pricingTiers ?? []);
-                                    $durations = [1 => '1 Month', 3 => '3 Months', 6 => '6 Months', 12 => '12 Months (Best Value)'];
-                                    foreach ($durations as $months => $label):
-                                        $price = $tiers[$months] ?? ($months * 18000);
-                                    ?>
-                                        <option value="<?= $months ?>" data-price="<?= $price ?>">
-                                            <?= $label ?> — ₦<?= number_format($price) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="text-center mb-4">
-                                <div id="priceDisplay" class="price-display text-primary">₦18,000</div>
-                                <p id="priceSubtitle" class="text-muted">billed monthly</p>
-                            </div>
-
-                            <div id="savingsInfo" class="text-center mb-4 d-none">
-                                <span class="badge bg-success">Save up to 25% with annual plan</span>
-                            </div>
-
-                            <ul class="list-unstyled row g-2">
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> <strong>Unlimited</strong> job postings</li>
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> Featured at the top</li>
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> Network Blast (115k+)</li>
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> Anonymous posting</li>
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> URL Redirection</li>
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> Verified Hirer Badge</li>
-                                <li class="col-12"><i class="ti ti-check text-success me-2"></i> Priority Support</li>
-                            </ul>
-
-                            <div class="mt-4">
-                                <?php if ($currentPlan && $currentPlan->plan_type === 'subscription'): ?>
-                                    <button class="btn btn-success w-100 py-3" disabled>Active Subscription</button>
-                                <?php else: ?>
-                                    <button onclick="showPurchaseModal('subscription')" class="btn btn-primary w-100 py-3 btn-lg">
-                                        Subscribe Now
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+<div class="page-head">
+    <div class="page-head-left">
+        <h1><svg aria-hidden="true"><use href="#i-card"/></svg> Billing &amp; Plans</h1>
+        <p>Choose the hiring plan that fits how you recruit.</p>
     </div>
 </div>
 
+<div class="notice notice--info" role="status">
+    <svg aria-hidden="true"><use href="#i-zap"/></svg>
+    <span>You have <b><?= esc($creditBalance ?? 0) ?> job credits</b> available. Credits are used automatically when you post a job.</span>
+</div>
+
+<div class="plans">
+    <!-- pay-as-you-go bundles -->
+    <section class="card" aria-label="Growth bundles">
+        <div class="card-head">
+            <span class="card-title">
+                <svg aria-hidden="true"><use href="#i-briefcase"/></svg> Growth Bundles 
+                <span style="font-weight:500;color:var(--muted);font-size:.76rem">· Pay as you go</span>
+            </span>
+        </div>
+        <div class="card-body">
+            <?php if (!empty($bundles)): ?>
+                <?php foreach ($bundles as $bundle): 
+                    $icBg = 'linear-gradient(135deg,#8d99ab,#5b6577)';
+                    if (stripos($bundle->name, 'gold') !== false) {
+                        $icBg = 'linear-gradient(135deg,#ED9020,#C8770E)';
+                    } elseif (stripos($bundle->name, 'diamond') !== false || stripos($bundle->name, 'blue') !== false || (int)$bundle->job_credits >= 5) {
+                        $icBg = 'linear-gradient(135deg,#1d6fb8,#0861A9)';
+                    }
+                ?>
+                    <div class="bundle">
+                        <span class="bundle-ic" style="background: <?= $icBg ?>;" aria-hidden="true">
+                            <svg><use href="#i-briefcase"/></svg>
+                        </span>
+                        <div class="bundle-info">
+                            <div class="bundle-name"><?= esc($bundle->name) ?></div>
+                            <div class="bundle-posts"><?= (int)$bundle->job_credits ?> job post<?= (int)$bundle->job_credits > 1 ? 's' : '' ?></div>
+                        </div>
+                        <div class="bundle-price">
+                            &#8358;<?= number_format($bundle->price) ?>
+                            <i>&#8358;<?= number_format($bundle->price_per_credit ?? ($bundle->price / $bundle->job_credits)) ?> / post</i>
+                        </div>
+                        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm js-bundle-purchase" data-bundle='<?= esc(json_encode($bundle, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), 'attr') ?>'>Buy Bundle</button>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="empty">
+                    <div class="empty-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></div>
+                    <h3>No Bundles Available</h3>
+                    <p>There are no pay-as-you-go bundles available at the moment.</p>
+                </div>
+            <?php endif; ?>
+            <p style="font-size:.74rem;color:var(--muted);margin-top:14px">Bundle credits never expire and are used automatically each time you post a job.</p>
+        </div>
+    </section>
+
+    <!-- Subscription Plan -->
+    <section class="pro-card" aria-label="Subscription plan">
+        <div class="pro-head">
+            <span class="pro-badge">Best value</span>
+            <h2><?= esc($subscriptionPlan->name ?? 'Business Pro') ?></h2>
+            <p>Unlimited job postings + premium features</p>
+        </div>
+        <div class="pro-body">
+            <label class="lbl" for="duration">Select duration</label>
+            <select class="select" id="duration" aria-label="Subscription duration" onchange="updatePrice()">
+                <?php
+                $tiers = is_string($pricingTiers) ? json_decode($pricingTiers, true) : ($pricingTiers ?? []);
+                $price1 = $tiers[1] ?? 18000;
+                $price3 = $tiers[3] ?? 48000;
+                $price6 = $tiers[6] ?? 84000;
+                $price12 = $tiers[12] ?? 150000;
+
+                $durations = [
+                    1 => ['label' => '1 Month', 'price' => $price1, 'per' => 'billed monthly'],
+                    3 => ['label' => '3 Months', 'price' => $price3, 'per' => '&#8358;' . number_format($price3 / 3) . ' / month · billed quarterly'],
+                    6 => ['label' => '6 Months', 'price' => $price6, 'per' => '&#8358;' . number_format($price6 / 6) . ' / month · billed bi-annually'],
+                    12 => ['label' => '12 Months (Best Value)', 'price' => $price12, 'per' => '&#8358;' . number_format($price12 / 12) . ' / month · billed yearly']
+                ];
+                foreach ($durations as $months => $info):
+                    $price = $info['price'];
+                ?>
+                    <option value="<?= $months ?>" data-price="<?= $price ?>" data-per="<?= esc($info['per']) ?>" <?= $months === 1 ? 'selected' : '' ?>>
+                        <?= esc($info['label']) ?> — &#8358;<?= number_format($price) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            
+            <div class="pro-price" style="margin-top:18px">
+                <span id="pro-amt">&#8358;18,000</span>
+                <i id="pro-per">billed monthly</i>
+            </div>
+            
+            <div id="savingsInfo" class="text-center mb-3 d-none" style="margin-top: 10px;">
+                <span class="badge bg-success" style="background: var(--success); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem;">Save up to 25% with annual plan</span>
+            </div>
+
+            <ul class="feat">
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Unlimited</b> job postings</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Featured at the top</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Network Blast (115k+)</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Anonymous posting</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>URL redirection</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Verified Hirer badge</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Priority support</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Advanced candidate search</span></li>
+            </ul>
+
+            <?php 
+            $activePlan = $myPlan ?? $currentPlan ?? null;
+            if ($activePlan && $activePlan->plan_type === 'subscription'): 
+            ?>
+                <button class="emp-btn emp-btn-accent emp-btn-block" disabled>Active Subscription</button>
+            <?php else: ?>
+                <button onclick="showPurchaseModal('subscription')" class="emp-btn emp-btn-accent emp-btn-block">
+                    <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
+                </button>
+            <?php endif; ?>
+            <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px">Renews automatically. Cancel anytime from this page.</p>
+        </div>
+    </section>
+</div>
+
+<div class="notice notice--warn" role="note" style="margin-top: 24px;">
+    <svg aria-hidden="true"><use href="#i-shield"/></svg>
+    <span><b>Note:</b> We do not publish scam jobs. All postings are reviewed. No refunds after successful payment.</span>
+</div>
+
 <!-- PURCHASE DETAILS MODAL -->
-<div class="modal fade" id="purchaseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Complete Your Purchase</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
+<div class="custom-modal" id="purchaseModal">
+    <div class="custom-modal-dialog modal-lg">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title" id="modalTitle">Complete Your Purchase</h5>
+            <button type="button" class="custom-close-btn" onclick="closeModal('purchaseModal')">&times;</button>
+        </div>
+        <div class="custom-modal-body">
+            <form id="purchaseForm">
+                <?= csrf_field() ?>
+                <input type="hidden" name="type" id="purchase_type">
+                <input type="hidden" name="bundle_id" id="bundle_id">
+                <input type="hidden" name="bundle_data" id="bundle_data">
+                <input type="hidden" name="duration_months" id="duration_months">
 
-                <form id="purchaseForm">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="type" id="purchase_type">
-                    <input type="hidden" name="bundle_id" id="bundle_id">
-                    <input type="hidden" name="bundle_data" id="bundle_data">
-                    <input type="hidden" name="duration_months" id="duration_months">
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="full_name" id="full_name" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" name="email" id="email" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" id="phone" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Invoice Number</label>
-                            <input type="text" id="invoice_number" class="form-control" readonly>
-                        </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label class="lbl">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="full_name" id="full_name" class="input" required style="font-size: 14px;">
                     </div>
-
-                    <div class="mt-4">
-                        <label class="form-label">Payment Method</label>
-                        <select name="payment_method" id="payment_method" class="form-select" required>
-                            <option value="card">Card Payment (Instant)</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="ussd">USSD</option>
-                        </select>
+                    <div>
+                        <label class="lbl">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" id="email" class="input" required style="font-size: 14px;">
                     </div>
-                </form>
+                    <div>
+                        <label class="lbl">Phone Number <span class="text-danger">*</span></label>
+                        <input type="tel" name="phone" id="phone" class="input" required style="font-size: 14px;">
+                    </div>
+                    <div>
+                        <label class="lbl">Invoice Number</label>
+                        <input type="text" id="invoice_number" class="input" readonly style="background: var(--bg); font-size: 14px;">
+                    </div>
+                </div>
 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</button>
-                <button onclick="generateInvoice()" class="btn btn-primary">Generate Invoice & Continue</button>
-            </div>
+                <div style="margin-top: 16px;">
+                    <label class="lbl">Payment Method</label>
+                    <select name="payment_method" id="payment_method" class="select" required style="font-size: 14px;">
+                        <option value="card">Card Payment (Instant)</option>
+                        <option value="wallet">Wallet Balance (₦<?= number_format($walletBalance ?? 0, 2) ?>)</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="ussd">USSD</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="emp-btn emp-btn-outline" onclick="closeModal('purchaseModal')">Cancel</button>
+            <button onclick="generateInvoice()" class="emp-btn emp-btn-primary">Generate Invoice & Continue</button>
         </div>
     </div>
 </div>
 
 <!-- INVOICE PREVIEW MODAL -->
-<div class="modal fade" id="invoiceModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold">
-                    <i class="ti ti-file-invoice me-2"></i> INVOICE
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
+<div class="custom-modal" id="invoiceModal">
+    <div class="custom-modal-dialog modal-xl">
+        <div class="custom-modal-header" style="background: var(--brand); color: #fff;">
+            <h5 class="custom-modal-title" style="color: #fff;">INVOICE</h5>
+            <button type="button" class="custom-close-btn" onclick="closeModal('invoiceModal')" style="color: #fff;">&times;</button>
+        </div>
 
-            <div class="modal-body p-0" id="invoiceContent">
-                <!-- Filled dynamically by JavaScript -->
-            </div>
+        <div class="custom-modal-body" id="invoiceContent" style="padding: 0;">
+            <!-- Filled dynamically by JavaScript -->
+        </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Close</button>
-                <button onclick="proceedToPayment()" class="btn btn-success px-5">
-                    <i class="ti ti-credit-card"></i> Pay Now
-                </button>
-            </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="emp-btn emp-btn-outline" onclick="closeModal('invoiceModal')">Close</button>
+            <button onclick="proceedToPayment()" class="emp-btn emp-btn-primary" style="background: var(--success); border-color: var(--success);">
+                Pay Now
+            </button>
         </div>
     </div>
 </div>
 
 <!-- Payment Loader -->
 <div id="payment-loader" class="payment-loader">
-    <div class="spinner-border text-primary mb-3"></div>
-    <img src="<?= base_url('assets/imgs/template/logo.png') ?>" class="loader-logo">
-    <p class="mt-3 fw-semibold">Processing payment…</p>
+    <div style="border: 4px solid var(--border); border-top: 4px solid var(--brand); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+    <img src="<?= base_url('auth/img/logo.png') ?>" class="loader-logo" alt="JobberRecruit">
+    <p class="mt-3 fw-semibold" style="margin-top: 15px; font-weight: 600; color: var(--brand-deep);">Processing payment…</p>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<button class="emp-btn emp-btn-outline" onclick="document.querySelector('.plans').scrollIntoView({behavior:'smooth'})">View Bundles</button>
+<?php if ($activePlan && $activePlan->plan_type === 'subscription'): ?>
+    <button class="emp-btn emp-btn-accent" disabled>Active Subscription</button>
+<?php else: ?>
+    <button class="emp-btn emp-btn-accent" onclick="showPurchaseModal('subscription')">
+        <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
+    </button>
+<?php endif; ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 200);
+        }
+    }
+
     let currentPurchase = {};
 
     document.querySelectorAll('.js-bundle-purchase').forEach((button) => {
@@ -266,7 +342,6 @@
                 showPurchaseModal('bundle', JSON.parse(bundleJson));
             } catch (error) {
                 console.error('Unable to parse bundle payload', error);
-                toastr.error('Unable to load bundle details. Please refresh and try again.');
             }
         });
     });
@@ -276,7 +351,6 @@
             type
         };
 
-        // Handle bundle properly
         if (type === 'bundle' && bundle) {
             currentPurchase.bundle = bundle;
             document.getElementById('bundle_id').value = bundle.id;
@@ -288,26 +362,23 @@
 
         document.getElementById('purchase_type').value = type;
 
-        // Handle subscription
         if (type === 'subscription') {
-            const months = parseInt(document.getElementById('durationSelect').value);
+            const months = parseInt(document.getElementById('duration').value);
             currentPurchase.duration_months = months;
             document.getElementById('duration_months').value = months;
-            document.getElementById('modalTitle').textContent = 'Subscribe to Business Pro';
+            document.getElementById('modalTitle').textContent = 'Subscribe to ' + <?= json_encode($subscriptionPlan->name ?? "Business Pro") ?>;
         } else {
             document.getElementById('modalTitle').textContent = 'Purchase Bundle';
         }
 
-        // Auto-fill user info
-        document.getElementById('full_name').value = "<?= esc($user->fullname ?? '') ?>";
-        document.getElementById('email').value = "<?= esc($user->email ?? '') ?>";
+        document.getElementById('full_name').value = <?= json_encode($user->fullname ?? $user->username ?? '') ?>;
+        document.getElementById('email').value = <?= json_encode($user->email ?? '') ?>;
         document.getElementById('phone').value = "";
 
-        // Generate invoice number
         const invoiceNo = 'INV-' + Date.now().toString().slice(-8);
         document.getElementById('invoice_number').value = invoiceNo;
 
-        new bootstrap.Modal(document.getElementById('purchaseModal')).show();
+        openModal('purchaseModal');
     }
 
     function generateInvoice() {
@@ -345,18 +416,13 @@
             const tiers = <?= json_encode($pricingTiers ?? []) ?>;
             const basePrice = <?= (int)($subscriptionPlan->base_price ?? 18000) ?>;
 
+            currentPurchase.duration_months = parseInt(document.getElementById('duration').value);
             amount = tiers[currentPurchase.duration_months] || (basePrice * currentPurchase.duration_months);
 
-            currentPurchase.duration_months = parseInt(document.getElementById('durationSelect').value);
-
             itemDescription = `<?= esc($subscriptionPlan->name ?? 'Business Pro') ?> Subscription (${currentPurchase.duration_months} Month${currentPurchase.duration_months > 1 ? 's' : ''})`;
-
             itemDetails = `Unlimited job postings + premium features for ${currentPurchase.duration_months} month${currentPurchase.duration_months > 1 ? 's' : ''}`;
         } else if (currentPurchase.type === 'bundle') {
             const bundle = currentPurchase.bundle_data;
-
-            console.log(bundle);
-
             amount = parseFloat(bundle.price);
             itemDescription = bundle.name;
             itemDetails = `${bundle.job_credits} Job Posting Credits`;
@@ -364,28 +430,25 @@
 
         currentPurchase.amount = amount;
 
-        // Full Professional Invoice HTML
         let html = `
         <div style="max-width: 800px; margin: 20px auto; background: white; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
-            
             <!-- Company Header -->
-            <div style="background: linear-gradient(135deg, #0D609E, #0b5ed7); color: white; padding: 25px 30px;">
+            <div style="background: linear-gradient(135deg, #0861A9, #064A85); color: white; padding: 25px 30px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h2 style="margin: 0; font-size: 28px;">${'<?= esc($companyName ?? "Jobber Recruit") ?>'}</h2>
+                        <h2 style="margin: 0; font-size: 28px;">${<?= json_encode($companyName ?? "Jobber Recruit") ?>}</h2>
                         <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">
                             The new face of job hunting • Lagos, Nigeria
                         </p>
                     </div>
                     <div style="text-align: right;">
-                        <h1 style="margin: 0; font-size: 32px; font-weight: 700;">INVOICE</h1>
+                        <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #fff;">INVOICE</h1>
                         <p style="margin: 5px 0 0; font-size: 16px;">#${currentPurchase.invoice_number}</p>
                     </div>
                 </div>
             </div>
 
             <div style="padding: 30px;">
-
                 <!-- Bill To & Invoice Info -->
                 <div style="display: flex; justify-content: space-between; margin-bottom: 35px;">
                     <div>
@@ -426,7 +489,7 @@
                 <!-- Total -->
                 <div style="text-align: right; padding: 20px; background: #f8f9fa; border-radius: 8px;">
                     <div style="font-size: 15px; color: #555;">Total Amount Due</div>
-                    <div style="font-size: 28px; font-weight: 700; color: #0D609E;">
+                    <div style="font-size: 28px; font-weight: 700; color: #0861A9;">
                         ₦${amount.toLocaleString()}
                     </div>
                 </div>
@@ -436,20 +499,61 @@
                     <strong>Payment Terms:</strong> Full payment is required upon receipt of invoice.<br>
                     Card / Bank Transfer / USSD payments are processed securely via Paystack and will be confirmed ASAP.
                 </div>
-
             </div>
         </div>
     `;
 
         document.getElementById('invoiceContent').innerHTML = html;
 
-        // Close details modal and show invoice
-        bootstrap.Modal.getInstance(document.getElementById('purchaseModal')).hide();
-        new bootstrap.Modal(document.getElementById('invoiceModal')).show();
+        closeModal('purchaseModal');
+        openModal('invoiceModal');
     }
 
     function proceedToPayment() {
-        bootstrap.Modal.getInstance(document.getElementById('invoiceModal')).hide();
+        closeModal('invoiceModal');
+
+        if (currentPurchase.payment_method === 'wallet') {
+            const walletBalance = <?= (float)($walletBalance ?? 0.0) ?>;
+            if (walletBalance < currentPurchase.amount) {
+                toastr.warning('Insufficient wallet balance. Please select another payment method.');
+                return;
+            }
+
+            document.getElementById('payment-loader').style.display = 'flex';
+            
+            // Build key value body parameters to align with WalletController API expectation
+            const walletPayload = {
+                type: currentPurchase.type === 'subscription' ? 'subscription' : 'bundle',
+                plan_id: currentPurchase.type === 'subscription' ? <?= (int)($subscriptionPlan->id ?? 0) ?> : currentPurchase.bundle_id,
+                bundle_id: currentPurchase.bundle_id,
+                duration_months: currentPurchase.duration_months
+            };
+
+            fetch('<?= base_url('employer/wallet/pay-with-wallet') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(walletPayload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('payment-loader').style.display = 'none';
+                if (data.success) {
+                    toastr.success(data.message || 'Payment successful!');
+                    window.location.reload();
+                } else {
+                    toastr.error(data.message || 'Wallet payment failed.');
+                }
+            })
+            .catch(() => {
+                document.getElementById('payment-loader').style.display = 'none';
+                toastr.error('An error occurred processing payment.');
+            });
+            return;
+        }
+
         document.getElementById('payment-loader').style.display = 'flex';
 
         const payload = {
@@ -463,13 +567,12 @@
             payment_method: currentPurchase.payment_method
         };
 
-        console.log(payload);
-
         fetch("<?= base_url('employer/initiate-payment') ?>", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="<?= csrf_token() ?>"]').value
                 },
                 body: JSON.stringify(payload)
             })
@@ -483,7 +586,7 @@
                         email: res.email,
                         amount: res.amount,
                         ref: res.reference,
-                        channel: [res.method],
+                        channels: [res.method],
                         metadata: res.metadata,
                         callback: function(response) {
                             window.location.href = "<?= base_url('employer/verify-payment') ?>?reference=" + response.reference;
@@ -504,12 +607,15 @@
     }
 
     function updatePrice() {
-        const months = parseInt(document.getElementById('durationSelect').value);
-        const tiers = <?= json_encode($pricingTiers) ?>;
-        const price = tiers[months] || (18000 * months);
-
-        document.getElementById('priceDisplay').textContent = '₦' + price.toLocaleString();
-        document.getElementById('priceSubtitle').textContent = months === 1 ? 'billed monthly' : `billed once for ${months} months`;
+        const d = document.getElementById('duration');
+        const a = document.getElementById('pro-amt');
+        const p = document.getElementById('pro-per');
+        const o = d.options[d.selectedIndex];
+        const price = Number(o.getAttribute('data-price'));
+        const months = Number(o.value);
+        
+        a.textContent = '₦' + price.toLocaleString('en-NG');
+        p.innerHTML = o.getAttribute('data-per');
         document.getElementById('savingsInfo').classList.toggle('d-none', months < 6);
     }
 

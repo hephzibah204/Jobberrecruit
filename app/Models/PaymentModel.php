@@ -20,13 +20,19 @@ class PaymentModel extends Model
         'employer_id',
         'reference',
         'amount',
+        'amount_paid',
+        'currency',
         'status',
         'payment_method',
         'metadata',
-        'paid_at'
+        'paid_at',
+        'created_at',
+        'updated_at'
     ];
 
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
     protected $returnType = 'array';
 
     protected $cast = [

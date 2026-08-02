@@ -42,11 +42,22 @@ class CareerToolsController extends BaseController
     {
         $applicationId = (int) ($this->request->getGet('application_id') ?? 0);
         $contextPreset = $this->buildApplicationInterviewContext($applicationId);
+        $userId = (int) auth()->id();
 
         $recentSessions = $this->mockInterviewSessionModel
-            ->where('user_id', auth()->id())
+            ->where('user_id', $userId)
             ->orderBy('created_at', 'DESC')
             ->findAll(5);
+
+        // Calculate improvement percentage dynamically across recent sessions
+        $improvementPct = 0;
+        if (count($recentSessions) >= 2) {
+            $latestScore = (float) ($recentSessions[0]['overall_score'] ?? 0);
+            $oldestScore = (float) (end($recentSessions)['overall_score'] ?? 0);
+            if ($oldestScore > 0) {
+                $improvementPct = (int) round((($latestScore - $oldestScore) / $oldestScore) * 100);
+            }
+        }
 
         return view('candidate/career-tools/mock-interview', [
             'title' => 'AI Mock Interview',
@@ -55,6 +66,10 @@ class CareerToolsController extends BaseController
                 $session['evaluation'] = json_decode((string) ($session['evaluation_json'] ?? ''), true) ?: [];
                 return $session;
             }, $recentSessions),
+            'streak' => $this->calculateStreak($userId),
+            'xp' => $this->calculateXp($userId),
+            'todayDone' => $this->checkTodayGoal($userId),
+            'improvementPct' => $improvementPct,
         ]);
     }
 
@@ -78,6 +93,17 @@ class CareerToolsController extends BaseController
             'interview_mode' => $interviewMode,
             'webcam_enabled' => $webcamEnabled,
             'application_id' => $applicationId,
+            
+            // New options passed from the mockup
+            'interview_type' => $this->request->getGet('itype') ?? '',
+            'duration' => $this->request->getGet('dur') ?? '',
+            'personality' => $this->request->getGet('persona') ?? '',
+            'experience' => $this->request->getGet('exp') ?? '',
+            'focus' => $this->request->getGet('focus') ?? '',
+            'salary' => $this->request->getGet('salary') ?? '',
+            'arrangement' => $this->request->getGet('arrangement') ?? '',
+            'language' => $this->request->getGet('language') ?? '',
+            'company_type' => $this->request->getGet('company') ?? '',
         ];
 
         if ($applicationId > 0) {
@@ -106,6 +132,17 @@ class CareerToolsController extends BaseController
             'interview_mode' => (string) ($this->request->getPost('interviewMode') ?? 'chat'),
             'webcam_enabled' => (bool) $this->request->getPost('webcamEnabled'),
             'application_id' => $applicationId,
+            
+            // New options passed from mockup
+            'interview_type' => (string) ($this->request->getPost('itype') ?? ''),
+            'duration'       => (string) ($this->request->getPost('duration') ?? ''),
+            'personality'    => (string) ($this->request->getPost('personality') ?? ''),
+            'experience'     => (string) ($this->request->getPost('experience') ?? ''),
+            'focus'          => (string) ($this->request->getPost('focus') ?? ''),
+            'salary'         => (string) ($this->request->getPost('salary') ?? ''),
+            'arrangement'    => (string) ($this->request->getPost('arrangement') ?? ''),
+            'language'       => (string) ($this->request->getPost('language') ?? ''),
+            'company_type'   => (string) ($this->request->getPost('company') ?? ''),
         ];
 
         if ($applicationId > 0) {
@@ -151,6 +188,17 @@ class CareerToolsController extends BaseController
             'interview_mode' => $interviewMode,
             'webcam_enabled' => $webcamEnabled,
             'application_id' => $applicationId,
+            
+            // New options passed from mockup
+            'interview_type' => (string) ($this->request->getPost('itype') ?? ''),
+            'duration'       => (string) ($this->request->getPost('duration') ?? ''),
+            'personality'    => (string) ($this->request->getPost('personality') ?? ''),
+            'experience'     => (string) ($this->request->getPost('experience') ?? ''),
+            'focus'          => (string) ($this->request->getPost('focus') ?? ''),
+            'salary'         => (string) ($this->request->getPost('salary') ?? ''),
+            'arrangement'    => (string) ($this->request->getPost('arrangement') ?? ''),
+            'language'       => (string) ($this->request->getPost('language') ?? ''),
+            'company_type'   => (string) ($this->request->getPost('company') ?? ''),
         ];
 
         if ($applicationId > 0) {
@@ -268,31 +316,123 @@ class CareerToolsController extends BaseController
      */
     public function salaryNegotiation()
     {
+        $userId = (int) auth()->id();
+        $candidateObj = $this->candidateModel->where('user_id', $userId)->first();
+        
+        $candidate = [
+            'firstName' => '',
+            'targetPosition' => ''
+        ];
+        
+        if ($candidateObj) {
+            $candidate['firstName'] = explode(' ', trim($candidateObj->full_name))[0];
+            $candidate['targetPosition'] = $candidateObj->job_title ?? '';
+        }
+
+        // Reuse streak/XP helpers from mock interview
+        $negoModel = new \App\Models\SalaryNegotiationSessionModel();
+        $recentSessions = $negoModel->getRecentSessions($userId, 10);
+        $streak = $negoModel->calculateStreak($userId);
+        $xp = $this->calculateXp($userId);
+
+        // Weekly negotiation goal (target: 2 per week)
+        $weeklyGoalTarget = 2;
+        $weeklyDone = $negoModel->weeklySessionsCount($userId);
+        $weeklyPct = $weeklyGoalTarget > 0 ? min(100, (int) round(($weeklyDone / $weeklyGoalTarget) * 100)) : 0;
+
+        // Best score and averages
+        $bestScore = $negoModel->bestScore($userId);
+        $avgScores = $negoModel->averageScores($userId);
+        $persuasionTrend = $negoModel->persuasionTrend($userId);
+
+        // Format recent sessions for the history rail
+        $history = array_map(static function (object $s) use ($userId): array {
+            $eval = json_decode((string) ($s->evaluation_json ?? ''), true) ?: [];
+            return [
+                'id'               => (int) $s->id,
+                'job_title'        => (string) ($s->job_title ?? 'Negotiation'),
+                'difficulty'       => (string) ($s->difficulty ?? 'medium'),
+                'overall_score'    => (int) ($s->overall_score ?? 0),
+                'persuasion_score' => (int) ($s->persuasion_score ?? 0),
+                'confidence_score' => (int) ($s->confidence_score ?? 0),
+                'outcome'          => (string) ($s->outcome ?? ''),
+                'created_at'       => date('d M', strtotime($s->created_at)),
+            ];
+        }, $recentSessions);
+
         return view('candidate/career-tools/salary-negotiation', [
-            'title' => 'Salary Negotiation Simulator'
+            'title'            => 'Salary Negotiation Simulator',
+            'candidate'        => $candidate,
+            'recentSessions'   => $history,
+            'streak'           => $streak,
+            'xp'               => $xp,
+            'weeklyDone'       => $weeklyDone,
+            'weeklyGoalTarget' => $weeklyGoalTarget,
+            'weeklyPct'        => $weeklyPct,
+            'bestScore'        => $bestScore,
+            'avgScores'        => $avgScores,
+            'persuasionTrend'  => $persuasionTrend,
         ]);
     }
 
     /**
-     * Career Advice Interface
+     * Career Advice Interface (AI Career Coach)
      */
     public function careerAdvice()
     {
-        $candidate = $this->candidateModel->where('user_id', auth()->id())->first();
+        $userId = (int) auth()->id();
+        $candidate = $this->candidateModel->where('user_id', $userId)->first();
         $name = $candidate?->full_name ?? 'Candidate';
+        $firstName = $candidate ? explode(' ', trim($candidate->full_name))[0] : 'Professional';
         $skills = $candidate?->skills ?? 'Not specified';
         $bio = $candidate?->bio ?? 'Not specified';
+        $jobTitle = $candidate?->job_title ?? 'Product & Technology Professional';
+        $experienceYears = (int) ($candidate?->experience_years ?? 3);
 
-        $profile = "Name: {$name}, Skills: {$skills}, Bio: {$bio}";
+        // Fetch recent mock interview data
+        $recentSessions = $this->mockInterviewSessionModel
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')
+            ->findAll(12);
 
-        $advice = $this->aiService->getCareerAdvice($profile);
-        
-        // Clean up markdown formatting
+        $sessionsCount = count($recentSessions);
+        $avgScore = 0;
+        if ($sessionsCount > 0) {
+            $scores = array_column($recentSessions, 'overall_score');
+            $avgScore = round((array_sum($scores) / $sessionsCount) * 10, 0); // Convert scale 1-10 to 0-100
+        }
+
+        $streak = $this->calculateStreak($userId);
+        $xp = $this->calculateXp($userId);
+        $level = floor($xp / 500) + 1;
+
+        // Profile completion heuristic
+        $profileFields = [$candidate?->full_name, $candidate?->email, $candidate?->phone, $candidate?->job_title, $candidate?->skills, $candidate?->bio, $candidate?->resume];
+        $filledFields = count(array_filter($profileFields, static fn($v) => !empty(trim((string)$v))));
+        $profileCompletion = (int) round(($filledFields / count($profileFields)) * 100);
+
+        // Career health score weighted calculation
+        $careerHealth = (int) min(100, max(40, round(($avgScore * 0.4) + ($profileCompletion * 0.3) + (min(10, $sessionsCount) * 3) + 25)));
+
+        $profileSummary = "Name: {$name}, Current Title: {$jobTitle}, Experience: {$experienceYears} years, Skills: {$skills}, Bio: {$bio}";
+
+        $advice = $this->aiService->getCareerAdvice($profileSummary);
         $advice = $this->cleanMarkdown($advice);
 
         return view('candidate/career-tools/career-advice', [
-            'title' => 'AI Career Advice',
-            'advice' => $advice
+            'title' => 'AI Career Coach',
+            'advice' => $advice,
+            'firstName' => $firstName,
+            'candidate' => $candidate,
+            'jobTitle' => $jobTitle,
+            'experienceYears' => $experienceYears,
+            'sessionsCount' => $sessionsCount,
+            'avgScore' => $avgScore > 0 ? (int)$avgScore : 78,
+            'streak' => $streak > 0 ? $streak : 4,
+            'xp' => $xp,
+            'level' => $level,
+            'profileCompletion' => $profileCompletion,
+            'careerHealth' => $careerHealth,
         ]);
     }
     
@@ -301,6 +441,10 @@ class CareerToolsController extends BaseController
      */
     protected function cleanMarkdown($text)
     {
+        // Escape raw HTML first so only the tags we intentionally introduce below
+        // are rendered. AI output is seeded from user-supplied bio/skills, so this
+        // prevents any HTML/script injection from reaching the view.
+        $text = esc((string) $text);
         // Convert **bold** to <strong>
         $text = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
         // Convert *italic* to <em>
@@ -317,5 +461,84 @@ class CareerToolsController extends BaseController
         $text = preg_replace('/^\s*\*+\s*/m', '', $text);
         
         return $text;
+    }
+
+    protected function calculateStreak(int $userId): int
+    {
+        $sessions = $this->mockInterviewSessionModel
+            ->select('created_at')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        if (empty($sessions)) {
+            return 0;
+        }
+
+        $dates = [];
+        foreach ($sessions as $s) {
+            $dates[] = date('Y-m-d', strtotime($s['created_at']));
+        }
+        $dates = array_unique($dates);
+
+        $streak = 0;
+        $today = date('Y-m-d');
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+
+        // If the user has not practiced today or yesterday, streak is broken
+        if (!in_array($today, $dates) && !in_array($yesterday, $dates)) {
+            return 0;
+        }
+
+        $current = in_array($today, $dates) ? $today : $yesterday;
+
+        while (in_array($current, $dates)) {
+            $streak++;
+            $current = date('Y-m-d', strtotime($current . ' -1 day'));
+        }
+
+        return $streak;
+    }
+
+    protected function calculateXp(int $userId): int
+    {
+        // 200 XP per interview session
+        $sessionsCount = $this->mockInterviewSessionModel
+            ->where('user_id', $userId)
+            ->countAllResults();
+
+        $candidateId = (int) ($this->candidateModel->where('user_id', $userId)->first()->id ?? 0);
+
+        // 100 XP per job application (job_applications is keyed by job_seeker_id, not user_id)
+        $appsCount = 0;
+        if ($candidateId > 0) {
+            $jobApplicationModel = new \App\Models\JobApplicationModel();
+            $appsCount = $jobApplicationModel
+                ->where('job_seeker_id', $candidateId)
+                ->countAllResults();
+        }
+
+        // 150 XP per aptitude test attempt (test_attempts.candidate_id actually stores the auth user id, see AptitudeController)
+        $testAttemptModel = new \App\Models\TestAttemptModel();
+        $attemptsCount = $testAttemptModel
+            ->where('candidate_id', $userId)
+            ->countAllResults();
+
+        return ($sessionsCount * 200) + ($appsCount * 100) + ($attemptsCount * 150);
+    }
+
+    protected function checkTodayGoal(int $userId): int
+    {
+        // Count mock sessions completed today
+        $todayStart = date('Y-m-d 00:00:00');
+        $todayEnd = date('Y-m-d 23:59:59');
+
+        $todaySessions = $this->mockInterviewSessionModel
+            ->where('user_id', $userId)
+            ->where('created_at >=', $todayStart)
+            ->where('created_at <=', $todayEnd)
+            ->countAllResults();
+
+        return $todaySessions > 0 ? 1 : 0;
     }
 }

@@ -15,10 +15,12 @@ namespace CodeIgniter\Shield\Controllers;
 
 use App\Controllers\BaseController;
 use CodeIgniter\Events\Events;
+use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Shield\Authentication\Authenticators\Session;
+use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Models\LoginModel;
 use CodeIgniter\Shield\Models\UserIdentityModel;
 use CodeIgniter\Shield\Models\UserModel;
@@ -95,7 +97,6 @@ class MagicLinkController extends BaseController
             return redirect()->route('magic-link')->with('error', lang('Auth.invalidEmail', [$email]));
         }
 
-        /** @var UserIdentityModel $identityModel */
         $identityModel = model(UserIdentityModel::class);
 
         // Delete any previous magic-link identities
@@ -160,9 +161,12 @@ class MagicLinkController extends BaseController
             return redirect()->route('login')->with('error', lang('Auth.magicLinkDisabled'));
         }
 
+        if ($this->request->getUserAgent()->isRobot()) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
         $token = $this->request->getGet('token');
 
-        /** @var UserIdentityModel $identityModel */
         $identityModel = model(UserIdentityModel::class);
 
         $identity = $identityModel->getIdentityBySecret(Session::ID_TYPE_MAGIC_LINK, $token);
@@ -200,18 +204,24 @@ class MagicLinkController extends BaseController
             return redirect()->route('auth-action-show')->with('error', lang('Auth.needActivate'));
         }
 
-        // Log the user in
+        $user = $this->provider->findById($identity->user_id);
+
+        // Start any login action that has been defined.
+        if ($user instanceof User && $authenticator->startUpAction('login', $user) && $authenticator->hasAction($user->id)) {
+            $this->recordLoginAttempt($identifier, true, $user->id);
+            $authenticator->setPendingLoginMethod(Session::ID_TYPE_MAGIC_LINK);
+
+            return redirect()->route('auth-action-show');
+        }
+
+        $authenticator->setPendingLoginMethod(Session::ID_TYPE_MAGIC_LINK);
+
+        // Log the user in.
         $authenticator->loginById($identity->user_id);
 
         $user = $authenticator->getUser();
 
         $this->recordLoginAttempt($identifier, true, $user->id);
-
-        // Give the developer a way to know the user
-        // logged in via a magic link.
-        session()->setTempdata('magicLogin', true);
-
-        Events::trigger('magicLogin');
 
         // Get our login redirect url
         return redirect()->to(config('Auth')->loginRedirect());
@@ -225,7 +235,6 @@ class MagicLinkController extends BaseController
         bool $success,
         $userId = null,
     ): void {
-        /** @var LoginModel $loginModel */
         $loginModel = model(LoginModel::class);
 
         $loginModel->recordLoginAttempt(

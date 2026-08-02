@@ -1,4 +1,12 @@
-<!-- Mobile Bottom Navigation App Bar -->
+<!-- Mobile Bottom Navigation App Bar (Hidden on Desktop) -->
+<style>
+/* Self-contained desktop hide: higher specificity than Bootstrap's .d-flex
+   (display:flex !important) so it always wins, regardless of which stylesheet
+   a given layout loads or their order. Hidden from tablet up (>=768px). */
+@media (min-width: 768px) {
+  html body .mobile-bottom-nav { display: none !important; }
+}
+</style>
 <div class="mobile-bottom-nav d-flex d-md-none">
     <a href="<?= base_url('/') ?>" class="nav-item <?= current_url() == base_url() || current_url() == base_url('/') ? 'active' : '' ?>">
         <i class="bi bi-house"></i>
@@ -27,7 +35,7 @@
     <?php else: ?>
         <a href="<?= base_url('login') ?>" class="nav-item <?= strpos(current_url(), 'login') !== false ? 'active' : '' ?>">
             <i class="bi bi-person"></i>
-            <span>Login</span>
+            <span>Get Started</span>
         </a>
     <?php endif; ?>
 

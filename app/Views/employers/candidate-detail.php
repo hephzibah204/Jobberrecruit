@@ -1,242 +1,566 @@
-<?= $this->extend('employers/layouts/app') ?>
+<?php $page_title = 'Candidate Profile'; ?>
+<?= $this->extend('layouts/employer') ?>
 
-<?= $this->section('section') ?>
-<div class="container-fluid page-container main-body-container">
+<?php
+// Normalize the unlocked variable
+$unlocked = isset($unlocked) ? (bool)$unlocked : (isset($isUnlocked) ? (bool)$isUnlocked : false);
 
-    <!-- Start::page-header -->
-    <div class="page-header-breadcrumb mb-3">
-        <div class="d-flex align-center justify-content-between flex-wrap">
-            <h1 class="page-title fw-medium fs-18 mb-0">Candidate Profile</h1>
-            <div class="ms-auto">
-                <a href="<?= base_url('employer/candidates') ?>" class="btn btn-light btn-sm">
-                    <i class="ri-arrow-left-line"></i> Back to Search
-                </a>
-            </div>
-        </div>
-    </div>
-    <!-- End::page-header -->
+// Initials generation
+$candName = $candidate->full_name ?? 'Candidate';
+$candInitials = '';
+$words = explode(' ', preg_replace('/\s+/', ' ', trim($candName)));
+$candInitials = count($words) >= 2
+    ? strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1))
+    : strtoupper(substr($candName, 0, 2));
 
-    <div class="row">
-        <!-- LEFT COLUMN: AVATAR & INFO -->
-        <div class="col-xxl-4 col-xl-5">
-            <div class="card custom-card">
-                <div class="card-body text-center p-4">
-                    <div class="mb-3">
-                        <span class="avatar avatar-xxl avatar-rounded online shadow-sm">
-                            <?php if (!empty($candidate->profile_picture)): ?>
-                                <img src="<?= base_url($candidate->profile_picture) ?>" alt="img">
-                            <?php else: ?>
-                                <div class="avatar avatar-xxl bg-primary-transparent rounded-circle fs-30">
-                                    <?= substr($candidate->full_name, 0, 1) ?>
-                                </div>
-                            <?php endif; ?>
-                        </span>
-                    </div>
-                    <h5 class="fw-bold mb-1">
-                        <?= esc($candidate->full_name) ?>
-                        <?php if ($candidate->is_verified): ?>
-                            <span class="text-primary fs-18" title="Verified Candidate">
-                                <i class="ri-checkbox-circle-fill"></i>
-                            </span>
-                        <?php endif; ?>
-                    </h5>
-                    <p class="text-muted mb-3"><?= esc($candidate->job_title ?? 'Professional') ?></p>
-                    
-                    <div class="d-flex justify-content-center gap-2 mb-4">
-                        <span class="badge bg-primary-transparent text-primary"><?= esc($candidate->experience_years ?? 0) ?> Years Exp.</span>
-                        <span class="badge bg-success-transparent text-success"><?= esc($candidate->employment_type ?? 'Full-time') ?></span>
-                        <span class="badge bg-info-transparent text-info"><?= esc($candidate->availability ?? 'Immediate') ?></span>
-                    </div>
+// Email and Phone masking functions
+if (!function_exists('maskEmail')) {
+    function maskEmail($email) {
+        if (empty($email)) return '••••••••@••••.•••';
+        $parts = explode('@', $email);
+        $name = $parts[0];
+        $domain = $parts[1] ?? '';
+        $len = strlen($name);
+        if ($len <= 2) {
+            return '••@' . $domain;
+        }
+        return substr($name, 0, 2) . str_repeat('•', max(3, $len - 3)) . substr($name, -1) . '@' . $domain;
+    }
+}
+if (!function_exists('maskPhone')) {
+    function maskPhone($phone) {
+        if (empty($phone)) return '•••• ••• •••';
+        $len = strlen($phone);
+        if ($len <= 7) {
+            return str_repeat('•', $len);
+        }
+        return substr($phone, 0, 4) . ' ••• ••' . substr($phone, -2);
+    }
+}
 
-                    <!-- CONTACT DETAILS SECTION (GATED) -->
-                    <div class="card bg-light border-0">
-                        <div class="card-body p-3">
-                            <h6 class="fw-bold mb-3 text-start">Contact Information</h6>
-                            
-                            <?php if ($isUnlocked): ?>
-                                <!-- UNLOCKED STATE -->
-                                <div class="text-start">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="me-2"><i class="ri-mail-line text-primary"></i></div>
-                                        <div><span class="fw-medium">Email:</span> <?= esc($candidate->email) ?></div>
-                                    </div>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="me-2"><i class="ri-phone-line text-primary"></i></div>
-                                        <div><span class="fw-medium">Phone:</span> <?= esc($candidate->phone) ?></div>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-2"><i class="ri-map-pin-line text-primary"></i></div>
-                                        <div><span class="fw-medium">Location:</span> <?= esc($candidate->state_name) ?>, Nigeria</div>
-                                    </div>
-                                </div>
-                                <div class="mt-4">
-                                    <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="btn btn-primary w-100 mb-2">
-                                        <i class="ri-download-line me-1"></i> Download Resume
-                                    </a>
-                                    <button class="btn btn-outline-primary w-100" onclick="startMessage(<?= $candidate->id ?>)">
-                                        <i class="ri-message-2-line me-1"></i> Send Message
-                                    </button>
-                                </div>
-                            <?php else: ?>
-                                <!-- LOCKED STATE -->
-                                <div class="text-start blur-content">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="me-2"><i class="ri-mail-line text-muted"></i></div>
-                                        <div class="blurred-text">example@email.com</div>
-                                    </div>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="me-2"><i class="ri-phone-line text-muted"></i></div>
-                                        <div class="blurred-text">+234 800 000 0000</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-4 p-3 bg-white rounded border border-primary border-dashed">
-                                    <p class="small text-muted mb-3">Contact details are hidden. Use 1 credit to unlock this candidate's full profile and resume.</p>
-                                    <button class="btn btn-primary w-100" onclick="unlockCandidate(<?= $candidate->id ?>)">
-                                        <i class="ri-lock-unlock-line me-1"></i> Unlock Contact Details
-                                    </button>
-                                    <?php if($hasUnlimited): ?>
-                                        <div class="mt-2 small text-success fw-bold">You have Unlimited Access! Click above to reveal.</div>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+// Get wallet balance for view
+$walletBalance = 0;
+$user = auth()->user();
+if (isset($user)) {
+    try {
+        $walletRow = model(\App\Models\WalletModel::class)->where('user_id', $user->id)->first();
+        $walletBalance = $walletRow ? (float) $walletRow->balance : 0;
+    } catch (\Throwable $e) {
+        $walletBalance = 0;
+    }
+}
+?>
 
-        <!-- RIGHT COLUMN: BIO & DETAILS -->
-        <div class="col-xxl-8 col-xl-7">
-            <div class="card custom-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Professional Biography</h6>
-                    <p class="text-muted"><?= nl2br(esc($candidate->bio ?? 'No biography provided.')) ?></p>
-
-                    <hr class="my-4">
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">Education Level</h6>
-                            <p class="text-primary fw-medium"><?= esc($candidate->education_level ?? 'Not specified') ?></p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">Salary Expectation</h6>
-                            <p class="text-success fw-bold">₦<?= number_format((float)($candidate->desired_salary ?? 0)) ?> (<?= esc($candidate->salary_type ?? 'Monthly') ?>)</p>
-                        </div>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <h6 class="fw-bold mb-3">Core Skills & Competencies</h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        <?php 
-                        $skills = explode(',', $candidate->skills ?? '');
-                        if (!empty($skills[0])):
-                            foreach ($skills as $s): ?>
-                                <span class="badge bg-light text-dark fs-12 p-2 border"><?= esc(trim($s)) ?></span>
-                            <?php endforeach;
-                        else: ?>
-                            <span class="text-muted">No skills specified.</span>
-                        <?php endif; ?>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <h6 class="fw-bold mb-3">Preferred Industries</h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        <?php if ($industries): foreach ($industries as $ind): ?>
-                            <span class="badge bg-primary-transparent text-primary p-2"><?= esc($ind->name) ?></span>
-                        <?php endforeach; else: ?>
-                            <span class="text-muted">No specific industries preferred.</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<?= $this->section('content') ?>
+<div class="page-head">
+  <div>
+    <h1><svg aria-hidden="true"><use href="#i-users"/></svg> Candidate Profile</h1>
+    <p>Review this candidate's full profile.</p>
+  </div>
+  <div class="page-actions">
+    <a href="<?= base_url('employer/candidates') ?>" class="emp-btn emp-btn-outline emp-btn-sm">
+      <svg aria-hidden="true"><use href="#i-arrow-l"/></svg> Back to Search
+    </a>
+  </div>
 </div>
 
-<style>
-.blur-content {
-    filter: blur(4px);
-    user-select: none;
-    pointer-events: none;
-}
-.blurred-text {
-    background: #eee;
-    color: transparent;
-    border-radius: 4px;
-}
-</style>
+<div class="cp-grid">
+  <!-- ══ LEFT · identity + paywalled contact ══ -->
+  <div class="cp-col cp-sticky">
+    <section class="card cp-id" aria-label="Candidate identity">
+      <div class="cp-ava" aria-hidden="true">
+        <?php if (!empty($candidate->profile_picture)): ?>
+          <img src="<?= base_url($candidate->profile_picture) ?>" alt="img" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+        <?php else: ?>
+          <?= esc($candInitials) ?>
+        <?php endif; ?>
+        <span class="dot" title="Open to work"></span>
+      </div>
+      <div class="cp-name"><?= esc($candidate->full_name) ?></div>
+      <div class="cp-role"><?= esc($candidate->job_title ?? 'Professional') ?></div>
+      <div class="cp-pills">
+        <span class="chip"><?= esc($candidate->experience_years ?? 0) ?> years experience</span>
+        <span class="chip"><?= esc($candidate->employment_type ?? 'Full Time') ?></span>
+        <span class="pill pill--immediate"><?= esc($candidate->availability ?? 'Available immediately') ?></span>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Contact information">
+      <div class="card-head">
+        <span class="card-title">
+          <svg aria-hidden="true"><use href="#i-mail"/></svg> Contact Information
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="lock-row">
+          <svg aria-hidden="true"><use href="#i-mail"/></svg>
+          <span>
+            <span class="lbl2">Email</span>
+            <b><?= $unlocked ? esc($candidate->email) : maskEmail($candidate->email) ?></b>
+          </span>
+          <?php if (!$unlocked): ?>
+            <span class="lock-tag"><svg aria-hidden="true"><use href="#i-shield"/></svg> Locked</span>
+          <?php endif; ?>
+        </div>
+        <div class="lock-row">
+          <svg aria-hidden="true"><use href="#i-phone"/></svg>
+          <span>
+            <span class="lbl2">Phone</span>
+            <b><?= $unlocked ? esc($candidate->phone) : maskPhone($candidate->phone) ?></b>
+          </span>
+          <?php if (!$unlocked): ?>
+            <span class="lock-tag"><svg aria-hidden="true"><use href="#i-shield"/></svg> Locked</span>
+          <?php endif; ?>
+        </div>
+        <div class="lock-row">
+          <svg aria-hidden="true"><use href="#i-building"/></svg>
+          <span>
+            <span class="lbl2">Location</span>
+            <b style="font-family:'Inter',sans-serif"><?= esc($candidate->state_name ?? 'Nigeria') ?></b>
+          </span>
+        </div>
+        <div class="lock-row">
+          <svg aria-hidden="true"><use href="#i-doc"/></svg>
+          <span>
+            <span class="lbl2">CV / Resume</span>
+            <b style="font-family:'Inter',sans-serif"><?= $unlocked ? 'Available' : 'Available after unlock' ?></b>
+          </span>
+          <?php if (!$unlocked): ?>
+            <span class="lock-tag"><svg aria-hidden="true"><use href="#i-shield"/></svg> Locked</span>
+          <?php endif; ?>
+        </div>
+
+        <div class="cp-actions">
+          <button onclick="startMessage(<?= (int)$candidate->id ?>)" class="emp-btn emp-btn-outline emp-btn-block">
+            <svg aria-hidden="true"><use href="#i-chat"/></svg> Send Message — Free
+          </button>
+          <?php if ($unlocked): ?>
+            <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="emp-btn emp-btn-primary emp-btn-block">
+              <svg aria-hidden="true"><use href="#i-download"/></svg> Download Resume
+            </a>
+          <?php else: ?>
+            <button class="emp-btn emp-btn-primary emp-btn-block" data-unlock="<?= esc($candidate->full_name) ?>">
+              <svg aria-hidden="true"><use href="#i-shield"/></svg> Unlock Contact &amp; CV · ₦5,000
+            </button>
+          <?php endif; ?>
+        </div>
+        <p style="font-size:.72rem;color:var(--muted);margin-top:10px;text-align:center">One-time fee per candidate, charged from your wallet. Messaging is always free.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══ RIGHT · profile sections ══ -->
+  <div class="cp-col">
+    <section class="card" aria-label="Professional summary">
+      <div class="card-head">
+        <span class="card-title">
+          <svg aria-hidden="true"><use href="#i-note"/></svg> Professional Summary
+        </span>
+      </div>
+      <div class="card-body">
+        <?php if (!empty($candidate->bio)): ?>
+          <p style="white-space: pre-line;"><?= esc($candidate->bio) ?></p>
+        <?php else: ?>
+          <p class="cp-empty">This candidate hasn't added a professional summary yet.</p>
+        <?php endif; ?>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Job preferences">
+      <div class="card-head">
+        <span class="card-title">
+          <svg aria-hidden="true"><use href="#i-star"/></svg> Job Preferences
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="kv">
+          <div>
+            <div class="k">Salary expectation</div>
+            <div class="v">
+              <?php if (!empty($candidate->desired_salary)): ?>
+                ₦<?= number_format((float)$candidate->desired_salary) ?> / <?= esc($candidate->salary_type ?? 'month') ?>
+              <?php else: ?>
+                Not specified
+              <?php endif; ?>
+            </div>
+          </div>
+          <div>
+            <div class="k">Employment type</div>
+            <div class="v"><?= esc($candidate->employment_type ?? 'Not specified') ?></div>
+          </div>
+          <div>
+            <div class="k">Availability</div>
+            <div class="v"><?= esc($candidate->availability ?? 'Not specified') ?></div>
+          </div>
+          <div>
+            <div class="k">Preferred location</div>
+            <div class="v"><?= esc($candidate->state_name ?? 'Not specified') ?></div>
+          </div>
+        </div>
+        
+        <?php if (!empty($industries)): ?>
+          <div class="sec-title2" style="margin-top:18px">Preferred industries</div>
+          <div class="chips">
+            <?php foreach ($industries as $ind): ?>
+              <span class="chip"><?= esc($ind->name) ?></span>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Skills">
+      <div class="card-head">
+        <span class="card-title">
+          <svg aria-hidden="true"><use href="#i-zap"/></svg> Core Skills &amp; Competencies
+        </span>
+      </div>
+      <div class="card-body">
+        <?php 
+        $skillsList = [];
+        if (isset($skills) && is_array($skills)) {
+            $skillsList = $skills;
+        } elseif (isset($candidate->skills) && !empty($candidate->skills)) {
+            $skillsList = is_array($candidate->skills) ? $candidate->skills : explode(',', $candidate->skills);
+        }
+        ?>
+        <?php if (!empty($skillsList)): ?>
+          <div class="chips">
+            <?php foreach ($skillsList as $s): ?>
+              <?php if (trim($s) !== ''): ?>
+                <span class="chip"><?= esc(trim($s)) ?></span>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <p class="cp-empty">No skills added yet.</p>
+        <?php endif; ?>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Work experience">
+      <div class="card-head">
+        <span class="card-title">
+          <svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience
+        </span>
+      </div>
+      <div class="card-body">
+        <?php if (!empty($experience)): ?>
+          <?php foreach ($experience as $xp): ?>
+            <div class="xp">
+              <span class="xp-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
+              <div>
+                <?php
+                $xpStart = !empty($xp->start_date) ? date('Y', strtotime($xp->start_date)) : '';
+                $xpEnd   = !empty($xp->is_current) ? 'present'
+                    : (!empty($xp->end_date) ? date('Y', strtotime($xp->end_date)) : 'present');
+                ?>
+                <b><?= esc($xp->job_title ?? '') ?></b>
+                <i><?= esc($xp->company ?? '') ?> &middot; <?= esc($xp->location ?? '') ?> &middot; <?= esc($xpStart) ?> &ndash; <?= esc($xpEnd) ?></i>
+                <?php if (!empty($xp->description)): ?>
+                  <p><?= nl2br(esc($xp->description)) ?></p>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <p class="cp-empty">No work experience added yet.</p>
+        <?php endif; ?>
+      </div>
+    </section>
+
+    <div class="cp-grid" style="grid-template-columns:1fr 1fr;gap:clamp(14px,1.8vw,20px)">
+      <section class="card" aria-label="Education" style="min-width:0">
+        <div class="card-head">
+          <span class="card-title">
+            <svg aria-hidden="true"><use href="#i-grad"/></svg> Education
+          </span>
+        </div>
+        <div class="card-body">
+          <?php if (!empty($education)): ?>
+            <?php foreach ($education as $edu): ?>
+              <div class="xp" style="border:none;padding:2px 0">
+                <span class="xp-ic" aria-hidden="true"><svg><use href="#i-grad"/></svg></span>
+                <div>
+                  <b><?= esc($edu->degree ?? '') ?><?= !empty($edu->field_of_study) ? ' in ' . esc($edu->field_of_study) : '' ?></b>
+                  <i><?= esc($edu->school ?? '') ?> &middot; <?= esc($edu->start_year ?? '') ?> &ndash; <?= esc($edu->end_year ?? 'Completed') ?></i>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p class="cp-empty">No education details added yet.</p>
+          <?php endif; ?>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Languages" style="min-width:0">
+        <div class="card-head">
+          <span class="card-title">
+            <svg aria-hidden="true"><use href="#i-chat"/></svg> Languages
+          </span>
+        </div>
+        <div class="card-body">
+          <?php 
+          $langList = [];
+          if (isset($languages) && is_array($languages)) {
+              $langList = $languages;
+          } elseif (isset($candidate->languages) && !empty($candidate->languages)) {
+              $langList = is_array($candidate->languages) ? $candidate->languages : explode(',', $candidate->languages);
+          }
+          ?>
+          <?php if (!empty($langList)): ?>
+            <div class="chips">
+              <?php foreach ($langList as $l): ?>
+                <?php if (trim($l) !== ''): ?>
+                  <span class="chip"><?= esc(trim($l)) ?></span>
+                <?php endif; ?>
+              <?php endforeach; ?>
+            </div>
+          <?php else: ?>
+            <p class="cp-empty">No languages specified.</p>
+          <?php endif; ?>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ══ UNLOCK MODAL ══ -->
+<div class="modal-scrim" id="unlock-scrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="unlock-title">
+    <div class="modal-head">
+      <span class="modal-title" id="unlock-title"><svg aria-hidden="true"><use href="#i-shield"/></svg> Unlock Candidate Details</span>
+      <button class="modal-close" id="unlock-close" aria-label="Close dialog"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.86rem">Unlock <b id="unlock-name">this candidate</b> to get:</p>
+      <ul class="unlock-list">
+        <li><svg aria-hidden="true"><use href="#i-phone"/></svg> Direct phone number</li>
+        <li><svg aria-hidden="true"><use href="#i-mail"/></svg> Email address</li>
+        <li><svg aria-hidden="true"><use href="#i-download"/></svg> Full CV / resume download</li>
+      </ul>
+      <div class="unlock-total"><span>One-time unlock fee</span><b>₦5,000</b></div>
+      
+      <?php if ($walletBalance < 5000): ?>
+        <div class="notice notice--warn" id="unlock-warn" style="margin-top:12px">
+          <svg aria-hidden="true"><use href="#i-wallet"/></svg>
+          <span>Your wallet balance is <b>₦<?= number_format($walletBalance, 2) ?></b> — fund your wallet to unlock this candidate.</span>
+        </div>
+      <?php endif; ?>
+      
+      <p style="font-size:.72rem;color:var(--muted);margin-top:12px">The fee is deducted from your wallet. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
+    </div>
+    <div class="modal-foot modal-foot--stacked">
+      <div class="modal-foot-row">
+        <button class="emp-btn emp-btn-outline" id="unlock-cancel">Cancel</button>
+        <?php if ($walletBalance >= 5000): ?>
+          <button class="emp-btn emp-btn-primary" id="confirm-unlock-btn" onclick="executeUnlock(<?= (int)$candidate->id ?>)">
+            <svg aria-hidden="true"><use href="#i-wallet"/></svg> Use Wallet (₦5,000)
+          </button>
+        <?php endif; ?>
+      </div>
+      <button class="emp-btn emp-btn-accent" id="unlock-paystack-btn">
+        <svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)
+      </button>
+    </div>
+  </div>
+</div>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+  <button onclick="startMessage(<?= (int)$candidate->id ?>)" class="emp-btn emp-btn-outline">
+    <svg aria-hidden="true"><use href="#i-chat"/></svg> Message
+  </button>
+  <?php if ($unlocked): ?>
+    <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="emp-btn emp-btn-primary">
+      <svg aria-hidden="true"><use href="#i-download"/></svg> Download CV
+    </a>
+  <?php else: ?>
+    <button class="emp-btn emp-btn-primary" data-unlock="<?= esc($candidate->full_name) ?>">
+      <svg aria-hidden="true"><use href="#i-shield"/></svg> Unlock · ₦5,000
+    </button>
+  <?php endif; ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
-function unlockCandidate(id) {
-    if (confirm('Unlock this candidate for 1 credit? This will give you permanent access to their contact details and resume.')) {
-        // Show loading state
-        const btn = event.target.closest('button');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="ri-loader-4-line animation-spin"></i> Unlocking...';
+(function(){
+  'use strict';
+  var scrim=document.getElementById('unlock-scrim'),
+      nameEl=document.getElementById('unlock-name'),
+      closeB=document.getElementById('unlock-close'),
+      cancelB=document.getElementById('unlock-cancel'),
+      last=null;
+      
+  function open(name){
+    nameEl.textContent=name;
+    last=document.activeElement;
+    scrim.classList.add('show');
+    document.body.style.overflow='hidden';
+  }
+  
+  function close(){
+    scrim.classList.remove('show');
+    document.body.style.overflow='';
+    if(last)last.focus();
+  }
+  
+  document.querySelectorAll('[data-unlock]').forEach(function(b){
+    b.addEventListener('click',function(){open(b.getAttribute('data-unlock'))});
+  });
+  
+  if (closeB) closeB.addEventListener('click',close);
+  if (cancelB) cancelB.addEventListener('click',close);
+  if (scrim) {
+    scrim.addEventListener('click',function(e){if(e.target===scrim)close()});
+  }
+  
+  const paystackB = document.getElementById('unlock-paystack-btn');
+  if (paystackB) {
+      paystackB.addEventListener('click', function() {
+          paystackB.disabled = true;
+          paystackB.textContent = 'Processing...';
 
-        fetch('<?= base_url("employer/candidates/unlock") ?>', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-            },
-            body: 'candidate_id=' + id
-        })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                toastr.success(res.message);
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                toastr.error(res.message);
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-                
-                if (res.message.includes('credits') || res.message.includes('subscription')) {
-                    // Redirect to pricing if needed
-                    // setTimeout(() => window.location.href = '<?= base_url("employer/pricing") ?>', 2000);
-                }
-            }
-        })
-        .catch(err => {
-            toastr.error('Error unlocking candidate');
-            console.error(err);
+          fetch("<?= base_url('employer/initiate-payment') ?>", {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({
+                  type: 'unlock',
+                  candidate_id: <?= (int)$candidate->id ?>,
+                  email: '<?= esc($user->email ?? '') ?>',
+                  full_name: '<?= esc($employer->company_name ?? '') ?>'
+              })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+              if (res.success && res.paystack) {
+                  let handler = PaystackPop.setup({
+                      key: res.paystack,
+                      email: res.email,
+                      amount: res.amount,
+                      ref: res.reference,
+                      channels: [res.method || 'card'],
+                      metadata: res.metadata,
+                      callback: function(response) {
+                          // Verify payment via Ajax
+                          var verifyData = new FormData();
+                          verifyData.append('reference', response.reference);
+                          verifyData.append('candidate_id', <?= (int)$candidate->id ?>);
+                          verifyData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+                          fetch("<?= base_url('employer/candidates/unlock-verify') ?>", {
+                              method: 'POST',
+                              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                              body: verifyData
+                          })
+                          .then(function(vr) { return vr.json(); })
+                          .then(function(vres) {
+                              if (vres.success) {
+                                  location.reload();
+                              } else {
+                                  alert(vres.message || 'Payment verification failed.');
+                                  paystackB.disabled = false;
+                                  paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
+                              }
+                          })
+                          .catch(function() {
+                              alert('Error verifying transaction.');
+                              paystackB.disabled = false;
+                              paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
+                          });
+                      },
+                      onClose: function() {
+                          paystackB.disabled = false;
+                          paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
+                      }
+                  });
+                  handler.openIframe();
+              } else {
+                  alert(res.message || 'Failed to initialize payment.');
+                  paystackB.disabled = false;
+                  paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
+              }
+          })
+          .catch(function(err) {
+              alert('Connection error.');
+              paystackB.disabled = false;
+              paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
+          });
+      });
+  }
+})();
+
+function showNotification(type, message) {
+    if (typeof toastr !== 'undefined') {
+        toastr[type](message);
+    } else {
+        alert(message);
+    }
+}
+
+function executeUnlock(id) {
+    const btn = document.getElementById('confirm-unlock-btn');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Unlocking...';
+
+    const formData = new FormData();
+    formData.append('candidate_id', id);
+    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+    fetch('<?= base_url("employer/candidates/unlock") ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            showNotification('success', res.message || 'Unlocked successfully!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('error', res.message || 'Failed to unlock');
             btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        });
-    }
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        showNotification('error', 'An error occurred. Please try again.');
+        console.error(err);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
 
-    function startMessage(candidateId) {
-        const formData = new FormData();
-        formData.append('seeker_id', candidateId);
-        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+function startMessage(candidateId) {
+    const formData = new FormData();
+    formData.append('seeker_id', candidateId);
+    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
-        fetch('<?= base_url("employer/messages/start") ?>', {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData
-        })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success && res.redirect) {
-                window.location.href = res.redirect;
-            } else {
-                toastr.error(res.message || 'Failed to start conversation');
-            }
-        })
-        .catch(err => {
-            toastr.error('Error starting conversation');
-            console.error(err);
-        });
-    }
+    fetch('<?= base_url("employer/messages/start") ?>', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success && res.redirect) {
+            window.location.href = res.redirect;
+        } else {
+            showNotification('error', res.message || 'Failed to start conversation');
+        }
+    })
+    .catch(err => {
+        showNotification('error', 'Error starting conversation');
+        console.error(err);
+    });
 }
 </script>
 <?= $this->endSection() ?>

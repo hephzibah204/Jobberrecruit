@@ -53,7 +53,7 @@
 /* ============================================================
    DESIGN SYSTEM — BRAND COLORS ONLY
    ⚠️ IMPORTANT: Reference/mockup design files may use
-   different hex values (e.g. #0861A9, #ED9020). NEVER copy
+   different hex values (e.g. #0D609E, #ED9020). NEVER copy
    those hexes directly — always use the BRAND COLORS below:
      Blue   → var(--brand)  (primary)
      Orange → var(--accent)  (accent)
@@ -179,11 +179,11 @@ main, .section, .container, .jobs-header, .jobs-grid { background-color: transpa
 .hero-employer-h2 em { font-style: normal; color: var(--accent); }
 
 /* Ticker */
-.ticker { position: relative; z-index: 1; background: rgba(10,47,87,.55); border-top: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: stretch; }
+.ticker { position: relative; z-index: 1; background: rgba(10,47,87,.55); border-top: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: stretch; max-width: 100%; width: 100%; }
 .ticker-label { flex-shrink: 0; display: flex; align-items: center; gap: 8px; background: var(--accent); color: var(--brand-deep); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 0 16px; z-index: 2; }
 .ticker-dot { width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px rgba(10,47,87,.55); animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.72); opacity: .7; } }
-.ticker-viewport { flex: 1; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.ticker-viewport { flex: 1 1 0%; min-width: 0; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
 .ticker-track { display: inline-flex; align-items: center; white-space: nowrap; padding: 12px 0; will-change: transform; animation: ticker-scroll 48s linear infinite; }
 .ticker-viewport:hover .ticker-track { animation-play-state: paused; }
 @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }

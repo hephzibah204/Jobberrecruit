@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A2F57">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<meta name="format-detection" content="telephone=no">
+<!-- DEV: favicon — drop your icon file here, e.g.
+     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"> -->
+<title>Classroom – JobberRecruit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+<!--
+DEVELOPER HANDOVER — COURSE CLASSROOM (premium enhancement pass v2)
+Enhancement of the v1 classroom; existing structure/IDs/responsiveness preserved.
+NEW SECTIONS (all front-end; wire to real data):
+- Hero: instructor avatar, rating (course.rating/reviews), enrollment count,
+  difficulty, duration, language, last_updated; floating glass stat cards
+  (lessons/duration/skills/certificate).
+- Skills You'll Gain: loop course.skills[]. Career Outcomes: course.roles[] with
+  salary ranges (PLACEHOLDER market estimates — replace with real data; disclaimer
+  shown).
+- Lesson tabs: Overview/Notes/Transcript/Downloads/Discussion/AI Summary. Notes
+  textarea autosaves per user; Transcript binds lesson.transcript; Discussion binds
+  thread.
+- AI Learning Assistant (AI Summary tab): Summarize/Explain/Quiz/Takeaways/
+  Flashcards/Practice Interview. Demo text client-side; DEV route to Gemini
+  (see gemini-integration package) grounded in lesson content.
+- Career Intelligence: animated progress cards (readiness/resume/ATS/interview/
+  employability/skill-growth) + recommended next course. Bind to candidate metrics.
+- Recommended Jobs carousel: query jobs by course skill tag; Apply + Save.
+- Certificate showcase: preview card + View Full / Download PDF / Verify
+  (GET /candidate/certificates/{code}/pdf ; /verify/{code}).
+PRESERVED from v1: completion hero, 3-col curriculum/viewer/dashboard, career
+tools strip, custom video-unavailable state, no leaked URLs, brand palette,
+mobile overflow fix, keyboard-accessible lessons.
+
+HERO v3 + iOS DARK MODE: hero rebranded to navy→blue with orange glow (was
+off-brand green); made compact; now STATE-AWARE — .cls-hero.done shows the
+certificate claim + check badge, without 'done' it shows a live progress ring +
+"Continue Learning" (jumps to first incomplete lesson) + a note explaining the
+certificate unlocks at 100%. Toggle the 'done' class server-side on progress==100.
+iOS DARK MODE FIX: color-scheme:light only + explicit -webkit-text-fill-color on
+all text surfaces and form controls, so iOS Safari can't recolor copy invisible.
+MOBILE HERO FIX: grid children constrained (min-width:0, overflow-wrap), single
+column + stacked CTAs on <=720px, smaller ring/badges on <=420px — no more
+cut-off elements. VIDEO: Expand button uses Fullscreen API on the player
+container (works while playing). YouTube plays INLINE via
+youtube-nocookie.com/embed + playsinline=1&rel=0 — it does NOT redirect; the
+Reload button re-injects that iframe rather than opening YouTube. NON-VIDEO
+LESSONS: setPlayerState('reading') shows a branded Reading-lesson state (Read /
+Download PDF) instead of an empty video box — use for ebook/PDF/reading lessons;
+'unavailable' shows the error state; 'video' shows iframe + expand.
+PROGRESSION MODEL (Franklin's choice): lessons are OPEN (learn in any order); the
+FINAL ASSESSMENT is the gate to the certificate. Pass mark 70% (configurable).
+Retry allowed UNTIL PASSED (no attempt limit). Certificate status card shows a
+live checklist (lessons done / assessment passed / certificate ready); the
+Download button is hidden until the assessment is passed, then revealed and the
+hero flips to 'done'. IMPORTANT: the demo scores client-side for preview only —
+in production, score server-side (POST /candidate/courses/{id}/assessment) and
+NEVER expose correct answers to the client; enforce the gate before issuing the
+PDF so it can't be bypassed. Assessment questions/pass-mark are backend-config.
+-->
+<style>
+:root{
+  color-scheme: light;
+  --brand:#0861A9; --brand-dark:#064A85; --brand-deep:#0A2F57; --brand-light:#E6F0F8;
+  --accent:#ED9020; --accent-dark:#C8770E; --accent-light:#FDF1E0;
+  --text:#141926; --muted:#5b6577; --bg:#f5f7fb; --white:#fff; --border:#e2e8f2;
+  --success:#16a34a; --success-light:#e8f7ee; --danger:#dc2626; --danger-light:#fdeaea;
+  --radius:10px; --radius-lg:14px;
+  --shadow:0 2px 14px rgba(10,47,87,.08); --shadow-lg:0 14px 40px rgba(10,47,87,.16);
+  --transition:.18s ease; --sidebar-w:262px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;max-width:100%}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overflow-x:hidden}
+h1,h2,h3,.display{font-family:'Sora','Inter',sans-serif;letter-spacing:-.02em}
+a{color:var(--brand);text-decoration:none}
+button{font-family:inherit}
+img,svg{display:block}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.skip-link{position:absolute;top:-50px;left:16px;background:var(--brand);color:#fff;padding:8px 16px;border-radius:0 0 6px 6px;font-weight:600;z-index:9999;transition:top .2s}
+.skip-link:focus{top:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:var(--transition);text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:44px;white-space:nowrap}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn-outline{background:var(--white);color:var(--brand);border-color:var(--border)}
+.btn-outline:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-accent{background:var(--accent);color:var(--brand-deep);border-color:var(--accent)}
+.btn-accent:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:var(--brand-deep)}
+.btn-ghost-w{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.28)}
+.btn-ghost-w:hover{background:rgba(255,255,255,.2)}
+.btn-danger-o{background:#fff;color:var(--danger);border-color:var(--border)}
+.btn-danger-o:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-sm{padding:8px 14px;font-size:.78rem;min-height:38px}
+.btn-block{width:100%}
+
+/* icon button */
+.ic-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition);flex-shrink:0}
+.ic-btn:hover{border-color:var(--brand);color:var(--brand)}
+.ic-btn svg{width:15px;height:15px}
+.ic-btn--danger:hover{border-color:var(--danger);color:var(--danger)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.02em;white-space:nowrap}
+.pill svg{width:11px;height:11px}
+.pill--pending{background:var(--accent-light);color:var(--accent-dark)}
+.pill--reviewed{background:var(--brand-light);color:var(--brand)}
+.pill--rejected{background:var(--danger-light);color:var(--danger)}
+.pill--hired,.pill--open,.pill--success{background:var(--success-light);color:var(--success)}
+.pill--closed{background:var(--bg);color:var(--muted)}
+.pill--immediate{background:var(--brand-light);color:var(--brand)}
+
+/* layout shell */
+.shell{display:flex;min-height:100vh;overflow-x:hidden;width:100%;max-width:100%}
+.main{flex:1;min-width:0;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+@media (max-width:1024px){.main{margin-left:0}}
+
+/* sidebar */
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);z-index:1200;display:flex;flex-direction:column;color:#fff;
+  background:radial-gradient(ellipse 90% 40% at 100% 0%,rgba(237,144,32,.14) 0%,transparent 55%),linear-gradient(175deg,#0A2F57 0%,#083a6b 60%,#064A85 100%);
+  padding-top:env(safe-area-inset-top,0)}
+.sidebar::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.45;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:42px 42px;-webkit-mask-image:radial-gradient(ellipse 100% 55% at 50% 0%,#000 25%,transparent 85%);mask-image:radial-gradient(ellipse 100% 55% at 50% 0%,#000 25%,transparent 85%)}
+.sb-head{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;position:relative}
+.sb-logo{font-family:'Sora',sans-serif;font-weight:800;font-size:1.28rem;color:#fff;display:inline-flex;align-items:baseline;letter-spacing:-.02em}
+.sb-logo .o{position:relative;display:inline-block;width:.62em;height:.62em;border:.13em solid var(--accent);border-radius:50%;margin:0 .04em;transform:translateY(.02em)}
+.sb-logo .o::after{content:'';position:absolute;width:.16em;height:.34em;background:var(--accent);border-radius:2px;left:73%;top:78%;transform:rotate(-45deg);transform-origin:top left}
+.sb-close{display:none;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:10px;line-height:0;-webkit-tap-highlight-color:transparent}
+.sb-close svg{width:20px;height:20px}
+.sb-scroll{flex:1;overflow-y:auto;padding:4px 14px 14px;position:relative;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.sb-group{margin-top:16px}
+.sb-label{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:0 12px 7px}
+.sb-link{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;font-size:.86rem;font-weight:500;color:rgba(255,255,255,.82);transition:var(--transition);min-height:44px;position:relative}
+.sb-link svg{width:17px;height:17px;flex-shrink:0;opacity:.85}
+.sb-link:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+.sb-link[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+.sb-link[aria-current="page"]::before{content:'';position:absolute;left:-14px;top:8px;bottom:8px;width:3.5px;border-radius:0 4px 4px 0;background:var(--accent)}
+.sb-count{margin-left:auto;background:var(--accent);color:var(--brand-deep);font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:20px;line-height:1.5}
+.sb-wallet{margin:20px 2px 6px;padding:15px 15px 14px;border-radius:var(--radius-lg);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden}
+.sb-wallet::after{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(237,144,32,.28),transparent 70%)}
+.sb-wallet-label{font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.sb-wallet-amt{font-family:'Sora',sans-serif;font-weight:800;font-size:1.32rem;margin:2px 0 10px;color:#fff}
+.sb-wallet .btn{width:100%;position:relative;z-index:1}
+.sb-foot{padding:12px 20px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0));font-size:.7rem;color:rgba(255,255,255,.4);position:relative;border-top:1px solid rgba(255,255,255,.1)}
+.scrim{position:fixed;inset:0;background:rgba(10,25,45,.55);backdrop-filter:blur(2px);z-index:1100;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
+@media (max-width:1024px){
+  .sidebar{transform:translateX(-100%);transition:transform .26s ease;box-shadow:var(--shadow-lg)}
+  .sidebar.open{transform:translateX(0)}
+  .scrim.show{opacity:1;visibility:visible}
+  .sb-close{display:block}
+}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:900;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top,0)}
+.topbar-inner{display:flex;align-items:center;gap:12px;height:66px;padding:0 clamp(16px,3vw,32px)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:10px;color:var(--text);line-height:0;-webkit-tap-highlight-color:transparent;margin-left:-8px}
+.hamburger svg{width:22px;height:22px}
+@media (max-width:1024px){.hamburger{display:block}}
+.tb-crumb{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;min-width:0}
+.tb-crumb a{color:var(--muted);font-weight:500}
+.tb-crumb a:hover{color:var(--brand)}
+.tb-crumb svg{width:12px;height:12px;flex-shrink:0}
+.tb-crumb b{color:var(--brand-deep);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.tb-wallet{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px solid var(--border);border-radius:9px;background:#fff;font-size:.8rem;font-weight:600;color:var(--brand-deep);min-height:44px;transition:var(--transition)}
+.tb-wallet:hover{border-color:var(--brand);text-decoration:none}
+.tb-wallet svg{width:16px;height:16px;color:var(--brand)}
+.tb-wallet b{font-family:'Sora',sans-serif;font-weight:700}
+.tb-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition)}
+.tb-icon:hover{border-color:var(--brand);color:var(--brand)}
+.tb-icon svg{width:18px;height:18px}
+.tb-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid #fff}
+.tb-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0}
+@media (max-width:640px){.tb-wallet span.lbl{display:none}}
+
+/* content + page head */
+.content{flex:1;padding:clamp(18px,3vw,32px);padding-bottom:96px;display:flex;flex-direction:column;gap:clamp(16px,2.2vw,24px)}
+@media (min-width:1025px){.content{padding-bottom:clamp(18px,3vw,32px)}}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-head h1{font-size:clamp(1.25rem,2.3vw,1.6rem);font-weight:800;color:var(--brand-deep);display:flex;align-items:center;gap:10px}
+.page-head h1 svg{width:22px;height:22px;color:var(--brand)}
+.page-head p{color:var(--muted);font-size:.85rem;margin-top:2px}
+.page-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* card */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{display:inline-flex;align-items:center;gap:8px;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep)}
+.card-title svg{width:16px;height:16px;color:var(--brand)}
+.card-body{padding:18px 20px}
+.card-link{font-size:.76rem;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;padding:8px 10px;margin:-8px -10px;border-radius:8px}
+.card-link:hover{background:var(--brand-light);text-decoration:none}
+.card-link svg{width:13px;height:13px}
+
+/* stat chips (reusable) */
+.stats{display:grid;gap:clamp(10px,1.4vw,16px)}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 16px 13px;position:relative;overflow:hidden;transition:var(--transition)}
+.stat:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.stat::before{content:'';position:absolute;left:0;top:13px;bottom:13px;width:3.5px;border-radius:0 4px 4px 0;background:var(--st-bar,var(--brand))}
+.stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.stat-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--st-icbg,var(--brand-light));color:var(--st-ic,var(--brand))}
+.stat-ic svg{width:17px;height:17px}
+.stat-num{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(1.35rem,2.4vw,1.75rem);color:var(--brand-deep);line-height:1.1}
+.stat-lbl{font-size:.74rem;color:var(--muted);font-weight:500;margin-top:1px}
+
+/* form controls */
+.input,.select,textarea.input{width:100%;min-height:44px;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;background:#fff;color:var(--text);transition:var(--transition)}
+.input:focus,.select:focus,textarea.input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(8,97,169,.12)}
+.select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b6577' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.search-wrap .input{padding-left:38px}
+label.lbl{display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+
+/* toolbar (search + filters) */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar .select{width:auto;min-width:150px}
+
+/* table + mobile card fallback */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;min-width:640px}
+.tbl th{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 14px;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:13px 14px;border-bottom:1px solid var(--border);font-size:.84rem;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafbfe}
+.row-actions{display:flex;gap:8px}
+
+/* pagination */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
+.pager-nav{display:flex;gap:6px;align-items:center}
+.pager-btn{min-width:38px;height:38px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-size:.8rem;font-weight:600;color:var(--text);cursor:pointer;transition:var(--transition);text-decoration:none}
+.pager-btn:hover{border-color:var(--brand);color:var(--brand);text-decoration:none}
+.pager-btn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.pager-btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
+
+/* avatar chip */
+.ava{width:42px;height:42px;border-radius:10px;background:var(--brand-light);border:1px solid var(--border);color:var(--brand);font-family:'Sora',sans-serif;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ava--round{border-radius:50%}
+
+/* skill chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:.66rem;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+
+/* empty state */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 18px}
+.empty-ic{width:56px;height:56px;border-radius:16px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center}
+.empty-ic svg{width:26px;height:26px}
+.empty h3{font-size:.94rem;font-weight:700;color:var(--brand-deep)}
+.empty p{font-size:.8rem;color:var(--muted);max-width:360px}
+
+/* notice */
+.notice{display:flex;gap:8px;align-items:flex-start;font-size:.78rem;border-radius:10px;padding:12px 14px;border:1px solid}
+.notice svg{width:15px;height:15px;flex-shrink:0;margin-top:2px}
+.notice--warn{background:var(--accent-light);border-color:#f3d9ae;color:#8a5a10}
+.notice--info{background:var(--brand-light);border-color:#cfe2f2;color:var(--brand-dark)}
+
+/* footer */
+.dash-foot{border-top:1px solid var(--border);background:#fff;padding:16px clamp(16px,3vw,32px);padding-bottom:max(16px,env(safe-area-inset-bottom,0));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
+.dash-foot nav{display:flex;gap:16px;flex-wrap:wrap}
+.dash-foot a{color:var(--muted);font-weight:500}
+.dash-foot a:hover{color:var(--brand);text-decoration:none}
+
+/* mobile sticky bar */
+.mobile-cta{position:fixed;left:0;right:0;bottom:0;z-index:950;display:none;gap:10px;padding:10px clamp(14px,4vw,18px);padding-bottom:max(10px,env(safe-area-inset-bottom,0));background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(12px);border-top:1px solid var(--border);transition:transform .28s ease}
+.mobile-cta.hidden{transform:translateY(110%)}
+.mobile-cta .btn{flex:1}
+@media (max-width:1024px){.mobile-cta{display:flex}}
+
+/* ══ TOPBAR DROPDOWNS ══ */
+.tb-drop{position:relative}
+.tb-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:230px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:8px;z-index:1000;opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.tb-drop.open .tb-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.tb-menu a,.tb-menu .tb-menu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:.84rem;font-weight:500;color:var(--text);transition:var(--transition);min-height:42px}
+.tb-menu a:hover{background:var(--brand-light);color:var(--brand);text-decoration:none}
+.tb-menu a svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
+.tb-menu a:hover svg{color:var(--brand)}
+.tb-menu hr{border:none;border-top:1px solid var(--border);margin:7px 4px}
+.tb-menu .tm-head{padding:8px 12px 10px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.tb-menu .tm-name{font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;color:var(--brand-deep)}
+.tb-menu .tm-mail{font-size:.72rem;color:var(--muted);overflow-wrap:anywhere}
+.tb-menu a.tm-out{color:var(--danger)}
+.tb-menu a.tm-out svg{color:var(--danger)}
+.tb-menu a.tm-out:hover{background:var(--danger-light);color:var(--danger)}
+.tb-menu--notif{min-width:300px}
+.tn-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;transition:var(--transition)}
+.tn-item:hover{background:var(--bg);text-decoration:none}
+.tn-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand-light);color:var(--brand)}
+.tn-ic--accent{background:var(--accent-light);color:var(--accent-dark)}
+.tn-ic svg{width:14px;height:14px}
+.tn-item b{font-size:.78rem;color:var(--brand-deep);display:block;line-height:1.4;font-weight:600}
+.tn-item i{font-style:normal;font-size:.68rem;color:var(--muted)}
+@media (max-width:480px){.tb-menu{right:-52px}.tb-menu--notif{min-width:min(300px,calc(100vw - 24px))}}
+/* ══ ENTRY MOTION ══ */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.content>*{animation:rise .34s ease both}
+.content>*:nth-child(2){animation-delay:.05s}
+.content>*:nth-child(3){animation-delay:.1s}
+.content>*:nth-child(4){animation-delay:.15s}
+.content>*:nth-child(5){animation-delay:.2s}
+.content>*:nth-child(n+6){animation-delay:.24s}
+
+
+.sb-logo-text{font-family:'Sora',sans-serif;font-weight:800;font-size:1.24rem;color:#fff;letter-spacing:-.02em;line-height:1}
+.sb-logo-img{height:26px;width:auto;display:block}
+/* ═══════════ CLASSROOM — premium LMS ═══════════ */
+.cls-wrap{display:flex;flex-direction:column;gap:clamp(16px,2vw,22px)}
+
+/* ── completion hero ── */
+.cls-hero{position:relative;overflow:hidden;border-radius:18px;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;padding:clamp(20px,2.8vw,30px)}
+.cls-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 85% -20%,rgba(237,144,32,.35),transparent 55%);pointer-events:none}
+.cls-hero.done{background:linear-gradient(135deg,var(--brand-deep),var(--brand))}
+.cls-hero.done::before{background:radial-gradient(circle at 88% -30%,rgba(237,144,32,.4),transparent 50%)}
+.cls-hero-grid{position:relative;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+@media(max-width:720px){.cls-hero-grid{grid-template-columns:1fr;text-align:center}}
+.cls-hero .eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85;display:inline-flex;align-items:center;gap:8px}
+.cls-hero .eyebrow svg{width:14px;height:14px;flex-shrink:0}
+/* catch-all: no hero icon may exceed its box (prevents cutoff) */
+.cls-hero svg{max-width:22px;max-height:22px}
+.cls-hero .ring svg,.cls-hero .ring-done svg{max-width:60px;max-height:60px}
+.cls-hero h1{font-family:'Sora',sans-serif;font-size:clamp(1.4rem,2.6vw,2rem);line-height:1.15;margin:10px 0 6px;color:#fff}
+.cls-hero .meta{display:flex;flex-wrap:wrap;gap:16px;font-size:.82rem;opacity:.92;margin-top:12px}
+@media(max-width:720px){.cls-hero .meta{justify-content:center}}
+.cls-hero .meta span{display:inline-flex;align-items:center;gap:6px}
+.cls-hero .meta svg{width:15px;height:15px}
+.cls-hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+@media(max-width:720px){.cls-hero-cta{justify-content:center}}
+.btn-on-dark{background:#fff;color:var(--brand-deep);border:none;font-weight:700}
+.btn-on-dark:hover{background:#f0f5fb;transform:translateY(-1px)}
+.btn-ghost-dark{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);font-weight:600}
+.btn-ghost-dark:hover{background:rgba(255,255,255,.2)}
+
+/* progress ring */
+.ring{--p:0;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p)*1%),rgba(255,255,255,.22) 0);flex-shrink:0}
+.ring::before{content:'';position:absolute;width:92px;height:92px;border-radius:50%;background:rgba(10,47,87,.55);backdrop-filter:blur(2px)}
+.cls-hero.done .ring::before{background:rgba(10,47,87,.55)}
+.ring b{position:relative;font-family:'Sora',sans-serif;font-size:1.5rem;color:#fff}
+.ring i{position:relative;font-style:normal;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;opacity:.85;color:#fff}
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ring-done{width:118px;height:118px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;flex-shrink:0;animation:pop-in .5s ease}
+.ring-done svg{width:52px;height:52px;color:#fff}
+
+/* verification chip */
+.verify-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:30px;padding:7px 15px;font-size:.76rem;margin-top:16px}
+.verify-chip b{font-family:'Sora',sans-serif;letter-spacing:.03em}
+.verify-chip .vv{width:7px;height:7px;border-radius:50%;background:#5fe0a8;box-shadow:0 0 0 3px rgba(95,224,168,.25)}
+
+/* ── three-column body ── */
+.cls-body{display:grid;grid-template-columns:300px 1fr 288px;gap:18px;align-items:start}
+@media(max-width:1200px){.cls-body{grid-template-columns:270px 1fr}.cls-right{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}}
+@media(max-width:860px){.cls-body{grid-template-columns:1fr}.cls-right{grid-template-columns:1fr}}
+
+/* curriculum */
+.cur-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:84px}
+@media(max-width:860px){.cur-card{position:static}}
+.cur-head{padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cur-head b{font-family:'Sora',sans-serif;font-size:.9rem;color:var(--brand-deep);display:inline-flex;align-items:center;gap:8px}
+.cur-head svg{width:16px;height:16px;color:var(--brand)}
+.cur-search{padding:11px 14px;border-bottom:1px solid var(--border)}
+.cur-search input{width:100%;border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:.8rem;font-family:inherit}
+.cur-search input:focus{outline:2px solid var(--brand-light);border-color:var(--brand)}
+.les{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative}
+.les:last-child{border-bottom:none}
+.les:hover{background:var(--bg)}
+.les.active{background:var(--brand-light)}
+.les.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
+.les-num{width:26px;height:26px;border-radius:50%;background:var(--bg);color:var(--muted);font-size:.76rem;font-weight:700;display:grid;place-items:center;flex-shrink:0;border:1px solid var(--border)}
+.les.active .les-num{background:var(--brand);color:#fff;border-color:var(--brand)}
+.les.done .les-num{background:var(--success-light);color:var(--success);border-color:transparent}
+.les.locked{opacity:.55;cursor:not-allowed}
+.les-main{flex:1;min-width:0}
+.les-main b{font-size:.82rem;color:var(--text);display:block;line-height:1.3;font-weight:600}
+.les.active .les-main b{color:var(--brand-deep)}
+.les-meta{display:flex;align-items:center;gap:10px;margin-top:4px;font-size:.68rem;color:var(--muted)}
+.les-meta span{display:inline-flex;align-items:center;gap:4px}
+.les-meta svg{width:11px;height:11px}
+.les-type{font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--brand-light);color:var(--brand)}
+.les-type.video{background:#fdecd8;color:var(--accent-dark)}
+.les-type.quiz{background:#e9e2fb;color:#6b46c1}
+.les-badge{flex-shrink:0}
+.les-badge svg{width:16px;height:16px}
+.les.done .les-badge svg{color:var(--success)}
+.les.locked .les-badge svg{color:var(--muted)}
+.cur-foot{padding:14px 16px;background:var(--bg)}
+.cur-prog-lbl{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:6px;font-weight:600}
+.cur-prog-lbl b{color:var(--success);font-family:'Sora',sans-serif}
+.cur-bar{height:7px;border-radius:20px;background:var(--border);overflow:hidden}
+.cur-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--brand),var(--accent));transition:width .5s}
+
+/* main lesson viewer */
+.les-view{display:flex;flex-direction:column;gap:16px;min-width:0}
+.player{position:relative;aspect-ratio:16/9;background:#0e1420;border-radius:14px;overflow:hidden;display:grid;place-items:center}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player-empty{text-align:center;color:#9aa4b5;padding:20px}
+.player-empty .pe-ic{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.06);display:grid;place-items:center;margin:0 auto 14px}
+.player-empty .pe-ic svg{width:28px;height:28px;color:#6b7688}
+.player-empty b{display:block;font-family:'Sora',sans-serif;font-size:1rem;color:#c9d1dc;margin-bottom:4px}
+.player-empty p{font-size:.82rem;max-width:320px;margin:0 auto 16px}
+.player-empty .btn{background:var(--brand);color:#fff;border:none}
+.les-nav{display:flex;justify-content:space-between;gap:10px}
+.les-nav button{flex:1;max-width:200px}
+.les-nav button:disabled{opacity:.4;cursor:not-allowed}
+.les-detail{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:clamp(16px,2.4vw,24px)}
+.les-src{display:inline-flex;align-items:center;gap:8px;font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:5px 12px;margin-bottom:14px}
+.les-src svg{width:12px;height:12px;color:var(--accent-dark)}
+.les-detail h2{font-family:'Sora',sans-serif;font-size:1.25rem;color:var(--brand-deep);margin-bottom:14px}
+.les-detail h3{font-size:.82rem;font-weight:700;color:var(--brand-deep);letter-spacing:.02em;margin:20px 0 9px;display:flex;align-items:center;gap:8px}
+.les-detail h3 svg{width:15px;height:15px;color:var(--brand)}
+.les-detail p{font-size:.9rem;line-height:1.65;color:var(--text)}
+.obj-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.obj-list li{display:flex;gap:8px;align-items:flex-start;font-size:.86rem;color:var(--text);line-height:1.5}
+.obj-list svg{width:15px;height:15px;color:var(--success);flex-shrink:0;margin-top:2px}
+.res-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.res-item{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:10px;padding:11px 13px;transition:var(--transition)}
+.res-item:hover{border-color:var(--brand);background:var(--brand-light)}
+.res-ic{width:34px;height:34px;border-radius:8px;background:var(--brand-light);color:var(--brand);display:grid;place-items:center;flex-shrink:0}
+.res-ic svg{width:16px;height:16px}
+.res-item b{font-size:.82rem;color:var(--brand-deep);display:block}
+.res-item i{font-style:normal;font-size:.7rem;color:var(--muted)}
+.res-item .btn{margin-left:auto}
+.mark-done{margin-top:20px}
+
+/* right dashboard */
+.cls-right{display:flex;flex-direction:column;gap:16px}
+.dash-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.dash-card h4{font-family:'Sora',sans-serif;font-size:.8rem;color:var(--brand-deep);margin-bottom:13px;display:flex;align-items:center;gap:8px}
+.dash-card h4 svg{width:15px;height:15px;color:var(--brand)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.stat-row:last-child{border-bottom:none}
+.stat-row span{color:var(--muted)}
+.stat-row b{font-family:'Sora',sans-serif;color:var(--brand-deep)}
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ach{border:1px solid var(--border);border-radius:10px;padding:11px;text-align:center;transition:var(--transition)}
+.ach.earned{border-color:var(--accent);background:var(--accent-light)}
+.ach.locked{opacity:.5}
+.ach-ic{width:32px;height:32px;border-radius:8px;background:var(--bg);color:var(--muted);display:grid;place-items:center;margin:0 auto 7px}
+.ach.earned .ach-ic{background:var(--accent);color:#fff}
+.ach-ic svg{width:16px;height:16px}
+.ach b{font-size:.68rem;color:var(--text);display:block;line-height:1.25}
+.cert-check{display:flex;align-items:center;gap:8px;font-size:.82rem;padding:7px 0;color:var(--text)}
+.cert-check svg{width:16px;height:16px;color:var(--success);flex-shrink:0}
+.cert-check.pending svg{color:var(--muted)}
+.cert-dl{width:100%;margin-top:13px;background:var(--accent);color:var(--brand-deep);border:none;font-weight:700;justify-content:center}
+.cert-dl:hover{background:var(--accent-dark);color:#fff}
+
+/* career tools strip */
+.career-strip{background:linear-gradient(135deg,var(--brand-light),#fff);border:1px solid var(--border);border-radius:16px;padding:clamp(18px,2.6vw,26px)}
+.career-strip .cs-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.cs-badge{width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;flex-shrink:0}
+.cs-badge svg{width:19px;height:19px}
+.career-strip h3{font-family:'Sora',sans-serif;font-size:1.05rem;color:var(--brand-deep)}
+.career-strip .cs-sub{font-size:.8rem;color:var(--muted)}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.cs-tool{display:flex;align-items:flex-start;gap:12px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;transition:var(--transition);cursor:pointer}
+.cs-tool:hover{border-color:var(--brand);transform:translateY(-2px);box-shadow:var(--shadow)}
+.cs-tool-ic{width:38px;height:38px;border-radius:10px;background:var(--brand-light);color:var(--brand);display:grid;place-items:center;flex-shrink:0}
+.cs-tool-ic svg{width:18px;height:18px}
+.cs-tool b{font-size:.86rem;color:var(--brand-deep);display:block;margin-bottom:2px}
+.cs-tool p{font-size:.72rem;color:var(--muted);line-height:1.4}
+.cs-tool .cs-arrow{margin-left:auto;color:var(--muted)}
+.cs-tool:hover .cs-arrow{color:var(--brand)}
+
+/* readiness meter */
+.readiness-card{grid-column:1/-1}
+.rd-flex{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.rd-ring{--p:0;width:88px;height:88px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--border) 0);display:grid;place-items:center;flex-shrink:0}
+.rd-ring::before{content:'';position:absolute;width:66px;height:66px;border-radius:50%;background:#fff}
+.rd-ring b{position:relative;font-family:'Sora',sans-serif;font-size:1.15rem;color:var(--brand-deep)}
+.rd-info{flex:1;min-width:200px}
+.rd-info b{font-family:'Sora',sans-serif;font-size:.95rem;color:var(--brand-deep)}
+.rd-info p{font-size:.8rem;color:var(--muted);margin-top:3px}
+
+@media print{.cls-sidebar,.topbar,.mobile-cta{display:none}}
+
+/* ═══ PREMIUM ENHANCEMENTS (v2) ═══ */
+/* richer hero meta */
+.hero-rating{display:inline-flex;align-items:center;gap:4px;color:#ffd27a}
+.hero-rating svg{width:14px;height:14px}
+.hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:5px 12px;font-size:.72rem;font-weight:600}
+.hero-badge svg{width:12px;height:12px}
+/* floating glass stat cards */
+.glass-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+@media(max-width:720px){.glass-row{grid-template-columns:repeat(2,1fr)}}
+.glass-card{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:13px 15px}
+.glass-card .gc-ic{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.18);display:grid;place-items:center;margin-bottom:8px}
+.glass-card .gc-ic svg{width:15px;height:15px;color:#fff}
+.glass-card b{font-family:'Sora',sans-serif;font-size:1.1rem;color:#fff;display:block;line-height:1}
+.glass-card i{font-style:normal;font-size:.68rem;opacity:.85;letter-spacing:.04em;text-transform:uppercase}
+
+/* skills + outcomes section */
+.info-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:clamp(16px,2.4vw,24px)}
+.info-card h3{font-family:'Sora',sans-serif;font-size:1rem;color:var(--brand-deep);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.info-card h3 svg{width:17px;height:17px;color:var(--brand)}
+.skill-tags{display:flex;flex-wrap:wrap;gap:8px}
+.skill-tag{display:inline-flex;align-items:center;gap:8px;background:var(--brand-light);color:var(--brand-deep);border-radius:9px;padding:8px 13px;font-size:.82rem;font-weight:600}
+.skill-tag svg{width:13px;height:13px;color:var(--brand)}
+.outcome-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:6px}
+.outcome{border:1px solid var(--border);border-radius:12px;padding:15px;transition:var(--transition)}
+.outcome:hover{border-color:var(--brand);box-shadow:var(--shadow)}
+.outcome b{font-family:'Sora',sans-serif;font-size:.9rem;color:var(--brand-deep);display:block}
+.outcome .sal{font-size:.8rem;color:var(--success);font-weight:700;margin-top:5px;display:inline-flex;align-items:center;gap:4px}
+.outcome .sal svg{width:13px;height:13px}
+.outcome i{display:block;font-style:normal;font-size:.7rem;color:var(--muted);margin-top:4px}
+
+/* lesson tabs */
+.les-tabs{display:flex;flex-wrap:wrap;gap:6px 4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.les-tab{border:none;background:none;padding:9px 12px;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:var(--transition);display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+@media(max-width:480px){
+  .les-tabs{gap:6px}
+  .les-tab{padding:9px 10px;font-size:.76rem}
+  .les-tab svg{width:12px;height:12px}
+}
+.les-tab svg{width:14px;height:14px}
+.les-tab:hover{color:var(--brand)}
+.les-tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.les-tab .ai-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.tab-panel{display:none;animation:gentle-rise .28s ease}
+.tab-panel.on{display:block}
+
+/* AI assistant panel */
+.ai-panel{background:linear-gradient(135deg,#0d1b30,#0a2f57);border-radius:14px;padding:clamp(16px,2.4vw,22px);color:#fff}
+.ai-panel .ai-head{display:flex;align-items:center;gap:12px;margin-bottom:15px}
+.ai-panel .ai-badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--accent));display:grid;place-items:center;flex-shrink:0}
+.ai-panel .ai-badge svg{width:18px;height:18px;color:#fff}
+.ai-panel h4{font-family:'Sora',sans-serif;font-size:.95rem;color:#fff}
+.ai-panel .ai-sub{font-size:.74rem;color:#9fb3cc}
+.ai-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ai-act{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:11px 13px;color:#fff;font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--transition);text-align:left}
+.ai-act:hover{background:rgba(255,255,255,.16);border-color:var(--accent)}
+.ai-act svg{width:15px;height:15px;color:var(--accent);flex-shrink:0}
+.ai-output{margin-top:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;font-size:.84rem;line-height:1.6;color:#dbe6f2;display:none}
+.ai-output.show{display:block;animation:gentle-rise .3s ease}
+
+/* career intelligence cards */
+.ci-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
+.ci-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px;transition:var(--transition)}
+.ci-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.ci-card .ci-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ci-card .ci-lbl{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ci-card .ci-ic{width:26px;height:26px;border-radius:7px;background:var(--brand-light);color:var(--brand);display:grid;place-items:center}
+.ci-card .ci-ic svg{width:14px;height:14px}
+.ci-val{font-family:'Sora',sans-serif;font-size:1.4rem;color:var(--brand-deep);line-height:1}
+.ci-track{height:5px;border-radius:20px;background:var(--bg);overflow:hidden;margin-top:9px}
+.ci-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--brand),var(--accent));width:0;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.ci-card.next{background:linear-gradient(135deg,var(--brand-light),#fff);border-color:var(--brand)}
+.ci-card.next b{font-family:'Sora',sans-serif;font-size:.86rem;color:var(--brand-deep);display:block}
+.ci-card.next p{font-size:.72rem;color:var(--muted);margin:4px 0 9px}
+
+/* recommended jobs carousel */
+.jobs-scroll{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.job-card{flex:0 0 268px;scroll-snap-align:start;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;transition:var(--transition)}
+.job-card:hover{border-color:var(--brand);box-shadow:var(--shadow)}
+.job-card .jc-top{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.jc-logo{width:42px;height:42px;border-radius:10px;background:var(--brand-light);color:var(--brand);display:grid;place-items:center;font-family:'Sora',sans-serif;font-weight:800;font-size:1rem;flex-shrink:0}
+.job-card b{font-size:.88rem;color:var(--brand-deep);display:block;line-height:1.3}
+.job-card .jc-co{font-size:.74rem;color:var(--muted)}
+.jc-meta{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0}
+.jc-meta span{font-size:.7rem;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+.jc-meta svg{width:11px;height:11px}
+.jc-sal{font-size:.82rem;font-weight:700;color:var(--success);margin-bottom:11px}
+.jc-actions{display:flex;gap:8px}
+.jc-actions .btn{flex:1;justify-content:center}
+.jc-save{flex:0 0 auto!important;padding:8px 11px}
+
+/* premium certificate showcase */
+.cert-showcase{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center}
+@media(max-width:800px){.cert-showcase{grid-template-columns:1fr}}
+.cert-preview{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#faf7f0,#fff);box-shadow:var(--shadow-lg);position:relative;aspect-ratio:1.414/1}
+.cert-preview .cp-inner{position:absolute;inset:14px;border:2px solid var(--brand);border-radius:8px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.cert-preview .cp-seal{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--accent));display:grid;place-items:center;margin-bottom:10px}
+.cert-preview .cp-seal svg{width:22px;height:22px;color:#fff}
+.cert-preview h5{font-family:'Sora',sans-serif;font-size:.82rem;color:var(--brand-deep);margin-bottom:4px}
+.cert-preview .cp-name{font-family:Georgia,serif;font-size:1.1rem;color:var(--brand);font-weight:700;margin:6px 0}
+.cert-preview .cp-course{font-size:.7rem;color:var(--muted)}
+.cert-preview .cp-code{position:absolute;bottom:20px;font-size:.56rem;color:#aeb6c2;letter-spacing:.05em}
+.cert-info h3{font-family:'Sora',sans-serif;font-size:1.3rem;color:var(--brand-deep);margin-bottom:8px}
+.cert-info p{font-size:.88rem;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.cert-actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ═══ iOS DARK MODE LOCK ═══ */
+/* iOS Safari can recolor text/inputs to its own dark palette even under
+   color-scheme:light, making copy invisible on our light surfaces. Lock the
+   surfaces and controls to explicit values. */
+html{color-scheme:light only;-webkit-text-fill-color:currentColor}
+input,textarea,select,button{color-scheme:light;-webkit-text-fill-color:currentColor}
+input,textarea{background:#fff!important;color:var(--text)!important;-webkit-text-fill-color:var(--text)!important}
+input::placeholder,textarea::placeholder{color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important;opacity:1}
+/* explicit text color on classroom surfaces (belt-and-braces for iOS) */
+.info-card,.info-card p,.outcome i,.les-detail p,.tab-panel,.tab-panel p{color:var(--text);-webkit-text-fill-color:var(--text)}
+.info-card .cs-sub,.les-meta,.jc-co,.jc-meta span,.cp-course,.cert-info p{color:var(--muted);-webkit-text-fill-color:var(--muted)}
+/* white text on dark surfaces must stay white in dark mode */
+.cls-hero,.cls-hero *,.ai-panel,.ai-panel *,.player-empty,.player-empty *{-webkit-text-fill-color:currentColor}
+.cls-hero h1,.cls-hero .eyebrow,.glass-card b,.glass-card i,.verify-chip,.hero-badge{color:#fff;-webkit-text-fill-color:#fff}
+
+/* ═══ HERO v3 — brand, compact, state-aware ═══ */
+.cls-hero h1{margin:8px 0 10px}
+.hero-instructor{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hi-av{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-family:'Sora',sans-serif;font-weight:800;font-size:.8rem;color:#fff;flex-shrink:0}
+.hi-txt b{display:block;font-family:'Sora',sans-serif;font-size:.84rem;color:#fff}
+.hi-txt i{font-style:normal;opacity:.85;font-size:.72rem}
+.hero-rating{display:inline-flex;align-items:center;gap:4px;color:#ffd27a;font-size:.82rem;font-weight:700}
+.hero-rating svg{width:14px;height:14px}
+.hero-rating .hr-count{color:rgba(255,255,255,.8);font-weight:500}
+.hero-badges{margin-top:13px}
+.hero-cta,.cls-hero-cta{margin-top:16px}
+.hero-eta{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;opacity:.9}
+.hero-eta svg{width:14px;height:14px}
+.hero-cert-note{display:flex;align-items:center;gap:8px;font-size:.78rem;opacity:.9;margin-top:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:9px 13px}
+.hero-cert-note svg{width:15px;height:15px;color:#ffd27a;flex-shrink:0}
+.ring-cap{font-size:.7rem;opacity:.9;letter-spacing:.08em;text-transform:uppercase}
+/* state switching: default (not done) shows progress block + ring */
+.cls-hero .hero-done-block{display:none}
+.cls-hero .hero-progress-block{display:block}
+.cls-hero .ring-done{display:none}
+.cls-hero .ring{display:grid}
+.cls-hero .ring-cap::after{content:"Keep going"}
+/* done state: show cert block + check badge */
+.cls-hero.done .hero-done-block{display:block}
+.cls-hero.done .hero-progress-block{display:none}
+.cls-hero.done .ring-done{display:grid}
+.cls-hero.done .ring{display:none}
+.cls-hero.done .ring-cap::after{content:"100% Complete"}
+
+/* ═══ HERO MOBILE FIX — prevent overflow/cutoff ═══ */
+.cls-hero{max-width:100%;box-sizing:border-box}
+.cls-hero-grid{min-width:0;max-width:100%}
+.cls-hero-grid > div{min-width:0;max-width:100%}
+.cls-hero h1{overflow-wrap:anywhere;word-break:break-word;max-width:100%}
+.hero-instructor{min-width:0;max-width:100%}
+.hero-instructor .hi-txt{min-width:0}
+.verify-chip{max-width:100%;overflow-wrap:anywhere}
+.verify-chip b{overflow-wrap:anywhere;word-break:break-all}
+.hero-badges{max-width:100%}
+@media(max-width:720px){
+  .cls-hero-grid{grid-template-columns:1fr!important;text-align:left;gap:18px}
+  .ring-wrap{flex-direction:row;justify-content:flex-start;align-items:center;gap:16px}
+  .hero-instructor{gap:8px}
+  .hero-rating{width:100%;margin-top:2px}
+  .cls-hero-cta{flex-direction:column;align-items:stretch}
+  .cls-hero-cta .btn{width:100%;justify-content:center}
+  .hero-eta{justify-content:center;margin-top:4px}
+  .hero-cert-note{font-size:.74rem}
+}
+@media(max-width:420px){
+  .cls-hero{padding:18px 16px}
+  .hero-badge{font-size:.68rem;padding:4px 9px}
+  .ring,.ring-done{width:96px;height:96px}
+  .ring::before{width:74px;height:74px}
+  .ring-done svg{width:42px;height:42px}
+}
+
+/* ═══ PLAYER: reading state + expand ═══ */
+.player-reading{text-align:center;color:#9aa4b5;padding:24px;max-width:380px}
+.player-reading .pr-ic{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;margin:0 auto 14px}
+.player-reading .pr-ic svg{width:28px;height:28px;color:var(--accent)}
+.player-reading b{display:block;font-family:'Sora',sans-serif;font-size:1.05rem;color:#e6ecf4;margin-bottom:5px}
+.player-reading p{font-size:.84rem;line-height:1.5;margin:0 auto 16px}
+.pr-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.btn-on-brand{background:var(--brand);color:#fff;border:none}
+.btn-on-brand:hover{background:var(--brand-deep)}
+.btn-outline-light{background:transparent;color:#cdd6e2;border:1px solid rgba(255,255,255,.28)}
+.btn-outline-light:hover{background:rgba(255,255,255,.1)}
+.player-expand{position:absolute;bottom:12px;right:12px;width:38px;height:38px;border-radius:9px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;cursor:pointer;transition:var(--transition);z-index:3}
+.player-expand:hover{background:rgba(0,0,0,.75)}
+.player-expand svg{width:17px;height:17px}
+.player:fullscreen{border-radius:0}
+.player:fullscreen iframe{width:100vw;height:100vh}
+/* Fallback for browsers (notably iOS Safari) where Fullscreen API on a <div> is
+   unsupported: emulate fullscreen with fixed positioning instead. */
+.player.player--expanded{position:fixed;inset:0;z-index:9999;border-radius:0;aspect-ratio:auto;width:100vw;height:100vh}
+.player.player--expanded .player-expand{bottom:16px;right:16px}
+@media(hover:none) and (pointer:coarse){
+  /* Touch devices: bigger, higher-contrast controls so expand/reload are easy to hit and see */
+  .player-expand{width:46px;height:46px;background:rgba(0,0,0,.7)}
+  .player-expand svg{width:20px;height:20px}
+  .player-empty #retry-video{min-width:170px}
+}
+
+/* ═══ CERTIFICATE GATE + ASSESSMENT ═══ */
+.cert-check.done svg{color:var(--success)}
+.cert-check.pending{color:var(--muted)}
+.cert-check.pending svg{color:var(--muted)}
+.cert-locked{margin-top:12px}
+.cl-note{display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--muted);background:var(--accent-light);border:1px solid #f5d9b0;border-radius:9px;padding:10px 12px;margin-bottom:11px;line-height:1.45}
+.cl-note svg{width:14px;height:14px;color:var(--accent-dark);flex-shrink:0;margin-top:1px}
+
+.assess-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:clamp(18px,2.6vw,26px);box-shadow:var(--shadow);scroll-margin-top:80px}
+.assess-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.assess-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.assess-eyebrow svg{width:14px;height:14px}
+.assess-head h3{font-family:'Sora',sans-serif;font-size:1.15rem;color:var(--brand-deep);margin:8px 0 6px}
+.assess-head p{font-size:.86rem;color:var(--muted);line-height:1.55;max-width:560px}
+.assess-head p b{color:var(--brand-deep)}
+.q-block{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.q-text{font-size:.9rem;color:var(--text);margin-bottom:12px;line-height:1.5}
+.q-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;cursor:pointer;font-size:.86rem;color:var(--text);transition:var(--transition)}
+.q-opt:last-child{margin-bottom:0}
+.q-opt:hover{border-color:var(--brand);background:var(--brand-light)}
+.q-opt input{accent-color:var(--brand);width:16px;height:16px;flex-shrink:0}
+.q-opt:has(input:checked){border-color:var(--brand);background:var(--brand-light)}
+#assess-submit{margin-top:4px}
+.assess-result{text-align:center;padding:20px}
+.ar-ic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;margin:0 auto 14px}
+.ar-ic.pass{background:var(--success-light)}
+.ar-ic.pass svg{width:32px;height:32px;color:var(--success)}
+.ar-ic.fail{background:var(--accent-light)}
+.ar-ic.fail svg{width:30px;height:30px;color:var(--accent-dark)}
+.assess-result h3{font-family:'Sora',sans-serif;font-size:1.2rem;color:var(--brand-deep);margin-bottom:7px}
+.assess-result p{font-size:.88rem;color:var(--muted);line-height:1.55;max-width:420px;margin:0 auto 16px}
+.assess-result p b{color:var(--brand-deep)}
+
+/* ══════════════════════════════════════════════════════════
+   PREMIUM POLISH LAYER — shared across all candidate pages
+   Additive only: shadow/border convergence, press feedback,
+   skeleton loaders, confetti-on-success, typing micro-affordance.
+   Respects prefers-reduced-motion (already handled globally, but
+   every new animation here is re-guarded defensively).
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 1. SHADOW + BORDER CONVERGENCE ──
+   Was: 31 distinct box-shadow declarations across pages. Converge
+   every card/panel/modal to these three tokens for visual rhythm. */
+:root{
+  --shadow-xs:0 1px 3px rgba(10,47,87,.06);
+  --shadow-sm:0 2px 10px rgba(10,47,87,.07);
+  --shadow-md:0 6px 24px rgba(10,47,87,.10);
+  --shadow-lg-p:0 16px 44px rgba(10,47,87,.16);
+  --border-c:#e2e8f2;
+}
+.card,.dash-card,.set-card,.plan,.info-card,.job-card,.les-detail,.cur-card,
+.at-card,.faq-item,.modal,.q-block{
+  box-shadow:var(--shadow-xs);
+  border-color:var(--border-c);
+}
+.card:hover,.dash-card:hover,.job-card:hover,.cs-tool:hover,.res-item:hover{
+  box-shadow:var(--shadow-sm);
+}
+.modal{box-shadow:var(--shadow-lg-p)}
+
+/* ── 2. BUTTON PRESS FEEDBACK — every interactive element ── */
+.btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.tpl-swatch,
+.les,.res-item,.faq-item,.plan .btn,.icon-btn{
+  transition:transform .12s cubic-bezier(.2,.8,.2,1),
+             box-shadow .18s ease,
+             background-color .18s ease,
+             border-color .18s ease,
+             opacity .18s ease;
+}
+.btn:active,.at-pal:active,.at-opt:active,.q-opt:active,.cs-tool:active,
+.les:active,.res-item:active{
+  transform:scale(.97);
+}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){
+  .btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.les,.res-item{
+    transition:background-color .12s ease,border-color .12s ease!important;
+  }
+  .btn:active,.btn:hover{transform:none!important}
+}
+
+/* ── 3. SKELETON LOADERS — initial-load state for async content ──
+   DEV: attach class "is-loading" to a container before data arrives;
+   remove it once real content is painted. Skeleton blocks live inside
+   as .sk-line / .sk-block and are hidden automatically once is-loading
+   is removed (CSS only shows them while the parent has the class). */
+.sk-line,.sk-block,.sk-circle{display:none}
+.is-loading .sk-line,.is-loading .sk-block,.is-loading .sk-circle{
+  display:block;background:linear-gradient(90deg,#eef1f6 25%,#e4e9f1 37%,#eef1f6 63%);
+  background-size:400% 100%;animation:sk-shimmer 1.4s ease infinite;border-radius:6px;
+}
+.is-loading > *:not(.sk-line):not(.sk-block):not(.sk-circle){display:none}
+.sk-line{height:13px;margin-bottom:9px;width:100%}
+.sk-line.w-60{width:60%} .sk-line.w-40{width:40%} .sk-line.w-80{width:80%}
+.sk-block{height:80px;width:100%;border-radius:12px}
+.sk-circle{width:40px;height:40px;border-radius:50%}
+@keyframes sk-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){
+  .is-loading .sk-line,.is-loading .sk-block,.is-loading .sk-circle{animation:none;background:#eef1f6}
+}
+
+/* ── 4. SUCCESS / COMPLETION — confetti burst (canvas-free, CSS only) ──
+   DEV: trigger by adding class "burst" to #confetti-root for ~1.6s on a
+   genuine completion event (course done, certificate earned, subscribe
+   success) — not on routine actions. Never fires automatically. */
+#confetti-root{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;display:none}
+#confetti-root.burst{display:block}
+.confetti-piece{position:absolute;top:-12px;width:8px;height:14px;opacity:0;border-radius:2px;
+  animation:confetti-fall 1.6s ease-in forwards}
+@keyframes confetti-fall{
+  0%{opacity:1;transform:translateY(0) rotate(0deg)}
+  100%{opacity:0;transform:translateY(100vh) rotate(540deg)}
+}
+@media(prefers-reduced-motion:reduce){
+  #confetti-root.burst{display:none}
+}
+
+/* ── 5. MODAL TRANSITION POLISH ── */
+.modal-overlay{transition:opacity .2s ease}
+.modal-overlay:not(.show){opacity:0;pointer-events:none}
+.modal-overlay.show{opacity:1}
+.modal{transform:translateY(10px) scale(.98);opacity:0;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .22s ease}
+.modal-overlay.show .modal{transform:translateY(0) scale(1);opacity:1}
+@media(prefers-reduced-motion:reduce){.modal{transition:opacity .15s ease;transform:none!important}}
+
+/* ── 6. PROGRESS BAR — smoother easing, subtle sheen while active ── */
+.cur-fill,.ci-fill,.ah-fill,.set-strength-fill,.cls-hero .ring::before{
+  transition:width .6s cubic-bezier(.4,0,.2,1)!important;
+}
+.cur-bar,.ci-track,.ah-bar{position:relative;overflow:hidden}
+
+/* ── 7. FOCUS RING — slightly refined (kept, not replaced) to ensure
+   consistent radius across pill/rect controls ── */
+.btn:focus-visible,.sb-link:focus-visible,.at-opt:focus-visible,.q-opt:focus-visible{
+  outline:3px solid var(--accent);outline-offset:2px;
+}
+input:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:2px solid var(--brand);outline-offset:1px;
+}
+
+/* ── 8. TOUCH TARGET SAFETY NET — .btn-sm (38px) is fine for mouse/desktop,
+   but must meet the 44px minimum on touch devices where precision is lower ── */
+@media(hover:none) and (pointer:coarse){
+  .btn,.sb-link,.at-pal,.icon-btn,.les-tab,.switch,.btn-sm{min-height:44px;min-width:44px}
+  .at-pal{width:44px;height:44px}
+}
+
+/* ── 9. LAYOUT-SHIFT GUARD — reserve space for async avatar/logo slots ── */
+.jc-logo,.hi-av,.rev-av,[data-async-img]{min-width:1em;min-height:1em}
+img{max-width:100%;height:auto}
+
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-search-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20a7 7 0 0 1 11-5.5"/><circle cx="17.5" cy="16.5" r="3.5"/><path d="m20 19 2.5 2.5"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M10 21v-3h4v3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2.5-1.5L9 22l2.5-1.5L14 22l2.5-1.5L19 22V2l-2.5 1.5L14 2l-2.5 1.5L9 2 6.5 3.5Z"/><path d="M8 8h7M8 12h7"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5.5 5.5 0 0 0-4-5.3"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 13-3.5"/><path d="m15 18 2.5 2.5L22 16"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></symbol>
+    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9Z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8Z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1Z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-1 8 11-13h-8Z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+    <symbol id="i-grad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 9-10-5L2 9l10 5 10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5M22 9v6"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.25-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.06c-.24.68-1.4 1.3-1.93 1.35-.52.05-1 .24-3.4-.7-2.87-1.13-4.7-4.06-4.84-4.25-.14-.19-1.16-1.55-1.16-2.95 0-1.4.74-2.1 1-2.38.26-.29.57-.36.76-.36l.55.01c.17 0 .41-.06.64.5.24.57.8 1.97.88 2.11.07.14.12.31.02.5-.1.19-.14.3-.29.47l-.43.51c-.14.14-.29.3-.13.58.17.29.74 1.22 1.58 1.97 1.09.97 2 1.27 2.29 1.41.28.14.45.12.62-.07.16-.19.71-.83.9-1.11.19-.29.38-.24.64-.14.26.09 1.66.78 1.94.92.29.14.48.22.55.34.07.12.07.68-.17 1.35Z"/></symbol>
+    <symbol id="i-x-social" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.3 22h-6.3l-4.9-6.4L6.5 22H3.4l7.3-8.3L1 2h6.4l4.4 5.9L18.9 2Zm-1.1 18h1.7L7.3 3.7H5.5L17.8 20Z"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24" fill="currentColor"><path d="M20.4 3H3.6A.6.6 0 0 0 3 3.6v16.8c0 .33.27.6.6.6h16.8a.6.6 0 0 0 .6-.6V3.6a.6.6 0 0 0-.6-.6ZM8.3 18.4H5.7v-8.6h2.7v8.6ZM7 8.6a1.55 1.55 0 1 1 0-3.1 1.55 1.55 0 0 1 0 3.1Zm11.4 9.8h-2.7v-4.2c0-1 0-2.3-1.4-2.3s-1.6 1.1-1.6 2.2v4.3H10v-8.6h2.6v1.2h0c.36-.68 1.24-1.4 2.55-1.4 2.7 0 3.2 1.8 3.2 4.1v4.7Z"/></symbol>
+  </defs>
+</svg>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-award" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M8.2 13.9 7 22l5-3 5 3-1.2-8.1"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4Z"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></symbol>
+<symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></symbol>
+<symbol id="i-naira" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V3l12 18V3M3.5 9.5h17M3.5 14.5h17"/></symbol>
+<symbol id="i-chev-d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 15v3M13 11v7M18 7v11"/></symbol>
+<symbol id="i-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 4.5 3L12 4l5.5 7L22 8l-2 12H4L2 8Z"/></symbol>
+</defs></svg>
+<div class="scrim" id="scrim" hidden></div>
+<div class="shell">
+<aside class="sidebar" id="sidebar" aria-label="Dashboard navigation">
+<div class="sb-head"><a href="/" class="sb-logo" aria-label="JobberRecruit home"><!-- DEV: insert logo here — recommended <img src="/assets/logo-white.svg" alt="JobberRecruit" class="sb-logo-img"> (white/mono version, ~150×26). Placeholder text shown until then. --><span class="sb-logo-text">JobberRecruit</span></a>
+<button class="sb-close" id="sb-close" aria-label="Close menu"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<nav class="sb-scroll" aria-label="Candidate menu">
+<div class="sb-group"><div class="sb-label">Core Career</div>
+<a class="sb-link" href="candidate-dashboard.html"><svg aria-hidden="true"><use href="#i-grid"/></svg> Dashboard </a>
+<a class="sb-link" href="/jobs"><svg aria-hidden="true"><use href="#i-search"/></svg> Browse Jobs </a>
+<a class="sb-link" href="candidate-applications.html"><svg aria-hidden="true"><use href="#i-doc"/></svg> My Applications </a>
+<a class="sb-link" href="/candidate/saved-jobs"><svg aria-hidden="true"><use href="#i-bookmark"/></svg> Saved Jobs <span class="sb-count">1</span></a>
+<a class="sb-link" href="candidate-profile.html"><svg aria-hidden="true"><use href="#i-users"/></svg> My Profile </a>
+<a class="sb-link" href="candidate-messages.html"><svg aria-hidden="true"><use href="#i-chat"/></svg> Messages </a>
+</div>
+<div class="sb-group"><div class="sb-label">AI Cognitive Tools</div>
+<a class="sb-link" href="/candidate/resume-builder"><svg aria-hidden="true"><use href="#i-doc"/></svg> AI Resume Builder </a>
+<a class="sb-link" href="candidate-career-tools.html"><svg aria-hidden="true"><use href="#i-zap"/></svg> AI Career Tools </a>
+</div>
+<div class="sb-group"><div class="sb-label">Learning &amp; Training</div>
+<a class="sb-link" href="/training"><svg aria-hidden="true"><use href="#i-book"/></svg> Training Catalog </a>
+<a class="sb-link" href="candidate-courses.html" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg> My Courses </a>
+          <a class="sb-link" href="candidate-aptitude-test.html"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Aptitude Tests </a>
+<a class="sb-link" href="candidate-certificates.html"><svg aria-hidden="true"><use href="#i-award"/></svg> Certificates </a>
+<a class="sb-link" href="/training/webinars"><svg aria-hidden="true"><use href="#i-video"/></svg> Career Webinars </a>
+</div>
+<div class="sb-group"><div class="sb-label">Billing &amp; Network</div>
+<a class="sb-link" href="/candidate/premium"><svg aria-hidden="true"><use href="#i-crown"/></svg> Premium Plans </a>
+<a class="sb-link" href="candidate-referrals.html"><svg aria-hidden="true"><use href="#i-share"/></svg> Referral Program </a>
+<a class="sb-link" href="candidate-transactions.html"><svg aria-hidden="true"><use href="#i-receipt"/></svg> Transactions </a>
+<a class="sb-link" href="candidate-job-alerts.html"><svg aria-hidden="true"><use href="#i-bell"/></svg> Job Alerts </a>
+</div>
+<div class="sb-group"><div class="sb-label">Settings</div>
+<a class="sb-link" href="/candidate/settings"><svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings </a>
+<a class="sb-link" href="/logout"><svg aria-hidden="true"><use href="#i-logout"/></svg> Sign Out </a>
+</div>
+<div class="sb-wallet"><div class="sb-wallet-label">Wallet balance</div><div class="sb-wallet-amt">&#8358;0.00</div>
+<a href="/candidate/wallet/fund" class="btn btn-ghost-w btn-sm"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</a></div>
+</nav><div class="sb-foot">© 2026 JobberRecruit</div></aside>
+<div class="main">
+<header class="topbar" role="banner"><div class="topbar-inner">
+<button class="hamburger" id="hamburger" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg aria-hidden="true"><use href="#i-menu"/></svg></button>
+<nav class="tb-crumb" aria-label="Breadcrumb"><a href="candidate-dashboard.html">Dashboard</a><svg aria-hidden="true"><use href="#i-arrow-r"/></svg><b>Classroom</b></nav>
+<div class="tb-right">
+<a href="/candidate/wallet/fund" class="tb-wallet" aria-label="Wallet balance &#8358;0.00 — fund wallet"><svg aria-hidden="true"><use href="#i-wallet"/></svg><span class="lbl">Wallet</span> <b>&#8358;0.00</b></a>
+<div class="tb-drop" id="notif-drop">
+<button class="tb-icon" aria-label="Notifications — 2 unread" aria-haspopup="true" aria-expanded="false"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="tb-dot" aria-hidden="true"></span></button>
+<div class="tb-menu tb-menu--notif" role="menu" aria-label="Notifications">
+<a href="candidate-job-alerts.html" class="tn-item" role="menuitem"><span class="tn-ic tn-ic--accent" aria-hidden="true"><svg><use href="#i-bell"/></svg></span><span><b>3 new jobs match your alert</b><i>&#8220;Executive Assistant&#8221; · today</i></span></a>
+<a href="candidate-certificates.html" class="tn-item" role="menuitem"><span class="tn-ic" aria-hidden="true"><svg><use href="#i-award"/></svg></span><span><b>Certificate issued: Agile &amp; Scrum</b><i>Training · Jun 13</i></span></a>
+<hr><a href="#" role="menuitem" style="justify-content:center;font-weight:600;color:var(--brand)">View all notifications</a>
+</div></div>
+<div class="tb-drop" id="account-drop">
+<button class="tb-avatar" aria-label="Account menu — Franklin Ezirim" aria-haspopup="true" aria-expanded="false">FE</button>
+<div class="tb-menu" role="menu" aria-label="Account">
+<div class="tm-head"><div class="tm-name">Franklin Ezirim</div><div class="tm-mail">franklin@example.com</div></div>
+<a href="/candidate/profile" role="menuitem"><svg aria-hidden="true"><use href="#i-users"/></svg> My Profile</a>
+<a href="/candidate/premium" role="menuitem"><svg aria-hidden="true"><use href="#i-crown"/></svg> Premium Plans</a>
+<a href="/candidate/settings" role="menuitem"><svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings</a>
+<hr><a href="/logout" class="tm-out" role="menuitem"><svg aria-hidden="true"><use href="#i-logout"/></svg> Sign Out</a>
+</div></div>
+</div></div></header>
+<main class="content" id="main-content">
+
+<div class="page-head" style="margin-bottom:16px">
+  <div>
+    <div class="crumbs"><a href="/candidate/courses">My Courses</a> <span>/</span> <b>Social Media Marketing Masterclass</b></div>
+    <h1 style="font-family:'Sora',sans-serif;font-size:clamp(1.3rem,2.4vw,1.7rem);color:var(--brand-deep);margin-top:4px">Classroom</h1>
+  </div>
+  <a href="/candidate/courses" class="btn btn-outline btn-sm"><svg aria-hidden="true"><use href="#i-arrow-l"/></svg> Back to Courses</a>
+</div>
+
+<div class="cls-wrap">
+
+  <!-- ═══ LEARNING HERO — brand palette, compact, state-aware ═══ -->
+  <!-- DEV: add class 'done' to .cls-hero ONLY when progress==100. When done, the
+       certificate CTA + verify chip show; otherwise the "Continue Learning" CTA
+       shows and the ring displays live progress. Both states are in the markup;
+       CSS hides the irrelevant one via the 'done' class. -->
+  <section class="cls-hero" aria-label="Course overview">
+    <div class="cls-hero-grid">
+      <div>
+        <span class="eyebrow"><svg aria-hidden="true"><use href="#i-grad"/></svg> JobberRecruit Academy</span>
+        <h1>Social Media Marketing Masterclass</h1>
+        <div class="hero-instructor">
+          <span class="hi-av" aria-hidden="true">JA</span>
+          <span class="hi-txt"><b>JobberRecruit Academy</b><i>Lead Instructor · Digital Marketing</i></span>
+          <span class="hero-rating" aria-label="Rated 4.8 out of 5"><svg aria-hidden="true"><use href="#i-star"/></svg> 4.8 <span class="hr-count">(2,140)</span></span>
+        </div>
+        <div class="hero-badges">
+          <span class="hero-badge"><svg aria-hidden="true"><use href="#i-users"/></svg> 8,600+ enrolled</span>
+          <span class="hero-badge"><svg aria-hidden="true"><use href="#i-chart"/></svg> Beginner</span>
+          <span class="hero-badge"><svg aria-hidden="true"><use href="#i-clock"/></svg> 4 hours</span>
+          <span class="hero-badge"><svg aria-hidden="true"><use href="#i-award"/></svg> Certificate</span>
+        </div>
+        <!-- DONE state: certificate claim -->
+        <div class="hero-done-block">
+          <div class="verify-chip"><span class="vv" aria-hidden="true"></span>Verified · <b>CERT-40315B08AE40</b></div>
+          <div class="cls-hero-cta">
+            <button class="btn btn-on-dark" id="dl-cert"><svg aria-hidden="true"><use href="#i-download"/></svg> Download Certificate</button>
+            <button class="btn btn-ghost-dark" id="share-li"><svg aria-hidden="true"><use href="#i-linkedin"/></svg> Share</button>
+          </div>
+        </div>
+        <!-- IN-PROGRESS state: continue learning -->
+        <div class="hero-progress-block">
+          <div class="cls-hero-cta">
+            <button class="btn btn-on-dark" id="continue-btn"><svg aria-hidden="true"><use href="#i-video"/></svg> Continue Learning</button>
+            <span class="hero-eta"><svg aria-hidden="true"><use href="#i-clock"/></svg> ~35 min left to finish</span>
+          </div>
+          <p class="hero-cert-note"><svg aria-hidden="true"><use href="#i-award"/></svg> Finish the lessons, then pass the final assessment to unlock your verified certificate.</p>
+        </div>
+      </div>
+
+      <div class="ring-wrap">
+        <!-- DONE: check badge -->
+        <div class="ring-done" aria-label="100 percent complete"><svg aria-hidden="true"><use href="#i-check-c"/></svg></div>
+        <!-- IN-PROGRESS: live progress ring (DEV: set --p to real percentage) -->
+        <div class="ring" style="--p:60" aria-label="60 percent complete"><b>60%</b><i>complete</i></div>
+        <span class="ring-cap"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ THREE-COLUMN BODY ═══ -->
+  <div class="cls-body">
+
+    <!-- LEFT: curriculum -->
+    <aside class="cur-card">
+      <div class="cur-head">
+        <b><svg aria-hidden="true"><use href="#i-book"/></svg> Curriculum</b>
+        <span style="font-size:.7rem;color:var(--muted);font-weight:600">3 / 3</span>
+      </div>
+      <div class="cur-search">
+        <input type="search" id="cur-search" placeholder="Search lessons…" aria-label="Search lessons">
+      </div>
+      <div id="les-list">
+        <div class="les done active" data-les="0" tabindex="0" role="button">
+          <span class="les-num">1</span>
+          <div class="les-main">
+            <b>Introduction to Social Media Marketing</b>
+            <div class="les-meta"><span class="les-type video">Video</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 12 min</span></div>
+          </div>
+          <span class="les-badge" aria-label="Completed"><svg aria-hidden="true"><use href="#i-check-c"/></svg></span>
+        </div>
+        <div class="les done" data-les="1" tabindex="0" role="button">
+          <span class="les-num">2</span>
+          <div class="les-main">
+            <b>Core Concepts &amp; Curriculum</b>
+            <div class="les-meta"><span class="les-type">Reading</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 18 min</span></div>
+          </div>
+          <span class="les-badge" aria-label="Completed"><svg aria-hidden="true"><use href="#i-check-c"/></svg></span>
+        </div>
+        <div class="les done" data-les="2" tabindex="0" role="button">
+          <span class="les-num">3</span>
+          <div class="les-main">
+            <b>Final Assessment &amp; Completion</b>
+            <div class="les-meta"><span class="les-type quiz">Quiz</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 15 min</span></div>
+          </div>
+          <span class="les-badge" aria-label="Completed"><svg aria-hidden="true"><use href="#i-check-c"/></svg></span>
+        </div>
+      </div>
+      <div class="cur-foot">
+        <div class="cur-prog-lbl"><span>Course progress</span><b>100%</b></div>
+        <div class="cur-bar"><div class="cur-fill" style="width:100%"></div></div>
+      </div>
+    </aside>
+
+    <!-- MAIN: lesson viewer -->
+    <main class="les-view">
+      <div class="player" id="player">
+        <!-- DEV: three states —
+             (a) valid video → inject <iframe> + show .player-tools (expand);
+             (b) no video / video error → #player-empty (branded, not YouTube's error);
+             (c) reading/PDF lesson (no video by design) → #player-reading.
+             Toggle by lesson.type. YouTube iframes play INLINE here (no redirect);
+             the Expand button uses the Fullscreen API on the player container. -->
+        <div class="player-empty" id="player-empty">
+          <div class="pe-ic"><svg aria-hidden="true"><use href="#i-video"/></svg></div>
+          <b>Video unavailable</b>
+          <p>This lesson's video couldn't be loaded right now. You can continue with the module notes below, or reload the video.</p>
+          <button class="btn btn-sm" id="retry-video"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Reload video</button>
+        </div>
+        <!-- reading/ebook lesson state (shown when a lesson has no video by design) -->
+        <div class="player-reading" id="player-reading" hidden>
+          <div class="pr-ic"><svg aria-hidden="true"><use href="#i-book"/></svg></div>
+          <b>Reading lesson</b>
+          <p>This lesson is a guided reading. Open the material below or download the PDF to study at your own pace.</p>
+          <div class="pr-actions">
+            <button class="btn btn-sm btn-on-brand"><svg aria-hidden="true"><use href="#i-book"/></svg> Read lesson</button>
+            <button class="btn btn-sm btn-outline-light"><svg aria-hidden="true"><use href="#i-download"/></svg> Download PDF</button>
+          </div>
+        </div>
+        <!-- expand control (shown only when a real video iframe is present) -->
+        <button class="player-expand" id="player-expand" hidden aria-label="Expand video"><svg aria-hidden="true"><use href="#i-grid"/></svg></button>
+      </div>
+
+      <div class="les-nav">
+        <button class="btn btn-outline" id="prev-les" disabled><svg aria-hidden="true"><use href="#i-arrow-l"/></svg> Previous</button>
+        <button class="btn btn-outline" id="next-les">Next lesson <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></button>
+      </div>
+
+      <div class="les-detail">
+        <span class="les-src"><svg aria-hidden="true"><use href="#i-video"/></svg> Module Source: Video</span>
+        <h2 id="les-title">Introduction to Social Media Marketing</h2>
+
+        <div class="les-tabs" role="tablist">
+          <button class="les-tab on" data-tab="overview" role="tab"><svg aria-hidden="true"><use href="#i-book"/></svg> Overview</button>
+          <button class="les-tab" data-tab="notes" role="tab"><svg aria-hidden="true"><use href="#i-note"/></svg> Notes</button>
+          <button class="les-tab" data-tab="transcript" role="tab"><svg aria-hidden="true"><use href="#i-doc"/></svg> Transcript</button>
+          <button class="les-tab" data-tab="downloads" role="tab"><svg aria-hidden="true"><use href="#i-download"/></svg> Downloads</button>
+          <button class="les-tab" data-tab="discussion" role="tab"><svg aria-hidden="true"><use href="#i-chat"/></svg> Discussion</button>
+          <button class="les-tab" data-tab="ai" role="tab"><span class="ai-dot" aria-hidden="true"></span> AI Summary</button>
+        </div>
+
+        <div class="tab-panel on" data-panel="overview">
+          <h3><svg aria-hidden="true"><use href="#i-bulb"/></svg> Learning objectives</h3>
+          <ul class="obj-list">
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg> Understand the core channels and how audiences behave on each</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg> Set measurable goals for a social campaign</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg> Recognise what separates content that converts from content that's ignored</li>
+          </ul>
+          <h3><svg aria-hidden="true"><use href="#i-note"/></svg> Module notes</h3>
+          <p>Welcome to the first module of the Social Media Marketing Masterclass. Here we cover the fundamentals — the major platforms, how to think about audience and intent, and the metrics that actually matter for a Nigerian business building an audience. By the end you'll have the vocabulary and framework the rest of the course builds on.</p>
+        </div>
+
+        <div class="tab-panel" data-panel="notes">
+          <p style="color:var(--muted);font-size:.86rem">Your personal notes for this lesson. <!-- DEV: bind to per-user lesson notes; textarea autosaves to /candidate/courses/{id}/notes --></p>
+          <textarea style="width:100%;min-height:140px;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:.86rem;margin-top:10px" placeholder="Type your notes here…"></textarea>
+        </div>
+
+        <div class="tab-panel" data-panel="transcript">
+          <p style="font-size:.86rem;line-height:1.7;color:var(--text)"><!-- DEV: bind lesson.transcript -->In this opening lesson we walk through what social media marketing actually means for a business today. We start with the landscape — where audiences spend time, how each platform rewards different content — and set up the framework we'll use throughout the course…</p>
+        </div>
+
+        <div class="tab-panel" data-panel="downloads">
+          <div class="res-list">
+            <div class="res-item">
+              <span class="res-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span>
+              <div><b>Module 1 Workbook</b><i>PDF · 1.2 MB</i></div>
+              <button class="btn btn-outline btn-sm">Download</button>
+            </div>
+            <div class="res-item">
+              <span class="res-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span>
+              <div><b>Channel Planning Template</b><i>PDF · 640 KB</i></div>
+              <button class="btn btn-outline btn-sm">Download</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-panel="discussion">
+          <p style="color:var(--muted);font-size:.86rem;margin-bottom:12px">Ask a question or share what you learned. <!-- DEV: bind discussion thread --></p>
+          <div style="display:flex;gap:10px;margin-bottom:16px">
+            <input style="flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:.84rem" placeholder="Ask the instructor or fellow learners…">
+            <button class="btn btn-primary btn-sm">Post</button>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--border)">
+            <span style="width:34px;height:34px;border-radius:50%;background:var(--brand-light);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:.78rem;flex-shrink:0">AO</span>
+            <div><b style="font-size:.82rem;color:var(--brand-deep)">Adaeze O.</b> <span style="font-size:.7rem;color:var(--muted)">· 2 days ago</span><p style="font-size:.84rem;color:var(--text);margin-top:3px">Really clear intro — the channel framework already changed how I plan my posts.</p></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-panel="ai">
+          <div class="ai-panel">
+            <div class="ai-head">
+              <span class="ai-badge"><svg aria-hidden="true"><use href="#i-zap"/></svg></span>
+              <div><h4>AI Learning Assistant</h4><span class="ai-sub">Powered by JobberRecruit AI · grounded in this lesson</span></div>
+            </div>
+            <div class="ai-actions">
+              <button class="ai-act" data-ai="summarize"><svg aria-hidden="true"><use href="#i-note"/></svg> Summarize Lesson</button>
+              <button class="ai-act" data-ai="explain"><svg aria-hidden="true"><use href="#i-bulb"/></svg> Explain a Topic</button>
+              <button class="ai-act" data-ai="quiz"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Practice Quiz</button>
+              <button class="ai-act" data-ai="takeaways"><svg aria-hidden="true"><use href="#i-star"/></svg> Key Takeaways</button>
+              <button class="ai-act" data-ai="flashcards"><svg aria-hidden="true"><use href="#i-copy"/></svg> Flashcards</button>
+              <button class="ai-act" data-ai="interview"><svg aria-hidden="true"><use href="#i-mic"/></svg> Practice Interview</button>
+            </div>
+            <div class="ai-output" id="ai-output"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary mark-done" id="mark-done"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Completed</button>
+      </div>
+    </main>
+
+    <!-- RIGHT: learning dashboard -->
+    <aside class="cls-right">
+      <div class="dash-card">
+        <h4><svg aria-hidden="true"><use href="#i-chart"/></svg> Learning progress</h4>
+        <div class="stat-row"><span>Progress</span><b style="color:var(--success)">100%</b></div>
+        <div class="stat-row"><span>Lessons completed</span><b>3 of 3</b></div>
+        <div class="stat-row"><span>Hours studied</span><b>4.0</b></div>
+        <div class="stat-row"><span>Remaining lessons</span><b>0</b></div>
+      </div>
+
+      <div class="dash-card">
+        <h4><svg aria-hidden="true"><use href="#i-award"/></svg> Achievements</h4>
+        <div class="ach-grid">
+          <div class="ach earned"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-grad"/></svg></div><b>Course Completed</b></div>
+          <div class="ach earned"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-check-c"/></svg></div><b>Assessment Passed</b></div>
+          <div class="ach earned"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></div><b>Learning Streak</b></div>
+          <div class="ach locked"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-crown"/></svg></div><b>Top Performer</b></div>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <h4><svg aria-hidden="true"><use href="#i-shield"/></svg> Certificate status</h4>
+        <!-- DEV: each .cert-check reflects real state. .done = met, .pending = not yet.
+             Certificate unlocks ONLY when all three are .done (lessons complete AND
+             final assessment passed). Enforce server-side before issuing the PDF. -->
+        <div class="cert-check done"><svg aria-hidden="true"><use href="#i-check-c"/></svg> All lessons completed</div>
+        <div class="cert-check pending" id="chk-assessment"><svg aria-hidden="true"><use href="#i-circle"/></svg> Final assessment passed</div>
+        <div class="cert-check pending" id="chk-ready"><svg aria-hidden="true"><use href="#i-circle"/></svg> Certificate ready</div>
+        <!-- Locked state: assessment not yet passed -->
+        <div class="cert-locked" id="cert-locked">
+          <p class="cl-note"><svg aria-hidden="true"><use href="#i-shield"/></svg> Pass the final assessment to unlock your verified certificate.</p>
+          <button class="btn btn-primary cert-dl" id="start-assessment"><svg aria-hidden="true"><use href="#i-note"/></svg> Take Final Assessment</button>
+        </div>
+        <!-- Unlocked state: assessment passed -->
+        <button class="btn cert-dl" id="dl-cert-2" hidden><svg aria-hidden="true"><use href="#i-download"/></svg> Download Verified Certificate</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ═══ FINAL ASSESSMENT (gate to certificate) ═══ -->
+  <!-- DEV: questions/scoring server-side. Pass mark configurable (e.g. 70%).
+       On pass → mark assessment_passed, unlock certificate. Retry allowed until
+       passed (per your setting). This panel is a front-end shell; wire submit to
+       POST /candidate/courses/{id}/assessment and read back score+passed. -->
+  <section class="assess-card" id="assess-card" hidden>
+    <div class="assess-head">
+      <div>
+        <span class="assess-eyebrow"><svg aria-hidden="true"><use href="#i-shield"/></svg> Final Assessment</span>
+        <h3>Prove your knowledge to earn your certificate</h3>
+        <p>Answer the questions below. You need <b>70%</b> to pass. You can retake this as many times as you need — your certificate unlocks the moment you pass.</p>
+      </div>
+      <button class="btn btn-outline btn-sm" id="assess-close" aria-label="Close assessment"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="assess-body" id="assess-body">
+      <div class="q-block">
+        <p class="q-text"><b>1.</b> What's the most reliable signal that social content is working for a business?</p>
+        <label class="q-opt"><input type="radio" name="q1" value="a"> Number of followers</label>
+        <label class="q-opt"><input type="radio" name="q1" value="b"> Conversions and measurable engagement</label>
+        <label class="q-opt"><input type="radio" name="q1" value="c"> Number of posts published</label>
+      </div>
+      <div class="q-block">
+        <p class="q-text"><b>2.</b> Why does content strategy differ across platforms?</p>
+        <label class="q-opt"><input type="radio" name="q2" value="a"> Audiences visit each platform with different intent</label>
+        <label class="q-opt"><input type="radio" name="q2" value="b"> The colours are different</label>
+        <label class="q-opt"><input type="radio" name="q2" value="c"> It doesn't — one post fits all</label>
+      </div>
+      <div class="q-block">
+        <p class="q-text"><b>3.</b> What should you define before publishing a campaign?</p>
+        <label class="q-opt"><input type="radio" name="q3" value="a"> Nothing — just post consistently</label>
+        <label class="q-opt"><input type="radio" name="q3" value="b"> A single measurable goal</label>
+        <label class="q-opt"><input type="radio" name="q3" value="c"> The exact number of likes you'll get</label>
+      </div>
+      <button class="btn btn-primary" id="assess-submit"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Submit Assessment</button>
+    </div>
+
+    <!-- result states -->
+    <div class="assess-result pass" id="assess-pass" hidden>
+      <div class="ar-ic pass"><svg aria-hidden="true"><use href="#i-check-c"/></svg></div>
+      <h3>You passed! 🎉</h3>
+      <p>Great work — you scored <b id="pass-score">100%</b>. Your verified certificate is now unlocked.</p>
+      <button class="btn btn-primary" id="assess-claim"><svg aria-hidden="true"><use href="#i-download"/></svg> Claim Your Certificate</button>
+    </div>
+    <div class="assess-result fail" id="assess-fail" hidden>
+      <div class="ar-ic fail"><svg aria-hidden="true"><use href="#i-refresh"/></svg></div>
+      <h3>Not quite — try again</h3>
+      <p>You scored <b id="fail-score">33%</b>, and you need 70% to pass. Review the lessons and retake — there's no limit on attempts.</p>
+      <button class="btn btn-primary" id="assess-retry"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Retake Assessment</button>
+    </div>
+  </section>
+  <section class="info-card">
+    <h3><svg aria-hidden="true"><use href="#i-zap"/></svg> Skills you'll gain</h3>
+    <div class="skill-tags">
+      <span class="skill-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Social Media Strategy</span>
+      <span class="skill-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Facebook Ads</span>
+      <span class="skill-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Content Marketing</span>
+      <span class="skill-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Analytics</span>
+      <span class="skill-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Branding</span>
+    </div>
+    <h3 style="margin-top:22px"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Career outcomes</h3>
+    <p style="font-size:.84rem;color:var(--muted);margin-bottom:6px">This course prepares you for roles such as:</p>
+    <div class="outcome-grid">
+      <div class="outcome"><b>Social Media Manager</b><span class="sal"><svg aria-hidden="true"><use href="#i-naira"/></svg> 250k – 450k / mo</span><i>Typical Lagos range</i></div>
+      <div class="outcome"><b>Digital Marketing Executive</b><span class="sal"><svg aria-hidden="true"><use href="#i-naira"/></svg> 200k – 400k / mo</span><i>Typical Lagos range</i></div>
+      <div class="outcome"><b>Brand Strategist</b><span class="sal"><svg aria-hidden="true"><use href="#i-naira"/></svg> 300k – 550k / mo</span><i>Typical Lagos range</i></div>
+      <div class="outcome"><b>Content Creator</b><span class="sal"><svg aria-hidden="true"><use href="#i-naira"/></svg> 180k – 350k / mo</span><i>Typical Lagos range</i></div>
+    </div>
+    <p style="font-size:.7rem;color:var(--muted);margin-top:12px;font-style:italic">Salary ranges are broad market estimates for guidance only, not a guarantee. <!-- DEV: replace with real market data when available --></p>
+  </section>
+
+  <!-- ═══ CAREER INTELLIGENCE ═══ -->
+  <section class="career-strip">
+    <div class="cs-head">
+      <span class="cs-badge" aria-hidden="true"><svg aria-hidden="true"><use href="#i-chart"/></svg></span>
+      <div>
+        <h3>Your Career Intelligence</h3>
+        <p class="cs-sub">How this course moves you closer to your next role.</p>
+      </div>
+    </div>
+    <div class="ci-grid">
+      <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Career Readiness</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span></div><div class="ci-val">72%</div><div class="ci-track"><div class="ci-fill" data-fill="72"></div></div></div>
+      <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Resume Score</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span></div><div class="ci-val">68%</div><div class="ci-track"><div class="ci-fill" data-fill="68"></div></div></div>
+      <div class="ci-card"><div class="ci-top"><span class="ci-lbl">ATS Compatibility</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span></div><div class="ci-val">81%</div><div class="ci-track"><div class="ci-fill" data-fill="81"></div></div></div>
+      <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Interview Readiness</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></span></div><div class="ci-val">64%</div><div class="ci-track"><div class="ci-fill" data-fill="64"></div></div></div>
+      <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Employability</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span></div><div class="ci-val">70%</div><div class="ci-track"><div class="ci-fill" data-fill="70"></div></div></div>
+      <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Skill Growth</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></span></div><div class="ci-val">+18%</div><div class="ci-track"><div class="ci-fill" data-fill="88"></div></div></div>
+      <div class="ci-card next"><b>Recommended next course</b><p>Facebook &amp; Instagram Ads Deep-Dive</p><a href="/candidate/courses" class="btn btn-primary btn-sm">View course</a></div>
+    </div>
+  </section>
+
+  <!-- ═══ RECOMMENDED JOBS ═══ -->
+  <section class="info-card">
+    <h3><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Jobs matched to this course</h3>
+    <div class="jobs-scroll">
+      <div class="job-card">
+        <div class="jc-top"><span class="jc-logo">PL</span><div><b>Social Media Manager</b><span class="jc-co">Paylode · Lagos</span></div></div>
+        <div class="jc-meta"><span><svg aria-hidden="true"><use href="#i-building"/></svg> On-site</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> Full-time</span></div>
+        <div class="jc-sal">₦300k – ₦450k / mo</div>
+        <div class="jc-actions"><a href="/jobs/apply" class="btn btn-primary btn-sm">Apply</a><button class="btn btn-outline btn-sm jc-save" aria-label="Save job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></button></div>
+      </div>
+      <div class="job-card">
+        <div class="jc-top"><span class="jc-logo">MH</span><div><b>Digital Marketing Executive</b><span class="jc-co">MediaHive · Remote</span></div></div>
+        <div class="jc-meta"><span><svg aria-hidden="true"><use href="#i-link"/></svg> Remote</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> Full-time</span></div>
+        <div class="jc-sal">₦250k – ₦400k / mo</div>
+        <div class="jc-actions"><a href="/jobs/apply" class="btn btn-primary btn-sm">Apply</a><button class="btn btn-outline btn-sm jc-save" aria-label="Save job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></button></div>
+      </div>
+      <div class="job-card">
+        <div class="jc-top"><span class="jc-logo">BR</span><div><b>Brand & Content Strategist</b><span class="jc-co">Brandr Co · Abuja</span></div></div>
+        <div class="jc-meta"><span><svg aria-hidden="true"><use href="#i-building"/></svg> Hybrid</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> Contract</span></div>
+        <div class="jc-sal">₦350k – ₦500k / mo</div>
+        <div class="jc-actions"><a href="/jobs/apply" class="btn btn-primary btn-sm">Apply</a><button class="btn btn-outline btn-sm jc-save" aria-label="Save job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CERTIFICATE SHOWCASE ═══ -->
+  <section class="info-card">
+    <div class="cert-showcase">
+      <div class="cert-preview" aria-label="Certificate preview">
+        <div class="cp-inner">
+          <span class="cp-seal"><svg aria-hidden="true"><use href="#i-award"/></svg></span>
+          <h5>CERTIFICATE OF COMPLETION</h5>
+          <div class="cp-name">Franklin Ezirim</div>
+          <div class="cp-course">Social Media Marketing Masterclass</div>
+          <span class="cp-code">CERT-40315B08AE40 · Verified by JobberRecruit</span>
+        </div>
+      </div>
+      <div class="cert-info">
+        <h3>Your verified certificate</h3>
+        <p>Completed on 12 June 2026. This certificate carries a unique verification code employers can check on JobberRecruit — proof your skills are real, not just claimed.</p>
+        <div class="cert-actions">
+          <button class="btn btn-primary"><svg aria-hidden="true"><use href="#i-eye"/></svg> View Full Certificate</button>
+          <button class="btn btn-outline" id="dl-cert-3"><svg aria-hidden="true"><use href="#i-download"/></svg> Download PDF</button>
+          <a href="/verify/CERT-40315B08AE40" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-shield"/></svg> Verify</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CAREER TOOLS ═══ -->
+  <section class="career-strip">
+    <div class="cs-head">
+      <span class="cs-badge" aria-hidden="true"><svg aria-hidden="true"><use href="#i-zap"/></svg></span>
+      <div>
+        <h3>Turn this course into a career move</h3>
+        <p class="cs-sub">You've built a new skill — now put it to work with JobberRecruit's career tools.</p>
+      </div>
+    </div>
+    <div class="cs-grid">
+      <a href="/candidate/resume-builder" class="cs-tool">
+        <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span>
+        <div><b>AI Resume Builder</b><p>Add this certification and rewrite your CV to recruiter standard.</p></div>
+        <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
+      </a>
+      <a href="/candidate/resume-builder" class="cs-tool">
+        <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span>
+        <div><b>ATS Resume Checker</b><p>See how applicant tracking systems read your CV.</p></div>
+        <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
+      </a>
+      <a href="/candidate/career-tools" class="cs-tool">
+        <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-chat"/></svg></span>
+        <div><b>AI Career Coach</b><p>Get guidance on your next step and interview prep.</p></div>
+        <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
+      </a>
+      <a href="/jobs?skill=social-media-marketing" class="cs-tool">
+        <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+        <div><b>Recommended Jobs</b><p>Roles that value social media marketing skills.</p></div>
+        <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
+      </a>
+    </div>
+  </section>
+
+</div>
+
+</main>
+<footer class="dash-foot">
+<span>© 2026 JobberRecruit · Jobber Recruit Ltd</span>
+<nav aria-label="Footer links"><a href="/help">Help Centre</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-service">Terms</a><a href="/contact">Contact</a></nav>
+</footer>
+</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var sidebar=document.getElementById('sidebar'),scrim=document.getElementById('scrim'),
+      burger=document.getElementById('hamburger'),closeBtn=document.getElementById('sb-close');
+  function openMenu(){sidebar.classList.add('open');scrim.hidden=false;requestAnimationFrame(function(){scrim.classList.add('show')});burger.setAttribute('aria-expanded','true');document.body.style.overflow='hidden'}
+  function closeMenu(){sidebar.classList.remove('open');scrim.classList.remove('show');burger.setAttribute('aria-expanded','false');document.body.style.overflow='';setTimeout(function(){if(!scrim.classList.contains('show'))scrim.hidden=true},240)}
+  burger.addEventListener('click',openMenu);closeBtn.addEventListener('click',closeMenu);scrim.addEventListener('click',closeMenu);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&sidebar.classList.contains('open'))closeMenu()});
+  var bar=document.getElementById('mobile-cta');
+  if(bar){var lastY=window.scrollY,ticking=false;
+    window.addEventListener('scroll',function(){if(ticking)return;ticking=true;
+      requestAnimationFrame(function(){var y=window.scrollY,nearBottom=(window.innerHeight+y)>=(document.documentElement.scrollHeight-120);
+        if(nearBottom||y<lastY||y<60){bar.classList.remove('hidden')}else if(y>lastY+8){bar.classList.add('hidden')}
+        lastY=y;ticking=false;});
+    },{passive:true});}
+})();
+
+/* topbar dropdowns */
+(function(){
+var drops=document.querySelectorAll('.tb-drop');
+drops.forEach(function(d){var btn=d.querySelector('button');
+  btn.addEventListener('click',function(e){e.stopPropagation();
+    var was=d.classList.contains('open');
+    drops.forEach(function(x){x.classList.remove('open');x.querySelector('button').setAttribute('aria-expanded','false')});
+    if(!was){d.classList.add('open');btn.setAttribute('aria-expanded','true')}
+  });
+});
+document.addEventListener('click',function(){drops.forEach(function(d){d.classList.remove('open');d.querySelector('button').setAttribute('aria-expanded','false')})});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')drops.forEach(function(d){d.classList.remove('open');d.querySelector('button').setAttribute('aria-expanded','false')})});
+})();
+
+// ── toast helper ──
+function toast(msg){
+  var t = document.createElement("div");
+  t.style.cssText = "position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:var(--brand-deep);color:#fff;font-size:.82rem;font-weight:600;padding:11px 20px;border-radius:10px;box-shadow:var(--shadow-lg);z-index:2000;opacity:0;transition:opacity .25s,transform .25s";
+  t.textContent = msg; document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.style.opacity=1; t.style.transform="translateX(-50%) translateY(0)"; });
+  setTimeout(function(){ t.style.opacity=0; setTimeout(function(){ t.remove(); }, 300); }, 2600);
+}
+
+
+// ── FINAL ASSESSMENT (gate to certificate) ──
+var ANSWERS = { q1:"b", q2:"a", q3:"b" }; // DEV: never expose answers client-side in production; score server-side
+function openAssessment(){
+  var c=document.getElementById("assess-card"); if(!c) return;
+  c.hidden=false;
+  document.getElementById("assess-body").hidden=false;
+  document.getElementById("assess-pass").hidden=true;
+  document.getElementById("assess-fail").hidden=true;
+  c.scrollIntoView({behavior:"smooth",block:"start"});
+}
+var sa=document.getElementById("start-assessment"); if(sa) sa.addEventListener("click", openAssessment);
+// clicking the final-assessment lesson also opens it
+document.querySelectorAll(".les").forEach(function(el){
+  if((el.querySelector(".les-main b")||{}).textContent && /assessment/i.test(el.querySelector(".les-main b").textContent))
+    el.addEventListener("click", openAssessment);
+});
+var ac=document.getElementById("assess-close"); if(ac) ac.addEventListener("click", function(){ document.getElementById("assess-card").hidden=true; });
+
+var asub=document.getElementById("assess-submit");
+if(asub) asub.addEventListener("click", function(){
+  // DEV: POST answers to server; server scores + returns {score, passed}. This is a client demo.
+  var total=Object.keys(ANSWERS).length, correct=0;
+  for(var q in ANSWERS){ var sel=document.querySelector('input[name="'+q+'"]:checked'); if(sel && sel.value===ANSWERS[q]) correct++; }
+  var score=Math.round(correct/total*100), passed=score>=70;
+  document.getElementById("assess-body").hidden=true;
+  if(passed){
+    document.getElementById("pass-score").textContent=score+"%";
+    document.getElementById("assess-pass").hidden=false;
+    // unlock certificate UI
+    var chkA=document.getElementById("chk-assessment"), chkR=document.getElementById("chk-ready");
+    if(chkA){ chkA.classList.remove("pending"); chkA.classList.add("done"); chkA.querySelector("use").setAttribute("href","#i-check-c"); }
+    if(chkR){ chkR.classList.remove("pending"); chkR.classList.add("done"); chkR.querySelector("use").setAttribute("href","#i-check-c"); }
+    var locked=document.getElementById("cert-locked"); if(locked) locked.hidden=true;
+    var dl=document.getElementById("dl-cert-2"); if(dl) dl.hidden=false;
+    // flip the hero into the 'done' state
+    var hero=document.querySelector(".cls-hero"); if(hero) hero.classList.add("done");
+    celebrateSuccess(); // genuine completion: assessment passed, certificate unlocked
+  } else {
+    document.getElementById("fail-score").textContent=score+"%";
+    document.getElementById("assess-fail").hidden=false;
+  }
+});
+var aretry=document.getElementById("assess-retry"); if(aretry) aretry.addEventListener("click", openAssessment);
+var aclaim=document.getElementById("assess-claim"); if(aclaim) aclaim.addEventListener("click", function(){ dlCert(); document.getElementById("assess-card").hidden=true; });
+
+// ── lesson tabs ──
+document.querySelectorAll(".les-tab").forEach(function(tab){
+  tab.addEventListener("click", function(){
+    document.querySelectorAll(".les-tab").forEach(function(t){ t.classList.remove("on"); });
+    document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("on"); });
+    tab.classList.add("on");
+    var panel = document.querySelector('.tab-panel[data-panel="'+tab.dataset.tab+'"]');
+    if (panel) panel.classList.add("on");
+  });
+});
+
+// ── AI assistant (demo responses; DEV: POST to /candidate/resumes/ai or a lessons AI endpoint) ──
+var AI_TEXT = {
+  summarize: "This lesson introduces the core social platforms and how audience intent differs across each. Key idea: match content format to where the audience already is, and define one measurable goal before posting.",
+  explain: "Which topic would you like explained? Type it in the Ask AI box and I'll break it down in plain terms with a Nigerian-market example.",
+  quiz: "Quick check: (1) Name two metrics that indicate content is converting, not just being seen. (2) Why does audience intent differ between platforms? (3) What should you define before your first post?",
+  takeaways: "• Audiences behave differently per platform — plan content accordingly.\n• Set one measurable goal per campaign.\n• Engagement without conversion is vanity; track both.",
+  flashcards: "Card 1 — Front: What is 'audience intent'? Back: The reason someone is on a platform (entertainment vs research vs buying).\nCard 2 — Front: Vanity metric? Back: A number that looks good but doesn't drive business results.",
+  interview: "Practice question: \"Tell me about a social campaign you planned end-to-end — how did you set goals and measure success?\" Answer using a real example; focus on the goal, your actions, and the measurable result."
+};
+document.querySelectorAll(".ai-act").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var out = document.getElementById("ai-output");
+    out.classList.add("show");
+    out.textContent = "Thinking…";
+    setTimeout(function(){ out.textContent = AI_TEXT[btn.dataset.ai] || "…"; }, 500);
+  });
+});
+
+// ── animate Career Intelligence bars when scrolled into view ──
+var ciObserver = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if (e.isIntersecting){
+      e.target.querySelectorAll(".ci-fill").forEach(function(f){ f.style.width = f.dataset.fill + "%"; });
+      ciObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+var ciGrid = document.querySelector(".ci-grid");
+if (ciGrid) ciObserver.observe(ciGrid);
+
+// ── lesson switching (smooth) ──
+var LESSONS = [
+  { title:"Introduction to Social Media Marketing", src:"Video", type:"video", videoId:"dQw4w9WgXcQ" },
+  { title:"Core Concepts & Curriculum", src:"Reading", type:"reading" },
+  { title:"Final Assessment & Completion", src:"Quiz", type:"unavailable" }
+];
+var curLes = 0;
+function selectLesson(i){
+  if (i < 0 || i >= LESSONS.length) return;
+  curLes = i;
+  document.querySelectorAll(".les").forEach(function(el){ el.classList.toggle("active", +el.dataset.les === i); });
+  var t = document.getElementById("les-title"); if (t){ t.style.opacity = 0; setTimeout(function(){ t.textContent = LESSONS[i].title; t.style.opacity = 1; }, 120); }
+  document.getElementById("prev-les").disabled = (i === 0);
+  document.getElementById("next-les").disabled = (i === LESSONS.length - 1);
+  var scr = document.querySelector(".les-view"); if (scr) scr.scrollIntoView({behavior:"smooth", block:"start"});
+  renderPlayer(i);
+}
+document.querySelectorAll(".les").forEach(function(el){
+  if (el.classList.contains("locked")) return;
+  el.addEventListener("click", function(){ selectLesson(+el.dataset.les); });
+  el.addEventListener("keydown", function(e){ if (e.key==="Enter"||e.key===" "){ e.preventDefault(); selectLesson(+el.dataset.les); } });
+});
+document.getElementById("prev-les").addEventListener("click", function(){ selectLesson(curLes-1); });
+document.getElementById("next-les").addEventListener("click", function(){ selectLesson(curLes+1); });
+
+// ── curriculum search ──
+document.getElementById("cur-search").addEventListener("input", function(){
+  var q = this.value.toLowerCase();
+  document.querySelectorAll(".les").forEach(function(el){
+    var txt = el.querySelector(".les-main b").textContent.toLowerCase();
+    el.style.display = txt.indexOf(q) > -1 ? "" : "none";
+  });
+});
+
+// ── certificate download (both buttons) ──
+function dlCert(){
+  // DEV: GET /candidate/certificates/CERT-40315B08AE40/pdf (server-generated, QR-verified)
+  toast("Preparing your verified certificate…");
+}
+["dl-cert","dl-cert-2","dl-cert-3"].forEach(function(id){ var b=document.getElementById(id); if(b) b.addEventListener("click", dlCert); });
+
+// ── share on LinkedIn ──
+var sli = document.getElementById("share-li");
+if (sli) sli.addEventListener("click", function(){
+  var url = encodeURIComponent("https://jobberrecruit.com/verify/CERT-40315B08AE40");
+  window.open("https://www.linkedin.com/sharing/share-offsite/?url="+url, "_blank", "width=600,height=560");
+});
+
+// ── continue learning (jump to first incomplete lesson) ──
+var cont = document.getElementById("continue-btn");
+if (cont) cont.addEventListener("click", function(){
+  var firstIncomplete = 0;
+  document.querySelectorAll(".les").forEach(function(el,i){ if(!el.classList.contains("done") && firstIncomplete===0) firstIncomplete=+el.dataset.les; });
+  selectLesson(firstIncomplete);
+  document.querySelector(".les-view").scrollIntoView({behavior:"smooth"});
+});
+
+// ── build / remove the YouTube iframe ──
+function buildIframe(videoId){
+  var pl = document.getElementById("player");
+  var old = pl.querySelector("iframe"); if (old) old.remove();
+  if (!videoId) return;
+  var f = document.createElement("iframe");
+  f.src = "https://www.youtube-nocookie.com/embed/" + videoId + "?rel=0&modestbranding=1&playsinline=1";
+  f.setAttribute("allow","accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture");
+  f.setAttribute("allowfullscreen","");
+  f.setAttribute("title","Lesson video");
+  pl.insertBefore(f, pl.firstChild);
+}
+
+// ── show the right player state for a lesson type + (re)build the iframe ──
+function setPlayerState(type, videoId){ // "video" | "reading" | "unavailable"
+  var empty=document.getElementById("player-empty"), reading=document.getElementById("player-reading"), exp=document.getElementById("player-expand");
+  if(empty) empty.hidden = (type!=="unavailable");
+  if(reading) reading.hidden = (type!=="reading");
+  if(exp) exp.hidden = (type!=="video");
+  if (type === "video") buildIframe(videoId); else buildIframe(null);
+}
+
+// ── called every time a lesson is opened, so the player actually matches lesson type ──
+function renderPlayer(i){
+  var l = LESSONS[i]; if (!l) return;
+  setPlayerState(l.type || "unavailable", l.videoId);
+}
+
+// ── video: expand / fullscreen (with non-fullscreen mobile fallback) ──
+var expandBtn = document.getElementById("player-expand");
+if (expandBtn) expandBtn.addEventListener("click", function(){
+  var pl = document.getElementById("player");
+  var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if (!fsEl){
+    var req = pl.requestFullscreen || pl.webkitRequestFullscreen;
+    if (req){
+      req.call(pl).catch(function(){ pl.classList.toggle("player--expanded", true); });
+    } else {
+      // iOS Safari / browsers without Fullscreen API on divs: CSS fallback
+      pl.classList.toggle("player--expanded", true);
+    }
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+  }
+});
+document.addEventListener("click", function(e){
+  if (e.target.closest && e.target.closest(".player--expanded") && e.target.id !== "player-expand") return;
+});
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape"){ var pl=document.getElementById("player"); if (pl) pl.classList.remove("player--expanded"); }
+});
+
+// ── reload video (re-inject the iframe so YouTube plays INLINE, never redirects) ──
+var rv = document.getElementById("retry-video");
+if (rv) rv.addEventListener("click", function(){
+  toast("Reloading video…");
+  var l = LESSONS[curLes];
+  setPlayerState(l && l.videoId ? "video" : "unavailable", l && l.videoId);
+});
+
+// ── initial render for whichever lesson is active on page load ──
+renderPlayer(curLes);
+
+// ══ PREMIUM POLISH — shared JS helpers (additive, no existing behavior changed) ══
+
+// Confetti burst — call ONLY on genuine completion events (certificate earned,
+// course finished, premium subscribed). Never auto-fires.
+function celebrateSuccess(){
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var root = document.getElementById('confetti-root');
+  if (!root){ root = document.createElement('div'); root.id = 'confetti-root'; document.body.appendChild(root); }
+  root.innerHTML = '';
+  var colors = ['#0861A9','#ED9020','#16a34a','#0A2F57'];
+  for (var i = 0; i < 32; i++){
+    var p = document.createElement('span');
+    p.className = 'confetti-piece';
+    p.style.left = (Math.random()*100) + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = (Math.random()*0.3) + 's';
+    p.style.animationDuration = (1.2 + Math.random()*0.6) + 's';
+    root.appendChild(p);
+  }
+  root.classList.add('burst');
+  setTimeout(function(){ root.classList.remove('burst'); root.innerHTML=''; }, 1900);
+}
+
+// Skeleton-loading helper — wraps a real async fetch/render so the skeleton
+// only shows for genuine loading time, never a fixed fake delay.
+// Usage: withSkeleton(containerEl, async () => { ...populate real content... })
+function withSkeleton(container, work){
+  if (!container) return work();
+  container.classList.add('is-loading');
+  var done = function(){ container.classList.remove('is-loading'); };
+  try {
+    var result = work();
+    if (result && typeof result.then === 'function') return result.finally(done);
+    done(); return result;
+  } catch (e){ done(); throw e; }
+}
+
+// Button-press haptic-style feedback class toggle for elements that need JS
+// (CSS :active already covers most; this is for programmatic triggers e.g.
+// Enter-key submits) — additive, opt-in via data-press-fx.
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var el = document.activeElement;
+  if (el && el.matches('[data-press-fx]')){
+    el.style.transform = 'scale(.97)';
+    setTimeout(function(){ el.style.transform=''; }, 120);
+  }
+});
+
+</script>
+<div id="confetti-root" aria-hidden="true"></div>
+</body>
+</html>

@@ -17,8 +17,8 @@ foreach ($jobs as $index => $j) {
 <?= json_encode([
     '@context'      => 'https://schema.org',
     '@type'         => 'ItemList',
-    'name'          => 'Job Listings',
-    'description'   => 'Find your next career opportunity from thousands of job listings',
+    'name'          => 'Jobs in Nigeria',
+    'description'   => 'Verified job vacancies across Nigeria on JobberRecruit.',
     'url'           => current_url(),
     'numberOfItems' => (int) $total_jobs,
     'itemListElement' => $listItems,
@@ -27,37 +27,39 @@ foreach ($jobs as $index => $j) {
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<main id="main-content">
+<main id="main">
+
+  <!-- PAGE HERO -->
   <section class="jobs-hero" aria-label="Find jobs in Nigeria">
     <span class="jobs-hero-grid" aria-hidden="true"></span>
     <svg class="jobs-hero-motif" viewBox="0 0 400 400" fill="none" aria-hidden="true" focusable="false">
       <defs>
         <radialGradient id="jhMotifGlow" cx="50%" cy="42%" r="55%">
-          <stop offset="0%" stop-color="var(--accent)" stop-opacity=".22"/>
-          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          <stop offset="0%" stop-color="#ED9020" stop-opacity=".22"/>
+          <stop offset="100%" stop-color="#ED9020" stop-opacity="0"/>
         </radialGradient>
       </defs>
       <circle cx="200" cy="188" r="150" fill="url(#jhMotifGlow)"/>
-      <line x1="262" y1="252" x2="318" y2="312" stroke="var(--accent)" stroke-width="26" stroke-linecap="round"/>
-      <circle cx="200" cy="190" r="78" fill="none" stroke="var(--accent)" stroke-width="26"/>
-      <circle cx="200" cy="78" r="30" fill="var(--accent)"/>
+      <line x1="262" y1="252" x2="318" y2="312" stroke="#ED9020" stroke-width="26" stroke-linecap="round"/>
+      <circle cx="200" cy="190" r="78" fill="none" stroke="#ED9020" stroke-width="26"/>
+      <circle cx="200" cy="78" r="30" fill="#ED9020"/>
     </svg>
     <div class="container jobs-hero-inner">
       <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a href="<?= base_url() ?>" style="color:rgba(255,255,255,.8);">Home</a>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="transform:rotate(-90deg);margin:0 4px;color:rgba(255,255,255,.5);"><path d="m6 9 6 6 6-6"/></svg>
-        <span style="color:#fff;font-weight:500;">Find Jobs</span>
+        <a href="<?= base_url() ?>">Home</a>
+        <svg aria-hidden="true" style="transform:rotate(-90deg); width:13px; height:13px; display:inline-block;"><use href="#i-chev-down"/></svg>
+        <span>Find Jobs</span>
       </nav>
-      <h1 class="jobs-hero-title">Find Your Next <em>Job</em> in Nigeria</h1>
-      <p class="jobs-hero-sub" style="color: #ffffff;">Browse full-time, part-time, and remote vacancies in Lagos, Abuja, Port Harcourt and across all 36 states. New listings added daily.</p>
+      <h1>Find Your Next <em>Job</em> in Nigeria</h1>
+      <p>Browse verified jobs in Lagos, Abuja, Port Harcourt and across Nigeria. Filter by location, salary, job type and industry. New roles added daily.</p>
 
       <div class="search-card">
         <div class="search-field">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg aria-hidden="true" width="17" height="17"><use href="#i-search"/></svg>
           <input type="text" id="searchKeyword" placeholder="Job title, skills..." value="<?= esc($keywords ?? '') ?>">
         </div>
         <div class="search-field">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <svg aria-hidden="true" width="17" height="17"><use href="#i-pin"/></svg>
           <select id="locationFilter">
             <option value="">All Locations</option>
             <?php foreach ($states as $state): ?>
@@ -66,7 +68,7 @@ foreach ($jobs as $index => $j) {
           </select>
         </div>
         <div class="search-field">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          <svg aria-hidden="true" width="17" height="17"><use href="#i-bag"/></svg>
           <select id="categoryFilterHero">
             <option value="">All Categories</option>
             <?php foreach ($categories as $category): ?>
@@ -74,446 +76,369 @@ foreach ($jobs as $index => $j) {
             <?php endforeach; ?>
           </select>
         </div>
-        <button id="applyFiltersHero" class="btn-primary" style="background:var(--accent);color:var(--brand-deep);border:none;">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Search jobs
+        <button id="applyFiltersHero" class="btn btn-primary" style="background:var(--accent);color:var(--brand-deep);border:none;">
+          <svg aria-hidden="true" width="17" height="17"><use href="#i-search"/></svg> Search jobs
         </button>
       </div>
 
-      <div class="jobs-trending">
+      <div class="trending" style="margin-top: 15px;">
         <strong>Popular:</strong>
-        <?php 
-        foreach ($states as $state) {
-            if (in_array($state->name, ['Lagos', 'Abuja', 'Federal Capital Territory', 'Rivers'])) {
-                ?>
-                <a href="#" class="trending-tag" data-state-id="<?= esc($state->id) ?>"><?= esc($state->name) ?></a>
-                <?php
-            }
-        }
-        ?>
+        <?php foreach ($states as $state): ?>
+          <?php if (in_array($state->name, ['Lagos', 'Abuja', 'Federal Capital Territory', 'Rivers'])): ?>
+            <a href="#" class="trending-tag" data-state-id="<?= esc($state->id) ?>"><?= esc($state->name) ?></a>
+          <?php endif; ?>
+        <?php endforeach; ?>
         <a href="#" class="trending-tag" data-job-type="remote">Remote</a>
       </div>
     </div>
   </section>
 
-  <!-- SIGNATURE: LIVE JOB TICKER -->
-  <div class="ticker" role="marquee" aria-live="off">
-    <div class="ticker-label" style="background:var(--accent);color:var(--brand-deep);">
-      <span class="ticker-dot" aria-hidden="true"></span> Live vacancies
-    </div>
-    <div class="ticker-viewport">
-      <div class="ticker-track">
-        <?php if (!empty($jobs)): ?>
-          <?php foreach (array_slice($jobs, 0, 5) as $job): ?>
-            <a href="<?= base_url('jobs/' . $job->slug) ?>" class="ticker-item">
-              <span class="ticker-role"><?= esc($job->title) ?></span>
-              <span class="ticker-co"><?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential' : esc($job->employer_name) ?></span>
-              <span class="ticker-loc"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> <?= esc($job->location ?? 'Nigeria') ?></span>
-              <span class="ticker-new" style="background:var(--accent);color:var(--brand-deep);">NEW</span>
-            </a>
-          <?php endforeach; ?>
-          <!-- Duplicate to make scrolling loop smooth -->
-          <?php foreach (array_slice($jobs, 0, 5) as $job): ?>
-            <a href="<?= base_url('jobs/' . $job->slug) ?>" class="ticker-item">
-              <span class="ticker-role"><?= esc($job->title) ?></span>
-              <span class="ticker-co"><?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential' : esc($job->employer_name) ?></span>
-              <span class="ticker-loc"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> <?= esc($job->location ?? 'Nigeria') ?></span>
-              <span class="ticker-new" style="background:var(--accent);color:var(--brand-deep);">NEW</span>
-            </a>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div>
+  <!-- LAYOUT -->
+  <div class="container mt-28">
+    <button id="filters-open" class="btn filters-toggle" aria-controls="filters">
+      <svg aria-hidden="true" style="width:16px;height:16px"><use href="#i-gear"/></svg> Filters &amp; Sort
+    </button>
 
-    <!-- Main Content -->
-    <div class="jobs-content">
-      <div class="container">
-        <div class="jobs-layout">
-          <!-- Sidebar Filters -->
-          <aside class="jobs-sidebar">
-            <div class="jobs-filters-card">
-              <div class="jobs-filters-header">
-                <span class="jobs-filters-count" id="activeFilterCount">0</span>
-                <h5 class="fw-bold mb-0">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 3H2a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h20a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM8 21V4"/><path d="M2 10h20"/><path d="M2 14h20"/><path d="M12 18h8"/><path d="M12 6h8"/></svg>
-                  Filters
-                </h5>
-              </div>
+    <div class="filters-overlay" id="filters-overlay" aria-hidden="true"></div>
+    <div class="jobs-layout">
 
-              <div class="jobs-filters-body">
-                <!-- Job Type -->
-                <div class="mb-4">
-                  <label class="form-label fw-semibold mb-2">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                    Job Type
-                  </label>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input job-type-filter" type="checkbox" value="full_time" id="fullTime">
-                    <label class="form-check-label" for="fullTime">
-                      Full Time
-                      <span class="text-muted float-end"> (<?= $job_type_counts['full_time'] ?? 0 ?>)</span>
-                    </label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input job-type-filter" type="checkbox" value="part_time" id="partTime">
-                    <label class="form-check-label" for="partTime">
-                      Part Time
-                      <span class="text-muted float-end"> (<?= $job_type_counts['part_time'] ?? 0 ?>)</span>
-                    </label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input job-type-filter" type="checkbox" value="contract" id="contract">
-                    <label class="form-check-label" for="contract">
-                      Contract
-                      <span class="text-muted float-end"> (<?= $job_type_counts['contract'] ?? 0 ?>)</span>
-                    </label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input job-type-filter" type="checkbox" value="remote" id="remote">
-                    <label class="form-check-label" for="remote">
-                      Remote
-                      <span class="text-muted float-end"> (<?= $job_type_counts['remote'] ?? 0 ?>)</span>
-                    </label>
-                  </div>
-                </div>
+      <!-- FILTER SIDEBAR -->
+      <aside class="filters" id="filters" aria-label="Job filters">
+        <div class="filters-head">
+          <span class="filters-head-title"><svg aria-hidden="true"><use href="#i-gear"/></svg> Filters</span>
+          <button class="filters-close ic" id="filters-close" aria-label="Close filters" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.8);width:32px;height:32px;border-radius:8px">
+            <svg aria-hidden="true" style="width:18px;height:18px"><use href="#i-x-circle"/></svg>
+          </button>
+        </div>
+        <div class="filters-body">
 
-                <!-- Industry -->
-                <div class="mb-4">
-                  <label class="form-label fw-semibold mb-2">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l8-4 8 4v14M8 21v-4h8v4"/></svg>
-                    Industry
-                  </label>
-                  <select id="industryFilter" class="form-select searchable-select">
-                    <option value="">All Industries</option>
-                    <?php foreach ($industries as $industry):
-                      $count = array_reduce($industry_counts, fn($carry, $item) => $item->id == $industry->id ? $item->job_count : $carry, 0);
-                    ?>
-                      <option value="<?= esc($industry->id) ?>" <?= $industryId == $industry->id ? 'selected' : '' ?>>
-                        <?= esc($industry->name) ?> (<?= $count ?>)
-                      </option>
-                    <?php endforeach; ?>
-                  </select>
-                </div>
-
-                <!-- Salary Range -->
-                <div class="mb-4">
-                  <label class="form-label fw-semibold mb-2">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Salary Range
-                  </label>
-                  <div class="row g-2">
-                    <div class="col-6">
-                      <input type="number" id="minSalary" class="form-control" placeholder="Min" value="<?= esc($salaryMin ?? '') ?>">
-                    </div>
-                    <div class="col-6">
-                      <input type="number" id="maxSalary" class="form-control" placeholder="Max" value="<?= esc($salaryMax ?? '') ?>">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Sort Options -->
-                <div class="mb-4">
-                  <label class="form-label fw-semibold mb-2">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
-                    Sort By
-                  </label>
-                  <select id="sortBy" class="form-select">
-                    <option value="newest" <?= $sort_by == 'newest' ? 'selected' : '' ?>>Newest First</option>
-                    <option value="oldest" <?= $sort_by == 'oldest' ? 'selected' : '' ?>>Oldest First</option>
-                    <option value="salary_high" <?= $sort_by == 'salary_high' ? 'selected' : '' ?>>Salary (High to Low)</option>
-                    <option value="salary_low" <?= $sort_by == 'salary_low' ? 'selected' : '' ?>>Salary (Low to High)</option>
-                  </select>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="d-grid gap-2 mt-4">
-                  <button class="btn btn-primary" id="applyFilters">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
-                    Apply Filters
-                  </button>
-                  <button class="btn btn-outline-secondary" id="clearFilters">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                    Reset All
-                  </button>
-                </div>
-              </div>
+          <div class="filter-group">
+            <label class="filter-label" for="f-keywords"><svg aria-hidden="true"><use href="#i-search"/></svg> Keywords</label>
+            <div class="filter-input-wrap">
+              <input type="text" id="f-keywords" class="filter-input" placeholder="Job title, skills…" value="<?= esc($keywords ?? '') ?>" autocomplete="off">
             </div>
-          </aside>
+          </div>
 
-          <!-- Job Listings -->
-          <div class="jobs-main">
-            <!-- Results Header -->
-            <div class="jobs-results-header">
-              <div>
-                <h5 class="fw-bold mb-0">
-                  <span id="resultsCount"><?= number_format($total_jobs) ?></span> Jobs Found
-                </h5>
-                <p class="text-muted small mb-0 mt-1" id="filterSummary">
-                  Showing <?= count($jobs) ?> of <?= number_format($total_jobs) ?> results
-                </p>
-              </div>
+          <div class="filter-group">
+            <label class="filter-label" for="f-location"><svg aria-hidden="true"><use href="#i-pin"/></svg> Location</label>
+            <select id="f-location" class="filter-select">
+              <option value="">All Locations</option>
+              <?php foreach ($states as $state): ?>
+                <option value="<?= esc($state->id) ?>" <?= $stateId == $state->id ? 'selected' : '' ?>><?= esc($state->name) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label"><svg aria-hidden="true"><use href="#i-bag"/></svg> Job Type</span>
+            <div class="filter-checks">
+              <?php 
+              $currentJobTypes = !empty($jobType) ? explode(',', $jobType) : [];
+              $typesDef = [
+                'full-time'  => 'Full Time',
+                'part-time'  => 'Part Time',
+                'contract'   => 'Contract',
+                'freelance'  => 'Freelance',
+                'internship' => 'Internship'
+              ];
+              foreach ($typesDef as $val => $label):
+              ?>
+                <label class="filter-check">
+                  <input type="checkbox" name="jobtype" class="job-type-filter" value="<?= $val ?>" <?= in_array($val, $currentJobTypes) ? 'checked' : '' ?>>
+                  <span class="box"><svg aria-hidden="true"><use href="#i-check"/></svg></span> 
+                  <?= $label ?> 
+                  <span class="ct">(<?= $job_type_counts[$val] ?? 0 ?>)</span>
+                </label>
+              <?php endforeach; ?>
             </div>
+          </div>
 
-            <!-- Loading State -->
-            <div id="loadingState" class="d-none">
-              <div class="text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="text-muted">Searching for jobs...</p>
-              </div>
+          <div class="filter-group">
+            <label class="filter-label" for="f-date"><svg aria-hidden="true"><use href="#i-clock"/></svg> Date Posted</label>
+            <select id="f-date" class="filter-select">
+              <option value="" <?= empty($jobPosted) ? 'selected' : '' ?>>Any time</option>
+              <option value="1_day" <?= $jobPosted == '1_day' ? 'selected' : '' ?>>Last 24 hours</option>
+              <option value="7_days" <?= $jobPosted == '7_days' ? 'selected' : '' ?>>Last 7 days</option>
+              <option value="30_days" <?= $jobPosted == '30_days' ? 'selected' : '' ?>>Last 30 days</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label" for="f-experience"><svg aria-hidden="true"><use href="#i-chart"/></svg> Experience</label>
+            <select id="f-experience" class="filter-select">
+              <option value="" <?= empty($experienceLevel) ? 'selected' : '' ?>>Any Experience</option>
+              <option value="entry" <?= $experienceLevel == 'entry' ? 'selected' : '' ?>>Entry level</option>
+              <option value="mid" <?= $experienceLevel == 'mid' ? 'selected' : '' ?>>Mid level</option>
+              <option value="senior" <?= $experienceLevel == 'senior' ? 'selected' : '' ?>>Senior level</option>
+              <option value="manager" <?= $experienceLevel == 'manager' ? 'selected' : '' ?>>Manager / Lead</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label" for="f-industry"><svg aria-hidden="true"><use href="#i-building"/></svg> Industry</label>
+            <select id="f-industry" class="filter-select">
+              <option value="">All Industries</option>
+              <?php foreach ($industries as $industry):
+                $count = array_reduce($industry_counts, fn($carry, $item) => $item->id == $industry->id ? $item->job_count : $carry, 0);
+              ?>
+                <option value="<?= esc($industry->id) ?>" <?= $industryId == $industry->id ? 'selected' : '' ?>>
+                  <?= esc($industry->name) ?> (<?= $count ?>)
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label"><svg aria-hidden="true"><use href="#i-coins"/></svg> Salary Range (₦/month)</span>
+            <div class="salary-presets" role="group" aria-label="Minimum salary">
+              <label class="salary-preset"><input type="radio" name="salary-preset-min" value="" <?= empty($salaryMin) ? 'checked' : '' ?>><span>Any</span></label>
+              <label class="salary-preset"><input type="radio" name="salary-preset-min" value="100000" <?= $salaryMin == 100000 ? 'checked' : '' ?>><span>₦100k+</span></label>
+              <label class="salary-preset"><input type="radio" name="salary-preset-min" value="250000" <?= $salaryMin == 250000 ? 'checked' : '' ?>><span>₦250k+</span></label>
+              <label class="salary-preset"><input type="radio" name="salary-preset-min" value="500000" <?= $salaryMin == 500000 ? 'checked' : '' ?>><span>₦500k+</span></label>
+              <label class="salary-preset"><input type="radio" name="salary-preset-min" value="1000000" <?= $salaryMin == 1000000 ? 'checked' : '' ?>><span>₦1M+</span></label>
             </div>
-
-            <!-- No Results -->
-            <div id="noResults" class="d-none">
-              <div class="text-center py-5">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                <h4 class="fw-bold mb-3">No jobs found</h4>
-                <p class="text-muted mb-4">Try adjusting your filters or search keywords</p>
-                <button class="btn btn-primary" id="resetFiltersBtn">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                  Reset Filters
-                </button>
-              </div>
+            <button type="button" class="salary-custom-toggle" id="salary-custom-toggle" aria-expanded="false">Set a custom range</button>
+            <div class="filter-range" id="salary-custom" <?= empty($salaryMin) && empty($salaryMax) ? 'hidden' : '' ?>>
+              <input type="number" id="minSalary" class="filter-input" placeholder="Min" value="<?= esc($salaryMin ?? '') ?>" inputmode="numeric" aria-label="Minimum salary">
+              <span>–</span>
+              <input type="number" id="maxSalary" class="filter-input" placeholder="Max" value="<?= esc($salaryMax ?? '') ?>" inputmode="numeric" aria-label="Maximum salary">
             </div>
+          </div>
 
+          <div class="filters-actions">
+            <button class="btn btn-primary" id="applyFilters"><svg aria-hidden="true"><use href="#i-check"/></svg> Apply Filters</button>
+            <button class="btn btn-outline" id="clearFilters"><svg aria-hidden="true"><use href="#i-arrow-up" style="transform:rotate(45deg)"/></svg> Reset all</button>
+          </div>
 
-            <!-- Job Cards Grid -->
-            <div class="jobs-grid" id="jobCardsContainer">
-              <?php if (empty($jobs)): ?>
-                <!-- No results handled by noResults div -->
-              <?php else: ?>
-                <?php foreach ($jobs as $job): ?>
-                  <div class="job-card"
-                    data-title="<?= esc($job->title) ?>"
-                    data-location="<?= esc($job->location) ?>"
-                    data-type="<?= esc($job->job_type) ?>"
-                    data-experience="<?= esc($job->experience_level) ?>"
-                    data-industry="<?= esc($job->industry_name) ?>"
-                    data-salary="<?= esc($job->salary) ?>">
-                    
-                    <?php if ($job->is_featured && $job->featured_until >= date('Y-m-d')): ?>
-                      <div class="badge-featured">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26 6.88.6-5.2 4.52 1.56 6.72L12 16.9l-6.14 3.7 1.56-6.72-5.2-4.52 6.88-.6z"/></svg>
-                        Featured
-                      </div>
-                    <?php endif; ?>
+        </div>
+      </aside>
 
-                    <div class="job-card-top">
-                      <div class="job-logo">
-                        <?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'CV' : esc(substr($job->employer_name ?? 'C', 0, 2)) ?>
-                      </div>
-                      <div class="job-title">
-                        <a href="<?= base_url('jobs/' . $job->slug) ?>" class="text-decoration-none">
-                          <?= esc($job->title) ?>
-                        </a>
-                      </div>
-                    </div>
-
-                    <div class="job-company">
-                      <span class="job-company-name">
-                        <?php if (!empty($job->anonymous) || !empty($job->is_anonymous)): ?>
-                          Confidential Employer
-                        <?php else: ?>
-                          <?= esc($job->employer_name) ?>
-                        <?php endif; ?>
-                      </span>
-                      <?php if ($job->show_trust_badge): ?>
-                        <button type="button" class="verified-check" aria-label="Verified employer">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16.5 9.2l-5.6 5.6-3-3" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                          <span class="verified-tip">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16.5 9.2l-5.6 5.6-3-3" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <strong>Verified</strong> employer
-                          </span>
-                        </button>
-                      <?php endif; ?>
-                    </div>
-
-                    <div class="job-meta">
-                      <span>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <?= esc($job->location ?? 'Nigeria') ?>
-                      </span>
-                      <?php if ($job->remote_available): ?>
-                        <span class="badge-verified">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                          Remote
-                        </span>
-                      <?php endif; ?>
-                    </div>
-
-                    <div class="job-salary-row">
-                      <span class="job-salary">
-                        <?= $job->salary ? esc($job->salary) : 'Negotiable' ?>
-                      </span>
-                      <span class="text-muted small"><?= esc($job->salary_period ?? 'monthly') ?></span>
-                    </div>
-
-                    <div class="job-actions">
-                      <a href="<?= base_url('jobs/' . $job->slug) ?>" class="btn btn-primary">
-                        View Details
-                      </a>
-                      <?php $isSaved = in_array($job->id, $savedJobIds ?? []); ?>
-                      <button class="save-btn" data-job-id="<?= $job->id ?>" data-saved="<?= $isSaved ? 'true' : 'false' ?>">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                <?php endforeach; ?>
-              <?php endif; ?>
+      <!-- RESULTS -->
+      <section aria-label="Job results">
+        <div class="results-toolbar">
+          <div class="results-count">
+            <strong><?= number_format($total_jobs) ?> Jobs Found</strong>
+            <span>Showing <?= count($jobs) ?> of <?= number_format($total_jobs) ?> results</span>
+          </div>
+          <div class="results-tools">
+            <label class="results-sort">
+              <span>Sort:</span>
+              <select class="filter-select" id="sortBy" aria-label="Sort jobs by">
+                <option value="newest" <?= $sort_by == 'newest' ? 'selected' : '' ?>>Newest First</option>
+                <option value="oldest" <?= $sort_by == 'oldest' ? 'selected' : '' ?>>Oldest First</option>
+                <option value="salary_high" <?= $sort_by == 'salary_high' ? 'selected' : '' ?>>Salary: High to Low</option>
+                <option value="salary_low" <?= $sort_by == 'salary_low' ? 'selected' : '' ?>>Salary: Low to High</option>
+              </select>
+            </label>
+            <div class="view-toggle" role="group" aria-label="View mode">
+              <button data-view="grid" class="<?= ($view_mode != 'list') ? 'active' : '' ?>" aria-pressed="<?= ($view_mode != 'list') ? 'true' : 'false' ?>" aria-label="Grid view"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+              <button data-view="list" class="<?= ($view_mode == 'list') ? 'active' : '' ?>" aria-pressed="<?= ($view_mode == 'list') ? 'true' : 'false' ?>" aria-label="List view"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
             </div>
-
-            <!-- Pagination -->
-            <?php if ($total_jobs > $per_page): ?>
-              <nav class="mt-5 jobs-pagination">
-                <ul class="pagination justify-content-center">
-                  <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
-                    <a class="page-link" href="#" data-page="<?= $current_page - 1 ?>">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                      Previous
-                    </a>
-                  </li>
-
-                  <?php $total_pages = ceil($total_jobs / $per_page); ?>
-                  <?php $start_page = max(1, $current_page - 2); ?>
-                  <?php $end_page = min($total_pages, $start_page + 4); ?>
-
-                  <?php if ($start_page > 1): ?>
-                    <li class="page-item">
-                      <a class="page-link" href="#" data-page="1">1</a>
-                    </li>
-                    <?php if ($start_page > 2): ?>
-                      <li class="page-item disabled">
-                        <span class="page-link">...</span>
-                      </li>
-                    <?php endif; ?>
-                  <?php endif; ?>
-
-                  <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
-                    <li class="page-item <?= $current_page == $i ? 'active' : '' ?>">
-                      <a class="page-link" href="#" data-page="<?= $i ?>"><?= $i ?></a>
-                    </li>
-                  <?php endfor; ?>
-
-                  <?php if ($end_page < $total_pages): ?>
-                    <?php if ($end_page < $total_pages - 1): ?>
-                      <li class="page-item disabled">
-                        <span class="page-link">...</span>
-                      </li>
-                    <?php endif; ?>
-                    <li class="page-item">
-                      <a class="page-link" href="#" data-page="<?= $total_pages ?>"><?= $total_pages ?></a>
-                    </li>
-                  <?php endif; ?>
-
-                  <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
-                    <a class="page-link" href="#" data-page="<?= $current_page + 1 ?>">
-                      Next
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-                    </a>
-                  </li>
-                </ul>
-                <p class="text-center text-muted small mt-3">
-                  Page <?= $current_page ?> of <?= $total_pages ?>
-                  (<?= number_format($total_jobs) ?> total jobs)
-                </p>
-              </nav>
-            <?php endif; ?>
-
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-</main>
 
+        <div class="jobs-grid <?= ($view_mode == 'list') ? 'is-list' : '' ?>" id="jobCardsContainer">
+          <?php if (empty($jobs)): ?>
+            <div class="results-empty">
+              <div class="ic"><svg aria-hidden="true"><use href="#i-search"/></svg></div>
+              <h3>No jobs found</h3>
+              <p>Try adjusting your filters or search keywords to see matching opportunities.</p>
+              <button class="btn btn-primary" id="resetFiltersBtn"><svg aria-hidden="true"><use href="#i-arrow-up" style="transform:rotate(45deg)"/></svg> Clear filters</button>
+            </div>
+          <?php else: ?>
+            <?php foreach ($jobs as $job): 
+              $isFeatured = ($job->is_featured && $job->featured_until >= date('Y-m-d'));
+              $isSaved = in_array($job->id, $savedJobIds ?? []);
+              $logoInitials = !empty($job->anonymous) || !empty($job->is_anonymous) ? 'CV' : esc(substr($job->employer_name ?? 'C', 0, 2));
+            ?>
+              <article class="job-card <?= $isFeatured ? 'job-card--featured' : '' ?>" aria-label="<?= esc($job->title) ?>">
+                <?php if ($isFeatured): ?>
+                  <span class="badge-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
+                <?php endif; ?>
+
+                <!-- GRID LAYOUT VIEWPORT -->
+                <div class="grid-only" style="display:flex;flex-direction:column;gap:11px">
+                  <div class="job-card-top">
+                    <div>
+                      <h3 class="job-title" title="<?= esc($job->title) ?>">
+                        <a href="<?= base_url('jobs/' . $job->slug) ?>"><?= esc($job->title) ?></a>
+                      </h3>
+                      <div class="job-company">
+                        <span class="job-company-name">
+                          <?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential Employer' : esc($job->employer_name) ?>
+                        </span>
+                        <?php if ($job->show_trust_badge): ?>
+                          <button type="button" class="verified-check" aria-label="Verified employer — tap for details">
+                            <svg aria-hidden="true"><use href="#i-verified-disc"/></svg>
+                            <span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span>
+                          </button>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div class="job-logo" aria-hidden="true"><?= $logoInitials ?></div>
+                  </div>
+                  <div class="job-meta">
+                    <span><svg aria-hidden="true"><use href="#i-pin"/></svg> <?= esc($job->location ?? 'Nigeria') ?></span>
+                    <span><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= esc(humanize($job->job_type ?? '')) ?></span>
+                    <span><svg aria-hidden="true"><use href="#i-clock"/></svg> <?= date('d M Y', strtotime($job->created_at)) ?></span>
+                  </div>
+                  <div class="job-salary-row">
+                    <span class="job-salary"><?= $job->salary ? esc($job->salary) : 'Negotiable' ?></span>
+                  </div>
+                  <div class="job-actions">
+                    <a href="<?= base_url('jobs/' . $job->slug) ?>" class="btn btn-primary">Quick apply</a>
+                    <button class="save-btn" data-job-id="<?= $job->id ?>" aria-label="Save job" data-saved="<?= $isSaved ? 'true' : 'false' ?>">
+                      <svg aria-hidden="true"><use href="<?= $isSaved ? '#i-bookmark-fill' : '#i-bookmark' ?>"/></svg> Save
+                    </button>
+                  </div>
+                </div>
+
+                <!-- LIST LAYOUT VIEWPORT -->
+                <div class="job-logo" aria-hidden="true"><?= $logoInitials ?></div>
+                <div class="list-body">
+                  <div class="list-title-row">
+                    <h3 class="job-title" title="<?= esc($job->title) ?>">
+                      <a href="<?= base_url('jobs/' . $job->slug) ?>"><?= esc($job->title) ?></a>
+                    </h3>
+                    <?php if ($isFeatured): ?>
+                      <span class="list-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Promoted</span>
+                    <?php endif; ?>
+                  </div>
+                  <div class="job-company">
+                    <span class="job-company-name">
+                      <?= !empty($job->anonymous) || !empty($job->is_anonymous) ? 'Confidential Employer' : esc($job->employer_name) ?>
+                    </span>
+                    <?php if ($job->show_trust_badge): ?>
+                      <button type="button" class="verified-check" aria-label="Verified employer — tap for details">
+                        <svg aria-hidden="true"><use href="#i-verified-disc"/></svg>
+                        <span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span>
+                      </button>
+                    <?php endif; ?>
+                  </div>
+                  <div class="list-meta">
+                    <span><svg aria-hidden="true"><use href="#i-pin"/></svg> <?= esc($job->location ?? 'Nigeria') ?></span>
+                    <span><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= esc(humanize($job->job_type ?? '')) ?></span>
+                    <span><svg aria-hidden="true"><use href="#i-clock"/></svg> <?= date('d M Y', strtotime($job->created_at)) ?></span>
+                  </div>
+                </div>
+                <div class="list-action">
+                  <div><span class="job-salary"><?= $job->salary ? esc($job->salary) : 'Negotiable' ?></span></div>
+                  <div class="list-action-btns">
+                    <button class="save-btn" data-job-id="<?= $job->id ?>" aria-label="Save job" data-saved="<?= $isSaved ? 'true' : 'false' ?>">
+                      <svg aria-hidden="true"><use href="<?= $isSaved ? '#i-bookmark-fill' : '#i-bookmark' ?>"/></svg> Save
+                    </button>
+                    <a href="<?= base_url('jobs/' . $job->slug) ?>" class="btn btn-primary btn-sm">Quick apply</a>
+                  </div>
+                </div>
+
+              </article>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+
+        <!-- Pagination -->
+        <?php if ($total_jobs > $per_page): ?>
+          <nav class="pagination" id="paginationContainer" aria-label="Jobs pagination">
+            <?php $total_pages = ceil($total_jobs / $per_page); ?>
+            <a class="nav-btn <?= $current_page <= 1 ? 'disabled' : '' ?>" href="#" data-page="<?= $current_page - 1 ?>" aria-label="Previous page">
+              <svg aria-hidden="true" style="transform:rotate(90deg); width:13px; height:13px;"><use href="#i-chev-down"/></svg>
+            </a>
+            
+            <?php $start_page = max(1, $current_page - 2); ?>
+            <?php $end_page = min($total_pages, $start_page + 4); ?>
+
+            <?php if ($start_page > 1): ?>
+              <a href="#" data-page="1">1</a>
+              <?php if ($start_page > 2): ?><span class="ellipsis">...</span><?php endif; ?>
+            <?php endif; ?>
+
+            <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+              <a href="#" class="<?= $current_page == $i ? 'current' : '' ?>" data-page="<?= $i ?>"><?= $i ?></a>
+            <?php endfor; ?>
+
+            <?php if ($end_page < $total_pages): ?>
+              <?php if ($end_page < $total_pages - 1): ?><span class="ellipsis">...</span><?php endif; ?>
+              <a href="#" data-page="<?= $total_pages ?>"><?= $total_pages ?></a>
+            <?php endif; ?>
+
+            <a class="nav-btn <?= $current_page >= $total_pages ? 'disabled' : '' ?>" href="#" data-page="<?= $current_page + 1 ?>" aria-label="Next page">
+              <svg aria-hidden="true" style="transform:rotate(-90deg); width:13px; height:13px;"><use href="#i-chev-down"/></svg>
+            </a>
+          </nav>
+        <?php endif; ?>
+
+      </section>
+    </div>
+  </div>
+</main>
 <?= $this->endSection() ?>
 
 <?= $this->section('styles') ?>
-
 <style>
-:root {
-  --white: #ffffff;
-  --text: var(--text-dark, #1E293B);
-  --muted: var(--text-muted, #64748B);
-  --border: var(--border-light, #e2e8f0);
-  --bg: var(--bg-white, #FFFFFF);
-  --transition: all 0.25s ease-in-out;
-}
+/* ── Brand Tokens ── */
 
-/* ═══════════════════════════════════════════════════════════════════
-   JOBS LISTING PAGE — Brand colors: var(--brand) (blue), var(--accent) (orange)
-   ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Hero Section ── */
+/* ── Reset local style boundaries ── */
+main, .container { background-color: transparent !important; }
+
+.ic { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+
+/* ── Compact page hero ── */
 .jobs-hero {
   background:
-    radial-gradient(ellipse 70% 60% at 82% 20%, rgba(240, 143, 26, 0.16) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 70% at 10% 90%, rgba(13, 96, 158, 0.34) 0%, transparent 55%),
-    linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-dark) 55%, var(--brand) 100%);
+    radial-gradient(ellipse 60% 70% at 88% 30%, rgba(245,160,32,.16) 0%, transparent 55%),
+    linear-gradient(150deg, #0A2F57 0%, #064A85 60%, #0D609E 100%);
   color: var(--white);
-  padding: 64px 0 54px;
   position: relative; overflow: hidden;
+  padding: 30px 0;
+  padding-top: max(30px, calc(30px + env(safe-area-inset-top, 0px)));
 }
 .jobs-hero-grid {
-  position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  position: absolute; inset: 0; pointer-events: none; opacity: .4;
   background-image:
     linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-  background-size: 46px 46px;
-  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 30%, transparent 80%);
-          mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 30%, transparent 80%);
-}
-.jobs-hero-motif {
-  position: absolute; top: 46%; right: -50px; transform: translateY(-50%);
-  width: min(500px, 44vw); height: auto; pointer-events: none; z-index: 0;
-  opacity: .55;
-}
-.jobs-hero-motif circle, .jobs-hero-motif line {
-  transform-origin: center;
-}
-@media (max-width: 900px) {
-  .jobs-hero-motif {
-    top: -30px; right: -70px; transform: none;
-    width: 240px; opacity: .28;
-  }
-}
-@media (max-width: 580px) {
-  .jobs-hero-motif { top: -24px; right: -80px; width: 190px; opacity: .22; }
+  background-size: 42px 42px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 30% 30%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(ellipse 90% 90% at 30% 30%, #000 30%, transparent 85%);
 }
 .jobs-hero-inner { position: relative; z-index: 1; }
+.jobs-hero h1 { font-size: clamp(1.7rem, 3.6vw, 2.3rem); font-weight: 800; line-height: 1.12; margin-bottom: 8px; color: #fff; }
+.jobs-hero h1 em { font-style: normal; color: var(--accent); }
+.jobs-hero p { font-size: .9rem; opacity: .9; max-width: 560px; margin-bottom: 18px; color: rgba(255,255,255,0.9); }
+.jobs-hero .search-card { margin-bottom: 14px; }
 
-.jobs-hero-title {
-  font-size: clamp(1.9rem, 4.8vw, 3.1rem);
-  font-weight: 800; line-height: 1.15; margin-bottom: 16px;
+/* Motif */
+.jobs-hero-motif {
+  position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+  width: min(330px, 30vw); height: auto; pointer-events: none; z-index: 0; opacity: .5;
 }
-.jobs-hero-title em { font-style: normal; color: var(--accent); }
-.jobs-hero-sub {
-  font-size: 1rem; opacity: .9; max-width: 560px; margin-bottom: 28px;
+@media (max-width: 900px) {
+  .jobs-hero-motif { top: -20px; right: -60px; transform: none; width: 200px; opacity: .26; }
 }
+@media (max-width: 580px) {
+  .jobs-hero-motif { width: 150px; right: -54px; opacity: .2; }
+}
+.jobs-hero .breadcrumb { display: flex; align-items: center; gap: 7px; font-size: .76rem; opacity: .82; margin-bottom: 14px; }
+.jobs-hero .breadcrumb a { color: rgba(255,255,255,.82); text-decoration: none; }
+.jobs-hero .breadcrumb a:hover { color: var(--white); }
+.jobs-hero .breadcrumb svg { width: 13px; height: 13px; opacity: 0.6; color: rgba(255,255,255,0.6); }
 
-/* ── Search Card ── */
+/* Search Card Overrides */
 .search-card {
   background: var(--white); border-radius: 12px;
   padding: 10px; display: flex; flex-wrap: wrap; gap: 8px;
-  box-shadow: 0 14px 40px rgba(10,47,87,.16); max-width: 820px;
+  box-shadow: var(--shadow-lg); max-width: 820px;
 }
-.search-field {
-  position: relative; flex: 1 1 150px; display: flex; align-items: center;
-}
-.search-field svg {
-  position: absolute; left: 12px; width: 17px; height: 17px; color: var(--muted); pointer-events: none;
-}
+.search-field { position: relative; flex: 1 1 150px; display: flex; align-items: center; }
+.search-field svg { position: absolute; left: 12px; width: 17px; height: 17px; color: var(--muted); pointer-events: none; }
 .search-card input, .search-card select {
   width: 100%; border: 1px solid var(--border); border-radius: 7px;
   padding: 11px 14px 11px 38px; font-family: 'Inter', sans-serif; font-size: 1rem;
   color: var(--text); background: var(--bg); outline: none; appearance: none; -webkit-appearance: none; min-height: 46px;
 }
 .search-card select { padding-left: 38px; }
-.search-card input:focus, .search-card select:focus {
-  border-color: var(--brand); background: var(--white);
-}
+.search-card input:focus, .search-card select:focus { border-color: var(--brand); background: var(--white); }
 .search-card > button {
   flex: 0 0 auto; padding: 11px 24px; background: var(--accent); color: var(--brand-deep);
   border: none; border-radius: 7px; font-family: 'Inter', sans-serif;
@@ -523,25 +448,53 @@ foreach ($jobs as $index => $j) {
 .search-card > button svg { width: 17px; height: 17px; }
 .search-card > button:hover { background: var(--accent-dark); }
 
-.jobs-trending {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; font-size: .8rem;
+@media (max-width: 767.98px) {
+  .search-card {
+    flex-direction: column !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  .search-field {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+  .search-card input, .search-card select {
+    font-size: 0.9rem !important;
+    min-height: 42px !important;
+    padding: 8px 12px 8px 36px !important;
+  }
+  .search-card select {
+    padding-left: 36px !important;
+  }
+  .search-card > button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    padding: 8px 16px !important;
+    font-size: 0.9rem !important;
+  }
 }
-.jobs-trending strong { opacity: .8; letter-spacing: .04em; }
-.jobs-trending a {
+
+/* Trending */
+.trending { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .8rem; }
+.trending strong { color: rgba(255,255,255,0.8); }
+.trending a {
   background: rgba(255,255,255,.12); color: var(--white);
   padding: 5px 12px; border-radius: 20px; font-weight: 500;
   border: 1px solid rgba(255,255,255,.2); transition: var(--transition);
-  min-height: 32px; display: inline-flex; align-items: center;
+  min-height: 32px; display: inline-flex; align-items: center; text-decoration: none;
 }
-.jobs-trending a:hover { background: rgba(255,255,255,.26); text-decoration: none; }
+.trending a:hover { background: rgba(255,255,255,.26); text-decoration: none; color: #fff; }
 
-/* ── Ticker Section ── */
+/* ── Live Ticker ── */
 .ticker {
   position: relative; z-index: 1;
-  background: rgba(7, 48, 79, 0.7);
+  background: rgba(10,47,87,.55);
   border-top: 1px solid rgba(255,255,255,.12);
   backdrop-filter: blur(6px);
   overflow: hidden; display: flex; align-items: stretch;
+  max-width: 100%; width: 100%;
 }
 .ticker-label {
   flex-shrink: 0; display: flex; align-items: center; gap: 8px;
@@ -551,7 +504,7 @@ foreach ($jobs as $index => $j) {
 }
 .ticker-dot { width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px rgba(10,47,87,.55); animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.72); opacity: .7; } }
-.ticker-viewport { flex: 1; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.ticker-viewport { flex: 1 1 0%; min-width: 0; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
 .ticker-track { display: inline-flex; align-items: center; white-space: nowrap; padding: 12px 0; will-change: transform; animation: ticker-scroll 48s linear infinite; }
 .ticker-viewport:hover .ticker-track { animation-play-state: paused; }
 @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
@@ -568,56 +521,127 @@ foreach ($jobs as $index => $j) {
 .ticker-loc svg { width: 11px; height: 11px; }
 .ticker-new { background: var(--accent); color: var(--brand-deep); font-size: .64rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; letter-spacing: .04em; }
 
-/* ── Layout ── */
-.jobs-section { padding-bottom: 80px; }
-.jobs-content { padding: 40px 0 80px; }
+/* ── Two-column layout ── */
 .jobs-layout {
-  display: grid; grid-template-columns: 260px 1fr; gap: 24px;
+  display: grid; grid-template-columns: 286px 1fr; gap: 28px;
   align-items: start;
+  padding: 40px 0 64px;
 }
-@media (max-width: 992px) { .jobs-layout { grid-template-columns: 1fr; } }
 
-/* ── Filters Card ── */
-.jobs-filters-card {
-  background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 24px;
+/* ── Filter sidebar ── */
+.filters {
+  background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+  padding: 0; position: sticky; top: 86px; overflow: hidden;
   box-shadow: 0 2px 14px rgba(10,47,87,.06);
-  position: sticky; top: 100px;
 }
-.jobs-filters-header {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+.filters-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 18px; border-bottom: 2px solid var(--brand);
+  background: linear-gradient(180deg, #0A2F57, var(--brand)); color: #fff;
 }
-.jobs-filters-count {
-  font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand);
-  background: var(--brand-light); padding: 3px 8px; border-radius: 12px;
-}
-.jobs-filters-header h5 {
-  font-size: .92rem; font-weight: 700; margin: 0;
-  display: flex; align-items: center; gap: 8px;
-}
-.jobs-filters-header h5 svg { width: 17px; height: 17px; color: var(--brand); }
+.filters-head-title { display: flex; align-items: center; gap: 9px; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #fff; }
+.filters-head-title svg { width: 18px; height: 18px; color: var(--accent); }
+.filters-
+.filter-group { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.filter-group:last-of-type { border-bottom: none; }
+.filter-label { display: flex; align-items: center; gap: 7px; font-size: .76rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text); margin-bottom: 11px; }
+.filter-label svg { width: 14px; height: 14px; color: var(--muted); }
 
-.jobs-filters-body { display: flex; flex-direction: column; gap: 20px; }
-
-/* ── Results Header ── */
-.jobs-results-header {
-  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-  margin-bottom: 24px;
+.filter-input, .filter-select {
+  width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-family: 'Inter', sans-serif; font-size: .86rem;
+  color: var(--text); background: var(--bg); outline: none; min-height: 42px;
+  appearance: none; -webkit-appearance: none;
 }
+.filter-select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235b6577' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+}
+.filter-input:focus, .filter-select:focus { border-color: var(--brand); background: var(--white); }
+
+/* Checkbox rows (job type) */
+.filter-checks { display: flex; flex-direction: column; gap: 2px; }
+.filter-check {
+  display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px;
+  cursor: pointer; font-size: .85rem; color: var(--text); transition: background var(--transition);
+  user-select: none; min-height: 38px;
+}
+.filter-check:hover { background: var(--bg); }
+.filter-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.filter-check .box {
+  width: 18px; height: 18px; border-radius: 5px; border: 1.6px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: var(--transition); background: var(--white);
+}
+.filter-check .box svg { width: 12px; height: 12px; color: #fff; opacity: 0; }
+.filter-check input:checked + .box { background: var(--brand); border-color: var(--brand); }
+.filter-check input:checked + .box svg { opacity: 1; }
+.filter-check .ct { margin-left: auto; font-size: .76rem; color: var(--muted); }
+
+/* Salary range */
+.filter-range { display: flex; align-items: center; gap: 8px; }
+.filter-range .filter-input { padding-left: 12px; }
+.filter-range span { color: var(--muted); font-size: .8rem; }
+
+/* Salary preset bands */
+.salary-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.salary-preset { position: relative; cursor: pointer; }
+.salary-preset input { position: absolute; opacity: 0; width: 0; height: 0; }
+.salary-preset span {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 7px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: var(--white); font-size: .8rem; font-weight: 600; color: var(--text);
+  transition: var(--transition); min-height: 36px;
+}
+.salary-preset:hover span { border-color: var(--brand); color: var(--brand); }
+.salary-preset input:checked + span { background: var(--brand); border-color: var(--brand); color: #fff; }
+.salary-custom-toggle {
+  background: none; border: none; padding: 8px 2px 0; margin: 0; cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: .78rem; font-weight: 600; color: var(--brand);
+  text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.salary-custom-toggle:hover { text-decoration: underline; }
+#salary-custom { margin-top: 10px; }
+
+.filters-actions { display: flex; flex-direction: column; gap: 8px; padding-top: 16px; }
+.filters-actions .btn { width: 100%; }
+
+/* Mobile filter toggle */
+.filters-toggle { display: none; }
+
+/* ── Results toolbar ── */
+.results-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  flex-wrap: wrap; margin-bottom: 22px;
+}
+.results-count { font-family: 'Sora', sans-serif; }
+.results-count strong { font-size: 1.15rem; font-weight: 800; color: var(--text); }
+.results-count span { display: block; font-family: 'Inter', sans-serif; font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.results-tools { display: flex; align-items: center; gap: 12px; }
+.results-sort { display: flex; align-items: center; gap: 7px; font-size: .8rem; color: var(--muted); }
+.results-sort .filter-select { min-height: 38px; padding-top: 7px; padding-bottom: 7px; width: auto; min-width: 140px; }
+
+/* Grid / list view toggle */
+.view-toggle { display: inline-flex; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 3px; }
+.view-toggle button {
+  width: 36px; height: 32px; border: none; background: none; border-radius: 6px;
+  color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.view-toggle button svg { width: 17px; height: 17px; }
+.view-toggle button.active { background: var(--brand); color: #fff; box-shadow: 0 1px 4px rgba(8,97,169,.3); }
+.view-toggle button:not(.active):hover { color: var(--text); }
 
 /* ── Job Cards Grid ── */
-.jobs-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;
-}
-
+.jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
 .job-card {
   position: relative;
-  background: var(--white); border: 1px solid var(--border); border-radius: 10px;
+  background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 22px; transition: var(--transition); display: flex; flex-direction: column; gap: 11px;
 }
-.job-card:hover {
-  box-shadow: 0 14px 40px rgba(10,47,87,.16); border-color: var(--brand); transform: translateY(-3px);
-}
-.job-card--featured { border-left: 3px solid var(--accent); }
+.job-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand); transform: translateY(-3px); }
+.job-card--featured { background: linear-gradient(180deg, #fffaf0, #fff); border-color: rgba(245,160,32,.35); border-left: 3px solid var(--accent); }
+.job-card--featured:hover { border-color: var(--accent); }
 
 .badge-featured {
   position: absolute; top: -9px; left: 16px; z-index: 2;
@@ -628,27 +652,14 @@ foreach ($jobs as $index => $j) {
 }
 .badge-featured svg { width: 12px; height: 12px; }
 
-.job-card-top {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-}
-.job-logo {
-  width: 44px; height: 44px; border-radius: 9px; background: var(--brand-light);
-  color: var(--brand); display: flex; align-items: center; justify-content: center;
-  font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem; flex-shrink: 0;
-  border: 1px solid var(--border);
-}
-.job-title {
-  font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; word-break: break-word;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
+.job-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.job-logo { width: 44px; height: 44px; border-radius: 9px; background: var(--brand-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem; color: var(--brand); flex-shrink: 0; }
+.job-title { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .job-title a { color: var(--text); text-decoration: none; transition: var(--transition); }
-.job-title a:hover { color: var(--brand); }
+.job-title a:hover { color: var(--brand); text-decoration: underline; }
 
-.job-company {
-  font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
-}
+.job-company { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
 .job-company-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-
 .verified-check {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   color: var(--brand); flex-shrink: 0; background: none; border: none; padding: 0 0 0 1px;
@@ -669,35 +680,15 @@ foreach ($jobs as $index => $j) {
 }
 .verified-tip svg { width: 13px; height: 13px; color: var(--success); }
 .verified-tip strong { font-weight: 700; }
-.verified-check.open .verified-tip, .verified-check:hover .verified-tip {
-  opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
-}
+.verified-check:hover .verified-tip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
 
-.job-meta {
-  display: flex; flex-wrap: wrap; gap: 12px; font-size: .78rem; color: var(--muted);
-}
+.job-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: .78rem; color: var(--muted); }
 .job-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .job-meta svg { width: 13px; height: 13px; color: var(--muted); }
-.job-meta .badge-verified {
-  background: var(--brand-light); color: var(--brand); padding: 2px 8px; border-radius: 12px;
-}
-
-.job-salary-row {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.job-salary {
-  font-size: .92rem; font-weight: 700; color: var(--accent-dark);
-}
-
-.job-actions {
-  display: flex; gap: 8px; margin-top: 4px;
-}
+.job-salary { font-size: .92rem; font-weight: 700; color: var(--accent-dark); }
+.job-salary-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.job-actions { display: flex; gap: 8px; margin-top: 4px; }
 .job-actions .btn { flex: 1; padding: 10px; font-size: .82rem; min-height: 44px; }
-.btn-primary {
-  background: var(--brand); color: var(--white); border-color: var(--brand);
-  transition: var(--transition);
-}
-.btn-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); text-decoration: none; }
 
 .save-btn {
   background: none; border: 1.5px solid var(--border); border-radius: 8px;
@@ -710,68 +701,162 @@ foreach ($jobs as $index => $j) {
 .save-btn:hover { border-color: var(--brand); color: var(--brand); }
 .save-btn[data-saved="true"] { color: var(--success); border-color: var(--success); }
 
+/* Empty state */
+.results-empty { text-align: center; padding: 60px 20px; border: 1px dashed var(--border); border-radius: 14px; background: var(--white); width: 100%; grid-column: 1 / -1; }
+.results-empty .ic { width: 56px; height: 56px; border-radius: 14px; background: var(--brand-light); color: var(--brand); margin: 0 auto 16px; }
+.results-empty .ic svg { width: 26px; height: 26px; }
+.results-empty h3 { font-family: 'Sora', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+.results-empty p { font-size: .88rem; color: var(--muted); max-width: 380px; margin: 0 auto 18px; }
+
+/* ── LIST VIEW ── */
+.jobs-grid.is-list { grid-template-columns: 1fr; gap: 12px; }
+.jobs-grid.is-list .job-card {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  grid-template-areas: "logo body action";
+  align-items: center; gap: 18px; padding: 18px 22px;
+}
+.jobs-grid.is-list .job-card .job-logo { grid-area: logo; width: 52px; height: 52px; }
+.jobs-grid.is-list .job-card .list-
+.jobs-grid.is-list .job-card .list-action { grid-area: action; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.jobs-grid.is-list .job-card .list-action .job-salary-amount { font-size: 1.05rem; }
+.jobs-grid.is-list .job-card .list-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); }
+.jobs-grid.is-list .job-card .list-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.jobs-grid.is-list .job-card .list-meta svg { width: 13px; height: 13px; }
+.jobs-grid.is-list .job-card .list-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.jobs-grid.is-list .job-card .job-title { font-size: 1.02rem; -webkit-line-clamp: 1; }
+.jobs-grid.is-list .job-card .badge-featured { position: static; box-shadow: none; }
+.jobs-grid.is-list .job-card--featured { padding-top: 18px; border-top: 1px solid rgba(245,160,32,.35); }
+.jobs-grid.is-list .job-card > .badge-featured { display: none; }
+.jobs-grid.is-list .list-featured {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--accent); color: var(--brand-deep);
+  font-size: .64rem; font-weight: 800; padding: 3px 9px; border-radius: 20px; letter-spacing: .04em;
+}
+.jobs-grid:not(.is-list) .job-card .list-featured { display: none; }
+.jobs-grid.is-list .list-action-btns { display: flex; gap: 8px; }
+
+/* toggling direct columns inside grid vs list items */
+.jobs-grid:not(.is-list) .job-card > .job-logo,
+.jobs-grid:not(.is-list) .job-card > .list-body,
+.jobs-grid:not(.is-list) .job-card > .list-action { display: none !important; }
+.jobs-grid.is-list .job-card > .grid-only { display: none !important; }
+.jobs-grid.is-list .job-card > .job-logo { display: flex; }
+.jobs-grid.is-list .job-card > .list-
+.jobs-grid.is-list .job-card > .list-action { display: flex; }
+
 /* ── Pagination ── */
-.jobs-pagination .page-item.active .page-link {
-  background-color: var(--brand); border-color: var(--brand); color: var(--white);
+.pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 36px; flex-wrap: wrap; }
+.pagination a, .pagination span {
+  min-width: 40px; height: 40px; padding: 0 12px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--white); color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 600;
+  transition: var(--transition); text-decoration: none;
 }
-.jobs-pagination .page-link {
-  color: var(--brand); border-radius: 8px; margin: 0 0.25rem; border: 1px solid var(--border);
-}
-.jobs-pagination .page-link:hover { background-color: var(--brand-light); border-color: var(--brand); }
+.pagination a:hover { border-color: var(--brand); color: var(--brand); text-decoration: none; }
+.pagination .current { background: var(--brand); border-color: var(--brand); color: #fff; }
+.pagination .ellipsis { border: none; background: none; color: var(--muted); min-width: 24px; }
+.pagination .nav-btn svg { width: 16px; height: 16px; }
+.pagination .disabled { opacity: .4; pointer-events: none; }
 
-/* ── Loading State ── */
-.spinner-border { width: 3rem; height: 3rem; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .jobs-filters-card { position: static; }
-  .jobs-grid { grid-template-columns: 1fr; }
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .jobs-layout { grid-template-columns: 1fr; gap: 0; padding-top: 20px; }
+  .filters {
+    position: fixed; top: 0; left: 0; bottom: 0; width: min(340px, 86vw); z-index: 1200;
+    border-radius: 0; transform: translateX(-100%); transition: transform .26s ease;
+    overflow-y: auto; box-shadow: var(--shadow-lg);
+  }
+  .filters.open { transform: translateX(0); }
+  .filters-overlay {
+    position: fixed; inset: 0; background: rgba(10,47,87,.5); z-index: 1100;
+    opacity: 0; visibility: hidden; transition: opacity .2s; backdrop-filter: blur(2px);
+  }
+  .filters-overlay.open { opacity: 1; visibility: visible; }
+  .filters-toggle {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; margin-bottom: 18px;
+    position: sticky; top: 78px; z-index: 500;
+    background: var(--brand); color: #fff; border-color: var(--brand);
+    box-shadow: 0 4px 14px rgba(8,97,169,.28); font-weight: 700;
+  }
+  .filters-toggle:hover, .filters-toggle:focus-visible {
+    background: var(--accent); border-color: var(--accent); color: var(--brand-deep);
+  }
+  .filters-toggle svg { color: currentColor; }
+  .filters-head .filters-close { display: inline-flex; }
 }
+@media (min-width: 901px) {
+  .filters-head .filters-close { display: none; }
+}
+@media (max-width: 560px) {
+  .results-toolbar { align-items: flex-start; }
+  .jobs-grid.is-list .job-card {
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "logo body"
+      "action action";
+  }
+  .jobs-grid.is-list .job-card .list-action { align-items: stretch; flex-direction: row; justify-content: space-between; margin-top: 4px; }
+  .results-sort { display: none; }
+}
+
+/* iOS auto-dark defeat */
+html, 
+.job-card { background: #ffffff; }
+.job-card--featured { background: linear-gradient(180deg, #fffaf0, #fff); }
+.filters { background: #ffffff; }
+.filters-head { background: linear-gradient(180deg, #0A2F57, #0D609E); }
+.results-empty { background: #ffffff; }
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-// Apply filters
+// Filter values submission
 $('#applyFilters, #applyFiltersHero').on('click', function() {
-  const filters = {
-    keywords: $('#searchKeyword').val(),
-    location: $('#locationFilter').val(),
-    category: $('#categoryFilterHero').val(),
-    industry: $('#industryFilter').val(),
-    minSalary: $('#minSalary').val(),
-    maxSalary: $('#maxSalary').val(),
-    sort: $('#sortBy').val(),
-    jobTypes: []
-  };
-
+  const jobTypes = [];
   $('.job-type-filter:checked').each(function() {
-    filters.jobTypes.push($(this).val());
+    jobTypes.push($(this).val());
   });
 
-  const url = new URL(window.location.origin + window.location.pathname);
-  if (filters.keywords) url.searchParams.set('keywords', filters.keywords);
-  if (filters.location) url.searchParams.set('state_id', filters.location);
-  if (filters.category) url.searchParams.set('category_id', filters.category);
-  if (filters.industry) url.searchParams.set('industry_id', filters.industry);
-  if (filters.minSalary) url.searchParams.set('salary_min', filters.minSalary);
-  if (filters.maxSalary) url.searchParams.set('salary_max', filters.maxSalary);
-  if (filters.sort) url.searchParams.set('sort_by', filters.sort);
+  const salaryPreset = $('input[name="salary-preset-min"]:checked').val();
+  const minSalary = $('#minSalary').val() || salaryPreset || '';
 
-  if (filters.jobTypes.length > 0) {
-    url.searchParams.set('job_type', filters.jobTypes.join(','));
-  }
+  const params = new URLSearchParams();
+  const keywordsVal = $('#searchKeyword').val() || $('#f-keywords').val();
+  const locationVal = $('#locationFilter').val() || $('#f-location').val();
+  const categoryVal = $('#categoryFilterHero').val();
+  const industryVal = $('#f-industry').val();
+  const maxSalaryVal = $('#maxSalary').val();
+  const sortByVal = $('#sortBy').val();
+  const jobPostedVal = $('#f-date').val();
+  const expLevelVal = $('#f-experience').val();
 
-  window.location.href = url.toString();
+  if (keywordsVal) params.set('keywords', keywordsVal);
+  if (locationVal) params.set('state_id', locationVal);
+  if (categoryVal) params.set('category_id', categoryVal);
+  if (industryVal) params.set('industry_id', industryVal);
+  if (minSalary) params.set('salary_min', minSalary);
+  if (maxSalaryVal) params.set('salary_max', maxSalaryVal);
+  if (sortByVal) params.set('sort_by', sortByVal);
+  if (jobPostedVal) params.set('job_posted', jobPostedVal);
+  if (expLevelVal) params.set('experience_level', expLevelVal);
+  if (jobTypes.length > 0) params.set('job_type', jobTypes.join(','));
+
+  // Maintain grid/list view status
+  const currentView = $('.view-toggle button.active').data('view') || 'grid';
+  params.set('view_mode', currentView);
+
+  window.location.href = window.location.pathname + '?' + params.toString();
 });
 
-// Reset filters
-$('#clearFilters').on('click', function() {
-  const url = new URL(window.location.origin + window.location.pathname);
-  window.location.href = url.toString();
+// Clear Filters
+$('#clearFilters, #resetFiltersBtn').on('click', function() {
+  window.location.href = window.location.pathname;
 });
 
-// Trending tags click handler
+// Trending labels
 $('.trending-tag').on('click', function(e) {
   e.preventDefault();
   const stateId = $(this).data('state-id');
@@ -781,53 +866,79 @@ $('.trending-tag').on('click', function(e) {
     $('#locationFilter').val(stateId);
   }
   if (jobType === 'remote') {
-    // Clear other job types and check remote if it exists
     $('.job-type-filter').prop('checked', false);
-    $('#remote').prop('checked', true);
+    $('input[value="remote"]').prop('checked', true);
   }
-  
   $('#applyFiltersHero').click();
 });
 
-// Reset filters button
-$('#resetFiltersBtn').on('click', function() {
-  $('#clearFilters').click();
-});
-
-// Pagination
+// Pagination clicks
 $('#paginationContainer a[data-page]').on('click', function(e) {
   e.preventDefault();
+  if ($(this).hasClass('disabled')) return;
   const page = $(this).data('page');
   const url = new URL(window.location);
   url.searchParams.set('page', page);
   window.location.href = url.toString();
 });
 
-// Save job
+// Save job toggle
 $('.save-btn').on('click', function() {
   const btn = $(this);
   const jobId = btn.data('job-id');
   const isSaved = btn.data('saved') === 'true';
 
-  btn.prop('disabled', true).text('Processing…');
+  btn.prop('disabled', true);
 
   $.ajax({
     url: "<?= site_url('jobs/toggle-save') ?>/" + jobId,
     method: "POST",
+    headers: { 'X-CSRF-TOKEN': '<?= csrf_hash() ?>' },
     success: function(r) {
       if (r.success) {
         const saved = r.saved;
         btn.data('saved', saved ? 'true' : 'false');
-        btn.toggleClass('saved', saved);
         btn.html(saved ?
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved' :
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save'
+          '<svg aria-hidden="true"><use href="#i-bookmark-fill"/></svg> Saved' :
+          '<svg aria-hidden="true"><use href="#i-bookmark"/></svg> Save'
         );
-      } else { toastr.error(r.message); }
+        toastr.success(saved ? 'Job saved' : 'Job removed');
+      } else {
+        toastr.error(r.message || 'Error occurred');
+      }
     },
     complete: function() { btn.prop('disabled', false); },
     error: function() { toastr.error("Network error. Try again."); btn.prop('disabled', false); }
   });
+});
+
+// View mode toggling
+$('.view-toggle button').on('click', function() {
+  const view = $(this).data('view');
+  $('.view-toggle button').removeClass('active').attr('aria-pressed', 'false');
+  $(this).addClass('active').attr('aria-pressed', 'true');
+  
+  if (view === 'list') {
+    $('#jobCardsContainer').addClass('is-list');
+  } else {
+    $('#jobCardsContainer').removeClass('is-list');
+  }
+});
+
+// Custom salary range toggler
+$('#salary-custom-toggle').on('click', function() {
+  const customDiv = $('#salary-custom');
+  const expanded = $(this).attr('aria-expanded') === 'true';
+  $(this).attr('aria-expanded', !expanded);
+  customDiv.prop('hidden', expanded);
+});
+
+// Mobile Filter toggling
+$('#filters-open').on('click', function() {
+  $('#filters, #filters-overlay').addClass('open');
+});
+$('#filters-close, #filters-overlay').on('click', function() {
+  $('#filters, #filters-overlay').removeClass('open');
 });
 </script>
 <?= $this->endSection() ?>

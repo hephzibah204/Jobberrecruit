@@ -159,10 +159,12 @@
     <?php endif; ?>
     <div class="contact">
         <?php if (!empty($resume->email)): ?><?= esc($resume->email) ?><?php endif; ?>
-        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location))): ?><span>|</span><?php endif; ?>
+        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location) || !empty($resume->linkedin))): ?><span>|</span><?php endif; ?>
         <?php if (!empty($resume->phone)): ?><?= esc($resume->phone) ?><?php endif; ?>
-        <?php if (!empty($resume->phone) && !empty($resume->location)): ?><span>|</span><?php endif; ?>
+        <?php if (!empty($resume->phone) && (!empty($resume->location) || !empty($resume->linkedin))): ?><span>|</span><?php endif; ?>
         <?php if (!empty($resume->location)): ?><?= esc($resume->location) ?><?php endif; ?>
+        <?php if (!empty($resume->location) && !empty($resume->linkedin)): ?><span>|</span><?php endif; ?>
+        <?php if (!empty($resume->linkedin)): ?><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?><?php endif; ?>
     </div>
 </div>
 
@@ -218,6 +220,38 @@
             <?php if (!empty($skill->skill_name)): ?>
                 <span class="skill-pill"><?= esc($skill->skill_name) ?></span>
             <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($resume->certs)): ?>
+<div class="section-title">Certifications</div>
+<div class="skills-section">
+    <div class="skill-items">
+        <?php 
+            $certs = explode("\n", $resume->certs);
+            foreach ($certs as $cert): 
+                $cert = trim($cert);
+                if (empty($cert)) continue;
+        ?>
+            <span class="skill-pill"><?= esc($cert) ?></span>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($resume->languages)): ?>
+<div class="section-title">Languages</div>
+<div class="skills-section">
+    <div class="skill-items">
+        <?php 
+            $langs = explode(",", $resume->languages);
+            foreach ($langs as $lang): 
+                $lang = trim($lang);
+                if (empty($lang)) continue;
+        ?>
+            <span class="skill-pill"><?= esc($lang) ?></span>
         <?php endforeach; ?>
     </div>
 </div>

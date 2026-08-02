@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend('admin/layouts/app') ?>
 
 <?= $this->section('section') ?>
 <div class="content">

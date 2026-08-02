@@ -5,9 +5,11 @@ namespace App\Controllers;
 use App\Models\ReferralModel;
 use App\Models\UserModel;
 use App\Services\ReferralService;
+use CodeIgniter\API\ResponseTrait;
 
 class ReferralController extends BaseController
 {
+    use ResponseTrait;
     protected $referralModel;
     protected $userModel;
     protected $referralService;
@@ -42,12 +44,31 @@ class ReferralController extends BaseController
             'total_earned' => $this->referralModel->where('referrer_id', $user->id)->selectSum('reward_amount')->get()->getRow()->reward_amount ?? 0
         ];
 
-        return view('common/referral_dashboard', [
+        $data = [
             'title' => 'Referral & Affiliate Program',
             'referralCode' => $referralCode,
             'referrals' => $referrals,
-            'stats' => $stats
-        ]);
+            'stats' => $stats,
+            'user' => $user,
+        ];
+
+        // When an employer views this page it renders inside the employer
+        // layout, which shows the company name/logo and a pending-apps badge.
+        if ($user->user_type === 'employer') {
+            $employer = model(\App\Models\EmployerModel::class)
+                ->where('user_id', $user->id)->first();
+            $data['employer'] = $employer;
+            if ($employer) {
+                $data['pendingApps'] = model(\App\Models\JobApplicationModel::class)
+                    ->where('status', 'pending')
+                    ->whereIn('job_id', function ($builder) use ($employer) {
+                        return $builder->select('id')->from('jobs')->where('employer_id', $employer->id);
+                    })
+                    ->countAllResults();
+            }
+        }
+
+        return view('common/referral_dashboard', $data);
     }
 
     /**
@@ -56,7 +77,7 @@ class ReferralController extends BaseController
     public function adminSettings()
     {
         // Admin only check
-        if (!auth()->user()->inGroup('admin')) {
+        if (auth()->user()->user_type !== 'admin') {
             return redirect()->to('/')->with('error', 'Unauthorized access');
         }
 
@@ -74,7 +95,7 @@ class ReferralController extends BaseController
      */
     public function updateSettings()
     {
-        if (!auth()->user()->inGroup('admin')) {
+        if (auth()->user()->user_type !== 'admin') {
             return $this->fail('Unauthorized');
         }
 

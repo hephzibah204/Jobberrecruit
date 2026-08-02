@@ -26,7 +26,11 @@
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-12 text-lg-end">
-                            <div class="btn btn-apply-icon btn-apply btn-apply-big hover-up" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                            <?php if (($job->application_method ?? 'form') === 'form'): ?>
+                                <div class="btn btn-apply-icon btn-apply btn-apply-big hover-up" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                            <?php else: ?>
+                                <a class="btn btn-apply-icon btn-apply btn-apply-big hover-up" href="<?= site_url('job/start-application/' . $job->id) ?>" target="_blank">Apply now</a>
+                            <?php endif; ?>
                             <!-- <a class="btn btn-border ms-2" href="<?= site_url('jobs/save/' . $job->id) ?>">Save job</a> -->
                         </div>
                     </div>
@@ -259,7 +263,11 @@
         <a class="jr-save" href="<?= site_url('jobs/save/' . $job->id) ?>" aria-label="Save job">
             <i class="fi-rr-heart"></i>
         </a>
-        <a class="btn btn-default" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+        <?php if (($job->application_method ?? 'form') === 'form'): ?>
+            <a class="btn btn-default" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+        <?php else: ?>
+            <a class="btn btn-default" href="<?= site_url('job/start-application/' . $job->id) ?>" target="_blank">Apply now</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -302,6 +310,61 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php
+// Prepare JobPosting Schema Markup
+$isoDatePosted = date('c', strtotime($job->created_at ?? 'now'));
+$isoValidThrough = !empty($job->closing_date) ? date('c', strtotime($job->closing_date)) : date('c', strtotime('+30 days', strtotime($job->created_at ?? 'now')));
+
+$employmentTypeMap = [
+    'full-time' => 'FULL_TIME',
+    'part-time' => 'PART_TIME',
+    'contract'  => 'CONTRACTOR',
+    'internship'=> 'INTERN',
+    'temporary' => 'TEMPORARY',
+    'volunteer' => 'VOLUNTEER',
+];
+$schemaJobType = $employmentTypeMap[strtolower($job->job_type ?? '')] ?? 'FULL_TIME';
+
+$schemaData = [
+    "@context" => "https://schema.org/",
+    "@type" => "JobPosting",
+    "title" => $job->title ?? '',
+    "description" => isset($job->description) ? strip_tags($job->description) : '',
+    "datePosted" => $isoDatePosted,
+    "validThrough" => $isoValidThrough,
+    "employmentType" => $schemaJobType,
+    "hiringOrganization" => [
+        "@type" => "Organization",
+        "name" => $job->employer_name ?? 'Confidential',
+        "sameAs" => isset($job->employer_id) ? base_url("employer/{$job->employer_id}") : base_url(),
+        "logo" => resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company')
+    ],
+    "jobLocation" => [
+        "@type" => "Place",
+        "address" => [
+            "@type" => "PostalAddress",
+            "addressLocality" => $job->lga ?? '',
+            "addressRegion" => $job->state ?? '',
+            "addressCountry" => "NG"
+        ]
+    ]
+];
+
+if (!empty($job->salary)) {
+    $schemaData["baseSalary"] = [
+        "@type" => "MonetaryAmount",
+        "currency" => "NGN",
+        "value" => [
+            "@type" => "QuantitativeValue",
+            "value" => $job->salary,
+            "unitText" => "MONTH"
+        ]
+    ];
+}
+?>
+<script type="application/ld+json">
+<?= json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?>
+</script>
 <script>
     $(document).ready(function() {
         $('#applyJobForm').on('submit', function(e) {

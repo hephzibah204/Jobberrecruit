@@ -23,6 +23,10 @@ in the **app/Config/Auth.php** file.
 public int $magicLinkLifetime = HOUR;
 ```
 
+### Bot Detection
+
+Some apps or devices may try to be "too helpful" by automatically visiting links - for example, to check if they're safe or to prepare for read-aloud features. Since this is a one-time magic link, such automated visits could invalidate it. To prevent this, Shield relies on the framework's `UserAgents::robots` config property (**app/Config/UserAgents.php**) to filter out requests that are likely initiated by non-human agents.
+
 ## Responding to Magic Link Logins
 
 !!! note
@@ -30,6 +34,8 @@ public int $magicLinkLifetime = HOUR;
     You need to configure **app/Config/Email.php** to allow Shield to send emails. See [Installation](../getting_started/install.md#initial-setup).
 
 Magic Link logins allow a user that has forgotten their password to have an email sent with a unique, one-time login link. Once they've logged in you can decide how to respond. In some cases, you might want to redirect them to a special page where they must choose a new password. In other cases, you might simply want to display a one-time message prompting them to go to their account page and choose a new password.
+
+If a login auth action is configured, such as Email-based Two Factor Authentication, the user must complete that action before the magic link login is finished.
 
 ### Session Notification
 

@@ -20,5 +20,9 @@ class UserModel extends ShieldUserModel
         'user_type',
         'paystack_customer_code',
         'email_verified_at',
+        // ReferralService writes these; omitting them makes update() throw
+        // "There is no data to update" for any user without a referral code
+        'referral_code',
+        'referred_by',
     ];
 }

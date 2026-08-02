@@ -5,6 +5,14 @@
     <div class="container-fluid">
         <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
             <h1 class="page-title fw-semibold fs-18 mb-0">Issued Certificates</h1>
+            <div class="ms-md-1 ms-0">
+                <a href="<?= base_url('admin/elearning/certificates/settings') ?>" class="btn btn-primary-light btn-wave">
+                    <i class="ti ti-settings me-1"></i> Certificate Settings
+                </a>
+                <a href="<?= base_url('admin/elearning/certificates/editor') ?>" class="btn btn-secondary-light btn-wave ms-2">
+                    <i class="ti ti-edit me-1"></i> Template Editor
+                </a>
+            </div>
         </div>
 
         <?php if (session()->getFlashdata('success')): ?>

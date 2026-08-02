@@ -568,7 +568,7 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
       text-transform: uppercase; color: var(--accent) !important; margin-bottom: 16px;
     }
     .tr-hero-tag svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
-    .tr-hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(1.9rem, 4.4vw, 2.85rem); font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+    .tr-hero h1 { font-family: 'Sora', sans-serif; font-size: clamp(1.9rem, 4.4vw, 2.85rem); font-weight: 800; line-height: 1.15; margin-bottom: 16px; color: #fff !important; }
     .tr-hero-sub { font-size: 1rem; color: rgba(255, 255, 255, 0.95) !important; max-width: 520px; margin-bottom: 28px; }
     .tr-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -767,6 +767,7 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
     .dual-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
     .cta-panel { border-radius: 16px; padding: 40px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; position: relative; overflow: hidden; }
     .cta-panel.blue { background: linear-gradient(135deg, var(--brand-deep), var(--brand)); color: #ffffff; }
+.cta-panel.blue h2, .cta-panel.blue p, .cta-panel.blue li, .cta-panel.blue strong, .cta-panel.blue a { color: var(--white) !important; }
     .cta-panel.light { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
     .cta-ic { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
     .cta-panel.blue .cta-ic { background: rgba(255,255,255,.1); color: var(--accent); }
@@ -793,9 +794,12 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
 
     @media (max-width: 768px) {
       .tr-stats { flex: 1 1 100%; }
-      .course-grid { grid-template-columns: 1fr; }
+      .feat-course-grid, .course-grid { grid-template-columns: 1fr; }
       .dual-cta { grid-template-columns: 1fr; }
       .cta-panel { padding: 24px; }
+      .cert-band { flex-direction: column; text-align: center; justify-content: center; padding: 20px 16px; }
+      .cert-band-text { flex-direction: column; text-align: center; flex: 1 1 100%; }
+      .filter-bar > button { width: 100%; justify-content: center; }
     }
 </style>
 <?= $this->endSection() ?>

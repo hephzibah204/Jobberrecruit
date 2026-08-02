@@ -45,15 +45,25 @@
                             </td>
                         </tr>
                         <?php else: ?>
-                        <?php foreach ($reviews as $r): ?>
+                        <?php foreach ($reviews as $r): 
+                            $id = is_array($r) ? ($r['id'] ?? '') : ($r->id ?? '');
+                            $fullName = is_array($r) ? ($r['full_name'] ?? '') : ($r->full_name ?? '');
+                            $email = is_array($r) ? ($r['email'] ?? '') : ($r->email ?? '');
+                            $plan = is_array($r) ? ($r['plan'] ?? 'basic') : ($r->plan ?? 'basic');
+                            $amount = is_array($r) ? ($r['amount'] ?? 0) : ($r->amount ?? 0);
+                            $status = is_array($r) ? ($r['status'] ?? 'pending') : ($r->status ?? 'pending');
+                            $payStatus = is_array($r) ? ($r['payment_status'] ?? '') : ($r->payment_status ?? '');
+                            $reviewMode = is_array($r) ? ($r['review_mode'] ?? 'semi') : ($r->review_mode ?? 'semi');
+                            $createdAt = is_array($r) ? ($r['created_at'] ?? 'now') : ($r->created_at ?? 'now');
+                        ?>
                         <tr>
-                            <td class="ps-4 fw-semibold">#<?= $r->id ?></td>
+                            <td class="ps-4 fw-semibold">#<?= $id ?></td>
                             <td>
-                                <div class="fw-semibold"><?= esc($r->full_name ?: 'N/A') ?></div>
-                                <small class="text-muted"><?= esc($r->email) ?></small>
+                                <div class="fw-semibold"><?= esc($fullName ?: 'N/A') ?></div>
+                                <small class="text-muted"><?= esc($email) ?></small>
                             </td>
-                            <td><span class="badge bg-<?= $r->plan === 'premium' ? 'warning' : ($r->plan === 'professional' ? 'primary' : 'secondary') ?>-transparent text-<?= $r->plan === 'premium' ? 'warning' : ($r->plan === 'professional' ? 'primary' : 'secondary') ?>"><?= ucfirst($r->plan) ?></span></td>
-                            <td><?= $r->amount > 0 ? '&#8358;' . number_format($r->amount, 0) : 'Free' ?></td>
+                            <td><span class="badge bg-<?= $plan === 'premium' ? 'warning' : ($plan === 'professional' ? 'primary' : 'secondary') ?>-transparent text-<?= $plan === 'premium' ? 'warning' : ($plan === 'professional' ? 'primary' : 'secondary') ?>"><?= ucfirst($plan) ?></span></td>
+                            <td><?= $amount > 0 ? '&#8358;' . number_format($amount, 0) : 'Free' ?></td>
                             <td>
                                 <?php
                                 $statusBadges = [
@@ -62,31 +72,31 @@
                                     'completed'  => ['bg-success-transparent', 'text-success'],
                                     'rejected'   => ['bg-danger-transparent', 'text-danger'],
                                 ];
-                                $badge = $statusBadges[$r->status] ?? ['bg-secondary-transparent', 'text-secondary'];
+                                $badge = $statusBadges[$status] ?? ['bg-secondary-transparent', 'text-secondary'];
                                 ?>
-                                <span class="badge <?= $badge[0] ?> <?= $badge[1] ?> px-3 py-2"><?= ucfirst(str_replace('_', ' ', $r->status)) ?></span>
+                                <span class="badge <?= $badge[0] ?> <?= $badge[1] ?> px-3 py-2"><?= ucfirst(str_replace('_', ' ', $status)) ?></span>
                             </td>
                             <td>
-                                <?php if ($r->payment_status === 'paid'): ?>
+                                <?php if ($payStatus === 'paid'): ?>
                                     <span class="badge bg-success-transparent text-success">Paid</span>
-                                <?php elseif ($r->payment_status === 'free'): ?>
+                                <?php elseif ($payStatus === 'free'): ?>
                                     <span class="badge bg-secondary-transparent text-secondary">Free</span>
                                 <?php else: ?>
-                                    <span class="badge bg-danger-transparent text-danger"><?= ucfirst($r->payment_status) ?></span>
+                                    <span class="badge bg-danger-transparent text-danger"><?= ucfirst($payStatus) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if ($r->review_mode === 'auto'): ?>
+                                <?php if ($reviewMode === 'auto'): ?>
                                     <span class="badge bg-info-transparent text-info">Auto</span>
                                 <?php else: ?>
                                     <span class="badge bg-secondary-transparent text-secondary">Semi</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <small class="text-muted"><?= date('d M Y', strtotime($r->created_at)) ?></small>
+                                <small class="text-muted"><?= date('d M Y', strtotime((string)$createdAt)) ?></small>
                             </td>
                             <td class="pe-4">
-                                <a href="<?= base_url('admin/cv-reviews/view/' . $r->id) ?>" class="btn btn-sm btn-primary">
+                                <a href="<?= base_url('admin/cv-reviews/view/' . $id) ?>" class="btn btn-sm btn-primary">
                                     <i class="ti ti-eye me-1"></i>View
                                 </a>
                             </td>

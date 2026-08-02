@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "127.0.0.1:8091", "-t", ".", "C:\\Users\\hephz\\AppData\\Local\\Temp\\claude\\C--Users-hephz-Documents-CODEBASE-Jobberrecruit\\9307433b-1380-4a71-9296-34b58b1ef844\\scratchpad\\router.php"],
+      "port": 8091
+    }
+  ]
+}

@@ -1,216 +1,144 @@
-<?= $this->extend('layouts/app') ?>
+<?php $page_title = 'Transactions'; ?>
+<?= $this->extend('layouts/employer') ?>
+
 <?= $this->section('content') ?>
+<?php
+$totalSpent = 0;
+$successfulTxns = 0;
+$totalTxns = count($transactions ?? []);
 
-<div class="content">
-    <div class="page-header">
-        <div class="page-title">
-            <h4 class="fw-bold"><i class="ti ti-receipt me-2"></i>Transaction History</h4>
-            <h6>View your wallet funding and payment history</h6>
-        </div>
-        <div class="page-btn">
-            <a href="<?= base_url('employer/pricing') ?>" class="btn btn-primary">
-                <i class="ti ti-plus me-1"></i>Fund Wallet
-            </a>
-        </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card custom-card bg-primary bg-opacity-10 border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total Spent</h6>
-                            <h4 class="mb-0">₦<?= number_format($totalSpent, 2) ?></h4>
-                        </div>
-                        <div class="avatar bg-primary-transparent">
-                            <i class="ti ti-wallet fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card custom-card bg-success bg-opacity-10 border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Successful Transactions</h6>
-                            <h4 class="mb-0"><?= count(array_filter($transactions, fn($t) => $t['status'] === 'paid')) ?></h4>
-                        </div>
-                        <div class="avatar bg-success-transparent">
-                            <i class="ti ti-check fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card custom-card bg-info bg-opacity-10 border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Total Transactions</h6>
-                            <h4 class="mb-0"><?= count($transactions) ?></h4>
-                        </div>
-                        <div class="avatar bg-info-transparent">
-                            <i class="ti ti-list fs-20"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Transactions Table -->
-    <div class="card custom-card border-0 shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">All Transactions</h5>
-        </div>
-        <div class="card-body p-0">
-            <?php if (empty($transactions)): ?>
-                <div class="text-center py-5">
-                    <i class="ti ti-receipt-off fs-64 text-muted mb-3"></i>
-                    <h5 class="text-muted">No transactions yet</h5>
-                    <p class="text-muted">Your transaction history will appear here once you make a payment.</p>
-                    <a href="<?= base_url('employer/pricing') ?>" class="btn btn-primary mt-2">
-                        <i class="ti ti-plus me-1"></i>Make Your First Payment
-                    </a>
-                </div>
-            <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Reference</th>
-                                <th>Description</th>
-                                <th>Amount</th>
-                                <th>Method</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($transactions as $transaction): ?>
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold"><?= date('M d, Y', strtotime($transaction['created_at'])) ?></div>
-                                        <small class="text-muted"><?= date('h:i A', strtotime($transaction['created_at'])) ?></small>
-                                    </td>
-                                    <td>
-                                        <code class="small"><?= esc($transaction['reference']) ?></code>
-                                    </td>
-                                    <td>
-                                        <?php
-                                        $metadata = json_decode($transaction['metadata'] ?? '{}', true);
-                                        $type = $metadata['app_data']['type'] ?? $metadata['type'] ?? 'payment';
-                                        $description = $type === 'subscription' ? 'Subscription Payment' : 
-                                                     ($type === 'bundle' ? 'Credit Bundle Purchase' : 'Payment');
-                                        ?>
-                                        <div class="fw-semibold"><?= $description ?></div>
-                                        <?php if ($type === 'bundle' && !empty($metadata['app_data']['credits'])): ?>
-                                            <small class="text-muted"><?= $metadata['app_data']['credits'] ?> credits</small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">₦<?= number_format($transaction['amount'], 2) ?></div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark">
-                                            <i class="ti ti-credit-card me-1"></i><?= ucfirst($transaction['payment_method'] ?? 'Card') ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php if ($transaction['status'] === 'paid'): ?>
-                                            <span class="badge bg-success-transparent text-success">
-                                                <i class="ti ti-check me-1"></i>Completed
-                                            </span>
-                                        <?php elseif ($transaction['status'] === 'pending'): ?>
-                                            <span class="badge bg-warning-transparent text-warning">
-                                                <i class="ti ti-clock me-1"></i>Pending
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge bg-danger-transparent text-danger">
-                                                <i class="ti ti-x me-1"></i>Failed
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="showReceipt('<?= $transaction['reference'] ?>', '<?= $transaction['amount'] ?>', '<?= date('M d, Y h:i A', strtotime($transaction['created_at'])) ?>', '<?= $description ?>')">
-                                                <i class="ti ti-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</div>
-
-<!-- Receipt Modal -->
-<div class="modal fade" id="receiptModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title"><i class="ti ti-receipt me-2"></i>Payment Receipt</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <img src="<?= base_url('auth/img/logo.png') ?>" alt="JobberRecruit" style="max-height: 50px;">
-                    <h5 class="mt-3 mb-1">Payment Receipt</h5>
-                    <p class="text-muted small">JobberRecruit Platform</p>
-                </div>
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Reference:</span>
-                        <strong id="receipt-ref"></strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Date:</span>
-                        <strong id="receipt-date"></strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Description:</span>
-                        <strong id="receipt-desc"></strong>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted fw-bold">Amount Paid:</span>
-                        <strong class="text-primary fs-18" id="receipt-amount"></strong>
-                    </div>
-                </div>
-                <div class="alert alert-success small mb-0">
-                    <i class="ti ti-check-circle me-1"></i>Payment completed successfully
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="window.print()">
-                    <i class="ti ti-printer me-1"></i>Print
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function showReceipt(ref, amount, date, desc) {
-    document.getElementById('receipt-ref').textContent = ref;
-    document.getElementById('receipt-amount').textContent = '₦' + parseFloat(amount).toLocaleString('en-NG', {minimumFractionDigits: 2});
-    document.getElementById('receipt-date').textContent = date;
-    document.getElementById('receipt-desc').textContent = desc;
-    
-    const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
-    modal.show();
+if (!empty($transactions)) {
+    foreach ($transactions as $txn) {
+        $status = strtolower($txn['status'] ?? '');
+        if (in_array($status, ['success', 'hired', 'open', 'active', 'completed', 'approved'])) {
+            $totalSpent += ($txn['amount'] ?? 0);
+            $successfulTxns++;
+        }
+    }
 }
-</script>
+?>
 
+<div class="page-head">
+  <div class="page-head-left">
+    <h1><svg aria-hidden="true"><use href="#i-receipt"/></svg> Transaction History</h1>
+    <p>Your wallet funding and payment history.</p>
+  </div>
+  <div class="page-actions">
+    <a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-accent">
+      <svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet
+    </a>
+  </div>
+</div>
+
+<section class="stats stats--txn" aria-label="Transaction statistics">
+  <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)">
+    <div class="stat-top">
+      <span class="stat-ic"><svg aria-hidden="true"><use href="#i-wallet"/></svg></span>
+    </div>
+    <div class="stat-num">&#8358;<?= esc(number_format($totalSpent, 2)) ?></div>
+    <div class="stat-lbl">Total Spent</div>
+  </div>
+  <div class="stat" style="--st-bar:var(--success);--st-icbg:var(--success-light);--st-ic:var(--success)">
+    <div class="stat-top">
+      <span class="stat-ic"><svg aria-hidden="true"><use href="#i-check-c"/></svg></span>
+    </div>
+    <div class="stat-num"><?= esc($successfulTxns) ?></div>
+    <div class="stat-lbl">Successful Transactions</div>
+  </div>
+  <div class="stat">
+    <div class="stat-top">
+      <span class="stat-ic"><svg aria-hidden="true"><use href="#i-receipt"/></svg></span>
+    </div>
+    <div class="stat-num"><?= esc($totalTxns) ?></div>
+    <div class="stat-lbl">Total Transactions</div>
+  </div>
+</section>
+
+<section class="card" aria-label="All transactions">
+  <div class="card-head">
+    <span class="card-title"><svg aria-hidden="true"><use href="#i-receipt"/></svg> All Transactions</span>
+    <div class="toolbar">
+      <select class="select" aria-label="Filter by type" style="min-height:38px;font-size:.8rem">
+        <option>All types</option>
+        <option>Wallet funding</option>
+        <option>Job post</option>
+        <option>Subscription</option>
+        <option>Referral reward</option>
+      </select>
+    </div>
+  </div>
+
+  <?php if (empty($transactions)): ?>
+    <div class="empty">
+      <span class="empty-ic"><svg aria-hidden="true"><use href="#i-receipt"/></svg></span>
+      <h3>No transactions yet</h3>
+      <p>Your transaction history will appear here once you make a payment. Fund your wallet or buy a job bundle to get started.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">
+        <a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-primary emp-btn-sm">
+          <svg aria-hidden="true"><use href="#i-plus"/></svg> Make Your First Payment
+        </a>
+        <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline emp-btn-sm">View Plans</a>
+      </div>
+    </div>
+  <?php else: ?>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Description</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($transactions as $txn): ?>
+            <?php
+              $status = strtolower($txn['status'] ?? '');
+              $statusClass = 'pill--pending';
+              if (in_array($status, ['success', 'hired', 'open', 'active', 'completed', 'approved'])) {
+                  $statusClass = 'pill--success';
+              } elseif (in_array($status, ['rejected', 'failed'])) {
+                  $statusClass = 'pill--rejected';
+              } elseif (in_array($status, ['closed', 'expired'])) {
+                  $statusClass = 'pill--closed';
+              } elseif (in_array($status, ['reviewed', 'shortlisted'])) {
+                  $statusClass = 'pill--reviewed';
+              }
+            ?>
+            <tr>
+              <td><b><?= esc($txn['reference'] ?? '-') ?></b></td>
+              <td><?= esc($txn['description'] ?? '-') ?></td>
+              <td><?= esc(!empty($txn['created_at']) ? date('M d, Y', strtotime($txn['created_at'])) : '-') ?></td>
+              <td>&#8358;<?= esc(number_format($txn['amount'] ?? 0, 2)) ?></td>
+              <td>
+                <span class="pill <?= $statusClass ?>"><?= esc(ucfirst($txn['status'] ?? 'pending')) ?></span>
+              </td>
+              <td>
+                <button type="button" class="ic-btn" title="Receipt download coming soon" aria-label="Receipt download not yet available" disabled>
+                  <svg aria-hidden="true"><use href="#i-download"/></svg>
+                </button>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+
+    <?php if (isset($pager)): ?>
+      <div class="pager">
+        <?= $pager->links() ?>
+      </div>
+    <?php endif; ?>
+  <?php endif; ?>
+</section>
+<?= $this->endSection() ?>
+
+<?= $this->section('mobile_cta') ?>
+<a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-outline"><svg aria-hidden="true"><use href="#i-receipt"/></svg> View Plans</a>
+<a href="<?= base_url('employer/wallet') ?>" class="emp-btn emp-btn-accent">
+  <svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet
+</a>
 <?= $this->endSection() ?>

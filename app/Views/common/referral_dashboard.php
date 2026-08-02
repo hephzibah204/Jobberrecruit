@@ -1,147 +1,232 @@
-<?= $this->extend('layouts/app') ?>
+<?php $page_title = 'Referral Program'; ?>
+<?= $this->extend(auth()->loggedIn() && auth()->user()->user_type === 'employer' ? 'layouts/employer' : 'layouts/app') ?>
+
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<style>
+/* ── Referrals Layout styling ── */
+.ref-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+@media (max-width: 992px) {
+    .ref-grid { grid-template-columns: 1fr; }
+}
+.ref-link-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 6px;
+}
+.ref-link-row .input {
+    flex: 1;
+}
+.social-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.btn-social {
+    color: #fff !important;
+}
+.btn-wa { background: #25d366; border-color: #25d366; }
+.btn-wa:hover { background: #128c7e; border-color: #128c7e; }
+.btn-xs { background: #0f1419; border-color: #0f1419; }
+.btn-xs:hover { background: #2c3640; border-color: #2c3640; }
+.btn-li { background: #0077b5; border-color: #0077b5; }
+.btn-li:hover { background: #004b73; border-color: #004b73; }
+.copied-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--success, #16a34a);
+    background: var(--success-light, #dcfce7);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity .2s;
+}
+.copied-toast.show {
+    opacity: 1;
+}
+
+ol.how {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+ol.how li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+ol.how li::before {
+    content: none;
+}
+.how-n {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand-light);
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+ol.how li b {
+    display: block;
+    font-size: .88rem;
+    color: var(--brand-deep);
+}
+ol.how li p {
+    font-size: .78rem;
+    color: var(--muted);
+    margin: 2px 0 0;
+    line-height: 1.4;
+}
+</style>
+<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="content">
-    <div class="page-header">
-        <div class="page-title">
-            <h4 class="fw-bold">Referral & Affiliate Program</h4>
-            <h6>Invite friends and earn rewards when they join and use JobberRecruit</h6>
+    <div class="page-head">
+        <div>
+            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-gift"/></svg> Referral &amp; Affiliate Program</h1>
+            <p>Invite friends and earn wallet rewards when they join and use JobberRecruit.</p>
         </div>
     </div>
 
-    <!-- Stats Row -->
-    <div class="row">
-        <div class="col-xl-4 col-md-4 d-flex">
-            <div class="card flex-fill bg-primary-transparent border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="mb-1">Total Referrals</h6>
-                            <h3 class="fw-bold mb-0"><?= $stats['total_referrals'] ?></h3>
-                        </div>
-                        <div class="avatar avatar-lg bg-primary">
-                            <i class="ti ti-users fs-24"></i>
-                        </div>
-                    </div>
+    <!-- Referral Stats Grid -->
+    <section class="stats stats--ref" aria-label="Referral statistics" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <div class="stat">
+            <div class="stat-top">
+                <span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-users"/></svg></span>
+            </div>
+            <div class="stat-num"><?= (int) $stats['total_referrals'] ?></div>
+            <div class="stat-lbl">Total Referrals</div>
+        </div>
+        <div class="stat" style="--st-bar:var(--success);--st-icbg:var(--success-light);--st-ic:var(--success)">
+            <div class="stat-top">
+                <span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-check-c"/></svg></span>
+            </div>
+            <div class="stat-num"><?= (int) $stats['completed_referrals'] ?></div>
+            <div class="stat-lbl">Successful Referrals</div>
+        </div>
+        <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)">
+            <div class="stat-top">
+                <span class="stat-ic"><svg aria-hidden="true" style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-wallet"/></svg></span>
+            </div>
+            <div class="stat-num">₦<?= number_format($stats['total_earned'], 2) ?></div>
+            <div class="stat-lbl">Total Earned</div>
+        </div>
+    </section>
+
+    <!-- Main Content Panels -->
+    <div class="ref-grid">
+        
+        <!-- Invite Card -->
+        <section class="card" aria-label="Invite friends">
+            <div class="card-head">
+                <span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-link"/></svg> Invite Your Friends</span>
+            </div>
+            <div class="card-body">
+                <p style="font-size:.84rem;color:var(--muted);margin-bottom:16px">Share your unique link. When a friend signs up and completes a qualifying action, your reward lands in your wallet — spend it on training courses or premium features.</p>
+                
+                <label class="lbl" for="ref-link">Your referral link</label>
+                <div class="ref-link-row">
+                    <input class="input" id="ref-link" type="text" readonly value="<?= site_url('register?ref=' . $referralCode) ?>" aria-label="Your referral link">
+                    <button class="btn btn-accent" id="copy-btn">
+                        <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-copy"/></svg> Copy Link
+                    </button>
+                    <span class="copied-toast" id="copied" role="status"><svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-check"/></svg> Link copied to clipboard</span>
+                </div>
+
+                <div class="lbl" style="margin-top:18px">Share on social media</div>
+                <div class="social-row">
+                    <a class="btn btn-sm btn-social btn-wa" href="https://wa.me/?text=Join%20me%20on%20JobberRecruit%20%E2%80%94%20find%20verified%20jobs%20in%20Nigeria%3A%20<?= urlencode(site_url('register?ref=' . $referralCode)) ?>" target="_blank" rel="noopener">
+                        <svg aria-hidden="true" style="width:13px;height:13px;fill:currentColor;stroke:none;margin-right:4px;"><use href="#i-whatsapp"/></svg> WhatsApp
+                    </a>
+                    <a class="btn btn-sm btn-social btn-xs" href="https://x.com/intent/post?text=Join%20me%20on%20JobberRecruit&url=<?= urlencode(site_url('register?ref=' . $referralCode)) ?>" target="_blank" rel="noopener">
+                        <svg aria-hidden="true" style="width:13px;height:13px;fill:currentColor;stroke:none;margin-right:4px;"><use href="#i-x-social"/></svg> X
+                    </a>
+                    <a class="btn btn-sm btn-social btn-li" href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(site_url('register?ref=' . $referralCode)) ?>" target="_blank" rel="noopener">
+                        <svg aria-hidden="true" style="width:13px;height:13px;fill:currentColor;stroke:none;margin-right:4px;"><use href="#i-linkedin"/></svg> LinkedIn
+                    </a>
+                </div>
+
+                <div class="notice notice--info" style="margin-top:18px;">
+                    <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bulb"/></svg>
+                    <span>Rewards are credited to your JobberRecruit wallet. Wallet funds can be used for courses and services on the platform; they are not withdrawable as cash and are non-refundable.</span>
                 </div>
             </div>
-        </div>
-        <div class="col-xl-4 col-md-4 d-flex">
-            <div class="card flex-fill bg-success-transparent border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="mb-1">Successful Referrals</h6>
-                            <h3 class="fw-bold mb-0"><?= $stats['completed_referrals'] ?></h3>
-                        </div>
-                        <div class="avatar avatar-lg bg-success">
-                            <i class="ti ti-check fs-24"></i>
-                        </div>
-                    </div>
-                </div>
+        </section>
+
+        <!-- How It Works Card -->
+        <section class="card" aria-label="How it works">
+            <div class="card-head">
+                <span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bulb"/></svg> How It Works</span>
             </div>
-        </div>
-        <div class="col-xl-4 col-md-4 d-flex">
-            <div class="card flex-fill bg-warning-transparent border-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
+            <div class="card-body">
+                <ol class="how">
+                    <li>
+                        <span class="how-n" aria-hidden="true"></span>
                         <div>
-                            <h6 class="mb-1">Total Earned</h6>
-                            <h3 class="fw-bold mb-0">₦<?= number_format($stats['total_earned'], 2) ?></h3>
+                            <b>Share your link</b>
+                            <p>Invite friends to join JobberRecruit with your unique referral link.</p>
                         </div>
-                        <div class="avatar avatar-lg bg-warning text-white">
-                            <i class="ti ti-wallet fs-24"></i>
+                    </li>
+                    <li>
+                        <span class="how-n" aria-hidden="true"></span>
+                        <div>
+                            <b>They sign up</b>
+                            <p>Your friend creates a free account and starts exploring jobs.</p>
                         </div>
-                    </div>
-                </div>
+                    </li>
+                    <li>
+                        <span class="how-n" aria-hidden="true"></span>
+                        <div>
+                            <b>Earn rewards</b>
+                            <p>When they complete a qualifying action, your wallet is credited instantly — enough referrals can cover a full training course.</p>
+                        </div>
+                    </li>
+                </ol>
             </div>
-        </div>
+        </section>
+
     </div>
 
-    <div class="row">
-        <!-- Invitation Link -->
-        <div class="col-xl-6 col-md-12">
-            <div class="card custom-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Invite Your Friends</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted mb-4">Share your unique referral link with your network. When they sign up using your link, you'll earn rewards.</p>
-                    
-                    <div class="mb-4">
-                        <label class="form-label">Your Referral Link</label>
-                        <div class="input-group">
-                            <input type="text" id="referral-link" class="form-control" value="<?= site_url('register?ref=' . $referralCode) ?>" readonly>
-                            <button class="btn btn-primary" type="button" onclick="copyReferralLink()">
-                                <i class="ti ti-copy me-1"></i>Copy
-                            </button>
-                        </div>
-                    </div>
-
-                    <h6>Share on Social Media</h6>
-                    <div class="d-flex gap-2">
-                        <a href="https://wa.me/?text=Check out JobberRecruit! Use my referral link to sign up: <?= urlencode(site_url('register?ref=' . $referralCode)) ?>" target="_blank" class="btn btn-success">
-                            <i class="ti ti-brand-whatsapp me-1"></i>WhatsApp
-                        </a>
-                        <a href="https://twitter.com/intent/tweet?text=Join JobberRecruit today and find your dream job! <?= urlencode(site_url('register?ref=' . $referralCode)) ?>" target="_blank" class="btn btn-info text-white">
-                            <i class="ti ti-brand-twitter me-1"></i>Twitter
-                        </a>
-                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(site_url('register?ref=' . $referralCode)) ?>" target="_blank" class="btn btn-primary">
-                            <i class="ti ti-brand-linkedin me-1"></i>LinkedIn
-                        </a>
-                    </div>
-                </div>
+    <!-- Referrals Table Section -->
+    <section class="card" aria-label="My referrals">
+        <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-users"/></svg> My Referrals</span>
+        </div>
+        
+        <?php if (empty($referrals)): ?>
+            <div class="empty">
+                <span class="empty-ic"><svg aria-hidden="true" style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-gift"/></svg></span>
+                <h3>You haven't referred anyone yet</h3>
+                <p>Share your link above — every friend who joins and takes a qualifying action earns you a wallet reward.</p>
+                <button class="btn btn-primary btn-sm" onclick="document.getElementById('copy-btn').click();window.scrollTo({top:0,behavior:'smooth'})">
+                    <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-copy"/></svg> Copy My Link
+                </button>
             </div>
-        </div>
-
-        <!-- How it works -->
-        <div class="col-xl-6 col-md-12">
-            <div class="card custom-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">How It Works</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex mb-3">
-                        <div class="me-3">
-                            <span class="avatar avatar-sm bg-light text-primary rounded-circle">1</span>
-                        </div>
-                        <div>
-                            <h6>Share your link</h6>
-                            <p class="text-muted small">Invite friends to join JobberRecruit using your unique referral code or link.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex mb-3">
-                        <div class="me-3">
-                            <span class="avatar avatar-sm bg-light text-primary rounded-circle">2</span>
-                        </div>
-                        <div>
-                            <h6>They sign up</h6>
-                            <p class="text-muted small">Your friend creates an account and starts using the platform.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex mb-0">
-                        <div class="me-3">
-                            <span class="avatar avatar-sm bg-light text-primary rounded-circle">3</span>
-                        </div>
-                        <div>
-                            <h6>Earn Rewards</h6>
-                            <p class="text-muted small">Once they complete a qualifying action (like making a payment or filling their profile), you receive your reward instantly in your wallet.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Referral List -->
-    <div class="card custom-card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">My Referrals</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="bg-light">
+        <?php else: ?>
+            <div class="tbl-wrap">
+                <table class="tbl" style="width:100%;">
+                    <thead>
                         <tr>
                             <th>User</th>
                             <th>Joined Date</th>
@@ -150,49 +235,52 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($referrals)): ?>
+                        <?php foreach ($referrals as $ref): ?>
                             <tr>
-                                <td colspan="4" class="text-center py-4">You haven't referred anyone yet.</td>
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="ava--round" style="width:28px; height:28px; font-size:.65rem; background:var(--bg); border:1px solid var(--border); color:var(--text); display:flex; align-items:center; justify-content:center;">
+                                            U
+                                        </span>
+                                        <b style="color:var(--brand-deep);"><?= esc($ref->referee_name) ?></b>
+                                    </div>
+                                </td>
+                                <td style="font-size:.8rem; color:var(--muted);"><?= date('d M Y', strtotime($ref->joined_at)) ?></td>
+                                <td>
+                                    <?php if ($ref->status === 'rewarded'): ?>
+                                        <span class="pill pill--success">Completed</span>
+                                    <?php else: ?>
+                                        <span class="pill pill--pending">Pending</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><b style="color:var(--brand-deep)">₦<?= number_format($ref->reward_amount, 2) ?></b></td>
                             </tr>
-                        <?php else: ?>
-                            <?php foreach ($referrals as $ref): ?>
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-sm bg-light me-2">
-                                                <i class="ti ti-user"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0 fs-13"><?= esc($ref->referee_name) ?></h6>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><?= date('M d, Y', strtotime($ref->joined_at)) ?></td>
-                                    <td>
-                                        <?php if ($ref->status === 'rewarded'): ?>
-                                            <span class="badge bg-success-transparent text-success">Completed</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-warning-transparent text-warning">Pending</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>₦<?= number_format($ref->reward_amount, 2) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-</div>
+        <?php endif; ?>
+    </section>
 
+</div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
-    function copyReferralLink() {
-        var copyText = document.getElementById("referral-link");
+$(document).ready(function() {
+    $('#copy-btn').on('click', function() {
+        var copyText = document.getElementById("ref-link");
         copyText.select();
         copyText.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyText.value);
         toastr.success('Referral link copied to clipboard!');
-    }
+        // Show the copied toast
+        var copied = document.getElementById('copied');
+        if (copied) {
+            copied.classList.add('show');
+            setTimeout(function() { copied.classList.remove('show'); }, 2000);
+        }
+    });
+});
 </script>
 <?= $this->endSection() ?>

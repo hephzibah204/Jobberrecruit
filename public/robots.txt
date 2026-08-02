@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /employer/dashboard/
+Disallow: /candidate/dashboard/
+Disallow: /login
+Disallow: /register
+Disallow: /auth/
+Disallow: /jobs/apply/
+Allow: /
+
+Sitemap: https://jobberrecruit.com/sitemap.xml

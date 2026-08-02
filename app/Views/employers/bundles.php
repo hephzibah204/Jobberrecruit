@@ -1,342 +1,294 @@
-<?= $this->extend('layouts/app') ?>
+<?php $page_title = 'Job Bundles'; ?>
+<?= $this->extend('layouts/employer') ?>
+
 <?= $this->section('content') ?>
 
-<style>
-    body.loading {
-        overflow: hidden;
-    }
-
-    .pricing-card {
-        transition: all .25s ease-in-out;
-    }
-
-    .pricing-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Fullscreen overlay */
-    .payment-loader {
-        position: fixed;
-        inset: 0;
-        background: rgba(255, 255, 255, 0.96);
-        z-index: 99999;
-
-        display: none;
-        /* show via JS */
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-
-        text-align: center;
-    }
-
-    /* Logo animation */
-    .loader-logo {
-        width: 120px;
-        max-width: 60%;
-        margin-top: 10px;
-        will-change: transform;
-
-        animation: floatUp 2.2s ease-in-out infinite;
-    }
-
-    /* Optional: smoother spinner */
-    .spinner-border {
-        width: 3rem;
-        height: 3rem;
-    }
-
-    /* Keyframes */
-    @keyframes pulseScale {
-        0% {
-            transform: scale(1);
-            opacity: 0.85;
-        }
-
-        50% {
-            transform: scale(1.08);
-            opacity: 1;
-        }
-
-        100% {
-            transform: scale(1);
-            opacity: 0.85;
-        }
-    }
-
-    @keyframes floatUp {
-        0% {
-            transform: translateY(0);
-        }
-
-        50% {
-            transform: translateY(-8px);
-        }
-
-        100% {
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes slowRotate {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* .loader-logo {
-        animation: slowRotate 6s linear infinite;
-    } */
-</style>
-
-<div class="content">
-
-    <!-- PAGE HEADER -->
-    <div class="page-header">
-        <div class="page-title">
-            <h4 class="fw-bold">Job Bundles</h4>
-            <h6>Buy job credits for urgent or bulk hiring</h6>
-
-            <p class="text-dark mt-3">
-                <span class="text-danger fw-bold">Note: </span> We will not publish scam jobs or non-existent "company names" and we will not offer refunds.
-            </p>
-
-            <?php if (session()->has('success')): ?>
-                <div class="alert alert-success alert-dismissible fade show">
-                    <?= session('success') ?>
-                    <button class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
-
-            <?php if (session()->has('error')): ?>
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <?= session('error') ?>
-                    <button class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
-        </div>
+<div class="page-head">
+    <div>
+        <h1><svg aria-hidden="true"><use href="#i-card"/></svg> Billing &amp; Plans</h1>
+        <p>Choose the hiring plan that fits how you recruit.</p>
     </div>
+</div>
 
-    <div class="card">
-        <div class="card-body pb-5">
+<?php if (session()->has('success')): ?>
+    <div class="notice notice--info" role="status">
+        <svg aria-hidden="true"><use href="#i-check-c"/></svg>
+        <span><?= esc(session('success')) ?></span>
+    </div>
+<?php endif; ?>
 
-            <!-- CREDIT BALANCE -->
-            <div class="alert alert-info d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Available Job Credits:</strong>
-                    <?= number_format($creditBalance, 0) ?>
+<?php if (session()->has('error')): ?>
+    <div class="notice notice--warn" role="status">
+        <svg aria-hidden="true"><use href="#i-shield"/></svg>
+        <span><?= esc(session('error')) ?></span>
+    </div>
+<?php endif; ?>
+
+<div class="notice notice--info" role="status">
+    <svg aria-hidden="true"><use href="#i-zap"/></svg>
+    <span>You have <b><?= number_format($creditBalance ?? 0) ?> job credits</b> available. Credits are used automatically when you post a job.</span>
+</div>
+
+<div class="plans">
+    <!-- pay-as-you-go bundles -->
+    <section class="card" aria-label="Growth bundles">
+        <div class="card-head">
+            <span class="card-title">
+                <svg aria-hidden="true"><use href="#i-briefcase"/></svg>
+                Growth Bundles <span style="font-weight:500;color:var(--muted);font-size:.76rem">· Pay as you go</span>
+            </span>
+        </div>
+        <div class="card-body">
+            <?php if (empty($bundles)): ?>
+                <div class="empty-state">
+                    <div class="empty-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></div>
+                    <h3>No bundles available</h3>
+                    <p>There are no pay-as-you-go bundles configured at the moment.</p>
                 </div>
-                <a href="<?= base_url('employer/post-job') ?>" class="btn btn-sm btn-primary">
-                    Post a Job
-                </a>
-            </div>
-
-            <!-- BUNDLES GRID -->
-            <div class="row justify-content-center g-4 mt-3">
-
-                <?php foreach ($bundles as $bundle): ?>
-
-                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
-                        <div class="card pricing-card h-100 border-0 shadow-sm">
-                            <div class="card-body text-center d-flex flex-column">
-                                <?php if ($recommendedBundle && $recommendedBundle['id'] === $bundle['id']): ?>
-                                    <span class="badge bg-primary mb-2">Recommended</span>
+            <?php else: ?>                <?php foreach ($bundles as $bundle): ?>
+                    <?php
+                    $bg_grad = 'linear-gradient(135deg,#8d99ab,#5b6577)';
+                    if (stripos($bundle->name, 'diamond') !== false) {
+                        $bg_grad = 'linear-gradient(135deg,#1d6fb8,#0861A9)';
+                    } elseif (stripos($bundle->name, 'gold') !== false) {
+                        $bg_grad = 'linear-gradient(135deg,#ED9020,#C8770E)';
+                    }
+                    ?>
+                    <div class="bundle">
+                        <span class="bundle-ic" style="background:<?= $bg_grad ?>" aria-hidden="true">
+                            <svg><use href="#i-briefcase"/></svg>
+                        </span>
+                        <div class="bundle-info">
+                            <div class="bundle-name">
+                                <?= esc($bundle->name) ?>
+                                <?php if (isset($recommendedBundle) && $recommendedBundle && $recommendedBundle->id === $bundle->id): ?>
+                                    <span class="pill pill--reviewed" style="font-size: 0.6rem; padding: 2px 6px; margin-left: 4px;">Recommended</span>
                                 <?php endif; ?>
-
-                                <h5 class="fw-bold mb-1">
-                                    <?= esc($bundle['name']) ?>
-                                </h5>
-
-                                <p class="text-muted mb-3">
-                                    <?= $bundle['credits'] ?> Job Credits
-                                </p>
-
-                                <h2 class="fw-bold text-primary mb-0">
-                                    ₦<?= number_format($bundle['price']) ?>
-                                </h2>
-
-                                <small class="text-muted mb-4 d-block">
-                                    ₦<?= number_format($bundle['cost_per_credit']) ?> per credit
-                                </small>
-
-                                <div class="mt-auto">
-                                    <button
-                                        class="btn btn-outline-primary w-100 buy-bundle-btn"
-                                        data-code="<?= esc($bundle['code']) ?>">
-                                        Buy Bundle
-                                    </button>
-                                </div>
-
                             </div>
+                            <div class="bundle-posts"><?= esc($bundle->job_credits) ?> job posts</div>
                         </div>
+                        <div class="bundle-price">
+                            &#8358;<?= number_format($bundle->price) ?>
+                            <i>&#8358;<?= number_format($bundle->price_per_credit ?? ($bundle->price / ($bundle->job_credits ?: 1))) ?> / post</i>
+                        </div>
+                        <button class="emp-btn emp-btn-outline emp-btn-sm buy-bundle-btn" data-code="<?= esc($bundle->slug) ?>">
+                            Buy Bundle
+                        </button>
                     </div>
-
                 <?php endforeach; ?>
-
-            </div>
-
-            <!-- EXPLANATION -->
-            <div class="mt-5 text-center">
-                <p class="text-muted">
-                    Job bundles give you extra credits that can be used anytime.
-                    Perfect for urgent hiring or when your monthly plan credits run out.
-                </p>
-            </div>
-
-            <div class="mt-5">
-                <h5 class="fw-bold mb-3">Bundle Purchase History</h5>
-
-                <?php if (empty($bundleHistory)): ?>
-                    <p class="text-muted">No bundle purchases yet.</p>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Credits</th>
-                                    <th>Reference</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($bundleHistory as $row): ?>
-                                    <tr>
-                                        <td><?= date('M j, Y', strtotime($row['created_at'])) ?></td>
-                                        <td><?= $row['credits'] ?></td>
-                                        <td>
-                                            <code><?= esc($row['reference']) ?></code>
-                                        </td>
-                                        <td><?= esc($row['description']) ?></td>
-                                    </tr>
-                                <?php endforeach ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif ?>
-            </div>
-
+            <?php endif; ?>
+            <p style="font-size:.74rem;color:var(--muted);margin-top:14px">Bundle credits never expire and are used automatically each time you post a job.</p>
         </div>
+    </section>
+
+    <!-- Business Pro -->
+    <section class="pro-card" aria-label="Business Pro plan">
+        <div class="pro-head">
+            <span class="pro-badge">Best value</span>
+            <h2><?= esc($subscriptionPlan->name ?? 'Business Pro') ?></h2>
+            <p>Unlimited job postings + premium features</p>
+        </div>
+        <div class="pro-body">
+            <div class="form-group">
+                <label class="form-label" for="duration">Select duration</label>
+                <select class="select" id="duration" aria-label="Subscription duration">
+                    <?php
+                    $tiers = is_string($pricingTiers) ? json_decode($pricingTiers, true) : ($pricingTiers ?? []);
+                    $durations = [
+                        1 => ['label' => '1 Month', 'per' => 'billed monthly'],
+                        3 => ['label' => '3 Months', 'per' => '&#8358;' . number_format(($tiers[3] ?? 48000) / 3) . ' / month · billed quarterly'],
+                        6 => ['label' => '6 Months', 'per' => '&#8358;' . number_format(($tiers[6] ?? 84000) / 6) . ' / month · billed bi-annually'],
+                        12 => ['label' => '12 Months (Best Value)', 'per' => '&#8358;' . number_format(($tiers[12] ?? 150000) / 12) . ' / month · billed yearly']
+                    ];
+                    foreach ($durations as $months => $info):
+                        $price = $tiers[$months] ?? ($months * 18000);
+                    ?>
+                        <option value="<?= $price ?>" data-per="<?= esc($info['per']) ?>" <?= $months === 1 ? 'selected' : '' ?>>
+                            <?= esc($info['label']) ?> — &#8358;<?= number_format($price) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="pro-price" style="margin-top:18px">
+                <span id="pro-amt">&#8358;<?= number_format($tiers[1] ?? 18000) ?></span>
+                <i id="pro-per">billed monthly</i>
+            </div>
+            <ul class="feat">
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Unlimited</b> job postings</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Featured at the top</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Network Blast (115k+)</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Anonymous posting</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>URL redirection</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Verified Hirer badge</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Priority support</span></li>
+                <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Advanced candidate search</span></li>
+            </ul>
+            <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-accent emp-btn-block">
+                <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
+            </a>
+            <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px">Renews automatically. Cancel anytime from this page.</p>
+        </div>
+    </section>  </section>
+</div>
+
+<!-- Purchase History -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-head">
+        <span class="card-title">
+            <svg aria-hidden="true"><use href="#i-receipt"/></svg> Bundle Purchase History
+        </span>
     </div>
+    <div class="card-body">
+        <?php if (empty($bundleHistory)): ?>
+            <div class="empty-state">
+                <div class="empty-ic"><svg aria-hidden="true"><use href="#i-receipt"/></svg></div>
+                <h3>No purchase history</h3>
+                <p>No bundle purchases recorded yet.</p>
+            </div>
+        <?php else: ?>
+            <div class="tbl-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Credits</th>
+                            <th>Reference</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($bundleHistory as $row): ?>
+                            <tr>
+                                <td><?= date('M j, Y', strtotime($row['created_at'])) ?></td>
+                                <td><?= esc($row['credits']) ?></td>
+                                <td><code><?= esc($row['reference']) ?></code></td>
+                                <td><?= esc($row['description']) ?></td>
+                            </tr>
+                        <?php endforeach ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif ?>
+    </div>
+</div>
+
+<div class="notice notice--warn" role="note" style="margin-top: 24px;">
+    <svg aria-hidden="true"><use href="#i-shield"/></svg>
+    <span><b>Note:</b> We do not publish scam jobs. All postings are reviewed. No refunds after successful payment.</span>
 </div>
 
 <div id="payment-loader" class="payment-loader">
     <div class="spinner-border text-primary mb-3" role="status"></div>
-
-    <img src="<?= base_url('assets/imgs/template/logo.png'); ?>"
-        alt="Processing"
-        class="loader-logo img-fluid">
-
-    <p class="mt-3 text-muted fw-semibold">
-        Processing payment… please wait
-    </p>
+    <img src="<?= base_url('auth/img/logo.png'); ?>" alt="Processing" class="loader-logo img-fluid">
+    <p class="mt-3 text-muted fw-semibold">Processing payment… please wait</p>
 </div>
 
 <?= $this->endSection() ?>
 
+<?= $this->section('mobile_cta') ?>
+<button class="emp-btn emp-btn-outline" onclick="document.querySelector('.plans').scrollIntoView({behavior:'smooth'})">View Bundles</button>
+<button class="emp-btn emp-btn-accent" onclick="document.querySelector('.pro-card').scrollIntoView({behavior:'smooth'})"><svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now</button>
+<?= $this->endSection() ?>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 <?= $this->section('scripts') ?>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
-    $(function() {
+$(function() {
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        timeOut: 5000
+    };
 
-        toastr.options = {
-            closeButton: true,
-            progressBar: true,
-            timeOut: 5000
-        };
+    $('.buy-bundle-btn').on('click', function() {
+        const btn = $(this);
+        const bundleCode = btn.data('code');
 
-        $('.buy-bundle-btn').on('click', function() {
-            const btn = $(this);
-            const bundleCode = btn.data('code');
+        btn.prop('disabled', true).text('Processing...');
 
-            btn.prop('disabled', true).text('Processing...');
-
-            $.ajax({
-                url: "<?= base_url('employer/bundles/buy') ?>/" + bundleCode,
-                type: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-
-                success: function(res) {
-
-                    if (!res.success) {
-                        toastr.error(res.message || 'Unable to proceed');
-                        btn.prop('disabled', false).text('Buy Bundle');
-                        return;
-                    }
-
-                    // WALLET ONLY
-                    if (!res.paystack) {
-                        toastr.success(res.message || 'Bundle purchased');
-                        window.location.reload();
-                        return;
-                    }
-
-                    // PAYSTACK POPUP
-                    let handler = PaystackPop.setup({
-                        key: res.public_key,
-                        email: res.email,
-                        amount: res.amount,
-                        ref: res.reference,
-                        metadata: res.metadata,
-
-                        callback: function(response) {
-                            $('body').addClass('loading');
-                            $('#payment-loader').fadeIn(150);
-
-                            verifyPayment(response.reference);
-                        },
-
-                        onClose: function() {
-                            toastr.warning('Payment cancelled');
-                            btn.prop('disabled', false).text('Buy Bundle');
-                        }
-                    });
-
-                    handler.openIframe();
-                },
-
-                error: function() {
-                    toastr.error('Network error');
+        $.ajax({
+            url: "<?= base_url('employer/bundles/buy') ?>/" + bundleCode,
+            type: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(res) {
+                if (!res.success) {
+                    toastr.error(res.message || 'Unable to proceed');
                     btn.prop('disabled', false).text('Buy Bundle');
+                    return;
                 }
-            });
-        });
 
-        function verifyPayment(reference) {
+                // WALLET ONLY
+                if (!res.paystack) {
+                    toastr.success(res.message || 'Bundle purchased');
+                    window.location.reload();
+                    return;
+                }
 
-            $.ajax({
-                url: "<?= base_url('employer/bundles/payments/verify') ?>",
-                type: 'POST',
-                data: {
-                    reference
-                },
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function(res) {
-
-                    if (res.success && res.verified) {
-                        toastr.success('Payment confirmed');
-                        window.location.reload();
-                        return;
+                // PAYSTACK POPUP
+                let handler = PaystackPop.setup({
+                    key: res.public_key,
+                    email: res.email,
+                    amount: res.amount,
+                    ref: res.reference,
+                    metadata: res.metadata,
+                    callback: function(response) {
+                        $('body').addClass('loading');
+                        $('#payment-loader').fadeIn(150).css('display', 'flex');
+                        verifyPayment(response.reference);
+                    },
+                    onClose: function() {
+                        toastr.warning('Payment cancelled');
+                        btn.prop('disabled', false).text('Buy Bundle');
                     }
+                });
 
-                    setTimeout(() => verifyPayment(reference), 2500);
-                },
-
-                error: function() {
-                    setTimeout(() => verifyPayment(reference), 3000);
-                }
-            });
-        }
-
+                handler.openIframe();
+            },
+            error: function() {
+                toastr.error('Network error');
+                btn.prop('disabled', false).text('Buy Bundle');
+            }
+        });
     });
+
+    function verifyPayment(reference) {
+        $.ajax({
+            url: "<?= base_url('employer/bundles/payments/verify') ?>",
+            type: 'POST',
+            data: { reference: reference },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(res) {
+                if (res.success && res.verified) {
+                    toastr.success('Payment confirmed');
+                    window.location.reload();
+                    return;
+                }
+                setTimeout(() => verifyPayment(reference), 2500);
+            },
+            error: function() {
+                setTimeout(() => verifyPayment(reference), 3000);
+            }
+        });
+    }
+
+    // Duration selector logic
+    const d = document.getElementById('duration');
+    const a = document.getElementById('pro-amt');
+    const p = document.getElementById('pro-per');
+    if (d && a && p) {
+        d.addEventListener('change', function() {
+            const o = d.options[d.selectedIndex];
+            a.textContent = '₦' + Number(o.value).toLocaleString('en-NG');
+            p.innerHTML = o.getAttribute('data-per');
+        });
+    }
+});
 </script>
 <?= $this->endSection() ?>

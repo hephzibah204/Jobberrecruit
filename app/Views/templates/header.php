@@ -56,10 +56,11 @@
                         <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
                         <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
                         <li class="has-children">
-                            <a <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'class="active"' : '' ?> href="#">Training</a>
+                            <a <?= (uri_string() == 'training' || uri_string() == 'webinars' || uri_string() == 'cv-review' || strpos(uri_string(), 'cv-review/') === 0) ? 'class="active"' : '' ?> href="#">Training</a>
                             <ul class="sub-menu">
                                 <li><a href="<?= base_url('training'); ?>">Courses</a></li>
                                 <li><a href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                                <li><a href="<?= base_url('cv-review'); ?>">CV Review</a></li>
                             </ul>
                         </li>
                         <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
@@ -111,10 +112,11 @@
                             <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
                             <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
                             <li class="has-children">
-                                <a <?= (uri_string() == 'training' || uri_string() == 'webinars') ? 'class="active"' : '' ?> href="#">Training</a>
+                                <a <?= (uri_string() == 'training' || uri_string() == 'webinars' || uri_string() == 'cv-review' || strpos(uri_string(), 'cv-review/') === 0) ? 'class="active"' : '' ?> href="#">Training</a>
                                 <ul class="sub-menu">
                                     <li><a href="<?= base_url('training'); ?>">Courses</a></li>
                                     <li><a href="<?= base_url('webinars'); ?>">Webinars</a></li>
+                                    <li><a href="<?= base_url('cv-review'); ?>">CV Review</a></li>
                                 </ul>
                             </li>
                             <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
@@ -125,12 +127,14 @@
                             <li><a <?= (uri_string() == 'blog') ? 'class="active"' : '' ?> href="<?= base_url('blog'); ?>">Blog</a></li>
                             <li><a <?= (uri_string() == 'about-us') ? 'class="active"' : '' ?> href="<?= base_url('about-us'); ?>">About Us</a></li>
                             <li><a <?= (uri_string() == 'contact-us') ? 'class="active"' : '' ?> href="<?= base_url('contact-us'); ?>">Contact Us</a></li>
-                            <?php if ($auth->user()) : ?>
+                             <?php if ($auth->user()) : ?>
                                 <?php if ($auth->user()->user_type == 'employer'): ?>
                                     <li><a href="<?= base_url('employer/dashboard') ?>">Dashboard</a></li>
                                 <?php else: ?>
                                     <li><a href="<?= base_url('candidate/dashboard') ?>">Dashboard</a></li>
                                 <?php endif; ?>
+                            <?php else: ?>
+                                <li><a href="<?= base_url('login') ?>">Get Started</a></li>
                             <?php endif; ?>
                         </ul>
                     </nav>

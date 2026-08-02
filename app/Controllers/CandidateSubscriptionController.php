@@ -32,6 +32,7 @@ class CandidateSubscriptionController extends BaseController
             ->findAll();
 
         $currentPlan = null;
+        $walletBalance = 0.0;
         if (auth()->loggedIn()) {
             $currentPlan = $this->subModel
                 ->select('user_subscriptions.*, plans.name as plan_name')
@@ -39,6 +40,9 @@ class CandidateSubscriptionController extends BaseController
                 ->where('user_subscriptions.user_id', auth()->id())
                 ->where('user_subscriptions.is_active', 1)
                 ->first();
+
+            $wallet = (new \App\Services\WalletService())->getOrCreateWallet(auth()->id());
+            $walletBalance = (float) ($wallet->balance ?? 0.0);
         }
 
         $isFreeMode = env('site_free_mode') === 'true';
@@ -48,6 +52,7 @@ class CandidateSubscriptionController extends BaseController
             'plans' => $plans,
             'currentPlan' => $currentPlan,
             'isFreeMode' => $isFreeMode,
+            'walletBalance' => $walletBalance,
         ]);
     }
 
@@ -133,34 +138,43 @@ class CandidateSubscriptionController extends BaseController
         $duration = (int) ($plan->pricing_tiers ? json_decode($plan->pricing_tiers, true)[1]['duration'] ?? 30 : 30);
         $endDate = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         // Deactivate existing subscription
         $this->subModel->where('user_id', $userId)->where('is_active', 1)->set(['is_active' => 0, 'updated_at' => $now])->update();
 
         // Record payment
         $this->paymentModel->insert([
-            'user_id' => $userId,
-            'plan_id' => $planId,
-            'reference' => $reference,
-            'amount' => $amount,
-            'amount_paid' => $amount,
-            'currency' => 'NGN',
-            'status' => 'paid',
-            'channel' => 'card',
-            'paid_at' => $now,
+            'user_id'    => $userId,
+            'plan_id'    => $planId,
+            'reference'  => $reference,
+            'amount'     => $amount,
+            'amount_paid'=> $amount,
+            'currency'   => 'NGN',
+            'status'     => 'paid',
+            'channel'    => 'card',
+            'paid_at'    => $now,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
         // Create subscription
         $this->subModel->insert([
-            'user_id' => $userId,
-            'plan_id' => $planId,
-            'start_date' => $now,
-            'end_date' => $endDate,
-            'is_active' => 1,
+            'user_id'    => $userId,
+            'plan_id'    => $planId,
+            'starts_at'  => $now,
+            'ends_at'    => $endDate,
+            'is_active'  => 1,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            log_message('error', "CandidateSubscription: activatePlan failed for user {$userId}, plan {$planId}, ref {$reference}");
+        }
     }
 
     /**
@@ -178,8 +192,8 @@ class CandidateSubscriptionController extends BaseController
         $this->subModel->insert([
             'user_id' => $userId,
             'plan_id' => $plan->id,
-            'start_date' => $now,
-            'end_date' => $endDate,
+            'starts_at' => $now,
+            'ends_at' => $endDate,
             'is_active' => 1,
             'created_at' => $now,
             'updated_at' => $now,

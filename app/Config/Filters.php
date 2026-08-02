@@ -79,20 +79,21 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             'featureGate',
+            'csrf' => [
+                'except' => [
+                    'pricing/webhook',    // Paystack webhook — signed externally, no CSRF token
+                    'webhooks/paystack',  // Paystack webhook — signed externally, no CSRF token
+                    'candidate/resumes/ai/proxy-image', // Exclude for testing mock requests
+                    'candidate/resumes/autosave', // Exclude for testing mock requests
+                    'candidate/resumes/*/restore-autosave', // Exclude for testing mock requests
+                ],
+            ],
             // 'honeypot',
-            // 'csrf' => ['except' => ['subscription/webhook']]
-            // 'csrf' => [
-            //     'except' => [
-            //         'login',
-            //         'register',
-            //         'api/*'
-            //     ]
-            // ],
             // 'invalidchars',
         ],
         'after' => [
+            'secureheaders',
             // 'honeypot',
-            // 'secureheaders',
         ],
     ];
 

@@ -54,7 +54,6 @@ class AuthController extends BaseController
             $oldUser = $this->auth->user();
             $this->auth->logout();
             $this->auth->forgetUser($oldUser->id);
-            session()->destroy();
         }
 
         // 2️⃣ Validate input
@@ -106,6 +105,13 @@ class AuthController extends BaseController
             ]);
         }
 
+        if (!$user->active) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Your account has been suspended. Please contact support.',
+            ]);
+        }
+
         // Skip verification gates locally so development can proceed without mail setup.
         if (ENVIRONMENT !== 'development' && !($user->email_verified_at)) {
             log_message('info', 'Verified: ' . json_encode($user->email_verified_at));
@@ -126,11 +132,11 @@ class AuthController extends BaseController
             ]);
         }
 
-        // 6️⃣ LOGIN ONCE (THIS IS THE ONLY LOGIN CALL)
-        $this->auth->login($user, true);
-
-        // 7️⃣ Regenerate session (CRITICAL)
+        // 6️⃣ Regenerate session (CRITICAL - must occur before writing authentication data to session)
         session()->regenerate(true);
+
+        // 7️⃣ LOGIN ONCE (THIS IS THE ONLY LOGIN CALL)
+        $this->auth->login($user, true);
 
         // 8️⃣ Redirect
         $redirectTo = ($user->user_type === 'employer')
@@ -227,6 +233,9 @@ class AuthController extends BaseController
                 $username = $baseUsername . $counter++;
             }
 
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             // Create user record (Shield provider)
             $user = $users->createNewUser([
                 'username'       => $username,
@@ -240,6 +249,7 @@ class AuthController extends BaseController
             $userId = $users->insert($user);
 
             if (!$userId) {
+                $db->transRollback();
                 throw new \Exception('Failed to create user: ' . json_encode($users->errors()));
             }
 
@@ -286,6 +296,18 @@ class AuthController extends BaseController
                 // Assign free plan & create paystack customer
                 // $this->assignFreePlanToUser($userId);
                 $this->createPaystackCustomerIfNeededById($userId, $email);
+            }
+
+            // Trigger automation event
+            \App\Libraries\AutomationEngine::triggerEvent('user_registered', $userId);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Registration failed due to a database error. Please try again.'
+                ]);
             }
 
              // Auto-login after registration (optional, can be removed if you want to force email verification first)
@@ -344,8 +366,8 @@ class AuthController extends BaseController
             $subModel->insert([
                 'user_id'    => $userId,
                 'plan_id'    => $freePlan->id,
-                'start_date' => date('Y-m-d H:i:s'),
-                'end_date'   => date('Y-m-d H:i:s', strtotime('+3650 days')),
+                'starts_at'  => date('Y-m-d H:i:s'),
+                'ends_at'    => date('Y-m-d H:i:s', strtotime('+3650 days')),
                 'is_active'  => 1
             ]);
         }
@@ -599,9 +621,13 @@ class AuthController extends BaseController
             'last_active' => date('Y-m-d H:i:s'),
         ]);
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         $userId = $this->userProvider->insert($user);
 
         if (!$userId) {
+            $db->transRollback();
             log_message('error', 'Social finalize: failed to insert user: ' . json_encode($this->userProvider->errors()));
             return ['status' => 'error', 'message' => 'Could not create user account.'];
         }
@@ -629,6 +655,12 @@ class AuthController extends BaseController
             // Assign free plan + create paystack customer
             $this->assignFreeEmployerPlan($userId);
             $this->createPaystackCustomer($tmp['email'], $userId);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return ['status' => 'error', 'message' => 'Registration failed due to database transaction failure.'];
         }
 
         if (ENVIRONMENT === 'development') {
@@ -671,8 +703,8 @@ class AuthController extends BaseController
             $subModel->insert([
                 'user_id'    => $userId,
                 'plan_id'    => $freePlan->id,
-                'start_date' => date('Y-m-d H:i:s'),
-                'end_date'   => date('Y-m-d H:i:s', strtotime('+3650 days')),
+                'starts_at'  => date('Y-m-d H:i:s'),
+                'ends_at'    => date('Y-m-d H:i:s', strtotime('+3650 days')),
                 'is_active'  => 1
             ]);
         }

@@ -7,6 +7,7 @@ use CodeIgniter\Model;
 class CvReviewModel extends Model
 {
     protected $table = 'cv_reviews';
+    protected $returnType = \App\Entities\CvReview::class;
     protected $useTimestamps = true;
     protected $allowedFields = [
         'user_id', 'plan', 'amount', 'payment_reference', 'payment_status',

@@ -1,16 +1,44 @@
 <?php
 $user = $user ?? auth()->user();
 $isEmployer = ($user?->user_type === 'employer');
-$profileImage = 'images/favicon.png';
+$defaultImage = 'images/favicon.png';
+$profileImage = $defaultImage;
+$hasProfileImage = false;
 $displayName = 'User';
 $email = $user->email ?? '';
 
 if ($isEmployer) {
-    $profileImage = isset($employer) && ! empty($employer->logo) ? $employer->logo : $profileImage;
+    $logoPath = isset($employer) && ! empty($employer->logo) ? $employer->logo : '';
+    if ($logoPath) {
+        if (filter_var($logoPath, FILTER_VALIDATE_URL) || str_starts_with($logoPath, 'http://') || str_starts_with($logoPath, 'https://')) {
+            $profileImage = $logoPath;
+            $hasProfileImage = true;
+        } elseif (file_exists(FCPATH . $logoPath)) {
+            $profileImage = $logoPath;
+            $hasProfileImage = true;
+        }
+    }
     $displayName = isset($employer) && ! empty($employer->company_name) ? $employer->company_name : 'Employer';
 } else {
-    $profileImage = isset($candidate) && ! empty($candidate->profile_picture) ? $candidate->profile_picture : $profileImage;
+    $picPath = isset($candidate) && ! empty($candidate->profile_picture) ? $candidate->profile_picture : '';
+    if ($picPath) {
+        if (filter_var($picPath, FILTER_VALIDATE_URL) || str_starts_with($picPath, 'http://') || str_starts_with($picPath, 'https://')) {
+            $profileImage = $picPath;
+            $hasProfileImage = true;
+        } elseif (file_exists(FCPATH . $picPath)) {
+            $profileImage = $picPath;
+            $hasProfileImage = true;
+        }
+    }
     $displayName = isset($candidate) && ! empty($candidate->full_name) ? $candidate->full_name : 'Candidate';
+}
+
+$initials = '';
+$words = explode(' ', preg_replace('/\s+/', ' ', trim($displayName)));
+if (count($words) >= 2) {
+    $initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+} else {
+    $initials = strtoupper(substr($displayName, 0, 2));
 }
 ?>
 <div class="header">
@@ -69,11 +97,7 @@ if ($isEmployer) {
                 </a>
             </li>
 
-            <li class="nav-item nav-item-box">
-                <a href="javascript:void(0);" class="theme-toggle" aria-label="Toggle dark mode">
-                    <i class="ti ti-moon"></i>
-                </a>
-            </li>
+
 
             <!-- /Notifications -->
 
@@ -82,14 +106,26 @@ if ($isEmployer) {
                 <a href="javascript:void(0);" class="nav-link userset" data-bs-toggle="dropdown">
                     <span class="user-info p-0">
                         <span class="user-letter">
-                            <img src="<?= base_url($profileImage); ?>" alt="Img" class="img-fluid">
+                            <?php if ($hasProfileImage): ?>
+                                <img src="<?= (str_starts_with($profileImage, 'http://') || str_starts_with($profileImage, 'https://')) ? $profileImage : base_url($profileImage); ?>" alt="Img" class="img-fluid rounded-circle">
+                            <?php else: ?>
+                                <span class="d-flex align-items-center justify-content-center text-white rounded-circle fw-bold" style="width: 38px; height: 38px; font-size: 14px; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);">
+                                    <?= esc($initials) ?>
+                                </span>
+                            <?php endif; ?>
                         </span>
                     </span>
                 </a>
                 <div class="dropdown-menu menu-drop-user">
                     <div class="profileset d-flex align-items-center">
                         <span class="user-img me-2">
-                            <img src="<?= base_url($profileImage); ?>" alt="Img" class="img-fluid">
+                            <?php if ($hasProfileImage): ?>
+                                <img src="<?= (str_starts_with($profileImage, 'http://') || str_starts_with($profileImage, 'https://')) ? $profileImage : base_url($profileImage); ?>" alt="Img" class="img-fluid rounded-circle">
+                            <?php else: ?>
+                                <span class="d-flex align-items-center justify-content-center text-white rounded-circle fw-bold" style="width: 38px; height: 38px; font-size: 14px; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);">
+                                    <?= esc($initials) ?>
+                                </span>
+                            <?php endif; ?>
                         </span>
                         <div>
                             <h6 class="fw-medium"><?= esc($displayName) ?></h6>

@@ -1,3 +1,4 @@
+<?php $page_title = 'Referral Program'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('content') ?>

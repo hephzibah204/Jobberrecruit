@@ -30,6 +30,9 @@ class AddSEOAndActiveColumnsToIndustriesAndCategories extends Migration
 
     public function down()
     {
+        if ($this->db->getPlatform() === 'SQLite3') {
+            return;
+        }
         foreach (['is_active', 'description', 'meta_description', 'seo_h1'] as $col) {
             if ($this->db->fieldExists($col, 'industries')) {
                 $this->forge->dropColumn('industries', $col);

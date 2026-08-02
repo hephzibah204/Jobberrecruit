@@ -139,13 +139,47 @@ class AiService
         $coverLetter = trim((string) ($options['cover_letter'] ?? ''));
         $summaryNote = trim((string) ($options['summary_note'] ?? ''));
 
+        $interviewType = (string) ($options['interview_type'] ?? '');
+        $duration = (string) ($options['duration'] ?? '');
+        $personality = (string) ($options['personality'] ?? '');
+        $experience = (string) ($options['experience'] ?? '');
+        $focus = (string) ($options['focus'] ?? '');
+        $salary = (string) ($options['salary'] ?? '');
+        $arrangement = (string) ($options['arrangement'] ?? '');
+        $language = (string) ($options['language'] ?? '');
+        $companyType = (string) ($options['company_type'] ?? '');
+
         $context = "You are an experienced hiring manager conducting a mock interview for a '{$jobTitle}' position with '{$candidateName}'. ";
         if ($companyName !== '') {
             $context .= "Company: {$companyName}. ";
         }
+        if ($companyType !== '' && $companyType !== 'any') {
+            $context .= "Company Type: {$companyType}. ";
+        }
         $context .= "Difficulty level: {$difficulty}. ";
         $context .= 'Question pack: ' . $this->getQuestionPackContext($questionPack) . '. ';
         $context .= "Interview mode: {$interviewMode}. ";
+        if ($interviewType !== '') {
+            $context .= "Interview Type/Style: {$interviewType}. ";
+        }
+        if ($personality !== '') {
+            $context .= "Your persona/profile: {$personality}. Adopt this character and recruiter tone throughout. ";
+        }
+        if ($experience !== '') {
+            $context .= "Candidate expected level: {$experience}. ";
+        }
+        if ($focus !== '' && $focus !== 'balanced') {
+            $context .= "Focus areas: {$focus}. ";
+        }
+        if ($salary !== '') {
+            $context .= "Candidate expected salary band: {$salary}. ";
+        }
+        if ($arrangement !== '') {
+            $context .= "Work arrangement: {$arrangement}. ";
+        }
+        if ($language !== '') {
+            $context .= "Language/Dialect preference: {$language}. ";
+        }
         if ($webcamEnabled) {
             $context .= "The candidate is practicing in webcam mode, so keep the tone realistic for a live video interview. ";
         }
@@ -167,7 +201,7 @@ class AiService
         if ($coverLetter !== '') {
             $context .= "Candidate cover letter summary: {$coverLetter}. ";
         }
-        $context .= "Use the job description, requirements, submitted application context, and candidate profile as the scoring yardstick. ";
+        $context .= "Use the job description, requirements, submitted application context, and candidate profile as the scoring yardstick. CRITICAL REQUIREMENT: Critically evaluate the candidate's answers. If the candidate provides wrong, incorrect, irrelevant, or incomplete answers, or simply says they do not know, detect this immediately. You must lower their STAR scores (1-3 out of 10) for that turn, and provide clear corrective feedback in 'feedback' and 'star_tip' pointing out the mistake or gap. ";
         $context .= "Return ONLY valid JSON with this exact shape: ";
         $context .= '{"feedback":"","next_question":"","interviewer_reply":"","star_score":0,"star_breakdown":{"situation":0,"task":0,"action":0,"result":0},"star_tip":"","focus_area":""}. ';
         $context .= "Use integer scores from 1 to 10 for star_score and each STAR breakdown item. ";
@@ -255,13 +289,47 @@ class AiService
             $transcript[] = $speaker . ': ' . $message;
         }
 
+        $interviewType = (string) ($options['interview_type'] ?? '');
+        $duration = (string) ($options['duration'] ?? '');
+        $personality = (string) ($options['personality'] ?? '');
+        $experience = (string) ($options['experience'] ?? '');
+        $focus = (string) ($options['focus'] ?? '');
+        $salary = (string) ($options['salary'] ?? '');
+        $arrangement = (string) ($options['arrangement'] ?? '');
+        $language = (string) ($options['language'] ?? '');
+        $companyType = (string) ($options['company_type'] ?? '');
+
         $prompt = "You are a senior interview coach reviewing a completed mock interview for '{$candidateName}' applying for '{$jobTitle}'. ";
         if ($companyName !== '') {
             $prompt .= "Company: {$companyName}. ";
         }
+        if ($companyType !== '' && $companyType !== 'any') {
+            $prompt .= "Company Type: {$companyType}. ";
+        }
         $prompt .= "Difficulty level: {$difficulty}. ";
         $prompt .= 'Question pack: ' . $this->getQuestionPackContext($questionPack) . '. ';
         $prompt .= "Interview mode: {$interviewMode}. ";
+        if ($interviewType !== '') {
+            $prompt .= "Interview Type/Style: {$interviewType}. ";
+        }
+        if ($personality !== '') {
+            $prompt .= "Interviewer persona: {$personality}. ";
+        }
+        if ($experience !== '') {
+            $prompt .= "Candidate expected level: {$experience}. ";
+        }
+        if ($focus !== '' && $focus !== 'balanced') {
+            $prompt .= "Focus areas: {$focus}. ";
+        }
+        if ($salary !== '') {
+            $prompt .= "Candidate expected salary band: {$salary}. ";
+        }
+        if ($arrangement !== '') {
+            $prompt .= "Work arrangement: {$arrangement}. ";
+        }
+        if ($language !== '') {
+            $prompt .= "Language/Dialect preference: {$language}. ";
+        }
         if ($webcamEnabled) {
             $prompt .= "The practice was done in webcam mode, so include concise video interview guidance. ";
         }
@@ -701,6 +769,27 @@ class AiService
             'marketing' => 'Campaign planning, analytics, brand, and growth questions',
             'support' => 'Customer support, service recovery, communication, and empathy questions',
             'operations' => 'Process improvement, coordination, ownership, and execution questions',
+            
+            // Newly matched from mockup
+            'software-developer' => 'Technical, coding, system design, and architecture questions for software engineering roles',
+            'data-analysis' => 'Data analysis, statistics, SQL, data modeling, and reporting questions',
+            'accounting-fundamentals' => 'Accounting, finance, audit, bookkeeping, and budgeting questions',
+            'digital-marketing' => 'SEO, SEM, digital marketing strategies, campaigns, and growth metrics',
+            'social-media-content' => 'Social media, content creation, brand strategy, and community engagement questions',
+            'office-admin' => 'Office administration, scheduling, operations, and support questions',
+            'sales-business-dev' => 'Sales, prospecting, objection handling, closing, and business development questions',
+            'customer-service' => 'Customer support, empathy, conflict resolution, and communication questions',
+            'human-resources' => 'HR, hiring, conflict resolution, training, and employee engagement questions',
+            'engineering-technical' => 'Civil, mechanical, electrical engineering, or site/field technical questions',
+            'logistics-supply-chain' => 'Logistics, supply chain, procurement, and warehouse operations questions',
+            'legal-compliance' => 'Legal compliance, corporate governance, contract law, and regulatory questions',
+            'healthcare-medical' => 'Medical care, patient safety, clinical practice, and healthcare compliance questions',
+            'education-training' => 'Pedagogy, classroom management, training development, and instructional design questions',
+            'hospitality' => 'Guest relations, hospitality operations, service recovery, and hotel/restaurant service questions',
+            'manufacturing-production' => 'Manufacturing line management, safety standards, quality control, and production scheduling',
+            'it-support' => 'IT helpdesk, troubleshooting, system admin, and user support questions',
+            'project-management' => 'Project management, product thinking, Scrum, Agile prioritization, and execution questions',
+            'design-ux' => 'UX/UI design, design thinking, prototyping, and graphic design questions',
         ];
 
         return $packs[$questionPack] ?? $packs['general'];

@@ -19,6 +19,7 @@ use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\Response;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Shield\Authentication\Actions\ActionInterface;
+use CodeIgniter\Shield\Authentication\Actions\ConditionalActionInterface;
 use CodeIgniter\Shield\Authentication\AuthenticationException;
 use CodeIgniter\Shield\Authentication\AuthenticatorInterface;
 use CodeIgniter\Shield\Authentication\Passwords;
@@ -55,6 +56,10 @@ class Session implements AuthenticatorInterface
     private const STATE_ANONYMOUS = 1;
     private const STATE_PENDING   = 2; // 2FA or Activation required.
     private const STATE_LOGGED_IN = 3;
+
+    // Passwordless login session markers
+    private const MAGIC_LOGIN_TEMP_DATA = 'magicLogin';
+    private const PENDING_LOGIN_METHOD  = 'auth_action_login_method';
 
     /**
      * Authenticated or authenticating (pending login) User
@@ -107,8 +112,6 @@ class Session implements AuthenticatorInterface
 
     /**
      * Sets the $shouldRemember flag
-     *
-     * @return $this
      */
     public function remember(bool $shouldRemember = true): self
     {
@@ -121,7 +124,7 @@ class Session implements AuthenticatorInterface
      * Attempts to authenticate a user with the given $credentials.
      * Logs the user in with a successful check.
      *
-     * @phpstan-param array{email?: string, username?: string, password?: string} $credentials
+     * @phpstan-param array{email?: string, username?: string, password?: string, ...<string, string>} $credentials
      */
     public function attempt(array $credentials): Result
     {
@@ -185,22 +188,26 @@ class Session implements AuthenticatorInterface
     }
 
     /**
-     * If an action has been defined, start it up.
+     * If an action has been defined and applies to the user, start it up.
      *
      * @param string $type 'register', 'login'
      *
-     * @return bool If the action has been defined or not.
+     * @return bool If the action was started or not.
      */
     public function startUpAction(string $type, User $user): bool
     {
         $actionClass = setting('Auth.actions')[$type] ?? null;
 
-        if ($actionClass === null) {
+        if ($actionClass === null || $actionClass === '') {
             return false;
         }
 
         /** @var ActionInterface $action */
         $action = Factories::actions($actionClass); // @phpstan-ignore-line
+
+        if (! $this->actionAppliesToUser($action, $user)) {
+            return false;
+        }
 
         // Create identity for the action.
         $action->createIdentity($user);
@@ -265,6 +272,34 @@ class Session implements AuthenticatorInterface
 
         // a successful login
         Events::trigger('login', $user);
+
+        // Complete the passwordless login notification after any pending login action.
+        $this->completePendingLoginMethod();
+    }
+
+    /**
+     * Marks the pending login action as originating from a passwordless login method.
+     */
+    public function setPendingLoginMethod(string $method): void
+    {
+        $this->setSessionUserKey(self::PENDING_LOGIN_METHOD, $method);
+    }
+
+    private function completePendingLoginMethod(): void
+    {
+        $method = $this->getSessionUserKey(self::PENDING_LOGIN_METHOD);
+
+        if ($method === null) {
+            return;
+        }
+
+        $this->removeSessionUserKey(self::PENDING_LOGIN_METHOD);
+
+        if ($method === self::ID_TYPE_MAGIC_LINK) {
+            session()->setTempdata(self::MAGIC_LOGIN_TEMP_DATA, true);
+
+            Events::trigger('magicLogin');
+        }
     }
 
     /**
@@ -280,7 +315,7 @@ class Session implements AuthenticatorInterface
         // Determine the type of ID we're using.
         // Standard fields would be email, username,
         // but any column within config('Auth')->validFields can be used.
-        $field = array_intersect(config('Auth')->validFields ?? [], array_keys($credentials));
+        $field = array_intersect(config('Auth')->validFields, array_keys($credentials));
 
         if (count($field) !== 1) {
             throw new InvalidArgumentException('Invalid credentials passed to recordLoginAttempt.');
@@ -310,7 +345,7 @@ class Session implements AuthenticatorInterface
      * Checks a user's $credentials to see if they match an
      * existing user.
      *
-     * @phpstan-param array{email?: string, username?: string, password?: string} $credentials
+     * @phpstan-param array{email?: string, username?: string, password?: string, ...<string, string>} $credentials
      */
     public function check(array $credentials): Result
     {
@@ -472,13 +507,20 @@ class Session implements AuthenticatorInterface
 
         $authActions = setting('Auth.actions');
 
-        foreach ($authActions as $actionClass) {
-            if ($actionClass === null) {
+        foreach ($authActions as $type => $actionClass) {
+            if ($actionClass === null || $actionClass === '') {
                 continue;
             }
 
             /** @var ActionInterface $action */
             $action = Factories::actions($actionClass);  // @phpstan-ignore-line
+
+            if (
+                ! $this->actionAppliesToUser($action, $this->user)
+                && ! $this->inactiveUserNeedsRegisterAction($type, $this->user)
+            ) {
+                continue;
+            }
 
             $identity = $this->userIdentityModel->getIdentityByType($this->user, $action->getType());
 
@@ -504,29 +546,47 @@ class Session implements AuthenticatorInterface
     {
         return $this->userIdentityModel->getIdentitiesByTypes(
             $user,
-            $this->getActionTypes(),
+            $this->getActionTypes($user),
         );
     }
 
     /**
      * @return list<string>
      */
-    private function getActionTypes(): array
+    private function getActionTypes(User $user): array
     {
         $actions = setting('Auth.actions');
         $types   = [];
 
-        foreach ($actions as $actionClass) {
-            if ($actionClass === null) {
+        foreach ($actions as $type => $actionClass) {
+            if ($actionClass === null || $actionClass === '') {
                 continue;
             }
 
             /** @var ActionInterface $action */
-            $action  = Factories::actions($actionClass);  // @phpstan-ignore-line
+            $action = Factories::actions($actionClass);  // @phpstan-ignore-line
+
+            if (
+                ! $this->actionAppliesToUser($action, $user)
+                && ! $this->inactiveUserNeedsRegisterAction($type, $user)
+            ) {
+                continue;
+            }
+
             $types[] = $action->getType();
         }
 
         return $types;
+    }
+
+    private function actionAppliesToUser(ActionInterface $action, User $user): bool
+    {
+        return ! $action instanceof ConditionalActionInterface || $action->appliesTo($user);
+    }
+
+    private function inactiveUserNeedsRegisterAction(int|string $type, User $user): bool
+    {
+        return $type === 'register' && ! $user->active;
     }
 
     /**

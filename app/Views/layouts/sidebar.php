@@ -16,9 +16,43 @@ function isActiveStartsWith($path)
 }
 
 if ($isEmployer) {
+    $logoPath = isset($employer) && ! empty($employer->logo) ? $employer->logo : '';
+    $defaultImage = 'images/favicon.png';
+    $profileImage = $defaultImage;
+    $hasProfileImage = false;
+    if ($logoPath) {
+        if (filter_var($logoPath, FILTER_VALIDATE_URL) || str_starts_with($logoPath, 'http://') || str_starts_with($logoPath, 'https://')) {
+            $profileImage = $logoPath;
+            $hasProfileImage = true;
+        } elseif (file_exists(FCPATH . $logoPath)) {
+            $profileImage = $logoPath;
+            $hasProfileImage = true;
+        }
+    }
     $displayName = isset($employer) && ! empty($employer->company_name) ? $employer->company_name : 'Employer';
 } else {
+    $picPath = isset($candidate) && ! empty($candidate->profile_picture) ? $candidate->profile_picture : '';
+    $defaultImage = 'images/favicon.png';
+    $profileImage = $defaultImage;
+    $hasProfileImage = false;
+    if ($picPath) {
+        if (filter_var($picPath, FILTER_VALIDATE_URL) || str_starts_with($picPath, 'http://') || str_starts_with($picPath, 'https://')) {
+            $profileImage = $picPath;
+            $hasProfileImage = true;
+        } elseif (file_exists(FCPATH . $picPath)) {
+            $profileImage = $picPath;
+            $hasProfileImage = true;
+        }
+    }
     $displayName = isset($candidate) && ! empty($candidate->full_name) ? $candidate->full_name : 'Candidate';
+}
+
+$initials = '';
+$words = explode(' ', preg_replace('/\s+/', ' ', trim($displayName)));
+if (count($words) >= 2) {
+    $initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+} else {
+    $initials = strtoupper(substr($displayName, 0, 2));
 }
 ?>
 <div class="sidebar" id="sidebar">
@@ -37,7 +71,13 @@ if ($isEmployer) {
     <div class="modern-profile p-3 pb-0">
         <div class="text-center rounded bg-light p-3 mb-4 user-profile">
             <div class="avatar avatar-lg online mb-3">
-                <img src="<?= base_url('assets/img/customer/customer15.jpg'); ?>" alt="Img" class="img-fluid rounded-circle">
+                <?php if ($hasProfileImage): ?>
+                    <img src="<?= (str_starts_with($profileImage, 'http://') || str_starts_with($profileImage, 'https://')) ? $profileImage : base_url($profileImage); ?>" alt="Img" class="img-fluid rounded-circle">
+                <?php else: ?>
+                    <span class="d-flex align-items-center justify-content-center text-white rounded-circle fw-bold mx-auto" style="width: 80px; height: 80px; font-size: 24px; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);">
+                        <?= esc($initials) ?>
+                    </span>
+                <?php endif; ?>
             </div>
             <h6 class="fs-14 fw-bold mb-1">
                 <?= esc($displayName) ?>

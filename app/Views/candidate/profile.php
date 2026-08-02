@@ -1,252 +1,73 @@
+<?php $page_title = 'My Profile'; ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <style>
-    :root {
-        --brand: #0D609E;
-        --brand-dark: #0A4D7E;
-        --brand-deep: #07304F;
-        --brand-light: #E6F0F9;
-        --accent: #F08F1A;
-        --accent-dark: #C8750E;
-        --accent-light: #FFF8F0;
-        --white: #ffffff;
-        --border: rgba(13, 96, 158, 0.15);
-    }
-
-    [data-theme="dark"] {
-        --brand-light: rgba(13, 96, 158, 0.15);
-        --accent-light: rgba(240, 143, 26, 0.1);
-        --white: #0F172A;
-        --border: rgba(255, 255, 255, 0.1);
-    }
-
-    /* ══ STICKY / RELATIVE PROGRESS BAR ══ */
-    .profile-progress-bar {
-        background: var(--bg-white);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 16px 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        margin-bottom: 24px;
-    }
-    .progress-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-    .progress-left {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex: 1;
-        min-width: 280px;
-    }
-    .progress-track {
-        flex: 1;
-        max-width: 360px;
-        height: 10px;
-        background: var(--border-light);
-        border-radius: 20px;
-        position: relative;
-    }
-    [data-theme="dark"] .progress-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--brand), #2575fc);
-        border-radius: 20px;
-        transition: width .6s ease;
-    }
-    .progress-text {
-        font-size: .88rem;
-        font-weight: 700;
-        color: var(--text-dark);
-        white-space: nowrap;
-    }
-    .progress-tip {
-        font-size: .8rem;
-        color: var(--accent-dark);
-        font-weight: 600;
-        white-space: nowrap;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .progress-tip svg {
-        width: 14px;
-        height: 14px;
-    }
-    .progress-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-shrink: 0;
-    }
-
-    /* Milestone markers on track */
-    .milestone-marker {
-        position: absolute;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        z-index: 2;
-        background: var(--bg-white);
-        border: 2px solid #c8dff2;
-        transition: background .35s ease, border-color .35s ease, box-shadow .35s ease;
-    }
-    .milestone-marker.achieved {
-        background: var(--accent);
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(240, 143, 26, 0.22);
-    }
-    .milestone-marker.next {
-        border-color: var(--accent);
-        animation: marker-pulse 1.6s ease infinite;
-    }
-    @keyframes marker-pulse {
-        0%,100% { box-shadow: 0 0 0 0 rgba(240, 143, 26, 0.4); }
-        50% { box-shadow: 0 0 0 6px rgba(240, 143, 26, 0); }
-    }
-    .milestone-label {
-        position: absolute;
-        bottom: 18px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: .65rem;
-        font-weight: 700;
-        white-space: nowrap;
-        letter-spacing: .03em;
-        color: var(--text-muted);
-        transition: color .35s ease;
-    }
-    .milestone-marker.achieved .milestone-label,
-    .milestone-marker.next .milestone-label {
-        color: var(--accent-dark);
-    }
-
-    /* Wallet balance chip */
-    .wallet-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--brand-deep);
-        color: #ffffff;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: .82rem;
-        font-weight: 700;
-        cursor: default;
-        user-select: none;
-    }
-    .wallet-chip svg {
-        width: 14px;
-        height: 14px;
-    }
-    .wallet-chip.has-balance {
-        background: linear-gradient(120deg, var(--accent-dark), var(--accent));
-        color: var(--brand-deep);
-    }
-
-    /* ══ PROFILE CARDS ══ */
-    .profile-card {
-        background: var(--bg-white);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-        margin-bottom: 24px;
-    }
-    .profile-card-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .profile-card-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text-dark);
-        margin-bottom: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .profile-card-title i {
-        color: var(--brand);
-    }
-    .profile-card-body {
-        padding: 24px;
-    }
-
-    /* Details styling */
-    .info-label {
-        font-size: .8rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: .05em;
-        margin-bottom: 4px;
-        font-weight: 600;
-    }
-    .info-value {
-        font-size: .95rem;
-        color: var(--text-dark);
-        font-weight: 500;
-        margin-bottom: 16px;
-    }
-
-    .badge-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        border: 1px solid transparent;
-    }
-    .badge-tag-success {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-        border-color: rgba(16, 185, 129, 0.2);
-    }
-    .badge-tag-warning {
-        background: rgba(245, 158, 11, 0.1);
-        color: #F59E0B;
-        border-color: rgba(245, 158, 11, 0.2);
-    }
-    .badge-tag-brand {
-        background: var(--brand-light);
-        color: var(--brand);
-        border-color: var(--border);
-    }
-
-    /* Skills Cloud */
-    .skills-cloud {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .skill-badge {
-        background: var(--bg-light);
-        border: 1px solid var(--border-light);
-        color: var(--text-dark);
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-size: .85rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    .skill-badge:hover {
-        border-color: var(--brand);
-        background: var(--brand-light);
-        color: var(--brand);
-    }
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+html.anim-ready .content>*{animation:rise .34s ease both}
+html.anim-ready .content>*:nth-child(2){animation-delay:.05s}
+html.anim-ready .content>*:nth-child(3){animation-delay:.1s}
+html.anim-ready .content>*:nth-child(4){animation-delay:.15s}
+html.anim-ready .content>*:nth-child(5){animation-delay:.2s}
+html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
+.card{box-shadow:0 1px 3px rgba(10,47,87,.06);transition:var(--transition)}
+.card:hover{box-shadow:0 2px 10px rgba(10,47,87,.07)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,background-color .18s ease,border-color .18s ease}
+.btn:active{transform:scale(.97)}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){.btn{transition:background-color .12s ease,border-color .12s ease!important}.btn:active,.btn:hover{transform:none!important}}
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.sl{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.3s}
+.sl::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.switch input:checked+.sl{background:var(--brand)}
+.switch input:checked+.sl::before{transform:translateX(20px)}
+.switch input:focus-visible+.sl{outline:3px solid var(--accent);outline-offset:2px}
+.prof-grid{display:grid;grid-template-columns:300px 1fr;gap:clamp(16px,2vw,24px);align-items:start}
+@media(max-width:960px){.prof-grid{grid-template-columns:1fr}}
+.prof-sticky{position:sticky;top:90px}
+.id-card{text-align:center;padding:24px}
+.id-ava{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:1.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;position:relative}
+.id-ava .dot{position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:var(--success);border:3px solid #fff}
+.id-name{font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:var(--brand-deep)}
+.id-mail{font-size:.78rem;color:var(--muted);margin-top:2px}
+.id-badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.id-actions{margin-top:12px}
+.pf{display:flex;gap:16px;align-items:center}
+.pf-ring{position:relative;width:88px;height:88px;flex-shrink:0}
+.pf-ring svg{width:88px;height:88px;transform:rotate(-90deg)}
+.pf-ring .track{fill:none;stroke:var(--bg);stroke-width:8}
+.pf-ring .prog{fill:none;stroke:var(--brand);stroke-width:8;stroke-linecap:round;stroke-dasharray:239}
+.pf-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:1rem;color:var(--brand-deep)}
+.pf-body b{display:block;font-size:.86rem;color:var(--brand-deep)}
+.pf-body p{font-size:.76rem;color:var(--muted);line-height:1.6;margin-top:4px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:560px){.info-grid{grid-template-columns:1fr}}
+.info-full{grid-column:1/-1}
+.info-lbl{display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.info-lbl svg{width:13px;height:13px;color:var(--brand)}
+.info-val{font-size:.86rem;color:var(--brand-deep);font-weight:500}
+.priv-note{display:flex;align-items:center;gap:6px;font-size:.64rem;color:var(--muted);margin-top:4px}
+.priv-note svg{width:11px;height:11px;color:var(--brand);flex-shrink:0}
+.xp{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.xp:last-child{border-bottom:none;padding-bottom:2px}
+.xp:first-child{padding-top:2px}
+.xp-ic{width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0}
+.xp-ic svg{width:16px;height:16px}
+.xp b{display:block;font-size:.84rem;color:var(--brand-deep);line-height:1.35}
+.xp i{font-style:normal;font-size:.72rem;color:var(--muted);display:block;margin-top:2px}
+.xp p{font-size:.74rem;color:var(--text);line-height:1.55;margin-top:4px}
+.doc-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.doc-row:last-child{border-bottom:none}
+.doc-ic{width:44px;height:44px;border-radius:12px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-ic svg{width:20px;height:20px}
+.doc-info{flex:1;min-width:0}
+.doc-info b{display:block;font-size:.84rem;color:var(--brand-deep)}
+.doc-info i{font-style:normal;font-size:.72rem;color:var(--muted)}
+.doc-actions{display:flex;gap:8px;flex-shrink:0}
+.duo2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2vw,24px)}
+@media(max-width:760px){.duo2{grid-template-columns:1fr}}
 </style>
 <?= $this->endSection() ?>
 
@@ -281,267 +102,345 @@ $completion = round(($completed / $totalFields) * 100);
 ?>
 
 <div class="content">
-    <!-- Header -->
-    <div class="page-header mb-4">
-        <div class="add-item d-flex">
-            <div class="page-title">
-                <h4 class="fw-bold text-gradient">Candidate Profile</h4>
-                <h6 class="text-muted">View and manage your job seeker profile</h6>
-            </div>
+    
+    <!-- Breadcrumbs / Top header style -->
+    <div class="page-head">
+        <div>
+            <h1><svg aria-hidden="true"><use href="#i-users"/></svg> My Profile</h1>
+            <p>View and manage your job seeker profile</p>
         </div>
-        <div class="page-btn mt-0">
-            <a href="<?= base_url('candidate/dashboard') ?>" class="btn btn-secondary">
-                <i data-feather="arrow-left" class="me-2"></i>Back to Dashboard
+        <div class="page-actions">
+            <a href="<?= base_url('candidate/profile/employer-view') ?>" class="btn btn-outline btn-sm">
+                <svg aria-hidden="true"><use href="#i-eye"/></svg> View as Employer
+            </a>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-primary btn-sm">
+                <svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile
             </a>
         </div>
     </div>
 
-    <!-- STICKY PROFILE COMPLETION / TOASTER BAR -->
-    <div class="profile-progress-bar">
-        <div class="progress-inner">
-            <div class="progress-left">
-                <div class="progress-track" aria-hidden="true">
-                    <div class="progress-fill" style="width: <?= $completion ?>%;"></div>
-                    <div class="milestone-marker <?= $completion >= 60 ? 'achieved' : 'next' ?>" style="left: 60%;" title="Earn ₦200 at 60%">
-                        <span class="milestone-label">₦200</span>
-                    </div>
-                    <div class="milestone-marker <?= $completion >= 80 ? 'achieved' : ($completion >= 60 ? 'next' : '') ?>" style="left: 80%;" title="Earn ₦500 at 80%">
-                        <span class="milestone-label">₦500</span>
-                    </div>
+    <!-- The 2-column Layout Grid -->
+    <div class="prof-grid">
+      <!-- ══ LEFT COLUMN ══ -->
+      <div class="prof-col prof-sticky">
+        <section class="card id-card" aria-label="Candidate ID">
+          <div class="id-ava">
+            <?php if (!empty($candidate->profile_picture)): ?>
+                <img src="<?= base_url($candidate->profile_picture) ?>" alt="Profile Photo" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+            <?php else: ?>
+                <?= esc(substr($candidate->full_name ?? 'C', 0, 1)) ?>
+            <?php endif; ?>
+            <span class="dot" aria-hidden="true"></span>
+          </div>
+          <h2 class="id-name"><?= esc($candidate->full_name ?? 'Not Set') ?></h2>
+          <p class="id-mail"><?= esc($user->email) ?></p>
+          <div class="id-badges">
+            <?php if (!empty($candidate->resume)): ?>
+                <span class="pill pill--success"><svg aria-hidden="true"><use href="#i-check"/></svg> CV Uploaded</span>
+            <?php else: ?>
+                <span class="pill pill--pending"><svg aria-hidden="true"><use href="#i-x"/></svg> No CV</span>
+            <?php endif; ?>
+            <?php if (!empty($candidate->is_open_to_work)): ?>
+                <span class="pill pill--immediate">Open to work</span>
+            <?php endif; ?>
+          </div>
+          <div class="id-actions">
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-outline btn-sm btn-block"><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile</a>
+          </div>
+        </section>
+
+        <!-- Profile completion card -->
+        <section class="card" aria-label="Profile completion">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Profile Completion</span></div>
+          <div class="card-body">
+            <div class="pf">
+              <div class="pf-ring" role="img" aria-label="Profile <?= $completion ?> percent complete">
+                <svg viewBox="0 0 88 88" aria-hidden="true"><circle class="track" cx="44" cy="44" r="38"/><circle class="prog" cx="44" cy="44" r="38" stroke-dashoffset="<?= 239 * (1 - $completion/100) ?>"/></svg>
+                <span class="pct"><?= $completion ?>%</span>
+              </div>
+              <div class="pf-body">
+                <b><?= $completion == 100 ? 'Fully Complete' : 'Almost complete' ?></b>
+                <p>
+                    <?php if ($completion < 100):
+                        // Identify the first missing field so we can give specific advice
+                        $missingHints = [];
+                        if (empty($candidate->full_name))       $missingHints[] = 'add your full name';
+                        if (empty($candidate->dob))             $missingHints[] = 'add your date of birth';
+                        if (empty($candidate->gender))          $missingHints[] = 'set your gender';
+                        if (empty($candidate->phone))           $missingHints[] = 'add a phone number';
+                        if (empty($candidate->location))        $missingHints[] = 'add your location';
+                        if (empty($candidate->job_title))       $missingHints[] = 'add your job title';
+                        if (empty($candidate->employment_type)) $missingHints[] = 'set your employment type';
+                        if (empty($candidate->skills))          $missingHints[] = 'add your skills';
+                        if (empty($candidate->experience_years))$missingHints[] = 'set your years of experience';
+                        if (empty($candidate->education_level)) $missingHints[] = 'set your education level';
+                        if (empty($candidate->resume))          $missingHints[] = '<a href="' . base_url('candidate/profile/edit') . '">upload your CV</a>';
+                        $nextStep = !empty($missingHints) ? ucfirst($missingHints[0]) . ' to move to the next milestone.' : 'Almost there!';
+                    ?>
+                        Next step: <?= $nextStep ?> Complete profiles rank higher in employer searches and unlock &#8358;500 in wallet rewards.
+                    <?php else: ?>
+                        Excellent! Your profile is complete and optimised for employer searches.
+                    <?php endif; ?>
+                </p>
+                <p style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap">
+                    <span class="pill <?= $completion >= 60 ? 'pill--success' : 'pill--pending' ?>"><svg aria-hidden="true"><use href="#i-check"/></svg> &#8358;200 at 60%</span>
+                    <span class="pill <?= $completion >= 100 ? 'pill--success' : 'pill--pending' ?>"><svg aria-hidden="true"><use href="#i-wallet"/></svg> &#8358;500 at 100%</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Profile visibility -->
+        <section class="card" aria-label="Profile visibility">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-eye"/></svg> Profile Visibility</span></div>
+          <div class="card-body">
+            <div class="vis-row" style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
+              <p id="vis-text" style="font-size:.82rem;color:var(--muted);margin:0;">
+                <?php if (!empty($candidate->is_visible)): ?>
+                  <b style="color:var(--brand-deep)">Visible to employers.</b> Verified employers can find you in candidate search and invite you to roles.
+                <?php else: ?>
+                  <b style="color:var(--brand-deep)">Hidden.</b> You won't appear in employer candidate search until you turn this back on.
+                <?php endif; ?>
+              </p>
+              <label class="switch" style="flex-shrink:0;">
+                <input type="checkbox" id="visibility-toggle" <?= !empty($candidate->is_visible) ? 'checked' : '' ?> aria-label="Profile visible to employers">
+                <span class="sl"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Wallet card -->
+        <section class="card" aria-label="Wallet">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Wallet Balance</span></div>
+          <div class="card-body">
+            <h3 style="font-family:'Sora',sans-serif;font-weight:800;font-size:1.4rem;color:var(--brand-deep);margin-bottom:10px;">&#8358;<?= number_format($walletBalance, 2) ?></h3>
+            <a href="<?= base_url('candidate/wallet') ?>" class="btn btn-outline btn-sm btn-block"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Go to Wallet</a>
+          </div>
+        </section>
+      </div>
+
+      <!-- ══ RIGHT COLUMN ══ -->
+      <div class="prof-col">
+        <!-- Personal Info -->
+        <section class="card" aria-label="Personal information">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-users"/></svg> Personal Information</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-users"/></svg> Full name</div><div class="info-val"><?= esc($candidate->full_name ?? 'Not Set') ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-users"/></svg> Gender</div><div class="info-val"><?= esc(ucfirst($candidate->gender ?? 'Not Set')) ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Date of birth</div><div class="info-val"><?= esc(!empty($candidate->dob) ? date('d M Y', strtotime($candidate->dob)) : 'Not Set') ?></div>
+                <div class="priv-note"><svg aria-hidden="true"><use href="#i-shield"/></svg> Private — used for age verification, never shown to employers</div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-phone"/></svg> Phone</div><div class="info-val"><?= esc($candidate->phone ?? 'Not Set') ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-building"/></svg> Location</div><div class="info-val"><?= esc(!empty($candidate->location) ? $candidate->location . ' State' : 'Not Set') ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-doc"/></svg> User ID</div><div class="info-val"><?= esc($candidate->user_id) ?></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Career Info -->
+        <section class="card" aria-label="Career information">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Career Information</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Job title</div><div class="info-val"><?= esc($candidate->job_title ?? 'Not Set') ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-clock"/></svg> Employment type</div><div class="info-val"><?= esc($candidate->employment_type ?? 'Not Set') ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-chart"/></svg> Experience</div><div class="info-val"><?= esc(!empty($candidate->experience_years) ? $candidate->experience_years . ' years' : 'Not Set') ?></div></div>
+              <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education level</div><div class="info-val"><?= esc($candidate->education_level ?? 'Not Set') ?></div></div>
+              <div class="info-full"><div class="info-lbl"><svg aria-hidden="true"><use href="#i-zap"/></svg> Skills</div>
+                <div class="chips" style="margin-top:4px">
+                  <?php if (!empty($candidate->skills)): ?>
+                      <?php 
+                      $skillsArr = array_map('trim', explode(',', $candidate->skills));
+                      foreach ($skillsArr as $skill): 
+                      ?>
+                          <span class="chip"><?= esc($skill) ?></span>
+                      <?php endforeach; ?>
+                  <?php else: ?>
+                      <span class="text-muted small">No skills added</span>
+                  <?php endif; ?>
                 </div>
-                <span class="progress-text"><?= $completion ?>% Completed</span>
-                <span class="progress-tip">
-                    <i data-feather="zap"></i>
-                    <span>
-                        <?php if ($completion < 60): ?>
-                            Complete <?= 60 - $completion ?>% more to unlock ₦200
-                        <?php elseif ($completion < 80): ?>
-                            Nice! Complete <?= 80 - $completion ?>% more to unlock ₦500
-                        <?php else: ?>
-                            All profile milestones achieved!
-                        <?php endif; ?>
-                    </span>
-                </span>
+              </div>
             </div>
-            <div class="progress-actions">
-                <span class="wallet-chip <?= $walletBalance > 0 ? 'has-balance' : '' ?>">
-                    <i data-feather="credit-card"></i>
-                    <span class="wallet-label">Wallet:</span>
-                    <span>₦<?= number_format($walletBalance, 2) ?></span>
-                </span>
+          </div>
+        </section>
+
+        <!-- Professional Summary -->
+        <section class="card" aria-label="Professional summary">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-note"/></svg> Professional Summary</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <p style="font-size:.86rem;line-height:1.75">
+                <?= !empty($candidate->description) ? nl2br(esc($candidate->description)) : 'No professional summary added.' ?>
+            </p>
+          </div>
+        </section>
+
+        <!-- Work Experience -->
+        <section class="card" aria-label="Work experience">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <?php if (!empty($experiences)): ?>
+                <?php foreach ($experiences as $xp): ?>
+                    <?php
+                    $start = !empty($xp->start_date) ? date('M Y', strtotime($xp->start_date)) : '';
+                    $end   = !empty($xp->is_current) ? 'present' : (!empty($xp->end_date) ? date('M Y', strtotime($xp->end_date)) : '');
+                    $range = trim($start . ($start && $end ? ' – ' : '') . $end);
+                    ?>
+                    <div class="xp"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+                      <div><b><?= esc($xp->job_title) ?></b><i><?= esc(trim(($xp->company ?? '') . (!empty($xp->location) ? ' · ' . $xp->location : '') . ($range ? ' · ' . $range : ''), ' ·')) ?></i>
+                        <?php if (!empty($xp->description)): ?><p><?= nl2br(esc($xp->description)) ?></p><?php endif; ?>
+                      </div></div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="xp" style="border:none;padding:2px 0"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+                  <div><b>No work experience added</b><i><a href="<?= base_url('candidate/profile/edit') ?>">Add your work history</a> so employers can see your background.</i></div></div>
+            <?php endif; ?>
+          </div>
+        </section>
+
+        <!-- Education -->
+        <section class="card" aria-label="Education">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <?php if (!empty($education)): ?>
+                <?php foreach ($education as $ed): ?>
+                    <?php $yr = trim(($ed->start_year ?? '') . (($ed->start_year && $ed->end_year) ? ' – ' : '') . ($ed->end_year ?? '')); ?>
+                    <div class="xp"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-grad"/></svg></span>
+                      <div><b><?= esc($ed->degree) ?><?= !empty($ed->field_of_study) ? ' — ' . esc($ed->field_of_study) : '' ?></b><i><?= esc(trim(($ed->school ?? '') . ($yr ? ' · ' . $yr : '') . (!empty($ed->grade) ? ' · ' . $ed->grade : ''), ' ·')) ?></i></div></div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="xp" style="border:none;padding:2px 0"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-grad"/></svg></span>
+                  <div><b>No education added</b><i><a href="<?= base_url('candidate/profile/edit') ?>">Add your qualifications</a> to strengthen your profile.</i></div></div>
+            <?php endif; ?>
+          </div>
+        </section>
+
+        <!-- Certifications (auto-attached JobberRecruit certificates) -->
+        <section class="card" aria-label="Certifications">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Certifications</span>
+            <a href="<?= base_url('candidate/certificates') ?>" class="card-link">My certificates <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-body">
+            <?php if (!empty($certificates)): ?>
+                <?php foreach ($certificates as $cert): ?>
+                    <div class="xp"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-award"/></svg></span>
+                      <div><b><?= esc($cert['course_name'] ?? 'Course Certificate') ?></b><i>JobberRecruit Training · <?= esc(date('M Y', strtotime($cert['issued_at']))) ?> · <?= esc($cert['certificate_code']) ?> · <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>" target="_blank">Download</a></i></div></div>
+                <?php endforeach; ?>
+                <p style="font-size:.72rem;color:var(--muted);margin-top:10px">JobberRecruit certificates attach to your profile automatically and are verifiable by employers.</p>
+            <?php else: ?>
+                <div class="xp" style="border:none;padding:2px 0"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-award"/></svg></span>
+                  <div><b>No certificates yet</b><i>Complete a course in <a href="<?= base_url('training') ?>">Training</a> to earn a verifiable certificate.</i></div></div>
+            <?php endif; ?>
+          </div>
+        </section>
+
+        <!-- Languages & Job Preferences -->
+        <div class="duo2">
+          <section class="card" aria-label="Languages" style="min-width:0">
+            <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-chat"/></svg> Languages</span></div>
+            <div class="card-body">
+              <div class="chips">
+                <?php if (!empty($candidate->languages)): ?>
+                    <?php 
+                    $langs = array_map('trim', explode(',', $candidate->languages));
+                    foreach ($langs as $lang):
+                    ?>
+                        <span class="chip"><?= esc($lang) ?></span>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <span class="text-muted small">Not Set</span>
+                <?php endif; ?>
+              </div>
             </div>
+          </section>
+          
+          <section class="card" aria-label="Job Preferences" style="min-width:0">
+            <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-star"/></svg> Preferences</span></div>
+            <div class="card-body">
+              <div style="font-size:.84rem;line-height:1.6;">
+                <div><span class="text-muted">Salary:</span> <b><?= !empty($candidate->desired_salary) ? '&#8358;' . number_format($candidate->desired_salary) . ' / ' . esc($candidate->salary_type ?? 'monthly') : 'Negotiable' ?></b></div>
+                <div><span class="text-muted">Availability:</span> <b><?= esc($candidate->availability ?? 'Not Set') ?></b></div>
+                <?php if (!empty($candidate->preferred_location)): ?>
+                <div><span class="text-muted">Preferred location:</span> <b><?= esc($candidate->preferred_location) ?></b></div>
+                <?php endif; ?>
+                <?php if (!empty($candidate->portfolio)): ?>
+                <div><span class="text-muted">Portfolio:</span> <b><a href="<?= esc($candidate->portfolio, 'attr') ?>" target="_blank" rel="noopener noreferrer">View portfolio</a></b></div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </section>
         </div>
+
+        <!-- Documents / CV -->
+        <section class="card" aria-label="Documents">
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Documents</span>
+            <span class="pill <?= !empty($candidate->resume) ? 'pill--success' : 'pill--pending' ?>"><svg aria-hidden="true"><use href="#i-check"/></svg> <?= !empty($candidate->resume) ? 'Uploaded' : 'Pending' ?></span></div>
+          <div class="card-body">
+            <div class="doc-row">
+              <span class="doc-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-doc"/></svg></span>
+              <div class="doc-info">
+                <b>Resume / CV</b>
+                <i><?= !empty($candidate->resume) ? 'Uploaded CV File' : 'No CV file uploaded yet' ?></i>
+              </div>
+              <div class="doc-actions">
+                <?php if (!empty($candidate->resume)): ?>
+                    <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline btn-sm"><svg aria-hidden="true"><use href="#i-eye"/></svg> View Resume</a>
+                <?php endif; ?>
+                <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-outline btn-sm"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Upload/Replace</a>
+              </div>
+            </div>
+            <p style="font-size:.74rem;color:var(--muted);margin-top:12px">Your CV is shared with an employer when you apply, or when a verified employer unlocks your profile from candidate search.</p>
+          </div>
+        </section>
+      </div>
     </div>
 
-    <div class="row">
-        <!-- Profile Overview (Left) -->
-        <div class="col-lg-4 col-md-12">
-            <div class="profile-card text-center">
-                <div class="profile-card-body py-5">
-                    <!-- Profile Image -->
-                    <div class="profile-image mb-4">
-                        <?php if (!empty($candidate->profile_picture)): ?>
-                            <img src="<?= base_url($candidate->profile_picture) ?>"
-                                alt="Profile Photo"
-                                class="rounded-circle shadow-lg img-thumbnail"
-                                style="width: 120px; height: 120px; object-fit: cover; border: 3px solid var(--brand);">
-                        <?php else: ?>
-                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm"
-                                style="width: 120px; height: 120px; border: 3px solid var(--border);">
-                                <i data-feather="user" class="text-muted" style="width: 50px; height: 50px;"></i>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-
-                    <h4 class="mb-1 text-gradient fw-bold"><?= esc($candidate->full_name ?? 'Not Set') ?></h4>
-                    <p class="text-muted mb-4"><?= esc($user->email) ?></p>
-
-                    <!-- Resume Badge -->
-                    <div class="mb-4">
-                        <?php if (!empty($candidate->resume)): ?>
-                            <span class="badge-tag badge-tag-success">
-                                <i data-feather="check-circle" class="me-1" style="width: 14px; height: 14px;"></i> Resume Uploaded
-                            </span>
-                        <?php else: ?>
-                            <span class="badge-tag badge-tag-warning">
-                                <i data-feather="alert-triangle" class="me-1" style="width: 14px; height: 14px;"></i> No Resume Uploaded
-                            </span>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="d-grid gap-2 px-3">
-                        <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-primary rounded-pill">
-                            <i data-feather="edit-2" class="me-2" style="width: 16px; height: 16px;"></i>Edit Profile
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Details (Right) -->
-        <div class="col-lg-8 col-md-12">
-            <!-- Personal Info Card -->
-            <div class="profile-card">
-                <div class="profile-card-header">
-                    <h5 class="profile-card-title"><i data-feather="user"></i> Personal Information</h5>
-                </div>
-                <div class="profile-card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-label">Full Name</div>
-                            <div class="info-value"><?= esc($candidate->full_name ?? 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Gender</div>
-                            <div class="info-value"><?= esc(ucfirst($candidate->gender ?? 'Not Set')) ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Date of Birth</div>
-                            <div class="info-value"><?= esc(!empty($candidate->dob) ? date('M d, Y', strtotime($candidate->dob)) : 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Phone Number</div>
-                            <div class="info-value">
-                                <?php if (!empty($candidate->phone)): ?>
-                                    <a href="tel:<?= esc($candidate->phone) ?>" class="text-decoration-none text-brand">
-                                        <?= esc($candidate->phone) ?>
-                                    </a>
-                                <?php else: ?>
-                                    Not Set
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Location (State)</div>
-                            <div class="info-value"><?= esc(!empty($candidate->location) ? $candidate->location . ' State' : 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">User ID</div>
-                            <div class="info-value"><?= esc($candidate->user_id) ?></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Career Info Card -->
-            <div class="profile-card">
-                <div class="profile-card-header">
-                    <h5 class="profile-card-title"><i data-feather="briefcase"></i> Career & Professional Details</h5>
-                </div>
-                <div class="profile-card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-label">Job Title</div>
-                            <div class="info-value"><?= esc($candidate->job_title ?? 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Employment Type</div>
-                            <div class="info-value"><?= esc($candidate->employment_type ?? 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Experience (Years)</div>
-                            <div class="info-value"><?= esc(!empty($candidate->experience_years) ? $candidate->experience_years . ' Years' : 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Education Level</div>
-                            <div class="info-value"><?= esc($candidate->education_level ?? 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Languages</div>
-                            <div class="info-value"><?= esc($candidate->languages ?? 'Not Set') ?></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">Desired Salary</div>
-                            <div class="info-value">
-                                <?php if (!empty($candidate->desired_salary)): ?>
-                                    ₦<?= number_format($candidate->desired_salary) ?> <span class="text-muted small">/ <?= esc($candidate->salary_type ?? 'monthly') ?></span>
-                                <?php else: ?>
-                                    Not Set
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <div class="info-label">Portfolio Website</div>
-                            <div class="info-value">
-                                <?php if (!empty($candidate->portfolio)): ?>
-                                    <a href="<?= esc($candidate->portfolio) ?>" target="_blank" class="text-brand text-decoration-none">
-                                        <i data-feather="external-link" class="me-1" style="width: 14px; height: 14px;"></i> <?= esc($candidate->portfolio) ?>
-                                    </a>
-                                <?php else: ?>
-                                    Not Set
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <div class="info-label">Skills</div>
-                            <div class="skills-cloud">
-                                <?php if (!empty($candidate->skills)): ?>
-                                    <?php 
-                                    $skillsArr = array_map('trim', explode(',', $candidate->skills));
-                                    foreach ($skillsArr as $skill): 
-                                    ?>
-                                        <span class="skill-badge"><?= esc($skill) ?></span>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="text-muted small">No skills added</span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="col-md-12">
-                            <div class="info-label">Professional Summary</div>
-                            <div class="info-value mb-0" style="line-height: 1.6;">
-                                <?= !empty($candidate->description) ? nl2br(esc($candidate->description)) : 'No professional summary added.' ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Documents Card -->
-            <div class="profile-card">
-                <div class="profile-card-header">
-                    <h5 class="profile-card-title"><i data-feather="file-text"></i> Documents</h5>
-                </div>
-                <div class="profile-card-body">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                                <i data-feather="file" class="text-primary"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Resume / Curriculum Vitae</h6>
-                                <p class="text-muted small mb-0">
-                                    <?php if (!empty($candidate->resume)): ?>
-                                        PDF/Word document format
-                                    <?php else: ?>
-                                        No CV file uploaded yet.
-                                    <?php endif; ?>
-                                </p>
-                            </div>
-                        </div>
-                        <div>
-                            <?php if (!empty($candidate->resume)): ?>
-                                <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                    <i data-feather="eye" class="me-1" style="width: 14px; height: 14px;"></i> View Resume
-                                </a>
-                            <?php else: ?>
-                                <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-warning btn-sm text-white">
-                                    <i data-feather="upload" class="me-1" style="width: 14px; height: 14px;"></i> Upload Resume
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
+<?= $this->endSection() ?>
 
+<?= $this->section('scripts') ?>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof feather !== 'undefined') {
-            feather.replace();
-        }
+requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
+$(function () {
+    $('#visibility-toggle').on('change', function () {
+        var input = $(this);
+        var makeVisible = input.is(':checked') ? 1 : 0;
+        input.prop('disabled', true);
+
+        $.ajax({
+            url: '<?= base_url('candidate/profile/visibility') ?>',
+            type: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            data: {
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                is_visible: makeVisible
+            },
+            success: function (res) {
+                if (res && res.success) {
+                    if (typeof toastr !== 'undefined') toastr.success(res.message);
+                    if (res.is_visible) {
+                        $('#vis-text').html('<b style="color:var(--brand-deep)">Visible to employers.</b> Verified employers can find you in candidate search and invite you to roles.');
+                    } else {
+                        $('#vis-text').html('<b style="color:var(--brand-deep)">Hidden.</b> You won\'t appear in employer candidate search until you turn this back on.');
+                    }
+                } else {
+                    input.prop('checked', !makeVisible);
+                    if (typeof toastr !== 'undefined') toastr.error((res && res.message) || 'Could not update visibility.');
+                }
+            },
+            error: function () {
+                input.prop('checked', !makeVisible);
+                if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
+            },
+            complete: function () { input.prop('disabled', false); }
+        });
     });
+});
 </script>
-<?= $this->endSection() ?>
+<?= $this->endSection() ?>
+
