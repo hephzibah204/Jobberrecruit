@@ -117,33 +117,62 @@ document.getElementById('inlineApplyForm')?.addEventListener('submit', function(
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
 
+  // Guest (not-logged-in) applicants: the backend reads separate
+  // first_name/last_name fields, but this form only collects one
+  // full_name field - split it so guest applications don't save blank names.
+  const fullNameParts = fullName.value.trim().split(/\s+/);
+  this.querySelector('[name="first_name"]')?.remove();
+  this.querySelector('[name="last_name"]')?.remove();
+  const firstNameInput = document.createElement('input');
+  firstNameInput.type = 'hidden';
+  firstNameInput.name = 'first_name';
+  firstNameInput.value = fullNameParts[0] || '';
+  const lastNameInput = document.createElement('input');
+  lastNameInput.type = 'hidden';
+  lastNameInput.name = 'last_name';
+  lastNameInput.value = fullNameParts.slice(1).join(' ') || '';
+  this.appendChild(firstNameInput);
+  this.appendChild(lastNameInput);
+
+  // NOTE: this previously posted to base_url('jobs/apply'), a route that has
+  // never existed - every submission silently 404'd and landed in the
+  // .catch() below. The real endpoint is Home::apply_job via
+  // POST job/application/(:num), which returns
+  // {status:'success'|'error', message, redirect?} as JSON.
   const formData = new FormData(this);
-  fetch('<?= base_url('jobs/apply') ?>', {
+  fetch('<?= base_url('job/application/' . $job->id) ?>', {
     method: 'POST',
     body: formData
   })
   .then(response => response.json())
   .then(data => {
+    if (data.status === 'error') {
+      if (typeof toastr !== 'undefined') {
+        toastr.error(data.message || 'Failed to submit application. Please try again.');
+      } else {
+        console.error(data.message);
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Application';
+      return;
+    }
+
+    if (typeof toastr !== 'undefined') {
+      toastr.success(data.message || 'Application submitted successfully!');
+    }
+    bootstrap.Modal.getInstance(document.getElementById('ModalApplyJobForm'))?.hide();
+    this.reset();
     if (data.redirect) {
       window.location.href = data.redirect;
     } else {
-      if (typeof toastr !== 'undefined') {
-        toastr.success(data.message || 'Application submitted successfully!');
-      } else {
-        console.log(data.message || 'Application submitted successfully!');
-      }
-      bootstrap.Modal.getInstance(document.getElementById('ModalApplyJobForm'))?.hide();
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit Application';
-      this.reset();
     }
   })
   .catch(error => {
     console.error('Application error:', error);
     if (typeof toastr !== 'undefined') {
       toastr.error('Failed to submit application. Please try again.');
-    } else {
-      console.log('Failed to submit application. Please try again.');
     }
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Application';
@@ -1840,6 +1869,7 @@ main, .section, .jobs-layout, .container,
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="inlineApplyForm" novalidate>
+          <?= csrf_field() ?>
           <input type="hidden" name="job_id" value="<?= $job->id ?>">
           <div class="modal-body" style="padding:22px">
             <p style="color:var(--muted);font-size:.87rem;margin-bottom:16px">Complete your application to be considered for this position. All fields marked with * are required.</p>
