@@ -595,7 +595,7 @@ requestAnimationFrame(function(){document.documentElement.classList.add('anim-re
 
             var data = new FormData(pwForm);
 
-            fetch('<?= base_url('candidate/settings/password') ?>', {
+            fetch('<?= base_url('candidate/settings/security/change-password') ?>', {
                 method : 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body   : data

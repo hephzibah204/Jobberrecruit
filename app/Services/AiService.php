@@ -33,7 +33,10 @@ class AiService
                         ['text' => $prompt]
                     ]
                 ]
-            ]
+            ],
+            'generationConfig' => [
+                'maxOutputTokens' => 1500,
+            ],
         ];
 
         $ch = curl_init($url);
@@ -42,6 +45,8 @@ class AiService
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
 
         $response = curl_exec($ch);
         $err = curl_error($ch);
@@ -127,6 +132,9 @@ class AiService
     public function getMockInterviewTurn(string $message, array $history = [], array $options = [], string $candidateName = ''): array
     {
         $jobTitle = (string) ($options['job_title'] ?? '');
+        if ($jobTitle === '') {
+            $jobTitle = (string) ($options['candidate_job_title'] ?? '');
+        }
         $difficulty = (string) ($options['difficulty'] ?? 'medium');
         $questionPack = (string) ($options['question_pack'] ?? 'general');
         $interviewMode = (string) ($options['interview_mode'] ?? 'chat');
@@ -149,7 +157,7 @@ class AiService
         $language = (string) ($options['language'] ?? '');
         $companyType = (string) ($options['company_type'] ?? '');
 
-        $context = "You are an experienced hiring manager conducting a mock interview for a '{$jobTitle}' position with '{$candidateName}'. ";
+        $context = "[[MOCK_INTERVIEW_SESSION]] You are an experienced hiring manager conducting a mock interview for a '{$jobTitle}' position with '{$candidateName}'. ";
         if ($companyName !== '') {
             $context .= "Company: {$companyName}. ";
         }
@@ -202,6 +210,8 @@ class AiService
             $context .= "Candidate cover letter summary: {$coverLetter}. ";
         }
         $context .= "Use the job description, requirements, submitted application context, and candidate profile as the scoring yardstick. CRITICAL REQUIREMENT: Critically evaluate the candidate's answers. If the candidate provides wrong, incorrect, irrelevant, or incomplete answers, or simply says they do not know, detect this immediately. You must lower their STAR scores (1-3 out of 10) for that turn, and provide clear corrective feedback in 'feedback' and 'star_tip' pointing out the mistake or gap. ";
+        $context .= "YOU control the interview: decide every question yourself, in real time, based on the candidate's answers so far — never repeat a question or pull from a fixed script. ";
+        $context .= "QUESTION SOURCE REQUIREMENT: 'next_question' must be grounded in this specific candidate's listed skills, years of experience, education, target role, cover letter, and (if given) prior answers — reference an actual skill, project type, tool, or experience level named above. Do NOT ask generic, one-size-fits-all interview questions ('Tell me about a challenge you faced') unless you tie it explicitly to something in the candidate's background. If little candidate background is available, ask questions grounded in the job title/description/requirements instead of generic filler. Vary question difficulty and topic based on the candidate's stated experience level. ";
         $context .= "Return ONLY valid JSON with this exact shape: ";
         $context .= '{"feedback":"","next_question":"","interviewer_reply":"","star_score":0,"star_breakdown":{"situation":0,"task":0,"action":0,"result":0},"star_tip":"","focus_area":""}. ';
         $context .= "Use integer scores from 1 to 10 for star_score and each STAR breakdown item. ";
@@ -265,6 +275,9 @@ class AiService
     public function getMockInterviewEvaluation(array $history, array $options = [], string $candidateName = ''): array
     {
         $jobTitle = (string) ($options['job_title'] ?? '');
+        if ($jobTitle === '') {
+            $jobTitle = (string) ($options['candidate_job_title'] ?? '');
+        }
         $difficulty = (string) ($options['difficulty'] ?? 'medium');
         $questionPack = (string) ($options['question_pack'] ?? 'general');
         $interviewMode = (string) ($options['interview_mode'] ?? 'chat');
@@ -558,8 +571,9 @@ class AiService
             'parts' => [['text' => "Understood. I am ready to help as JobberRecruit AI Assistant."]]
         ];
 
-        // Add history
-        foreach ($history as $chat) {
+        // Add last 4 history turns for speed & context balance
+        $recentHistory = array_slice($history, -4);
+        foreach ($recentHistory as $chat) {
             $contents[] = [
                 'role' => ($chat['sender'] === 'user') ? 'user' : 'model',
                 'parts' => [['text' => $chat['message']]]
@@ -575,8 +589,8 @@ class AiService
         $payload = [
             'contents' => $contents,
             'generationConfig' => [
-                'temperature' => 0.7,
-                'maxOutputTokens' => 500,
+                'temperature' => 0.5,
+                'maxOutputTokens' => 1024,
             ]
         ];
 
@@ -586,6 +600,8 @@ class AiService
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
         $response = curl_exec($ch);
         $err = curl_error($ch);
@@ -615,6 +631,96 @@ class AiService
     protected function getApiUrl(): string
     {
         return 'https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent';
+    }
+
+    /**
+     * Convert text to speech via Gemini's native TTS model. Returns a
+     * base64-encoded WAV string, or null if unavailable/failed (callers
+     * should fall back to browser speech synthesis).
+     */
+    public function textToSpeech(string $text, string $voiceName = 'Kore'): ?string
+    {
+        $text = trim($text);
+        if (empty($this->apiKey) || $text === '') {
+            return null;
+        }
+
+        $ttsModel = env('GEMINI_TTS_MODEL') ?: 'gemini-2.5-flash-preview-tts';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $ttsModel . ':generateContent?key=' . $this->apiKey;
+
+        $payload = [
+            'contents' => [[
+                'role'  => 'user',
+                'parts' => [['text' => $text]],
+            ]],
+            'generationConfig' => [
+                'responseModalities' => ['AUDIO'],
+                'speechConfig' => [
+                    'voiceConfig' => [
+                        'prebuiltVoiceConfig' => ['voiceName' => $voiceName],
+                    ],
+                ],
+            ],
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+
+        $response = curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if ($err || ! $response) {
+            log_message('error', 'Gemini TTS failed: ' . $err);
+            return null;
+        }
+
+        $result = json_decode($response, true);
+        $inline = $result['candidates'][0]['content']['parts'][0]['inlineData'] ?? null;
+        $b64Pcm = $inline['data'] ?? null;
+        $mimeType = $inline['mimeType'] ?? 'audio/L16;rate=24000';
+
+        if (! $b64Pcm) {
+            log_message('error', 'Gemini TTS returned no audio: ' . ($result['error']['message'] ?? json_encode($result)));
+            return null;
+        }
+
+        $pcm = base64_decode($b64Pcm);
+        $sampleRate = 24000;
+        if (preg_match('/rate=(\d+)/', $mimeType, $m)) {
+            $sampleRate = (int) $m[1];
+        }
+
+        return base64_encode($this->pcmToWav($pcm, $sampleRate));
+    }
+
+    /**
+     * Wrap raw 16-bit PCM audio in a WAV container so browsers can play it
+     * directly via an <audio> element, no client-side decoding needed.
+     */
+    protected function pcmToWav(string $pcm, int $sampleRate, int $channels = 1, int $bitsPerSample = 16): string
+    {
+        $byteRate = (int) ($sampleRate * $channels * $bitsPerSample / 8);
+        $blockAlign = (int) ($channels * $bitsPerSample / 8);
+        $dataSize = strlen($pcm);
+
+        $header = 'RIFF' . pack('V', 36 + $dataSize) . 'WAVE'
+            . 'fmt ' . pack('V', 16)
+            . pack('v', 1)
+            . pack('v', $channels)
+            . pack('V', $sampleRate)
+            . pack('V', $byteRate)
+            . pack('v', $blockAlign)
+            . pack('v', $bitsPerSample)
+            . 'data' . pack('V', $dataSize);
+
+        return $header . $pcm;
     }
 
     /**
@@ -823,6 +929,10 @@ class AiService
      */
     protected function handleGenerateFallback($prompt, $err)
     {
+        // Preserve the provider/network reason in server logs. The previous
+        // catch-all labelled every failure as "offline", hiding invalid keys,
+        // API restrictions, quota errors, and unsupported models.
+        log_message('error', 'Gemini generation failed: ' . (string) $err);
         // 1. Career Advice Fallback
         if (stripos($prompt, 'career coach') !== false || stripos($prompt, 'career advice') !== false || stripos($prompt, 'career growth') !== false) {
             // Extract name, skills, bio from prompt
@@ -1063,7 +1173,7 @@ class AiService
         }
 
         // Fallback catch-all
-        return "Offline Mode Active: We've compiled a tailored outline for you. Please check your internet connection to unlock full interactive AI optimizations.";
+        return 'AI Error: ' . (string) $err;
     }
 
     /**
@@ -1074,7 +1184,7 @@ class AiService
         $messageLower = strtolower($message);
 
         // 1. Mock Interview Session Fallback
-        if (stripos($context, 'hiring manager') !== false || stripos($context, 'mock interview') !== false) {
+        if (strpos($context, '[[MOCK_INTERVIEW_SESSION]]') !== false) {
             $questions = [
                 "Could you walk me through a situation where you had to manage conflicting project priorities under a tight deadline?",
                 "Tell me about a time when you engineered a feature or optimization that significantly improved application performance. What metrics did you track?",

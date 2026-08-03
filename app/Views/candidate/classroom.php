@@ -882,7 +882,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         title: <?= json_encode($mod->title) ?>,
         src: <?= json_encode(ucfirst($mod->content_source)) ?>,
         type: <?= json_encode($mod->content_source) ?>,
-        videoId: <?= json_encode(($mod->content_source === 'youtube' && !empty($mod->youtube_url)) ? $this->getYoutubeEmbedUrl($mod->youtube_url) : null) ?>
+        videoId: <?= json_encode(($mod->content_source === 'youtube' && !empty($mod->youtube_url)) ? ($moduleEmbeds[$mod->id] ?? null) : null) ?>
       });
     <?php endforeach; ?>
   <?php endif; ?>
@@ -1145,7 +1145,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
             if (viewCertBtn) {
               viewCertBtn.disabled = false;
               viewCertBtn.addEventListener("click", function(){
-                window.location.href = '<?= base_url("training/certificate/view/") ?>' + '/' + data.certificate_id;
+                window.location.href = '<?= base_url("training/certificate/view/") ?>' + data.certificate_id;
               });
             }
 
@@ -1154,7 +1154,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
             if (dlCertBtn) {
               dlCertBtn.disabled = false;
               dlCertBtn.addEventListener("click", function(){
-                window.location.href = '<?= base_url("training/certificate/download/") ?>' + '/' + data.certificate_id;
+                window.location.href = '<?= base_url("training/certificate/download/") ?>' + data.certificate_id;
               });
             }
 

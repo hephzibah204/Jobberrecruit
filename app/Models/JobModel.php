@@ -46,6 +46,7 @@ class JobModel extends Model
         'featured_until',
         'status',
         'is_featured',
+        'is_urgent',
         'is_anonymous',
         'network_blast',
         'views',

@@ -188,6 +188,14 @@ class ResumeController extends BaseController
 
         $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
 
+        $tailorJobs = model(\App\Models\JobModel::class)
+            ->select(['jobs.id', 'jobs.title', 'jobs.description', 'employers.company_name'])
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->where('jobs.status', 'open')
+            ->orderBy('jobs.created_at', 'DESC')
+            ->limit(15)
+            ->findAll();
+
         $allResumesQuery = $this->resumeModel->where('user_id', $user->id);
         if ($id) {
             $allResumesQuery->where('id !=', $id);
@@ -214,6 +222,7 @@ class ResumeController extends BaseController
             'skills'     => $skills,
             'candidate'  => $candidate,
             'allResumes' => $allResumes,
+            'tailorJobs' => $tailorJobs,
             'linkedin'   => $linkedin,
             'certs'      => $certs,
             'languages'  => $languages,
@@ -263,8 +272,25 @@ class ResumeController extends BaseController
             }
         }
 
-        // Seed one education row from profile if education_level is set
-        if (!empty($candidate->education_level)) {
+        // Seed full education history from profile
+        $eduModel = new \App\Models\JobSeekerEducationModel();
+        $profileEdus = $eduModel->forSeeker((int) $candidate->id);
+        if (!empty($profileEdus)) {
+            foreach ($profileEdus as $edu) {
+                $gradDate = null;
+                if (!empty($edu->end_year)) {
+                    $gradDate = $edu->end_year . '-12-31';
+                }
+                $this->educationModel->insert([
+                    'resume_id'       => $resumeId,
+                    'institution'     => $edu->school ?? '',
+                    'degree'          => $edu->degree ?? '',
+                    'field_of_study'  => $edu->field_of_study ?? '',
+                    'graduation_date' => $gradDate,
+                ]);
+            }
+        } elseif (!empty($candidate->education_level)) {
+            // Seed one education row from profile if education_level is set (fallback)
             $this->educationModel->insert([
                 'resume_id'       => $resumeId,
                 'institution'     => '',
@@ -272,6 +298,23 @@ class ResumeController extends BaseController
                 'field_of_study'  => '',
                 'graduation_date' => null,
             ]);
+        }
+
+        // Seed full work experience history from profile
+        $expModel = new \App\Models\JobSeekerExperienceModel();
+        $profileExps = $expModel->forSeeker((int) $candidate->id);
+        if (!empty($profileExps)) {
+            foreach ($profileExps as $exp) {
+                $this->experienceModel->insert([
+                    'resume_id'   => $resumeId,
+                    'company'     => $exp->company ?? '',
+                    'position'    => $exp->job_title ?? '',
+                    'description' => $exp->description ?? '',
+                    'start_date'  => $exp->start_date ?? null,
+                    'end_date'    => $exp->end_date ?? null,
+                    'is_current'  => (int) ($exp->is_current ?? 0),
+                ]);
+            }
         }
 
         $db->transComplete();
@@ -653,6 +696,18 @@ class ResumeController extends BaseController
         if (!$resumeId) {
             $db->transRollback();
             return $this->fail('Failed to save resume metadata', 500);
+        }
+
+        // The builder's header fields (name/phone/location) aren't resume-specific columns —
+        // they mirror the candidate's profile, which is what PDF/DOCX export actually reads.
+        // Keep them in sync so edits made here aren't silently discarded.
+        $profileUpdate = array_filter([
+            'full_name' => trim((string) $this->request->getPost('full_name')),
+            'phone'     => trim((string) $this->request->getPost('phone')),
+            'location'  => trim((string) $this->request->getPost('location')),
+        ], static fn($v) => $v !== '');
+        if (!empty($profileUpdate)) {
+            model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->set($profileUpdate)->update();
         }
 
         // Handle Experiences

@@ -1575,6 +1575,31 @@ function renderReport(){
   var checkWon4 = numRatio>=0.5&&justRatio>=0.5;
   win('ach-1',checkWon1);win('ach-2',checkWon2);win('ach-3',checkWon3);win('ach-4',checkWon4);
   toast('Report ready \u2014 scored from '+S.turns.length+' replies');
+  saveSession(total,conf,pers,skills,bandNames[band-1]);
+}
+
+/* \u2500\u2500 persist the finished session so history/streak/XP aren't always empty \u2500\u2500 */
+function saveSession(total,conf,pers,skills,outcome){
+  var body=new URLSearchParams();
+  body.append('job_title',S.job);
+  body.append('base_salary_offered',S.offer);
+  body.append('target_salary',S.target);
+  body.append('final_salary',S.lastAiNumber||S.offer);
+  body.append('recruiter_style',S.setupStyle);
+  body.append('difficulty',S.diff);
+  body.append('rounds_completed',S.round);
+  body.append('confidence_score',Math.round(conf));
+  body.append('persuasion_score',Math.round(pers));
+  body.append('overall_score',total);
+  body.append('outcome',outcome);
+  body.append('transcript_json',JSON.stringify(S.turns));
+  body.append('evaluation_json',JSON.stringify(skills));
+  body.append('<?= csrf_token() ?>','<?= csrf_hash() ?>');
+  fetch('<?= base_url("candidate/career-tools/save-negotiation-session") ?>',{
+    method:'POST',
+    headers:{'X-Requested-With':'XMLHttpRequest'},
+    body:body
+  }).catch(function(){/* history is a nice-to-have; don't block the report on a failed save */});
 }
 $('end-btn').addEventListener('click',finish);
 $('restart-btn').addEventListener('click',function(){startSession()});

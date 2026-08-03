@@ -27,7 +27,7 @@
                         </div>
                         <div class="col-lg-4 col-md-12 text-lg-end">
                             <?php if (($job->application_method ?? 'form') === 'form'): ?>
-                                <div class="btn btn-apply-icon btn-apply btn-apply-big hover-up" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                                <a class="btn btn-apply-icon btn-apply btn-apply-big hover-up" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
                             <?php else: ?>
                                 <a class="btn btn-apply-icon btn-apply btn-apply-big hover-up" href="<?= site_url('job/start-application/' . $job->id) ?>" target="_blank">Apply now</a>
                             <?php endif; ?>
@@ -130,7 +130,7 @@
                     <div class="single-apply-jobs" data-inflow-cta>
                         <div class="row align-items-center">
                             <div class="col-md-5">
-                                <a class="btn btn-default mr-15" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+                                <a class="btn btn-default mr-15" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
                                 <a class="btn btn-border" href="<?= site_url('jobs/save/' . $job->id) ?>">Save job</a>
                             </div>
                             <div class="col-md-7 text-lg-end social-share">
@@ -235,7 +235,7 @@
                                             <div class="row">
                                                 <div class="col-lg-7 col-7"><span class="card-text-price">$<?= number_format($featured->salary, 2) ?></span><span class="text-muted">/<?= $featured->salary_period ?? 'Hour' ?></span></div>
                                                 <div class="col-lg-5 col-5 text-end">
-                                                    <div class="btn btn-apply-now" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                                                    <a class="btn btn-apply-now" href="<?= base_url('job/application/' . $featured->id) ?>">Apply now</a>
                                                 </div>
                                             </div>
                                         </div>
@@ -264,7 +264,7 @@
             <i class="fi-rr-heart"></i>
         </a>
         <?php if (($job->application_method ?? 'form') === 'form'): ?>
-            <a class="btn btn-default" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+            <a class="btn btn-default" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
         <?php else: ?>
             <a class="btn btn-default" href="<?= site_url('job/start-application/' . $job->id) ?>" target="_blank">Apply now</a>
         <?php endif; ?>

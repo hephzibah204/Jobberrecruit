@@ -10,5 +10,5 @@ class ResumeExperienceModel extends Model
     protected $allowedFields = ['resume_id', 'company', 'position', 'start_date', 'end_date', 'description', 'is_current'];
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at'; // uses same column, set in migration
+    protected $updatedField  = '';
 }

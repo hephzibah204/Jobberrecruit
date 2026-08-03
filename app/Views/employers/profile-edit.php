@@ -378,39 +378,12 @@
               <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">Your Corporate Affairs Commission (CAC) registration number. We cross-reference this with the CAC public register.</span>
             </div>
 
-            <!-- CAC Document Upload -->
+            <!-- CAC Document Upload lives on its own dedicated flow (handles validation, storage, admin review) -->
             <div class="form-field full">
               <label>CAC Certificate / Incorporation document</label>
-              <?php
-              $hasCac = !empty($employer->cac_document);
-              $cacName = $hasCac ? basename($employer->cac_document) : 'document.pdf';
-              ?>
-              <div class="doc-upload-zone" id="cac-drop-zone"
-                   onclick="document.getElementById('cac-file-input').click()"
-                   ondragover="handleDragOver(event)"
-                   ondragleave="handleDragLeave(event)"
-                   ondrop="handleDrop(event,'cac-file-input','cac-file-info')"
-                   role="button" tabindex="0" aria-label="Upload CAC document"
-                   onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('cac-file-input').click()">
-                <input type="file" id="cac-file-input" name="cac_document"
-                       accept=".pdf,.jpg,.jpeg,.png"
-                       class="sr-only"
-                       onchange="showFileInfo(this,'cac-file-info','cac-drop-zone')">
-                <div class="doc-upload-idle" id="cac-idle" style="<?= $hasCac ? 'display:none;' : '' ?>">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted);margin-bottom:10px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3"/></svg>
-                  <p style="font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:4px">Click to upload or drag and drop</p>
-                  <p style="font-size:.78rem;color:var(--muted)">CAC Certificate of Incorporation, Business Name Certificate, or Status Report</p>
-                  <p style="font-size:.75rem;color:var(--muted);margin-top:4px">PDF, JPG, or PNG · Max 5MB · Must be a clear, unaltered official document</p>
-                </div>
-                <div class="doc-upload-done" id="cac-file-info" style="<?= $hasCac ? 'display:flex;' : 'display:none;' ?>">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--success)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <span class="doc-file-name" id="cac-file-name"><?= esc($cacName) ?></span>
-                  <span class="doc-file-size" id="cac-file-size">Uploaded</span>
-                  <button type="button" class="doc-remove-btn" onclick="removeFile('cac-file-input','cac-file-info','cac-idle',event)" aria-label="Remove uploaded document">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                </div>
-              </div>
+              <a href="<?= base_url('employer/profile/upload-document') ?>" class="emp-btn emp-btn-outline emp-btn-block">
+                <svg aria-hidden="true"><use href="#i-download"/></svg> Upload / manage CAC document
+              </a>
               <span style="font-size:.76rem;color:var(--muted);margin-top:6px;display:block">
                 🔒 Uploaded documents are reviewed only by the JobberRecruit verification team — never shared with candidates.
               </span>
@@ -419,7 +392,7 @@
 
           <div class="form-actions">
             <button type="button" class="emp-btn emp-btn-primary" onclick="saveSection('verify', event)">
-              <svg aria-hidden="true"><use href="#i-check"/></svg> Submit for verification
+              <svg aria-hidden="true"><use href="#i-check"/></svg> Save RC number
             </button>
             <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Verification takes up to 24 hours</span>
           </div>
@@ -531,7 +504,7 @@ var completedSections = {
     identity: <?= (!empty($employer->company_name) && !empty($employerIndustryIds) && !empty($employer->company_size)) ? 'true' : 'false' ?>,
     contact: <?= (!empty($employer->contact_name) && !empty($employer->contact_phone) && !empty($employer->contact_email) && !empty($employer->company_address) && !empty($employer->state_id)) ? 'true' : 'false' ?>,
     about: <?= (!empty($employer->description)) ? 'true' : 'false' ?>,
-    verify: <?= (!empty($employer->rc_number) || !empty($employer->cac_document)) ? 'true' : 'false' ?>,
+    verify: <?= (!empty($employer->rc_number) || !empty($employer->is_verified)) ? 'true' : 'false' ?>,
     social: <?= (!empty($employer->linkedin) || !empty($employer->twitter) || !empty($employer->facebook) || !empty($employer->instagram)) ? 'true' : 'false' ?>
 };
 
@@ -733,70 +706,6 @@ function updateProgress() {
   var pct = document.getElementById('progress-pct');
   if (fill) fill.style.width = total + '%';
   if (pct) pct.textContent = total + '% Completed';
-}
-
-/* ── CAC document upload handlers ── */
-function showFileInfo(input, infoId, zoneId) {
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-
-  /* Validate size (5MB max) */
-  if (file.size > 5 * 1024 * 1024) {
-    if (typeof toastr !== 'undefined') toastr.error('File is too large. Please upload a document under 5MB.');
-    else alert('File is too large. Please upload a document under 5MB.');
-    input.value = '';
-    return;
-  }
-  /* Validate type */
-  var allowed = ['application/pdf','image/jpeg','image/png'];
-  if (!allowed.includes(file.type)) {
-    if (typeof toastr !== 'undefined') toastr.error('Please upload a PDF, JPG, or PNG file.');
-    else alert('Please upload a PDF, JPG, or PNG file.');
-    input.value = '';
-    return;
-  }
-
-  var nameEl = document.getElementById('cac-file-name');
-  var sizeEl = document.getElementById('cac-file-size');
-  var info   = document.getElementById(infoId);
-  var idle   = document.getElementById('cac-idle');
-
-  if (nameEl) nameEl.textContent = file.name;
-  if (sizeEl) sizeEl.textContent = file.size > 1024*1024
-    ? (file.size / (1024*1024)).toFixed(1) + ' MB'
-    : Math.round(file.size / 1024) + ' KB';
-  if (info) info.style.display = 'flex';
-  if (idle) idle.style.display = 'none';
-}
-
-function removeFile(inputId, infoId, idleId, event) {
-  event.stopPropagation();
-  var input = document.getElementById(inputId);
-  var info  = document.getElementById(infoId);
-  var idle  = document.getElementById(idleId);
-  if (input) input.value = '';
-  if (info)  info.style.display = 'none';
-  if (idle)  idle.style.display = 'flex';
-}
-
-function handleDragOver(event) {
-  event.preventDefault();
-  event.currentTarget.classList.add('drag-over');
-}
-function handleDragLeave(event) {
-  event.currentTarget.classList.remove('drag-over');
-}
-function handleDrop(event, inputId, infoId) {
-  event.preventDefault();
-  event.currentTarget.classList.remove('drag-over');
-  var input = document.getElementById(inputId);
-  if (!input || !event.dataTransfer.files.length) return;
-  try {
-    var dt = new DataTransfer();
-    dt.items.add(event.dataTransfer.files[0]);
-    input.files = dt.files;
-  } catch(e) { }
-  showFileInfo(input, infoId, event.currentTarget.id);
 }
 
 document.addEventListener('DOMContentLoaded', function() {

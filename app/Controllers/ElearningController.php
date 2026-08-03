@@ -562,6 +562,15 @@ class ElearningController extends BaseController
             ->orderBy('order_index', 'ASC')
             ->findAll();
 
+        // Pre-resolve YouTube embed URLs per module — the view can't call this
+        // private controller method itself ($this inside a view is the View object).
+        $moduleEmbeds = [];
+        foreach ($modules as $mod) {
+            if (($mod->content_source ?? null) === 'youtube' && !empty($mod->youtube_url)) {
+                $moduleEmbeds[$mod->id] = $this->getYoutubeEmbedUrl($mod->youtube_url);
+            }
+        }
+
         // Determine active module
         $activeModuleId = $this->request->getGet('module_id');
         $activeModule = null;
@@ -590,7 +599,7 @@ class ElearningController extends BaseController
         // Get candidate name
         $seekerModel = model(\App\Models\JobSeekerModel::class);
         $seeker = $seekerModel->where('user_id', $userId)->first();
-        $candidateName = $seeker ? ($seeker['full_name'] ?? $seeker['first_name'] . ' ' . $seeker['last_name']) : (auth()->user()->username ?? 'Student');
+        $candidateName = ($seeker && !empty($seeker->full_name)) ? $seeker->full_name : (auth()->user()->username ?? 'Student');
 
         return view('candidate/classroom', [
             'title' => esc($course->title) . ' - Learning Portal',
@@ -600,7 +609,8 @@ class ElearningController extends BaseController
             'activeModule' => $activeModule,
             'certificate' => $certificate,
             'candidateName' => $candidateName,
-            'youtubeEmbedUrl' => $activeModule ? $this->getYoutubeEmbedUrl($activeModule->youtube_url ?? null) : null
+            'youtubeEmbedUrl' => $activeModule ? $this->getYoutubeEmbedUrl($activeModule->youtube_url ?? null) : null,
+            'moduleEmbeds' => $moduleEmbeds
         ]);
     }
 
@@ -789,8 +799,8 @@ class ElearningController extends BaseController
         if (empty($targetUser->full_name)) {
             $seekerModel = model(\App\Models\JobSeekerModel::class);
             $seeker = $seekerModel->where('user_id', $targetUser->id)->first();
-            if ($seeker) {
-                $targetUser->full_name = $seeker['full_name'] ?? $seeker['first_name'] . ' ' . $seeker['last_name'];
+            if ($seeker && !empty($seeker->full_name)) {
+                $targetUser->full_name = $seeker->full_name;
             }
         }
 

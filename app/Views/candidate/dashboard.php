@@ -464,10 +464,7 @@
         <span class="ai-badge"><span class="pulse" aria-hidden="true"></span> JobberRecruit AI Engine · Active</span>
         <h2 id="ai-title">Let's accelerate your <span>career path.</span></h2>
         <p class="ai-sub">
-          <?php
-            $pending = array_filter($applications ?? [], fn($a) => strtolower($a->status ?? '') === 'pending');
-            $pendingCount = count($pending);
-          ?>
+          <?php $pendingCount = $pendingApplicationsCount ?? 0; ?>
           <?php if ($pendingCount > 0): ?>
             You have <strong><?= $pendingCount ?></strong> pending <?= $pendingCount == 1 ? 'application' : 'applications' ?> awaiting employer response<?= !empty($savedJobs) && $savedJobs > 0 ? ' and <strong>' . $savedJobs . '</strong> saved ' . ($savedJobs == 1 ? 'job' : 'jobs') . ' to revisit' : '' ?>.
           <?php else: ?>
@@ -555,22 +552,39 @@
     <div class="card">
       <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Skill Match Hub</span></div>
       <div class="card-body">
+        <?php
+          $donutColors = ['#0861A9', '#16a34a', '#ED9020', '#8b5cf6'];
+          $donutTop = array_slice($skillCategories ?? [], 0, 4);
+          $donutSum = array_sum(array_map(fn($c) => max($c->match, 1), $donutTop));
+          $overallMatch = !empty($skillCategories)
+            ? (int) round(array_sum(array_map(fn($c) => $c->match, $skillCategories)) / count($skillCategories))
+            : 0;
+          $donutOffset = 0;
+          $donutSegments = [];
+          foreach ($donutTop as $i => $cat) {
+              $len = $donutSum > 0 ? round((max($cat->match, 1) / $donutSum) * 320) : 0;
+              $donutSegments[] = ['len' => $len, 'offset' => -$donutOffset, 'color' => $donutColors[$i] ?? '#94a3b8', 'name' => $cat->name];
+              $donutOffset += $len;
+          }
+        ?>
         <div class="donut-wrap">
-          <div class="donut" role="img" aria-label="Overall match rate 85 percent">
+          <div class="donut" role="img" aria-label="Overall match rate <?= $overallMatch ?> percent">
             <svg viewBox="0 0 140 140" aria-hidden="true">
               <circle class="track" cx="70" cy="70" r="58"/>
-              <circle class="prog" cx="70" cy="70" r="58" stroke="#0861A9" stroke-dasharray="128 320" stroke-dashoffset="0" stroke-linecap="butt"/>
-              <circle class="prog" cx="70" cy="70" r="58" stroke="#16a34a" stroke-dasharray="64 320" stroke-dashoffset="-128" stroke-linecap="butt"/>
-              <circle class="prog" cx="70" cy="70" r="58" stroke="#ED9020" stroke-dasharray="48 320" stroke-dashoffset="-192" stroke-linecap="butt"/>
-              <circle class="prog" cx="70" cy="70" r="58" stroke="#8b5cf6" stroke-dasharray="32 320" stroke-dashoffset="-240" stroke-linecap="butt"/>
+              <?php foreach ($donutSegments as $seg): ?>
+                <circle class="prog" cx="70" cy="70" r="58" stroke="<?= $seg['color'] ?>" stroke-dasharray="<?= $seg['len'] ?> 320" stroke-dashoffset="<?= $seg['offset'] ?>" stroke-linecap="butt"/>
+              <?php endforeach; ?>
             </svg>
-            <span class="c"><b>85%</b><i>Match rate</i></span>
+            <span class="c"><b><?= $overallMatch ?>%</b><i>Match rate</i></span>
           </div>
           <ul class="leg">
-            <li><i style="background:#0861A9"></i>Tech skills</li>
-            <li><i style="background:#16a34a"></i>Soft skills</li>
-            <li><i style="background:#ED9020"></i>Domain knowledge</li>
-            <li><i style="background:#8b5cf6"></i>Other matches</li>
+            <?php if (!empty($donutSegments)): ?>
+              <?php foreach ($donutSegments as $seg): ?>
+                <li><i style="background:<?= $seg['color'] ?>"></i><?= esc($seg['name']) ?></li>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <li><i style="background:#94a3b8"></i>Add skills to see your match rate</li>
+            <?php endif; ?>
           </ul>
         </div>
         <div class="mcat" style="margin-top:18px">

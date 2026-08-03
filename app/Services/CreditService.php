@@ -59,6 +59,13 @@ class CreditService
             }
         }
 
+        // A paid unlimited subscription is an entitlement in its own right.
+        // Do not require the separate admin-only employer flag to be synchronized.
+        $activePlan = $this->getCurrentPlan($userId);
+        if ($activePlan && $this->planProvidesUnlimitedPosting($activePlan)) {
+            return true;
+        }
+
         // Check if parent employer has unlimited access
         if (!empty($employer->parent_employer_id)) {
             $parentEmployer = $this->employerModel->find($employer->parent_employer_id);
@@ -67,9 +74,50 @@ class CreditService
                     return true;
                 }
             }
+
+            if ($parentEmployer && !empty($parentEmployer->user_id)) {
+                $parentPlan = $this->getCurrentPlan((int) $parentEmployer->user_id);
+                if ($parentPlan && $this->planProvidesUnlimitedPosting($parentPlan)) {
+                    return true;
+                }
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Determine whether a plan grants unlimited employer job postings.
+     * Supports the explicit feature key going forward and legacy plan naming.
+     */
+    public function planProvidesUnlimitedPosting($plan): bool
+    {
+        $value = static function (string $field) use ($plan) {
+            return is_array($plan) ? ($plan[$field] ?? null) : ($plan->{$field} ?? null);
+        };
+
+        $planType = strtolower(trim((string) $value('plan_type')));
+        if ($planType === 'candidate') {
+            return false;
+        }
+
+        $features = $value('features') ?? [];
+        if (is_string($features)) {
+            $features = json_decode($features, true) ?: [];
+        } elseif (is_object($features)) {
+            $features = (array) $features;
+        }
+
+        foreach (['unlimited_job_postings', 'unlimited_posting', 'unlimited_jobs', 'unlimited'] as $feature) {
+            if (!empty($features[$feature])) {
+                return true;
+            }
+        }
+
+        // Backward compatibility for plans already sold as "Unlimited" before
+        // the explicit feature was introduced.
+        $identity = strtolower(trim((string) $value('code') . ' ' . (string) $value('name')));
+        return str_contains($identity, 'unlimited');
     }
 
     public function getCurrentPlan(int $userId): ?object
@@ -278,7 +326,7 @@ class CreditService
 
         try {
             // Get wallets with FOR UPDATE lock to prevent race conditions
-            $sql = "SELECT * FROM job_credit_wallet
+            $sql = "SELECT * FROM job_credit_wallets
                     WHERE user_id = ? AND credits > 0
                     AND (expires_at IS NULL OR expires_at > NOW())
                     ORDER BY expires_at ASC, created_at ASC

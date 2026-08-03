@@ -131,23 +131,23 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
         <!-- Search Bar Card -->
         <section class="card" aria-label="Candidate search">
             <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
-                <form method="GET" action="<?= current_url() ?>">
-                    <div class="toolbar">
-                        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm mob-filter-btn" id="f-open" aria-controls="filters" aria-expanded="false">
-                            <svg aria-hidden="true"><use href="#i-filter"/></svg> Filters
-                        </button>
-                        <div class="search-wrap">
-                            <svg aria-hidden="true"><use href="#i-search"/></svg>
-                            <input class="input" type="search" name="keyword" value="<?= esc(request()->getGet('keyword') ?? '') ?>" placeholder="Search by name, skills, or job title…" aria-label="Search candidates">
-                        </div>
-                        <select class="select" name="sort" aria-label="Sort candidates">
-                            <option value="best_match" <?= request()->getGet('sort') === 'best_match' ? 'selected' : '' ?>>Best match</option>
-                            <option value="most_experienced" <?= request()->getGet('sort') === 'most_experienced' ? 'selected' : '' ?>>Most experienced</option>
-                            <option value="recently_active" <?= request()->getGet('sort') === 'recently_active' ? 'selected' : '' ?>>Recently active</option>
-                        </select>
-                        <button type="submit" class="emp-btn emp-btn-primary">Search</button>
+                <!-- These inputs submit into #filters-form (defined in the sidebar) via the form="" attribute,
+                     so keyword/sort survive alongside the checkbox filters instead of being two disconnected forms. -->
+                <div class="toolbar">
+                    <button type="button" class="emp-btn emp-btn-outline emp-btn-sm mob-filter-btn" id="f-open" aria-controls="filters" aria-expanded="false">
+                        <svg aria-hidden="true"><use href="#i-filter"/></svg> Filters
+                    </button>
+                    <div class="search-wrap">
+                        <svg aria-hidden="true"><use href="#i-search"/></svg>
+                        <input class="input" type="search" name="keyword" form="filters-form" value="<?= esc(request()->getGet('keyword') ?? '') ?>" placeholder="Search by name, skills, or job title…" aria-label="Search candidates">
                     </div>
-                </form>
+                    <select class="select" name="sort" form="filters-form" aria-label="Sort candidates">
+                        <option value="best_match" <?= request()->getGet('sort') === 'best_match' ? 'selected' : '' ?>>Best match</option>
+                        <option value="most_experienced" <?= request()->getGet('sort') === 'most_experienced' ? 'selected' : '' ?>>Most experienced</option>
+                        <option value="recently_active" <?= request()->getGet('sort') === 'recently_active' ? 'selected' : '' ?>>Recently active</option>
+                    </select>
+                    <button type="submit" form="filters-form" class="emp-btn emp-btn-primary">Search</button>
+                </div>
                 <div class="cand-list-head">
                     <span class="result-count"><b><?= number_format($total ?? 0) ?></b> candidates found</span>
                     <span style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px">
@@ -176,7 +176,7 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                     $isUnlocked = in_array($c->id, $unlockedIds) || ($hasUnlimitedAccess ?? false);
                     ?>
                     <div class="cand-card">
-                        <?php if (!empty($c->profile_picture)): ?>
+                        <?php if (!empty($c->profile_picture) && file_exists(FCPATH . $c->profile_picture)): ?>
                             <img src="<?= base_url($c->profile_picture) ?>" alt="<?= esc($c->full_name) ?>" class="ava ava--round cc-ava" style="object-fit: cover; width: 42px; height: 42px;">
                         <?php else: ?>
                             <span class="ava ava--round cc-ava" aria-hidden="true"><?= esc($initials) ?></span>

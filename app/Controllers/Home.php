@@ -1936,11 +1936,13 @@ class Home extends BaseController
             $cvPath = null;
 
             // Handle CV Upload Logic
-            $cvFile = $this->request->getFile('cv_file');
+            // The Quick Apply modal (view_job.php #inlineApplyForm) sends "resume",
+            // while the full-page apply.php form sends "cv_file". Accept both.
+            $cvFile = $this->request->getFile('resume') ?? $this->request->getFile('cv_file');
 
             if ($cvFile && $cvFile->isValid()) {
                 $allowedMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
-                if (!in_array($cvFile->getMime(), $allowedMimes)) {
+                if (!in_array($cvFile->getMimeType(), $allowedMimes)) {
                     return $this->response->setJSON([
                         'status' => 'error',
                         'message' => 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.'
@@ -2124,8 +2126,30 @@ class Home extends BaseController
             ]);
         }
 
-        // GET: Redirect to main job details page (form is now embedded)
-        return redirect()->to(base_url('jobs/view/' . ($job->slug ?? $jobId)));
+        // Fetch questions
+        $questionModel = model(\App\Models\JobQuestionModel::class);
+        $questions = $questionModel->where('job_id', $jobId)->findAll();
+        
+        $candidate = null;
+        $isSaved = false;
+        if (auth()->loggedIn()) {
+            $user = auth()->user();
+            $candidateModel = model(\App\Models\JobSeekerModel::class);
+            $candidate = $candidateModel->where('user_id', $user->id)->first();
+            
+            $savedJobModel = model(\App\Models\SavedJobModel::class);
+            $isSaved = (bool) $savedJobModel->where('user_id', $user->id)->where('job_id', $jobId)->first();
+        }
+
+        return view('home/apply', [
+            'title'     => 'Apply: ' . $job->title,
+            'auth'      => auth(),
+            'user'      => auth()->user(),
+            'candidate' => $candidate,
+            'job'       => $job,
+            'questions' => $questions,
+            'isSaved'   => $isSaved
+        ]);
 
     }
 
@@ -3180,4 +3204,60 @@ class Home extends BaseController
             'auth'            => $this->auth,
         ]);
     }
+
+    /**
+     * Public Employers Directory
+     */
+    public function employers()
+    {
+        $keyword = trim((string) $this->request->getGet('keyword'));
+        $stateId = $this->request->getGet('state_id');
+
+        $jobModel = model(JobModel::class);
+        $builder = $jobModel->builder('employers')
+            ->select('employers.id, employers.company_name, employers.user_id, employers.logo, employers.company_address, employers.website, employers.is_verified, states.name as location, COUNT(jobs.id) as job_count')
+            ->join('jobs', 'jobs.employer_id = employers.id AND jobs.status = "open"', 'left')
+            ->join('states', 'states.id = employers.state_id', 'left')
+            ->groupBy('employers.id');
+
+        if (!empty($keyword)) {
+            $builder->like('employers.company_name', $keyword);
+        }
+
+        if (!empty($stateId)) {
+            $builder->where('employers.state_id', (int) $stateId);
+        }
+
+        $employers = $builder->orderBy('job_count', 'DESC')->get()->getResult();
+
+        $stateModel = model(\App\Models\StateModel::class);
+        $states = $stateModel->orderBy('name', 'ASC')->findAll();
+
+        return view('home/employers', [
+            'title'        => 'Top Employers & Companies in Nigeria | JobberRecruit',
+            'employers'    => $employers,
+            'states'       => $states,
+            'keyword'      => $keyword,
+            'selectedState'=> $stateId,
+            'auth'         => $this->auth,
+        ]);
+    }
+
+    /**
+     * Public Career Advice & Resources Page
+     */
+    public function careerAdvice()
+    {
+        $blogModel = model(\App\Models\BlogModel::class);
+        $recentBlogs = $blogModel->where('status', 'published')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(6);
+
+        return view('home/career_advice', [
+            'title'       => 'Career Advice, Resume Tips & Salary Guides | JobberRecruit',
+            'recentBlogs' => $recentBlogs,
+            'auth'        => $this->auth,
+        ]);
+    }
 }
+

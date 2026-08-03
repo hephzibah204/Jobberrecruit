@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof toastr !== 'undefined') {
       toastr.success(msg);
     } else {
-      alert(msg);
+      console.log('Login Success:', msg);
     }
   }
 
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof toastr !== 'undefined') {
       toastr.error(msg);
     } else {
-      alert(msg);
+      console.error('Login Error:', msg);
     }
   }
 

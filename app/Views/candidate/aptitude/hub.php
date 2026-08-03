@@ -736,7 +736,6 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
   /* Only render progress from localStorage if user has started at least one test this session */
   var _progInit=loadProgress();
   if(_progInit.totalStarted>0)renderProgress(_progInit);
-  }
 
   /* skill difficulty pills rewrite the practice link's ?level= */
   document.querySelectorAll('.apt-page .cat').forEach(function(card){

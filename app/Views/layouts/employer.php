@@ -65,6 +65,39 @@ $walletFormatted = '₦' . number_format($walletBalance, 2);
 
 // Pending application count for sidebar badge
 $pendingCount = $pendingApps ?? 0;
+
+// Dashboard alone uses global search in the reference design. Every other
+// employer screen uses a route-aware breadcrumb.
+$dashboardPath = trim(uri_string(), '/');
+$employerTitles = [
+    'employer/applications/view' => 'Application Details',
+    'employer/candidates/view'   => 'Candidate Profile',
+    'employer/profile/edit'      => 'Edit Company Profile',
+    'employer/post-job'          => 'Post a Job',
+    'employer/jobs/create'       => 'Post a Job',
+    'employer/candidate-alerts'  => 'Candidate Alerts',
+    'employer/applications'      => 'Applications',
+    'employer/transactions'      => 'Transactions',
+    'employer/candidates'        => 'Candidates Search',
+    'employer/referrals'         => 'Referral Program',
+    'employer/notifications'     => 'Candidate Alerts',
+    'employer/settings/security' => 'Security Settings',
+    'employer/settings'          => 'General Settings',
+    'employer/profile'           => 'Company Profile',
+    'employer/pricing'           => 'Billing & Plans',
+    'employer/bundles'           => 'Billing & Plans',
+    'employer/messages'          => 'Messages',
+    'employer/jobs'              => 'My Jobs',
+];
+$resolvedPageTitle = '';
+if ($dashboardPath !== 'employer' && $dashboardPath !== 'employer/dashboard') {
+    foreach ($employerTitles as $routePrefix => $routeTitle) {
+        if ($dashboardPath === $routePrefix || str_starts_with($dashboardPath, $routePrefix . '/')) {
+            $resolvedPageTitle = $routeTitle;
+            break;
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en-NG">
@@ -169,8 +202,8 @@ $pendingCount = $pendingApps ?? 0;
   <!-- ════════ SIDEBAR ════════ -->
   <aside class="emp-sidebar" id="emp-sidebar" aria-label="Employer navigation">
     <div class="sb-head">
-      <a href="<?= base_url('/') ?>" aria-label="JobberRecruit home">
-        <img src="<?= base_url('auth/img/logo.png') ?>" alt="JobberRecruit" class="sb-logo-img">
+      <a href="<?= base_url('/') ?>" class="sb-logo" aria-label="JobberRecruit home">
+        <span>JobberRecruit</span>
       </a>
       <button class="sb-close" id="sb-close" aria-label="Close menu">
         <svg aria-hidden="true"><use href="#i-x"/></svg>
@@ -288,11 +321,11 @@ $pendingCount = $pendingApps ?? 0;
         </button>
 
         <!-- Breadcrumb (tb-crumb) shown when page_title is set, otherwise fallback to search -->
-        <?php if (!empty($page_title)): ?>
+        <?php if ($resolvedPageTitle !== ''): ?>
           <nav class="tb-crumb" aria-label="Breadcrumb">
             <a href="<?= base_url('employer/dashboard') ?>">Dashboard</a>
             <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
-            <b><?= esc($page_title) ?></b>
+            <b><?= esc($resolvedPageTitle) ?></b>
           </nav>
         <?php else: ?>
           <div class="tb-search" role="search">
@@ -468,6 +501,9 @@ $pendingCount = $pendingApps ?? 0;
 <script src="<?= base_url('auth/js/jquery-3.7.1.min.js') ?>"></script>
 <script src="<?= base_url('auth/js/toastr.min.js') ?>"></script>
 
+<?php if (auth()->loggedIn()): ?>
+<?= $this->include('partials/chatbot'); ?>
+<?php endif; ?>
 <!-- Page-level scripts -->
 <?= $this->renderSection('scripts') ?>
 </body>

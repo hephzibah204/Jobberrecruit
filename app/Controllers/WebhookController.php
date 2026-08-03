@@ -21,12 +21,16 @@ class WebhookController extends Controller
         // --------------------------------------------------
         $signature = $this->request->getHeaderLine('x-paystack-signature');
         $secretKey = env('PAYSTACK_SECRET_KEY');
-        if ($secretKey) {
-            $computed = hash_hmac('sha512', $payload, $secretKey);
-            if (!hash_equals($computed, $signature)) {
-                log_message('error', 'Paystack webhook: Invalid HMAC signature');
-                return $this->response->setStatusCode(401)->setBody('Unauthorized');
-            }
+        if (!$secretKey) {
+            // No secret configured means we cannot verify the sender — refuse rather than
+            // silently trust an unsigned payload (this previously let ANY POST through unverified).
+            log_message('critical', 'Paystack webhook: PAYSTACK_SECRET_KEY is not configured — rejecting webhook.');
+            return $this->response->setStatusCode(401)->setBody('Unauthorized');
+        }
+        $computed = hash_hmac('sha512', $payload, $secretKey);
+        if (!$signature || !hash_equals($computed, $signature)) {
+            log_message('error', 'Paystack webhook: Invalid HMAC signature');
+            return $this->response->setStatusCode(401)->setBody('Unauthorized');
         }
 
         // --------------------------------------------------

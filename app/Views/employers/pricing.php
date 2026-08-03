@@ -104,9 +104,12 @@
     <section class="card" aria-label="Growth bundles">
         <div class="card-head">
             <span class="card-title">
-                <svg aria-hidden="true"><use href="#i-briefcase"/></svg> Growth Bundles 
+                <svg aria-hidden="true"><use href="#i-briefcase"/></svg> Growth Bundles
                 <span style="font-weight:500;color:var(--muted);font-size:.76rem">· Pay as you go</span>
             </span>
+            <a href="<?= base_url('employer/bundles') ?>" style="font-size:.78rem;font-weight:600;color:var(--brand)">
+                <svg aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-receipt"/></svg> Bundle purchase history
+            </a>
         </div>
         <div class="card-body">
             <?php if (!empty($bundles)): ?>

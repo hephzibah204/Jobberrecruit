@@ -89,19 +89,7 @@ class EmployerController extends BaseController
             return false;
         }
 
-        // Check if employer has unlimited access and it hasn't expired
-        if ($employer->unlimited_access == 1) {
-            if (empty($employer->unlimited_until) || strtotime($employer->unlimited_until) > time()) {
-                return true;
-            }
-        }
-
-        // Check if parent employer has unlimited access (for team/agency accounts)
-        if (!empty($employer->parent_employer_id)) {
-            return $this->hasUnlimitedAccess($employer->parent_employer_id);
-        }
-
-        return false;
+        return (new CreditService())->hasUnlimitedAccess((int) $employer->user_id);
     }
 
     public function dashboard()
@@ -738,10 +726,16 @@ class EmployerController extends BaseController
 
         // CAC document check is now OPTIONAL - employers can post jobs before verification
 
-        // This will redirect automatically if access is denied
-        $access = $this->checkJobPostingAccess();
-        if ($access !== true) {
-            return $access;
+        $isDraft = $this->request->getMethod() === 'POST'
+            && $this->request->getPost('submission_type') === 'draft';
+
+        // Saving work must not require a posting credit. Access is enforced only
+        // when the employer is opening the publish form or publishing a job.
+        if (!$isDraft) {
+            $access = $this->checkJobPostingAccess();
+            if ($access !== true) {
+                return $access;
+            }
         }
 
         if ($this->request->getMethod() === 'POST') {
@@ -785,7 +779,9 @@ class EmployerController extends BaseController
             }
 
             /* ====================== CHECK ACCESS & FEATURES ====================== */
-            $canPost = $creditService->canPerformAction($userId, 'post_job');
+            $canPost = $isDraft
+                ? ['can' => true]
+                : $creditService->canPerformAction($userId, 'post_job');
 
             if (!$canPost['can']) {
                 return $this->response->setJSON([
@@ -809,16 +805,18 @@ class EmployerController extends BaseController
             $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
             $postData = $this->request->getPost($allowed);
             $postData['employer_id'] = $employer->id;
-            $postData['status'] = 'pending_approval';
-            $postData['admin_status'] = 'pending';
+            $postData['status'] = $isDraft ? 'draft' : 'pending_approval';
+            $postData['admin_status'] = $isDraft ? 'draft' : 'pending';
             $application_deadline = $postData['application_deadline'] ?? null;
             $start_date = $postData['start_date'] ?? null;
 
             // Set premium features
-            $postData['is_featured'] = $shouldBeFeatured ? 1 : 0;
-            $postData['featured_until'] = $shouldBeFeatured ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
-            $postData['is_anonymous'] = ($canPostAnonymous && $this->request->getPost('is_anonymous')) ? 1 : 0;
-            $postData['network_blast'] = $canUseNetworkBlast ? 1 : 0;
+            $postData['is_featured'] = (!$isDraft && $shouldBeFeatured) ? 1 : 0;
+            $postData['featured_until'] = (!$isDraft && $shouldBeFeatured) ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
+            // Urgent Hiring shares the same plan/credit eligibility as Featured Listing (no separate tier exists)
+            $postData['is_urgent'] = (!$isDraft && $shouldBeFeatured && $this->request->getPost('urgent_hiring')) ? 1 : 0;
+            $postData['is_anonymous'] = (!$isDraft && $canPostAnonymous && $this->request->getPost('is_anonymous')) ? 1 : 0;
+            $postData['network_blast'] = (!$isDraft && $canUseNetworkBlast) ? 1 : 0;
             $postData['application_deadline'] = $application_deadline ? date('Y-m-d H:i:s', strtotime($application_deadline)) : null;
             $postData['start_date'] = $start_date ? date('Y-m-d H:i:s', strtotime($start_date)) : null;
 
@@ -881,7 +879,7 @@ class EmployerController extends BaseController
                 }
 
                 // Only deduct credits if not unlimited access
-                if (!$hasUnlimitedAccess) {
+                if (!$isDraft && !$hasUnlimitedAccess) {
                     $deductResult = $creditService->deductCredits(
                         $userId,
                         1,
@@ -896,38 +894,42 @@ class EmployerController extends BaseController
                 }
 
                 // Create in-app notification for job posting
-                $featuredMessage = $shouldBeFeatured ? " This job is FEATURED and will get priority visibility!" : "";
-                $this->createNotification(
-                    $employer->id,
-                    $jobId,
-                    null,
-                    'job_pending',
-                    'Job Posted - Pending Review',
-                    "Your job '{$postData['title']}' has been submitted for admin review.{$featuredMessage}"
-                );
+                if (!$isDraft) {
+                    $featuredMessage = $shouldBeFeatured ? " This job is FEATURED and will get priority visibility!" : "";
+                    $this->createNotification(
+                        $employer->id,
+                        $jobId,
+                        null,
+                        'job_pending',
+                        'Job Posted - Pending Review',
+                        "Your job '{$postData['title']}' has been submitted for admin review.{$featuredMessage}"
+                    );
+                }
 
                 $db->transComplete();
 
 
                 // Send email notification if enabled
-                if ($notificationPreferences['email']) {
+                if (!$isDraft && $notificationPreferences['email']) {
                     $this->sendJobPostingEmail($employer, $postData['title'], $jobId, $shouldBeFeatured);
                 }
 
                 // Build success message
-                $successMessage = $hasUnlimitedAccess
-                    ? 'Job posted successfully! (Unlimited Access - No credits deducted)'
-                    : 'Job posted successfully! 1 credit deducted.';
+                $successMessage = $isDraft
+                    ? 'Draft saved successfully. You can continue editing it from My Jobs.'
+                    : ($hasUnlimitedAccess
+                        ? 'Job posted successfully! (Unlimited Access - No credits deducted)'
+                        : 'Job posted successfully! 1 credit deducted.');
 
-                if ($shouldBeFeatured) {
+                if (!$isDraft && $shouldBeFeatured) {
                     $successMessage .= ' ⭐ Your job is FEATURED and will appear at the top of search results!';
                 }
 
-                if ($postData['is_anonymous']) {
+                if (!$isDraft && $postData['is_anonymous']) {
                     $successMessage .= ' 🔒 Your company name will be hidden.';
                 }
 
-                if ($postData['network_blast']) {
+                if (!$isDraft && $postData['network_blast']) {
                     $successMessage .= ' 📢 Network blast has been sent to 115k+ subscribers!';
                 }
 
@@ -935,6 +937,7 @@ class EmployerController extends BaseController
                     'success' => true,
                     'message' => $successMessage,
                     'job_id' => $jobId,
+                    'is_draft' => $isDraft,
                     'is_featured' => $shouldBeFeatured,
                     'is_anonymous' => (bool)$postData['is_anonymous'],
                     'network_blast' => (bool)$postData['network_blast']
@@ -2235,283 +2238,6 @@ class EmployerController extends BaseController
         }
     }
 
-    public function job_detail($id)
-    {
-        $user = $this->auth->user();
-        $employerModel = model(EmployerModel::class);
-        $employer = $employerModel->where('user_id', $user->id)->first();
-
-        if (!$employer) {
-            return redirect()
-                ->to('employer/profile/edit')
-                ->with('error', 'Please create your company profile first.');
-        }
-
-        $jobModel = model(JobModel::class);
-        $subscriptionModel = model(UserSubscriptionModel::class);
-
-        $activeSub = $subscriptionModel
-            ->select('user_subscriptions.*, plans.name AS plan_name, plans.features AS plan_features')
-            ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
-            ->where('user_id', $user->id)
-            ->where('user_subscriptions.is_active', 1)
-            ->first();
-
-        if ($activeSub && !empty($activeSub['plan_features'])) {
-            $activeSub['features_array'] = json_decode($activeSub['plan_features'], true) ?? [];
-        } else {
-            $activeSub['features_array'] = [];
-        }
-
-        $featuredLimit = 0;
-        $featuredUsed = 0;
-        $remainingFeatured = 0;
-
-        $canFeature = false;
-        $featuredUsed = 0;
-
-        $features = [];
-
-        if ($activeSub) {
-            $features = $activeSub['features_array'];
-
-            $canFeature = !empty($features['featured']);
-
-            if ($canFeature) {
-                $featuredUsed = $jobModel
-                    ->where('employer_id', $employer->id)
-                    ->where('is_featured', 1)
-                    ->where('featured_until >', date('Y-m-d H:i:s'))
-                    ->countAllResults();
-            }
-        }
-
-        $job = $jobModel
-            ->select("
-            jobs.*,
-            job_categories.name AS category_name,
-            industries.name AS industry_name,
-            states.name AS location
-        ")
-            ->join('states', 'states.id = jobs.state_id', 'left')
-            ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
-            ->join('industries', 'industries.id = jobs.industry_id', 'left')
-            ->where('jobs.id', $id)
-            ->where('jobs.employer_id', $employer->id)
-            ->first();
-
-        if (!$job) {
-            return redirect()
-                ->to('employer/jobs')
-                ->with('error', 'Job not found.');
-        }
-
-        $features = planFeatures($activeSub['features_array']);
-
-        $creditWalletModel = model(JobCreditWalletModel::class);
-
-        $creditBalance = (int) ($creditWalletModel
-            ->where('user_id', $user->id)
-            ->selectSum('credits')
-            ->get()
-            ->getRow()
-            ->credits ?? 0);
-
-        // Models
-        $applicationModel = model(JobApplicationModel::class);
-        $clickModel = model(JobClickModel::class);
-
-        $data = [
-            'title'             => 'Job Details',
-            'user'              => $user,
-            'employer'          => $employer,
-            'job'               => $job,
-            'features'          => $features,
-            'creditBalance' => $creditBalance,
-            'activeSubscription' => $activeSub,
-
-            // Analytics
-            'applicationCount'  => $applicationModel->where('job_id', $id)->countAllResults(),
-            'totalClicks'       => $clickModel->totalClicks($id),
-
-            // Extra: Make application method fields directly available to the view
-            'applicationMethod' => $job->application_method,
-            'accessType'        => $job->application_access,
-            'whatsappLink'      => $job->whatsapp_link,
-            'applicationEmail'  => $job->application_email,
-            'externalUrl'       => $job->external_url
-        ];
-
-        return view('employers/job-detail', $data);
-    }
-
-
-    public function edit_job($id)
-    {
-        // Models
-        $employerModel = new EmployerModel();
-        $industryModel = new IndustryModel();
-        $categoryModel = new JobCategoryModel();
-        $jobModel      = new JobModel();
-
-        /* -----------------------------------------------------------------
-     * 1. Employer & job ownership check
-     * ----------------------------------------------------------------- */
-        $employer = $employerModel->where('user_id', auth()->user()->id)->first();
-        if (!$employer) {
-            return redirect()->to('employer/profile')->with('error', 'Employer profile not found.');
-        }
-
-        $job = $jobModel->find($id);
-        if (!$job || $job->employer_id !== $employer->id) {
-            return redirect()->to('employer/jobs')->with('error', 'Job not found or you do not own it.');
-        }
-
-        /* -----------------------------------------------------------------
-     * 2. POST — update
-     * ----------------------------------------------------------------- */
-        if ($this->request->getMethod() === 'POST') {
-
-            /* ---------------------------------------------------------
-         * Base validation rules
-         * --------------------------------------------------------- */
-            $rules = [
-                'title'              => 'required|min_length[3]',
-                'description'        => 'required|min_length[50]',
-                'job_type'           => 'required|in_list[full-time,part-time,contract,freelance,internship]',
-                'state_id'           => 'required|is_natural_no_zero',
-                'location_type'      => 'required|in_list[hybrid,remote,on-site]',
-
-                'salary_type'        => 'required|in_list[fixed,range,negotiable]',
-                'salary_period'      => 'required|in_list[monthly,yearly,hourly]',
-                'salary'             => 'permit_empty|min_length[1]|regex_match[/^(?:₦|N)?\s?\d{1,3}(?:,\d{3})*(?:\s?-\s?(?:₦|N)?\s?\d{1,3}(?:,\d{3})*)?$/u]',
-
-                'industry_id'        => 'required|is_natural_no_zero',
-                'category_id'        => 'required|is_natural_no_zero',
-                'education_level'    => 'required',
-                'experience_level'   => 'required',
-
-                'skills'             => 'permit_empty|string',
-                'requirements'       => 'permit_empty|string',
-
-                'application_deadline' => 'permit_empty|valid_date[Y-m-d]',
-                'start_date'         => 'permit_empty|valid_date[Y-m-d]',
-
-                'contact_email'      => 'required|valid_email',
-                'contact_phone'      => 'permit_empty|regex_match[/^(?:\+?[1-9]\d{1,14}|0\d{9,10})$/]',
-
-                'application'        => 'permit_empty|string',
-                'application_method' => 'required|in_list[form,whatsapp,email,external]',
-                'application_access' => 'required|in_list[guest,authenticated,general]',
-            ];
-
-            $postData = $this->request->getPost();
-            $method   = $postData['application_method'] ?? $job->application_method;
-
-            /* ---------------------------------------------------------
-         * Extract conditional inputs BEFORE clearing anything
-         * --------------------------------------------------------- */
-            $whatsappInput       = $this->request->getPost('whatsapp_link');
-            $applicationEmailInput = $this->request->getPost('application_email');
-            $externalUrlInput    = $this->request->getPost('external_url');
-
-            /* ---------------------------------------------------------
-         * Add conditional validation rules
-         * --------------------------------------------------------- */
-            if ($method === 'whatsapp') {
-                $rules['whatsapp_link'] = 'required|valid_url';
-            } elseif ($method === 'email') {
-                $rules['application_email'] = 'required|valid_email';
-            } elseif ($method === 'external') {
-                $rules['external_url'] = 'required|valid_url';
-            }
-
-            /* ---------------------------------------------------------
-         * Validate request
-         * --------------------------------------------------------- */
-            if (!$this->validate($rules)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors'  => $this->validator->getErrors()
-                ]);
-            }
-
-            /* ---------------------------------------------------------
-         * Prepare clean update data
-         * --------------------------------------------------------- */
-            $postData['employer_id'] = $employer->id;
-            $postData['status']      = $job->status;
-
-            // Salary details
-            if ($postData['salary_type'] !== 'negotiable' && !empty($postData['salary'])) {
-                $postData['salary_details'] =
-                    ucfirst($postData['salary_type']) . ', ' .
-                    ucfirst($postData['salary_period']) . ': ' .
-                    $postData['salary'];
-            } else {
-                $postData['salary_details'] = 'Negotiable';
-            }
-
-            /* ---------------------------------------------------------
-         * Remove all method fields, then set only the relevant one
-         * --------------------------------------------------------- */
-            $postData['whatsapp_link']     = null;
-            $postData['application_email'] = null;
-            $postData['external_url']      = null;
-
-            switch ($method) {
-                case 'whatsapp':
-                    $postData['whatsapp_link'] = trim($whatsappInput);
-                    break;
-
-                case 'email':
-                    $postData['application_email'] = trim($applicationEmailInput);
-                    break;
-
-                case 'external':
-                    $postData['external_url'] = trim($externalUrlInput);
-                    break;
-
-                case 'form':
-                default:
-                    // No extra fields
-                    break;
-            }
-
-            $postData['application_method'] = $method;
-
-            /* ---------------------------------------------------------
-         * Update Job
-         * --------------------------------------------------------- */
-            if ($jobModel->update($id, $postData)) {
-                return $this->response->setJSON([
-                    'status'  => 'success',
-                    'message' => 'Job updated successfully.'
-                ]);
-            }
-
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Failed to update job.'
-            ]);
-        }
-
-        /* -----------------------------------------------------------------
-     * 3. GET – show edit form
-     * ----------------------------------------------------------------- */
-        $data = [
-            'title'      => 'Edit Job',
-            'user'       => auth()->user(),
-            'employer'   => $employer,
-            'job'        => $job,
-            'industries' => $industryModel->findAll(),
-            'categories' => $categoryModel->findAll(),
-            'states'     => (new StateModel())->findAll(),
-        ];
-
-        return view('employers/edit-job', $data);
-    }
 
 
     public function deleteJob($id) 
@@ -2690,61 +2416,6 @@ class EmployerController extends BaseController
     }
 
     /**
-     * Update application status via AJAX
-     */
-    public function updateApplicationStatus2()
-    {
-        if ($this->request->getMethod() !== 'POST') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
-        }
-
-        $user = $this->auth->user();
-        $employerModel = model(EmployerModel::class);
-        $employer = $employerModel->where('user_id', $user->id)->first();
-
-        if (!$employer) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
-        }
-
-        $applicationId = $this->request->getPost('application_id');
-        $status = $this->request->getPost('status');
-
-        $allowedStatuses = ['pending', 'reviewed', 'shortlisted', 'rejected', 'hired'];
-        if (!in_array($status, $allowedStatuses)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid status']);
-        }
-
-        $applicationModel = model(JobApplicationModel::class);
-        $application = $applicationModel->find($applicationId);
-
-        if (!$application) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Application not found']);
-        }
-
-        // Verify ownership through job
-        $jobModel = model(JobModel::class);
-        $job = $jobModel->find($application->job_id);
-
-        if (!$job || $job->employer_id != $employer->id) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
-        }
-
-        $applicationModel->update($applicationId, [
-            'status' => $status,
-            'reviewed_at' => date('Y-m-d H:i:s')
-        ]);
-
-        // Create notification for job seeker (optional)
-        // $this->sendStatusUpdateEmail($application, $status);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Application status updated successfully',
-            'status' => $status
-        ]);
-    }
-
-    /**
      * Delete application
      */
     public function deleteApplication($id)
@@ -2893,6 +2564,13 @@ class EmployerController extends BaseController
             ->where('application_answers.application_id', $id)
             ->findAll();
 
+        $experience = [];
+        $education = [];
+        if (!empty($application->job_seeker_id)) {
+            $experience = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker((int) $application->job_seeker_id);
+            $education = model(\App\Models\JobSeekerEducationModel::class)->forSeeker((int) $application->job_seeker_id);
+        }
+
         return view('employers/application_view', [
             'title' => 'Application Details',
             'user' => $user,
@@ -2900,6 +2578,8 @@ class EmployerController extends BaseController
             'application' => $application,
             'notes' => $notes,
             'answers' => $answers,
+            'experience' => $experience,
+            'education' => $education,
             'creditBalance' => $creditBalance,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
         ]);
@@ -3144,6 +2824,9 @@ class EmployerController extends BaseController
                 $website = 'https://' . $website;
             }
 
+            $benefits = (array) $this->request->getPost('benefits');
+            $benefits = array_values(array_filter(array_map('trim', $benefits)));
+
             $data = [
                 'company_name'      => $this->request->getPost('company_name'),
                 'state_id'          => $this->request->getPost('state_id'),
@@ -3154,6 +2837,18 @@ class EmployerController extends BaseController
                 'contact_email'     => $this->request->getPost('contact_email'),
                 'contact_phone'     => $this->request->getPost('contact_phone'),
                 'company_address'   => trim($this->request->getPost('company_address')),
+                'tagline'           => trim((string) $this->request->getPost('tagline')) ?: null,
+                'company_type'      => $this->request->getPost('company_type') ?: null,
+                'founded_year'      => $this->request->getPost('founded_year') ?: null,
+                'remote_policy'     => $this->request->getPost('remote_policy') ?: null,
+                'whatsapp'          => trim((string) $this->request->getPost('whatsapp')) ?: null,
+                'benefits'          => !empty($benefits) ? json_encode($benefits) : null,
+                'hiring_process'    => trim((string) $this->request->getPost('hiring_process')) ?: null,
+                'rc_number'         => trim((string) $this->request->getPost('rc_number')) ?: null,
+                'linkedin'          => trim((string) $this->request->getPost('linkedin')) ?: null,
+                'twitter'           => trim((string) $this->request->getPost('twitter')) ?: null,
+                'facebook'          => trim((string) $this->request->getPost('facebook')) ?: null,
+                'instagram'         => trim((string) $this->request->getPost('instagram')) ?: null,
             ];
 
             // === Handle Logo Upload Only ===
@@ -3705,21 +3400,35 @@ class EmployerController extends BaseController
             return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
         }
 
-        $paymentModel = model(PaymentModel::class);
-        
-        // Get all payments for this employer
-        $transactions = $paymentModel
-            ->where('employer_id', $employer->id)
+        // Wallet transactions are the ledger used by the wallet page and are the
+        // source of truth for both funding and spending activity.
+        $wallet = (new \App\Services\WalletService())->getOrCreateWallet($user->id);
+        $walletRows = model(WalletTransactionModel::class)
+            ->where('wallet_id', $wallet->id)
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
-        // Calculate total spent
-        $totalSpent = array_sum(array_column($transactions, 'amount'));
+        $transactions = array_map(static function ($transaction): array {
+            $type = strtolower((string) ($transaction->type ?? ''));
+            return [
+                'reference'   => (string) ($transaction->reference ?? ''),
+                'description' => (string) ($transaction->description ?? ''),
+                'created_at'  => (string) ($transaction->created_at ?? ''),
+                'amount'      => (float) ($transaction->amount ?? 0),
+                'type'        => $type,
+                'status'      => 'completed',
+            ];
+        }, $walletRows);
+
+        $totalSpent = array_reduce($transactions, static function (float $total, array $transaction): float {
+            return $total + ($transaction['type'] === 'debit' ? $transaction['amount'] : 0);
+        }, 0.0);
 
         return view('employers/transactions', [
             'title' => 'Transaction History',
             'user' => $user,
             'employer' => $employer,
+            'wallet' => $wallet,
             'transactions' => $transactions,
             'totalSpent' => $totalSpent
         ]);
@@ -4652,26 +4361,6 @@ class EmployerController extends BaseController
     }
 
 
-    public function subscribe($planId)
-    {
-        $plan = model(PlanModel::class)->find($planId);
-
-        $paystack = service('paystack');
-
-        $response = $paystack->initialize([
-            'email' => auth()->user()->email,
-            'amount' => $plan->price * 100,
-            'plan'  => $plan->paystack_plan_code,
-            'metadata' => [
-                'type'      => 'subscription',
-                'user_id'   => auth()->user()->id,
-                'plan_code' => $plan->paystack_plan_code
-            ]
-        ]);
-
-        return redirect()->to($response['data']['authorization_url']);
-    }
-
     /**
      * Cancel the current paid subscription via Paystack + mark as will_not_renew
      */
@@ -4782,109 +4471,6 @@ class EmployerController extends BaseController
         return redirect()->to('employer/pricing')
             ->with('success', 'Your subscription has been successfully reactivated! Monthly billing will resume on ' .
                 date('F j, Y', strtotime($currentSub->ends_at)) . '.');
-    }
-
-    /**
-     * Checkout page — calculates prorated upgrade cost + handles billing cycle.
-     */
-    public function checkout($planSlug = null)
-    {
-        $user = $this->auth->user();
-        if (!$user) return redirect()->to('/login');
-
-        $billingCycle = $this->request->getGet('billing_cycle') ?? 'monthly';
-
-        $employerModel = model(EmployerModel::class);
-        $employer = $employerModel->where('user_id', $user->id)->first();
-
-        if (!$employer) {
-            return redirect()->to('employer/profile/edit')->with('error', 'Please create your company profile first.');
-        }
-
-        $planModel = model(SubscriptionPlanModel::class);
-        $userPlanModel = model(UserSubscriptionModel::class);
-
-        $plan = $planModel->where('slug', $planSlug)->first();
-        if (!$plan) {
-            return redirect()->back()->with('error', 'Plan not found.');
-        }
-
-        $currentSub = $userPlanModel->where('user_id', $user->id)->first();
-        if ($currentSub) {
-            $currentSub = (object) $currentSub;
-        }
-
-        // FREE PLAN → assign instantly
-        if ($plan->slug === 'free' && (float)$plan->price == 0) {
-            $this->applyPlanToUser($user->id, $plan->id, $plan->duration);
-            return redirect()->to('employer/pricing')->with('success', 'Free plan applied.');
-        }
-
-        // ENTERPRISE PLAN → no payment, contact sales instead
-        if ($plan->slug === 'enterprise') {
-            return view('employers/checkout', [
-                'user' => $user,
-                'employer' => $employer,
-                'title' => 'Checkout Subscription for ' . $plan->name,
-                'plan' => $plan,
-                'billingCycle' => $billingCycle,
-                'message' => 'This plan requires a custom quote. Please contact sales.'
-            ]);
-        }
-
-        // Determine new plan amount based on billing cycle
-        if ($billingCycle === 'yearly') {
-            $newPlanPrice = $plan->price * 12 * 0.85; // yearly billing
-        } else {
-            $newPlanPrice = $plan->price; // monthly
-        }
-
-        // If no current subscription → charge full amount
-        if (!$currentSub) {
-            return view('employers/checkout', [
-                'user' => $user,
-                'employer' => $employer,
-                'title' => 'Checkout Subscription for ' . $plan->name,
-                'plan' => $plan,
-                'billingCycle' => $billingCycle,
-                'upgradeCost' => round($newPlanPrice, 2),
-                'explain' => 'Full price (no existing subscription).'
-            ]);
-        }
-
-        // If same plan chosen → no upgrade needed
-        if ($currentSub->plan_id == $plan->id) {
-            return redirect()->to('subscription/pricing')->with('info', 'You are already on this plan.');
-        }
-
-        // Calculate prorated credit
-        $oldPlan = $planModel->find($currentSub->plan_id);
-
-        $today = new DateTime();
-        $end = new DateTime($currentSub->ends_at);
-        $daysLeft = (int)$today->diff($end)->format('%a');
-        if ($daysLeft < 0) $daysLeft = 0;
-
-        $oldDuration = max($oldPlan->duration, 1); // avoid division by zero
-        $dailyOld = (float)$oldPlan->price / $oldDuration;
-        $remainingCredit = $daysLeft * $dailyOld;
-
-        // Compute upgrade cost
-        $rawUpgradeCost = $newPlanPrice - $remainingCredit;
-        $upgradeCost = max($rawUpgradeCost, 0);
-
-        $explain = "Prorated: {$daysLeft} day(s) left. Remaining credit: ₦" . number_format($remainingCredit, 2);
-
-        return view('employers/checkout', [
-            'user' => $user,
-            'employer' => $employer,
-            'title' => 'Checkout Subscription for ' . $plan->name,
-            'plan' => $plan,
-            'billingCycle' => $billingCycle,
-            'currentSub' => $currentSub,
-            'upgradeCost' => round($upgradeCost, 2),
-            'explain' => $explain
-        ]);
     }
 
     public function processCheckoutAjax()
@@ -5132,41 +4718,6 @@ class EmployerController extends BaseController
         ]);
 
         return redirect()->to('employers/pricing')->with('error', 'Payment not successful.');
-    }
-
-    public function verifyPayment(string $reference)
-    {
-        $paystack = service('paystack');
-        $wallet   = service('wallet');
-
-        $response = $paystack->verifyTransaction($reference);
-
-        if (! $response['status']) {
-            throw new \RuntimeException('Payment verification failed');
-        }
-
-        $data = $response['data'];
-
-        $paymentModel = model(PaymentModel::class);
-        $payment = $paymentModel->where('reference', $reference)->first();
-
-        if ($payment['status'] === 'paid') {
-            return;
-        }
-
-        $wallet->credit(
-            $payment['user_id'],
-            $payment['amount_paid'],
-            'wallet_funding',
-            $reference,
-            null,
-            'Wallet funding via Paystack'
-        );
-
-        $paymentModel->update($payment['id'], [
-            'status' => 'paid',
-            'gateway_response' => json_encode($data),
-        ]);
     }
 
     /**
@@ -5710,7 +5261,7 @@ class EmployerController extends BaseController
 
         $typeStats = [];
         foreach ($typeCounts as $stat) {
-            $typeStats[$stat->type] = $stat->count;
+            $typeStats[$stat['type']] = $stat['count'];
         }
 
         $creditService = new \App\Services\CreditService();
@@ -5827,6 +5378,7 @@ class EmployerController extends BaseController
             'category'   => trim((string) $this->request->getPost('category')),
             'location'   => trim((string) $this->request->getPost('location')),
             'experience' => trim((string) $this->request->getPost('experience')),
+            'education'  => trim((string) $this->request->getPost('education')),
         ];
         // Drop empty criteria for a clean stored payload.
         $criteria = array_filter($criteria, static fn ($v) => $v !== '');
@@ -6037,19 +5589,6 @@ class EmployerController extends BaseController
         }
 
         return view('employers/candidates', $data);
-    }
-
-    public function filterCandidates()
-    {
-        $jobSeekerModel = model(JobSeekerModel::class);
-        $filters = $this->request->getGet();
-
-        $candidates = $jobSeekerModel->getCandidates($filters, 10);
-
-        return view('employers/partials/candidates_table', [
-            'candidates' => $candidates,
-            'pager'      => $jobSeekerModel->pager,
-        ]);
     }
 
     public function viewCandidate(int $id)
@@ -6418,6 +5957,12 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['error' => 'Job title is required to generate a description.']);
         }
 
+        if (empty(env('GEMINI_API_KEY'))) {
+            return $this->response->setStatusCode(503)->setJSON([
+                'error' => 'AI generation is not configured. Add GEMINI_API_KEY to the server environment, or write the description manually.'
+            ]);
+        }
+
         $prompt = "Write a comprehensive, professional job description for the role of '{$title}'. ";
         if (!empty($industry)) {
             $prompt .= "The company operates in the '{$industry}' industry. ";
@@ -6438,6 +5983,12 @@ class EmployerController extends BaseController
         try {
             $aiService = new \App\Services\AiService();
             $result = $aiService->generate($prompt);
+
+            if (str_starts_with($result, 'Offline Mode Active:') || str_starts_with($result, 'AI Error:')) {
+                return $this->response->setStatusCode(503)->setJSON([
+                    'error' => 'AI generation is temporarily unavailable. Your form has not been changed.'
+                ]);
+            }
             
             // Clean markdown code blocks if the AI returned it inside triple backticks
             if (str_starts_with($result, '```')) {
@@ -6446,8 +5997,11 @@ class EmployerController extends BaseController
             }
 
             return $this->response->setJSON(['status' => 'success', 'description' => trim($result)]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON(['error' => 'AI Generation failed: ' . $e->getMessage()]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Employer job AI generation failed: ' . $e->getMessage());
+            return $this->response->setStatusCode(503)->setJSON([
+                'error' => 'AI generation is temporarily unavailable. Your form has not been changed.'
+            ]);
         }
     }
 

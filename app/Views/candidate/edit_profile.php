@@ -44,12 +44,13 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .progress-bar{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:4px}
 .progress-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .progress-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap;flex:1}
-.progress-track{position:relative;width:200px;height:8px;background:var(--bg);border-radius:20px;overflow:visible}
+.progress-track{position:relative;width:100%;max-width:320px;min-width:140px;height:8px;background:var(--bg);border-radius:20px;overflow:visible}
 .progress-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--brand-dark),var(--brand));transition:width .6s ease}
 .milestone-marker{position:absolute;top:-6px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:#fff;transform:translateX(-50%);transition:all .3s ease}
 .milestone-marker.achieved{background:var(--success);border-color:var(--success)}
 .milestone-marker.next{border-color:var(--accent);border-style:dashed}
 .milestone-label{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.6rem;font-weight:700;white-space:nowrap;color:var(--muted)}
+.milestone-marker:nth-of-type(2) .milestone-label{top:18px}
 .milestone-marker.achieved .milestone-label{color:var(--success)}
 .progress-text{font-family:'Sora',sans-serif;font-weight:800;font-size:.86rem;color:var(--brand-deep)}
 .progress-tip{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--muted)}
@@ -180,7 +181,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                     <!-- Profile photo upload -->
                     <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px;">
                         <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:#f5f7fb;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);flex-shrink:0;">
-                            <?php if (!empty($candidate->profile_picture)): ?>
+                            <?php if (!empty($candidate->profile_picture) && file_exists(FCPATH . $candidate->profile_picture)): ?>
                                 <img src="<?= base_url($candidate->profile_picture) ?>" id="currentProfilePic" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
                             <?php else: ?>
                                 <svg aria-hidden="true"><use href="#i-users"/></svg>
@@ -342,10 +343,10 @@ $portfolioDone  = !empty($candidate->portfolio);
                         </button>
                     </div>
                     <div class="form-field" style="margin-top:14px;">
-                        <textarea name="description" id="summaryTextarea" class="input" rows="5" maxlength="600"
+                        <textarea name="bio" id="summaryTextarea" class="input" rows="5" maxlength="600"
                             placeholder="e.g. Results-driven Marketing Manager with 5+ years of experience..."
-                            oninput="document.getElementById('summaryCount').textContent=this.value.length"><?= old('description', $candidate->description ?? '') ?></textarea>
-                        <div class="char-count"><span id="summaryCount"><?= strlen($candidate->description ?? '') ?></span> / 600</div>
+                            oninput="document.getElementById('summaryCount').textContent=this.value.length"><?= old('bio', $candidate->bio ?? '') ?></textarea>
+                        <div class="char-count"><span id="summaryCount"><?= strlen($candidate->bio ?? '') ?></span> / 600</div>
                     </div>
                 </div>
             </details>

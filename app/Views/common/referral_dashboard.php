@@ -182,21 +182,21 @@ ol.how li p {
             <div class="card-body">
                 <ol class="how">
                     <li>
-                        <span class="how-n" aria-hidden="true"></span>
+                        <span class="how-n" aria-hidden="true">1</span>
                         <div>
                             <b>Share your link</b>
                             <p>Invite friends to join JobberRecruit with your unique referral link.</p>
                         </div>
                     </li>
                     <li>
-                        <span class="how-n" aria-hidden="true"></span>
+                        <span class="how-n" aria-hidden="true">2</span>
                         <div>
                             <b>They sign up</b>
                             <p>Your friend creates a free account and starts exploring jobs.</p>
                         </div>
                     </li>
                     <li>
-                        <span class="how-n" aria-hidden="true"></span>
+                        <span class="how-n" aria-hidden="true">3</span>
                         <div>
                             <b>Earn rewards</b>
                             <p>When they complete a qualifying action, your wallet is credited instantly — enough referrals can cover a full training course.</p>

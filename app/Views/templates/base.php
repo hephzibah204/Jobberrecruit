@@ -449,6 +449,9 @@
     <?= $this->include('partials/mobile_bottom_nav') ?>
     <script src="<?= base_url('assets/js/mobile-app.js?v=1.0'); ?>"></script>
 
+    <?php if (auth()->loggedIn()): ?>
+    <?= $this->include('partials/chatbot'); ?>
+    <?php endif; ?>
     <script src="<?= base_url('js/inline-validation.js'); ?>" type="text/javascript"></script>
     <script src="<?= base_url('js/interactive-ui.js'); ?>" type="text/javascript"></script>
 </body>

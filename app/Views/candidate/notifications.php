@@ -121,11 +121,16 @@
                             <th>Frequency</th>
                             <th>Time</th>
                             <th>Channel</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($alerts as $alert): ?>
+                            <?php
+                                $isSnoozed = !empty($alert->snooze_until) && strtotime($alert->snooze_until) > time();
+                                $isPaused = !empty($alert->is_paused);
+                            ?>
                             <tr>
                                 <td><b style="color:var(--brand-deep);"><?= esc($alert->keyword) ?></b></td>
                                 <td><?= esc($alert->location_id ? ($stateMap[$alert->location_id] ?? 'Any') : 'Any location') ?></td>
@@ -133,6 +138,24 @@
                                 <td style="font-size:.8rem;color:var(--muted);"><?= $alert->delivery_time ? date('g:i A', strtotime($alert->delivery_time)) : '—' ?></td>
                                 <td><?= ucfirst($alert->channel ?? 'email') ?></td>
                                 <td>
+                                    <?php if ($isSnoozed): ?>
+                                        <span class="pill pill--pending">Snoozed until <?= date('M j', strtotime($alert->snooze_until)) ?></span>
+                                    <?php elseif ($isPaused): ?>
+                                        <span class="pill pill--closed">Paused</span>
+                                    <?php else: ?>
+                                        <span class="pill pill--hired">Active</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="white-space:nowrap">
+                                    <?php if ($isPaused || $isSnoozed): ?>
+                                        <button class="btn btn-outline btn-sm resume-alert" data-id="<?= $alert->id ?>" title="Resume alert">
+                                            <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-play"/></svg> Resume
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline btn-sm pause-alert" data-id="<?= $alert->id ?>" title="Pause alert">
+                                            <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-pause"/></svg> Pause
+                                        </button>
+                                    <?php endif; ?>
                                     <button class="btn btn-outline btn-sm delete-alert" data-id="<?= $alert->id ?>">
                                         <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-trash"/></svg> Delete
                                     </button>
@@ -192,6 +215,36 @@
                 setTimeout(() => location.reload(), 800);
             } else {
                 toastr.error("Unable to delete alert");
+            }
+        });
+    });
+
+    // Pause alert
+    $('.pause-alert').on('click', function() {
+        let id = $(this).data('id');
+        $.post("<?= site_url('candidate/alerts/pause') ?>/" + id, {
+            <?= csrf_token() ?>: "<?= csrf_hash() ?>"
+        }, function(response) {
+            if (response.success) {
+                toastr.success("Alert paused");
+                setTimeout(() => location.reload(), 800);
+            } else {
+                toastr.error("Unable to pause alert");
+            }
+        });
+    });
+
+    // Resume alert
+    $('.resume-alert').on('click', function() {
+        let id = $(this).data('id');
+        $.post("<?= site_url('candidate/alerts/resume') ?>/" + id, {
+            <?= csrf_token() ?>: "<?= csrf_hash() ?>"
+        }, function(response) {
+            if (response.success) {
+                toastr.success("Alert resumed");
+                setTimeout(() => location.reload(), 800);
+            } else {
+                toastr.error("Unable to resume alert");
             }
         });
     });

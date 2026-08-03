@@ -28,12 +28,11 @@ class SalaryNegotiationSessionModel extends Model
         'outcome',
         'transcript_json',
         'evaluation_json',
-        'created_at',
     ];
 
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
-    protected $updatedField  = false;
+    protected $updatedField  = '';
 
     /**
      * Get recent sessions for a user, ordered by most recent.

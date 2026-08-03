@@ -10,5 +10,5 @@ class ResumeSkillModel extends Model
     protected $allowedFields = ['resume_id', 'skill_name', 'proficiency_level'];
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    protected $updatedField  = '';
 }

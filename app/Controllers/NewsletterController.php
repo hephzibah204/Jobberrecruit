@@ -43,8 +43,11 @@ class NewsletterController extends BaseController
 
     public function registered()
     {
+        $userEmail = auth()->loggedIn() ? auth()->user()->email : 'your email';
+
         return view('webinar_registered', [
-            'title' => 'Webinar Registration Confirmed'
+            'title'      => 'Webinar Registration Confirmed',
+            'user_email' => $userEmail,
         ]);
     }
 
@@ -105,6 +108,9 @@ class NewsletterController extends BaseController
             'user_id' => auth()->id()
         ]);
 
+        // Increment actual registrants count
+        $this->webinarModel->where('id', $webinarId)->increment('registrants_count', 1);
+
         return $this->respondCreated(['message' => 'Successfully registered for the webinar']);
     }
 
@@ -113,7 +119,7 @@ class NewsletterController extends BaseController
     public function adminIndex()
     {
         $newsletters = $this->newsletterModel->orderBy('created_at', 'DESC')->findAll();
-        $webinars = $this->webinarModel->orderBy('created_at', 'DESC')->findAll();
+        $webinars = $this->webinarModel->orderBy('scheduled_at', 'DESC')->findAll();
 
         return view('admin/newsletters/index', [
             'title' => 'Newsletters & Webinars',
@@ -221,14 +227,26 @@ class NewsletterController extends BaseController
     public function saveWebinar()
     {
         $id = $this->request->getPost('id');
+        $accessType = $this->request->getPost('access_type') === 'paid' ? 'paid' : 'free';
+        $price = $accessType === 'paid' ? (float)$this->request->getPost('price') : 0.00;
+
         $data = [
-            'title' => $this->request->getPost('title'),
-            'description' => $this->request->getPost('description'),
+            'title'        => $this->request->getPost('title'),
+            'description'  => $this->request->getPost('description'),
             'speaker_name' => $this->request->getPost('speaker_name'),
             'scheduled_at' => $this->request->getPost('scheduled_at'),
             'meeting_link' => $this->request->getPost('meeting_link'),
-            'status' => $this->request->getPost('status') ?? 'upcoming'
+            'access_type'  => $accessType,
+            'price'        => $price,
+            'status'       => $this->request->getPost('status') ?? 'upcoming'
         ];
+
+        $flyer = $this->request->getFile('flyer_image');
+        if ($flyer && $flyer->isValid() && !$flyer->hasMoved()) {
+            $newName = $flyer->getRandomName();
+            $flyer->move(FCPATH . 'uploads/webinars/', $newName);
+            $data['flyer_image'] = 'uploads/webinars/' . $newName;
+        }
 
         if ($id) {
             $this->webinarModel->update($id, $data);

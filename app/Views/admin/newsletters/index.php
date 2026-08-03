@@ -217,8 +217,11 @@
                             <table class="table text-nowrap table-hover">
                                 <thead>
                                     <tr>
+                                        <th>Flyer</th>
                                         <th>Title</th>
                                         <th>Speaker</th>
+                                        <th>Type &amp; Price</th>
+                                        <th>Registered</th>
                                         <th>Scheduled At</th>
                                         <th>Meeting Link</th>
                                         <th>Status</th>
@@ -228,7 +231,7 @@
                                 <tbody>
                                     <?php if (empty($webinars)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
+                                            <td colspan="9" class="text-center text-muted py-4">
                                                 <i class="ti ti-video-off fs-24 d-block mb-2"></i>
                                                 No webinars yet.
                                             </td>
@@ -236,8 +239,28 @@
                                     <?php else: ?>
                                         <?php foreach ($webinars as $webinar): ?>
                                             <tr>
+                                                <td>
+                                                    <?php if (!empty($webinar->flyer_image)): ?>
+                                                        <img src="<?= base_url($webinar->flyer_image) ?>" alt="Flyer" style="width:45px;height:45px;object-fit:cover;" class="rounded border">
+                                                    <?php else: ?>
+                                                        <span class="avatar avatar-sm bg-light text-muted"><i class="ti ti-photo"></i></span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td class="fw-semibold"><?= esc($webinar->title) ?></td>
                                                 <td><?= esc($webinar->speaker_name) ?></td>
+                                                <td>
+                                                    <?php if (($webinar->access_type ?? 'free') === 'paid'): ?>
+                                                        <span class="badge bg-warning-transparent text-warning fw-bold">PAID</span>
+                                                        <span class="fs-12 ms-1 fw-semibold">&#x20A6;<?= number_format((float)($webinar->price ?? 0), 2) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-success-transparent text-success fw-bold">FREE</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-primary-transparent text-primary fw-bold fs-12">
+                                                        <i class="ti ti-users me-1"></i><?= number_format((int)($webinar->registrants_count ?? 0)) ?>
+                                                    </span>
+                                                </td>
                                                 <td><?= $webinar->scheduled_at ?></td>
                                                 <td>
                                                     <?php if ($webinar->meeting_link): ?>
@@ -315,7 +338,7 @@
 <!-- ── Add/Edit Webinar Modal ─────────────────────────────────────────────── -->
 <div class="modal fade" id="addWebinar" tabindex="-1">
     <div class="modal-dialog">
-        <form action="<?= base_url('admin/webinars/save') ?>" method="POST">
+        <form action="<?= base_url('admin/webinars/save') ?>" method="POST" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="id" id="webinar_id">
             <div class="modal-content">
@@ -341,8 +364,26 @@
                         <input type="url" name="meeting_link" id="w_link" class="form-control" placeholder="https://meet.google.com/...">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Training Flyer Image</label>
+                        <input type="file" name="flyer_image" id="w_flyer" class="form-control" accept="image/*">
+                        <small class="text-muted">Upload webinar poster or banner image (PNG, JPG, WebP)</small>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea name="description" id="w_desc" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Access Type</label>
+                            <select name="access_type" id="w_access_type" class="form-select" onchange="togglePriceField(this.value)">
+                                <option value="free">Free</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="price_wrap" style="display:none;">
+                            <label class="form-label">Price (&#x20A6;)</label>
+                            <input type="number" step="0.01" min="0" name="price" id="w_price" class="form-control" placeholder="e.g. 2500.00" value="0.00">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status</label>
@@ -364,6 +405,13 @@
 </div>
 
 <script>
+function togglePriceField(type) {
+    const wrap = document.getElementById('price_wrap');
+    if (wrap) {
+        wrap.style.display = type === 'paid' ? 'block' : 'none';
+    }
+}
+
 function editWebinar(webinar) {
     document.getElementById('webinar_id').value = webinar.id || '';
     document.getElementById('w_title').value = webinar.title || '';
@@ -371,6 +419,12 @@ function editWebinar(webinar) {
     document.getElementById('w_date').value = (webinar.scheduled_at || '').replace(' ', 'T');
     document.getElementById('w_link').value = webinar.meeting_link || '';
     document.getElementById('w_desc').value = webinar.description || '';
+    
+    const accessType = webinar.access_type || 'free';
+    document.getElementById('w_access_type').value = accessType;
+    document.getElementById('w_price').value = webinar.price || '0.00';
+    togglePriceField(accessType);
+
     document.getElementById('w_status').value = webinar.status || 'upcoming';
     document.getElementById('webinarModalTitle').innerText = 'Edit Webinar';
     new bootstrap.Modal(document.getElementById('addWebinar')).show();

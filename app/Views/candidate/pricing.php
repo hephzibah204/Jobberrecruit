@@ -131,7 +131,7 @@
                     <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> Priority profile in employer searches</li>
                     <li class="yes"><svg aria-hidden="true"><use href="#i-check"/></svg> Detailed skill analytics</li>
                 </ul>
-                <a href="<?= base_url('candidate/subscription/checkout') ?>" class="btn btn-primary" id="subscribe-btn"><svg aria-hidden="true"><use href="#i-crown"/></svg> Upgrade to Premium</a>
+                <button class="btn btn-primary" id="subscribe-btn" disabled title="No premium plan is currently configured — please check back soon."><svg aria-hidden="true"><use href="#i-crown"/></svg> Upgrade to Premium</button>
             </div>
         <?php else: ?>
             <?php foreach ($plans as $plan): ?>

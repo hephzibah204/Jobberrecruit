@@ -77,13 +77,15 @@
         <option value="hired">Hired</option>
       </select>
 
-      <select class="select" id="bulk-actions" aria-label="Bulk actions">
-        <option value="">Bulk actions</option>
-        <option value="reviewed">Mark as reviewed</option>
-        <option value="shortlisted">Shortlist</option>
-        <option value="rejected">Reject</option>
-        <option value="delete">Delete selected</option>
-      </select>
+      <?php if (!empty($applications)): ?>
+        <select class="select" id="bulk-actions" aria-label="Bulk actions">
+          <option value="">Bulk actions</option>
+          <option value="reviewed">Mark as reviewed</option>
+          <option value="shortlisted">Shortlist</option>
+          <option value="rejected">Reject</option>
+          <option value="delete">Delete selected</option>
+        </select>
+      <?php endif; ?>
     </div>
   </div>
 

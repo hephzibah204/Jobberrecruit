@@ -1560,16 +1560,16 @@ document.addEventListener('DOMContentLoaded', function() {
         window.speechSynthesis.onvoiceschanged = pickVoice;
     }
 
-    function speakText(text, onDoneCallback) {
-        if (!VOICE.on || !synthesisSupported) {
+    let activeAudio = null;
+
+    function speakTextBrowserFallback(text, onDoneCallback) {
+        if (!synthesisSupported) {
             if (onDoneCallback) onDoneCallback();
             return;
         }
         window.speechSynthesis.cancel();
         const sentences = text.replace(/<[^>]*>/g, '').split(/(?<=[.!?])\s+/);
         let sIdx = 0;
-        isSpeaking = true;
-        setTalking(true);
 
         function speakSentence() {
             if (sIdx >= sentences.length) {
@@ -1582,17 +1582,82 @@ document.addEventListener('DOMContentLoaded', function() {
             if (VOICE.voice) utterance.voice = VOICE.voice;
             utterance.pitch = (contextPreset.personality === 'big4-partner' || contextPreset.personality === 'gov-recruiter') ? 0.9 : 1.0;
             utterance.rate = 1.0;
-            utterance.onend = () => {
-                sIdx++;
-                speakSentence();
-            };
-            utterance.onerror = () => {
-                sIdx++;
-                speakSentence();
-            };
+            utterance.onend = () => { sIdx++; speakSentence(); };
+            utterance.onerror = () => { sIdx++; speakSentence(); };
             window.speechSynthesis.speak(utterance);
         }
         speakSentence();
+    }
+
+    // Interviewer's voice comes from Gemini's native TTS (server-rendered
+    // audio), matched to the interviewer persona's gender. Falls back to the
+    // browser's SpeechSynthesis only if the Gemini call fails or is unavailable.
+    function pickGeminiVoiceName() {
+        const female = ['corporate-hr', 'banking-recruiter'].includes(contextPreset.personality);
+        return female ? 'Kore' : 'Charon';
+    }
+
+    function speakText(text, onDoneCallback) {
+        if (!VOICE.on) {
+            if (onDoneCallback) onDoneCallback();
+            return;
+        }
+        if (activeAudio) {
+            activeAudio.pause();
+            activeAudio = null;
+        }
+        window.speechSynthesis && window.speechSynthesis.cancel();
+
+        const plainText = text.replace(/<[^>]*>/g, '');
+        isSpeaking = true;
+        setTalking(true);
+
+        const formData = new FormData();
+        formData.append('text', plainText);
+        formData.append('voice', pickGeminiVoiceName());
+
+        fetch('<?= base_url('candidate/career-tools/speak') ?>', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data || !data.audio) {
+                isSpeaking = false;
+                setTalking(false);
+                speakTextBrowserFallback(plainText, onDoneCallback);
+                return;
+            }
+            const audio = new Audio(`data:${data.mime || 'audio/wav'};base64,${data.audio}`);
+            activeAudio = audio;
+            audio.onended = () => {
+                isSpeaking = false;
+                setTalking(false);
+                activeAudio = null;
+                if (onDoneCallback) onDoneCallback();
+            };
+            audio.onerror = () => {
+                isSpeaking = false;
+                setTalking(false);
+                activeAudio = null;
+                speakTextBrowserFallback(plainText, onDoneCallback);
+            };
+            audio.play().catch(() => {
+                isSpeaking = false;
+                setTalking(false);
+                activeAudio = null;
+                speakTextBrowserFallback(plainText, onDoneCallback);
+            });
+        })
+        .catch(() => {
+            isSpeaking = false;
+            setTalking(false);
+            speakTextBrowserFallback(plainText, onDoneCallback);
+        });
     }
 
     function setTalking(on) {
@@ -1608,7 +1673,8 @@ document.addEventListener('DOMContentLoaded', function() {
         this.setAttribute('aria-pressed', VOICE.on ? 'true' : 'false');
         $('voice-btn-ic').innerHTML = `<use href="#${VOICE.on ? 'i-vol' : 'i-vol-off'}"/>`;
         if (!VOICE.on) {
-            window.speechSynthesis.cancel();
+            window.speechSynthesis && window.speechSynthesis.cancel();
+            if (activeAudio) { activeAudio.pause(); activeAudio = null; }
             isSpeaking = false;
             setTalking(false);
         }
@@ -1949,7 +2015,7 @@ document.addEventListener('DOMContentLoaded', function() {
         submitAnswerText("[Candidate Skipped Question. Please ask the next question.]");
     });
 
-    function submitAnswerText(textStr) {
+    function submitAnswerText(textStr, isFirst) {
         // Render AI analysis/thinking animation
         const thinkDiv = document.createElement('div');
         thinkDiv.className = 'turn turn--ai';
@@ -1990,11 +2056,14 @@ document.addEventListener('DOMContentLoaded', function() {
             thinkDiv.remove();
             history.push({ sender: 'model', message: data.message });
 
-            const tag = `<span class="q-tag">Question ${currentIdx + 2} of ${totalQuestions}</span><br>`;
+            const qNum = isFirst ? (currentIdx + 1) : (currentIdx + 2);
+            const tag = `<span class="q-tag">Question ${qNum} of ${totalQuestions}</span><br>`;
             appendBubble('model', tag + data.message);
             speakText(data.message);
 
-            currentIdx++;
+            if (!isFirst) {
+                currentIdx++;
+            }
             if (currentIdx >= totalQuestions) {
                 finishSession(false);
                 return;
@@ -2257,12 +2326,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Start timers and initialize questions
         startTimer();
         buildQuestionMap();
-        
+        const firstPoint = $('qm-0');
+        if (firstPoint) {
+            firstPoint.classList.add('now');
+        }
+        setPill();
+
         appendBubble('model', P.open);
         history.push({ sender: 'model', message: P.open });
-        
+
         // Retrieve initial question dynamically from AI service to start the interview
-        submitAnswerText(`Starting mock interview for ${jobTitle}. Mode: ${activeMode}. Difficulty: ${contextPreset.difficulty}.`);
+        submitAnswerText(`Starting mock interview for ${jobTitle}. Mode: ${activeMode}. Difficulty: ${contextPreset.difficulty}.`, true);
     });
 
     document.body.classList.add('in-lobby');

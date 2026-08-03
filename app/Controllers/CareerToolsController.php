@@ -106,6 +106,7 @@ class CareerToolsController extends BaseController
             'company_type' => $this->request->getGet('company') ?? '',
         ];
 
+        $contextPreset = array_merge($contextPreset, $this->buildCandidateContext());
         if ($applicationId > 0) {
             $contextPreset = array_merge($contextPreset, $this->buildApplicationInterviewContext($applicationId));
         }
@@ -145,6 +146,7 @@ class CareerToolsController extends BaseController
             'company_type'   => (string) ($this->request->getPost('company') ?? ''),
         ];
 
+        $options = array_merge($options, $this->buildCandidateContext());
         if ($applicationId > 0) {
             $options = array_merge($options, $this->buildApplicationInterviewContext($applicationId));
         }
@@ -162,6 +164,30 @@ class CareerToolsController extends BaseController
         return $this->respond(is_array($response) ? $response : [
             'message' => $response,
         ]);
+    }
+
+    /**
+     * Text-to-speech for the mock interview voice mode, via Gemini's native
+     * TTS model instead of the browser's SpeechSynthesis API.
+     */
+    public function speak()
+    {
+        $text = trim((string) $this->request->getPost('text'));
+        if ($text === '') {
+            return $this->fail('Text is required');
+        }
+
+        // Keep prompts short — this is a spoken interviewer line, not an essay.
+        $text = mb_substr(strip_tags($text), 0, 800);
+
+        $voiceName = (string) ($this->request->getPost('voice') ?? 'Kore');
+        $audioB64 = $this->aiService->textToSpeech($text, $voiceName);
+
+        if (! $audioB64) {
+            return $this->respond(['audio' => null], 503);
+        }
+
+        return $this->respond(['audio' => $audioB64, 'mime' => 'audio/wav']);
     }
 
     public function evaluateInterview()
@@ -201,6 +227,7 @@ class CareerToolsController extends BaseController
             'company_type'   => (string) ($this->request->getPost('company') ?? ''),
         ];
 
+        $options = array_merge($options, $this->buildCandidateContext());
         if ($applicationId > 0) {
             $options = array_merge($options, $this->buildApplicationInterviewContext($applicationId));
         }
@@ -239,6 +266,78 @@ class CareerToolsController extends BaseController
         ];
 
         return $this->respond($evaluation);
+    }
+
+    /**
+     * Always-on candidate qualifications/experience context, independent of
+     * whether the interview is tied to a specific job application. Without
+     * this, sessions started outside an application flow had no candidate
+     * background and the AI fell back to generic questions.
+     *
+     * @return array<string, mixed>
+     */
+    protected function buildCandidateContext(): array
+    {
+        $candidate = $this->candidateModel->where('user_id', auth()->id())->first();
+        if (! $candidate) {
+            return [];
+        }
+
+        $parts = array_filter([
+            'Target role: ' . (string) ($candidate->job_title ?? ''),
+            'Skills: ' . (string) ($candidate->skills ?? ''),
+            'Years of experience: ' . (string) ($candidate->experience_years ?? ''),
+            'Education level: ' . (string) ($candidate->education_level ?? ''),
+            'Bio: ' . trim((string) ($candidate->bio ?? '')),
+        ], static function ($value): bool {
+            $value = trim((string) $value);
+            return $value !== '' && substr($value, -1) !== ':';
+        });
+
+        $historyDetails = $this->getHistoryDetails($candidate);
+        if ($historyDetails !== '') {
+            $parts[] = $historyDetails;
+        }
+
+        if ($parts === []) {
+            return [];
+        }
+
+        return [
+            'candidate_job_title' => (string) ($candidate->job_title ?? ''),
+            'candidate_profile'   => implode("\n", $parts),
+        ];
+    }
+
+    /**
+     * Fetch and format candidate's detailed experience and education history.
+     */
+    protected function getHistoryDetails(object $candidate): string
+    {
+        $expModel = new \App\Models\JobSeekerExperienceModel();
+        $eduModel = new \App\Models\JobSeekerEducationModel();
+        
+        $experiences = $expModel->forSeeker((int) $candidate->id);
+        $education = $eduModel->forSeeker((int) $candidate->id);
+        
+        $lines = [];
+        if (!empty($experiences)) {
+            $lines[] = "\nDetailed Work Experience & History:";
+            foreach ($experiences as $exp) {
+                $end = $exp->is_current ? 'Present' : $exp->end_date;
+                $lines[] = "- Role: {$exp->job_title} at {$exp->company} ({$exp->start_date} to {$end})\n  Responsibilities & Achievements: " . trim((string) ($exp->description ?? ''));
+            }
+        }
+        
+        if (!empty($education)) {
+            $lines[] = "\nDetailed Education & Qualifications:";
+            foreach ($education as $edu) {
+                $gradeStr = !empty($edu->grade) ? " (Grade: {$edu->grade})" : '';
+                $lines[] = "- {$edu->degree} in {$edu->field_of_study} from {$edu->school} ({$edu->start_year} to {$edu->end_year}){$gradeStr}";
+            }
+        }
+        
+        return implode("\n", $lines);
     }
 
     /**
@@ -308,6 +407,11 @@ class CareerToolsController extends BaseController
             return $value !== '' && substr($value, -1) !== ':';
         });
 
+        $historyDetails = $this->getHistoryDetails($candidate);
+        if ($historyDetails !== '') {
+            $parts[] = $historyDetails;
+        }
+
         return implode("\n", $parts);
     }
 
@@ -376,6 +480,45 @@ class CareerToolsController extends BaseController
     }
 
     /**
+     * AJAX: persist a finished salary-negotiation session — without this, history/streak/XP
+     * on the salary-negotiation page can never show real data (the whole flow runs client-side).
+     */
+    public function saveNegotiationSession()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $userId = (int) auth()->id();
+
+        $data = [
+            'user_id'              => $userId,
+            'job_title'            => (string) $this->request->getPost('job_title'),
+            'base_salary_offered'  => (float) $this->request->getPost('base_salary_offered'),
+            'target_salary'        => (float) $this->request->getPost('target_salary'),
+            'final_salary'         => (float) $this->request->getPost('final_salary'),
+            'recruiter_style'      => (string) $this->request->getPost('recruiter_style'),
+            'difficulty'           => (string) $this->request->getPost('difficulty'),
+            'rounds_completed'     => (int) $this->request->getPost('rounds_completed'),
+            'confidence_score'     => (int) $this->request->getPost('confidence_score'),
+            'persuasion_score'     => (int) $this->request->getPost('persuasion_score'),
+            'overall_score'        => (int) $this->request->getPost('overall_score'),
+            'outcome'              => (string) $this->request->getPost('outcome'),
+            'transcript_json'      => (string) $this->request->getPost('transcript_json'),
+            'evaluation_json'      => (string) $this->request->getPost('evaluation_json'),
+        ];
+
+        if (empty($data['job_title'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Missing session data']);
+        }
+
+        $negoModel = new \App\Models\SalaryNegotiationSessionModel();
+        $id = $negoModel->insert($data);
+
+        return $this->response->setJSON(['success' => (bool) $id, 'id' => $id]);
+    }
+
+    /**
      * Career Advice Interface (AI Career Coach)
      */
     public function careerAdvice()
@@ -435,7 +578,35 @@ class CareerToolsController extends BaseController
             'careerHealth' => $careerHealth,
         ]);
     }
-    
+
+    /**
+     * AJAX: confirms the AI service can produce advice before the page reloads and
+     * regenerates it fresh — careerAdvice() always calls the AI on every load, so this
+     * endpoint's only job is to surface a real error instead of a silent one on reload.
+     */
+    public function generateAdvice()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $userId = (int) auth()->id();
+        $candidate = $this->candidateModel->where('user_id', $userId)->first();
+        $profileSummary = "Name: " . ($candidate?->full_name ?? 'Candidate')
+            . ", Current Title: " . ($candidate?->job_title ?? 'Professional')
+            . ", Experience: " . ($candidate?->experience_years ?? 0) . " years"
+            . ", Skills: " . ($candidate?->skills ?? 'Not specified')
+            . ", Bio: " . ($candidate?->bio ?? 'Not specified');
+
+        try {
+            $this->aiService->getCareerAdvice($profileSummary);
+            return $this->response->setJSON(['success' => true]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Career advice generation failed: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Could not generate new advice right now. Please try again.']);
+        }
+    }
+
     /**
      * Clean markdown formatting from AI response
      */

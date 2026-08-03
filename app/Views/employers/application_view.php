@@ -147,10 +147,10 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
         <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
           <?php foreach ($experience as $exp): ?>
             <div style="border-bottom: 1px solid var(--border); padding-bottom: 14px; &:last-child { border-bottom: none; padding-bottom: 0; }">
-              <h4 style="font-weight:700; color:var(--brand-deep); font-size:0.94rem; margin-bottom:2px;"><?= esc($exp->position ?? 'Position') ?></h4>
+              <h4 style="font-weight:700; color:var(--brand-deep); font-size:0.94rem; margin-bottom:2px;"><?= esc($exp->job_title ?? 'Position') ?></h4>
               <p style="font-size:0.8rem; color:var(--muted); margin-bottom:8px;">
-                <b><?= esc($exp->company ?? 'Company') ?></b> &middot; 
-                <?= date('M Y', strtotime($exp->start_date ?? 'now')) ?> &ndash; 
+                <b><?= esc($exp->company ?? 'Company') ?></b><?= !empty($exp->location) ? ' &middot; ' . esc($exp->location) : '' ?> &middot;
+                <?= !empty($exp->start_date) ? date('M Y', strtotime($exp->start_date)) : '' ?> &ndash;
                 <?= !empty($exp->is_current) ? 'Present' : (!empty($exp->end_date) ? date('M Y', strtotime($exp->end_date)) : '') ?>
               </p>
               <?php if (!empty($exp->description)): ?>
@@ -177,8 +177,8 @@ $appliedDate = !empty($application->created_at) ? date('d M Y, H:i', strtotime($
                 <?= esc($edu->degree ?? 'Degree') ?><?= !empty($edu->field_of_study) ? ' in ' . esc($edu->field_of_study) : '' ?>
               </h4>
               <p style="font-size:0.8rem; color:var(--muted); margin:0;">
-                <b><?= esc($edu->institution ?? 'Institution') ?></b> &middot; 
-                <?= !empty($edu->graduation_date) ? date('Y', strtotime($edu->graduation_date)) : '' ?>
+                <b><?= esc($edu->school ?? 'Institution') ?></b> &middot;
+                <?= esc($edu->start_year ?? '') ?> &ndash; <?= esc($edu->end_year ?? 'Completed') ?>
               </p>
             </div>
           <?php endforeach; ?>

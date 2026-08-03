@@ -427,9 +427,11 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       $wTimestamp = strtotime($featured->scheduled_at);
     ?>
     <div class="feat-card" role="region" aria-label="Next webinar">
-      <div class="fc-thumb">
-        <svg class="fc-thumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <div class="fc-avatar"><?= esc($initials) ?></div>
+      <div class="fc-thumb" <?= !empty($featured->flyer_image) ? 'style="background:url(\''.base_url($featured->flyer_image).'\') center/cover no-repeat;"' : '' ?>>
+        <?php if (empty($featured->flyer_image)): ?>
+          <svg class="fc-thumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <div class="fc-avatar"><?= esc($initials) ?></div>
+        <?php endif; ?>
         <div class="fc-badges"><span class="fc-badge fc-badge-next">UP NEXT</span><span class="fc-badge fc-badge-cat">Live Webinar</span></div>
       </div>
       <div class="fc-body">
@@ -447,8 +449,12 @@ $featured = !empty($webinars) ? $webinars[0] : null;
           <div class="cd-box"><div class="cd-n" id="cd-m">00</div><div class="cd-l">Min</div></div>
           <div class="cd-box"><div class="cd-n" id="cd-s">00</div><div class="cd-l">Sec</div></div>
         </div>
-        <button class="fc-cta btn-register" data-id="<?= $featured->id ?>">Reserve your free seat &#x2192;</button>
-        <div class="fc-note"><svg aria-hidden="true"><use href="#ic-cc"/></svg>Free &middot; Live interactive session</div>
+        <?php if (($featured->access_type ?? 'free') === 'paid'): ?>
+          <button class="fc-cta btn-register" data-id="<?= $featured->id ?>">Reserve your seat (&#x20A6;<?= number_format((float)($featured->price ?? 0), 0) ?>) &#x2192;</button>
+        <?php else: ?>
+          <button class="fc-cta btn-register" data-id="<?= $featured->id ?>">Reserve your free seat &#x2192;</button>
+        <?php endif; ?>
+        <div class="fc-note"><svg aria-hidden="true"><use href="#ic-cc"/></svg><?= ($featured->access_type ?? 'free') === 'paid' ? 'Paid Workshop' : 'Free' ?> &middot; Live interactive session</div>
       </div>
     </div>
     <?php endif; ?>
@@ -516,12 +522,18 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       $timeFormatted = date('h:i A', strtotime($webinar->scheduled_at));
       $wTimestamp = strtotime($webinar->scheduled_at);
     ?>
-    <article class="wb-card" data-cat="<?= $cSlug ?>" data-date="<?= date('Y-m-d', $wTimestamp) ?>" data-pop="0" data-price="0" data-title="<?= strtolower(esc($webinar->title)) ?>">
-      <div class="wb-thumb <?= $gClass ?>">
-        <svg class="wb-thumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <div class="wb-thumb-av" style="background:var(--brand)"><?= esc($initials) ?></div>
-        <span class="wb-badge wb-free">FREE</span>
-        <span class="wb-reg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>0</span>
+    <article class="wb-card" data-cat="<?= $cSlug ?>" data-date="<?= date('Y-m-d', $wTimestamp) ?>" data-pop="<?= (int)($webinar->registrants_count ?? 0) ?>" data-price="<?= (float)($webinar->price ?? 0) ?>" data-title="<?= strtolower(esc($webinar->title)) ?>">
+      <div class="wb-thumb <?= $gClass ?>" <?= !empty($webinar->flyer_image) ? 'style="background:url(\''.base_url($webinar->flyer_image).'\') center/cover no-repeat;"' : '' ?>>
+        <?php if (empty($webinar->flyer_image)): ?>
+          <svg class="wb-thumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <div class="wb-thumb-av" style="background:var(--brand)"><?= esc($initials) ?></div>
+        <?php endif; ?>
+        <?php if (($webinar->access_type ?? 'free') === 'paid'): ?>
+          <span class="wb-badge wb-prem">&#x20A6;<?= number_format((float)($webinar->price ?? 0), 0) ?></span>
+        <?php else: ?>
+          <span class="wb-badge wb-free">FREE</span>
+        <?php endif; ?>
+        <span class="wb-reg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><?= number_format((int)($webinar->registrants_count ?? 0)) ?></span>
       </div>
       <div class="wb-body">
         <div class="wb-cat"><?= esc($cat) ?></div>
@@ -532,15 +544,19 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         </div>
       </div>
       <div class="wb-seats">
-        <div class="wb-seat-bar"><div class="wb-seat-fill" style="width:10%"></div></div>
-        <div class="wb-seat-label"><span><strong>0</strong> registered</span><span>100 seats left</span></div>
+        <div class="wb-seat-bar"><div class="wb-seat-fill" style="width:<?= min(100, max(5, (int)($webinar->registrants_count ?? 0))) ?>%"></div></div>
+        <div class="wb-seat-label"><span><strong><?= number_format((int)($webinar->registrants_count ?? 0)) ?></strong> registered</span><span><?= max(0, 100 - (int)($webinar->registrants_count ?? 0)) ?> seats left</span></div>
       </div>
       <div class="wb-foot-2">
         <button class="wb-cal" type="button" onclick="addToCal('https://calendar.google.com/calendar/render?action=TEMPLATE&text=<?= urlencode(esc($webinar->title)) ?>&dates=<?= date('Ymd\THis\Z', $wTimestamp) ?>/<?= date('Ymd\THis\Z', $wTimestamp + 3600) ?>&details=JobberRecruit+Career+Webinar&location=Online')"><svg aria-hidden="true"><use href="#ic-cal"/></svg>Add to calendar</button>
       </div>
       <div class="wb-foot">
         <span class="wb-prov <?= esc($provider['class']) ?>">&#x25CF; <?= esc($provider['name']) ?></span>
-        <button class="btn btn-primary btn-sm btn-register" data-id="<?= $webinar->id ?>">Register free &#x2192;</button>
+        <?php if (($webinar->access_type ?? 'free') === 'paid'): ?>
+          <button class="btn btn-accent btn-sm btn-register" data-id="<?= $webinar->id ?>">Register (&#x20A6;<?= number_format((float)($webinar->price ?? 0), 0) ?>) &#x2192;</button>
+        <?php else: ?>
+          <button class="btn btn-primary btn-sm btn-register" data-id="<?= $webinar->id ?>">Register free &#x2192;</button>
+        <?php endif; ?>
       </div>
     </article>
   <?php endforeach; ?>
@@ -572,19 +588,6 @@ $featured = !empty($webinars) ? $webinars[0] : null;
   </div>
 </section>
 
-<!-- SPEAKERS -->
-<section class="spk-section" aria-labelledby="spk-h">
-  <div class="container">
-    <div class="section-label"><svg aria-hidden="true"><use href="#ic-mic"/></svg>Meet the speakers</div>
-    <h2 class="section-title" id="spk-h">Taught by people who <span>actually hire</span></h2>
-    <p class="section-sub">Senior professionals actively working in recruitment, HR, or their industry &mdash; not career coaches.</p>
-    <div class="spk-grid">
-      <div class="spk-card"><div class="spk-av" style="background:var(--brand)">AO</div><div class="spk-name">Dr. Amaka Obi</div><div class="spk-role">Head of Talent Acquisition<br>Access Bank Plc &middot; Lagos</div><span class="spk-tag"><svg aria-hidden="true"><use href="#ic-cap"/></svg>Interview Prep</span><div class="spk-count">4 sessions &middot; 1,200+ attendees</div></div>
-      <div class="spk-card"><div class="spk-av" style="background:#7c3aed">EO</div><div class="spk-name">Emeka Okafor</div><div class="spk-role">Engineering Director<br>Paystack &middot; Lagos</div><span class="spk-tag"><svg aria-hidden="true"><use href="#ic-chip"/></svg>Tech Skills</span><div class="spk-count">3 sessions &middot; 900+ attendees</div></div>
-      <div class="spk-card"><div class="spk-av" style="background:#16a34a">CN</div><div class="spk-name">Chioma Nwachukwu</div><div class="spk-role">Compensation Lead<br>Dangote Group &middot; Lagos</div><span class="spk-tag"><svg aria-hidden="true"><use href="#ic-coin"/></svg>Salary &amp; Negotiation</span><div class="spk-count">2 sessions &middot; 540+ attendees</div></div>
-    </div>
-  </div>
-</section>
 
 <!-- TESTIMONIALS -->
 <section class="testi-section" aria-labelledby="tst-h">
@@ -688,11 +691,8 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .then(response => response.json())
       .then(data => {
-        if (data.status === 201 || !data.error) {
-          this.classList.remove('btn-primary');
-          this.classList.add('btn-success');
-          this.innerHTML = 'Registered';
-          alert(data.message || 'Successfully registered!');
+        if (data.status === 201 || data.status === 200 || !data.error) {
+          window.location.href = '<?= base_url('training/webinars/registered') ?>';
         } else {
           alert(data.messages ? data.messages.error : (data.message || 'An error occurred'));
           this.disabled = false;
@@ -706,7 +706,31 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   });
+
+  // Featured Countdown Timer
+  const cdEl = document.querySelector('.countdown');
+  if (cdEl && cdEl.dataset.time) {
+    const target = new Date(cdEl.dataset.time);
+    function tickFeat() {
+      const diff = target - new Date();
+      if (diff <= 0) return;
+      const d = Math.floor(diff / 864e5);
+      const h = Math.floor((diff % 864e5) / 36e5);
+      const m = Math.floor((diff % 36e5) / 6e4);
+      const s = Math.floor((diff % 6e4) / 1e3);
+      const cdD = document.getElementById('cd-d'); if (cdD) cdD.textContent = String(d).padStart(2, '0');
+      const cdH = document.getElementById('cd-h'); if (cdH) cdH.textContent = String(h).padStart(2, '0');
+      const cdM = document.getElementById('cd-m'); if (cdM) cdM.textContent = String(m).padStart(2, '0');
+      const cdS = document.getElementById('cd-s'); if (cdS) cdS.textContent = String(s).padStart(2, '0');
+    }
+    tickFeat();
+    setInterval(tickFeat, 1000);
+  }
 });
+
+function addToCal(url) {
+  window.open(url, '_blank');
+}
 
 function handleSub(e) {
   e.preventDefault();

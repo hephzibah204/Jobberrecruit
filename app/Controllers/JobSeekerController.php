@@ -112,19 +112,22 @@ class JobSeekerController extends BaseController
 
         // Recent Applications (limit 5)
         $recentApplications = $applicationModel
-            ->where('job_seeker_id', $candidate->id)
-            ->orderBy('created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
-
-        // Latest Jobs (for the "Latest Jobs" section in the view)
-        $latestJobs = $jobModel
-            ->orderBy('created_at', 'DESC')
+            ->select('job_applications.*, jobs.title as job_title, employers.company_name')
+            ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->where('job_applications.job_seeker_id', $candidate->id)
+            ->orderBy('job_applications.created_at', 'DESC')
             ->limit(5)
             ->findAll();
 
         // (Optional) recent applications count for the welcome banner
         $recentApplicationsCount = count($recentApplications);
+
+        // Pending count across ALL applications (not just the 5 most recent) for the AI-hero banner
+        $pendingApplicationsCount = $applicationModel
+            ->where('job_seeker_id', $candidate->id)
+            ->where('status', 'pending')
+            ->countAllResults();
 
         // ====== Weekly Chart Data (job clicks per day, Mon → Sun) ======
         $weeklyChartData = $this->getWeeklyJobClicks($this->auth->user()->id);
@@ -167,7 +170,7 @@ class JobSeekerController extends BaseController
             'recommendedJobs'        => $recommendedJobs,
             'recentApplications'     => $recentApplications,
             'recentApplicationsCount' => $recentApplicationsCount,
-            'latestJobs'             => $latestJobs,
+            'pendingApplicationsCount' => $pendingApplicationsCount,
             'profileCompletion'      => $profileCompletion,
             'weeklyChartData'        => $weeklyChartData,
             'skillCategories'        => $skillCategories,
@@ -252,7 +255,6 @@ class JobSeekerController extends BaseController
                 'phone'             => 'required|min_length[6]',
                 'state_id'          => 'required|integer',
                 'job_title'         => 'required|min_length[2]',
-                'industry_ids'      => 'required',
             ];
 
             if (!$this->validate($rules)) {
@@ -287,7 +289,7 @@ class JobSeekerController extends BaseController
                 'desired_salary'    => trim($this->request->getPost('desired_salary')),
                 'salary_type'       => trim($this->request->getPost('salary_type')),
                 'portfolio'         => $portfolio ?? null,
-                'description'       => trim($this->request->getPost('description'))
+                'bio'               => trim($this->request->getPost('bio'))
             ];
 
             helper(['filesystem', 'form']);
@@ -302,7 +304,13 @@ class JobSeekerController extends BaseController
              * PROFILE PICTURE UPLOAD
              */
             $profileFile = $this->request->getFile('profile_picture');
-            if ($profileFile && $profileFile->isValid()) {
+            $profileCheck = $this->validateUploadedFile($profileFile, [
+                'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'], 'webp' => ['image/webp'],
+            ], 2048);
+            if ($profileFile && $profileFile->isValid() && !$profileCheck['valid']) {
+                return redirect()->back()->withInput()->with('error', $profileCheck['error']);
+            }
+            if ($profileCheck['valid']) {
 
                 if ($candidate->profile_picture && file_exists($candidate->profile_picture)) {
                     unlink($candidate->profile_picture);
@@ -325,7 +333,15 @@ class JobSeekerController extends BaseController
              * RESUME UPLOAD
              */
             $resumeFile = $this->request->getFile('resume');
-            if ($resumeFile && $resumeFile->isValid()) {
+            $resumeCheck = $this->validateUploadedFile($resumeFile, [
+                'pdf' => ['application/pdf'],
+                'doc' => ['application/msword'],
+                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+            ], 5120);
+            if ($resumeFile && $resumeFile->isValid() && !$resumeCheck['valid']) {
+                return redirect()->back()->withInput()->with('error', $resumeCheck['error']);
+            }
+            if ($resumeCheck['valid']) {
 
                 if ($candidate->resume && file_exists($candidate->resume)) {
                     unlink($candidate->resume);
@@ -696,150 +712,6 @@ class JobSeekerController extends BaseController
         ]);
     }
 
-    /**
-     * AJAX Profile Update Handler
-     */
-    public function update_profile()
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Invalid request.'
-            ]);
-        }
-
-        $user = $this->auth->user();
-
-        $candidateModel = new JobSeekerModel();
-        $candidateIndustryModel = new JobSeekerIndustryModel();
-
-        // Fetch candidate
-        $candidate = $candidateModel->where('user_id', $user->id)->first();
-
-        if (!$candidate) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Candidate profile not found.'
-            ]);
-        }
-
-        // Validation Rules
-        $rules = [
-            'full_name'         => 'required|min_length[3]',
-            'phone'             => 'required|min_length[6]',
-            'state_id'          => 'required|integer',
-            'job_title'         => 'required|min_length[2]',
-            'industry_ids'      => 'required',
-        ];
-
-        if (!$this->validate($rules)) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'errors' => $this->validator->getErrors()
-            ]);
-        }
-
-        // Collect POST Data
-        $data = [
-            'full_name'         => $this->request->getPost('full_name'),
-            'dob'               => $this->request->getPost('dob'),
-            'gender'            => $this->request->getPost('gender'),
-            'phone'             => $this->request->getPost('phone'),
-            'location'          => $this->request->getPost('location'),
-            'state_id'          => $this->request->getPost('state_id'),
-            'availability'      => $this->request->getPost('availability'),
-            'job_title'         => $this->request->getPost('job_title'),
-            'employment_type'   => $this->request->getPost('employment_type'),
-            'skills'            => $this->request->getPost('skills'),
-            'experience_years'  => $this->request->getPost('experience_years'),
-            'education_level'   => $this->request->getPost('education_level'),
-            'languages'         => $this->request->getPost('languages'),
-            'desired_salary'    => $this->request->getPost('desired_salary'),
-            'salary_type'       => $this->request->getPost('salary_type'),
-            'portfolio'         => $this->request->getPost('portfolio'),
-            'description'       => $this->request->getPost('description')
-        ];
-
-        helper(['filesystem', 'form']);
-
-        // File Upload Directory
-        $uploadPath = 'uploads/candidates/' . $candidate->id . '/';
-        if (!is_dir($uploadPath)) {
-            mkdir($uploadPath, 0775, true);
-        }
-
-        /**
-         * PROFILE PICTURE UPLOAD
-         */
-        $profileFile = $this->request->getFile('profile_picture');
-        if ($profileFile && $profileFile->isValid()) {
-
-            if ($candidate->profile_picture && file_exists($candidate->profile_picture)) {
-                unlink($candidate->profile_picture);
-            }
-
-            $newName = $profileFile->getRandomName();
-            $profileFile->move($uploadPath, $newName);
-
-            $data['profile_picture'] = $uploadPath . $newName;
-
-        } elseif ($this->request->getPost('remove_profile_picture')) {
-
-            if ($candidate->profile_picture && file_exists($candidate->profile_picture)) {
-                unlink($candidate->profile_picture);
-            }
-            $data['profile_picture'] = null;
-        }
-
-
-        /**
-         * RESUME UPLOAD
-         */
-        $resumeFile = $this->request->getFile('resume');
-        if ($resumeFile && $resumeFile->isValid()) {
-
-            if ($candidate->resume && file_exists($candidate->resume)) {
-                unlink($candidate->resume);
-            }
-
-            $resumeName = $resumeFile->getRandomName();
-            $resumeFile->move($uploadPath, $resumeName);
-
-            $data['resume'] = $uploadPath . $resumeName;
-
-        } elseif ($this->request->getPost('remove_resume')) {
-
-            if ($candidate->resume && file_exists($candidate->resume)) {
-                unlink($candidate->resume);
-            }
-            $data['resume'] = null;
-        }
-
-        log_message('info', json_encode($data));
-
-        /**
-         * UPDATE CANDIDATE
-         */
-        $candidateModel->update($candidate->id, $data);
-
-        /**
-         * UPDATE INDUSTRIES
-         */
-        $industryIds = $this->request->getVar('industry_ids') ?? [];
-        $candidateIndustryModel->where('job_seeker_id', $candidate->id)->delete();
-
-        foreach ($industryIds as $industryId) {
-            $candidateIndustryModel->insert([
-                'job_seeker_id' => $candidate->id,
-                'industry_id'   => $industryId
-            ]);
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Profile updated successfully.'
-        ])->setStatusCode(200);
-    }
 
     public function applications()
     {
@@ -1043,8 +915,8 @@ class JobSeekerController extends BaseController
             'job_seeker_id' => $candidate->id,
             'keyword'       => $this->request->getPost('keyword'),
             'location_id'   => $this->request->getPost('location_id'),
-            'frequency'     => $this->request->getPost('frequency'),
-            'delivery_time' => $this->request->getPost('delivery_time'),
+            'frequency'     => $this->request->getPost('frequency') ?: 'daily',
+            'delivery_time' => $this->request->getPost('delivery_time') ?: '08:00',
             'channel'       => $this->request->getPost('channel') ?? 'email',
         ];
 
@@ -1058,6 +930,13 @@ class JobSeekerController extends BaseController
     public function deleteAlert($id)
     {
         $alertModel = model(JobAlertModel::class);
+        $user = $this->auth->user();
+
+        $alert = $alertModel->find($id);
+
+        if (! $alert || $alert->job_seeker_id != $this->getCandidateId($user->id)) {
+            return $this->response->setJSON(['success' => false]);
+        }
 
         if ($alertModel->delete($id)) {
             return $this->response->setJSON(['success' => true]);
@@ -1260,7 +1139,6 @@ class JobSeekerController extends BaseController
                 'dob' => $candidate->dob ?? '',
                 'gender' => $candidate->gender ?? '',
                 'bio' => $candidate->bio ?? '',
-                'description' => $candidate->description ?? '',
                 'skills' => $candidate->skills ?? '',
                 'languages' => $candidate->languages ?? '',
                 'experience_years' => $candidate->experience_years ?? '',

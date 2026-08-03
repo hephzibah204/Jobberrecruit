@@ -84,6 +84,7 @@ class AptitudeController extends BaseController
         $leaderboard = $this->weeklyLeaderboard($db, $userId);
 
         return view('candidate/aptitude/hub', [
+            'title'       => 'Aptitude Test Hub',
             'skillTests'  => $skillTests,
             'roleTests'   => $roleTests,
             'summary'     => $summary,
@@ -297,10 +298,26 @@ class AptitudeController extends BaseController
         $testModel = new TestModel();
         $test = $testModel->find($attempt['test_id']);
 
+        $candidateProfile = model(\App\Models\JobSeekerModel::class)
+            ->where('user_id', $attempt['candidate_id'])
+            ->first();
+
+        $employerName = null;
+        if (!empty($attempt['employer_required']) && !empty($attempt['job_id'])) {
+            $job = model(\App\Models\JobModel::class)->find($attempt['job_id']);
+            if ($job) {
+                $employer = model(\App\Models\EmployerModel::class)->find($job->employer_id);
+                $employerName = $employer->company_name ?? null;
+            }
+        }
+
         return view('candidate/aptitude/test_engine', [
-            'title'   => ($test['title'] ?? 'Aptitude Test') . ' — Test in progress',
-            'attempt' => $attempt,
-            'test'    => $test,
+            'title'          => ($test['title'] ?? 'Aptitude Test') . ' — Test in progress',
+            'attempt'        => $attempt,
+            'test'           => $test,
+            'candidate_name' => $candidateProfile->full_name ?? (auth()->user()->username ?? 'Candidate'),
+            'candidate_id'   => $attempt['candidate_id'],
+            'employer_name'  => $employerName,
         ]);
     }
 

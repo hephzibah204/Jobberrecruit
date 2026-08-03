@@ -3,6 +3,7 @@
 
 <?= $this->section('styles') ?>
 <style>
+/* ═══ Animations ═══ */
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 html.anim-ready .content>*{animation:rise .34s ease both}
 html.anim-ready .content>*:nth-child(2){animation-delay:.05s}
@@ -17,6 +18,8 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .btn:not(:disabled):hover{transform:translateY(-1px)}
 .btn:not(:disabled):active{transform:translateY(0) scale(.97)}
 @media(prefers-reduced-motion:reduce){.btn{transition:background-color .12s ease,border-color .12s ease!important}.btn:active,.btn:hover{transform:none!important}}
+
+/* ═══ Toggle switch ═══ */
 .switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
 .switch input{opacity:0;width:0;height:0}
 .sl{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.3s}
@@ -24,50 +27,110 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .switch input:checked+.sl{background:var(--brand)}
 .switch input:checked+.sl::before{transform:translateX(20px)}
 .switch input:focus-visible+.sl{outline:3px solid var(--accent);outline-offset:2px}
-.prof-grid{display:grid;grid-template-columns:300px 1fr;gap:clamp(16px,2vw,24px);align-items:start}
-@media(max-width:960px){.prof-grid{grid-template-columns:1fr}}
+
+/* ═══ Page-head mobile stacking ═══ */
+@media(max-width:560px){
+  .page-head{flex-direction:column;align-items:flex-start!important;gap:12px}
+  .page-head .page-actions{width:100%}
+  .page-head .page-actions .btn{width:100%;justify-content:center}
+}
+
+/* ═══ Card head stacks on small screens ═══ */
+@media(max-width:640px){
+  .card-head{flex-direction:column;align-items:flex-start;gap:8px}
+  .card-head > a,.card-head > span{padding:0;margin:0}
+}
+
+/* ═══ Profile grid: 2-col desktop, 1-col mobile ═══ */
+.prof-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:clamp(14px,1.8vw,20px);align-items:start}
+@media(max-width:960px){.prof-grid{grid-template-columns:minmax(0,1fr)}}
+.prof-col{display:flex;flex-direction:column;gap:clamp(14px,1.8vw,20px);min-width:0}
 .prof-sticky{position:sticky;top:90px}
+@media(max-width:960px){.prof-sticky{position:static}}
+
+/* ═══ ID card (avatar + name) ═══ */
 .id-card{text-align:center;padding:24px}
-.id-ava{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:1.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;position:relative}
+.id-ava{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:800;font-size:1.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;position:relative;overflow:hidden;flex-shrink:0}
+.id-ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .id-ava .dot{position:absolute;bottom:2px;right:2px;width:14px;height:14px;border-radius:50%;background:var(--success);border:3px solid #fff}
-.id-name{font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:var(--brand-deep)}
-.id-mail{font-size:.78rem;color:var(--muted);margin-top:2px}
+.id-name{font-family:'Sora',sans-serif;font-weight:800;font-size:1.1rem;color:var(--brand-deep);overflow-wrap:anywhere;word-break:break-word}
+.id-mail{font-size:.78rem;color:var(--muted);margin-top:2px;overflow-wrap:anywhere;word-break:break-word}
 .id-badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0}
 .id-actions{margin-top:12px}
-.pf{display:flex;gap:16px;align-items:center}
-.pf-ring{position:relative;width:88px;height:88px;flex-shrink:0}
-.pf-ring svg{width:88px;height:88px;transform:rotate(-90deg)}
+
+/* ═══ Profile-completion ring + body ═══ */
+.pf{display:flex;gap:14px;align-items:center;min-width:0}
+.pf-ring{position:relative;width:80px;height:80px;flex-shrink:0}
+.pf-ring svg{width:80px;height:80px;transform:rotate(-90deg)}
 .pf-ring .track{fill:none;stroke:var(--bg);stroke-width:8}
-.pf-ring .prog{fill:none;stroke:var(--brand);stroke-width:8;stroke-linecap:round;stroke-dasharray:239}
-.pf-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:1rem;color:var(--brand-deep)}
+.pf-ring .prog{fill:none;stroke:var(--brand);stroke-width:8;stroke-linecap:round;stroke-dasharray:239;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)}
+.pf-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:.95rem;color:var(--brand-deep)}
+.pf-body{flex:1;min-width:0}
 .pf-body b{display:block;font-size:.86rem;color:var(--brand-deep)}
-.pf-body p{font-size:.76rem;color:var(--muted);line-height:1.6;margin-top:4px}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.pf-body p{font-size:.76rem;color:var(--muted);line-height:1.6;margin-top:4px;overflow-wrap:anywhere}
+.pf-body .pill-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+/* Stack ring above body on very narrow screens */
+@media(max-width:380px){
+  .pf{flex-direction:column;align-items:flex-start;gap:12px}
+  .pf-body{width:100%}
+}
+
+/* ═══ Info grid (Personal / Career) ═══ */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}
 @media(max-width:560px){.info-grid{grid-template-columns:1fr}}
 .info-full{grid-column:1/-1}
 .info-lbl{display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.info-lbl svg{width:13px;height:13px;color:var(--brand)}
-.info-val{font-size:.86rem;color:var(--brand-deep);font-weight:500}
-.priv-note{display:flex;align-items:center;gap:6px;font-size:.64rem;color:var(--muted);margin-top:4px}
-.priv-note svg{width:11px;height:11px;color:var(--brand);flex-shrink:0}
-.xp{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.info-lbl svg{width:13px;height:13px;color:var(--brand);flex-shrink:0}
+.info-val{font-size:.86rem;color:var(--brand-deep);font-weight:500;overflow-wrap:anywhere;word-break:break-word}
+.priv-note{display:flex;align-items:flex-start;gap:6px;font-size:.64rem;color:var(--muted);margin-top:4px;line-height:1.5}
+.priv-note svg{width:11px;height:11px;color:var(--brand);flex-shrink:0;margin-top:2px}
+
+/* ═══ Skills / Languages chips ═══ */
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.chip{overflow-wrap:anywhere;word-break:break-word}
+
+/* ═══ Experience / Education / Cert rows ═══ */
+.xp{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);min-width:0}
 .xp:last-child{border-bottom:none;padding-bottom:2px}
 .xp:first-child{padding-top:2px}
 .xp-ic{width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0}
 .xp-ic svg{width:16px;height:16px}
-.xp b{display:block;font-size:.84rem;color:var(--brand-deep);line-height:1.35}
-.xp i{font-style:normal;font-size:.72rem;color:var(--muted);display:block;margin-top:2px}
-.xp p{font-size:.74rem;color:var(--text);line-height:1.55;margin-top:4px}
-.doc-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.xp > div{flex:1;min-width:0}
+.xp b{display:block;font-size:.84rem;color:var(--brand-deep);line-height:1.35;overflow-wrap:anywhere;word-break:break-word}
+.xp i{font-style:normal;font-size:.72rem;color:var(--muted);display:block;margin-top:2px;overflow-wrap:anywhere;word-break:break-word}
+.xp p{font-size:.74rem;color:var(--text);line-height:1.55;margin-top:4px;overflow-wrap:anywhere;word-break:break-word}
+
+/* ═══ Documents row (CV) ═══ */
+.doc-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);min-width:0}
 .doc-row:last-child{border-bottom:none}
 .doc-ic{width:44px;height:44px;border-radius:12px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .doc-ic svg{width:20px;height:20px}
-.doc-info{flex:1;min-width:0}
-.doc-info b{display:block;font-size:.84rem;color:var(--brand-deep)}
+.doc-info{flex:1;min-width:160px}
+.doc-info b{display:block;font-size:.84rem;color:var(--brand-deep);overflow-wrap:anywhere;word-break:break-word}
 .doc-info i{font-style:normal;font-size:.72rem;color:var(--muted)}
-.doc-actions{display:flex;gap:8px;flex-shrink:0}
-.duo2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2vw,24px)}
+.doc-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
+@media(max-width:480px){
+  .doc-row{flex-direction:column;align-items:flex-start;gap:10px}
+  .doc-actions{width:100%}
+  .doc-actions .btn{flex:1;min-width:0;justify-content:center}
+}
+
+/* ═══ Duo 2-col (Languages + Preferences) ═══ */
+.duo2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,1.8vw,20px)}
 @media(max-width:760px){.duo2{grid-template-columns:1fr}}
+.duo2 > section{min-width:0}
+
+/* ═══ Visibility toggle row ═══ */
+.vis-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.vis-row p{font-size:.82rem;color:var(--muted);margin:0;flex:1;min-width:200px;overflow-wrap:anywhere}
+@media(max-width:480px){
+  .vis-row{flex-direction:column;align-items:flex-start;gap:10px}
+  .vis-row p{min-width:0}
+}
+
+/* ═══ Preferences / inner card text wrap ═══ */
+.card-body > div{overflow-wrap:anywhere;word-break:break-word}
+.card-body > div a{overflow-wrap:anywhere;word-break:break-all}
 </style>
 <?= $this->endSection() ?>
 
@@ -110,9 +173,6 @@ $completion = round(($completed / $totalFields) * 100);
             <p>View and manage your job seeker profile</p>
         </div>
         <div class="page-actions">
-            <a href="<?= base_url('candidate/profile/employer-view') ?>" class="btn btn-outline btn-sm">
-                <svg aria-hidden="true"><use href="#i-eye"/></svg> View as Employer
-            </a>
             <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-primary btn-sm">
                 <svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile
             </a>
@@ -125,7 +185,7 @@ $completion = round(($completed / $totalFields) * 100);
       <div class="prof-col prof-sticky">
         <section class="card id-card" aria-label="Candidate ID">
           <div class="id-ava">
-            <?php if (!empty($candidate->profile_picture)): ?>
+            <?php if (!empty($candidate->profile_picture) && file_exists(FCPATH . $candidate->profile_picture)): ?>
                 <img src="<?= base_url($candidate->profile_picture) ?>" alt="Profile Photo" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
             <?php else: ?>
                 <?= esc(substr($candidate->full_name ?? 'C', 0, 1)) ?>
@@ -274,7 +334,7 @@ $completion = round(($completed / $totalFields) * 100);
             <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
           <div class="card-body">
             <p style="font-size:.86rem;line-height:1.75">
-                <?= !empty($candidate->description) ? nl2br(esc($candidate->description)) : 'No professional summary added.' ?>
+                <?= !empty($candidate->bio) ? nl2br(esc($candidate->bio)) : 'No professional summary added.' ?>
             </p>
           </div>
         </section>
@@ -443,4 +503,4 @@ $(function () {
 });
 </script>
 <?= $this->endSection() ?>
-
+

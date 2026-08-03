@@ -2584,6 +2584,7 @@ class AdminController extends BaseController
                     'unlimited_applications' => (bool) $this->request->getPost('feat_unlimited_applications'),
                     'candidate_messaging' => (bool) $this->request->getPost('feat_candidate_messaging'),
                     'profile_highlight' => (bool) $this->request->getPost('feat_profile_highlight'),
+                    'unlimited_job_postings' => (bool) $this->request->getPost('feat_unlimited_job_postings'),
                 ];
             }
 

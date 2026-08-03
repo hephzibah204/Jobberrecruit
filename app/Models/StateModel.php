@@ -38,9 +38,10 @@ class StateModel extends Model
     public function getStatesWithStats()
     {
         return $this->db->table('states s')
-            ->select('s.*, 
-                (SELECT COUNT(*) FROM employers WHERE state_id = s.id) as employer_count,
-                (SELECT COUNT(*) FROM jobs WHERE state_id = s.id) as job_count')
+            ->select('s.*, COUNT(DISTINCT e.id) as employer_count, COUNT(DISTINCT j.id) as job_count')
+            ->join('employers e', 'e.state_id = s.id', 'left')
+            ->join('jobs j', 'j.state_id = s.id', 'left')
+            ->groupBy('s.id')
             ->orderBy('s.name', 'ASC')
             ->get()
             ->getResult();

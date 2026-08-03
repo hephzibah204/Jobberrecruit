@@ -65,6 +65,9 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
         <?php endif; ?>
       </div>
       <div class="id-name"><?= esc($displayName) ?></div>
+      <?php if (!empty($employer->tagline)): ?>
+        <div class="id-mail" style="font-style:italic"><?= esc($employer->tagline) ?></div>
+      <?php endif; ?>
       <div class="id-mail"><?= esc($employer->contact_email ?? '') ?></div>
       <?php if ($canShowTrustBadge ?? false): ?>
         <span class="badge-verified"><svg aria-hidden="true"><use href="#i-shield"/></svg> Verified Employer</span>
@@ -161,6 +164,15 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
             </div>
           </div>
           <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-users"/></svg> Company size</div><div class="info-val"><?= esc($employer->company_size ?? 'Not Set') ?></div></div>
+          <?php if (!empty($employer->company_type)): ?>
+          <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Company type</div><div class="info-val"><?= esc($employer->company_type) ?></div></div>
+          <?php endif; ?>
+          <?php if (!empty($employer->founded_year)): ?>
+          <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Founded</div><div class="info-val"><?= esc($employer->founded_year) ?></div></div>
+          <?php endif; ?>
+          <?php if (!empty($employer->remote_policy)): ?>
+          <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-globe"/></svg> Remote policy</div><div class="info-val"><?= esc(ucwords(str_replace('_', ' ', $employer->remote_policy))) ?></div></div>
+          <?php endif; ?>
           <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-link"/></svg> Website</div>
             <div class="info-val">
               <?php if (!empty($employer->website)): ?>
@@ -208,9 +220,59 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
             </div>
           </div>
           <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-building"/></svg> Physical address</div><div class="info-val"><?= esc($employer->company_address ?? 'Not Set') ?></div></div>
+          <?php if (!empty($employer->whatsapp)): ?>
+          <div><div class="info-lbl"><svg aria-hidden="true"><use href="#i-whatsapp"/></svg> WhatsApp</div><div class="info-val"><?= esc($employer->whatsapp) ?></div></div>
+          <?php endif; ?>
         </div>
       </div>
     </section>
+
+    <?php
+    $socialLinks = array_filter([
+        'linkedin'  => $employer->linkedin ?? null,
+        'twitter'   => $employer->twitter ?? null,
+        'facebook'  => $employer->facebook ?? null,
+        'instagram' => $employer->instagram ?? null,
+    ]);
+    $benefitsList = [];
+    if (!empty($employer->benefits)) {
+        $decoded = json_decode($employer->benefits, true);
+        $benefitsList = is_array($decoded) ? $decoded : [];
+    }
+    ?>
+    <?php if (!empty($benefitsList) || !empty($employer->hiring_process) || !empty($socialLinks)): ?>
+    <!-- Culture, benefits & social -->
+    <section class="card" aria-label="Culture and social profiles">
+      <div class="card-head">
+        <span class="card-title"><svg aria-hidden="true"><use href="#i-star"/></svg> Culture &amp; Social</span>
+        <a href="<?= base_url('employer/profile/edit') ?>" class="card-link">Edit <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+      </div>
+      <div class="card-body">
+        <?php if (!empty($benefitsList)): ?>
+          <div class="info-lbl" style="margin-bottom:6px"><svg aria-hidden="true"><use href="#i-star"/></svg> Benefits &amp; perks</div>
+          <div class="chips" style="margin-bottom:16px">
+            <?php foreach ($benefitsList as $b): ?>
+              <span class="chip"><?= esc(ucwords(str_replace('_', ' ', $b))) ?></span>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+        <?php if (!empty($employer->hiring_process)): ?>
+          <div class="info-lbl" style="margin-bottom:6px"><svg aria-hidden="true"><use href="#i-note"/></svg> Hiring process</div>
+          <p style="margin-bottom:16px"><?= nl2br(esc($employer->hiring_process)) ?></p>
+        <?php endif; ?>
+        <?php if (!empty($socialLinks)): ?>
+          <div class="info-lbl" style="margin-bottom:8px"><svg aria-hidden="true"><use href="#i-globe"/></svg> Social profiles</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <?php foreach ($socialLinks as $platform => $url): ?>
+              <a href="<?= esc($url) ?>" target="_blank" rel="noopener" class="emp-btn emp-btn-outline emp-btn-sm">
+                <svg aria-hidden="true"><use href="#i-<?= $platform === 'twitter' ? 'x-social' : $platform ?>"/></svg> <?= esc(ucfirst($platform)) ?>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </section>
+    <?php endif; ?>
 
     <!-- CAC verification -->
     <section class="card" aria-label="CAC certificate verification">

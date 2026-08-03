@@ -68,6 +68,10 @@ class DemoAccounts extends BaseCommand
             $user = $userProvider->findById($userId);
             $user->setPassword($employerPassword);
             $userProvider->save($user);
+            // Shield's entity creation only persists its own mapped fields. Set
+            // the application role through our user model so this account is
+            // routed to the employer dashboard during browser tests.
+            $users->update($userId, ['user_type' => 'employer']);
             // Email identity creation removed to prevent duplicate entries
             // Employer profile
             $employerModel->save([
@@ -112,6 +116,7 @@ class DemoAccounts extends BaseCommand
             $user = $userProvider->findById($userId);
             $user->setPassword($candidatePassword);
             $userProvider->save($user);
+            $users->update($userId, ['user_type' => 'job_seeker']);
             // Email identity creation removed to prevent duplicate entries
             // Candidate profile
             $jobSeekerModel->save([
@@ -121,11 +126,11 @@ class DemoAccounts extends BaseCommand
                 'location'  => 'Demo City',
                 'state_id'  => 1,
                 'job_title' => 'Software Engineer',
-                'employment_type' => 'full_time',
+                'employment_type' => 'Full Time',
                 'skills' => 'PHP, JavaScript, HTML, CSS',
                 'experience_years' => 2,
-                'education_level' => "Bachelor's",
-                'resume' => null,
+                'education_level' => "Bachelor's Degree",
+                'resume' => 'uploads/resumes/demo-placeholder.pdf',
             ]);
             // Mark email verified
             $users->update($userId, ['email_verified_at' => date('Y-m-d H:i:s')]);

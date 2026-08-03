@@ -151,6 +151,11 @@ class JobSeekerModel extends Model
             $builder->whereIn('job_seekers.education_level', (array) $filters['education_level']);
         }
 
+        /* Availability */
+        if (!empty($filters['availability'])) {
+            $builder->whereIn('job_seekers.availability', (array) $filters['availability']);
+        }
+
         switch ($filters['sort'] ?? '') {
             case 'most_experienced':
                 $builder->orderBy('job_seekers.experience_years', 'DESC');

@@ -2,1076 +2,7 @@
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
-<style>
-    :root {
-        --primary-color: #0D609E;
-        --primary-color-dark: var(--brand-dark);
-        --accent-color: var(--accent);
-        --brand:#0861A9;
-        --brand-light:#E6F0F8;
-        --accent:#ED9020;
-        --accent-dark:#C8770E;
-        --accent-light:#FDF1E0;
-        --success:#16a34a;
-        --success-light:#e8f7ee;
-        --danger:#dc2626;
-        --danger-light:#fdeaea;
-        --border:#e2e8f2;
-    }
-
-    /* Side-by-side design layout & controls */
-    .design-bar {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px 14px;
-        margin-bottom: 16px;
-    }
-    .design-bar .lbl {
-        margin: 0;
-        white-space: nowrap;
-    }
-    .dens {
-        display: flex;
-        gap: 4px;
-        background: #f5f7fb;
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        padding: 3px;
-    }
-    .dens button {
-        border: none;
-        background: transparent;
-        font-size: .72rem;
-        font-weight: 600;
-        color: #5b6577;
-        padding: 6px 12px;
-        border-radius: 7px;
-        cursor: pointer;
-        min-height: 32px;
-        transition: all 0.2s;
-    }
-    .dens button.on {
-        background: #fff;
-        color: var(--brand);
-        box-shadow: 0 2px 14px rgba(10,47,87,.08);
-    }
-    .wm-note {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: .68rem;
-        font-weight: 600;
-        color: #5b6577;
-        margin-left: auto;
-        white-space: nowrap;
-    }
-    .wm-note svg {
-        width: 13px;
-        height: 13px;
-        color: var(--brand);
-    }
-
-    /* Score Card & Gauge */
-    .score-card {
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 15px;
-    }
-    .score-top {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-    .gauge {
-        position: relative;
-        width: 74px;
-        height: 74px;
-        flex-shrink: 0;
-    }
-    .gauge svg {
-        width: 74px;
-        height: 74px;
-        transform: rotate(-90deg);
-    }
-    .gauge circle.t {
-        fill: none;
-        stroke: #f5f7fb;
-        stroke-width: 8;
-    }
-    .gauge circle.p {
-        fill: none;
-        stroke: var(--success);
-        stroke-width: 8;
-        stroke-linecap: round;
-        stroke-dasharray: 207;
-        transition: stroke-dashoffset .5s ease, stroke .3s;
-    }
-    .gauge b {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Sora', sans-serif;
-        font-weight: 800;
-        font-size: 1rem;
-        color: #0A2F57;
-    }
-    .score-info b {
-        font-size: .86rem;
-        color: #0A2F57;
-        display: block;
-    }
-    .score-info p {
-        font-size: .72rem;
-        color: #5b6577;
-    }
-    .score-list {
-        list-style: none;
-        margin-top: 12px;
-        padding-left: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 7px;
-    }
-    .score-list li {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: .76rem;
-        color: #141926;
-    }
-    .score-list li i {
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-    .score-list li.ok i {
-        color: var(--success);
-    }
-    .score-list li.no i {
-        color: var(--accent-dark);
-    }
-    .score-list button {
-        margin-left: auto;
-        border: none;
-        background: none;
-        color: var(--brand);
-        font-weight: 700;
-        font-size: .7rem;
-        cursor: pointer;
-        padding: 4px;
-        white-space: nowrap;
-    }
-    .score-list button:hover {
-        text-decoration: underline;
-    }
-
-    /* Live Preview Document shell styling */
-    .pv-shell {
-        background: #e8ecf3;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 16px;
-        max-height: calc(100vh - 170px);
-        overflow-y: auto;
-    }
-    .doc {
-        background: #fff;
-        max-width: 100%;
-        margin: 0 auto;
-        box-shadow: 0 8px 30px rgba(10,47,87,.14);
-        padding: 30px;
-        font-size: .84rem;
-        line-height: 1.62;
-        color: #212836;
-        position: relative;
-        min-height: 842px; /* standard proportion check */
-        transition: font-size 0.2s, line-height 0.2s, padding 0.2s;
-    }
-    .doc h1 {
-        font-size: 1.95rem;
-        letter-spacing: -.02em;
-        line-height: 1.1;
-        font-weight: 800;
-        margin-bottom: 4px;
-    }
-    .doc .d-title {
-        font-size: .8rem;
-        font-weight: 600;
-        color: #4b5568;
-        margin-top: 4px;
-        text-transform: uppercase;
-        letter-spacing: .14em;
-    }
-    .doc .d-contact {
-        font-size: .72rem;
-        color: #4b5568;
-        margin-top: 10px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .doc .d-contact span {
-        display: inline-flex;
-        align-items: center;
-    }
-    .doc .d-contact span + span::before {
-        content: '';
-        width: 3px;
-        height: 3px;
-        border-radius: 50%;
-        background: #b7c1cf;
-        margin: 0 10px;
-        display: inline-block;
-    }
-    .doc .d-head {
-        padding-bottom: 18px;
-        margin-bottom: 4px;
-    }
-    .doc .d-sec {
-        margin-top: 22px;
-    }
-    .doc .d-sec h2 {
-        font-size: .72rem;
-        letter-spacing: .16em;
-        text-transform: uppercase;
-        font-weight: 700;
-        padding-bottom: 6px;
-        margin-bottom: 11px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .doc .d-xp {
-        margin-bottom: 14px;
-    }
-    .doc .d-xp-h {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    .doc .d-xp-h b {
-        font-size: .9rem;
-        font-weight: 700;
-    }
-    .doc .d-xp-h i {
-        font-style: normal;
-        font-size: .7rem;
-        font-weight: 600;
-        color: #5b6577;
-        white-space: nowrap;
-        letter-spacing: .03em;
-    }
-    .doc .d-xp p.co {
-        font-size: .76rem;
-        font-weight: 500;
-        color: #5b6577;
-        margin: 1px 0 6px;
-    }
-    .doc ul {
-        padding-left: 17px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin-top: 4px;
-        margin-bottom: 8px;
-    }
-    .doc ul li {
-        padding-left: 2px;
-    }
-    .doc .d-skills {
-        display: flex;
-        gap: 7px 8px;
-        flex-wrap: wrap;
-        list-style: none;
-        padding: 0;
-        margin: 4px 0 0;
-    }
-    .doc .d-skills li {
-        font-size: .71rem;
-        font-weight: 600;
-        border: 1px solid #dbe2ec;
-        border-radius: 4px;
-        padding: 3px 10px;
-        color: #33415c;
-        background: #f8fafd;
-    }
-
-    /* Metric progress bar styles */
-    .met {
-        display: flex;
-        flex-direction: column;
-    }
-    .met .met-h {
-        display: flex;
-        justify-content: space-between;
-        font-size: .68rem;
-        font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: .05em;
-    }
-    .met .met-h b {
-        color: #0f172a;
-        font-family: 'Sora', sans-serif;
-    }
-    .met .met-t {
-        height: 5px;
-        border-radius: 20px;
-        background: #edf2f7;
-        overflow: hidden;
-        margin-top: 4px;
-    }
-    .met .met-f {
-        height: 100%;
-        border-radius: 20px;
-        background: var(--primary-color, #0861a9);
-        transition: width .4s ease;
-    }
-    .met.warn .met-f {
-        background: #c8770e;
-    }
-    .met.bad .met-f {
-        background: #ef4444;
-    }
-
-    /* ── Watermark: vertical right-margin brand mark ── */
-    .doc { position: relative; }
-    .doc .wm {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 7px;
-        opacity: .5;
-        pointer-events: none;
-        user-select: none;
-    }
-    .doc .wm .wm-ic { width: 12px; height: 16px; flex-shrink: 0; }
-    .doc .wm .wm-tx {
-        writing-mode: vertical-rl;
-        font-family: 'Inter', sans-serif;
-        font-size: .56rem;
-        font-weight: 600;
-        letter-spacing: .16em;
-        color: #9aa4b5;
-        line-height: 1;
-    }
-    /* Diagonal tile watermark (anti-copy visual signal on preview) */
-    .doc.wm-tile {
-        background-image: repeating-linear-gradient(
-            -30deg,
-            transparent 0 78px,
-            rgba(8,97,169,.028) 78px 79px
-        );
-    }
-    /* A4 page-break guide line (preview only) */
-    .doc.guides:not(.onepage) {
-        background-image: repeating-linear-gradient(
-            to bottom,
-            transparent 0,
-            transparent 1074px,
-            #f0b35c 1074px,
-            #f0b35c 1075px
-        );
-    }
-    @media (max-width:1024px) { .doc.guides { background-image: none !important; } }
-    /* Hide page-break guides in print — browser renders real breaks */
-    @media print { .doc.guides { background-image: none; } }
-
-    /* ── @media print — full print architecture ── */
-    @media print {
-        html { font-size: 13pt; }
-        body { background: #fff !important; }
-        body > * { display: none !important; }
-        #print-root { display: block !important; }
-        #print-root .doc {
-            position: static;
-            width: 100%;
-            max-width: none;
-            box-shadow: none;
-            margin: 0;
-            padding: 0 9mm 0 0;
-            font-size: .84rem;
-            line-height: 1.5;
-        }
-        #print-root .doc.t-exec  { display: grid; padding: 0 9mm 0 0; }
-        #print-root .doc.guides  { background-image: none; }
-        #print-root .doc .wm     { position: fixed; right: 3.5mm; top: 50%; transform: translateY(-50%); }
-        .doc.t-modern::before    { display: block; top: 0; height: 6px; }
-        #print-root .doc.t-modern { padding-top: 14px; }
-    }
-
-    /* Template: Modern */
-    .doc.t-modern {
-        font-family: 'Inter', sans-serif;
-    }
-    .doc.t-modern::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 7px;
-        background: linear-gradient(90deg, var(--acc, #0861A9) 45%, var(--acc2, #ED9020));
-    }
-    .doc.t-modern h1 {
-        font-family: 'Sora', sans-serif;
-        color: #141c2b;
-    }
-    .doc.t-modern .d-title {
-        color: var(--acc, #0861A9);
-    }
-    .doc.t-modern .d-head {
-        border-bottom: 1px solid #e6ebf2;
-    }
-    .doc.t-modern .d-sec h2 {
-        color: #141c2b;
-        border: none;
-        border-bottom: 2px solid var(--acc, #0861A9);
-        padding-bottom: 3px;
-    }
-
-    /* Template: Classic */
-    .doc.t-classic, .doc.t-classic h1, .doc.t-classic h2 {
-        font-family: Georgia, 'Times New Roman', serif;
-    }
-    .doc.t-classic .d-head {
-        text-align: center;
-        border-bottom: 3px double #c8d1dd;
-    }
-    .doc.t-classic h1 {
-        color: var(--acc, #0861A9);
-        font-weight: 700;
-        letter-spacing: .02em;
-        font-size: 2.15rem;
-        font-variant: small-caps;
-    }
-    .doc.t-classic .d-title {
-        letter-spacing: .22em;
-    }
-    .doc.t-classic .d-contact {
-        justify-content: center;
-    }
-    .doc.t-classic .d-sec h2 {
-        color: var(--acc, #0861A9);
-        border-bottom: none;
-        letter-spacing: .24em;
-        font-weight: 700;
-        justify-content: center;
-        font-variant: small-caps;
-        font-size: .8rem;
-        position: relative;
-        padding-bottom: 9px;
-    }
-    .doc.t-classic .d-sec h2::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        bottom: 0;
-        width: 46px;
-        height: 2px;
-        background: var(--acc, #0861A9);
-        transform: translateX(-50%);
-    }
-    .doc.t-classic .d-xp-h b {
-        font-style: italic;
-        font-weight: 700;
-    }
-    .doc.t-classic .d-skills {
-        gap: 0;
-        display: block;
-    }
-    .doc.t-classic .d-skills li {
-        display: inline;
-        border: none;
-        background: none;
-        padding: 0;
-        font-size: .8rem;
-        font-weight: 400;
-        color: #212836;
-    }
-    .doc.t-classic .d-skills li + li::before {
-        content: '  ·  ';
-    }
-
-    /* Template: Minimal */
-    .doc.t-minimal {
-        font-family: 'Inter', sans-serif;
-    }
-    .doc.t-minimal h1 {
-        font-weight: 700;
-        color: #171d29;
-        letter-spacing: -.03em;
-        font-size: 2.05rem;
-    }
-    .doc.t-minimal .d-head {
-        border-bottom: none;
-    }
-    .doc.t-minimal .d-title {
-        color: #6b7688;
-    }
-    .doc.t-minimal h1 {
-        border-bottom: 2px solid var(--acc, #0861A9);
-        padding-bottom: 6px;
-        display: inline-block;
-    }
-    .doc.t-minimal .d-sec h2 {
-        color: #8a94a6;
-        border-bottom: 1px solid #edf0f5;
-        font-weight: 700;
-        letter-spacing: .2em;
-    }
-    .doc.t-minimal .d-skills li {
-        border: none;
-        background: #f3f5f9;
-        border-radius: 3px;
-    }
-
-    /* Template: Executive */
-    .doc.t-exec {
-        display: grid;
-        grid-template-columns: 32% 68%;
-        gap: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-    .doc.t-exec .d-head {
-        grid-column: 1/-1;
-        padding: 30px 30px 18px;
-        border-bottom: 3px solid var(--acc, #0861A9);
-    }
-    .doc.t-exec h1 {
-        font-family: 'Sora', sans-serif;
-        color: #141c2b;
-        font-size: 1.9rem;
-    }
-    .doc.t-exec .d-title {
-        color: var(--acc, #0861A9);
-        font-weight: 600;
-    }
-    .doc.t-exec .exec-side {
-        background: #f4f7fb;
-        padding: 20px;
-    }
-    .doc.t-exec .exec-main {
-        padding: 20px;
-    }
-    .doc.t-exec .d-sec {
-        margin-top: 0;
-        margin-bottom: 18px;
-    }
-    .doc.t-exec .d-sec h2 {
-        font-size: .66rem;
-        font-weight: 700;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        color: var(--acc, #0861A9);
-        border: none;
-        border-left: 3px solid var(--acc, #0861A9);
-        padding: 1px 0 1px 9px;
-        margin-bottom: 9px;
-    }
-    .doc.t-exec .exec-side .d-skills {
-        flex-direction: column;
-        gap: 6px;
-    }
-    .doc.t-exec .exec-side .d-skills li {
-        width: 100%;
-        background: #fff;
-        border-color: #dde5ef;
-    }
-
-    /* Template: Creative */
-    .doc.t-creative {
-        font-family: 'Inter', sans-serif;
-        padding: 0;
-    }
-    .doc.t-creative .d-head {
-        background: linear-gradient(135deg, #4c1d95, #6d28d9, #7c3aed);
-        padding: 26px 30px 22px 30px;
-        color: #ffffff !important;
-        border-bottom: none;
-        margin: 0;
-    }
-    .doc.t-creative .d-head h1 {
-        color: #ffffff !important;
-        font-family: 'Sora', sans-serif;
-        font-weight: 800;
-        margin: 0;
-        font-size: 2rem;
-    }
-    .doc.t-creative .d-head .d-title {
-        color: #c4b5fd !important;
-        font-weight: 500;
-        margin-top: 2px;
-        font-size: .95rem;
-    }
-    .doc.t-creative .d-head .d-contact {
-        color: #ddd6fe !important;
-        margin-top: 10px;
-        display: flex;
-        gap: 12px;
-    }
-    .doc.t-creative .d-head .d-contact span {
-        color: #ddd6fe !important;
-    }
-    .doc.t-creative .d-sec {
-        padding: 0 30px;
-    }
-    .doc.t-creative .d-sec h2 {
-        color: #4c1d95;
-        border-bottom: 2.5px solid #7c3aed;
-        padding-bottom: 3px;
-        margin-bottom: 12px;
-    }
-
-    /* Spacing & Tile effects */
-    .doc.spacing-tight {
-        font-size: .72rem;
-        line-height: 1.34;
-        padding: 20px;
-    }
-    .doc.spacing-tight h1 { font-size: 1.7rem; }
-    .doc.spacing-tight .d-title { font-size: .72rem; margin-top: 1px; }
-    .doc.spacing-tight .d-contact { margin-top: 5px; }
-    .doc.spacing-tight .d-head { padding-bottom: 7px; }
-    .doc.spacing-tight .d-sec { margin-top: 8px; }
-    .doc.spacing-tight .d-sec h2 { font-size: .68rem; padding-bottom: 3px; margin-bottom: 5px; }
-    .doc.spacing-tight .d-xp { margin-bottom: 5px; }
-    .doc.spacing-tight .d-xp-h b { font-size: .8rem; }
-    .doc.spacing-tight ul { gap: 1px; }
-    .doc.spacing-tight .d-skills li { padding: 1.5px 7px; font-size: .68rem; }
-
-    .doc.spacing-roomy {
-        font-size: .84rem;
-        line-height: 1.62;
-        padding: 30px;
-    }
-
-    /* Watermark vertical right column styling */
-    .doc .wm {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 7px;
-        opacity: .5;
-        pointer-events: none;
-        user-select: none;
-    }
-    .doc .wm .wm-ic {
-        width: 12px;
-        height: 16px;
-        flex-shrink: 0;
-        fill: #F08F1C;
-    }
-    .doc .wm .wm-tx {
-        writing-mode: vertical-rl;
-        font-family: 'Inter', sans-serif;
-        font-size: .56rem;
-        font-weight: 600;
-        letter-spacing: .16em;
-        color: #9aa4b5;
-        line-height: 1;
-    }
-    .doc.wm-tile {
-        background-image: repeating-linear-gradient(-30deg, transparent 0 78px, rgba(8,97,169,.028) 78px 79px);
-    }
-
-    /* Pagebreaks */
-    .doc.guides {
-        background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 1074px, #f0b35c 1074px, #f0b35c 1075px);
-    }
-    .pv-hint {
-        font-size: .68rem;
-        color: var(--muted);
-        text-align: center;
-        margin-top: 9px;
-    }
-    .pv-hint b {
-        color: var(--accent-dark);
-    }
-
-    .builder-step-nav {
-        border-right: 1px solid #e9ecef;
-    }
-    .step-item {
-        padding: 12px 15px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        margin-bottom: 5px;
-        font-weight: 500;
-    }
-    .step-item:hover {
-        background-color: #f8f9fa;
-        color: var(--primary-color);
-    }
-    .step-item.active {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    .step-item i {
-        margin-right: 10px;
-        font-size: 1.2rem;
-    }
-    .ai-assist-btn {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%);
-        color: white;
-        border: none;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .ai-assist-btn:hover {
-        transform: scale(1.05);
-        color: white;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    }
-    .ai-assist-btn i {
-        margin-right: 5px;
-    }
-    
-    .template-choice {
-        transition: all 0.25s ease-in-out;
-        background-color: #fff;
-    }
-    .template-choice:hover {
-        transform: translateY(-4px);
-        border-color: var(--primary-color) !important;
-        box-shadow: 0 6px 15px rgba(13, 96, 158, 0.12) !important;
-    }
-    .template-choice.active {
-        border-color: var(--primary-color) !important;
-        border-width: 2px !important;
-        box-shadow: 0 6px 15px rgba(13, 96, 158, 0.18) !important;
-        background-color: #f8fafc;
-    }
-    .template-choice.active h6 {
-        color: var(--primary-color);
-    }
-    
-    .template-preview {
-        box-shadow: inset 0 0 8px rgba(0,0,0,0.02);
-        transition: all 0.2s;
-    }
-    .template-choice:hover .template-preview {
-        border-color: #cbd5e1 !important;
-    }
-    
-    @media (min-width: 1200px) {
-        .col-xl-2-4 {
-            flex: 0 0 20%;
-            max-width: 20%;
-        }
-    }
-
-    .download-pdf-btn, .download-docx-btn {
-        transition: all 0.2s ease-in-out !important;
-    }
-    .download-pdf-btn:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 24px rgba(220, 53, 69, 0.25) !important;
-    }
-    .download-docx-btn:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 24px rgba(13, 96, 158, 0.25) !important;
-    }
-
-    .ai-coach-fab {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        z-index: 1050;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
-        border: none;
-        box-shadow: 0 10px 25px rgba(13, 96, 158, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .ai-coach-fab:hover {
-        transform: scale(1.1) translateY(-3px);
-        box-shadow: 0 15px 30px rgba(0,0,0,0.12);
-        background: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--brand-deep) 100%);
-    }
-    .ai-coach-fab i {
-        font-size: 1.6rem;
-    }
-    .ai-coach-fab .pulse-ring {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        border: 3px solid rgba(13, 96, 158, 0.5);
-        animation: fab-pulse 2s infinite;
-    }
-    @keyframes fab-pulse {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        50% { transform: scale(1.3); opacity: 0; }
-        100% { transform: scale(0.95); opacity: 0; }
-    }
-
-    .custom-coach-offcanvas {
-        width: 480px !important;
-        background-color: #0f172a;
-        color: #f8fafc;
-        border-left: 1px solid #1e293b;
-        box-shadow: -10px 0 30px rgba(0,0,0,0.25);
-    }
-    .custom-coach-offcanvas .offcanvas-header {
-        background-color: #1e293b;
-        border-bottom: 1px solid #334155;
-        padding: 1.25rem 1.5rem;
-    }
-    .custom-coach-offcanvas .offcanvas-title {
-        color: #f8fafc;
-        font-weight: 700;
-    }
-    .custom-coach-offcanvas .btn-close {
-        filter: invert(1) grayscale(1) brightness(2);
-    }
-    .coach-chat-container {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .coach-messages-area {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-        background-color: #0f172a;
-    }
-    .coach-bubble {
-        max-width: 85%;
-        padding: 12px 16px;
-        border-radius: 16px;
-        line-height: 1.5;
-        font-size: 0.9rem;
-    }
-    .coach-bubble.coach {
-        background-color: #1e293b;
-        background-color: #1e293b;
-        border-top-left-radius: 4px;
-        color: #cbd5e1;
-        align-self: flex-start;
-        border: 1px solid #334155;
-    }
-    /* AI reply card styles for richer HTML returned by the model */
-    .coach-bubble.coach .ai-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-        border: 1px solid rgba(255,255,255,0.04);
-        padding: 12px 14px;
-        border-radius: 10px;
-        box-shadow: 0 6px 18px rgba(2,6,23,0.25);
-        color: #e6eef8;
-    }
-    .coach-bubble.coach .ai-card h3 {
-        margin: 0 0 6px 0;
-        color: var(--primary-color, #0D609E);
-        font-size: 1rem;
-    }
-    .coach-bubble.coach .ai-card p { color: #cbd5e1; margin:0 0 8px 0; }
-    .coach-bubble.coach .ai-card ul { padding-left:16px; margin:6px 0; }
-    .coach-bubble.coach .ai-skill-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-    .coach-bubble.coach .ai-skill-badges .badge {
-        background: rgba(255,255,255,0.04);
-        color: #e6eef8;
-        padding:4px 8px; border-radius:999px; font-size:0.78rem; border: 1px solid rgba(255,255,255,0.03);
-    }
-    .coach-bubble.user {
-        background: linear-gradient(135deg, #0d609e 0%, #0d609e 100%);
-        color: white;
-        border-top-right-radius: 4px;
-        align-self: flex-end;
-    }
-    .coach-bubble h1, .coach-bubble h2, .coach-bubble h3 {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--primary-color);
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
-    }
-    .coach-bubble ul, .coach-bubble ol {
-        padding-left: 1.2rem;
-        margin-bottom: 0.5rem;
-    }
-    .coach-bubble li {
-        margin-bottom: 0.25rem;
-    }
-    .coach-bubble strong {
-        color: #818cf8;
-        font-weight: 600;
-    }
-    .coach-input-area {
-        background-color: #1e293b;
-        border-top: 1px solid #334155;
-        padding: 1.25rem;
-    }
-    .coach-input-group {
-        background-color: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 30px;
-        padding: 6px 12px;
-        display: flex;
-        align-items: center;
-    }
-    .coach-input-field {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: #f8fafc;
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
-    .coach-input-field:focus {
-        outline: none;
-    }
-    .coach-send-btn {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
-        border: none;
-        color: white;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .coach-send-btn:hover {
-        transform: scale(1.08);
-        background: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--brand-deep) 100%);
-    }
-    .coach-apply-btn {
-        margin-top: 8px;
-        background: rgba(13,96,158,0.08);
-        border: 1px dashed rgba(13,96,158,0.5);
-        color: var(--primary-color);
-        font-size: 0.8rem;
-        padding: 5px 12px;
-        border-radius: 20px;
-        display: inline-flex;
-        align-items: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-weight: 600;
-    }
-    .coach-apply-btn:hover {
-        background: var(--primary-color);
-        color: white;
-    }
-    .typing-indicator {
-        display: flex;
-        gap: 4px;
-        padding: 4px 8px;
-    }
-    .typing-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #94a3b8;
-        border-radius: 50%;
-        animation: typing-bounce 1.4s infinite ease-in-out both;
-    }
-    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-    @keyframes typing-bounce {
-        0%, 80%, 100% { transform: scale(0); }
-        40% { transform: scale(1); }
-    }
-
-    /* ═══ MOCKUP: rb-bar (sticky toolbar) ═══ */
-    .rb-bar{position:sticky;top:0;z-index:900;display:flex;align-items:center;gap:12px;padding:10px 18px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--border);flex-wrap:wrap}
-    .rb-bar .rb-title{flex:1;min-width:120px;font-family:'Sora',sans-serif;font-weight:800;font-size:1rem;color:var(--brand-deep);display:flex;align-items:center;gap:8px}
-    .rb-bar .rb-title input{flex:1;min-width:100px;border:none;background:transparent;font-family:inherit;font-size:inherit;font-weight:inherit;color:inherit;padding:4px 0;border-bottom:2px solid transparent;transition:border-color .15s}
-    .rb-bar .rb-title input:focus{outline:none;border-bottom-color:var(--brand)}
-    .rb-bar .rb-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .rb-bar .rb-actions select{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem;font-weight:600;background:#fff;color:var(--text);cursor:pointer}
-    .rb-bar .rb-chip{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;padding:5px 11px;border-radius:20px;background:var(--brand-light);color:var(--brand)}
-    .rb-bar .rb-chip.green{background:var(--success-light);color:var(--success)}
-
-    /* ═══ MOCKUP: rb-design-bar (top toolbar — distinct from preview inner design-bar) ═══ */
-    .rb-design-bar{display:flex;align-items:center;gap:14px;padding:8px 18px;background:#fafbfe;border-bottom:1px solid var(--border);flex-wrap:wrap}
-    .rb-design-bar .db-label{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-    .rb-design-bar .swatches{display:flex;gap:6px}
-    .rb-design-bar .swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s}
-    .rb-design-bar .swatch:hover{transform:scale(1.2)}
-    .rb-design-bar .swatch.active{border-color:var(--brand-deep);box-shadow:0 0 0 2px rgba(10,47,87,.2)}
-    .rb-design-bar select{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;background:#fff}
-    .rb-design-bar .spacing-btns{display:flex;gap:4px}
-    .rb-design-bar .spacing-btn{border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:all .15s}
-    .rb-design-bar .spacing-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .rb-design-bar .verified-chip{display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--success-light);color:var(--success);margin-left:auto}
-
-    /* ═══ MOCKUP: rb-tabs (mobile edit/preview toggle) ═══ */
-    .rb-tabs{display:none;gap:4px;padding:6px 18px;background:#fff;border-bottom:1px solid var(--border)}
-    .rb-tabs button{flex:1;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:.78rem;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:all .15s}
-    .rb-tabs button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-    @media(max-width:992px){.rb-tabs{display:flex}}
-
-    /* ═══ MOCKUP: rb-split grid ═══ */
-    .rb-split{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:start}
-    .rb-editor-col{min-width:0;padding:18px;border-right:1px solid var(--border)}
-    .rb-preview-col{min-width:0;padding:18px;position:sticky;top:60px;max-height:calc(100vh - 60px);overflow-y:auto}
-    @media(max-width:992px){
-      .rb-split{grid-template-columns:1fr}
-      .rb-editor-col{display:block}
-      .rb-preview-col{display:none;position:static;max-height:none}
-      .rb-editor-col.preview-active{display:none}
-      .rb-preview-col.show-mobile{display:block}
-    }
-
-    /* ═══ MOCKUP: ed-sec (accordion sections) ═══ */
-    .ed-sec{border:1px solid var(--border);border-radius:12px;background:#fff;margin-bottom:12px;overflow:hidden;transition:box-shadow .2s}
-    .ed-sec:hover{box-shadow:0 2px 8px rgba(10,47,87,.06)}
-    .ed-head{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;user-select:none;transition:background .15s}
-    .ed-head:hover{background:var(--bg)}
-    .ed-grip{color:var(--muted);display:flex;align-items:center;cursor:grab;flex-shrink:0}
-    .ed-grip svg{width:16px;height:16px}
-    .ed-title{flex:1;font-size:.88rem;font-weight:700;color:var(--brand-deep);display:flex;align-items:center;gap:8px}
-    .ed-title svg{width:15px;height:15px;color:var(--brand)}
-    .ed-title .ed-tag{font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--brand-light);color:var(--brand);letter-spacing:.04em}
-    .ed-chev{color:var(--muted);flex-shrink:0;transition:transform .2s}
-    .ed-chevron svg{width:16px;height:16px}
-    .ed-sec.open .ed-chevron svg{transform:rotate(180deg)}
-    .ed-body{display:none;padding:0 16px 16px}
-    .ed-sec.open .ed-body{display:block;animation:ed-fade .2s ease}
-    @keyframes ed-fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-    .ed-body .custom-card{border:none;margin:0}
-    .ed-body .custom-card .card-header{padding:12px 0;border-bottom-color:var(--border)}
-    .ed-body .custom-card .card-body{padding:14px 0}
-</style>
+<link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
 <?= $this->include('candidate/resume/ai_replies_css') ?>
 <?= $this->endSection() ?>
 
@@ -1555,38 +486,39 @@
         </div>
     </div>
 
-    <div class="row">
-        <!-- Left Side: Form Controls -->
-        <div class="col-lg-5 col-xl-5 mb-4">
-            <div class="card custom-card mb-3">
-                <div class="card-body p-2">
-                    <div class="builder-step-nav d-flex flex-wrap gap-1 border-0 justify-content-between" style="display:none">
-                        <div class="step-item active py-2 px-3 mb-0" data-step="info" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-user me-1"></i> Info
-                        </div>
-                        <div class="step-item py-2 px-3 mb-0" data-step="experience" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-briefcase me-1"></i> Exp
-                        </div>
-                        <div class="step-item py-2 px-3 mb-0" data-step="education" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-school me-1"></i> Edu
-                        </div>
-                        <div class="step-item py-2 px-3 mb-0" data-step="skills" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-tool me-1"></i> Skills
-                        </div>
-                        <div class="step-item py-2 px-3 mb-0" data-step="summary" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-file-description me-1"></i> Summary
-                        </div>
-                        <div class="step-item py-2 px-3 mb-0" data-step="jd-match" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-target me-1"></i> Tailor
-                        </div>
-                        <div class="step-item py-2 px-3 mb-0" data-step="templates" style="font-size: 0.8rem; flex: 1; text-align: center; justify-content: center;">
-                            <i class="ti ti-layout-template me-1"></i> Layout
-                        </div>
+            <!-- ATS Score panel -->
+            <div class="score-card shadow-sm mb-3" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
+                <div class="score-top d-flex align-items-center gap-3">
+                    <div class="gauge position-relative" id="gauge-wrap" aria-label="ATS score 0 out of 100" style="width: 74px; height: 74px;">
+                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
+                            <circle class="p" id="gauge-p" cx="37" cy="37" r="33" style="fill: none; stroke: rgb(220, 38, 38); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;"></circle>
+                        </svg>
+                        <b id="ats-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0</b>
+                    </div>
+                    <div class="score-info">
+                        <b style="font-family: 'Sora', sans-serif; font-size: 1.05rem; color: #0a192f; display: block;">Resume Intelligence</b>
+                        <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">ATS readiness plus recruiter-grade writing checks — all recalculated as you type.</p>
                     </div>
                 </div>
+                
+                <!-- 6 Metric Gauges Grid -->
+                <div class="met-grid" id="met-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px; margin-top: 18px; border-top: 1px solid #edf2f7; padding-top: 15px;">
+                    <!-- Dynamically populated from JS -->
+                </div>
+                
+                <!-- Writing review issues header -->
+                <div class="mt-4 pt-3 border-top">
+                    <b style="font-family: 'Sora', sans-serif; font-size: 0.9rem; color: #0a192f; display: block; margin-bottom: 8px;">Detailed Audit & Checklist</b>
+                    <ul class="score-list" id="ats-list" style="list-style: none; padding-left: 0; margin-bottom: 0;">
+                        <!-- Dynamic Checklist items go here -->
+                    </ul>
+                </div>
             </div>
+
             <form id="resume-form" onsubmit="return false;" class="pb-3 mb-3">
                 <input type="hidden" name="id" value="<?= $resume->id ?? '' ?>">
+                <?= csrf_field() ?>
                 
                 <!-- Step: Basic Information -->
                 <div class="ed-sec open" id="sec-info" data-step="info">
@@ -1869,9 +801,9 @@
                                 <label class="form-label fw-semibold text-dark" for="job-pick">Pick a JobberRecruit listing</label>
                                 <select class="form-select" id="job-pick" aria-label="Tailor to a listed job">
                                     <option value="">— Choose a live job on JobberRecruit —</option>
-                                    <option value="senior-accountant">Senior Accountant — Renaissance Africa Energy (Lagos)</option>
-                                    <option value="finance-officer">Finance Officer — HR/People & Operations (Lagos)</option>
-                                    <option value="grad-trainee">Graduate Trainee — AP Programme 2026 (Nigeria)</option>
+                                    <?php foreach ($tailorJobs ?? [] as $tj): ?>
+                                        <option value="<?= $tj->id ?>" data-desc="<?= esc($tj->description ?? '') ?>"><?= esc($tj->title) ?><?= !empty($tj->company_name) ? ' — ' . esc($tj->company_name) : '' ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             
@@ -2062,8 +994,6 @@
                                 </div>
                             </div><!-- /Download Section -->
                         </form><!-- /resume-form -->
-                    </div><!-- /col-lg-5 -->
-                </div><!-- /row -->
             </div><!-- /content -->
         </div><!-- /rb-editor-col -->
 
@@ -2088,36 +1018,6 @@
 
                 <div class="wm-note ms-auto">
                     <i class="ti ti-shield-check text-success"></i> Anti-Crop Protection
-                </div>
-            </div>
-
-            <!-- ATS Score panel -->
-            <div class="score-card shadow-sm mb-3" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
-                <div class="score-top d-flex align-items-center gap-3">
-                    <div class="gauge position-relative" id="gauge-wrap" aria-label="ATS score 0 out of 100" style="width: 74px; height: 74px;">
-                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;">
-                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
-                            <circle class="p" id="gauge-p" cx="37" cy="37" r="33" style="fill: none; stroke: rgb(220, 38, 38); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;"></circle>
-                        </svg>
-                        <b id="ats-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0</b>
-                    </div>
-                    <div class="score-info">
-                        <b style="font-family: 'Sora', sans-serif; font-size: 1.05rem; color: #0a192f; display: block;">Resume Intelligence</b>
-                        <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">ATS readiness plus recruiter-grade writing checks — all recalculated as you type.</p>
-                    </div>
-                </div>
-                
-                <!-- 6 Metric Gauges Grid -->
-                <div class="met-grid" id="met-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px; margin-top: 18px; border-top: 1px solid #edf2f7; padding-top: 15px;">
-                    <!-- Dynamically populated from JS -->
-                </div>
-                
-                <!-- Writing review issues header -->
-                <div class="mt-4 pt-3 border-top">
-                    <b style="font-family: 'Sora', sans-serif; font-size: 0.9rem; color: #0a192f; display: block; margin-bottom: 8px;">Detailed Audit & Checklist</b>
-                    <ul class="score-list" id="ats-list" style="list-style: none; padding-left: 0; margin-bottom: 0;">
-                        <!-- Dynamic Checklist items go here -->
-                    </ul>
                 </div>
             </div>
 
@@ -2249,6 +1149,11 @@
         if (doc) doc.style.fontFamily = family;
     }
 
+    // ═══ MOCKUP: Select template from topbar ═══
+    window.selectTemplate = function(val) {
+        $('#tpl-select').val(val).trigger('change');
+    };
+
     // ═══ MOCKUP: Design-bar spacing toggle ═══
     function setSpacing(mode, el) {
         document.querySelectorAll('.design-bar .spacing-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -2275,6 +1180,15 @@
             return String(str).replace(/[&<>"']/g, function (s) {
                 return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]);
             });
+        }
+
+        // Matches PHP's date('M Y', strtotime($date)) used by the download templates
+        function formatMonthYear(dateStr) {
+            if (!dateStr) return '';
+            var d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return dateStr;
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getFullYear();
         }
 
         // ── LIVE PREVIEW GENERATION ──
@@ -2321,7 +1235,7 @@
                 var current = $(this).find('.exp-current-check').is(':checked');
                 var desc = $(this).find('textarea[name="exp_description[]"]').val() || '';
                 
-                var dates = start + (current ? ' - Present' : (end ? ' - ' + end : ''));
+                var dates = formatMonthYear(start) + ' – ' + (current ? 'Present' : (end ? formatMonthYear(end) : ''));
                 if (role || company || desc) {
                     var bulletPoints = desc.split('\n').map(s => s.trim()).filter(Boolean);
                     var bulletsUl = '';
@@ -2697,13 +1611,6 @@
             refreshAts();
         });
 
-        // ── TAILOR TO JOB — pre-set job descriptions for demo listings ──
-        var JOBS = {
-            'senior-accountant': "Senior Accountant needed. Responsibilities: month-end close, management reporting, budgeting and forecasting, VAT and PAYE compliance, bank reconciliation, fixed asset management, audit preparation. Requirements: B.Sc Accounting, 4+ years experience, strong Excel, ICAN is an advantage. Tools: accounting software, spreadsheets.",
-            'finance-officer': "Finance Officer to support operations. Duties: invoicing, accounts payable, payroll processing, expense reporting, vendor management, compliance with statutory filings, monthly reports for leadership. Skills: accounting, communication, attention to accuracy, Excel, budgeting.",
-            'grad-trainee': "Graduate trainee programme. We seek graduates with strong analysis skills, communication, teamwork, willingness to learn, Excel proficiency. Any discipline; finance and accounting graduates encouraged. Training provided in reporting, compliance and operations."
-        };
-
         function resumeTextForMatch() {
             var summary = $('#resume-summary').val() || '';
             var skills = ($('input[name="skills"]').val() || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -2754,8 +1661,9 @@
         // Job picker pre-fill JD
         $('#job-pick').on('change', function() {
             var val = $(this).val();
-            if (val && JOBS[val]) {
-                $('#jd').val(JOBS[val]);
+            var desc = $(this).find('option:selected').data('desc');
+            if (val && desc) {
+                $('#jd').val(desc);
                 runMatch();
             } else {
                 $('#jd').val('');
@@ -2784,6 +1692,7 @@
             var selected = $(this).val();
             var rawTpl = revTplMap[selected] || selected.replace('t-', '');
             $('#template_id').val(rawTpl);
+            $('#template-select-top').val(selected);
             // trigger active template card highlight
             $('.template-choice').removeClass('active border-primary border-2 shadow-sm');
             $('.template-choice[data-template="' + rawTpl + '"]').addClass('active border-primary border-2 shadow-sm');
@@ -3040,6 +1949,11 @@
                 if ($container.find('.experience-item, .education-item').length === 0) {
                     $container.find('.no-items').fadeIn(200);
                 }
+                // Re-index exp_current[] values so they still match each row's position —
+                // save() matches checked values against the submitted exp_company[] array index.
+                $('#experience-container .exp-current-check').each(function(idx) {
+                    $(this).val(idx);
+                });
             });
         });
 
@@ -3057,6 +1971,9 @@
         $(document).on('click', '.improve-desc-ai', function() {
             const btn = $(this);
             const textarea = btn.closest('.col-md-12').find('textarea');
+            if (textarea.length) {
+                lastFocusedTextarea = textarea;
+            }
             const description = textarea.length ? textarea.val() : '';
 
             if (!description || !description.trim()) {
@@ -3096,6 +2013,9 @@
         $(document).on('click', '.generate-bullets-ai', function() {
             const btn = $(this);
             const textarea = btn.closest('.col-md-12').find('textarea');
+            if (textarea.length) {
+                lastFocusedTextarea = textarea;
+            }
             const description = textarea.length ? textarea.val() : '';
             const position = btn.closest('.experience-item').find('input[name="exp_position[]"]').val() || '';
 
@@ -3394,7 +2314,7 @@
                         const $expContainer = $('#experience-container');
                         $expContainer.find('.experience-item').remove();
                         if (Array.isArray(snap.experiences)) {
-                            snap.experiences.forEach(function(e) {
+                            snap.experiences.forEach(function(e, idx) {
                                 const html = `
                                     <div class="experience-item border rounded p-3 mb-3 position-relative">
                                         <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
@@ -3417,7 +2337,7 @@
                                             </div>
                                             <div class="col-md-4 mb-3 d-flex align-items-end">
                                                 <div class="form-check mb-2">
-                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" ${e.is_current ? 'checked' : ''}>
+                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''}>
                                                     <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
                                                 </div>
                                             </div>
@@ -3524,7 +2444,7 @@
                         const $expContainer = $('#experience-container');
                         $expContainer.find('.experience-item').remove();
                         if (Array.isArray(snap.experiences)) {
-                            snap.experiences.forEach(function(e) {
+                            snap.experiences.forEach(function(e, idx) {
                                 const html = `
                                     <div class="experience-item border rounded p-3 mb-3 position-relative">
                                         <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
@@ -3547,7 +2467,7 @@
                                             </div>
                                             <div class="col-md-4 mb-3 d-flex align-items-end">
                                                 <div class="form-check mb-2">
-                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" ${e.is_current ? 'checked' : ''}>
+                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''}>
                                                     <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
                                                 </div>
                                             </div>
@@ -3904,8 +2824,12 @@
             }
         });
 
-        // Utility: Extract and clean raw markdown or blockquoted suggestions inside AI messages
+        // Utility: Extract and clean raw markdown, HTML tags or blockquoted suggestions inside AI messages
         function extractResumeContent(text) {
+            if (!text || typeof text !== 'string') {
+                if (text === null || text === undefined) return '';
+                text = String(text);
+            }
             let extracted = text;
             
             // 1. Extract content from code block if present
@@ -3922,27 +2846,36 @@
                 }
             }
             
-            // Strip any remaining markdown markers for clean resume placement
+            // Strip any remaining HTML tags and markdown markers for clean resume placement
             return extracted
-                .replace(/^>\s*/gm, '') // remove leading blockquote carrots
-                .replace(/[*#`]/g, '')  // strip asterisks, pound headers, and backticks
+                .replace(/<[^>]*>/g, '') // strip HTML tags
+                .replace(/^>\s*/gm, '')  // remove leading blockquote carrots
+                .replace(/[*#`]/g, '')   // strip asterisks, pound headers, and backticks
                 .trim();
         }
 
         // AI Preview modal actions
         $('#aiApplyBtn').on('click', function() {
-            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').html();
+            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text() || $('#aiPreviewRender').html() || '';
             const polished = extractResumeContent(raw);
-            // store prev for undo
-            const prev = $('#resume-summary').val();
-            $('#resume-summary').data('prev', prev);
-            $('#resume-summary').val(polished);
+            const target = $('#resume-summary');
+            if (target.length) {
+                target.data('prev', target.val());
+                target.val(polished);
+                // Scroll to summary section if hidden/collapsed
+                const secSummary = $('#sec-summary');
+                if (secSummary.length && !secSummary.hasClass('open')) {
+                    secSummary.addClass('open');
+                }
+            }
             $('#aiPreviewModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('overflow', '');
             toastr.success('Applied AI content to Professional Summary');
         });
 
         $('#aiCopyPlainBtn').on('click', function() {
-            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text();
+            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text() || '';
             const plain = extractResumeContent(raw);
             navigator.clipboard.writeText(plain).then(function() {
                 toastr.success('Copied plain text to clipboard');
@@ -3953,7 +2886,7 @@
 
         // Apply preview content to last-focused input/textarea (or reasonable fallback)
         $('#aiApplyActiveBtn').on('click', function() {
-            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text();
+            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text() || '';
             const polished = extractResumeContent(raw);
 
             if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
@@ -3961,6 +2894,8 @@
                 lastFocusedTextarea.data('prev', lastFocusedTextarea.val());
                 lastFocusedTextarea.val(polished);
                 $('#aiPreviewModal').modal('hide');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
                 toastr.success('Applied to the active input field!');
                 lastFocusedTextarea.focus();
                 lastFocusedTextarea.css('border-color', '#0d609e');
@@ -3974,6 +2909,8 @@
                 firstExpDesc.data('prev', firstExpDesc.val());
                 firstExpDesc.val(polished);
                 $('#aiPreviewModal').modal('hide');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
                 toastr.info('No active input was selected. Applied to first work experience description.');
                 if (firstExpDesc.is(':visible') && firstExpDesc.offset()) {
                     $('html, body').animate({ scrollTop: firstExpDesc.offset().top - 120 }, 300);
@@ -3983,12 +2920,13 @@
             }
 
             // Otherwise default to summary
-            const prev = $('#resume-summary').val();
-            $('#resume-summary').data('prev', prev);
-            $('#resume-summary').val(polished);
+            const targetSummary = $('#resume-summary');
+            targetSummary.data('prev', targetSummary.val());
+            targetSummary.val(polished);
             $('#aiPreviewModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('overflow', '');
             toastr.info('No active input was selected. Applied to Professional Summary.');
-            const targetSummary = $("#resume-summary");
             if (targetSummary.length && targetSummary.is(':visible') && targetSummary.offset()) {
                 $('html, body').animate({ scrollTop: targetSummary.offset().top - 120 }, 300);
             }

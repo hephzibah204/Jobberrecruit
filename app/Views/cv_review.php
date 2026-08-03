@@ -780,11 +780,12 @@ svg { flex-shrink: 0; }
 .cvr-hero h1{font-size:2.5rem;font-weight:800;line-height:1.12;letter-spacing:-.02em;margin-bottom:16px;color:#fff}
 .cvr-hero h1 span{color:var(--accent)}
 .cvr-hero-lede{font-size:1.05rem;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:28px;max-width:520px}
-.cvr-hero-ct
-.cvr-hero-cta 
-
-
-
+.cvr-hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+.cvr-hero-cta .btn-lg{padding:14px 26px;font-size:.96rem}
+.btn-accent{background:var(--accent);color:var(--brand-deep);border:none}
+.btn-accent:hover{background:#C8770E;color:var(--brand-deep)}
+.btn-ghost-light{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.3)}
+.btn-ghost-light:hover{background:rgba(255,255,255,.18);color:#fff}
 
 /* hero stat card */
 .cvr-stats{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:30px;display:grid;grid-template-columns:1fr 1fr;gap:24px;backdrop-filter:blur(6px)}
@@ -1049,8 +1050,31 @@ svg { flex-shrink: 0; }
         </ul>
       </div>
       <figure class="cvr-report-img">
-        <img src="<?= base_url('assets/cv-review/sample-report.jpg') ?>"/ alt="Sample CV review report showing ATS score and section feedback" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <div class="cvr-report-ph" style="display:none"><svg aria-hidden="true"><use href="#i-doc"/></svg><span>Sample report preview</span></div>
+        <div class="card p-4 border-0 shadow-lg rounded-4 text-start bg-white" style="max-width: 440px; margin: 0 auto;">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
+            <div>
+              <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill mb-1">ATS Score: 88 / 100</span>
+              <h6 class="fw-bold mb-0 text-dark">JobberRecruit Audit Report</h6>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-circle p-2 text-center" style="width:42px;height:42px;display:grid;place-items:center;">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+          </div>
+          <div class="mb-3">
+            <small class="text-muted fw-semibold">IMPACT ANALYSIS</small>
+            <div class="progress mt-1 mb-2" style="height: 8px;">
+              <div class="progress-bar bg-success" style="width: 88%"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-secondary">
+              <span>Keyword Match: 92%</span>
+              <span>Formatting: 85%</span>
+            </div>
+          </div>
+          <div class="bg-light p-3 rounded-3 border mb-2">
+            <small class="fw-bold text-dark d-block mb-1">Top Recommendation:</small>
+            <small class="text-muted">Quantify your achievements in work experience bullets using metrics & numbers.</small>
+          </div>
+        </div>
       </figure>
     </div>
   </div>

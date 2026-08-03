@@ -184,7 +184,7 @@
                                                         <span class="text-muted"><?= $job->salary ? '/' . esc($job->salary_period) : '' ?></span>
                                                     </div>
                                                     <div class="col-lg-5 col-5 text-end">
-                                                        <div class="btn btn-apply-now" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                                                        <a class="btn btn-apply-now" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -619,7 +619,7 @@
                                                         <span class="text-muted">${job.salary ? '/' + job.salary_period : ''}</span>
                                                     </div>
                                                     <div class="col-lg-5 col-5 text-end">
-                                                        <div class="btn btn-apply-now" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                                                        <a class="btn btn-apply-now" href="${window.location.origin}/job/application/${job.id}">Apply now</a>
                                                     </div>
                                                 </div>
                                             </div>

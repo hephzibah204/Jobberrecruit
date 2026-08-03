@@ -127,6 +127,9 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-naira" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V3l12 18V3M3.5 9.5h17M3.5 14.5h17"/></symbol>
+</defs></svg>
 <div class="content">
 
     <div class="page-head">

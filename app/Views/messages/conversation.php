@@ -411,6 +411,7 @@ if (auth()->user()->user_type === 'employer') {
                         <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                     </button>
                 </form>
+                <p id="messageError" role="alert" hidden style="margin:8px 0 0;color:#b42318;font-size:.82rem;"></p>
             </div>
         </div>
 
@@ -440,9 +441,12 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         var input = document.getElementById('messageInput');
         var sendBtn = document.getElementById('sendBtn');
+        var errorEl = document.getElementById('messageError');
         var msg = input.value.trim();
         if (!msg) return;
 
+        errorEl.hidden = true;
+        errorEl.textContent = '';
         sendBtn.disabled = true;
 
         var formData = new FormData();
@@ -456,13 +460,19 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(sendUrl, {
             method: 'POST',
             headers: {
-                [csrfHeader]: csrfToken
+                [csrfHeader]: csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: formData
         })
-        .then(r => r.json())
+        .then(async r => {
+            var data;
+            try { data = await r.json(); } catch (e) { data = {}; }
+            if (!r.ok) throw new Error(data.messages?.error || data.message || 'The server could not send this message.');
+            return data;
+        })
         .then(data => {
-            if (data.success || data.status === 'success') {
+            if (data.success || data.status === 'success' || data.message_id) {
                 var div = document.createElement('div');
                 div.className = 'bubble bubble--out';
                 div.innerHTML = `${msg.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}
@@ -471,13 +481,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.scrollTop = container.scrollHeight;
                 input.value = '';
             } else {
-                alert(data.message || 'Failed to send message');
+                throw new Error(data.messages?.error || data.message || 'Failed to send message');
             }
             sendBtn.disabled = false;
         })
         .catch(err => {
             console.error('Error sending message:', err);
-            alert('Network error. Please try again.');
+            errorEl.textContent = err.message || 'Network error. Your text has been kept; please try again.';
+            errorEl.hidden = false;
+            input.focus();
             sendBtn.disabled = false;
         });
     });

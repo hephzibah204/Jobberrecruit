@@ -5,7 +5,6 @@ namespace App\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Shield\Authentication\AuthenticationException;
 
 class AdminFilter implements FilterInterface
 {
@@ -25,9 +24,15 @@ class AdminFilter implements FilterInterface
 
         $user = $auth->user();
 
-        // Logged in but not admin
+        // Logged-in non-admin users should be denied without exposing a
+        // framework exception page. Return them to their own dashboard.
         if (! $user || $user->user_type !== 'admin') {
-            throw AuthenticationException::forInvalidUser();
+            $destination = ($user && $user->user_type === 'employer')
+                ? '/employer/dashboard'
+                : '/candidate/dashboard';
+
+            return redirect()->to($destination)
+                ->with('error', 'You do not have permission to access the administration area.');
         }
     }
 

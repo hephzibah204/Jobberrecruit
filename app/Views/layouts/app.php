@@ -74,6 +74,42 @@ if (!$isEmployer && isset($user) && $user) {
 
 // Pending applications (employer badge, when provided by controller)
 $pendingCount = $pendingApps ?? 0;
+
+// Child-view variables are not propagated into CodeIgniter parent layouts.
+// Resolve breadcrumbs from the route so authenticated pages match the mockups.
+$dashboardPath = trim(uri_string(), '/');
+$dashboardTitles = [
+    'candidate/career-tools/mock-interview/start' => 'AI Mock Interview',
+    'candidate/career-tools/mock-interview'       => 'AI Mock Interview',
+    'candidate/career-tools/salary-negotiation'  => 'Salary Negotiation Simulator',
+    'candidate/career-tools/career-advice'        => 'Personalized Career Advice',
+    'candidate/subscription/pricing'              => 'Premium Plans',
+    'candidate/resumes/build'                     => 'AI Resume Builder',
+    'candidate/resumes'                           => 'AI Resume Builder',
+    'candidate/profile/edit'                      => 'Edit Profile',
+    'candidate/applications'                      => 'My Applications',
+    'candidate/notifications'                     => 'Job Alerts',
+    'candidate/saved-jobs'                        => 'Saved Jobs',
+    'candidate/my-courses'                        => 'My Courses',
+    'candidate/certificates'                      => 'Certificates',
+    'candidate/career-tools'                      => 'AI Career Tools',
+    'candidate/referrals'                         => 'Referral Program',
+    'candidate/transactions'                      => 'Transactions',
+    'candidate/classroom'                         => 'Classroom',
+    'candidate/messages'                          => 'Messages',
+    'candidate/settings'                          => 'Settings',
+    'candidate/profile'                           => 'My Profile',
+    'candidate/dashboard'                         => 'Overview',
+    'candidate'                                   => 'Overview',
+    'aptitude'                                    => 'Aptitude Tests',
+];
+$resolvedPageTitle = '';
+foreach ($dashboardTitles as $routePrefix => $routeTitle) {
+    if ($dashboardPath === $routePrefix || str_starts_with($dashboardPath, $routePrefix . '/')) {
+        $resolvedPageTitle = $routeTitle;
+        break;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en-NG">
@@ -174,6 +210,7 @@ $pendingCount = $pendingApps ?? 0;
     <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 5 11.9V15a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1.1A7 7 0 0 1 12 2Z"/><path d="M9 17v1a3 3 0 0 0 6 0v-1"/></symbol>
     <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s5 4 5 9a5 5 0 0 1-10 0c0-1.5.6-2.8 1.4-3.8.4 1.8 1.6 2.3 2.6 1.3.9-.9.5-2.4 0-3.5-.3-.7-.3-1.4 0-2 0-.6.5-1 1-1Z"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
     <symbol id="i-message-sq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
     <symbol id="i-infinity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.7-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.3 6-4Zm0 0c2 2.7 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.3-6 4Z"/></symbol>
     <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
@@ -431,11 +468,11 @@ $pendingCount = $pendingApps ?? 0;
         </button>
 
         <!-- Breadcrumb (tb-crumb) shown when page_title is set, otherwise fallback to search -->
-        <?php if (!empty($page_title)): ?>
+        <?php if ($resolvedPageTitle !== ''): ?>
           <nav class="tb-crumb" aria-label="Breadcrumb">
             <a href="<?= $isEmployer ? base_url('employer/dashboard') : base_url('candidate/dashboard') ?>">Dashboard</a>
             <svg aria-hidden="true"><use href="#i-arrow-r"/></svg>
-            <b><?= esc($page_title) ?></b>
+            <b><?= esc($resolvedPageTitle) ?></b>
           </nav>
         <?php else: ?>
           <form class="tb-search" role="search" action="<?= base_url('jobs') ?>" method="get">
@@ -509,7 +546,6 @@ $pendingCount = $pendingApps ?? 0;
 </div><!-- /.emp-shell-wrap -->
 
 <!-- Mobile Bottom App Navigation -->
-<?= $this->include('partials/mobile_bottom_nav') ?>
 
 <!-- ══ Legacy component scripts (content views still use these) ══ -->
 <script src="<?= base_url('auth/js/jquery-3.7.1.min.js'); ?>" type="text/javascript"></script>
@@ -588,8 +624,9 @@ $pendingCount = $pendingApps ?? 0;
 })();
 </script>
 
+<?php if (auth()->loggedIn() && !str_starts_with(trim(uri_string(), '/'), 'candidate/resumes/build')): ?>
 <?= $this->include('partials/chatbot'); ?>
-<?= $this->include('partials/cookie_consent'); ?>
+<?php endif; ?>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

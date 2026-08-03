@@ -45,6 +45,18 @@ $hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
                   <span class="detail-badge db-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
                 <?php endif; ?>
               </div>
+              <div class="apply-key-details">
+                <span><svg aria-hidden="true"><use href="#i-pin"/></svg> <strong><?= esc($job->location ?? 'Nigeria') ?></strong></span>
+                <?php if (!empty($job->salary_min) || !empty($job->salary_max)): ?>
+                  <span><svg aria-hidden="true"><use href="#i-coins"/></svg> <strong>&#x20A6;<?= number_format((float)($job->salary_min ?? 0)) ?><?= !empty($job->salary_max) ? ' - &#x20A6;' . number_format((float)$job->salary_max) : '' ?> / month</strong></span>
+                <?php endif; ?>
+                <?php if (!empty($job->deadline)): ?>
+                  <span><svg aria-hidden="true"><use href="#i-clock"/></svg> Deadline: <strong><?= date('d M Y', strtotime($job->deadline)) ?></strong></span>
+                <?php endif; ?>
+                <?php if (!empty($job->location_type)): ?>
+                  <span><svg aria-hidden="true"><use href="#i-globe"/></svg> <strong><?= ucfirst(esc($job->location_type)) ?></strong></span>
+                <?php endif; ?>
+              </div>
             </div>
             <div class="apply-jobcard-actions">
               <button class="save-btn" id="saveJobBtn" data-job-id="<?= $job->id ?>" aria-label="Save job" data-saved="<?= $isSaved ? 'true' : 'false' ?>">
@@ -381,6 +393,11 @@ $hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
 .db-type { background: var(--brand-light); color: var(--brand); }
 .db-featured { background: var(--accent); color: var(--brand-deep); }
 .apply-jobcard-actions { display: flex; gap: 10px; align-self: flex-start; flex-wrap: wrap; }
+
+.apply-key-details { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: .82rem; color: var(--muted); }
+.apply-key-details span { display: inline-flex; align-items: center; gap: 6px; }
+.apply-key-details svg { width: 15px; height: 15px; color: var(--brand); flex-shrink: 0; }
+.apply-key-details strong { color: var(--text); font-weight: 600; }
 
 .save-btn {
   background: none; border: 1.5px solid var(--border); border-radius: 8px;

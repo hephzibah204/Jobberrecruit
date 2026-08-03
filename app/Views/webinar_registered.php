@@ -544,7 +544,7 @@ svg{flex-shrink:0}
       <div class="side-card">
         <h3><svg aria-hidden="true"><use href="#ic-cc"/></svg>What happens next</h3>
         <ul class="next-list">
-          <li><span class="next-num">1</span><div><strong>Check your inbox.</strong> A confirmation with your join link is on its way to {{user_email}}.</div></li>
+          <li><span class="next-num">1</span><div><strong>Check your inbox.</strong> A confirmation with your join link is on its way to <?= esc($user_email ?? 'your email') ?>.</div></li>
           <li><span class="next-num">2</span><div><strong>We&rsquo;ll remind you.</strong> You&rsquo;ll get a nudge 24 hours and 1 hour before the session.</div></li>
           <li><span class="next-num">3</span><div><strong>Join live.</strong> Tap the join link 15 minutes early to settle in before the Q&amp;A.</div></li>
           <li><span class="next-num">4</span><div><strong>Get the recording.</strong> Can&rsquo;t make it live? We&rsquo;ll email you the replay afterward.</div></li>
@@ -579,5 +579,113 @@ svg{flex-shrink:0}
 </section>
 
 </main>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+/* toast */
+var toastT;
+function showToast(m) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  document.getElementById('toast-msg').textContent = m;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(function() { t.classList.remove('show'); }, 3200);
+}
+
+/* countdown */
+var target = new Date('2026-06-25T10:00:00');
+function tick() {
+  var ids = ['cd-d', 'cd-h', 'cd-m', 'cd-s'];
+  var diff = target - new Date();
+  if (diff <= 0) {
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = '00';
+    });
+    return;
+  }
+  var v = [
+    Math.floor(diff / 864e5),
+    Math.floor((diff % 864e5) / 36e5),
+    Math.floor((diff % 36e5) / 6e4),
+    Math.floor((diff % 6e4) / 1e3)
+  ];
+  ids.forEach(function(id, i) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = String(v[i]).padStart(2, '0');
+  });
+}
+tick();
+setInterval(tick, 1000);
+
+/* copy join link */
+function copyJoin() {
+  var inp = document.getElementById('joinlink');
+  if (!inp) return;
+  inp.select();
+  inp.setSelectionRange(0, 99999);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(inp.value).then(function() {
+      showToast('Join link copied to clipboard.');
+    }, function() {
+      showToast(ok ? 'Join link copied.' : 'Press Ctrl+C to copy.');
+    });
+  } else {
+    showToast(ok ? 'Join link copied.' : 'Press Ctrl+C to copy.');
+  }
+}
+
+/* share */
+function shareWebinar() {
+  var data = {
+    title: 'Acing the Nigerian Corporate Interview in 2026',
+    text: 'I just registered for this free JobberRecruit career webinar — join me!',
+    url: window.location.href
+  };
+  if (navigator.share) {
+    navigator.share(data).catch(function() {});
+  } else {
+    if (navigator.clipboard) navigator.clipboard.writeText(data.url);
+    showToast('Webinar link copied — share it with a friend.');
+  }
+}
+
+/* calendar */
+function toastCal() {
+  showToast('Opening Google Calendar — reminder added.');
+}
+function downloadICS() {
+  var ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//JobberRecruit//Webinars//EN', 'BEGIN:VEVENT',
+    'UID:webinar-' + Date.now() + '@jobberrecruit.com', 'DTSTAMP:20260620T120000Z',
+    'DTSTART:20260625T090000Z', 'DTEND:20260625T103000Z',
+    'SUMMARY:Acing the Nigerian Corporate Interview in 2026',
+    'DESCRIPTION:Your JobberRecruit webinar. Join link is in your email.',
+    'LOCATION:Zoom', 'BEGIN:VALARM', 'TRIGGER:-PT1H', 'ACTION:DISPLAY',
+    'DESCRIPTION:Webinar starts in 1 hour', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'
+  ].join('\r\n');
+  var blob = new Blob([ics], { type: 'text/calendar' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'jobberrecruit-webinar.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Calendar file downloaded.');
+}
+
+/* reminder toggles */
+document.querySelectorAll('.switch input').forEach(function(c) {
+  c.addEventListener('change', function() {
+    showToast(c.checked ? 'Reminder turned on.' : 'Reminder turned off.');
+  });
+});
+</script>
 <?= $this->endSection() ?>
 

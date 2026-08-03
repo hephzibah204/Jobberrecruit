@@ -40,6 +40,7 @@ class Filters extends BaseFilters
         'guest'         => GuestFilter::class,
         'adminAuth' => \App\Filters\AdminFilter::class,
         'featureGate'   => \App\Filters\FeatureGateFilter::class,
+        'throttle'      => \App\Filters\ThrottleFilter::class,
     ];
 
     /**

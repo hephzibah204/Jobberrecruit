@@ -131,8 +131,14 @@ class MessageController extends BaseController
                 ->get()
                 ->getRow();
 
-            if (!$hasUnlocked) {
-                return $this->fail('You must unlock this candidate\'s contact details first');
+            $hasApplied = $db->table('job_applications')
+                ->join('jobs', 'jobs.id = job_applications.job_id')
+                ->where('jobs.employer_id', $employer->id)
+                ->where('job_applications.job_seeker_id', $recipientId)
+                ->countAllResults() > 0;
+
+            if (!$hasUnlocked && !$hasApplied) {
+                return $this->fail('You can only message candidates who applied to your jobs or whose profile you unlocked', 403);
             }
 
             $seekerId = $recipientId;
@@ -148,10 +154,14 @@ class MessageController extends BaseController
             $employerId = $recipientId;
         }
 
-        $conversation = $this->conversationModel
-            ->where('employer_id', $employerId)
-            ->where('job_seeker_id', $seekerId)
-            ->first();
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            $conversation = $this->conversationModel
+                ->where('employer_id', $employerId)
+                ->where('job_seeker_id', $seekerId)
+                ->first();
 
         if (!$conversation) {
             $conversationId = $this->conversationModel->insert([
@@ -170,14 +180,32 @@ class MessageController extends BaseController
             ]);
         }
 
-        $senderType = $user->user_type === 'employer' ? 'employer' : 'job_seeker';
-        $messageId = $this->messageModel->insert([
-            'conversation_id' => $conversationId,
-            'sender_id' => $user->id,
-            'sender_type' => $senderType,
-            'message' => $message,
-            'is_read' => 0,
-        ]);
+            if (!$conversationId) {
+                throw new \RuntimeException('Unable to create the conversation');
+            }
+
+            $senderType = $user->user_type === 'employer' ? 'employer' : 'job_seeker';
+            $messageId = $this->messageModel->insert([
+                'conversation_id' => $conversationId,
+                'sender_id' => $user->id,
+                'sender_type' => $senderType,
+                'message' => $message,
+                'is_read' => 0,
+            ]);
+
+            if (!$messageId) {
+                throw new \RuntimeException('Unable to save the message');
+            }
+
+            $db->transComplete();
+            if (!$db->transStatus()) {
+                throw new \RuntimeException('The message transaction failed');
+            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Message send failed: ' . $e->getMessage());
+            return $this->fail('Your message could not be sent. Your text has been kept; please try again.', 500);
+        }
 
         return $this->respond([
             'success' => true,

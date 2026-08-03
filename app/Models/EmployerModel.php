@@ -33,6 +33,18 @@ class EmployerModel extends Model
         'verified_at',
         'verified_by',
         'rejection_reason',
+        'tagline',
+        'company_type',
+        'founded_year',
+        'remote_policy',
+        'whatsapp',
+        'benefits',
+        'hiring_process',
+        'rc_number',
+        'linkedin',
+        'twitter',
+        'facebook',
+        'instagram',
     ];
 
     protected $useTimestamps = true;

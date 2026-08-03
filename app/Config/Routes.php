@@ -84,18 +84,18 @@ $routes->get('job-alerts', 'JobSeekerController::notifications', ['filter' => 'a
 // Login
 $routes->addRedirect('signin', 'login', 301);
 $routes->get('login', 'AuthController::login');
-$routes->post('login', 'AuthController::login');
+$routes->post('login', 'AuthController::login', ['filter' => 'throttle:10,60']);
 
 // Registration
 $routes->get('register', 'AuthController::register');
-$routes->post('register', 'AuthController::register');
+$routes->post('register', 'AuthController::register', ['filter' => 'throttle:5,60']);
 
 // Forgot & Reset Password
 $routes->get('forgot-password', 'AuthController::forgotPassword');
-$routes->post('forgot-password/send', 'AuthController::forgotPassword');
+$routes->post('forgot-password/send', 'AuthController::forgotPassword', ['filter' => 'throttle:5,60']);
 
 $routes->get('auth/reset-password/(:segment)', 'AuthController::resetPassword/$1');
-$routes->post('auth/reset-password/(:segment)', 'AuthController::resetPassword/$1');
+$routes->post('auth/reset-password/(:segment)', 'AuthController::resetPassword/$1', ['filter' => 'throttle:5,60']);
 
 // -----------------------------------------------------------
 // SOCIAL LOGINS
@@ -142,7 +142,6 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('no-access', 'EmployerController::no_access');
     // Jobs
     $routes->get('jobs', 'EmployerController::myJobs');
-    // $routes->get('jobs/view/(:num)', 'EmployerController::job_detail/$1');
     $routes->post('jobs/delete/(:num)', 'EmployerController::deleteJob/$1');
     $routes->get('jobs/edit/(:num)', 'EmployerController::editJob/$1');
     $routes->post('jobs/update', 'EmployerController::updateJob');
@@ -164,7 +163,6 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     // Applications
     $routes->get('applications', 'EmployerController::applications');
     $routes->get('applications/view/(:num)', 'EmployerController::viewApplication/$1');
-    $routes->post('applications/update-status-2', 'EmployerController::updateApplicationStatus2');
     $routes->post('applications/delete/(:num)', 'EmployerController::deleteApplication/$1');
     $routes->get('applications/export', 'EmployerController::exportApplications');
     $routes->post('applications/bulk-update-status', 'EmployerController::bulkUpdateApplicationStatus');
@@ -227,7 +225,6 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     // Candidate Search (Paid Feature)
     $routes->get('candidates', 'EmployerController::candidates');
-    $routes->get('candidates/filter', 'EmployerController::filterCandidates');
     $routes->get('candidates/view/(:num)', 'EmployerController::viewCandidate/$1');
     $routes->post('candidates/unlock', 'EmployerController::unlockCandidate');
     $routes->post('candidates/unlock-verify', 'EmployerController::verifyUnlockAjax');
@@ -264,6 +261,9 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('saved-jobs', 'JobSeekerController::savedJobs');
     $routes->post('alerts/save', 'JobSeekerController::saveAlert');
     $routes->post('alerts/delete/(:num)', 'JobSeekerController::deleteAlert/$1');
+    $routes->post('alerts/pause/(:num)', 'JobSeekerController::pauseAlert/$1');
+    $routes->post('alerts/resume/(:num)', 'JobSeekerController::resumeAlert/$1');
+    $routes->post('alerts/snooze/(:num)', 'JobSeekerController::snoozeAlert/$1');
 
     // Profile
     $routes->get('profile', 'JobSeekerController::profile');
@@ -276,7 +276,6 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->post('settings/security/change-password', 'JobSeekerController::changePassword');
     $routes->post('settings/notifications', 'JobSeekerController::saveNotificationPreferences');
     $routes->post('settings/delete-account', 'JobSeekerController::deleteAccount');
-    // $routes->post('profile/update/(:num)', 'JobSeekerController::update_profile/$1');
 
     // Resume Builder
     $routes->get('resumes', 'ResumeController::index');
@@ -322,8 +321,11 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
         $routes->get('salary-negotiation', 'CareerToolsController::salaryNegotiation');
         $routes->get('career-advice', 'CareerToolsController::careerAdvice');
         $routes->post('send-message', 'CareerToolsController::sendMessage');
+        $routes->post('speak', 'CareerToolsController::speak');
         $routes->post('evaluate-interview', 'CareerToolsController::evaluateInterview');
+        $routes->post('save-negotiation-session', 'CareerToolsController::saveNegotiationSession');
     });
+    $routes->post('coach/generate', 'CareerToolsController::generateAdvice');
 
     // My Courses & Certificates
     $routes->get('my-courses', 'ElearningController::myCourses');

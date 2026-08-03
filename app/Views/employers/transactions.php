@@ -11,7 +11,9 @@ if (!empty($transactions)) {
     foreach ($transactions as $txn) {
         $status = strtolower($txn['status'] ?? '');
         if (in_array($status, ['success', 'hired', 'open', 'active', 'completed', 'approved'])) {
-            $totalSpent += ($txn['amount'] ?? 0);
+            if (($txn['type'] ?? '') === 'debit') {
+                $totalSpent += ($txn['amount'] ?? 0);
+            }
             $successfulTxns++;
         }
     }
@@ -31,6 +33,13 @@ if (!empty($transactions)) {
 </div>
 
 <section class="stats stats--txn" aria-label="Transaction statistics">
+  <div class="stat" style="--st-bar:var(--brand);--st-icbg:var(--brand-light);--st-ic:var(--brand)">
+    <div class="stat-top">
+      <span class="stat-ic"><svg aria-hidden="true"><use href="#i-wallet"/></svg></span>
+    </div>
+    <div class="stat-num">&#8358;<?= esc(number_format((float) ($wallet->balance ?? 0), 2)) ?></div>
+    <div class="stat-lbl">Available Wallet Balance</div>
+  </div>
   <div class="stat" style="--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)">
     <div class="stat-top">
       <span class="stat-ic"><svg aria-hidden="true"><use href="#i-wallet"/></svg></span>
@@ -112,7 +121,7 @@ if (!empty($transactions)) {
               <td><b><?= esc($txn['reference'] ?? '-') ?></b></td>
               <td><?= esc($txn['description'] ?? '-') ?></td>
               <td><?= esc(!empty($txn['created_at']) ? date('M d, Y', strtotime($txn['created_at'])) : '-') ?></td>
-              <td>&#8358;<?= esc(number_format($txn['amount'] ?? 0, 2)) ?></td>
+              <td><?= ($txn['type'] ?? '') === 'credit' ? '+' : '-' ?>&#8358;<?= esc(number_format($txn['amount'] ?? 0, 2)) ?></td>
               <td>
                 <span class="pill <?= $statusClass ?>"><?= esc(ucfirst($txn['status'] ?? 'pending')) ?></span>
               </td>

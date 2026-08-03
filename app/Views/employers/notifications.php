@@ -24,9 +24,10 @@
     <div class="card-head">
         <span class="card-title">
             <svg aria-hidden="true"><use href="#i-bell"/></svg> 
-            Your Alerts 
+            Your Alerts
+            <?php $activeAlertCount = count(array_filter($alerts, fn($a) => !empty($a->active ?? $a['active'] ?? true))); ?>
             <span class="pill pill--reviewed">
-                <?= count($alerts) ?> <?= count($alerts) === 1 ? 'alert' : 'alerts' ?>
+                <?= $activeAlertCount ?> active
             </span>
         </span>
     </div>
@@ -174,6 +175,17 @@
                         <option value="1">1+ years</option>
                         <option value="3">3+ years</option>
                         <option value="5">5+ years</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="lbl" for="na-edu">Education level</label>
+                    <select class="select" id="na-edu" name="education">
+                        <option value="">Any</option>
+                        <option value="OND">OND</option>
+                        <option value="HND">HND</option>
+                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                        <option value="Master's Degree">Master's Degree</option>
+                        <option value="PhD">PhD</option>
                     </select>
                 </div>
             </div>

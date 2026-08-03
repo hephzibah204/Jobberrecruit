@@ -235,12 +235,12 @@ switch ($job->application_method ?? 'form') {
         break;
     case 'form':
     default:
-        $url = '#ModalApplyJobForm';
+        $url = base_url("job/application/{$job->id}");
         $label = $defaultLabel;
         $icon  = $defaultIcon;
         $btnBg = 'var(--brand)';
         $target = '';
-        $isInlineForm = true;
+        $isInlineForm = false;
         break;
 }
 $targetAttr = $target ? "target='_blank' rel='noopener'" : '';
@@ -1694,9 +1694,9 @@ main, .section, .jobs-layout, .container,
             ?>
             <?php if (auth()->loggedIn() || !$requiresAuth): ?>
               <?php if (($job->application_method ?? 'form') === 'form'): ?>
-                  <button class="btn btn-primary btn-lg apply-external" style="width:100%;justify-content:center" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">
-                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Quick apply
-                </button>
+                  <a href="<?= base_url("job/application/{$job->id}") ?>" class="btn btn-primary btn-lg apply-external" style="width:100%;justify-content:center">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Apply Now
+                </a>
               <?php else: ?>
                 <a href="<?= $url ?>" class="btn btn-primary btn-lg apply-external" <?= $targetAttr ?> style="width:100%;justify-content:center">
                   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> <?= $label ?>

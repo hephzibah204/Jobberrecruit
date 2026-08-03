@@ -442,3 +442,55 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
     justify-content: flex-start !important;
   }
 }
+
+/* ==========================================================================
+   Global Mobile Optimization & Viewport Defenses (< 768px)
+   ========================================================================== */
+@media (max-width: 767.98px) {
+  /* Prevent horizontal scrolling & content overflow */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+  }
+
+  .content, .emp-main, .main-wrapper {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: calc(72px + var(--safe-bottom, 0px)) !important;
+  }
+
+  /* Table responsiveness wrapper */
+  .table-responsive, div.dataTables_wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 1rem;
+    width: 100% !important;
+  }
+
+  /* Ensure input fields don't trigger iOS Safari page zoom */
+  input[type="text"], input[type="password"], input[type="email"],
+  input[type="number"], input[type="search"], input[type="tel"],
+  input[type="url"], select, textarea, .form-control, .form-select {
+    font-size: 16px !important;
+  }
+
+  /* Modal Dialogs optimization */
+  .modal-dialog {
+    margin: 10px !important;
+    max-width: calc(100% - 20px) !important;
+  }
+  .modal-content {
+    border-radius: 16px !important;
+    padding: 6px !important;
+  }
+
+  /* Standardize mobile grid stacking for 2-column or 3-column rows */
+  .row > [class*="col-"] {
+    margin-bottom: 12px;
+  }
+
+  /* Card and Stat-box wrapping */
+  .stats-grid, .stats-row, .grid-2, .grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
