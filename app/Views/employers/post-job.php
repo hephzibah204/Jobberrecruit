@@ -1,7 +1,15 @@
 <?php $page_title = 'Post a Job'; ?>
 <?= $this->extend('layouts/employer') ?>
 
-
+<?= $this->section('styles') ?>
+<style>
+.ai-action { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ai-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1.5px solid var(--accent, #ED9020); border-radius: 8px; background: rgba(237, 144, 32, 0.1); color: var(--brand-deep, #0A2F57); font-size: .8rem; font-weight: 700; cursor: pointer; transition: all .15s ease; white-space: nowrap; }
+.ai-btn:hover { background: #ED9020; color: #ffffff; }
+.ai-btn svg { width: 16px; height: 16px; fill: #f59e0b; stroke: #d97706; stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; flex-shrink: 0; transition: all .15s ease; }
+.ai-btn:hover svg { fill: #ffffff; stroke: #ffffff; }
+</style>
+<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php
@@ -274,8 +282,8 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             <label for="job-desc" style="font-size:.82rem;font-weight:600;color:var(--text)">Job description <span class="required-star">*</span></label>
             <p style="font-size:.78rem;color:var(--muted);margin-top:2px">Be specific — include responsibilities, what success looks like, and who you are looking for. Candidates compare listings side by side.</p>
           </div>
-          <button type="button" class="ai-btn" title="AI writes a draft based on your job title, industry and requirements">
-            <svg aria-hidden="true"><use href="#i-zap"/></svg> AI generate
+          <button type="button" class="ai-btn" id="btn-ai-generate" onclick="generateAiDescription()" title="AI writes a draft based on your job title, industry and requirements">
+            <svg aria-hidden="true"><use href="#i-zap"/></svg> <span id="ai-btn-text">AI generate</span>
           </button>
         </div>
         <div class="form-field">
@@ -646,6 +654,10 @@ $hasBenefit = function($value) use ($job, $isEdit) {
     </details>
 
     <!-- ══ 8. LISTING BOOST ══ -->
+    <?php
+      $hasPlanAccess = (is_site_free_mode() || !empty($hasUnlimitedAccess) || !empty($willBeFeatured) || (!empty($currentPlan) && !empty($currentPlan->id) && ($currentPlan->slug ?? '') !== 'free'));
+      $hasPlanDataVal = $hasPlanAccess ? '1' : '0';
+    ?>
     <details class="job-card" open style="margin-bottom:20px" aria-labelledby="h-boost">
       <summary class="job-card-header">
         <h2 class="job-card-title" id="h-boost"><svg aria-hidden="true"><use href="#i-trending-up"/></svg> Listing Boost <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span></h2>
@@ -659,12 +671,12 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             <div class="boost-body">
               <div class="boost-body-hd">
                 <strong>Urgently Hiring</strong>
-                <span class="boost-tag plan">Plan required</span>
+                <span class="boost-tag plan <?= $hasPlanAccess ? 'bg-success-subtle text-success' : '' ?>"><?= $hasPlanAccess ? 'Included with Plan' : 'Plan required' ?></span>
               </div>
               <p class="boost-body-desc">Adds an urgent badge to your listing and pins it above standard results — significantly increases click-through rate</p>
             </div>
             <label class="toggle" title="Mark as urgently hiring">
-              <input type="checkbox" name="urgent_hiring" id="urgent-hiring" value="1" data-has-plan="0" onchange="handleUrgentToggle(this)" <?= $val('urgent_hiring') ? 'checked' : '' ?>>
+              <input type="checkbox" name="urgent_hiring" id="urgent-hiring" value="1" data-has-plan="<?= $hasPlanDataVal ?>" onchange="handleUrgentToggle(this)" <?= $val('urgent_hiring') ? 'checked' : '' ?>>
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -675,12 +687,12 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             <div class="boost-body">
               <div class="boost-body-hd">
                 <strong>Featured Listing</strong>
-                <span class="boost-tag plan">Plan required</span>
+                <span class="boost-tag plan <?= $hasPlanAccess ? 'bg-success-subtle text-success' : '' ?>"><?= $hasPlanAccess ? 'Included with Plan' : 'Plan required' ?></span>
               </div>
               <p class="boost-body-desc">Pins your job to the top of search results and the homepage featured section for <strong>30 days</strong></p>
             </div>
             <label class="toggle" title="Feature this listing">
-              <input type="checkbox" name="featured_listing" id="featured-listing" value="1" data-has-plan="0" onchange="handleFeaturedToggle(this)" <?= $val('featured_listing') ? 'checked' : '' ?>>
+              <input type="checkbox" name="featured_listing" id="featured-listing" value="1" data-has-plan="<?= $hasPlanDataVal ?>" onchange="handleFeaturedToggle(this)" <?= $val('featured_listing') ? 'checked' : '' ?>>
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -1007,6 +1019,74 @@ function removeMCOption(btn) {
   var rows = btn.closest('.mc-option-rows');
   if (!rows || rows.children.length <= 2) return;
   btn.closest('.mc-option-row').remove();
+}
+
+/* ── AI Job Description Generator ── */
+function generateAiDescription() {
+  var title = (document.getElementById('job-title') || {}).value || '';
+  if (!title.trim()) {
+    if (typeof toastr !== 'undefined') toastr.warning('Please enter a job title first so AI can generate a description.');
+    else alert('Please enter a job title first.');
+    var titleEl = document.getElementById('job-title');
+    if (titleEl) titleEl.focus();
+    return;
+  }
+  
+  var industryEl = document.getElementById('industry');
+  var industry = industryEl && industryEl.selectedIndex > 0 ? industryEl.options[industryEl.selectedIndex].text : '';
+  var expEl = document.getElementById('years-exp');
+  var experience = expEl && expEl.selectedIndex > 0 ? expEl.options[expEl.selectedIndex].text : '';
+  var skills = (document.getElementById('skills-hidden') || {}).value || '';
+
+  var btn = document.getElementById('btn-ai-generate');
+  var origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:12px;height:12px;display:inline-block;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.75s linear infinite;"></span> Generating...';
+  }
+
+  var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
+
+  $.ajax({
+    url: '<?= base_url('employer/jobs/ai-generate') ?>',
+    type: 'POST',
+    data: {
+      title: title,
+      industry: industry,
+      experience: experience,
+      skills: skills,
+      '<?= csrf_token() ?>': csrfToken || '<?= csrf_hash() ?>'
+    },
+    dataType: 'json',
+    success: function(res) {
+      if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+      if (res && res.status === 'success' && res.description) {
+        var descEl = document.getElementById('job-desc');
+        if (descEl) {
+          var textContent = res.description
+            .replace(/<br\s*[\/]?>/gi, "\n")
+            .replace(/<\/p>/gi, "\n\n")
+            .replace(/<li>/gi, "• ")
+            .replace(/<\/li>/gi, "\n")
+            .replace(/<[^>]+>/ig, '');
+          descEl.value = textContent.trim();
+          updateCount('job-desc', 'desc-count', 5000);
+        }
+        if (typeof toastr !== 'undefined') toastr.success('Job description generated successfully!');
+      } else {
+        var err = (res && res.error) ? res.error : 'Could not generate description. Please try again or type manually.';
+        if (typeof toastr !== 'undefined') toastr.error(err);
+        else alert(err);
+      }
+    },
+    error: function(xhr) {
+      if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+      var err = 'AI generation is temporarily unavailable. Please type your description manually.';
+      if (xhr.responseJSON && xhr.responseJSON.error) err = xhr.responseJSON.error;
+      if (typeof toastr !== 'undefined') toastr.error(err);
+      else alert(err);
+    }
+  });
 }
 
 /* ── Urgently Hiring — plan required ── */

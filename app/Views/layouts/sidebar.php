@@ -133,14 +133,14 @@ if (count($words) >= 2) {
                                     <i class="ti ti-building fs-16 me-2"></i><span>Company Profile</span>
                                 </a>
                             </li>
-                            <?php if (env('feature_messaging', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_messaging', true)): ?>
                             <li class="<?= isActive('employer/messages') ?>">
                                 <a href="<?= base_url('employer/messages') ?>">
                                     <i class="ti ti-message-dots fs-16 me-2"></i><span>Messages</span>
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_referrals', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_referrals', true)): ?>
                             <li class="<?= isActive('employer/referrals') ?>">
                                 <a href="<?= base_url('employer/referrals') ?>">
                                     <i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span>
@@ -201,18 +201,18 @@ if (count($words) >= 2) {
                     </li>
 
                     <!-- ===== AI COGNITIVE TOOLS ===== -->
-                    <?php if (env('feature_ai_resume', 'true') == 'true' || env('feature_ai_career_tools', 'true') == 'true'): ?>
+                    <?php if (get_site_setting('feature_ai_resume', true) || get_site_setting('feature_ai_career_tools', true)): ?>
                     <li class="submenu-open">
                         <h6 class="submenu-hdr">AI Cognitive Tools</h6>
                         <ul>
-                            <?php if (env('feature_ai_resume', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_ai_resume', true)): ?>
                             <li class="<?= isActiveStartsWith('candidate/resumes') ?>">
                                 <a href="<?= base_url('candidate/resumes') ?>">
                                     <i class="ti ti-file-spark fs-16 me-2"></i><span>AI Resume Builder</span>
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_ai_career_tools', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_ai_career_tools', true)): ?>
                             <li class="<?= isActiveStartsWith('candidate/career-tools') ?>">
                                 <a href="<?= base_url('candidate/career-tools') ?>">
                                     <i class="ti ti-sparkles fs-16 me-2"></i><span>AI Career Tools</span>
@@ -224,11 +224,11 @@ if (count($words) >= 2) {
                     <?php endif; ?>
 
                     <!-- ===== LEARNING & TRAINING ===== -->
-                    <?php if (env('feature_elearning', 'true') == 'true' || env('feature_webinars', 'true') == 'true'): ?>
+                    <?php if (get_site_setting('feature_elearning', true) || get_site_setting('feature_webinars', true)): ?>
                     <li class="submenu-open">
                         <h6 class="submenu-hdr">Learning & Training</h6>
                         <ul>
-                            <?php if (env('feature_elearning', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_elearning', true)): ?>
                             <li class="<?= isActiveStartsWith('training') && !isActiveStartsWith('training/certificates') ? 'active' : '' ?>">
                                 <a href="<?= base_url('training') ?>">
                                     <i class="ti ti-book fs-16 me-2"></i><span>Training Catalog</span>
@@ -245,7 +245,7 @@ if (count($words) >= 2) {
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_webinars', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_webinars', true)): ?>
                             <li class="<?= isActiveStartsWith('webinars') ?>">
                                 <a href="<?= base_url('webinars') ?>">
                                     <i class="ti ti-video fs-16 me-2"></i><span>Career Webinars</span>
@@ -270,14 +270,14 @@ if (count($words) >= 2) {
                                     <i class="ti ti-receipt fs-16 me-2"></i><span>Transactions</span>
                                 </a>
                             </li>
-                            <?php if (env('feature_messaging', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_messaging', true)): ?>
                             <li class="<?= isActive('candidate/messages') ?>">
                                 <a href="<?= base_url('candidate/messages') ?>">
                                     <i class="ti ti-message-circle fs-16 me-2"></i><span>Messages</span>
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_referrals', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_referrals', true)): ?>
                             <li class="<?= isActive('candidate/referrals') ?>">
                                 <a href="<?= base_url('candidate/referrals') ?>">
                                     <i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span>

@@ -97,7 +97,13 @@
         <ul class="nav nav-tabs nav-tabs-header mb-4" role="tablist">
             <li class="nav-item">
                 <a class="nav-link active" data-bs-toggle="tab" href="#newsletters-tab" role="tab">
-                    <i class="ti ti-mail me-1"></i> Newsletters
+                    <i class="ti ti-mail me-1"></i> Newsletters &amp; Campaigns
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="<?= base_url('admin/email-templates') ?>">
+                    <i class="ti ti-mail-cog me-1"></i> Outgoing Email Templates
+                    <span class="badge bg-primary ms-1">Editable</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -129,9 +135,10 @@
                             <table class="table text-nowrap table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Title</th>
+                                        <th>Campaign / Title</th>
                                         <th>Subject</th>
-                                        <th>Target Group</th>
+                                        <th>Sender / Admin</th>
+                                        <th>Target Audience</th>
                                         <th>Status</th>
                                         <th>Sent At</th>
                                         <th>Actions</th>
@@ -140,7 +147,7 @@
                                 <tbody>
                                     <?php if (empty($newsletters)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
+                                            <td colspan="7" class="text-center text-muted py-4">
                                                 <i class="ti ti-mail-off fs-24 d-block mb-2"></i>
                                                 No newsletters yet. <a href="<?= base_url('admin/newsletters/create') ?>">Create your first one</a>.
                                             </td>
@@ -148,25 +155,51 @@
                                     <?php else: ?>
                                         <?php foreach ($newsletters as $newsletter): ?>
                                             <tr>
-                                                <td class="fw-semibold"><?= esc($newsletter->title) ?></td>
+                                                <td class="fw-semibold">
+                                                    <?= esc($newsletter->title) ?>
+                                                    <?php if (!empty($newsletter->content)): ?>
+                                                        <a href="javascript:void(0)" onclick="previewNewsletter(<?= $newsletter->id ?>)" class="ms-1 fs-12 text-primary" title="View content">
+                                                            <i class="ti ti-eye"></i> View Content
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td><?= esc($newsletter->subject ?? '—') ?></td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="ti ti-user me-1"></i><?= esc($newsletter->created_by ?? 'Admin') ?>
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     <?php
                                                     $tg = $newsletter->target_group ?? 'all';
-                                                    $tgLabels = ['all' => 'Everyone', 'employers' => 'Employers', 'candidates' => 'Candidates'];
-                                                    echo esc($tgLabels[$tg] ?? ucfirst($tg));
+                                                    $tgLabels = [
+                                                        'all'                    => '<span class="badge bg-primary-transparent">All Users &amp; Subscribers</span>',
+                                                        'candidates'             => '<span class="badge bg-info-transparent">Registered Candidates</span>',
+                                                        'employers'              => '<span class="badge bg-warning-transparent">Registered Employers</span>',
+                                                        'guest_subscribers'      => '<span class="badge bg-secondary-transparent">Guest Subscribers</span>',
+                                                        'registered_subscribers' => '<span class="badge bg-dark-transparent">Registered Subscribers</span>',
+                                                        'new_candidates'         => '<span class="badge bg-info-transparent">🆕 New Candidates</span>',
+                                                        'new_employers'          => '<span class="badge bg-warning-transparent">🆕 New Employers</span>',
+                                                        'subscribers'            => '<span class="badge bg-secondary-transparent">All Subscribers</span>',
+                                                        'webinar_registered'     => '<span class="badge bg-success-transparent">🎓 Webinar Registrants</span>',
+                                                        'training_registered'    => '<span class="badge bg-purple-transparent">📚 Training Registrants</span>',
+                                                    ];
+                                                    echo $tgLabels[$tg] ?? '<span class="badge bg-light text-dark">' . esc(ucfirst($tg)) . '</span>';
                                                     ?>
                                                 </td>
                                                 <td>
                                                     <?php if ($newsletter->status === 'sent'): ?>
-                                                        <span class="badge bg-success-transparent">Sent</span>
+                                                        <span class="badge bg-success-transparent text-success"><i class="ti ti-check me-1"></i>Sent</span>
                                                     <?php else: ?>
-                                                        <span class="badge bg-warning-transparent">Draft</span>
+                                                        <span class="badge bg-warning-transparent text-warning"><i class="ti ti-clock me-1"></i>Draft</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?= $newsletter->sent_at ?? '—' ?></td>
+                                                <td><?= $newsletter->sent_at ? date('M d, Y H:i', strtotime($newsletter->sent_at)) : '—' ?></td>
                                                 <td>
                                                     <div class="d-flex gap-1 flex-wrap">
+                                                        <button type="button" class="btn btn-sm btn-primary-light" onclick="previewNewsletter(<?= $newsletter->id ?>)" title="Preview Content">
+                                                            <i class="ti ti-eye"></i> View
+                                                        </button>
                                                         <?php if ($newsletter->status !== 'sent'): ?>
                                                             <a href="<?= base_url('admin/newsletters/edit/' . $newsletter->id) ?>" class="btn btn-sm btn-info-light" title="Edit">
                                                                 <i class="ti ti-edit"></i>
@@ -174,13 +207,11 @@
                                                             <form action="<?= base_url('admin/newsletters/send/' . $newsletter->id) ?>" method="POST" class="d-inline">
                                                                 <?= csrf_field() ?>
                                                                 <button type="submit" class="btn btn-sm btn-success-light"
-                                                                    onclick="return confirm('Send this newsletter to all <?= $subscribers ?> active subscribers?')"
+                                                                    onclick="return confirm('Send this newsletter now to target audience?')"
                                                                     title="Send Now">
                                                                     <i class="ti ti-send"></i>
                                                                 </button>
                                                             </form>
-                                                        <?php else: ?>
-                                                            <span class="text-muted small">Sent <?= $newsletter->sent_at ? date('d M Y', strtotime($newsletter->sent_at)) : '' ?></span>
                                                         <?php endif; ?>
                                                         <!-- Delete always available -->
                                                         <form action="<?= base_url('admin/newsletters/delete/' . $newsletter->id) ?>" method="POST" class="d-inline">
@@ -337,16 +368,16 @@
 
 <!-- ── Add/Edit Webinar Modal ─────────────────────────────────────────────── -->
 <div class="modal fade" id="addWebinar" tabindex="-1">
-    <div class="modal-dialog">
-        <form action="<?= base_url('admin/webinars/save') ?>" method="POST" enctype="multipart/form-data">
-            <?= csrf_field() ?>
-            <input type="hidden" name="id" id="webinar_id">
-            <div class="modal-content">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <form action="<?= base_url('admin/webinars/save') ?>" method="POST" enctype="multipart/form-data" class="d-flex flex-column h-100 mb-0">
+                <?= csrf_field() ?>
+                <input type="hidden" name="id" id="webinar_id">
                 <div class="modal-header">
                     <h6 class="modal-title" id="webinarModalTitle">Add Webinar</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="overflow-y: auto;">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
                         <input type="text" name="title" id="w_title" class="form-control" required>
@@ -395,12 +426,47 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Webinar</button>
                 </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Newsletter Preview Modal -->
+<div class="modal fade" id="previewNewsletterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold" id="previewModalTitle">Newsletter Preview</h5>
+                    <div class="fs-12 text-muted" id="previewModalSubtitle"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-        </form>
+            <div class="modal-body p-4">
+                <div class="card border mb-3 bg-light-subtle">
+                    <div class="card-body py-2 px-3 fs-13">
+                        <div class="row g-2">
+                            <div class="col-md-6"><strong>Subject:</strong> <span id="previewModalSubject">—</span></div>
+                            <div class="col-md-6"><strong>Audience:</strong> <span id="previewModalAudience" class="badge bg-primary-transparent">—</span></div>
+                            <div class="col-md-6"><strong>Sender / Admin:</strong> <span id="previewModalSender">—</span></div>
+                            <div class="col-md-6"><strong>Sent At:</strong> <span id="previewModalDate">—</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border rounded p-3 bg-white" style="min-height: 250px;">
+                    <div id="previewModalContent">
+                        <div class="text-center py-4 text-muted"><i class="ti ti-loader animate-spin fs-24"></i> Loading content...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -428,6 +494,34 @@ function editWebinar(webinar) {
     document.getElementById('w_status').value = webinar.status || 'upcoming';
     document.getElementById('webinarModalTitle').innerText = 'Edit Webinar';
     new bootstrap.Modal(document.getElementById('addWebinar')).show();
+}
+
+function previewNewsletter(id) {
+    const modalEl = document.getElementById('previewNewsletterModal');
+    const bsModal = new bootstrap.Modal(modalEl);
+    document.getElementById('previewModalContent').innerHTML = '<div class="text-center py-4 text-muted"><i class="ti ti-loader animate-spin fs-24 d-block mb-2"></i> Loading newsletter content...</div>';
+    bsModal.show();
+
+    fetch('<?= base_url("admin/newsletters/preview-content") ?>/' + id, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.newsletter) {
+            const nl = data.newsletter;
+            document.getElementById('previewModalTitle').innerText = nl.title || 'Newsletter';
+            document.getElementById('previewModalSubject').innerText = nl.subject || '—';
+            document.getElementById('previewModalAudience').innerText = nl.target_group ? nl.target_group.toUpperCase() : 'ALL';
+            document.getElementById('previewModalSender').innerText = nl.created_by || 'Admin';
+            document.getElementById('previewModalDate').innerText = nl.sent_at || 'Draft (Not sent yet)';
+            document.getElementById('previewModalContent').innerHTML = nl.content || '<div class="text-muted text-center">No content available</div>';
+        } else {
+            document.getElementById('previewModalContent').innerHTML = '<div class="alert alert-danger">Failed to load content.</div>';
+        }
+    })
+    .catch(err => {
+        document.getElementById('previewModalContent').innerHTML = '<div class="alert alert-danger">Error fetching content.</div>';
+    });
 }
 </script>
 

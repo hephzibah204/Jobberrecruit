@@ -26,11 +26,11 @@ function openIf(array $paths)
 <aside class="app-sidebar sticky" id="sidebar">
 
     <div class="main-sidebar-header">
-        <a href="<?= base_url('admin/dashboard') ?>" class="header-logo">
-            <img src="<?= base_url('assets/imgs/template/logo.png'); ?>" class="desktop-logo">
-            <img src="<?= base_url('images/favicon.png'); ?>" class="toggle-dark">
-            <img src="<?= base_url('images/favicon.png'); ?>" class="desktop-dark">
-            <img src="<?= base_url('images/favicon.png'); ?>" class="toggle-logo">
+        <a href="<?= base_url('admin/dashboard') ?>" class="header-logo" aria-label="JobberRecruit Admin Dashboard">
+            <img src="<?= base_url('images/logo.png'); ?>" alt="logo" class="desktop-logo" style="max-height:36px;width:auto;">
+            <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="toggle-dark">
+            <img src="<?= base_url('images/logo.png'); ?>" alt="logo" class="desktop-dark" style="max-height:36px;width:auto;">
+            <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="toggle-logo">
         </a>
     </div>
 
@@ -70,11 +70,11 @@ function openIf(array $paths)
                     ['Blog',                'admin/blogs',                  'ti-news',              'prefix'],
                     ['Testimonials',        'admin/testimonials',           'ti-message-star',      'exact'],
                     ['Newsletters',         'admin/newsletters',            'ti-mail',              'prefix'],
+                    ['Email Templates',     'admin/email-templates',        'ti-mail-cog',          'prefix'],
                     ['Chatbot',             'admin/chatbot',                'ti-message-chatbot',   'exact'],
                 ],
                 'Finance' => [
-                    ['Plans',               'admin/plans',                  'ti-crown',             'prefix'],
-                    ['Bundles',             'admin/bundles',                'ti-packages',          'exact'],
+                    ['Plans & Bundles',    'admin/plans',                  'ti-crown',             'prefix'],
                     ['Affiliates',          'admin/affiliate/settings',     'ti-share',             'exact'],
                 ],
                 'System' => [
@@ -103,39 +103,7 @@ function openIf(array $paths)
             </ul>
 
             <ul class="doublemenu_bottom-menu main-menu mb-0 border-top">
-                <!-- Start::slide -->
-                <li class="slide">
-                    <a href="javascript:void(0);" class="side-menu__item layout-setting-doublemenu">
-                        <span class="light-layout">
-                            <!-- Start::header-link-icon -->
-                            <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                                <rect width="256" height="256" fill="none" />
-                                <path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" opacity="0.2" />
-                                <path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            </svg>
-                            <!-- End::header-link-icon -->
-                        </span>
-                        <span class="dark-layout">
-                            <!-- Start::header-link-icon -->
-                            <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
-                                <rect width="256" height="256" fill="none" />
-                                <circle cx="128" cy="128" r="56" opacity="0.2" />
-                                <line x1="128" y1="40" x2="128" y2="32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <circle cx="128" cy="128" r="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="64" y1="64" x2="56" y2="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="64" y1="192" x2="56" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="192" y1="64" x2="200" y2="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="192" y1="192" x2="200" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="40" y1="128" x2="32" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="128" y1="216" x2="128" y2="224" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                                <line x1="216" y1="128" x2="224" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            </svg>
-                            <!-- End::header-link-icon -->
-                        </span>
-                        <span class="side-menu__label">Theme Settings</span>
-                    </a>
-                </li>
-                <!-- End::slide -->
+
                 <!-- Start::slide -->
                 <li class="slide">
                     <a href="<?= base_url('admin/profile') ?>" class="side-menu__item p-1 rounded-circle mb-0">

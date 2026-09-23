@@ -19,7 +19,7 @@
                 <div class="box-border-single">
                     <div class="row mt-10">
                         <div class="col-lg-8 col-md-12">
-                            <h3><?= esc($job->title) ?> - <?= esc($job->job_type) ?></h3>
+                            <h1 class="h3 text-dark fw-bold mb-2"><?= esc($job->title) ?> - <?= esc($job->job_type) ?></h1>
                             <div class="mt-0 mb-15">
                                 <span class="card-briefcase"><?= esc(ucfirst($job->job_type)) ?></span>
                                 <span class="card-time"><?= humanize_time($job->created_at) ?></span>
@@ -36,20 +36,20 @@
                     </div>
                     <div class="border-bottom pt-10 pb-10"></div>
                     <div class="banner-hero banner-image-single mt-10 mb-20">
-                        <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>" alt="JobberRecruit">
+                        <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>" alt="<?= esc($job->employer_name ?? 'Company') ?> logo">
                     </div>
                     <div class="job-overview">
                         <h5 class="border-bottom pb-15 mb-30">Overview</h5>
                         <div class="row">
                             <div class="col-md-6 d-flex">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/industry.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/industry.svg'); ?>" alt="Industry icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description industry-icon mb-10">Industry</span>
                                     <strong class="small-heading"><?= esc($job->industry_name) ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-level.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-level.svg'); ?>" alt="Job level icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description joblevel-icon mb-10">Job level</span>
                                     <strong class="small-heading"><?= esc(ucfirst($job->experience_level)) ?> Level</strong>
@@ -58,14 +58,14 @@
                         </div>
                         <div class="row mt-25">
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/salary.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/salary.svg'); ?>" alt="Salary icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description salary-icon mb-10">Salary</span>
                                     <strong class="small-heading"><?= esc($job->salary) ?: 'Negotiable' ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/experience.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/experience.svg'); ?>" alt="Experience icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description experience-icon mb-10">Experience</span>
                                     <strong class="small-heading"><?= esc($job->experience) ?? '3+' ?> years</strong>
@@ -74,14 +74,14 @@
                         </div>
                         <div class="row mt-25">
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-type.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-type.svg'); ?>" alt="Job type icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description jobtype-icon mb-10">Job type</span>
                                     <strong class="small-heading"><?= esc(ucfirst($job->job_type)) ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/deadline.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/deadline.svg'); ?>" alt="Deadline icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description mb-10">Deadline</span>
                                     <strong class="small-heading"><?= date('d/m/Y', strtotime($job->deadline ?? 'now')) ?></strong>
@@ -90,14 +90,14 @@
                         </div>
                         <div class="row mt-25">
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/updated.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/updated.svg'); ?>" alt="Updated icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description jobtype-icon mb-10">Updated</span>
                                     <strong class="small-heading"><?= date('d/m/Y', strtotime($job->updated_at ?? 'now')) ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/location.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/location.svg'); ?>" alt="Location icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description mb-10">Location</span>
                                     <strong class="small-heading"><?= esc($job->location) ?> <?= $job->work_arrangement ? ' (' . ucfirst($job->work_arrangement) . ')' : '' ?></strong>

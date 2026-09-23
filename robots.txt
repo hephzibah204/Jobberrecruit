@@ -17,7 +17,7 @@ Allow: /auth/img/
 Disallow: /candidate/
 Disallow: /employer/dashboard
 Disallow: /employer/settings
-Disallow: /candidate/dashboard
-Disallow: /candidate/settings
+Allow: /llms.txt
+Allow: /llms-full.txt
 
 Sitemap: https://jobberrecruit.com/sitemap.xml

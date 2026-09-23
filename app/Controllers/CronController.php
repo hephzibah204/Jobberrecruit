@@ -74,6 +74,8 @@ class CronController extends BaseController
             'jobs_processed' => $processed,
             'jobs_failed' => $failed
         ]);
+    }
+
     public function processEmailQueue()
     {
         $token = $this->request->getGet('token');
@@ -196,6 +198,211 @@ class CronController extends BaseController
         ]);
     }
 
+    /**
+     * Unified Cron Endpoint to run all automated email reminders and queue jobs in one call.
+     * Trigger via URL e.g.: /cron/run-all-automations?token=jobber_cron_secret_123
+     */
+    public function runAllAutomations()
+    {
+        @set_time_limit(120);
+        @ignore_user_abort(true);
+
+        $token = $this->request->getGet('token');
+        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
+
+        if ($token !== $expectedToken) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        }
+
+        $results = [];
+
+        // 1. Process Pending Queue Items (Newsletters, etc. - 15 items per batch)
+        try {
+            $queueModel = new JobQueueModel();
+            $pendingJobs = $queueModel->where('status', 'pending')->findAll(15);
+            $processed = 0;
+            foreach ($pendingJobs as $job) {
+                $queueModel->update($job->id, ['status' => 'processing']);
+                $payload = json_decode($job->payload, true);
+                $type = $payload['type'] ?? 'newsletter_email';
+                $data = $payload['data'] ?? [];
+
+                $sent = false;
+                if (!empty($data['email'])) {
+                    $sent = $this->sendEmail($data['email'], $data['subject'] ?? 'Notification', $data['content'] ?? '');
+                }
+
+                if ($sent) {
+                    $queueModel->update($job->id, ['status' => 'completed']);
+                    $processed++;
+                } else {
+                    $queueModel->update($job->id, ['status' => 'failed']);
+                }
+            }
+            $results['queue_processed'] = $processed;
+        } catch (\Throwable $e) {
+            $results['queue_error'] = $e->getMessage();
+        }
+
+        // 2. Run Webinar Reminders (24h & 1h)
+        try {
+            $webinarModel = new \App\Models\WebinarModel();
+            $regModel     = new \App\Models\WebinarRegistrationModel();
+            $userModel    = new \App\Models\UserModel();
+            $emailNotif   = new \App\Services\EmailNotificationService();
+
+            $now = time();
+            $webinars = $webinarModel->where('status !=', 'cancelled')
+                ->where('scheduled_at >=', date('Y-m-d H:i:s', $now))
+                ->findAll();
+
+            $wSent = 0;
+            foreach ($webinars as $w) {
+                $wObj = (object) $w;
+                $diffHours = (strtotime($wObj->scheduled_at) - $now) / 3600;
+                if ($diffHours <= 25 && $diffHours >= 23) {
+                    $regs = $regModel->where('webinar_id', $wObj->id)->where('reminder_sent_24h', 0)->findAll();
+                    foreach ($regs as $r) {
+                        $user = $userModel->find($r['user_id']);
+                        if ($user) {
+                            $emailNotif->sendWebinarReminderNotification($user, $wObj, '24h');
+                            $regModel->update($r['id'], ['reminder_sent_24h' => 1]);
+                            $wSent++;
+                        }
+                    }
+                } elseif ($diffHours <= 1.5 && $diffHours >= 0.1) {
+                    $regs = $regModel->where('webinar_id', $wObj->id)->where('reminder_sent_1h', 0)->findAll();
+                    foreach ($regs as $r) {
+                        $user = $userModel->find($r['user_id']);
+                        if ($user) {
+                            $emailNotif->sendWebinarReminderNotification($user, $wObj, '1h');
+                            $regModel->update($r['id'], ['reminder_sent_1h' => 1]);
+                            $wSent++;
+                        }
+                    }
+                }
+            }
+            $results['webinar_reminders_sent'] = $wSent;
+        } catch (\Throwable $e) {
+            $results['webinar_reminders_error'] = $e->getMessage();
+        }
+
+        // 3. Run Subscription Expiry Reminders
+        try {
+            $subModel  = new \App\Models\UserSubscriptionModel();
+            $planModel = new \App\Models\EmployerPlanModel();
+            $userModel = new \App\Models\UserModel();
+            $emailNotif= new \App\Services\EmailNotificationService();
+
+            $now = time();
+            $activeSubs = $subModel->where('status', 'active')->where('ends_at IS NOT NULL', null, false)->findAll();
+            $sSent = 0;
+
+            foreach ($activeSubs as $s) {
+                $sObj = (object) $s;
+                $diffDays = (strtotime($sObj->ends_at) - $now) / 86400;
+                $user = $userModel->find($sObj->user_id);
+                $plan = $planModel->find($sObj->plan_id);
+
+                if ($user && $plan) {
+                    if ($diffDays <= 3.5 && $diffDays >= 2.5 && !$sObj->expiry_reminder_3d_sent) {
+                        $emailNotif->sendSubscriptionExpiringNotification($user, (object)$plan, $sObj, 3);
+                        $subModel->update($sObj->id, ['expiry_reminder_3d_sent' => 1]);
+                        $sSent++;
+                    } elseif ($diffDays <= 1.5 && $diffDays >= 0.5 && !$sObj->expiry_reminder_1d_sent) {
+                        $emailNotif->sendSubscriptionExpiringNotification($user, (object)$plan, $sObj, 1);
+                        $subModel->update($sObj->id, ['expiry_reminder_1d_sent' => 1]);
+                        $sSent++;
+                    } elseif ($diffDays < 0 && !$sObj->expired_notice_sent) {
+                        $emailNotif->sendSubscriptionExpiredNotification($user, (object)$plan);
+                        $subModel->update($sObj->id, ['status' => 'expired', 'expired_notice_sent' => 1]);
+                        $sSent++;
+                    }
+                }
+            }
+            $results['subscription_reminders_sent'] = $sSent;
+        } catch (\Throwable $e) {
+            $results['subscription_reminders_error'] = $e->getMessage();
+        }
+
+        // 4. Run Scheduled Job Alert Matches
+        try {
+            $jobAlertService = new \App\Services\JobAlertService();
+            $alertsDailySent = $jobAlertService->processAlerts('daily');
+            $alertsWeeklySent = 0;
+            if (date('N') == 1) { // Mondays
+                $alertsWeeklySent = $jobAlertService->processAlerts('weekly');
+            }
+            $results['job_alerts_sent'] = $alertsDailySent + $alertsWeeklySent;
+        } catch (\Throwable $e) {
+            $results['job_alerts_error'] = $e->getMessage();
+        }
+
+        // 5. Run Weekly Premium Job Digest (Runs on Saturdays or Mondays)
+        try {
+            $dayOfWeek = (int) date('N'); // 1 = Mon, 6 = Sat
+            if ($dayOfWeek === 6 || $dayOfWeek === 1 || $this->request->getGet('force_digest')) {
+                $jobAlertService = new \App\Services\JobAlertService();
+                $digestResult = $jobAlertService->sendWeeklyPremiumDigest();
+                $results['weekly_premium_digest'] = $digestResult;
+            }
+        } catch (\Throwable $e) {
+            $results['weekly_digest_error'] = $e->getMessage();
+        }
+
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'summary'   => $results
+        ]);
+    }
+
+    /**
+     * Standalone Job Alert Matching endpoint: /cron/send-job-alerts?token=...
+     */
+    public function sendJobAlerts()
+    {
+        $token = $this->request->getGet('token');
+        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
+
+        if ($token !== $expectedToken) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        }
+
+        $frequency = $this->request->getGet('frequency') ?: 'daily';
+        $jobAlertService = new \App\Services\JobAlertService();
+        $sentCount = $jobAlertService->processAlerts($frequency);
+
+        return $this->response->setJSON([
+            'status'     => 'success',
+            'frequency'  => $frequency,
+            'sent_count' => $sentCount,
+            'timestamp'  => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    /**
+     * Standalone Weekly Premium Job Digest endpoint: /cron/send-weekly-digest?token=...
+     */
+    public function sendWeeklyDigest()
+    {
+        $token = $this->request->getGet('token');
+        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
+
+        if ($token !== $expectedToken) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        }
+
+        $jobAlertService = new \App\Services\JobAlertService();
+        $result = $jobAlertService->sendWeeklyPremiumDigest();
+
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'result'    => $result,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    }
+
     protected function sendEmail($to, $subject, $content)
     {
         $config = config('Email');
@@ -207,9 +414,8 @@ class CronController extends BaseController
         $email->setTo($to);
         $email->setSubject($subject);
         $email->setMessage($content);
-        
-        // Ensure email is sent as HTML
         $email->setMailType('html');
+        $email->setSMTPTimeout(5);
 
         if ($email->send()) {
             return true;
@@ -230,6 +436,7 @@ class CronController extends BaseController
         $email->setTo($data['to']);
         $email->setSubject($data['subject']);
         $email->setMessage($data['message']);
+        $email->setSMTPTimeout(5);
 
         if (!empty($data['alt_message'])) {
             $email->setAltMessage($data['alt_message']);

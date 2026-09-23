@@ -136,29 +136,12 @@ class JobSeekerController extends BaseController
         $skillCategories = $this->buildSkillCategories($candidate, $recommendedJobs);
 
         // Profile Completion
-        $fields = [
-            'full_name',
-            'dob',
-            'gender',
-            'phone',
-            'location',
-            'job_title',
-            'employment_type',
-            'skills',
-            'education_level',
-            'languages',
-            'resume',
-            'availability'
-        ];
+        $profileCompletion = $candidate->getProfileCompletion();
+        $this->checkAndRewardProfileCompletion((int) $this->auth->user()->id, $profileCompletion);
 
-        $completed = 0;
-        foreach ($fields as $f) {
-            if (!empty($candidate->$f)) {
-                $completed++;
-            }
-        }
-
-        $profileCompletion = round(($completed / count($fields)) * 100);
+        // Aptitude Test Invitations (for Assessment Centre banner / widget)
+        $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
+        $aptitudeInvitations = $invitationModel->getForCandidate((int) $this->auth->user()->id);
 
         return view('candidate/dashboard', [
             'title'                  => 'Dashboard',
@@ -172,8 +155,10 @@ class JobSeekerController extends BaseController
             'recentApplicationsCount' => $recentApplicationsCount,
             'pendingApplicationsCount' => $pendingApplicationsCount,
             'profileCompletion'      => $profileCompletion,
+            'profileChecklist'       => $candidate ? $candidate->getProfileChecklist() : [],
             'weeklyChartData'        => $weeklyChartData,
             'skillCategories'        => $skillCategories,
+            'aptitudeInvitations'    => $aptitudeInvitations,
         ]);
     }
 
@@ -199,18 +184,22 @@ class JobSeekerController extends BaseController
         $certificates = model(\App\Models\CourseCertificateModel::class)
             ->getUserCertificates($this->auth->user()->id);
 
-        // Structured work experience & education history
-        $experiences = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
-        $education   = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+        // Structured work experience, education history & external certifications
+        $experiences            = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education              = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+        $externalCertifications = model(\App\Models\JobSeekerCertificationModel::class)->forSeeker($candidate->id);
 
         $data = [
-            'title'        => 'Profile',
-            'user'         => $this->auth->user(),
-            'candidate'    => $candidate,
-            'certificates' => $certificates,
-            'experiences'  => $experiences,
-            'education'    => $education,
+            'title'                  => 'Profile',
+            'user'                   => $this->auth->user(),
+            'candidate'              => $candidate,
+            'certificates'           => $certificates,
+            'externalCertifications' => $externalCertifications,
+            'experiences'            => $experiences,
+            'education'              => $education,
         ];
+
+        $this->checkAndRewardProfileCompletion((int) $this->auth->user()->id, $candidate->getProfileCompletion());
 
         return view('candidate/profile', $data);
     }
@@ -291,6 +280,10 @@ class JobSeekerController extends BaseController
                 'portfolio'         => $portfolio ?? null,
                 'bio'               => trim($this->request->getPost('bio'))
             ];
+
+            if ($this->request->getPost('is_visible') !== null) {
+                $data['is_visible'] = in_array($this->request->getPost('is_visible'), ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+            }
 
             helper(['filesystem', 'form']);
 
@@ -413,27 +406,75 @@ class JobSeekerController extends BaseController
             /**
              * SYNC EDUCATION (delete + reinsert posted rows)
              */
-            $eduModel = model(\App\Models\JobSeekerEducationModel::class);
-            $eduModel->where('job_seeker_id', $candidate->id)->delete();
-            $eduDegree = (array) ($this->request->getPost('edu_degree') ?? []);
-            $eduField  = (array) ($this->request->getPost('edu_field') ?? []);
-            $eduSchool = (array) ($this->request->getPost('edu_school') ?? []);
-            $eduStart  = (array) ($this->request->getPost('edu_start_year') ?? []);
-            $eduEnd    = (array) ($this->request->getPost('edu_end_year') ?? []);
-            $eduGrade  = (array) ($this->request->getPost('edu_grade') ?? []);
-            foreach ($eduDegree as $i => $d) {
-                $d = trim((string) $d);
-                if ($d === '') continue;
-                $eduModel->insert([
-                    'job_seeker_id'  => $candidate->id,
-                    'degree'         => $d,
-                    'field_of_study' => trim((string) ($eduField[$i] ?? '')) ?: null,
-                    'school'         => trim((string) ($eduSchool[$i] ?? '')) ?: null,
-                    'start_year'     => trim((string) ($eduStart[$i] ?? '')) ?: null,
-                    'end_year'       => trim((string) ($eduEnd[$i] ?? '')) ?: null,
-                    'grade'          => trim((string) ($eduGrade[$i] ?? '')) ?: null,
-                    'sort_order'     => $i,
+             $eduModel = model(\App\Models\JobSeekerEducationModel::class);
+             $eduModel->where('job_seeker_id', $candidate->id)->delete();
+             $eduDegree = (array) ($this->request->getPost('edu_degree') ?? []);
+             $eduField  = (array) ($this->request->getPost('edu_field') ?? []);
+             $eduSchool = (array) ($this->request->getPost('edu_school') ?? []);
+             $eduStart  = (array) ($this->request->getPost('edu_start_year') ?? []);
+             $eduEnd    = (array) ($this->request->getPost('edu_end_year') ?? []);
+             $eduGrade  = (array) ($this->request->getPost('edu_grade') ?? []);
+             foreach ($eduDegree as $i => $d) {
+                 $d = trim((string) $d);
+                 if ($d === '') continue;
+                 $eduModel->insert([
+                     'job_seeker_id'  => $candidate->id,
+                     'degree'         => $d,
+                     'field_of_study' => trim((string) ($eduField[$i] ?? '')) ?: null,
+                     'school'         => trim((string) ($eduSchool[$i] ?? '')) ?: null,
+                     'start_year'     => trim((string) ($eduStart[$i] ?? '')) ?: null,
+                     'end_year'       => trim((string) ($eduEnd[$i] ?? '')) ?: null,
+                     'grade'          => trim((string) ($eduGrade[$i] ?? '')) ?: null,
+                     'sort_order'     => $i,
+                 ]);
+             }
+
+            /**
+             * SYNC CERTIFICATIONS (delete + reinsert posted rows)
+             */
+            $certModel = model(\App\Models\JobSeekerCertificationModel::class);
+            try {
+                $certModel->where('job_seeker_id', $candidate->id)->delete();
+                $certNames    = (array) ($this->request->getPost('cert_name') ?? []);
+                $certOrgs     = (array) ($this->request->getPost('cert_org') ?? []);
+                $certIds      = (array) ($this->request->getPost('cert_id') ?? []);
+                $certUrls     = (array) ($this->request->getPost('cert_url') ?? []);
+                $certIsMonths = (array) ($this->request->getPost('cert_issue_month') ?? []);
+                $certIsYears  = (array) ($this->request->getPost('cert_issue_year') ?? []);
+                $certNoExps   = (array) ($this->request->getPost('cert_no_expire') ?? []);
+                $certExMonths = (array) ($this->request->getPost('cert_exp_month') ?? []);
+                $certExYears  = (array) ($this->request->getPost('cert_exp_year') ?? []);
+
+                foreach ($certNames as $i => $cn) {
+                    $cn = trim((string) $cn);
+                    if ($cn === '') continue;
+                    $noExp = in_array($certNoExps[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+                    $certModel->insert([
+                        'job_seeker_id'        => $candidate->id,
+                        'name'                 => $cn,
+                        'issuing_organization' => trim((string) ($certOrgs[$i] ?? '')) ?: null,
+                        'credential_id'        => trim((string) ($certIds[$i] ?? '')) ?: null,
+                        'credential_url'       => trim((string) ($certUrls[$i] ?? '')) ?: null,
+                        'issue_month'          => trim((string) ($certIsMonths[$i] ?? '')) ?: null,
+                        'issue_year'           => trim((string) ($certIsYears[$i] ?? '')) ?: null,
+                        'does_not_expire'      => $noExp,
+                        'expiry_month'         => $noExp ? null : (trim((string) ($certExMonths[$i] ?? '')) ?: null),
+                        'expiry_year'          => $noExp ? null : (trim((string) ($certExYears[$i] ?? '')) ?: null),
+                        'sort_order'           => $i,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Error syncing certifications: ' . $e->getMessage());
+            }
+
+            // Sync profile_completion column in DB
+            $updatedCandidate = $candidateModel->find($candidate->id);
+            if ($updatedCandidate) {
+                $newCompletion = $updatedCandidate->getProfileCompletion();
+                $candidateModel->update($candidate->id, [
+                    'profile_completion' => $newCompletion
                 ]);
+                $this->checkAndRewardProfileCompletion((int) $this->auth->user()->id, $newCompletion);
             }
 
             $db->transComplete();
@@ -470,18 +511,20 @@ class JobSeekerController extends BaseController
             ->findColumn('industry_id') ?? [];
 
         // Existing structured history for repeatable form sections
-        $experiences = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
-        $education   = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+        $experiences    = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education      = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+        $certifications = model(\App\Models\JobSeekerCertificationModel::class)->forSeeker($candidate->id);
 
         return view('candidate/edit_profile', [
-            'title' => 'Edit Profile',
-            'user' => $user,
-            'candidate' => $candidate,
-            'industries' => $parentIndustries,
-            'states' => $states,
+            'title'                => 'Edit Profile',
+            'user'                 => $user,
+            'candidate'            => $candidate,
+            'industries'           => $parentIndustries,
+            'states'               => $states,
             'candidateIndustryIds' => $candidateIndustryIds,
-            'experiences' => $experiences,
-            'education' => $education,
+            'experiences'          => $experiences,
+            'education'            => $education,
+            'certifications'       => $certifications,
         ]);
     }
 
@@ -870,6 +913,10 @@ class JobSeekerController extends BaseController
             return redirect()->to('candidate/profile/edit')->with('error', 'Complete your profile first.');
         }
 
+        // Fetch in-app notifications for this candidate
+        $candidateNotifModel = model(\App\Models\CandidateNotificationModel::class);
+        $inAppNotifications = $candidateNotifModel->getNotifications((int)$candidate->id);
+
         // Fetch job alerts for this candidate
         $alerts = $alertModel
             ->where('job_seeker_id', $candidate->id)
@@ -887,15 +934,16 @@ class JobSeekerController extends BaseController
         $presetLocationId = $this->request->getGet('state');
 
         return view('candidate/notifications', [
-            'title'           => 'Job Alerts',
-            'user'            => $user,
-            'candidate'       => $candidate,
-            'alerts'          => $alerts,
-            'industries'      => $industries,
-            'categories'      => $categories,
-            'states'          => $states,
-            'presetKeyword'   => $presetKeyword,
-            'presetLocationId' => $presetLocationId
+            'title'              => 'Notifications & Job Alerts',
+            'user'               => $user,
+            'candidate'          => $candidate,
+            'inAppNotifications' => $inAppNotifications,
+            'alerts'             => $alerts,
+            'industries'         => $industries,
+            'categories'         => $categories,
+            'states'             => $states,
+            'presetKeyword'      => $presetKeyword,
+            'presetLocationId'   => $presetLocationId
         ]);
     }
 
@@ -1309,5 +1357,33 @@ class JobSeekerController extends BaseController
             'transactions' => $transactions,
             'totalSpent'   => $totalSpent,
         ]);
+    }
+
+    /**
+     * Check profile completion percentage and credit wallet rewards (₦500 at 80% completion threshold).
+     */
+    protected function checkAndRewardProfileCompletion(int $userId, int $completionPct): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        try {
+            $walletService = new \App\Services\WalletService();
+
+            if ($completionPct >= 80) {
+                $ref80 = 'profile_reward_80_user_' . $userId;
+                $walletService->credit(
+                    $userId,
+                    500.00,
+                    'profile_reward',
+                    $ref80,
+                    null,
+                    '₦500 Profile Completion Incentive (80%+ Completion)'
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Profile reward error for user ' . $userId . ': ' . $e->getMessage());
+        }
     }
 }

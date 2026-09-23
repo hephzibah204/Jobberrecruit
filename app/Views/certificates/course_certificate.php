@@ -112,8 +112,9 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 /* integrated verification footer — part of the document, not a UI card */
 .cert-verify{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:20px;margin-top:18px;padding:10px 22px 6px;border-top:1px solid rgba(201,162,75,.35)}
 .cert-verify::before{content:"";position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--gold) 30%,var(--gold) 70%,transparent)}
-.cert-qr{width:78px;height:78px;flex-shrink:0;padding:5px;border:1.5px solid rgba(10,47,87,.25);border-radius:6px;background:#fff;box-shadow:0 2px 6px rgba(10,47,87,.12)}
-.cert-qr svg{width:100%;height:100%}
+.cert-qr{width:78px;height:78px;flex-shrink:0;padding:5px;border:1.5px solid rgba(10,47,87,.25);border-radius:6px;background:#fff;box-shadow:0 2px 6px rgba(10,47,87,.12);display:inline-block;text-decoration:none;transition:transform .18s ease,border-color .18s ease}
+.cert-qr:hover{transform:scale(1.06);border-color:var(--brand)}
+.cert-qr img, .cert-qr svg{width:100%;height:100%;display:block;border-radius:3px;object-fit:contain}
 .cert-verify-text{text-align:left}
 .cert-verify-text .vt-lbl{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:1px}
 .cert-verify-text .vt-id{font-family:'Sora',sans-serif;font-size:.88rem;font-weight:800;color:var(--navy);letter-spacing:.02em}
@@ -121,14 +122,7 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 .cert-verify-badge{display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:700;color:var(--navy);background:linear-gradient(135deg,rgba(228,200,120,.25),rgba(201,162,75,.15));border:1px solid rgba(201,162,75,.5);border-radius:20px;padding:4px 11px}
 .cert-verify-badge svg{width:12px;height:12px;color:var(--gold)}
 
-@media(max-width:1100px){
-  .cert-inner{padding:38px 40px 32px}
-  .cert-title{font-size:2rem}
-  .cert-name{font-size:2.1rem}
-  .cert-course{font-size:1.02rem}
-  .cert-meta{gap:24px}
-}
-@media(max-width:1100px){
+@media screen and (max-width:1100px){
   .cert-inner{padding:38px 40px 32px}
   .cert-title{font-size:2rem}
   .cert-name{font-size:2.1rem}
@@ -137,7 +131,7 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 }
 
 /* Mobile: certificate scrolls horizontally, verification card shown prominently below */
-@media(max-width:1080px){
+@media screen and (max-width:1080px){
   html,body{overflow-x:hidden;max-width:100%}
   body{padding:0}
 
@@ -150,13 +144,13 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
   }
   .cert-scroll-wrap .certificate{min-width:1056px}
 }
-@media(max-width:680px){
+@media screen and (max-width:680px){
   .cert-corner{width:32px;height:32px}
 }
 
 /* Mobile-only: large verification card shown BELOW the certificate */
 .cert-mobile-verify{display:none}
-@media(max-width:900px){
+@media screen and (max-width:900px){
   .cert-mobile-verify{
     display:flex;align-items:center;gap:18px;
     background:#fff;border:1.5px solid rgba(201,162,75,.4);
@@ -181,19 +175,138 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 }
 @media(min-width:901px){.cert-swipe-hint{display:none}}
 
-/* PRINT */
+/* PRINT & PDF EXPORT */
+@page{
+  size: 297mm 210mm landscape;
+  margin: 0;
+}
 @media print{
-  @page{size:landscape;margin:0}
-  html,body{background:#fff;padding:0;margin:0;width:100vw;height:100vh;overflow:hidden}
-
-  .cert-mobile-verify{display:none!important}
-  .cert-swipe-hint{display:none!important}
-  .cert-scroll-wrap{overflow:hidden;width:100vw;height:100vh;padding:0;margin:0;display:block}
-  .certificate{box-shadow:none;width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;margin:0;page-break-inside:avoid;page-break-after:avoid}
+  html,body{
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .cert-toolbar, .cert-swipe-hint, .cert-mobile-verify{
+    display: none !important;
+  }
+  .cert-scroll-wrap{
+    width: 297mm !important;
+    height: 210mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    display: block !important;
+  }
+  .certificate{
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+  .cert-toolbar {
+    display: none !important;
+  }
+}
+.cert-toolbar {
+  width: 1056px;
+  max-width: 100%;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #ffffff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(10,47,87,0.08);
+  border: 1px solid #d9e2ee;
+}
+.cert-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+.cert-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn-cert-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-primary-cert {
+  background: var(--brand);
+  color: #ffffff !important;
+  border: 1px solid var(--brand);
+}
+.btn-primary-cert:hover {
+  background: var(--brand-dark);
+}
+.btn-outline-cert {
+  background: #ffffff;
+  color: var(--navy) !important;
+  border: 1px solid #c4d3e5;
+}
+.btn-outline-cert:hover {
+  background: #f0f4f9;
+}
+.btn-link-cert {
+  color: var(--brand) !important;
+  border: none;
+  background: transparent;
 }
 </style>
 </head>
-<body>
+<body style="<?= !empty($isPdfExport) ? 'padding:0 !important;margin:0 !important;background:#fff !important;display:block !important;' : '' ?>">
+
+<?php if (empty($isPdfExport)): ?>
+<div class="cert-toolbar">
+  <div class="cert-toolbar-left">
+    <span>JobberRecruit Verified Credential</span>
+    <span style="font-size:0.75rem; font-weight:600; color:var(--brand); background:#eef5fb; padding:3px 10px; border-radius:20px; border:1px solid #d2e4f3;">
+      <?= esc($certificate['certificate_code'] ?? '') ?>
+    </span>
+  </div>
+  <div class="cert-toolbar-right">
+    <a href="<?= base_url('training/certificate/download/' . ($certificate['id'] ?? $certificate['certificate_code'] ?? '')) ?>" class="btn-cert-action btn-primary-cert">
+      <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Download PDF
+    </a>
+    <button onclick="window.print()" type="button" class="btn-cert-action btn-outline-cert">
+      <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print
+    </button>
+    <a href="<?= base_url('certificates/verify?id=' . rawurlencode($certificate['certificate_code'] ?? '')) ?>" target="_blank" class="btn-cert-action btn-outline-cert">
+      <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Verify Online
+    </a>
+  </div>
+</div>
+<?php endif; ?>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
@@ -245,7 +358,7 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 
 <!-- ════ CERTIFICATE ════ -->
 <div class="cert-scroll-wrap">
-<div class="certificate" role="img" aria-label="Certificate of Completion issued by JobberRecruit">
+<div class="certificate" role="img" aria-label="Certificate of Completion issued by JobberRecruit" style="--brand: <?= $template['primary_color'] ?? '#0861A9' ?>; --navy: <?= $template['primary_color'] ?? '#0A2F57' ?>; --accent: <?= $template['secondary_color'] ?? '#ED9020' ?>; <?= !empty($template['background_image']) ? "background-image: url('" . base_url($template['background_image']) . "'); background-size: cover;" : '' ?>">
   <div class="cert-texture-overlay" aria-hidden="true"></div>
   <div class="cert-paper-grain" aria-hidden="true"></div>
   <div class="cert-vignette" aria-hidden="true"></div>
@@ -295,24 +408,61 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
     <div class="cert-top">
       <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8IS0tIENyZWF0b3I6IENvcmVsRFJBVyAyMDI2IC0tPg0KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI3Mi43MTU5bW0iIGhlaWdodD0iMTUuMTY1MW1tIiB2ZXJzaW9uPSIxLjEiIHN0eWxlPSJzaGFwZS1yZW5kZXJpbmc6Z2VvbWV0cmljUHJlY2lzaW9uOyB0ZXh0LXJlbmRlcmluZzpnZW9tZXRyaWNQcmVjaXNpb247IGltYWdlLXJlbmRlcmluZzpvcHRpbWl6ZVF1YWxpdHk7IGZpbGwtcnVsZTpldmVub2RkOyBjbGlwLXJ1bGU6ZXZlbm9kZCINCnZpZXdCb3g9IjAgMCA4NzgzLjggMTgzMS44OSINCiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayINCiB4bWxuczp4b2RtPSJodHRwOi8vd3d3LmNvcmVsLmNvbS9jb3JlbGRyYXcvb2RtLzIwMDMiPg0KIDxkZWZzPg0KICA8Zm9udCBpZD0iRm9udElEMCIgaG9yaXotYWR2LXg9Ijc1MCIgZm9udC12YXJpYW50PSJub3JtYWwiIGNsYXNzPSJzdHIxIiBzdHlsZT0iZmlsbC1ydWxlOm5vbnplcm8iIGZvbnQtd2VpZ2h0PSI1MDAiPg0KCTxmb250LWZhY2UgDQoJCWZvbnQtZmFtaWx5PSJDbGFzaCBEaXNwbGF5IE1lZGl1bSI+DQoJCTxmb250LWZhY2Utc3JjPg0KCQkJPGZvbnQtZmFjZS1uYW1lIG5hbWU9IkNsYXNoIERpc3BsYXkgTWVkaXVtIi8+DQoJCTwvZm9udC1mYWNlLXNyYz4NCgk8L2ZvbnQtZmFjZT4NCiAgIDxtaXNzaW5nLWdseXBoPjxwYXRoIGQ9Ik0wIDB6Ii8+PC9taXNzaW5nLWdseXBoPg0KICAgPGdseXBoIHVuaWNvZGU9IlIiIGhvcml6LWFkdi14PSI2NzEiIGQ9Ik0xNTguMDAyIDBsMCAyNjAuMDA0IDEyMi45OTggMGM4My45OTk3LDAgMTE1LjAwMSwtMi4yMDA1ZSswMDEgMTQ1LjAwMywtNy41MDAyOWUrMDAxbDEwNi45OTYgLTEuODUwMDFlKzAwMiAxMjMuOTk4IDAgLTEuMTJlKzAwMiAxOTMuOTk4Yy0yLjM5OTc0ZSswMDEsNDEuOTk5OCAtNC43OTk0OGUrMDAxLDcyLjAwMSAtMS4wMDAwMWUrMDAyLDg2LjAwMDlsMCA3LjAwNDRjMTI2LDYuOTk1NTUgMTk5LjAwMSw3NC45OTQgMTk5LjAwMSwxODUuOTkzIDAsMTI1LjAwOCAtOS4zOTk3MWUrMDAxLDE5NyAtMi40NTk5NWUrMDAyLDE5N2wtMy40ODAwNmUrMDAyIDAgMCAtNi42OTk5NmUrMDAyIDEwOC4wMDYgMHptMCA1NzIuOTk3bDIzOSAwYzg5Ljk5NDYsMCAxMzQuOTk2LC0zLjI5OTQyZSswMDEgMTM0Ljk5NiwtMS4xNTAwMWUrMDAyIDAsLTguMzk5OTdlKzAwMSAtNC41MDAxN2UrMDAxLC0xLjE0OTkzZSswMDIgLTEuMzQ5OTZlKzAwMiwtMS4xNDk5M2UrMDAybC0yLjM5ZSswMDIgMCAwIDIyOS45OTR6Ii8+DQogIDwvZm9udD4NCiAgPHN0eWxlIHR5cGU9InRleHQvY3NzIj4NCiAgIDwhW0NEQVRBWw0KICAgIEBmb250LWZhY2UgeyBmb250LWZhbWlseToiQ2xhc2ggRGlzcGxheSBNZWRpdW0iO2ZvbnQtdmFyaWFudDpub3JtYWw7Zm9udC13ZWlnaHQ6NTAwO3NyYzp1cmwoIiNGb250SUQwIikgZm9ybWF0KHN2Zyl9DQogICAgLnN0cjEge3N0cm9rZS13aWR0aDo5LjM3O3N0cm9rZS1taXRlcmxpbWl0OjIyLjkyNTZ9DQogICAgLnN0cjIge3N0cm9rZTojMDA2MkFFO3N0cm9rZS13aWR0aDoxMi43ODtzdHJva2UtbWl0ZXJsaW1pdDoyMi45MjU2fQ0KICAgIC5zdHIwIHtzdHJva2U6I0YwOEYxQztzdHJva2Utd2lkdGg6OS4yO3N0cm9rZS1taXRlcmxpbWl0OjIuNjEzMTN9DQogICAgLmZpbDIge2ZpbGw6IzAwNjJBRX0NCiAgICAuZmlsMSB7ZmlsbDojRjA4RjFDfQ0KICAgIC5maWwwIHtmaWxsOiMwMDYyQUU7ZmlsbC1ydWxlOm5vbnplcm99DQogICAgLmZudDAge2ZvbnQtd2VpZ2h0OjUwMDtmb250LXNpemU6MTM2NC4xNHB4O2ZvbnQtZmFtaWx5OidDbGFzaCBEaXNwbGF5IE1lZGl1bSd9DQogICBdXT4NCiAgPC9zdHlsZT4NCiA8L2RlZnM+DQogPGcgaWQ9IkxheWVyX3gwMDIwXzEiPg0KICA8bWV0YWRhdGEgaWQ9IkNvcmVsQ29ycElEXzBDb3JlbC1MYXllciIvPg0KICA8ZyBpZD0iXzM5MzI5Mjk0NTI4Ij4NCiAgIDxwYXRoIGNsYXNzPSJmaWwwIiBkPSJNMzg2LjM4IDEzNDcuMzVjLTc5LjA2LDAgLTE0Ny41LC0xNS41MSAtMjA1LjMyLC00Ni41NCAtNTcuOCwtMzEuMDMgLTEwMi40NCwtNzUuODcgLTEzMy44OSwtMTM0LjU0IC0zMS40NCwtNTguNjUgLTQ3LjE3LC0xMjcuOTUgLTQ3LjE3LC0yMDcuODRsMTc0LjcgMGMwLjg1LDczLjExIDE5LjU0LDEyOS40MyA1Ni4xMSwxNjguOTUgMzYuNTUsMzkuNTUgODguNCw1OS4zMSAxNTUuNTcsNTkuMzEgNjUuNDYsMCAxMTcuMzIsLTIwLjgzIDE1NS41NywtNjIuNSAzOC4yNiwtNDEuNjUgNTcuMzgsLTk4LjYxIDU3LjM4LC0xNzAuODdsMCAtMzU4LjMzIC0yNzUuNDMgMCAwIC0xNTguMTIgNDUxLjQgMCAwIDUyMS41NmMwLDc4LjIgLTE2LjE0LDE0Ni42MyAtNDguNDUsMjA1LjMxIC0zMi4zLDU4LjY2IC03Ny43OCwxMDMuOTIgLTEzNi40NSwxMzUuOCAtNTguNjYsMzEuODkgLTEyNi42Nyw0Ny44MiAtMjA0LjAyLDQ3Ljgyem0xOTUwLjEyIC0zLjgyYy00NS4wNiwwIC04Ni4yOCwtNy42NiAtMTIzLjcsLTIyLjk2IC0zNy40LC0xNS4zIC02OC44NywtMzcuODMgLTk0LjM3LC02Ny41OWwtMTEuNDggNzYuNTEgLTE0Ni42NSAwIDAgLTg5Mi42NCAxNjkuNjEgMCAwIDMyNi40NWMyNS41LC0yNC42NSA1Ni4xLC00My43OCA5MS44MSwtNTcuMzggMzUuNywtMTMuNjEgNzMuOTYsLTIwLjQxIDExNC43NywtMjAuNDEgNTkuNTIsMCAxMTIuNDIsMTMuODIgMTU4Ljc2LDQxLjQ2IDQ2LjM0LDI3LjYxIDgyLjQ2LDY2LjUxIDEwOC40LDExNi42NiAyNS45Miw1MC4xNSAzOC44NywxMDcuMTMgMzguODcsMTcwLjg4IDAsNjMuNzYgLTEyLjk1LDEyMC43MSAtMzguODcsMTcwLjg5IC0yNS45NSw1MC4xNSAtNjIuMDcsODkuMDUgLTEwOC40LDExNi42NiAtNDYuMzQsMjcuNjQgLTk5LjI1LDQxLjQ2IC0xNTguNzYsNDEuNDZ6bS0yMDcuODUgLTMyOS4wMWMwLDUyLjcgMTYuMTUsOTYuMDcgNDguNDUsMTMwLjA3IDMyLjMsMzQgNzMuOTgsNTEuMDEgMTI0Ljk2LDUxLjAxIDUwLjE4LDAgOTEuNDEsLTE3LjAxIDEyMy43MSwtNTEuMDEgMzIuMywtMzQgNDguNDUsLTc3LjM3IDQ4LjQ1LC0xMzAuMDcgMCwtNTIuNjkgLTE2LjE1LC05Ni4wNiAtNDguNDUsLTEzMC4wNiAtMzIuMywtMzQuMDIgLTczLjUzLC01MS4wMSAtMTIzLjcxLC01MS4wMSAtNTAuOTksMCAtOTIuNjYsMTcgLTEyNC45Niw1MS4wMSAtMzIuMywzNCAtNDguNDUsNzcuMzcgLTQ4LjQ1LDEzMC4wNnptOTYyLjIxIDMyOS4wMWMtNDUuMDYsMCAtODYuMjgsLTcuNjYgLTEyMy43LC0yMi45NiAtMzcuNCwtMTUuMyAtNjguODcsLTM3LjgzIC05NC4zNywtNjcuNTlsLTExLjQ4IDc2LjUxIC0xNDYuNjUgMCAwIC04OTIuNjQgMTY5LjYxIDAgMCAzMjYuNDVjMjUuNSwtMjQuNjUgNTYuMSwtNDMuNzggOTEuODEsLTU3LjM4IDM1LjcxLC0xMy42MSA3My45OCwtMjAuNDEgMTE0Ljc3LC0yMC40MSA1OS41MiwwIDExMi40MiwxMy44MiAxNTguNzYsNDEuNDYgNDYuMzQsMjcuNjEgODIuNDcsNjYuNTEgMTA4LjQsMTE2LjY2IDI1LjkyLDUwLjE1IDM4Ljg4LDEwNy4xMyAzOC44OCwxNzAuODggMCw2My43NiAtMTIuOTYsMTIwLjcxIC0zOC44OCwxNzAuODkgLTI1LjkzLDUwLjE1IC02Mi4wNyw4OS4wNSAtMTA4LjQsMTE2LjY2IC00Ni4zNCwyNy42NCAtOTkuMjUsNDEuNDYgLTE1OC43Niw0MS40NnptLTIwNy44NCAtMzI5LjAxYzAsNTIuNyAxNi4xNCw5Ni4wNyA0OC40NCwxMzAuMDcgMzIuMzEsMzQgNzMuOTgsNTEuMDEgMTI0Ljk2LDUxLjAxIDUwLjE4LDAgOTEuNDEsLTE3LjAxIDEyMy43MSwtNTEuMDEgMzIuMzEsLTM0IDQ4LjQ1LC03Ny4zNyA0OC40NSwtMTMwLjA3IDAsLTUyLjY5IC0xNi4xNCwtOTYuMDYgLTQ4LjQ1LC0xMzAuMDYgLTMyLjMsLTM0LjAyIC03My41MywtNTEuMDEgLTEyMy43MSwtNTEuMDEgLTUwLjk5LDAgLTkyLjY1LDE3IC0xMjQuOTYsNTEuMDEgLTMyLjMsMzQgLTQ4LjQ0LDc3LjM3IC00OC40NCwxMzAuMDZ6bTg5NS45IDMzMS41NmMtNzAuNTcsMCAtMTMxLjk4LC0xMy42IC0xODQuMjYsLTQwLjgyIC01Mi4yOSwtMjcuMTkgLTkyLjY2LC02NS42NiAtMTIxLjE1LC0xMTUuNCAtMjguNDcsLTQ5LjczIC00Mi43MSwtMTA3Ljc1IC00Mi43MSwtMTc0LjA3IDAsLTY0LjYxIDEzLjgxLC0xMjEuNzcgNDEuNDMsLTE3MS41MiAyNy42NCwtNDkuNzMgNjYuNTMsLTg4LjQyIDExNi42OSwtMTE2LjA0IDUwLjE1LC0yNy42MyAxMDcuOTcsLTQxLjQ2IDE3My40MywtNDEuNDYgMTAyLjg2LDAgMTgzLjYyLDI4LjcgMjQyLjI5LDg2LjA5IDU4LjY1LDU3LjM4IDg3Ljk5LDEzNS44MSA4Ny45OSwyMzUuMjYgMCwxOS41NiAtMS4yOCw0MC4zOCAtMy44NCw2Mi40OWwtNDg1Ljg0IDBjNS45NiwzOS45NiAyNS4yOCw3MS44NCA1OC4wMyw5NS42MyAzMi43MSwyMy44MiA3NC4xNiwzNS43MSAxMjQuMzQsMzUuNzEgMzMuOTksMCA2Ni43MywtNS4zIDk4LjE4LC0xNS45MyAzMS40NCwtMTAuNjIgNTcuMzgsLTI1LjI5IDc3Ljc5LC00My45OGw5NC4zNyA5Ni45Yy0zMy4xNiwzNCAtNzMuOTgsNjAuMzYgLTEyMi40NCw3OS4wNyAtNDguNDUsMTguNjkgLTk5Ljg3LDI4LjA1IC0xNTQuMjksMjguMDV6bTE1MC40OCAtMzg3LjY2Yy0zLjQxLC00MC44IC0xOS41NiwtNzMuMTIgLTQ4LjQ1LC05Ni45MyAtMjguOTEsLTIzLjggLTY2Ljc0LC0zNS43MSAtMTEzLjQ5LC0zNS43MSAtNDUuMDcsMCAtODEuODQsMTEuNjkgLTExMC4zMiwzNS4wOCAtMjguNDcsMjMuMzcgLTQ1LjcsNTUuODkgLTUxLjY0LDk3LjU1bDMyMy45IDB6bTIzNS4zNiAtMjU4Ljg3bDEyNy41MiAwIDEuMjggOTYuOTFjMjQuNjUsLTM3LjQyIDUyLjcsLTY1LjA0IDg0LjE1LC04Mi45IDMxLjQ3LC0xNy44NSA2Ny4xNywtMjYuNzggMTA3LjEzLC0yNi43OCAzMC42LDAgNjAuMTQsNC45IDg4LjYyLDE0LjY4IDI4LjQ4LDkuNzcgNTIuMDgsMjMuMTYgNzAuNzcsNDAuMThsLTYzLjc2IDExNi4wNGMtMzQsLTIyLjk2IC02OS4yOSwtMzQuNDQgLTEwNS44NSwtMzQuNDQgLTUwLjk5LDAgLTkxLjYsMTcuODUgLTEyMS43Nyw1My41NiAtMzAuMTcsMzUuNzEgLTQ1LjI3LDg0LjE3IC00NS4yNywxNDUuMzhsMCAzMDcuMzIgLTE0Mi44MiAwIDAgLTYyOS45NHptMTcyMy40OCA2NDcuNzljLTY4Ljg0LDAgLTEyOS4wMiwtMTMuODEgLTE4MC40MywtNDEuNDMgLTUxLjQxLC0yNy42NCAtOTEuMTgsLTY2LjUzIC0xMTkuMjMsLTExNi42OSAtMjguMDYsLTUwLjE1IC00Mi4wOSwtMTA4LjM5IC00Mi4wOSwtMTc0LjcxIDAsLTY0LjYgMTMuNjMsLTEyMS41OCA0MC44LC0xNzAuODggMjcuMTgsLTQ5LjI3IDY1LjUsLTg3Ljc5IDExNC43NywtMTE1LjQgNDkuMjgsLTI3LjYgMTA2LjI4LC00MS40NiAxNzAuODgsLTQxLjQ2IDEwMi4wMSwwIDE4MS45NiwyOS4zNSAyMzkuNzMsODcuOTkgNTcuOCw1OC42MyA4Ni43MiwxMzkuODYgODYuNzIsMjQzLjU3IDAsMTEuMDUgLTAuODYsMjcuNjMgLTIuNTUsNDkuNzNsLTUwMy43MSAwYzUuOTQsNDUuOSAyNi43OSw4Mi40OSA2Mi40OSwxMDkuNjcgMzUuNjcsMjcuMTggODEuMTksNDAuOCAxMzYuNDUsNDAuOCAzNS43LDAgNzAuMTUsLTUuOTggMTAzLjI5LC0xNy44NSAzMy4xMSwtMTEuODcgNTkuMDgsLTI3LjY0IDc3Ljc4LC00Ny4xOGw4Ni43MSA4NC4xNmMtMzEuNDYsMzQgLTcxLjIyLDYwLjgyIC0xMTkuMjQsODAuMzUgLTQ3Ljk5LDE5LjUyIC05OC44MSwyOS4zMiAtMTUyLjM4LDI5LjMyem0xNzIuMTYgLTM5MC4yMmMtNS4wOSwtNDUuMDQgLTI0LjA0LC04MC43NiAtNTYuNzUsLTEwNy4xMSAtMzIuNywtMjYuMzIgLTc1LjAxLC0zOS41MiAtMTI2Ljg3LC0zOS41MiAtNDkuMzEsMCAtODkuNzIsMTIuNzQgLTEyMS4xNSwzOC4yNiAtMzEuNDQsMjUuNSAtNTEuODYsNjEuNjMgLTYxLjIyLDEwOC4zOGwzNjUuOTkgMHptNTA4LjIzIDM4Ni40Yy02Ny4xNywwIC0xMjYuMjksLTEzLjYzIC0xNzcuMjYsLTQwLjgyIC01MC45OSwtMjcuMTggLTkwLjMzLC02NS42OSAtMTE3Ljk2LC0xMTUuNDEgLTI3LjYxLC00OS43MiAtNDEuNDUsLTEwNy4zMiAtNDEuNDUsLTE3Mi43OSAwLC02NC42IDE0LjA2LC0xMjEuOCA0Mi4wNywtMTcxLjUxIDI4LjA0LC00OS43MSA2Ny40MiwtODguNDMgMTE3Ljk2LC0xMTYuMDQgNTAuNTgsLTI3LjYgMTA5LjAzLC00MS40NiAxNzUuMzUsLTQxLjQ2IDkxLjgxLDAgMTcxLjMsMzIuMyAyMzguNDYsOTYuOTFsLTg2LjcyIDkzLjFjLTE4LjcsLTE4LjcxIC00MS4yNCwtMzMuNCAtNjcuNTksLTQ0LjAxIC0yNi4zMSwtMTAuNjEgLTUzLjU2LC0xNS45MyAtODEuNjEsLTE1LjkzIC01Ny44MSwwIC0xMDQuOCwxOC41MSAtMTQwLjkyLDU1LjQ3IC0zNi4xMSwzNi45NSAtNTQuMTgsODQuOCAtNTQuMTgsMTQzLjQ2IDAsNTkuNSAxOC4wNywxMDcuNTggNTQuMTgsMTQ0LjEgMzYuMTIsMzYuNTQgODMuMTEsNTQuODQgMTQwLjkyLDU0Ljg0IDMwLjYsMCA1OS41MywtNS41NCA4Ni43MiwtMTYuNTcgMjcuMTgsLTExLjAzIDUwLjE1LC0yNy4yMiA2OC44NSwtNDguNDhsODcuOTkgOTUuNjVjLTM0Ljg1LDM0LjAyIC03Mi4yNyw1OS4xMiAtMTEyLjIyLDc1LjI0IC0zOS45MiwxNi4xMyAtODQuMTcsMjQuMjMgLTEzMi42MSwyNC4yM3ptMzA1LjQ1IC02NDMuOThsMTI3LjUyIDAgMS4yOCA5Ni45MWMyNC42NCwtMzcuNDIgNTIuNywtNjUuMDUgODQuMTUsLTgyLjkgMzEuNDYsLTE3Ljg1IDY3LjE3LC0yNi43OCAxMDcuMTMsLTI2Ljc4IDMwLjYsMCA2MC4xNCw0LjkyIDg4LjYyLDE0LjY4IDI4LjQ3LDkuNzcgNTIuMDgsMjMuMTYgNzAuNzcsNDAuMThsLTYzLjc2IDExNi4wNGMtMzQsLTIyLjk2IC02OS4zLC0zNC40NCAtMTA1Ljg1LC0zNC40NCAtNTAuOTksMCAtOTEuNiwxNy44NSAtMTIxLjc3LDUzLjU2IC0zMC4xNywzNS43MSAtNDUuMjcsODQuMjIgLTQ1LjI3LDE0NS4zOGwwIDMwNy4zMiAtMTQyLjgyIDAgMCAtNjI5Ljk0em03NjcuMDggNjQyLjY4Yy01My41NiwwIC0xMDAuMzIsLTEyLjA5IC0xNDAuMjcsLTM2LjMyIC0zOS45NiwtMjQuMjQgLTcwLjc5LC01OC40NyAtOTIuNDYsLTEwMi42NSAtMjEuNjcsLTQ0LjIgLTMyLjUyLC05Ni4wOCAtMzIuNTIsLTE1NS41OWwwIC0zNDguMTIgMTQyLjgyIDAgMCAzMzkuMmMwLDU1LjIgMTMuMiw5OC4yIDM5LjU1LDEyOC43OSAyNi4zMywzMC42IDYyLjQ4LDQ1LjkxIDEwOC4zOCw0NS45MSA1MS44NywwIDkzLjk4LC0xNy4wMyAxMjYuMjYsLTUxLjAxIDMyLjI5LC0zMy45OCA0OC40NSwtNzcuNzggNDguNDUsLTEzMS4zNGwwIC0zMzEuNTUgMTQyLjgzIDAgMCA2MjkuOTQgLTEyNy41MiAwIC0xLjI3IC04MS42MWMtNTMuNTYsNjIuOTEgLTEyNC45OSw5NC4zNSAtMjE0LjI0LDk0LjM1em00NjIuMyAtNjQyLjY4bDE0Mi44MiAwIDAgNjI5Ljk0IC0xNDIuODIgMCAwIC02MjkuOTR6bS0xOS4xMiAtMTgxLjA5YzAsLTI2LjM2IDguNTIsLTQ3Ljg0IDI1LjUsLTY0LjQgMTYuOTgsLTE2LjU1IDM4LjY3LC0yNC44NiA2NS4wMiwtMjQuODYgMjcuMjIsMCA0OS41NSw4LjMxIDY2Ljk1LDI0Ljg2IDE3LjQxLDE2LjU2IDI2LjE1LDM4LjA0IDI2LjE1LDY0LjQgMCwyNC42NSAtOC43NSw0NS4yOSAtMjYuMTUsNjEuODUgLTE3LjM5LDE2LjU1IC0zOS43MywyNC44NyAtNjYuOTUsMjQuODcgLTI2LjM2LDAgLTQ4LjA0LC04LjMyIC02NS4wMiwtMjQuODcgLTE2Ljk4LC0xNi41NiAtMjUuNSwtMzcuMTkgLTI1LjUsLTYxLjg1em01NTcuOTIgODE5Ljk1Yy02Ni4zMSwwIC0xMTcuMzMsLTE5LjE2IC0xNTMuMDEsLTU3LjM5IC0zNS42NywtMzguMjMgLTUzLjU2LC05NC4zNSAtNTMuNTYsLTE2OC4zMmwwIC0yOTIuMDEgLTExOC42IDAgMCAtMTIxLjE1IDExOC42IDAgMCAtMTY0LjUxIDE0MS41NSAtMTUuMyAwIDE3OS44MiAxODEuMDkgMCAwIDEyMS4xNSAtMTgxLjA5IDAgMCAyOTIuMDFjMCwzMi4yNSA3LjQ1LDU2Ljk4IDIyLjMxLDczLjk2IDE0Ljg1LDE2Ljk4IDM2Ljc3LDI1LjUxIDY1LjY4LDI1LjUxIDI1LjUsMCA1MS44NiwtNi4zOCA3OS4wNiwtMTkuMTVsMzkuNTQgMTE0Ljc4Yy0yNC42NSwxMS4wNCAtNDcuODUsMTguOTMgLTY5LjUxLDIzLjU5IC0yMS42Niw0LjY0IC00NS43LDcuMDEgLTcyLjA1LDcuMDF6Ii8+DQogICA8cGF0aCBjbGFzcz0iZmlsMSBzdHIwIiBkPSJNMTI1NC4yNyA0ODEuNTFjLTI4Ny4xMSw2My40NyAtNDY4LjQxLDM0Ny42NiAtNDA0Ljk0LDYzNC43NyA2My40NywyODcuMTEgMzQ3LjY2LDQ2OC40MSA2MzQuNzcsNDA0Ljk0IDczLjE3LC0xNi4xNyAxMzkuNDUsLTQ2LjcxIDE5Ni41NiwtODcuOTVsMzc0LjAyIDM5Mi4xMiAxMDcuOTIgLTEwMS45NSAtMzc0Ljg3IC0zOTMuMDFjOTUuMDIsLTEyMSAxMzcuMTIsLTI4Mi4wMiAxMDEuMzEsLTQ0My45NyAtNjMuNDcsLTI4Ny4xMSAtMzQ3LjY2LC00NjguNDEgLTYzNC43NywtNDA0Ljk0em0zMy44NiAxNTMuMThjLTIwMi41LDQ0Ljc3IC0zMzAuMzgsMjQ1LjIzIC0yODUuNjEsNDQ3LjczIDQ0Ljc1LDIwMi41IDI0NS4yMiwzMzAuMzggNDQ3LjcyLDI4NS42MiAyMDIuNTEsLTQ0Ljc3IDMzMC4zOSwtMjQ1LjIzIDI4NS42MiwtNDQ3LjczIC00NC43NywtMjAyLjUgLTI0NS4yMywtMzMwLjM4IC00NDcuNzMsLTI4NS42MnoiLz4NCiAgIDxwYXRoIGNsYXNzPSJmaWwxIiBkPSJNMTM3MCAwYzEwOS43OCwwIDE5OC43Niw4OC45OSAxOTguNzYsMTk4Ljc2IDAsMTA5Ljc3IC04OC45OCwxOTguNzYgLTE5OC43NiwxOTguNzYgLTEwOS43NiwwIC0xOTguNzMsLTg4Ljk5IC0xOTguNzMsLTE5OC43NiAwLC0xMDkuNzcgODguOTgsLTE5OC43NiAxOTguNzMsLTE5OC43NnoiLz4NCiAgIDx0ZXh0IHg9IjQ2MzIuOTYiIHk9IjEzMzMuOTYiICBjbGFzcz0iZmlsMiBzdHIyIGZudDAiPlI8L3RleHQ+DQogIDwvZz4NCiA8L2c+DQo8L3N2Zz4NCg==" alt="JobberRecruit" class="cert-logo-real" width="232" height="48">
     </div>
-    <!-- DYNAMIC: backend swaps ribbon text by type — Training: "Professional Training Programme" | Webinar: "Professional Webinar" -->
-    <span class="cert-type-ribbon"><svg aria-hidden="true"><use href="#i-cap"/></svg> Professional Training Programme</span>
+    <!-- DYNAMIC: backend swaps ribbon text by type & applies saved layout_json positioning if present -->
+    <?php 
+      $layoutState = [];
+      if (!empty($template['layout_json'])) {
+          $layoutState = is_string($template['layout_json']) ? json_decode($template['layout_json'], true) : $template['layout_json'];
+          if (!is_array($layoutState)) $layoutState = [];
+      }
 
-    <h1 class="cert-title">Certificate of Completion</h1>
-    <div class="cert-sub">This certifies that</div>
+      function getCertElemStyle($id, $layoutState) {
+          if (empty($layoutState[$id])) return '';
+          $cfg = $layoutState[$id];
+          $style = [];
+          if (isset($cfg['visible']) && $cfg['visible'] === false) return 'style="display: none !important"';
+          if (($cfg['position'] ?? '') === 'absolute' && isset($cfg['left'], $cfg['top'])) {
+              $style[] = "position: absolute; margin: 0;";
+              $style[] = "left: {$cfg['left']}px";
+              $style[] = "top: {$cfg['top']}px";
+          }
+          if (!empty($cfg['fontSize'])) $style[] = "font-size: {$cfg['fontSize']}";
+          if (!empty($cfg['fontWeight'])) $style[] = "font-weight: {$cfg['fontWeight']}";
+          if (!empty($cfg['color'])) $style[] = "color: {$cfg['color']}";
+          if (!empty($cfg['textAlign'])) $style[] = "text-align: {$cfg['textAlign']}";
+          return !empty($style) ? 'style="' . implode(';', $style) . '"' : '';
+      }
+
+      $certType = $template['cert_type'] ?? 'training';
+      $ribbonText = 'Professional Training Programme';
+      $statementText = 'has successfully completed all requirements of the professional training programme';
+      if ($certType === 'webinar') {
+          $ribbonText = 'Professional Webinar';
+          $statementText = 'attended and successfully completed the professional webinar';
+      } elseif ($certType === 'course') {
+          $ribbonText = 'Course Completion';
+          $statementText = 'has successfully completed the online course';
+      }
+    ?>
+    <span class="cert-type-ribbon" <?= getCertElemStyle('ribbon', $layoutState) ?>><svg aria-hidden="true"><use href="#i-cap"/></svg> <?= esc($layoutState['ribbon']['text'] ?? $ribbonText) ?></span>
+
+    <h1 class="cert-title" <?= getCertElemStyle('title', $layoutState) ?>><?= esc($layoutState['title']['text'] ?? 'Certificate of Completion') ?></h1>
+    <div class="cert-sub" <?= getCertElemStyle('sub', $layoutState) ?>>This certifies that</div>
 
     <div class="cert-divider" aria-hidden="true"><i></i></div>
 
-    <div class="cert-name"><?= esc($user->full_name ?? $user->username ?? 'Participant') ?></div>
+    <div class="cert-name" <?= getCertElemStyle('name', $layoutState) ?>><?= esc($user->full_name ?? $user->username ?? 'Participant') ?></div>
     <div class="cert-name-rule" aria-hidden="true"></div>
 
-    <!-- DYNAMIC: backend swaps statement by type — Training: "has successfully completed all requirements of the professional training programme" | Webinar: "attended and completed the professional webinar" -->
-    <p class="cert-statement">has successfully completed all requirements of the professional training programme</p>
-    <div class="cert-course-wrap">
-      <div class="cert-course"><?= esc($course->title) ?></div>
+    <p class="cert-statement" <?= getCertElemStyle('statement', $layoutState) ?>><?= esc($layoutState['statement']['text'] ?? $statementText) ?></p>
+    <div class="cert-course-wrap" <?= getCertElemStyle('course', $layoutState) ?>>
+      <div class="cert-course"><?= esc(is_array($course) ? ($course['title'] ?? '') : ($course->title ?? '')) ?></div>
     </div>
+    <?php if (!empty($template['additional_text']) || !empty($layoutState['additional_text'])): ?>
+      <div class="cert-additional-text" <?= getCertElemStyle('additional_text', $layoutState) ?> style="font-size:.78rem;letter-spacing:.06em;color:var(--navy);font-weight:600;margin-top:6px;min-height:1.2em"><?= esc($template['additional_text'] ?? '') ?></div>
+    <?php endif; ?>
 
-    <div class="cert-meta">
+    <div class="cert-meta" <?= getCertElemStyle('meta', $layoutState) ?>>
       <div class="cert-meta-item"><div class="lbl">Date Issued</div><div class="val"><?= date('F j, Y', strtotime($certificate['issued_at'])) ?></div></div>
       <!-- DYNAMIC: backend sets Duration by type — Training: "6 Modules · 8 Hours" | Webinar: "90 Minutes" or "1 Session" -->
       <?php 
@@ -335,17 +485,31 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
     </div>
 
     <div class="cert-verify">
-      <div class="cert-qr" aria-hidden="true">
-        <!-- Placeholder QR (dev replaces with real QR encoding the verify URL) -->
-        <svg viewBox="0 0 29 29" shape-rendering="crispEdges"><path fill="#0A2F57" d="M0 0h7v1H0zM8 0h1v1H8zM11 0h2v1h-2zM14 0h1v1h-1zM17 0h1v1h-1zM20 0h2v1h-2zM22 0h7v1h-7zM0 1h1v1H0zM6 1h1v1H6zM9 1h3v1H9zM13 1h1v1h-1zM16 1h2v1h-2zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1H0zM2 2h3v1H2zM6 2h1v1H6zM8 2h1v1H8zM12 2h1v1h-1zM15 2h2v1h-2zM18 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h3v1h-3zM28 2h1v1h-1zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM8 3h2v1H8zM11 3h1v1h-1zM13 3h3v1h-3zM18 3h3v1h-3zM22 3h1v1h-1zM24 3h3v1h-3zM28 3h1v1h-1zM0 4h1v1H0zM2 4h3v1H2zM6 4h1v1H6zM10 4h2v1h-2zM14 4h1v1h-1zM16 4h1v1h-1zM19 4h2v1h-2zM22 4h1v1h-1zM24 4h3v1h-3zM28 4h1v1h-1zM0 5h1v1H0zM6 5h1v1H6zM9 5h2v1H9zM12 5h4v1h-4zM18 5h1v1h-1zM20 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h7v1H0zM8 6h1v1H8zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h7v1h-7zM8 7h2v1H8zM12 7h1v1h-1zM15 7h2v1h-2zM19 7h1v1h-1zM0 8h2v1H0zM3 8h1v1H3zM5 8h3v1H5zM10 8h3v1h-3zM14 8h2v1h-2zM17 8h1v1h-1zM19 8h2v1h-2zM23 8h1v1h-1zM25 8h1v1h-1zM27 8h2v1h-2zM1 9h2v1H1zM4 9h1v1H4zM7 9h1v1H7zM9 9h1v1H9zM13 9h1v1h-1zM16 9h1v1h-1zM18 9h1v1h-1zM21 9h2v1h-2zM26 9h1v1h-1zM0 10h1v1H0zM2 10h2v1H2zM5 10h2v1H5zM8 10h1v1H8zM11 10h3v1h-3zM15 10h1v1h-1zM17 10h3v1h-3zM21 10h1v1h-1zM23 10h2v1h-2zM27 10h1v1h-1zM1 11h1v1H1zM4 11h2v1H4zM7 11h4v1H7zM12 11h1v1h-1zM14 11h3v1h-3zM18 11h1v1h-1zM20 11h1v1h-1zM24 11h1v1h-1zM26 11h2v1h-2zM0 12h1v1H0zM3 12h1v1H3zM6 12h1v1H6zM9 12h2v1H9zM13 12h2v1h-2zM16 12h1v1h-1zM19 12h3v1h-3zM23 12h1v1h-1zM25 12h2v1h-2zM2 13h3v1H2zM6 13h1v1H6zM8 13h1v1H8zM10 13h1v1h-1zM12 13h1v1h-1zM15 13h3v1h-3zM19 13h1v1h-1zM22 13h1v1h-1zM24 13h1v1h-1zM27 13h2v1h-2zM0 14h1v1H0zM4 14h1v1H4zM7 14h2v1H7zM10 14h3v1h-3zM14 14h1v1h-1zM17 14h2v1h-2zM20 14h2v1h-2zM23 14h2v1h-2zM26 14h1v1h-1zM28 14h1v1h-1zM1 15h2v1H1zM5 15h2v1H5zM8 15h1v1H8zM11 15h1v1h-1zM13 15h3v1h-3zM18 15h1v1h-1zM21 15h1v1h-1zM24 15h3v1h-3zM0 16h2v1H0zM3 16h2v1H3zM6 16h2v1H6zM9 16h3v1H9zM13 16h1v1h-1zM15 16h1v1h-1zM17 16h1v1h-1zM19 16h2v1h-2zM22 16h1v1h-1zM25 16h1v1h-1zM27 16h2v1h-2zM2 17h1v1H2zM4 17h1v1H4zM8 17h2v1H8zM11 17h2v1h-2zM14 17h2v1h-2zM17 17h1v1h-1zM20 17h1v1h-1zM23 17h2v1h-2zM26 17h1v1h-1zM0 18h1v1H0zM3 18h3v1H3zM7 18h1v1H7zM9 18h1v1H9zM12 18h3v1h-3zM16 18h3v1h-3zM20 18h2v1h-2zM23 18h1v1h-1zM25 18h2v1h-2zM1 19h3v1H1zM5 19h1v1H5zM7 19h2v1H7zM10 19h2v1h-2zM13 19h1v1h-1zM15 19h1v1h-1zM18 19h1v1h-1zM21 19h2v1h-2zM24 19h1v1h-1zM27 19h1v1h-1zM0 20h1v1H0zM2 20h2v1H2zM6 20h3v1H6zM10 20h1v1h-1zM12 20h2v1h-2zM15 20h3v1h-3zM19 20h1v1h-1zM21 20h1v1h-1zM23 20h2v1h-2zM26 20h2v1h-2zM8 21h1v1H8zM11 21h2v1h-2zM14 21h1v1h-1zM16 21h1v1h-1zM18 21h3v1h-3zM22 21h1v1h-1zM24 21h1v1h-1zM27 21h1v1h-1zM0 22h7v1H0zM9 22h2v1H9zM12 22h1v1h-1zM14 22h3v1h-3zM18 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM26 22h1v1h-1zM28 22h1v1h-1zM0 23h1v1H0zM6 23h1v1H6zM8 23h2v1H8zM11 23h1v1h-1zM13 23h1v1h-1zM16 23h3v1h-3zM20 23h1v1h-1zM22 23h1v1h-1zM26 23h3v1h-3zM0 24h1v1H0zM2 24h3v1H2zM6 24h1v1H6zM9 24h1v1H9zM11 24h3v1h-3zM15 24h1v1h-1zM17 24h2v1h-2zM20 24h3v1h-3zM24 24h1v1h-1zM27 24h1v1h-1zM0 25h1v1H0zM2 25h3v1H2zM6 25h1v1H6zM8 25h1v1H8zM10 25h1v1h-1zM13 25h2v1h-2zM16 25h1v1h-1zM18 25h1v1h-1zM21 25h3v1h-3zM25 25h1v1h-1zM27 25h2v1h-2zM0 26h1v1H0zM2 26h3v1H2zM6 26h1v1H6zM8 26h3v1H8zM12 26h1v1h-1zM14 26h1v1h-1zM17 26h2v1h-2zM20 26h1v1h-1zM23 26h1v1h-1zM25 26h1v1h-1zM0 27h1v1H0zM6 27h1v1H6zM9 27h1v1H9zM11 27h1v1h-1zM13 27h3v1h-3zM17 27h1v1h-1zM19 27h2v1h-2zM22 27h2v1h-2zM25 27h2v1h-2zM0 28h7v1H0zM8 28h1v1H8zM10 28h2v1h-2zM13 28h1v1h-1zM15 28h3v1h-3zM19 28h1v1h-1zM21 28h1v1h-1zM23 28h1v1h-1zM25 28h1v1h-1zM27 28h1v1h-1z"/></svg>
-      </div>
+      <a href="<?= base_url('verify/' . esc($certificate['certificate_code'])) ?>" target="_blank" class="cert-qr" aria-label="Scan or click to verify certificate" title="Scan or click to verify certificate online">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&amp;data=<?= urlencode(base_url('verify/' . $certificate['certificate_code'])) ?>" alt="Scan or click to verify certificate" crossorigin="anonymous">
+      </a>
       <div class="cert-verify-text">
         <div class="vt-lbl">Certificate ID</div>
         <div class="vt-id"><?= esc($certificate['certificate_code']) ?></div>
-        <div class="vt-url">Verify at <?= base_url('verify/' . esc($certificate['certificate_code'])) ?></div>
+        <div class="vt-url"><a href="<?= base_url('verify/' . esc($certificate['certificate_code'])) ?>" target="_blank" style="color:var(--brand);text-decoration:underline;">Verify at <?= base_url('verify/' . esc($certificate['certificate_code'])) ?></a></div>
       </div>
       <span class="cert-verify-badge"><svg aria-hidden="true"><use href="#i-shield"/></svg> Authentic &amp; Verifiable</span>
     </div>
+    <?php foreach ($layoutState as $elemId => $cfg): ?>
+      <?php if (str_starts_with($elemId, 'custom_') && ($cfg['visible'] ?? true) !== false): ?>
+        <?php if (($cfg['type'] ?? '') === 'text'): ?>
+          <div class="custom-text-item" style="position:absolute;left:<?= intval($cfg['left'] ?? 0) ?>px;top:<?= intval($cfg['top'] ?? 0) ?>px;font-size:<?= esc($cfg['fontSize'] ?? '16px') ?>;color:<?= esc($cfg['color'] ?? '#15233a') ?>;font-weight:<?= esc($cfg['fontWeight'] ?? '600') ?>;text-align:<?= esc($cfg['textAlign'] ?? 'left') ?>;margin:0;z-index:10;">
+            <?= esc($cfg['text'] ?? '') ?>
+          </div>
+        <?php elseif (($cfg['type'] ?? '') === 'image'): ?>
+          <div class="custom-img-item" style="position:absolute;left:<?= intval($cfg['left'] ?? 0) ?>px;top:<?= intval($cfg['top'] ?? 0) ?>px;margin:0;z-index:10;">
+            <img src="<?= esc($cfg['url'] ?? '') ?>" style="max-width:140px;max-height:140px;object-fit:contain;" alt="">
+          </div>
+        <?php elseif (($cfg['type'] ?? '') === 'line'): ?>
+          <div class="custom-line-item" style="position:absolute;left:<?= intval($cfg['left'] ?? 0) ?>px;top:<?= intval($cfg['top'] ?? 0) ?>px;width:<?= esc($cfg['width'] ?? '556px') ?>;height:<?= esc($cfg['height'] ?? '2px') ?>;background-color:<?= esc($cfg['backgroundColor'] ?? '#C9A24B') ?>;margin:0;z-index:10;"></div>
+        <?php endif; ?>
+      <?php endif; ?>
+    <?php endforeach; ?>
   </div>
 </div>
 </div><!-- /cert-scroll-wrap -->

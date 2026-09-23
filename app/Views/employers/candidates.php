@@ -1,6 +1,137 @@
 <?php $page_title = 'Candidates Search'; ?>
 <?= $this->extend('layouts/employer') ?>
 
+<?= $this->section('styles') ?>
+<style>
+.cand-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 991px) {
+  .cand-layout { grid-template-columns: 1fr; }
+}
+.cand-card {
+  display: grid;
+  grid-template-columns: 46px 1.2fr 1.3fr 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  transition: background 0.15s ease;
+}
+.cand-card:last-child { border-bottom: none; }
+.cand-card:hover { background: #f8fafc; }
+.cc-ava {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0A2F57;
+  color: #fff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.cc-id { min-width: 0; }
+.cc-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--brand-deep, #0A2F57);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.cc-role {
+  font-size: 0.8rem;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.cc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: var(--muted, #64748b);
+}
+.cc-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.cc-meta svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  flex-shrink: 0;
+}
+.cc-skill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 52px;
+  overflow: hidden;
+  align-content: flex-start;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: #334155;
+  white-space: nowrap;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.cc-act {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+@media (max-width: 991px) {
+  .cand-card {
+    grid-template-columns: 44px 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  .cc-meta, .cc-skill, .cc-act {
+    grid-column: 1 / -1;
+  }
+  .cc-act {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <?php
 // Query database directly to fetch unlocked IDs for the logged-in employer
@@ -72,6 +203,25 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 </div>
             <?php endif; ?>
 
+            <!-- State / Location Filter -->
+            <?php if (!empty($states)): ?>
+                <div class="f-group">
+                    <div class="f-label">State / Region</div>
+                    <select name="state_id" class="select w-100 mb-2" onchange="this.form.submit()" style="min-height:38px;font-size:0.82rem;padding:6px 10px;">
+                        <option value="">All Nigerian States</option>
+                        <?php foreach ($states as $st): ?>
+                            <option value="<?= $st->id ?>" <?= (request()->getGet('state_id') == $st->id || request()->getGet('state') == $st->id) ? 'selected' : '' ?>>
+                                <?= esc($st->name) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="f-group">
+                    <div class="f-label">City / Town</div>
+                    <input type="text" name="city" class="input w-100" placeholder="e.g. Ikeja, Lekki, Wuse" value="<?= esc(request()->getGet('city') ?? '') ?>" style="min-height:38px;font-size:0.82rem;padding:6px 10px;" onchange="this.form.submit()">
+                </div>
+            <?php endif; ?>
+
             <!-- Locations Filter (if variable passed) -->
             <?php if (!empty($locations)): ?>
                 <div class="f-group">
@@ -122,6 +272,30 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+
+            <!-- Activity / Recency Filter -->
+            <div class="f-group">
+                <div class="f-label">Candidate Activity</div>
+                <?php
+                $currAct = request()->getGet('activity') ?? 'all';
+                $actOptions = [
+                    'all' => 'All candidates',
+                    'this_week' => 'Active this week',
+                    'last_week' => 'Active in last 2 weeks',
+                    'this_month' => 'Active this month',
+                    'last_3_months' => 'Active in last 3 months',
+                    'older' => 'Older / inactive profiles',
+                ];
+                foreach ($actOptions as $actVal => $actLabel):
+                ?>
+                    <label class="f-opt">
+                        <input type="radio" name="activity" value="<?= esc($actVal) ?>"
+                            <?= $currAct === $actVal ? 'checked' : '' ?>
+                            onchange="this.form.submit()">
+                        <?= esc($actLabel) ?>
+                    </label>
+                <?php endforeach; ?>
+            </div>
 
             <a href="<?= current_url() ?>" class="emp-btn emp-btn-outline emp-btn-sm f-clear text-center">Clear all filters</a>
         </form>
@@ -316,6 +490,19 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
     });
 })();
 
+function showToast(type, msg) {
+    if (typeof toastr !== 'undefined' && toastr[type]) {
+        toastr[type](msg);
+    } else {
+        alert(msg);
+    }
+}
+
+function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '<?= csrf_hash() ?>';
+}
+
 /* Unlock candidate paywall modal & API request handler */
 (function() {
     var scrim = document.getElementById('unlock-scrim'),
@@ -362,11 +549,14 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
             
             var formData = new FormData();
             formData.append('candidate_id', currentCandidateId);
-            formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+            formData.append('<?= csrf_token() ?>', getCsrfToken());
 
             fetch('<?= base_url("employer/candidates/unlock") ?>', {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken()
+                },
                 body: formData
             })
             .then(function(r) { return r.json(); })
@@ -374,13 +564,13 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 if (res.success) {
                     location.reload();
                 } else {
-                    toastr.error(res.message || 'Failed to unlock candidate.');
+                    showToast('error', res.message || 'Failed to unlock candidate.');
                     confirmB.disabled = false;
                     confirmB.innerHTML = '<svg aria-hidden="true"><use href="#i-wallet"/></svg> Confirm Unlock (₦5,000)';
                 }
             })
             .catch(function(err) {
-                toastr.error('An error occurred. Please try again.');
+                showToast('error', 'An error occurred. Please try again.');
                 confirmB.disabled = false;
                 confirmB.innerHTML = '<svg aria-hidden="true"><use href="#i-wallet"/></svg> Confirm Unlock (₦5,000)';
             });
@@ -397,7 +587,8 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken()
                 },
                 body: JSON.stringify({
                     type: 'unlock',
@@ -421,11 +612,14 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                             var verifyData = new FormData();
                             verifyData.append('reference', response.reference);
                             verifyData.append('candidate_id', currentCandidateId);
-                            verifyData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                            verifyData.append('<?= csrf_token() ?>', getCsrfToken());
 
                             fetch("<?= base_url('employer/candidates/unlock-verify') ?>", {
                                 method: 'POST',
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'X-CSRF-TOKEN': getCsrfToken()
+                                },
                                 body: verifyData
                             })
                             .then(function(vr) { return vr.json(); })
@@ -433,13 +627,13 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                                 if (vres.success) {
                                     location.reload();
                                 } else {
-                                    toastr.error(vres.message || 'Payment verification failed.');
+                                    showToast('error', vres.message || 'Payment verification failed.');
                                     paystackB.disabled = false;
                                     paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
                                 }
                             })
                             .catch(function() {
-                                toastr.error('Error verifying transaction.');
+                                showToast('error', 'Error verifying transaction.');
                                 paystackB.disabled = false;
                                 paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
                             });
@@ -451,13 +645,13 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                     });
                     handler.openIframe();
                 } else {
-                    toastr.error(res.message || 'Failed to initialize payment.');
+                    showToast('error', res.message || 'Failed to initialize payment.');
                     paystackB.disabled = false;
                     paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
                 }
             })
             .catch(function(err) {
-                toastr.error('Connection error.');
+                showToast('error', 'Connection error.');
                 paystackB.disabled = false;
                 paystackB.innerHTML = '<svg aria-hidden="true"><use href="#i-card"/></svg> Pay with Paystack (₦5,000)';
             });
@@ -469,11 +663,14 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
 function startMessage(candidateId) {
     var formData = new FormData();
     formData.append('seeker_id', candidateId);
-    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    formData.append('<?= csrf_token() ?>', getCsrfToken());
 
     fetch('<?= base_url("employer/messages/start") ?>', {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': getCsrfToken()
+        },
         body: formData
     })
     .then(function(r) { return r.json(); })
@@ -481,11 +678,11 @@ function startMessage(candidateId) {
         if (res.success && res.redirect) {
             window.location.href = res.redirect;
         } else {
-            toastr.error(res.message || 'Failed to start conversation');
+            showToast('error', res.message || 'Failed to start conversation');
         }
     })
     .catch(function(err) {
-        toastr.error('Error starting conversation');
+        showToast('error', 'Error starting conversation');
         console.error(err);
     });
 }

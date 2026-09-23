@@ -94,10 +94,39 @@
     </div>
 </div>
 
-<div class="notice notice--info" role="status">
+<div class="notice notice--info" role="status"
+    <?= !empty($hasUnlimitedAccess) ? 'style="background:#d4edda;border-color:#b8dfc6;color:#1a5c32;"' : '' ?>>
     <svg aria-hidden="true"><use href="#i-zap"/></svg>
-    <span>You have <b><?= esc($creditBalance ?? 0) ?> job credits</b> available. Credits are used automatically when you post a job.</span>
+    <?php if (!empty($hasUnlimitedAccess)): ?>
+        <span>🎉 You have <b>Unlimited Job Postings</b>. Post as many jobs as you like — no credits needed.</span>
+    <?php else: ?>
+        <span>You have <b><?= esc($creditBalance ?? 0) ?> job credits</b> available. Credits are used automatically when you post a job.</span>
+    <?php endif; ?>
 </div>
+
+<?php if (!empty($activeSubDetails['has_active'])): ?>
+    <div style="background: linear-gradient(135deg, #0A2F57, #0861A9); color: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(8, 97, 169, 0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.25); border: 1px solid rgba(74, 222, 128, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; color: #bbf7d0; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <svg aria-hidden="true" style="width:14px;height:14px;fill:currentColor;"><use href="#i-check-c"/></svg> Already Subscribed
+                </div>
+                <h3 style="margin: 8px 0 4px; font-size: 1.25rem; font-weight: 700; color: #ffffff; font-family: 'Sora', sans-serif;">
+                    You are already subscribed to the <?= esc($activeSubDetails['plan_name']) ?> (<?= esc($activeSubDetails['duration_label']) ?>) package
+                </h3>
+                <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">
+                    Started: <b><?= date('M d, Y', strtotime($activeSubDetails['starts_at'])) ?></b> &bull; 
+                    Active until: <b><?= date('M d, Y', strtotime($activeSubDetails['ends_at'])) ?></b>
+                </p>
+            </div>
+            <div style="text-align: right; background: rgba(255, 255, 255, 0.12); padding: 12px 18px; border-radius: 10px; backdrop-filter: blur(4px);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;">Active Plan Balance Credit</div>
+                <div style="font-size: 1.35rem; font-weight: 800; color: #4ade80; margin: 2px 0;">&#8358;<?= number_format($activeSubDetails['unused_credit'], 2) ?></div>
+                <div style="font-size: 0.75rem; opacity: 0.85;">Used <b><?= $activeSubDetails['days_used'] ?></b> of <b><?= $activeSubDetails['total_days'] ?></b> days (<?= $activeSubDetails['days_remaining'] ?> days remaining)</div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="plans">
     <!-- pay-as-you-go bundles -->
@@ -150,9 +179,19 @@
     <!-- Subscription Plan -->
     <section class="pro-card" aria-label="Subscription plan">
         <div class="pro-head">
-            <span class="pro-badge">Best value</span>
+            <?php if (!empty($activeSubDetails['has_active'])): ?>
+                <span class="pro-badge" style="background:#16a34a; color:#fff;">Already Subscribed</span>
+            <?php else: ?>
+                <span class="pro-badge">Best value</span>
+            <?php endif; ?>
             <h2><?= esc($subscriptionPlan->name ?? 'Business Pro') ?></h2>
             <p>Unlimited job postings + premium features</p>
+            <?php if (!empty($activeSubDetails['has_active'])): ?>
+                <div style="margin-top:10px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:8px; padding:8px 12px; font-size:0.78rem; color:#fff;">
+                    <svg aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;color:#86efac;"><use href="#i-check-c"/></svg> 
+                    You have an active subscription until <b><?= date('M d, Y', strtotime($activeSubDetails['ends_at'])) ?></b>. Choose a duration below to extend or upgrade with prorated discount.
+                </div>
+            <?php endif; ?>
         </div>
         <div class="pro-body">
             <label class="lbl" for="duration">Select duration</label>
@@ -188,7 +227,23 @@
                 <span class="badge bg-success" style="background: var(--success); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem;">Save up to 25% with annual plan</span>
             </div>
 
-            <ul class="feat">
+            <!-- Dynamic Proration Breakdown Box -->
+            <div id="prorationBreakdown" style="display: <?= !empty($initialProration['has_active_sub']) && $initialProration['unused_credit'] > 0 ? 'block' : 'none' ?>; background: #e8f4fd; border: 1px solid #b6e0fe; padding: 12px 14px; border-radius: 8px; margin-top: 14px; font-size: 0.82rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: #555;">New Plan Price:</span>
+                    <strong id="prora-new-price">&#8358;<?= number_format($initialProration['new_plan_price'] ?? 18000) ?></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #155724;">
+                    <span>Active Plan Balance Credit (<?= $initialProration['days_remaining'] ?? 0 ?> days remaining):</span>
+                    <strong id="prora-discount">-&#8358;<?= number_format($initialProration['proration_discount'] ?? 0, 2) ?></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid #b6e0fe; padding-top: 6px; margin-top: 6px; font-weight: 700; color: #0861A9;">
+                    <span>Net Upgrade Amount:</span>
+                    <strong id="prora-net-total" style="font-size: 0.95rem;">&#8358;<?= number_format($initialProration['net_amount_due'] ?? 18000, 2) ?></strong>
+                </div>
+            </div>
+
+            <ul class="feat" style="margin-top: 16px;">
                 <li><svg aria-hidden="true"><use href="#i-check"/></svg><span><b>Unlimited</b> job postings</span></li>
                 <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Featured at the top</span></li>
                 <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Network Blast (115k+)</span></li>
@@ -199,16 +254,11 @@
                 <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Advanced candidate search</span></li>
             </ul>
 
-            <?php 
-            $activePlan = $myPlan ?? $currentPlan ?? null;
-            if ($activePlan && $activePlan->plan_type === 'subscription'): 
-            ?>
-                <button class="emp-btn emp-btn-accent emp-btn-block" disabled>Active Subscription</button>
-            <?php else: ?>
-                <button onclick="showPurchaseModal('subscription')" class="emp-btn emp-btn-accent emp-btn-block">
-                    <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
-                </button>
-            <?php endif; ?>
+            <button id="sub-action-btn" onclick="showPurchaseModal('subscription')" class="emp-btn emp-btn-accent emp-btn-block">
+                <svg aria-hidden="true"><use href="#i-zap"/></svg> 
+                <?= !empty($activeSubDetails['has_active']) ? 'Upgrade / Extend Subscription' : 'Subscribe Now' ?>
+            </button>
+
             <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px">Renews automatically. Cancel anytime from this page.</p>
         </div>
     </section>
@@ -303,7 +353,7 @@
 
 <?= $this->section('mobile_cta') ?>
 <button class="emp-btn emp-btn-outline" onclick="document.querySelector('.plans').scrollIntoView({behavior:'smooth'})">View Bundles</button>
-<?php if ($activePlan && $activePlan->plan_type === 'subscription'): ?>
+<?php if (isset($currentPlan) && $currentPlan && $currentPlan->plan_type === 'subscription'): ?>
     <button class="emp-btn emp-btn-accent" disabled>Active Subscription</button>
 <?php else: ?>
     <button class="emp-btn emp-btn-accent" onclick="showPurchaseModal('subscription')">
@@ -332,6 +382,7 @@
     }
 
     let currentPurchase = {};
+    let currentProration = <?= json_encode($initialProration ?? []) ?>;
 
     document.querySelectorAll('.js-bundle-purchase').forEach((button) => {
         button.addEventListener('click', function() {
@@ -369,7 +420,9 @@
             const months = parseInt(document.getElementById('duration').value);
             currentPurchase.duration_months = months;
             document.getElementById('duration_months').value = months;
-            document.getElementById('modalTitle').textContent = 'Subscribe to ' + <?= json_encode($subscriptionPlan->name ?? "Business Pro") ?>;
+            document.getElementById('modalTitle').textContent = (currentProration && currentProration.has_active_sub)
+                ? 'Upgrade / Extend Subscription'
+                : 'Subscribe to ' + <?= json_encode($subscriptionPlan->name ?? "Business Pro") ?>;
         } else {
             document.getElementById('modalTitle').textContent = 'Purchase Bundle';
         }
@@ -412,26 +465,53 @@
         };
 
         let amount = 0;
+        let originalPrice = 0;
+        let discount = 0;
         let itemDescription = '';
         let itemDetails = '';
+        let hasProration = false;
 
         if (currentPurchase.type === 'subscription') {
-            const tiers = <?= json_encode($pricingTiers ?? []) ?>;
-            const basePrice = <?= (int)($subscriptionPlan->base_price ?? 18000) ?>;
-
             currentPurchase.duration_months = parseInt(document.getElementById('duration').value);
-            amount = tiers[currentPurchase.duration_months] || (basePrice * currentPurchase.duration_months);
+
+            if (currentProration && currentProration.has_active_sub && currentProration.unused_credit > 0) {
+                originalPrice = currentProration.new_plan_price;
+                discount = currentProration.proration_discount;
+                amount = currentProration.net_amount_due;
+                hasProration = discount > 0;
+            } else {
+                const tiers = <?= json_encode($pricingTiers ?? []) ?>;
+                const basePrice = <?= (int)($subscriptionPlan->base_price ?? 18000) ?>;
+                amount = tiers[currentPurchase.duration_months] || (basePrice * currentPurchase.duration_months);
+                originalPrice = amount;
+            }
 
             itemDescription = `<?= esc($subscriptionPlan->name ?? 'Business Pro') ?> Subscription (${currentPurchase.duration_months} Month${currentPurchase.duration_months > 1 ? 's' : ''})`;
             itemDetails = `Unlimited job postings + premium features for ${currentPurchase.duration_months} month${currentPurchase.duration_months > 1 ? 's' : ''}`;
         } else if (currentPurchase.type === 'bundle') {
             const bundle = currentPurchase.bundle_data;
             amount = parseFloat(bundle.price);
+            originalPrice = amount;
             itemDescription = bundle.name;
             itemDetails = `${bundle.job_credits} Job Posting Credits`;
         }
 
         currentPurchase.amount = amount;
+
+        let prorationRowHtml = '';
+        if (hasProration) {
+            prorationRowHtml = `
+            <tr style="background: #e8f4fd;">
+                <td style="padding: 14px 12px; border-bottom: 1px solid #cee5f8; color: #0861A9;">
+                    <strong>Active Subscription Balance Credit</strong><br>
+                    <small style="color: #0861A9;">Credit from remaining ${currentProration.days_remaining} days on ${currentProration.current_sub_name}</small>
+                </td>
+                <td style="padding: 14px 12px; text-align: right; border-bottom: 1px solid #cee5f8; font-size: 16px; font-weight: 600; color: #0861A9;">
+                    -₦${discount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+                </td>
+            </tr>
+            `;
+        }
 
         let html = `
         <div style="max-width: 800px; margin: 20px auto; background: white; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
@@ -483,17 +563,19 @@
                                 <small style="color: #666;">${itemDetails}</small>
                             </td>
                             <td style="padding: 18px 12px; text-align: right; border-bottom: 1px solid #eee; font-size: 18px; font-weight: 600;">
-                                ₦${amount.toLocaleString()}
+                                ₦${originalPrice.toLocaleString('en-NG')}
                             </td>
                         </tr>
+                        ${prorationRowHtml}
                     </tbody>
                 </table>
 
                 <!-- Total -->
                 <div style="text-align: right; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 15px; color: #555;">Total Amount Due</div>
+                    ${hasProration ? `<div style="font-size: 14px; color: #555;">Subtotal: ₦${originalPrice.toLocaleString('en-NG')}</div><div style="font-size: 14px; color: #155724; font-weight: 600;">Proration Credit: -₦${discount.toLocaleString('en-NG', {minimumFractionDigits: 2})}</div>` : ''}
+                    <div style="font-size: 15px; color: #555; margin-top: 4px;">Total Amount Due</div>
                     <div style="font-size: 28px; font-weight: 700; color: #0861A9;">
-                        ₦${amount.toLocaleString()}
+                        ₦${amount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
                     </div>
                 </div>
 
@@ -510,6 +592,13 @@
 
         closeModal('purchaseModal');
         openModal('invoiceModal');
+    }
+
+    function getCsrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.getAttribute('content')) return meta.getAttribute('content');
+        var input = document.querySelector('input[name="<?= csrf_token() ?>"]');
+        return input ? input.value : '<?= csrf_hash() ?>';
     }
 
     function proceedToPayment() {
@@ -536,7 +625,8 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken()
                 },
                 body: JSON.stringify(walletPayload)
             })
@@ -575,7 +665,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('input[name="<?= csrf_token() ?>"]').value
+                    'X-CSRF-TOKEN': getCsrfToken()
                 },
                 body: JSON.stringify(payload)
             })
@@ -583,7 +673,10 @@
             .then(res => {
                 document.getElementById('payment-loader').style.display = 'none';
 
-                if (res.success && res.paystack) {
+                if (res.success && res.zero_amount) {
+                    toastr.success(res.message || 'Subscription upgraded successfully!');
+                    setTimeout(() => window.location.reload(), 1200);
+                } else if (res.success && res.paystack) {
                     let handler = PaystackPop.setup({
                         key: res.paystack,
                         email: res.email,
@@ -620,6 +713,50 @@
         a.textContent = '₦' + price.toLocaleString('en-NG');
         p.innerHTML = o.getAttribute('data-per');
         document.getElementById('savingsInfo').classList.toggle('d-none', months < 6);
+
+        fetch("<?= base_url('employer/pricing/calculate-proration') ?>", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
+            body: JSON.stringify({ duration_months: months })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.proration) {
+                const pData = data.proration;
+                currentProration = pData;
+                const breakdown = document.getElementById('prorationBreakdown');
+                const subBtn = document.getElementById('sub-action-btn');
+                
+                if (pData.has_active_sub && pData.unused_credit > 0) {
+                    if (breakdown) breakdown.style.display = 'block';
+                    const elNew = document.getElementById('prora-new-price');
+                    const elDisc = document.getElementById('prora-discount');
+                    const elNet = document.getElementById('prora-net-total');
+
+                    if (elNew) elNew.textContent = '₦' + pData.new_plan_price.toLocaleString('en-NG');
+                    if (elDisc) elDisc.textContent = '-₦' + pData.proration_discount.toLocaleString('en-NG', {minimumFractionDigits: 2});
+                    if (elNet) elNet.textContent = '₦' + pData.net_amount_due.toLocaleString('en-NG', {minimumFractionDigits: 2});
+                    
+                    if (subBtn) {
+                        if (pData.net_amount_due === 0) {
+                            subBtn.innerHTML = '<svg aria-hidden="true"><use href="#i-zap"/></svg> Apply Free Upgrade (₦0.00 Credit)';
+                        } else {
+                            subBtn.innerHTML = '<svg aria-hidden="true"><use href="#i-zap"/></svg> Upgrade / Extend (₦' + pData.net_amount_due.toLocaleString('en-NG', {minimumFractionDigits: 2}) + ')';
+                        }
+                    }
+                } else {
+                    if (breakdown) breakdown.style.display = 'none';
+                    if (subBtn) {
+                        subBtn.innerHTML = '<svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now';
+                    }
+                }
+            }
+        })
+        .catch(e => console.error('Proration calculation error:', e));
     }
 
     window.onload = updatePrice;

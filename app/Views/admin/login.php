@@ -121,10 +121,10 @@
         }
 
         .form-floating-custom .form-control {
-            height: 56px;
+            height: 58px;
             border-radius: 12px;
             border: 1.5px solid #e2e8f0;
-            padding: 16px 16px 16px 48px;
+            padding: 22px 16px 6px 48px;
             font-size: 0.95rem;
             color: var(--text-dark);
             background-color: #fff;
@@ -145,13 +145,14 @@
             color: var(--text-muted);
             pointer-events: none;
             transition: var(--transition-smooth);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
+            transform-origin: left top;
         }
 
         .form-floating-custom .form-control:focus ~ label,
         .form-floating-custom .form-control:not(:placeholder-shown) ~ label {
-            top: 8px;
-            transform: translateY(0) scale(0.8);
+            top: 14px;
+            transform: translateY(-50%) scale(0.75);
             left: 48px;
             color: var(--brand);
             font-weight: 600;
@@ -376,7 +377,9 @@
     </div>
 
     <!-- Core Scripts -->
-    <script src="<?= base_url('admin/code.jquery.com/jquery-3.6.1.min.js'); ?>"></script>
+    <!-- jQuery -->
+    <script src="<?= base_url('auth/js/jquery-3.7.1.min.js'); ?>"></script>
+    <!-- Bootstrap JS -->
     <script src="<?= base_url('admin/libs/bootstrap/js/bootstrap.bundle.min.js'); ?>"></script>
     <!-- Toastr -->
     <script src="<?= base_url('admin/js/toastr.min.js'); ?>"></script>

@@ -17,6 +17,10 @@
             </div>
 
             <div class="btn-list">
+                <a href="<?= base_url('jobs/' . (!empty($job->slug) ? $job->slug : $job->id)) ?>" target="_blank" class="btn btn-primary btn-sm" title="View Candidate-Facing Job Page">
+                    <i class="ti ti-external-link me-1"></i> View Candidate Job Page
+                </a>
+
                 <?php if ($job->admin_status === 'pending'): ?>
                     <button type="button" class="btn btn-success btn-sm" onclick="openApproveModal()">
                         <i class="ti ti-check"></i> Approve Job
@@ -26,7 +30,7 @@
                     </button>
                 <?php endif; ?>
 
-                <a href="<?= base_url('admin/jobs/edit/' . $job->id) ?>" class="btn btn-primary btn-sm">
+                <a href="<?= base_url('admin/jobs/edit/' . $job->id) ?>" class="btn btn-outline-primary btn-sm">
                     <i class="ti ti-edit"></i> Edit Job
                 </a>
 
@@ -41,7 +45,12 @@
     <div class="card custom-card mb-3">
         <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h4 class="fw-semibold mb-1"><?= esc($job->title) ?></h4>
+                <h4 class="fw-semibold mb-1">
+                    <a href="<?= base_url('jobs/' . (!empty($job->slug) ? $job->slug : $job->id)) ?>" target="_blank" class="text-dark text-decoration-none hover-primary" title="View Job Post on Candidate Site">
+                        <?= esc($job->title) ?>
+                        <i class="ti ti-external-link text-primary fs-14 ms-1"></i>
+                    </a>
+                </h4>
                 <div class="text-muted">
                     Posted on <?= date('M d, Y', strtotime($job->created_at)) ?> by <?= esc($job->company_name) ?>
                 </div>
@@ -73,6 +82,23 @@
                     <i class="ti ti-<?= $job->status === 'open' ? 'circle-check' : 'circle-x' ?> me-1"></i>
                     <?= ucfirst($job->status) ?>
                 </span>
+
+                <a href="<?= base_url('jobs/' . (!empty($job->slug) ? $job->slug : $job->id)) ?>" target="_blank" class="btn btn-primary ms-2" title="View Candidate-Facing Job Page">
+                    <i class="ti ti-external-link me-1"></i>View Live Job Post
+                </a>
+
+                <?php if ($job->admin_status === 'pending'): ?>
+                    <button type="button" class="btn btn-success fw-bold ms-2" onclick="$('#approveModal').modal('show')">
+                        <i class="ti ti-check me-1"></i>Approve Job
+                    </button>
+                    <button type="button" class="btn btn-outline-danger ms-1" onclick="$('#rejectModal').modal('show')">
+                        <i class="ti ti-x me-1"></i>Reject
+                    </button>
+                <?php elseif ($job->admin_status === 'approved'): ?>
+                    <button type="button" class="btn btn-warning fw-bold ms-2" id="btn-unapprove-single-job">
+                        <i class="ti ti-rotate-clockwise me-1"></i>Unapprove Job
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -525,6 +551,37 @@
                 btn.prop('disabled', false).html('Reject Job');
                 toastr.error('Failed to reject job');
                 $('#rejectModal').modal('hide');
+            }
+        });
+    });
+
+    // Unapprove single job handler
+    $('#btn-unapprove-single-job').on('click', function() {
+        if (!confirm('Are you sure you want to unapprove this job and set it back to pending review?')) return;
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Unapproving...');
+
+        $.ajax({
+            url: '<?= base_url("admin/jobs/unapprove") ?>',
+            type: 'POST',
+            data: {
+                job_id: <?= $job->id ?>,
+                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    toastr.error(response.message || 'Failed to unapprove job');
+                    btn.prop('disabled', false).html('<i class="ti ti-rotate-clockwise me-1"></i>Unapprove Job');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('<i class="ti ti-rotate-clockwise me-1"></i>Unapprove Job');
+                toastr.error('Server error unapproving job');
             }
         });
     });

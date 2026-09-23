@@ -69,7 +69,7 @@
     <table class="container" cellpadding="0" cellspacing="0" border="0">
         <tr>
             <td class="header">
-                <img src="<?= base_url('images/logo-white.png') ?>" alt="JobberRecruit Logo">
+                <img src="<?= base_url('assets/imgs/template/logo-white.png') ?>" alt="JobberRecruit Logo" width="180" style="max-width: 180px; height: auto; display: block; margin: 0 auto; border: 0;">
             </td>
         </tr>
         <tr>

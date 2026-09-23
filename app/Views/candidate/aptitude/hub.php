@@ -302,6 +302,31 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
 .official-strip ul{list-style:none;display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding:0}
 .official-strip li{display:inline-flex;align-items:center;gap:7px;font-size:.74rem;font-weight:600;color:rgba(255,255,255,.92)}
 .official-strip li svg{width:14px;height:14px;color:var(--accent)}
+
+/* Employer invitations (Candidate Aptitude Test Centre) */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+@media(max-width:640px){.inv-grid{grid-template-columns:1fr}}
+.inv-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;transition:var(--transition);position:relative}
+.inv-card:hover{box-shadow:var(--shadow);border-color:#cfe2f2}
+.inv-card.is-pending{border-left:4px solid var(--accent)}
+.inv-card.is-inprogress{border-left:4px solid var(--brand)}
+.inv-card.is-completed{border-left:4px solid var(--success)}
+.inv-card.is-expired{border-left:4px solid var(--muted);opacity:.85}
+.inv-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.inv-emp{display:flex;align-items:center;gap:10px}
+.inv-logo{width:40px;height:40px;border-radius:10px;background:var(--brand-light);color:var(--brand);font-weight:700;font-size:.84rem;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.inv-logo img{width:100%;height:100%;object-fit:cover}
+.inv-company{font-size:.78rem;font-weight:700;color:var(--brand-deep)}
+.inv-job{font-size:.72rem;color:var(--muted)}
+.inv-body b{font-size:.94rem;font-weight:700;color:var(--brand-deep);display:block;margin-bottom:3px}
+.inv-meta{display:flex;gap:12px;font-size:.72rem;color:var(--muted);flex-wrap:wrap}
+.inv-meta span{display:inline-flex;align-items:center;gap:4px}
+.inv-meta svg{width:13px;height:13px}
+.inv-due{font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;background:#f8fafc}
+.inv-due.urgent{background:var(--danger-light);color:var(--danger)}
+.inv-actions{display:flex;gap:8px;margin-top:auto;padding-top:6px}
+.inv-actions .btn{flex:1}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);z-index:1400;display:flex;align-items:center;gap:10px;background:var(--brand-deep);color:#fff;font-size:.82rem;font-weight:600;padding:13px 20px;border-radius:12px;box-shadow:var(--shadow-lg);opacity:0;visibility:hidden;transition:opacity .25s ease,transform .25s ease,visibility .25s;max-width:min(420px,calc(100vw - 32px))}
 .toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .toast svg{width:17px;height:17px;color:var(--accent);flex-shrink:0}
@@ -371,6 +396,150 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
         <span class="entry-arrow" aria-hidden="true"><svg><use href="#apt-arrow-r"/></svg></span>
       </a>
     </div>
+  </div>
+</section>
+
+<!-- ═══ 2 · EMPLOYER TEST INVITATIONS (Candidate Aptitude Test Centre) ═══ -->
+<section class="card" aria-labelledby="inv-title">
+  <div class="card-head">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="card-title" id="inv-title"><svg aria-hidden="true"><use href="#apt-shield"/></svg> Employer Assessment Invitations</span>
+      <?php if (!empty($invitationStats['pending'])): ?>
+        <span class="pill pill--pending"><svg aria-hidden="true"><use href="#apt-flame"/></svg> <?= $invitationStats['pending'] ?> Action Required</span>
+      <?php endif; ?>
+    </div>
+    <?php if (!empty($invitations)): ?>
+    <div class="filters" role="group" aria-label="Filter invitations">
+      <button type="button" class="fchip inv-filter" data-filter="all" aria-pressed="true">All (<?= count($invitations) ?>)</button>
+      <button type="button" class="fchip inv-filter" data-filter="pending" aria-pressed="false">Invited (<?= $invitationStats['pending'] ?>)</button>
+      <button type="button" class="fchip inv-filter" data-filter="in_progress" aria-pressed="false">In Progress (<?= $invitationStats['in_progress'] ?>)</button>
+      <button type="button" class="fchip inv-filter" data-filter="completed" aria-pressed="false">Completed (<?= $invitationStats['completed'] ?>)</button>
+      <?php if (!empty($invitationStats['expired'])): ?>
+        <button type="button" class="fchip inv-filter" data-filter="expired" aria-pressed="false">Expired (<?= $invitationStats['expired'] ?>)</button>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
+  </div>
+  <div class="card-body">
+    <?php if (!empty($invitations)): ?>
+      <div class="inv-grid" id="inv-grid">
+        <?php foreach ($invitations as $inv):
+          $now = time();
+          $isCompleted = ($inv->status === 'completed' || (!empty($inv->attempt_status) && $inv->attempt_status === 'submitted'));
+          $isInProgress = (!empty($inv->attempt_status) && $inv->attempt_status === 'in_progress');
+          $isExpired = (!$isCompleted && !empty($inv->due_date) && strtotime($inv->due_date) < $now);
+          
+          $statusFilter = 'pending';
+          $statusLabel = 'Invited';
+          $statusClass = 'pill--pending';
+          $cardClass = 'is-pending';
+
+          if ($isCompleted) {
+              $statusFilter = 'completed';
+              $statusLabel = 'Completed';
+              $statusClass = 'pill--success';
+              $cardClass = 'is-completed';
+          } elseif ($isInProgress) {
+              $statusFilter = 'in_progress';
+              $statusLabel = 'In Progress';
+              $statusClass = 'pill--brand';
+              $cardClass = 'is-inprogress';
+          } elseif ($isExpired) {
+              $statusFilter = 'expired';
+              $statusLabel = 'Expired';
+              $statusClass = 'pill--muted';
+              $cardClass = 'is-expired';
+          }
+        ?>
+        <div class="inv-card <?= $cardClass ?>" data-inv-status="<?= $statusFilter ?>">
+          <div class="inv-top">
+            <div class="inv-emp">
+              <div class="inv-logo">
+                <?php if (!empty($inv->company_logo) && file_exists(FCPATH . $inv->company_logo)): ?>
+                  <img src="<?= base_url($inv->company_logo) ?>" alt="<?= esc($inv->company_name) ?>">
+                <?php else: ?>
+                  <?= strtoupper(substr($inv->company_name ?: 'JR', 0, 2)) ?>
+                <?php endif; ?>
+              </div>
+              <div>
+                <div class="inv-company"><?= esc($inv->company_name ?: 'Verified Employer') ?></div>
+                <div class="inv-job">Role: <b><?= esc($inv->job_title ?: 'Direct Application') ?></b></div>
+              </div>
+            </div>
+            <span class="pill <?= $statusClass ?>"><?= $statusLabel ?></span>
+          </div>
+
+          <div class="inv-body">
+            <b><?= esc($inv->test_title ?: 'Aptitude Assessment') ?></b>
+            <div class="inv-meta">
+              <span><svg aria-hidden="true"><use href="#apt-clock"/></svg> <?= (int) ($inv->duration_mins ?? 25) ?> mins</span>
+              <span><svg aria-hidden="true"><use href="#apt-check-c"/></svg> <?= (int) ($inv->num_questions ?? 20) ?> questions</span>
+              <span><svg aria-hidden="true"><use href="#apt-award"/></svg> <?= (int) ($inv->pass_threshold ?? 50) ?>% to pass</span>
+            </div>
+          </div>
+
+          <?php if (!empty($inv->message)): ?>
+            <div style="font-size:.74rem;color:var(--muted);background:#fbfcfe;padding:8px 10px;border-radius:6px;border:1px dashed var(--border);font-style:italic;">
+              "<?= esc($inv->message) ?>"
+            </div>
+          <?php endif; ?>
+
+          <?php if ($isCompleted): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:.78rem;">
+              <span style="color:#166534;font-weight:600;">Score: <b><?= (int) round($inv->score_pct ?? 0) ?>%</b></span>
+              <span class="pill <?= !empty($inv->passed) ? 'pill--success' : 'pill--pending' ?>">
+                <?= !empty($inv->passed) ? 'Passed ✓' : 'Results Available' ?>
+              </span>
+            </div>
+          <?php elseif (!empty($inv->due_date)): ?>
+            <?php
+              $dueTs = strtotime($inv->due_date);
+              $daysLeft = ceil(($dueTs - $now) / 86400);
+              $isUrgent = ($daysLeft <= 2 && $daysLeft >= 0);
+            ?>
+            <div class="inv-due <?= $isUrgent ? 'urgent' : '' ?>">
+              <svg aria-hidden="true" width="13" height="13"><use href="#apt-clock"/></svg>
+              <?php if ($isExpired): ?>
+                Expired on <?= date('d M Y', $dueTs) ?>
+              <?php elseif ($daysLeft == 0): ?>
+                Due today (<?= date('g:i A', $dueTs) ?>)
+              <?php elseif ($daysLeft == 1): ?>
+                Due tomorrow
+              <?php else: ?>
+                Due in <?= $daysLeft ?> days (<?= date('d M Y', $dueTs) ?>)
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
+
+          <div class="inv-actions">
+            <?php if ($isCompleted && !empty($inv->attempt_id)): ?>
+              <a href="<?= base_url('aptitude/result/' . $inv->attempt_id) ?>" class="btn btn-outline btn-sm">
+                <svg aria-hidden="true"><use href="#apt-check-c"/></svg> View Results &amp; Score
+              </a>
+            <?php elseif ($isInProgress && !empty($inv->attempt_id)): ?>
+              <a href="<?= base_url('aptitude/test/' . $inv->attempt_id) ?>" class="btn btn-accent btn-sm">
+                <svg aria-hidden="true"><use href="#apt-play"/></svg> Continue Assessment
+              </a>
+            <?php elseif (!$isExpired): ?>
+              <a href="<?= base_url('aptitude/invite/' . $inv->invitation_code) ?>" class="btn btn-primary btn-sm">
+                <svg aria-hidden="true"><use href="#apt-shield"/></svg> Start Assessment
+              </a>
+            <?php else: ?>
+              <button type="button" class="btn btn-outline btn-sm" disabled style="opacity:.6;cursor:not-allowed;">
+                Assessment Expired
+              </button>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <div class="empty show" style="padding:28px 16px;">
+        <span class="empty-ic"><svg aria-hidden="true"><use href="#apt-shield"/></svg></span>
+        <h3>No employer test invitations yet</h3>
+        <p>When an employer shortlists your job application and requests an aptitude assessment, it will appear here with instructions and deadlines.</p>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -762,11 +931,31 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
     });
   });
 
+  /* invitation status filter */
+  var invCards=document.querySelectorAll('#inv-grid .inv-card');
+  document.querySelectorAll('.fchip.inv-filter').forEach(function(chip){
+    chip.addEventListener('click',function(){
+      document.querySelectorAll('.fchip.inv-filter').forEach(function(c){c.setAttribute('aria-pressed','false');});
+      this.setAttribute('aria-pressed','true');
+      var f=this.dataset.filter;
+      invCards.forEach(function(c){
+        var s=c.dataset.invStatus||'';
+        var show=(f==='all'||s===f||
+          (f==='pending'&&(s==='pending'||s==='invited'||s==='not_started'))||
+          (f==='in_progress'&&s==='in_progress')||
+          (f==='completed'&&(s==='completed'||s==='results_available'||s==='results'))||
+          (f==='expired'&&s==='expired'));
+        c.style.display=show?'':'none';
+      });
+    });
+  });
+
   /* history type filter */
   var rows=document.querySelectorAll('#hist-list .hist'),histEmpty=document.getElementById('hist-empty');
-  document.querySelectorAll('.fchip[data-filter]').forEach(function(chip){
+  document.querySelectorAll('#hist-title').length && document.querySelectorAll('.card-head .fchip[data-filter]').forEach(function(chip){
+    if(chip.classList.contains('inv-filter')) return;
     chip.addEventListener('click',function(){
-      document.querySelectorAll('.fchip[data-filter]').forEach(function(c){c.setAttribute('aria-pressed','false');});
+      document.querySelectorAll('.card-head .fchip[data-filter]:not(.inv-filter)').forEach(function(c){c.setAttribute('aria-pressed','false');});
       this.setAttribute('aria-pressed','true');
       var f=this.dataset.filter,visible=0;
       rows.forEach(function(r){var show=f==='all'||r.dataset.type===f;r.style.display=show?'':'none';if(show)visible++;});

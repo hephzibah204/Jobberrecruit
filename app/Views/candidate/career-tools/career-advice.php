@@ -1,67 +1,56 @@
 <?php
 $page_title = 'AI Career Coach';
 
-// PHP variables — mapped from controller naming conventions
-$name           = $name           ?? $firstName ?? 'Candidate';
-$career_health  = $career_health  ?? $careerHealth ?? 74;
-$profile_completion = $profile_completion ?? $profileCompletion ?? 82;
-$market_readiness   = $market_readiness   ?? 'In Motion';
-$coaching_streak    = $coaching_streak    ?? $streak ?? 4;
-$streak_best        = $streak_best        ?? $streak ?? 4;
-$today_done         = $today_done         ?? 2;
-$today_total        = $today_total        ?? 5;
-$today_minutes_left = $today_minutes_left ?? 45;
+// PHP variables — mapped from controller dynamic calculations
+$name               = $name               ?? $firstName ?? 'Candidate';
+$career_health      = $career_health      ?? $careerHealth ?? 60;
+$profile_completion = $profile_completion ?? $profileCompletion ?? 0;
+$market_readiness   = $market_readiness   ?? $marketReadiness ?? 'In Motion';
+$coaching_streak    = $coaching_streak    ?? $streak ?? 0;
+$streak_best        = $streak_best        ?? $streak ?? 0;
+$today_done         = $todayDone          ?? $today_done ?? 0;
+$today_total        = $todayTotal         ?? $today_total ?? 5;
+$today_minutes_left = $todayMinutesLeft   ?? $today_minutes_left ?? 0;
+$today_plan         = $todayPlan          ?? $today_plan ?? [];
 
-// Six career health scores (0-100)
-$scores = $scores ?? [
-    ['label' => 'Resume Strength',    'value' => 82, 'source' => 'from your resume',   'tone' => 'good'],
-    ['label' => 'Interview Readiness','value' => 68, 'source' => 'from 12 scored sessions','tone' => ''],
-    ['label' => 'Technical Skills',   'value' => 71, 'source' => 'from aptitude tests', 'tone' => ''],
-    ['label' => 'Market Position',    'value' => 58, 'source' => 'from job applications','tone' => 'warn'],
-    ['label' => 'Online Presence',    'value' => 45, 'source' => 'from profile data',   'tone' => 'warn'],
-    ['label' => 'Soft Skills',        'value' => 76, 'source' => 'from session feedback','tone' => 'good'],
+// Dynamically generate gaps based on candidate profile & job title
+$candidateSkillsArr = !empty($candidate?->skills) ? array_map('trim', explode(',', $candidate->skills)) : [];
+$techGaps = array_diff(['System Design', 'Cloud Architecture', 'Data Analytics', 'Agile Leadership', 'CI/CD Pipelines'], $candidateSkillsArr);
+$softGaps = ['Executive Communication', 'Stakeholder Management', 'Strategic Problem Solving'];
+
+$gaps = [
+    'technical' => array_slice(array_values($techGaps), 0, 3) ?: ['Cloud Infrastructure', 'Data Analytics'],
+    'soft'      => array_slice($softGaps, 0, 2),
+    'demand'    => min(95, max(50, (int)$career_health + 10)),
 ];
 
-// Roadmap milestones by timeframe
-$roadmap = $roadmap ?? [
+// Dynamically build Roadmap based on candidate gaps
+$hasResume = !empty($candidate?->resume);
+$jobTitle = $candidate?->job_title ?? 'Professional';
+
+$roadmap = [
     '30' => [
-        ['icon' => 'i-book',    'title' => 'Close Core Technical Gaps',          'desc' => 'Dedicate 3 evenings a week to product analytics catalog modules.', 'pill' => 'Study Goal', 'pill_class' => 'pill--brand'],
-        ['icon' => 'i-edit',    'title' => 'Rewrite LinkedIn headline & About',  'desc' => 'Reflect your quantified accomplishments to clear the recruiter screening filter.', 'pill' => 'Profile', 'pill_class' => 'pill--pending'],
+        ['icon' => $hasResume ? 'i-book' : 'i-edit', 'title' => $hasResume ? 'Review & Quantify Resume Accomplishments' : 'Upload & Optimize Professional Resume', 'desc' => 'Ensure your CV features metrics and keywords matching ' . esc($jobTitle) . ' roles.', 'pill' => 'Resume Goal', 'pill_class' => 'pill--brand'],
+        ['icon' => 'i-zap', 'title' => 'Complete AI Mock Interview Session', 'desc' => 'Practice answering behavioral & technical questions to raise your readiness score.', 'pill' => 'Interviewing', 'pill_class' => 'pill--pending'],
     ],
     '60' => [
-        ['icon' => 'i-award',   'title' => 'Book Scrum / Product Owner certification', 'desc' => 'Schedule the exam; a fixed date ensures focused study cycles.', 'pill' => 'Credential', 'pill_class' => 'pill--brand'],
+        ['icon' => 'i-award', 'title' => 'Complete Skill Certification or Course', 'desc' => 'Enroll in an accredited course matching your core career competencies.', 'pill' => 'Credential', 'pill_class' => 'pill--brand'],
     ],
     '90' => [
-        ['icon' => 'i-zap',     'title' => 'Ship one data-led project',          'desc' => 'Utilize new analytical query skills on a real production decision.', 'pill' => 'Project', 'pill_class' => 'pill--brand'],
+        ['icon' => 'i-briefcase', 'title' => 'Submit Targeted Applications', 'desc' => 'Apply actively to verified roles matching your skills and experience band.', 'pill' => 'Applications', 'pill_class' => 'pill--brand'],
     ],
     '6m' => [
-        ['icon' => 'i-users',   'title' => 'Mentor one junior or intern',        'desc' => 'Grows leadership validation points and provides reference examples for reviews.', 'pill' => 'Leadership', 'pill_class' => 'pill--pending'],
+        ['icon' => 'i-users', 'title' => 'Expand Professional Network & Mentorship', 'desc' => 'Connect with industry peers and seek leadership / mentorship opportunities.', 'pill' => 'Leadership', 'pill_class' => 'pill--pending'],
     ],
     '12m' => [
-        ['icon' => 'i-target',  'title' => 'Comp review against senior bands',   'desc' => 'Align your compensation with verified senior Lagos benchmarks.', 'pill' => 'Milestone', 'pill_class' => 'pill--muted'],
+        ['icon' => 'i-target', 'title' => 'Career & Compensation Review', 'desc' => 'Benchmark your compensation against current market rates for ' . esc($jobTitle) . '.', 'pill' => 'Milestone', 'pill_class' => 'pill--muted'],
     ],
-];
-
-// Gap analysis
-$gaps = $gaps ?? [
-    'technical' => ['SQL Databases', 'A/B Testing'],
-    'soft'      => ['Executive Communication', 'Mentorship'],
-    'demand'    => 74,
-];
-
-// Today's career plan tasks
-$today_plan = $today_plan ?? [
-    ['text' => 'Complete an Interview Practice session', 'mins' => 15, 'done' => true],
-    ['text' => 'Improve one leadership-style answer',   'mins' => 10, 'done' => true],
-    ['text' => 'Finish the Product Analytics module',    'mins' => 20, 'done' => false],
-    ['text' => 'Optimise your CV summary',               'mins' => 15, 'done' => false],
-    ['text' => 'Apply to 3 tagged roles',                 'mins' => 10, 'done' => false],
 ];
 
 // AI Coach greeting
 $_hour = (int) date('G');
 $_greeting_time = $_hour < 12 ? 'Good morning' : ($_hour < 17 ? 'Good afternoon' : 'Good evening');
-$coach_greeting = $coach_greeting ?? "{$_greeting_time}, {$name}. 👋 I noticed you've been active this week — your confidence score is improving. Based on your profile, I'd recommend focusing on your weakest areas to strengthen your market position.";
+$coach_greeting = $coach_greeting ?? "{$_greeting_time}, {$name}. 👋 Your career health is currently at <strong>{$career_health}%</strong> with a profile completion of <strong>{$profile_completion}%</strong>. Based on your real profile and recent activity, I've updated your dynamic action plan below.";
 ?>
 
 <?= $this->extend('layouts/app') ?>

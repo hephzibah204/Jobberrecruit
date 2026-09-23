@@ -58,7 +58,14 @@ class WalletService
             throw new \InvalidArgumentException('Credit amount must be greater than zero');
         }
 
-        $this->db->transBegin();
+        if ($this->txModel->where('reference', $reference)->countAllResults() > 0) {
+            return;
+        }
+
+        $inOwnTrans = ($this->db->transDepth === 0);
+        if ($inOwnTrans) {
+            $this->db->transBegin();
+        }
 
         try {
             $wallet = $this->getOrCreateWallet($userId);
@@ -84,9 +91,13 @@ class WalletService
                 throw new DatabaseException('Wallet credit failed');
             }
 
-            $this->db->transCommit();
+            if ($inOwnTrans) {
+                $this->db->transCommit();
+            }
         } catch (\Throwable $e) {
-            $this->db->transRollback();
+            if ($inOwnTrans) {
+                $this->db->transRollback();
+            }
             throw $e;
         }
     }
@@ -107,7 +118,10 @@ class WalletService
             return;
         }
 
-        $this->db->transBegin();
+        $inOwnTrans = ($this->db->transDepth === 0);
+        if ($inOwnTrans) {
+            $this->db->transBegin();
+        }
 
         try {
             $wallet = $this->getOrCreateWallet($userId);
@@ -137,16 +151,19 @@ class WalletService
                 throw new DatabaseException('Wallet debit failed');
             }
 
-            $this->db->transCommit();
+            if ($inOwnTrans) {
+                $this->db->transCommit();
+            }
         } catch (\Throwable $e) {
-            $this->db->transRollback();
+            if ($inOwnTrans) {
+                $this->db->transRollback();
+            }
             throw $e;
         }
     }
 
     private function lockWalletForUpdate(int $walletId): object
     {
-        // IMPORTANT: must already be inside a transaction
         $wallet = $this->db->query(
             'SELECT * FROM wallets WHERE id = ? FOR UPDATE',
             [$walletId]
@@ -158,19 +175,4 @@ class WalletService
 
         return $wallet;
     }
-
-    // private function lockWalletForUpdate(int $walletId): object
-    // {
-    //     $wallet = $this->db->table('wallets')
-    //         ->where('id', $walletId)
-    //         ->lockForUpdate()
-    //         ->get()
-    //         ->getRow();
-
-    //     if (! $wallet) {
-    //         throw new \RuntimeException('Wallet not found');
-    //     }
-
-    //     return $wallet;
-    // }
 }

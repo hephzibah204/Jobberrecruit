@@ -50,7 +50,7 @@
 .hchip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 14px;min-width:150px}
 .hchip-lbl{display:inline-flex;align-items:center;gap:6px;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
 .hchip-lbl svg{width:12px;height:12px;color:var(--accent)}
-.hchip-val{font-family:'Sora',sans-serif;font-weight:800;font-size:1.02rem;margin-top:3px}
+.hchip-val{font-family:'Sora','Segoe UI',system-ui,sans-serif;font-weight:800;font-size:1.02rem;margin-top:3px}
 .hchip-val small{font-size:.66rem;font-weight:600;color:rgba(255,255,255,.55)}
 .goal-track{height:5px;border-radius:20px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:7px}
 .goal-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--accent),#ffc069);transition:width .6s ease}
@@ -88,7 +88,7 @@
 .trend svg{width:11px;height:11px}
 .trend--up{background:var(--success-light);color:var(--success)}
 .trend--flat{background:var(--bg);color:var(--muted)}
-.stat-num{font-family:'Sora',sans-serif;font-weight:800;font-size:1.5rem;color:var(--brand-deep);line-height:1.1}
+.stat-num{font-family:'Sora','Segoe UI',system-ui,sans-serif;font-weight:800;font-size:1.5rem;color:var(--brand-deep);line-height:1.1}
 .stat-num--empty{font-size:1.1rem;color:var(--muted);font-weight:700}
 .stat-lbl{font-size:.7rem;font-weight:600;color:var(--muted);margin-top:2px}
 .spark{width:100%;height:30px;margin-top:9px}
@@ -307,7 +307,7 @@
 @media (max-width:640px){.counter{grid-template-columns:1fr}}
 .co-cell{background:#fff;border:1px solid var(--border);border-radius:11px;padding:12px 14px}
 .co-cell i{font-style:normal;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block}
-.co-cell b{font-family:'Sora',sans-serif;font-weight:800;font-size:1.08rem;color:var(--brand-deep)}
+.co-cell b{font-family:'Sora','Segoe UI',system-ui,sans-serif;font-weight:800;font-size:1.08rem;color:var(--brand-deep)}
 .co-cell small{display:block;font-size:.64rem;color:var(--muted);margin-top:2px}
 
 .ach-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
@@ -1186,10 +1186,12 @@ function analyse(text){
 }
 function addMsg(who,text,opts){
   opts=opts||{};
+  text=String(text||'');
   var wrap=document.createElement('div');
   wrap.className='msg msg--'+who+(opts.interrupt?' msg--interrupt':'');
   var tag=opts.interrupt?'<span class="interrupt-tag"><svg aria-hidden="true" style="width:10px;height:10px"><use href="#i-alert"/></svg>Interruption</span>':'';
-  wrap.innerHTML='<span class="msg-ava" aria-hidden="true">'+(who==='ai'?'<svg style="width:17px;height:17px"><use href="#i-user"/></svg>':'FE')+'</span>'+
+  var ava=who==='ai'?'<svg style="width:17px;height:17px"><use href="#i-user"/></svg>':'<?= !empty($candidate['firstName']) ? strtoupper(substr($candidate['firstName'], 0, 2)) : 'ME' ?>';
+  wrap.innerHTML='<span class="msg-ava" aria-hidden="true">'+ava+'</span>'+
     '<div class="bubble">'+tag+text.replace(/</g,'&lt;')+'<time>'+timeHHMM()+'</time></div>';
   $('chat').appendChild(wrap);
   $('chat').scrollTop=$('chat').scrollHeight;
@@ -1215,6 +1217,7 @@ function setStyleBadge(style,flash){
 }
 function aiSay(text,cb,opts){
   opts=opts||{};
+  text=String(text||'Let us continue our discussion.');
   var readPause=opts.interrupt?110+Math.random()*90:280+Math.random()*320;
   setTimeout(function(){
     var t=document.createElement('div');t.className='msg msg--ai typing';
@@ -1222,7 +1225,11 @@ function aiSay(text,cb,opts){
     $('chat').appendChild(t);$('chat').scrollTop=$('chat').scrollHeight;
     var base=opts.interrupt?420:850+Math.min(1300,text.length*7);
     var delay=Math.round(base*(0.82+Math.random()*0.36));
-    setTimeout(function(){t.remove();addMsg('ai',text,opts);if(cb)cb()},delay);
+    setTimeout(function(){
+      if(t && t.parentNode) t.remove();
+      addMsg('ai',text,opts);
+      if(cb)cb();
+    },delay);
   },readPause);
 }
 function renderSugs(list){
@@ -1356,7 +1363,12 @@ function sendTurn(){
   if(!S)return;
   var box=$('composer-input'),text=box.value.trim();
   if(!text){box.focus();return}
-  addMsg('me',text);box.value='';
+  
+  box.value='';
+  box.disabled=true;
+  $('send-btn').disabled=true;
+  addMsg('me',text);
+
   var u=analyse(text);S.turns.push(u);
   var lenB=Math.min(14,Math.round(u.len/18));
   var conf=Math.max(8,Math.min(96,40+(u.hasNumber?18:0)+(u.courteous?8:0)+lenB-(u.aggressive?25:0)));
@@ -1398,6 +1410,35 @@ function sendTurn(){
   $('round-pill').textContent='Round '+(S.round+1)+' of '+MAX_ROUNDS;
   renderSugs([]);
 
+  function handleLineReceived(line){
+    line=String(line||'').trim();
+    if(!line){
+      var lineFn, variantKey=reaction+'-'+S.style;
+      if(reaction==='followup'){
+        S.followupCount=(S.followupCount||0)+1;
+        lineFn=(S.followupCount>=2&&LINES.followup.repeat[S.style])?LINES.followup.repeat[S.style][0]:pickVariant(LINES.followup[S.style],variantKey);
+      }else{
+        lineFn=pickVariant((LINES[reaction]&&LINES[reaction][S.style])||LINES.followup[S.style],variantKey);
+      }
+      line=lineFn(ctx);
+      if(reaction==='challenge'||reaction==='followup'||reaction==='tradeBenefits'||reaction==='strongCase')line=pickAck(S.style)+line;
+    }
+    logTactic('ai', AI_TACTIC[reaction] || 'Negotiation Stance');
+    aiSay(line, function(){
+      if(reaction==='close' || S.round >= MAX_ROUNDS - 1){
+        renderSugs(['End & get my report']);
+        $('composer-input').disabled=true;
+        $('send-btn').disabled=true;
+      } else {
+        renderSugs(SUGS[reaction] || SUGS.followup);
+        $('composer-input').disabled=false;
+        $('send-btn').disabled=false;
+        $('composer-input').focus();
+      }
+    }, opts);
+    if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+  }
+
   // Fetch AI recruiter response from server endpoint
   const formData = new FormData();
   formData.append('type', 'negotiation');
@@ -1408,7 +1449,7 @@ function sendTurn(){
           message: t.len > 0 ? text : 'Hello'
       };
   })));
-  formData.append('extra', `Job: ${S.job}. Offer: ${S.offer}. Target: ${S.target}. Recruiter Stance: ${S.style}.`);
+  formData.append('extra', `Job: ${S.job}. Offer: \u20A6${S.offer}. Target: \u20A6${S.target}. Recruiter Stance: ${S.style}.`);
 
   var opts=reaction==='interrupt'?{interrupt:true}:{};
 
@@ -1420,39 +1461,15 @@ function sendTurn(){
           '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
       }
   })
-  .then(res => res.json())
+  .then(res => {
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  })
   .then(data => {
-      var line = data.message;
-      logTactic('ai', AI_TACTIC[reaction] || 'Negotiation Stance');
-      aiSay(line, function(){
-          if(reaction==='close' || S.round >= MAX_ROUNDS - 1){
-              renderSugs(['End & get my report']);
-              $('composer-input').disabled=true;
-              $('send-btn').disabled=true;
-          } else {
-              renderSugs(SUGS[reaction] || SUGS.followup);
-          }
-      }, opts);
-      if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+    handleLineReceived(data.message || data.text || '');
   })
   .catch(err => {
-      // Graceful local fallback if offline or network times out
-      var lineFn, variantKey=reaction+'-'+S.style;
-      if(reaction==='followup'){
-        S.followupCount=(S.followupCount||0)+1;
-        lineFn=(S.followupCount>=2&&LINES.followup.repeat[S.style])?LINES.followup.repeat[S.style][0]:pickVariant(LINES.followup[S.style],variantKey);
-      }else{
-        lineFn=pickVariant((LINES[reaction]&&LINES[reaction][S.style])||LINES.followup[S.style],variantKey);
-      }
-      var line=lineFn(ctx);
-      if(reaction==='challenge'||reaction==='followup'||reaction==='tradeBenefits'||reaction==='strongCase')line=pickAck(S.style)+line;
-      logTactic('ai',AI_TACTIC[reaction]);
-
-      aiSay(line,function(){
-        if(reaction==='close'){renderSugs(['End & get my report']);$('composer-input').disabled=true;$('send-btn').disabled=true;}
-        else renderSugs(SUGS[reaction]||[]);
-      },opts);
-      if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+    handleLineReceived('');
   });
 }
 $('send-btn').addEventListener('click',sendTurn);
@@ -1462,17 +1479,17 @@ $('composer-input').addEventListener('keydown',function(e){if(e.key==='Enter'&&!
 function avg(a){return a.length?Math.round(a.reduce(function(x,y){return x+y},0)/a.length):0}
 function buildPlan(skills){
   var PLAN_COPY={
-    'Confidence':{t:'Build negotiation confidence',d:'Run two more Negotiation Room sessions this week at Medium difficulty \u2014 confidence compounds fastest through repetition.',link:'candidate-salary-negotiation.html',cta:'Practice again'},
-    'Persuasiveness':{t:'Sharpen your persuasion',d:'Before your next negotiation, write down three quantified results you can cite on demand.',link:'candidate-resume-builder.html',cta:'Review your resume wins'},
-    'Logic':{t:'Structure your justification',d:'Practice the result \u2192 evidence \u2192 ask sequence until it\u2019s automatic \u2014 it\u2019s what separated your strongest reply from your weakest.',link:'candidate-interview-studio.html',cta:'Practice in the Interview Studio'},
-    'Salary Justification':{t:'Anchor every figure in evidence',d:'Pull the Lagos market median into your opening ask next time.',link:'candidate-salary-negotiation.html',cta:'Try another negotiation'},
-    'Communication':{t:'Tighten your delivery',d:'Your replies ran short on detail \u2014 practice expanding each answer with one concrete example.',link:'candidate-interview-studio.html',cta:'Practice in the Interview Studio'},
-    'Professionalism':{t:'Protect your composure under pressure',d:'Hostile language cost you this session \u2014 rehearse firm-but-professional pushback lines before your next Hard or Expert round.',link:'candidate-salary-negotiation.html',cta:'Retry at Hard difficulty'},
-    'Emotional Intelligence':{t:'Read the room, then respond',d:'Practice acknowledging the recruiter\u2019s position before countering \u2014 your best moments did exactly that.',link:'candidate-interview-studio.html',cta:'Practice in the Interview Studio'}
+    'Confidence':{t:'Build negotiation confidence',d:'Run two more Negotiation Room sessions this week at Medium difficulty \u2014 confidence compounds fastest through repetition.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Practice again'},
+    'Persuasiveness':{t:'Sharpen your persuasion',d:'Before your next negotiation, write down three quantified results you can cite on demand.',link:'<?= base_url('candidate/resumes/build') ?>',cta:'Review your resume wins'},
+    'Logic':{t:'Structure your justification',d:'Practice the result \u2192 evidence \u2192 ask sequence until it\u2019s automatic \u2014 it\u2019s what separated your strongest reply from your weakest.',link:'<?= base_url('candidate/career-tools/mock-interview') ?>',cta:'Practice in the Interview Studio'},
+    'Salary Justification':{t:'Anchor every figure in evidence',d:'Pull the Lagos market median into your opening ask next time.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Try another negotiation'},
+    'Communication':{t:'Tighten your delivery',d:'Your replies ran short on detail \u2014 practice expanding each answer with one concrete example.',link:'<?= base_url('candidate/career-tools/mock-interview') ?>',cta:'Practice in the Interview Studio'},
+    'Professionalism':{t:'Protect your composure under pressure',d:'Hostile language cost you this session \u2014 rehearse firm-but-professional pushback lines before your next Hard or Expert round.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Retry at Hard difficulty'},
+    'Emotional Intelligence':{t:'Read the room, then respond',d:'Practice acknowledging the recruiter\u2019s position before countering \u2014 your best moments did exactly that.',link:'<?= base_url('candidate/career-tools/mock-interview') ?>',cta:'Practice in the Interview Studio'}
   };
   var sorted=Object.keys(skills).sort(function(a,b){return skills[a]-skills[b]});
   var items=sorted.slice(0,2).map(function(k){return PLAN_COPY[k]}).filter(Boolean);
-  items.push({t:'Rehearse the counter you didn\u2019t make',d:'Revisit the \u201CSay It Better\u201D rewrite above and practice saying it out loud until it feels natural.',link:'candidate-salary-negotiation.html',cta:'Practice again'});
+  items.push({t:'Rehearse the counter you didn\u2019t make',d:'Revisit the \u201CSay It Better\u201D rewrite above and practice saying it out loud until it feels natural.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Practice again'});
   return items;
 }
 function finish(){

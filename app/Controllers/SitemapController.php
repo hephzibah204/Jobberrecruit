@@ -53,9 +53,10 @@ class SitemapController extends Controller
             }
         }
 
-        // Active Jobs (only non-expired)
+        // Active Jobs (only approved & open)
         $jobs = $jobModel
             ->where('status', 'open')
+            ->where('admin_status', 'approved')
             ->orderBy('updated_at', 'DESC')
             ->findAll(500);
 
@@ -68,8 +69,11 @@ class SitemapController extends Controller
             ];
         }
 
-        // Blog Posts
-        $blogs = $blogModel->orderBy('created_at', 'DESC')->findAll(100);
+        // Blog Posts (only published)
+        $blogs = $blogModel
+            ->where('status', 'published')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(100);
 
         foreach ($blogs as $blog) {
             $staticPages[] = [

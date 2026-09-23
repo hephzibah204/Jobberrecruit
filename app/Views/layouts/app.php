@@ -75,6 +75,32 @@ if (!$isEmployer && isset($user) && $user) {
 // Pending applications (employer badge, when provided by controller)
 $pendingCount = $pendingApps ?? 0;
 
+// Notifications resolution
+$unreadNotifsCount = 0;
+$recentNotifs = [];
+if (isset($user) && $user) {
+    try {
+        if ($isEmployer) {
+            $empModel = model(\App\Models\EmployerModel::class)->where('user_id', $user->id)->first();
+            if ($empModel) {
+                $jobNotifModel = model(\App\Models\JobNotificationModel::class);
+                $unreadNotifsCount = $jobNotifModel->where('employer_id', $empModel->id)->where('is_read', 0)->countAllResults();
+                $recentNotifs = $jobNotifModel->where('employer_id', $empModel->id)->orderBy('created_at', 'DESC')->limit(4)->findAll();
+            }
+        } else {
+            $seekerModel = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+            if ($seekerModel) {
+                $candNotifModel = model(\App\Models\CandidateNotificationModel::class);
+                $unreadNotifsCount = $candNotifModel->where('job_seeker_id', $seekerModel->id)->where('is_read', 0)->countAllResults();
+                $recentNotifs = $candNotifModel->where('job_seeker_id', $seekerModel->id)->orderBy('created_at', 'DESC')->limit(4)->findAll();
+            }
+        }
+    } catch (\Throwable $e) {
+        $unreadNotifsCount = 0;
+        $recentNotifs = [];
+    }
+}
+
 // Child-view variables are not propagated into CodeIgniter parent layouts.
 // Resolve breadcrumbs from the route so authenticated pages match the mockups.
 $dashboardPath = trim(uri_string(), '/');
@@ -115,6 +141,11 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 <html lang="en-NG">
 <head>
 <script>
+    // Polyfill modern APIs for backward browser support
+    if (!window.Promise || !window.fetch || !Object.assign || !Array.from) {
+        document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.6/es6-shim.min.js"><\/script>');
+        document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.20/fetch.min.js"><\/script>');
+    }
     (function() {
         // Enforcing light mode globally for the dashboard
         document.documentElement.setAttribute('data-theme', 'light');
@@ -158,6 +189,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 
 <!-- Dashboard Design System shell (loaded last so it wins) -->
 <link rel="stylesheet" href="<?= base_url('css/employer-shell.css') ?>">
+<link rel="stylesheet" href="<?= base_url('css/modal-scroll.css') ?>?v=<?= time() ?>">
 
 <!-- Page-Level Styles -->
 <?= $this->renderSection('styles') ?>
@@ -179,7 +211,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
     <symbol id="i-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
     <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
-    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
     <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
     <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
@@ -202,7 +234,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
     <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
     <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5Z"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
-    <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.301-.15-1.781-.879-2.057-.98-.276-.1-.477-.15-.677.15-.2.301-.777.98-.952 1.18-.176.2-.351.226-.652.075-.301-.15-1.272-.469-2.423-1.496-.895-.799-1.5-1.786-1.675-2.087-.176-.301-.019-.464.132-.614.136-.135.301-.351.451-.527.151-.175.201-.301.301-.501.101-.2.05-.376-.025-.526-.075-.15-.677-1.633-.927-2.235-.244-.587-.492-.507-.677-.517-.175-.008-.376-.01-.576-.01-.201 0-.526.075-.802.376-.276.301-1.053 1.028-1.053 2.508 0 1.48 1.078 2.909 1.229 3.109.15.2 2.122 3.24 5.14 4.544.718.31 1.279.496 1.716.635.722.23 1.379.197 1.9.12.58-.087 1.781-.727 2.032-1.43.25-.702.25-1.304.175-1.43-.075-.125-.276-.2-.576-.35zm-5.435 7.618a9.948 9.948 0 0 1-5.074-1.39l-.364-.216-3.771.989 1.006-3.676-.237-.378a9.957 9.957 0 0 1-1.527-5.329c0-5.514 4.486-10 10-10 2.671 0 5.182 1.04 7.071 2.929 1.889 1.889 2.929 4.4 2.929 7.071 0 5.514-4.486 10-10 10zm8.485-18.485C18.27 1.263 15.247 0 12.037 0 5.4 0 0 5.4 0 12.037c0 2.12.553 4.188 1.604 6.01L0 24l6.113-1.604a12.007 12.007 0 0 0 5.924 1.564h.005c6.637 0 12.037-5.4 12.037-12.037 0-3.21-1.263-6.233-3.559-8.485z"/></symbol>
     <symbol id="i-x-social" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16zM4 20l6.768 -6.768M20 4l-6.768 6.768"/></symbol>
     <symbol id="i-linkedin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></symbol>
@@ -225,8 +257,8 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
   <!-- ════════ SIDEBAR ════════ -->
   <aside class="emp-sidebar" id="emp-sidebar" aria-label="Dashboard navigation">
     <div class="sb-head">
-      <a href="<?= base_url('/') ?>" aria-label="JobberRecruit home">
-        <img src="<?= base_url('auth/img/logo.png') ?>" alt="JobberRecruit" class="sb-logo-img">
+      <a href="<?= $isEmployer ? base_url('employer/dashboard') : base_url('candidate/dashboard') ?>" aria-label="JobberRecruit dashboard">
+        <img src="<?= base_url('images/logo.png') ?>" alt="JobberRecruit" class="sb-logo-img">
       </a>
       <button class="sb-close" id="sb-close" aria-label="Close menu">
         <svg aria-hidden="true"><use href="#i-x"/></svg>
@@ -260,7 +292,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
            <?= dashIsActiveStart('candidate/profile') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-user"/></svg> My Profile
         </a>
-        <?php if (env('feature_messaging', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_messaging', true)): ?>
         <a class="sb-link" href="<?= base_url('candidate/messages') ?>"
            <?= dashIsActive('candidate/messages') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-chat"/></svg> Messages
@@ -269,31 +301,43 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
       </div>
 
       <!-- AI COGNITIVE TOOLS -->
-      <?php if (env('feature_ai_resume', 'true') == 'true' || env('feature_ai_career_tools', 'true') == 'true'): ?>
+      <?php if (get_site_setting('feature_ai_resume', true) || get_site_setting('feature_ai_career_tools', true)): ?>
       <div class="sb-group">
         <div class="sb-label">AI Cognitive Tools</div>
-        <?php if (env('feature_ai_resume', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_ai_resume', true)): ?>
         <a class="sb-link" href="<?= base_url('candidate/resumes') ?>"
            <?= dashIsActiveStart('candidate/resumes') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-doc"/></svg> AI Resume Builder
         </a>
         <?php endif; ?>
-        <?php if (env('feature_ai_career_tools', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_ai_career_tools', true)): ?>
         <a class="sb-link" href="<?= base_url('candidate/career-tools') ?>"
-           <?= dashIsActiveStart('candidate/career-tools') ? 'aria-current="page"' : '' ?>>
+           <?= (dashIsActive('candidate/career-tools')) ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-zap"/></svg> AI Career Tools
+        </a>
+        <a class="sb-link" href="<?= base_url('candidate/career-tools/mock-interview') ?>"
+           <?= dashIsActiveStart('candidate/career-tools/mock-interview') ? 'aria-current="page"' : '' ?> style="padding-left:28px;font-size:0.78rem;">
+          <svg aria-hidden="true" style="width:14px;height:14px;"><use href="#i-mic"/></svg> Mock Interview
+        </a>
+        <a class="sb-link" href="<?= base_url('candidate/career-tools/salary-negotiation') ?>"
+           <?= dashIsActiveStart('candidate/career-tools/salary-negotiation') ? 'aria-current="page"' : '' ?> style="padding-left:28px;font-size:0.78rem;">
+          <svg aria-hidden="true" style="width:14px;height:14px;"><use href="#i-briefcase"/></svg> Salary Simulator
+        </a>
+        <a class="sb-link" href="<?= base_url('candidate/career-tools/career-advice') ?>"
+           <?= dashIsActiveStart('candidate/career-tools/career-advice') ? 'aria-current="page"' : '' ?> style="padding-left:28px;font-size:0.78rem;">
+          <svg aria-hidden="true" style="width:14px;height:14px;"><use href="#i-bulb"/></svg> Career Advice
         </a>
         <?php endif; ?>
       </div>
       <?php endif; ?>
 
       <!-- LEARNING & TRAINING -->
-      <?php if (env('feature_elearning', 'true') == 'true' || env('feature_webinars', 'true') == 'true'): ?>
+      <?php if (get_site_setting('feature_elearning', true) || get_site_setting('feature_webinars', true)): ?>
       <div class="sb-group">
         <div class="sb-label">Learning &amp; Training</div>
-        <?php if (env('feature_elearning', 'true') == 'true'): ?>
-        <a class="sb-link" href="<?= base_url('training') ?>"
-           <?= (dashIsActiveStart('training') && !dashIsActiveStart('training/certificates')) ? 'aria-current="page"' : '' ?>>
+        <?php if (get_site_setting('feature_elearning', true)): ?>
+        <a class="sb-link" href="<?= base_url('candidate/courses') ?>"
+           <?= (dashIsActiveStart('candidate/courses') || dashIsActiveStart('training')) ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-book"/></svg> Training Catalog
         </a>
         <a class="sb-link" href="<?= base_url('candidate/my-courses') ?>"
@@ -309,7 +353,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
           <svg aria-hidden="true"><use href="#i-award"/></svg> Certificates
         </a>
         <?php endif; ?>
-        <?php if (env('feature_webinars', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_webinars', true)): ?>
         <a class="sb-link" href="<?= base_url('webinars') ?>"
            <?= dashIsActiveStart('webinars') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-video"/></svg> Career Webinars
@@ -325,7 +369,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
            <?= dashIsActiveStart('candidate/subscription') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-crown"/></svg> Premium Plans
         </a>
-        <?php if (env('feature_referrals', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_referrals', true)): ?>
         <a class="sb-link" href="<?= base_url('candidate/referrals') ?>"
            <?= dashIsActive('candidate/referrals') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-share"/></svg> Referral Program
@@ -393,13 +437,13 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
            <?= dashIsActive('employer/profile') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-building"/></svg> Company Profile
         </a>
-        <?php if (env('feature_messaging', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_messaging', true)): ?>
         <a class="sb-link" href="<?= base_url('employer/messages') ?>"
            <?= dashIsActive('employer/messages') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-chat"/></svg> Messages
         </a>
         <?php endif; ?>
-        <?php if (env('feature_referrals', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_referrals', true)): ?>
         <a class="sb-link" href="<?= base_url('employer/referrals') ?>"
            <?= dashIsActive('employer/referrals') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-share"/></svg> Referral Program
@@ -423,7 +467,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
         </a>
       </div>
 
-      <?php if (env('feature_elearning', 'true') == 'true'): ?>
+      <?php if (get_site_setting('feature_elearning', true)): ?>
       <div class="sb-group">
         <div class="sb-label">Training</div>
         <a class="sb-link" href="<?= base_url('training') ?>"
@@ -467,6 +511,11 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
           <svg aria-hidden="true"><use href="#i-menu"/></svg>
         </button>
 
+        <!-- Mobile Logo -->
+        <a href="<?= $isEmployer ? base_url('employer/dashboard') : base_url('candidate/dashboard') ?>" class="tb-mob-logo" aria-label="JobberRecruit Dashboard">
+          <img src="<?= base_url('images/logo.png') ?>" alt="JobberRecruit" class="tb-logo-img">
+        </a>
+
         <!-- Breadcrumb (tb-crumb) shown when page_title is set, otherwise fallback to search -->
         <?php if ($resolvedPageTitle !== ''): ?>
           <nav class="tb-crumb" aria-label="Breadcrumb">
@@ -488,10 +537,42 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
             <span class="lbl">Wallet</span> <b><?= esc($walletFormatted) ?></b>
           </a>
 
-          <!-- Notifications -->
-          <a class="tb-icon" href="<?= $isEmployer ? base_url('employer/notifications') : base_url('candidate/notifications') ?>" aria-label="Notifications">
-            <svg aria-hidden="true"><use href="#i-bell"/></svg>
-          </a>
+          <!-- Notifications Dropdown -->
+          <div class="tb-drop tb-drop--notif" id="notif-drop">
+            <button class="tb-icon" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+              <svg aria-hidden="true"><use href="#i-bell"/></svg>
+              <?php if (!empty($unreadNotifsCount) && $unreadNotifsCount > 0): ?>
+                <span class="tb-dot" aria-hidden="true"></span>
+              <?php endif; ?>
+            </button>
+            <div class="tb-menu tb-menu--notif" role="menu" aria-label="Notifications preview">
+              <div class="tm-head" style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="tm-name">Notifications</div>
+                <a href="<?= $isEmployer ? base_url('employer/notifications') : base_url('candidate/notifications') ?>" style="font-size:0.75rem;font-weight:600;padding:0;min-height:auto;color:var(--brand);">View all</a>
+              </div>
+              <div class="tn-list">
+                <?php if (!empty($recentNotifs)): ?>
+                  <?php foreach ($recentNotifs as $n): ?>
+                    <a href="<?= $isEmployer ? base_url('employer/notifications') : base_url('candidate/notifications') ?>" class="tn-item" role="menuitem">
+                      <div class="tn-ic"><svg aria-hidden="true" width="14" height="14"><use href="#i-bell"/></svg></div>
+                      <div>
+                        <b><?= esc($n->title ?? $n['title'] ?? 'Notification') ?></b>
+                        <i><?= esc($n->message ?? $n['message'] ?? '') ?></i>
+                      </div>
+                    </a>
+                  <?php endforeach; ?>
+                <?php else: ?>
+                  <div style="padding:16px;text-align:center;color:var(--muted);font-size:0.82rem;">
+                    No new notifications
+                  </div>
+                <?php endif; ?>
+              </div>
+              <hr>
+              <a href="<?= $isEmployer ? base_url('employer/notifications') : base_url('candidate/notifications') ?>" class="tb-menu-item" style="justify-content:center;font-weight:600;color:var(--brand);" role="menuitem">
+                Open Notifications Center &rarr;
+              </a>
+            </div>
+          </div>
 
           <!-- Account dropdown -->
           <div class="tb-drop" id="account-drop">
@@ -546,6 +627,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 </div><!-- /.emp-shell-wrap -->
 
 <!-- Mobile Bottom App Navigation -->
+<?= $this->include('partials/mobile_bottom_nav') ?>
 
 <!-- ══ Legacy component scripts (content views still use these) ══ -->
 <script src="<?= base_url('auth/js/jquery-3.7.1.min.js'); ?>" type="text/javascript"></script>
@@ -570,56 +652,101 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
       burger   = document.getElementById('emp-hamburger'),
       closeBtn = document.getElementById('sb-close');
 
-  function openMenu() {
-    sidebar.classList.add('open');
-    scrim.hidden = false;
-    requestAnimationFrame(function() { scrim.classList.add('show'); });
-    burger.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeMenu() {
-    sidebar.classList.remove('open');
-    scrim.classList.remove('show');
-    burger.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-    setTimeout(function() { if (!scrim.classList.contains('show')) scrim.hidden = true; }, 240);
+  function toggleMobileMenu(forceState) {
+    if (!sidebar) return;
+    var isOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('open');
+    
+    if (isOpen) {
+      sidebar.classList.add('open');
+      if (scrim) {
+        scrim.removeAttribute('hidden');
+        scrim.classList.add('show');
+      }
+      if (burger) burger.setAttribute('aria-expanded', 'true');
+      document.documentElement.classList.add('menu-open');
+      document.body.classList.add('menu-open');
+    } else {
+      sidebar.classList.remove('open');
+      if (scrim) {
+        scrim.classList.remove('show');
+      }
+      if (burger) burger.setAttribute('aria-expanded', 'false');
+      document.documentElement.classList.remove('menu-open');
+      document.body.classList.remove('menu-open');
+    }
   }
 
-  if (burger)   burger.addEventListener('click', openMenu);
-  if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-  if (scrim)    scrim.addEventListener('click', closeMenu);
+  window.toggleEmployerSidebar = toggleMobileMenu;
+  window.toggleMobileMenu = toggleMobileMenu;
+
+  function handleOpen(e) {
+    if (e) e.preventDefault();
+    toggleMobileMenu(true);
+  }
+
+  function handleClose(e) {
+    if (e) e.preventDefault();
+    toggleMobileMenu(false);
+  }
+
+  if (burger) {
+    burger.addEventListener('click', handleOpen);
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener('click', handleClose);
+  }
+  if (scrim) {
+    scrim.addEventListener('click', handleClose);
+    scrim.addEventListener('touchstart', handleClose, { passive: true });
+  }
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && sidebar.classList.contains('open')) closeMenu();
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) {
+      toggleMobileMenu(false);
+    }
   });
 })();
 
-// Topbar dropdowns
+// Topbar dropdowns (robust for desktop and touch phones)
 (function() {
   var drops = document.querySelectorAll('.tb-drop');
   drops.forEach(function(d) {
-    var btn = d.querySelector('button');
+    var btn = d.querySelector('button, .tb-icon');
     if (!btn) return;
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      var was = d.classList.contains('open');
+      var wasOpen = d.classList.contains('open');
       drops.forEach(function(x) {
         x.classList.remove('open');
-        var b = x.querySelector('button'); if (b) b.setAttribute('aria-expanded', 'false');
+        var b = x.querySelector('button, .tb-icon');
+        if (b) b.setAttribute('aria-expanded', 'false');
       });
-      if (!was) { d.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      if (!wasOpen) {
+        d.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
     });
   });
-  document.addEventListener('click', function() {
+
+  // Close dropdown when tapping outside, but allow clicks inside the menu to navigate
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.closest && e.target.closest('.tb-drop')) {
+      return;
+    }
     drops.forEach(function(d) {
       d.classList.remove('open');
-      var b = d.querySelector('button'); if (b) b.setAttribute('aria-expanded', 'false');
+      var b = d.querySelector('button, .tb-icon');
+      if (b) b.setAttribute('aria-expanded', 'false');
     });
   });
+
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') drops.forEach(function(d) {
-      d.classList.remove('open');
-      var b = d.querySelector('button'); if (b) b.setAttribute('aria-expanded', 'false');
-    });
+    if (e.key === 'Escape') {
+      drops.forEach(function(d) {
+        d.classList.remove('open');
+        var b = d.querySelector('button, .tb-icon');
+        if (b) b.setAttribute('aria-expanded', 'false');
+      });
+    }
   });
 })();
 </script>

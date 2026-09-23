@@ -50,10 +50,44 @@
     <!-- Header Section -->
     <div class="page-head">
         <div>
-            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Job Alerts</h1>
-            <p>Get notified the moment new jobs match your criteria — never miss an opening.</p>
+            <h1><svg aria-hidden="true" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Notifications & Job Alerts</h1>
+            <p>Stay updated on webinar reminders, course enrollments, job application updates, and custom alerts.</p>
         </div>
     </div>
+
+    <!-- Recent Activity Notifications Feed -->
+    <section class="card mb-4" style="margin-bottom: 24px;">
+        <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Activity Notifications</span>
+            <?php if (!empty($inAppNotifications)): ?>
+                <span class="pill pill--reviewed"><?= count($inAppNotifications) ?> Notification<?= count($inAppNotifications) > 1 ? 's' : '' ?></span>
+            <?php endif; ?>
+        </div>
+        <div class="card-body">
+            <?php if (!empty($inAppNotifications)): ?>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <?php foreach ($inAppNotifications as $notif): ?>
+                        <div style="padding: 14px 16px; border: 1px solid var(--border-c); border-radius: 8px; background-color: <?= empty($notif['is_read']) ? '#f0f7ff' : '#ffffff' ?>; display: flex; align-items: flex-start; gap: 12px;">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #e0e7ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">
+                                🔔
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b;"><?= esc($notif['title']) ?></h4>
+                                    <span style="font-size: 0.78rem; color: #94a3b8;"><?= date('M j, Y g:i A', strtotime($notif['created_at'])) ?></span>
+                                </div>
+                                <p style="margin: 0; font-size: 0.88rem; color: #475569; line-height: 1.5;"><?= nl2br(esc($notif['message'])) ?></p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem;">
+                    No activity notifications yet. Webinar reminders, course updates, and application status changes will appear here.
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
 
     <div class="alerts-grid">
 
@@ -249,4 +283,4 @@
         });
     });
 </script>
-<?= $this->endSection() ?>
+<?= $this->endSection() ?>

@@ -78,13 +78,13 @@
 .w-stat-val span{color:var(--w-accent)}
 .w-stat-lbl{font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:3px}
 .w-feat-card{background:var(--w-white);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,.32);overflow:hidden;transform:translateY(32px)}
-.w-fc-thumb{height:120px;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(135deg,#07304F,#0D609E)}
+.w-fc-thumb{height:130px;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(135deg,#07304F,#0D609E);overflow:visible}
 .w-fc-thumb i{font-size:48px;color:rgba(255,255,255,.25)}
-.w-fc-avatar{position:absolute;bottom:-20px;left:18px;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:var(--w-brand);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:.82rem;font-weight:800;color:#fff}
-.w-fc-badges{position:absolute;top:10px;right:10px;display:flex;gap:6px}
-.w-fc-badge{font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:.04em}
-.w-fc-badge-next{background:var(--w-accent);color:var(--w-brand-deep)}
-.w-fc-badge-cat{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.w-fc-avatar{position:absolute;bottom:-20px;left:18px;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:var(--w-brand);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:.82rem;font-weight:800;color:#fff;z-index:10}
+.w-fc-badges{position:absolute;top:12px;right:14px;left:auto;bottom:auto;display:flex;flex-direction:row;align-items:center;gap:6px;z-index:5}
+.w-fc-badge{font-size:.68rem;font-weight:800;padding:4px 10px;border-radius:20px;letter-spacing:.04em;white-space:nowrap;display:inline-block}
+.w-fc-badge-next{background:var(--w-accent);color:#fff}
+.w-fc-badge-cat{background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.35)}
 .w-fc-body{padding:28px 18px 16px}
 .w-fc-spk-name{font-weight:700;font-size:.82rem;color:var(--w-text)}
 .w-fc-spk-role{font-size:.72rem;color:var(--w-muted);margin-bottom:10px}
@@ -790,15 +790,22 @@ function showToast(msg) {
 /* initial sort by date */
 applyFilters();
 
-/* ── WEBINAR REGISTRATION (preserved from original) ── */
+/* ── WEBINAR REGISTRATION ── */
 document.addEventListener('DOMContentLoaded', function() {
+  if (!document.querySelector('script[src*="paystack.co/v1/inline.js"]')) {
+    const s = document.createElement('script');
+    s.src = 'https://js.paystack.co/v1/inline.js';
+    document.head.appendChild(s);
+  }
+
   const btns = document.querySelectorAll('.btn-register');
   btns.forEach(btn => {
     btn.addEventListener('click', function() {
       const webinarId = this.getAttribute('data-id');
       const originalHtml = this.innerHTML;
       this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
       fetch('<?= base_url('webinars/register/') ?>' + webinarId, {
         method: 'POST',
         headers: {
@@ -806,23 +813,90 @@ document.addEventListener('DOMContentLoaded', function() {
           '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
         }
       })
-      .then(response => response.json())
+      .then(response => {
+        if (response.status === 401) {
+          window.location.href = '<?= base_url('login') ?>';
+          return null;
+        }
+        return response.json();
+      })
       .then(data => {
-        if (data.status === 201 || !data.error) {
-          toastr.success(data.message || 'Successfully registered!');
-          this.classList.remove('btn-primary');
-          this.classList.add('btn-success');
-          this.innerHTML = '<i class="ti ti-check me-1"></i> Registered';
+        if (!data) return;
+
+        // Paid Webinar - Open Paystack Modal
+        if (data.requires_payment) {
+          if (window.PaystackPop && data.public_key) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Opening payment...';
+            const handler = PaystackPop.setup({
+              key: data.public_key,
+              email: data.user_email,
+              amount: Math.round(Number(data.amount) * 100),
+              currency: 'NGN',
+              ref: data.reference,
+              metadata: {
+                custom_fields: [
+                  { display_name: "Webinar", variable_name: "webinar_title", value: data.webinar_title || "Webinar" },
+                  { display_name: "Webinar ID", variable_name: "webinar_id", value: String(webinarId) }
+                ]
+              },
+              callback: function(response) {
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+                
+                const formBody = new URLSearchParams();
+                formBody.append('reference', response.reference);
+                
+                fetch('<?= base_url('webinars/register/') ?>' + webinarId, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                  },
+                  body: formBody.toString()
+                })
+                .then(res => res.json())
+                .then(resData => {
+                  if (resData.status === 201 || resData.status === 200 || !resData.error) {
+                    window.location.href = resData.redirect || ('<?= base_url('training/webinars/registered') ?>?id=' + webinarId);
+                  } else {
+                    alert(resData.messages ? resData.messages.error : (resData.message || 'Payment verification failed'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                  }
+                })
+                .catch(err => {
+                  window.location.href = '<?= base_url('training/webinars/registered') ?>?id=' + webinarId;
+                });
+              },
+              onClose: function() {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+              }
+            });
+            handler.openIframe();
+          } else if (data.authorization_url) {
+            window.location.href = data.authorization_url;
+          } else {
+            alert('Paystack key is not configured. Please contact support.');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+          }
+          return;
+        }
+
+        // Free Webinar or success
+        if (data.status === 201 || data.status === 200 || !data.error) {
+          window.location.href = data.redirect || ('<?= base_url('training/webinars/registered') ?>?id=' + webinarId);
         } else {
-          toastr.error(data.messages ? data.messages.error : (data.message || 'An error occurred'));
-          this.disabled = false;
-          this.innerHTML = originalHtml;
+          alert(data.messages ? data.messages.error : (data.message || 'An error occurred'));
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
         }
       })
       .catch(error => {
-        toastr.error('An error occurred. Please try again.');
-        this.disabled = false;
-        this.innerHTML = originalHtml;
+        alert('An error occurred. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
       });
     });
   });

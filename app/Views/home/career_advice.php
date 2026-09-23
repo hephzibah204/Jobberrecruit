@@ -38,7 +38,7 @@
 
 <div class="adv-hero">
   <div class="container text-center max-w-700">
-    <h1 class="mb-3">Career Advice & <span>Guides</span></h1>
+    <h1 class="mb-3">Career Advice &amp; <span>Guides</span></h1>
     <p class="lead text-white-50 mb-0">Expert insights, resume building strategies, interview masterclasses, and salary negotiation guides tailored for job seekers in Nigeria.</p>
   </div>
 </div>
@@ -51,7 +51,7 @@
       <div class="col-md-6 col-lg-3">
         <div class="adv-card">
           <div class="adv-icon"><i class="ti ti-file-text"></i></div>
-          <h5 class="fw-bold mb-2">Resume & CV Mastery</h5>
+          <h5 class="fw-bold mb-2">Resume &amp; CV Mastery</h5>
           <p class="text-muted small mb-3">Learn how to write ATS-friendly resumes that get you shortlisted by top Nigerian recruiters.</p>
           <a href="<?= base_url('cv-review') ?>" class="text-primary fw-bold small text-decoration-none">Get CV Review <i class="ti ti-arrow-right"></i></a>
         </div>
@@ -68,14 +68,14 @@
         <div class="adv-card">
           <div class="adv-icon"><i class="ti ti-report-money"></i></div>
           <h5 class="fw-bold mb-2">Salary Benchmarks</h5>
-          <p class="text-muted small mb-3">Navigate salary negotiations and discover benchmark compensation trends across tech, finance & management.</p>
+          <p class="text-muted small mb-3">Navigate salary negotiations and discover benchmark compensation trends across tech, finance &amp; management.</p>
           <a href="<?= base_url('candidate/career-tools') ?>" class="text-primary fw-bold small text-decoration-none">Salary Guide <i class="ti ti-arrow-right"></i></a>
         </div>
       </div>
       <div class="col-md-6 col-lg-3">
         <div class="adv-card">
           <div class="adv-icon"><i class="ti ti-school"></i></div>
-          <h5 class="fw-bold mb-2">Upskilling & Certs</h5>
+          <h5 class="fw-bold mb-2">Upskilling &amp; Certs</h5>
           <p class="text-muted small mb-3">Acquire in-demand skills and earn verified certificates to elevate your professional portfolio.</p>
           <a href="<?= base_url('training') ?>" class="text-primary fw-bold small text-decoration-none">Browse Courses <i class="ti ti-arrow-right"></i></a>
         </div>
@@ -84,7 +84,7 @@
 
     <!-- Latest Articles -->
     <div class="d-flex align-items-center justify-content-between mb-4">
-      <h3 class="fw-bold mb-0">Latest Articles & Insights</h3>
+      <h3 class="fw-bold mb-0">Latest Articles &amp; Insights</h3>
       <a href="<?= base_url('blog') ?>" class="btn btn-outline-primary btn-sm">View All Blog Posts</a>
     </div>
 

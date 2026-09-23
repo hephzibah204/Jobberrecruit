@@ -521,61 +521,192 @@ class CareerToolsController extends BaseController
     /**
      * Career Advice Interface (AI Career Coach)
      */
+    /**
+     * Career Advice Interface (AI Career Coach)
+     */
     public function careerAdvice()
     {
         $userId = (int) auth()->id();
         $candidate = $this->candidateModel->where('user_id', $userId)->first();
+        $candidateId = (int) ($candidate?->id ?? 0);
+
         $name = $candidate?->full_name ?? 'Candidate';
-        $firstName = $candidate ? explode(' ', trim($candidate->full_name))[0] : 'Professional';
+        $firstName = $candidate && !empty($candidate->full_name) ? explode(' ', trim($candidate->full_name))[0] : 'Candidate';
         $skills = $candidate?->skills ?? 'Not specified';
         $bio = $candidate?->bio ?? 'Not specified';
-        $jobTitle = $candidate?->job_title ?? 'Product & Technology Professional';
-        $experienceYears = (int) ($candidate?->experience_years ?? 3);
+        $jobTitle = $candidate?->job_title ?? 'Job Seeker / Professional';
+        $experienceYears = (int) ($candidate?->experience_years ?? 1);
 
-        // Fetch recent mock interview data
+        // 1. Fetch Work Experience & Education counts
+        $expModel = new \App\Models\JobSeekerExperienceModel();
+        $eduModel = new \App\Models\JobSeekerEducationModel();
+        $expCount = $candidateId > 0 ? $expModel->where('job_seeker_id', $candidateId)->countAllResults() : 0;
+        $eduCount = $candidateId > 0 ? $eduModel->where('job_seeker_id', $candidateId)->countAllResults() : 0;
+
+        // 2. Fetch Mock Interview Sessions
         $recentSessions = $this->mockInterviewSessionModel
             ->where('user_id', $userId)
             ->orderBy('created_at', 'DESC')
             ->findAll(12);
 
         $sessionsCount = count($recentSessions);
-        $avgScore = 0;
+        $avgInterviewScore = 0;
         if ($sessionsCount > 0) {
-            $scores = array_column($recentSessions, 'overall_score');
-            $avgScore = round((array_sum($scores) / $sessionsCount) * 10, 0); // Convert scale 1-10 to 0-100
+            $scoresList = array_column($recentSessions, 'overall_score');
+            $avgInterviewScore = (int) round((array_sum($scoresList) / $sessionsCount) * 10); // scale 0-100
         }
 
+        // 3. Fetch Aptitude Test Attempts
+        $testAttemptModel = new \App\Models\TestAttemptModel();
+        $testAttempts = $testAttemptModel->where('candidate_id', $userId)->where('status', 'completed')->findAll();
+        $testAttemptsCount = count($testAttempts);
+        $avgTestScore = 0;
+        if ($testAttemptsCount > 0) {
+            $testScoresList = array_column($testAttempts, 'score_pct');
+            $avgTestScore = (int) round(array_sum($testScoresList) / $testAttemptsCount);
+        }
+
+        // 4. Fetch Job Applications
+        $appsCount = $candidateId > 0 ? $this->jobApplicationModel->where('job_seeker_id', $candidateId)->countAllResults() : 0;
+        $shortlistedCount = $candidateId > 0 ? $this->jobApplicationModel->where('job_seeker_id', $candidateId)->whereIn('status', ['shortlisted', 'interviewed', 'offered'])->countAllResults() : 0;
+
+        // 5. Compute Profile Completion
+        $profileCompletion = $candidate ? $candidate->getProfileCompletion() : 0;
+
+        // 6. Calculate 6 Metric Scores
+        // 6a. Resume Strength
+        $hasResume = !empty($candidate?->resume);
+        $hasBio = !empty(trim((string)$candidate?->bio));
+        $hasSkills = !empty(trim((string)$candidate?->skills));
+        $resumeScore = ($hasResume ? 30 : 0) + ($expCount > 0 ? 25 : ($hasBio ? 10 : 0)) + ($eduCount > 0 ? 25 : 10) + ($hasSkills ? 10 : 0) + ($hasBio ? 10 : 0);
+        $resumeScore = min(100, max(20, $resumeScore));
+        $resumeSource = $hasResume ? 'from your uploaded CV' : 'from profile summary';
+
+        // 6b. Interview Readiness
+        if ($sessionsCount > 0) {
+            $interviewScore = $avgInterviewScore;
+            $interviewSource = "from {$sessionsCount} scored mock sessions";
+        } else {
+            $interviewScore = min(75, max(30, ($experienceYears * 10) + 30));
+            $interviewSource = "estimated from experience profile";
+        }
+
+        // 6c. Technical Skills
+        if ($testAttemptsCount > 0) {
+            $techScore = $avgTestScore;
+            $techSource = "from {$testAttemptsCount} aptitude test attempts";
+        } else {
+            $skillArr = !empty($skills) && $skills !== 'Not specified' ? array_filter(explode(',', $skills)) : [];
+            $skillCount = count($skillArr);
+            $techScore = min(85, max(35, ($skillCount * 12) + ($experienceYears * 5)));
+            $techSource = $skillCount > 0 ? "from {$skillCount} listed skills" : "add skills to improve";
+        }
+
+        // 6d. Market Position
+        if ($appsCount > 0) {
+            $marketScore = min(100, max(30, 45 + ($appsCount * 5) + ($shortlistedCount * 15)));
+            $marketSource = "from {$appsCount} role applications";
+        } else {
+            $marketScore = max(30, min(65, (int) round($profileCompletion * 0.6)));
+            $marketSource = "apply to jobs to boost positioning";
+        }
+
+        // 6e. Online Presence
+        $hasPic = !empty($candidate?->profile_picture);
+        $hasLinkedin = !empty($candidate?->linkedin_url);
+        $hasPortfolio = !empty($candidate?->portfolio);
+        $hasPhoneLoc = !empty($candidate?->phone) && (!empty($candidate?->location) || !empty($candidate?->state_id));
+        $presenceScore = ($hasPic ? 25 : 0) + ($hasLinkedin ? 30 : 0) + ($hasPortfolio ? 25 : 0) + ($hasPhoneLoc ? 20 : 0);
+        $presenceScore = min(100, max(25, $presenceScore));
+        $presenceSource = ($hasLinkedin || $hasPortfolio) ? "from portfolio & social links" : "add portfolio & LinkedIn links";
+
+        // 6f. Soft Skills
+        if ($sessionsCount > 0) {
+            $softScores = array_map(static function ($s) {
+                $eval = json_decode((string)($s['evaluation_json'] ?? ''), true) ?: [];
+                return (int)($eval['soft_skills_score'] ?? (($s['overall_score'] ?? 7) * 10));
+            }, $recentSessions);
+            $softScore = (int) round(array_sum($softScores) / count($softScores));
+            $softSource = "from mock session feedback";
+        } else {
+            $softScore = min(88, max(45, 55 + ($experienceYears * 5)));
+            $softSource = "estimated from work background";
+        }
+
+        // 7. Overall Career Health
+        $careerHealth = (int) min(100, max(30, round(($resumeScore * 0.25) + ($interviewScore * 0.25) + ($techScore * 0.20) + ($marketScore * 0.15) + ($presenceScore * 0.15))));
+
+        // Market Readiness string
+        if ($careerHealth >= 80) {
+            $marketReadiness = 'High Market Fit';
+        } elseif ($careerHealth >= 65) {
+            $marketReadiness = 'Interview Ready';
+        } elseif ($careerHealth >= 45) {
+            $marketReadiness = 'In Motion';
+        } else {
+            $marketReadiness = 'Building Foundation';
+        }
+
+        // 8. Streak & XP
         $streak = $this->calculateStreak($userId);
         $xp = $this->calculateXp($userId);
-        $level = floor($xp / 500) + 1;
+        $level = (int) floor($xp / 500) + 1;
 
-        // Profile completion heuristic
-        $profileFields = [$candidate?->full_name, $candidate?->email, $candidate?->phone, $candidate?->job_title, $candidate?->skills, $candidate?->bio, $candidate?->resume];
-        $filledFields = count(array_filter($profileFields, static fn($v) => !empty(trim((string)$v))));
-        $profileCompletion = (int) round(($filledFields / count($profileFields)) * 100);
+        // 9. Today's Career Plan & Progress
+        $todayStart = date('Y-m-d 00:00:00');
+        $todayMockDone = $this->mockInterviewSessionModel
+            ->where('user_id', $userId)
+            ->where('created_at >=', $todayStart)
+            ->countAllResults() > 0;
 
-        // Career health score weighted calculation
-        $careerHealth = (int) min(100, max(40, round(($avgScore * 0.4) + ($profileCompletion * 0.3) + (min(10, $sessionsCount) * 3) + 25)));
+        $todayPlan = [
+            ['text' => 'Complete an AI Interview Practice session', 'mins' => 15, 'done' => $todayMockDone],
+            ['text' => 'Ensure Resume PDF is uploaded & updated', 'mins' => 10, 'done' => $hasResume],
+            ['text' => 'Add work experience & education details', 'mins' => 15, 'done' => ($expCount > 0 && $eduCount > 0)],
+            ['text' => 'Take a JobberRecruit Aptitude Assessment', 'mins' => 20, 'done' => ($testAttemptsCount > 0)],
+            ['text' => 'Apply to open matching job vacancies', 'mins' => 10, 'done' => ($appsCount > 0)],
+        ];
 
-        $profileSummary = "Name: {$name}, Current Title: {$jobTitle}, Experience: {$experienceYears} years, Skills: {$skills}, Bio: {$bio}";
+        $todayDone = count(array_filter($todayPlan, static fn($t) => !empty($t['done'])));
+        $todayTotal = count($todayPlan);
+        $todayMinutesLeft = array_sum(array_column(array_filter($todayPlan, static fn($t) => empty($t['done'])), 'mins'));
+
+        // 10. Six Scores Meter Array
+        $scoresArray = [
+            ['label' => 'Resume Strength',    'value' => $resumeScore,    'source' => $resumeSource,    'tone' => $resumeScore >= 75 ? 'good' : ($resumeScore < 50 ? 'warn' : '')],
+            ['label' => 'Interview Readiness','value' => $interviewScore, 'source' => $interviewSource, 'tone' => $interviewScore >= 75 ? 'good' : ($interviewScore < 50 ? 'warn' : '')],
+            ['label' => 'Technical Skills',   'value' => $techScore,      'source' => $techSource,      'tone' => $techScore >= 75 ? 'good' : ($techScore < 50 ? 'warn' : '')],
+            ['label' => 'Market Position',    'value' => $marketScore,    'source' => $marketSource,    'tone' => $marketScore >= 75 ? 'good' : ($marketScore < 50 ? 'warn' : '')],
+            ['label' => 'Online Presence',    'value' => $presenceScore,  'source' => $presenceSource,  'tone' => $presenceScore >= 75 ? 'good' : ($presenceScore < 50 ? 'warn' : '')],
+            ['label' => 'Soft Skills',        'value' => $softScore,      'source' => $softSource,      'tone' => $softScore >= 75 ? 'good' : ($softScore < 50 ? 'warn' : '')],
+        ];
+
+        // AI Advice Prompt
+        $profileSummary = "Name: {$name}, Current Title: {$jobTitle}, Experience: {$experienceYears} years, Skills: {$skills}, Profile Completion: {$profileCompletion}%, Resume: " . ($hasResume ? 'Uploaded' : 'Missing') . ", Work History Entries: {$expCount}, Education Entries: {$eduCount}, Applications: {$appsCount}";
 
         $advice = $this->aiService->getCareerAdvice($profileSummary);
         $advice = $this->cleanMarkdown($advice);
 
         return view('candidate/career-tools/career-advice', [
-            'title' => 'AI Career Coach',
-            'advice' => $advice,
-            'firstName' => $firstName,
-            'candidate' => $candidate,
-            'jobTitle' => $jobTitle,
-            'experienceYears' => $experienceYears,
-            'sessionsCount' => $sessionsCount,
-            'avgScore' => $avgScore > 0 ? (int)$avgScore : 78,
-            'streak' => $streak > 0 ? $streak : 4,
-            'xp' => $xp,
-            'level' => $level,
-            'profileCompletion' => $profileCompletion,
-            'careerHealth' => $careerHealth,
+            'title'              => 'AI Career Coach',
+            'advice'             => $advice,
+            'firstName'          => $firstName,
+            'candidate'          => $candidate,
+            'jobTitle'           => $jobTitle,
+            'experienceYears'    => $experienceYears,
+            'sessionsCount'      => $sessionsCount,
+            'avgScore'           => $interviewScore,
+            'streak'             => $streak,
+            'xp'                 => $xp,
+            'level'              => $level,
+            'profileCompletion'  => $profileCompletion,
+            'careerHealth'       => $careerHealth,
+            'marketReadiness'    => $marketReadiness,
+            'scores'             => $scoresArray,
+            'todayPlan'          => $todayPlan,
+            'todayDone'          => $todayDone,
+            'todayTotal'         => $todayTotal,
+            'todayMinutesLeft'   => $todayMinutesLeft,
         ]);
     }
 

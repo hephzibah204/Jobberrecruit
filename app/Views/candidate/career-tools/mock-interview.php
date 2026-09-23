@@ -1006,9 +1006,6 @@ if ($avgScore >= 8.0) {
               
               <input type="radio" name="imode" id="im-voice" value="voice" <?= ($contextPreset['interview_mode'] ?? '') === 'voice' ? 'checked' : '' ?>>
               <label for="im-voice"><svg aria-hidden="true"><use href="#i-mic"/></svg> Voice</label>
-              
-              <input type="radio" name="imode" id="im-video" value="video" <?= ($contextPreset['interview_mode'] ?? '') === 'video' ? 'checked' : '' ?>>
-              <label for="im-video"><svg aria-hidden="true"><use href="#i-video"/></svg> Video</label>
             </div>
           </fieldset>
 
@@ -1079,21 +1076,15 @@ if ($avgScore >= 8.0) {
             </select>
           </div>
 
-          <div class="cfg-divider"><span>Device check</span></div>
+          <div class="cfg-divider"><span>Microphone check</span></div>
 
-          <div class="devtests span2">
+          <div class="devtests span2" style="grid-template-columns: 1fr;">
             <div class="devtest" id="mic-test" data-state="idle">
               <span class="dt-ic" aria-hidden="true"><svg><use href="#i-mic"/></svg></span>
-              <div class="dt-info"><b>Microphone Test</b><i id="mic-msg">Needed for Voice and Video mode.</i></div>
+              <div class="dt-info"><b>Microphone Test</b><i id="mic-msg">Required for Voice mode speech recognition.</i></div>
               <span class="dt-spin" id="mic-spin" hidden aria-hidden="true"></span>
               <span class="mic-bars" id="mic-bars" hidden aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
               <button type="button" class="btn btn-outline btn-sm" id="mic-btn">Test</button>
-            </div>
-            <div class="devtest" id="cam-test" data-state="idle">
-              <span class="dt-ic" aria-hidden="true"><svg><use href="#i-video"/></svg></span>
-              <div class="dt-info"><b>Camera Test</b><i id="cam-msg">Needed for Video mode only.</i></div>
-              <span class="dt-spin" id="cam-spin" hidden aria-hidden="true"></span>
-              <button type="button" class="btn btn-outline btn-sm" id="cam-btn">Test</button>
             </div>
           </div>
         </div>

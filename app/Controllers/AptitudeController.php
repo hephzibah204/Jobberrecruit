@@ -73,6 +73,35 @@ class AptitudeController extends BaseController
             'trend'      => $this->weeklyTrend($attempts),
         ];
 
+        // ── Employer Invitations (Candidate Aptitude Test Centre) ──
+        $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
+        $invitations     = $invitationModel->getForCandidate($userId);
+
+        $nowTs = time();
+        $invitationStats = [
+            'total'       => count($invitations),
+            'pending'     => 0,
+            'in_progress' => 0,
+            'completed'   => 0,
+            'expired'     => 0,
+        ];
+
+        foreach ($invitations as $inv) {
+            $isCompleted = ($inv->status === 'completed' || (!empty($inv->attempt_status) && $inv->attempt_status === 'submitted'));
+            $isInProgress = (!empty($inv->attempt_status) && $inv->attempt_status === 'in_progress');
+            $isExpired = (!$isCompleted && !empty($inv->due_date) && strtotime($inv->due_date) < $nowTs);
+
+            if ($isCompleted) {
+                $invitationStats['completed']++;
+            } elseif ($isInProgress) {
+                $invitationStats['in_progress']++;
+            } elseif ($isExpired) {
+                $invitationStats['expired']++;
+            } else {
+                $invitationStats['pending']++;
+            }
+        }
+
         // ── Recent history ──
         $history = $db->table('test_attempts ta')
             ->select('ta.id, ta.mode, ta.score_pct, ta.num_correct, ta.num_total, ta.submitted_at, t.title, t.slug')
@@ -84,12 +113,14 @@ class AptitudeController extends BaseController
         $leaderboard = $this->weeklyLeaderboard($db, $userId);
 
         return view('candidate/aptitude/hub', [
-            'title'       => 'Aptitude Test Hub',
-            'skillTests'  => $skillTests,
-            'roleTests'   => $roleTests,
-            'summary'     => $summary,
-            'history'     => $history,
-            'leaderboard' => $leaderboard,
+            'title'           => 'Aptitude Test Hub',
+            'skillTests'      => $skillTests,
+            'roleTests'       => $roleTests,
+            'summary'         => $summary,
+            'history'         => $history,
+            'leaderboard'     => $leaderboard,
+            'invitations'     => $invitations,
+            'invitationStats' => $invitationStats,
         ]);
     }
 
@@ -103,7 +134,9 @@ class AptitudeController extends BaseController
     /** Start an official (verified) attempt for a test slug. */
     public function official($slug)
     {
-        return $this->launchBySlug($slug, 'official', null);
+        $referrerId = $this->request->getGet('ref');
+        $referrerId = is_numeric($referrerId) ? (int)$referrerId : null;
+        return $this->launchBySlug($slug, 'official', null, $referrerId);
     }
 
     /** Daily challenge — a mixed general-aptitude practice run. */
@@ -113,9 +146,9 @@ class AptitudeController extends BaseController
     }
 
     /** Resolve a slug, create an attempt, and redirect into the test engine. */
-    private function launchBySlug(string $slug, string $mode, ?string $level)
+    private function launchBySlug(string $slug, string $mode = 'practice', ?string $level = null, ?int $referrerId = null)
     {
-        $userId = (int) auth()->id();
+        $userId = auth()->id();
         if (!$userId) {
             return redirect()->to('/login');
         }
@@ -154,6 +187,7 @@ class AptitudeController extends BaseController
             'started_at'   => date('Y-m-d H:i:s'),
             'expires_at'   => date('Y-m-d H:i:s', strtotime('+' . (int) $test['duration_mins'] . ' minutes')),
             'question_ids' => json_encode($questionIds),
+            'referrer_id'  => $referrerId,
         ]);
 
         return redirect()->to("/aptitude/test/{$attemptId}");
@@ -641,9 +675,190 @@ class AptitudeController extends BaseController
             }
         }
 
+        // Sync with Aptitude Test Invitation if employer-required or attempt is linked
+        try {
+            $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
+            $invitation = null;
+            if (!empty($attempt['id'])) {
+                $invitation = $invitationModel->where('attempt_id', $attempt['id'])->first();
+            }
+            if (!$invitation && !empty($attempt['job_id'])) {
+                $invitation = $invitationModel->where('candidate_id', $userId)
+                    ->where('job_id', $attempt['job_id'])
+                    ->where('test_id', $attempt['test_id'])
+                    ->first();
+            }
+
+            if ($invitation) {
+                $invitationModel->update($invitation->id, [
+                    'status'     => 'completed',
+                    'attempt_id' => $attemptId,
+                ]);
+
+                // Notify Employer by email
+                $employer = model(\App\Models\EmployerModel::class)->find($invitation->employer_id);
+                $job      = model(\App\Models\JobModel::class)->find($invitation->job_id);
+                $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $userId)->first();
+                $candidateUser = model(\App\Models\UserModel::class)->find($userId);
+
+                if ($employer && !empty($candidateUser)) {
+                    $employerUser = model(\App\Models\UserModel::class)->find($employer->user_id);
+                    $employerEmail = $employerUser->email ?? ($employer->company_email ?? null);
+
+                    if ($employerEmail) {
+                        $candidateName = $candidate->full_name ?? ($candidateUser->username ?? 'Candidate');
+                        $mailData = [
+                            'company_name'     => $employer->company_name,
+                            'candidate_name'   => $candidateName,
+                            'job_title'        => $job->title ?? 'Your Job Opening',
+                            'test_title'       => $test['title'] ?? 'Aptitude Assessment',
+                            'score_percentage' => $scorePct,
+                            'passed'           => $passed,
+                            'completed_at'     => date('F j, Y, g:i A'),
+                            'result_url'       => base_url('employer/applications'),
+                        ];
+
+                        $mailer = service('mailer');
+                        if ($mailer && method_exists($mailer, 'sendTemplate')) {
+                            $mailer->sendTemplate(
+                                $employerEmail,
+                                "Candidate Completed Assessment: {$candidateName} ({$scorePct}%)",
+                                'emails/aptitude_test_completed_employer',
+                                $mailData
+                            );
+                        } else {
+                            $email = \Config\Services::email();
+                            $email->setTo($employerEmail);
+                            $email->setSubject("Candidate Completed Assessment: {$candidateName} ({$scorePct}%)");
+                            $email->setMessage(view('emails/aptitude_test_completed_employer', $mailData));
+                            $email->setMailType('html');
+                            $email->send();
+                        }
+                    }
+                }
+            }
+            // Track standalone link completions
+            if (empty($invitation) && !empty($attempt['referrer_id'])) {
+                $employer = model(\App\Models\EmployerModel::class)->find($attempt['referrer_id']);
+                $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $userId)->first();
+                $candidateUser = model(\App\Models\UserModel::class)->find($userId);
+
+                if ($employer && !empty($candidateUser)) {
+                    $employerUser = model(\App\Models\UserModel::class)->find($employer->user_id);
+                    $employerEmail = $employerUser->email ?? ($employer->company_email ?? null);
+
+                    if ($employerEmail) {
+                        $candidateName = $candidate->full_name ?? ($candidateUser->username ?? 'Candidate');
+                        $emailService = new \App\Services\EmailNotificationService();
+                        $candidateProfileUrl = site_url('employer/candidates/view/' . $userId);
+                        $emailService->sendAssessmentLinkCompletedEmail(
+                            $employerEmail,
+                            $employer->company_name ?? 'Employer',
+                            $candidateName,
+                            $test['title'] ?? 'Aptitude Assessment',
+                            $scorePct,
+                            $candidateProfileUrl
+                        );
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error syncing aptitude test invitation: ' . $e->getMessage());
+        }
+
         return $this->response->setJSON([
             'status' => 'success',
-            'redirect' => "/aptitude/result/{$attemptId}"
+            'redirect' => base_url("aptitude/result/{$attemptId}")
         ]);
+    }
+
+    /**
+     * Accept official Aptitude Test invitation link from email/portal
+     */
+    public function acceptInvitation(string $code)
+    {
+        $userId = (int) auth()->id();
+        if (!$userId) {
+            return redirect()->to('/login')->with('info', 'Please sign in to take your aptitude test.');
+        }
+
+        $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
+        $invitation = $invitationModel->getByCode($code);
+
+        if (!$invitation) {
+            return redirect()->to('/aptitude')->with('error', 'Invalid or expired aptitude test invitation link.');
+        }
+
+        // Verify candidate ownership (by user id, job_seeker id, or matching email)
+        $isOwner = ((int) $invitation->candidate_id === $userId);
+        if (!$isOwner) {
+            $userEmail = auth()->user()->email ?? '';
+            if (!empty($userEmail) && !empty($invitation->email) && strtolower($userEmail) === strtolower($invitation->email)) {
+                $isOwner = true;
+            } else {
+                $js = db_connect()->table('job_seekers')->select('id')->where('user_id', $userId)->get()->getRowObject();
+                if ($js && (int) $invitation->candidate_id === (int) $js->id) {
+                    $isOwner = true;
+                }
+            }
+        }
+
+        if (!$isOwner) {
+            return redirect()->to('/aptitude')->with('error', 'This assessment invitation was sent to a different candidate account.');
+        }
+
+        // Check if expired
+        if (!empty($invitation->due_date) && strtotime($invitation->due_date) < time() && $invitation->status !== 'completed') {
+            $invitationModel->update($invitation->id, ['status' => 'expired']);
+            return redirect()->to('/aptitude')->with('error', 'This assessment invitation expired on ' . date('M d, Y', strtotime($invitation->due_date)) . '.');
+        }
+
+        if ($invitation->status === 'completed' && $invitation->attempt_id) {
+            return redirect()->to('/aptitude/result/' . $invitation->attempt_id)->with('info', 'You have already completed this aptitude assessment.');
+        }
+
+        // If attempt already started and in progress, resume it
+        if (!empty($invitation->attempt_id)) {
+            $attemptModel = new TestAttemptModel();
+            $existingAttempt = $attemptModel->find($invitation->attempt_id);
+            if ($existingAttempt && $existingAttempt['status'] === 'in_progress') {
+                return redirect()->to('/aptitude/test/' . $invitation->attempt_id);
+            }
+        }
+
+        // Check if test exists
+        $testModel = new TestModel();
+        $test = $testModel->where('id', $invitation->test_id)->where('is_active', 1)->first();
+        if (!$test) {
+            return redirect()->to('/aptitude')->with('error', 'The requested test is currently unavailable.');
+        }
+
+        $questionIds = $this->selectQuestionIds($test, null);
+        if (count($questionIds) < 1) {
+            return redirect()->to('/aptitude')->with('error', 'This test has no questions yet. Please contact support.');
+        }
+
+        $attemptModel = new TestAttemptModel();
+        $startedAt = date('Y-m-d H:i:s');
+        $expiresAt = date('Y-m-d H:i:s', strtotime("+" . ((int) ($test['duration_mins'] ?? 25)) . " minutes"));
+
+        $attemptId = $attemptModel->insert([
+            'candidate_id'      => $userId,
+            'test_id'           => $test['id'],
+            'mode'              => 'official',
+            'status'            => 'in_progress',
+            'started_at'        => $startedAt,
+            'expires_at'        => $expiresAt,
+            'question_ids'      => json_encode($questionIds),
+            'employer_required' => 1,
+            'job_id'            => $invitation->job_id,
+        ]);
+
+        $invitationModel->update($invitation->id, [
+            'attempt_id' => $attemptId,
+            'status'     => 'in_progress',
+        ]);
+
+        return redirect()->to("/aptitude/test/{$attemptId}");
     }
 }

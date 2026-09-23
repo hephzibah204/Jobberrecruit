@@ -121,17 +121,95 @@
         <span class="card-title" style="color:var(--danger)"><svg aria-hidden="true"><use href="#i-x"/></svg> Danger Zone</span>
       </div>
       <div class="card-body">
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px">
-          Closing your account will remove all your job postings and associated data. This action is irreversible.
-        </p>
-        <a href="<?= base_url('employer/settings/security') ?>" class="emp-btn emp-btn-sm" style="background:#fff;color:var(--danger);border:1.5px solid var(--border);">
-          <svg aria-hidden="true"><use href="#i-shield"/></svg> Manage Account Security
-        </a>
+        <!-- Deactivate Account Option -->
+        <div style="margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border)">
+          <div style="font-weight: 700; font-size: .88rem; color: var(--brand-deep); margin-bottom: 4px;">Deactivate Account (Temporary)</div>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px; line-height: 1.4;">
+            Temporarily pauses all your active job postings and hides your company from public candidate searches. You can log back in at any time to restore full access.
+          </p>
+          <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" onclick="openDeactivateModal()">
+            <svg aria-hidden="true"><use href="#i-pause"/></svg> Deactivate Account
+          </button>
+        </div>
+
+        <!-- Delete Account Option -->
+        <div>
+          <div style="font-weight: 700; font-size: .88rem; color: var(--danger); margin-bottom: 4px;">Delete Account (Permanent)</div>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px; line-height: 1.4;">
+            Permanently erases your company account, jobs, candidates history, and data. This action is irreversible.
+          </p>
+          <button type="button" class="emp-btn emp-btn-danger emp-btn-sm" onclick="openDeleteAccountModal()">
+            <svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Account Permanently
+          </button>
+        </div>
       </div>
     </section>
 
   </div>
 </div>
+
+<!-- Deactivate Confirmation Modal -->
+<div class="modal" id="deactivateModal" style="display:none;" aria-hidden="true">
+  <div class="modal-card" style="max-width:440px;background:var(--card,#fff);border-radius:12px;padding:24px;box-shadow:0 10px 25px rgba(0,0,0,0.15);position:relative;margin:auto;">
+    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;color:var(--brand-deep)">
+      <svg style="width:18px;height:18px;vertical-align:-2px;color:var(--warning,#f59e0b);margin-right:6px;" aria-hidden="true"><use href="#i-pause"/></svg>
+      Deactivate Employer Account?
+    </h3>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+      Your active jobs and company profile will be temporarily hidden. You will be logged out, but your data remains intact and you can reactivate at any time by logging in.
+    </p>
+    <form method="post" action="<?= base_url('employer/settings/deactivate') ?>">
+      <?= csrf_field() ?>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" onclick="closeDeactivateModal()">Cancel</button>
+        <button type="submit" class="emp-btn emp-btn-accent emp-btn-sm">Yes, Deactivate Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Permanent Delete Confirmation Modal -->
+<div class="modal" id="deleteAccountModal" style="display:none;" aria-hidden="true">
+  <div class="modal-card" style="max-width:460px;background:var(--card,#fff);border-radius:12px;padding:24px;box-shadow:0 10px 25px rgba(0,0,0,0.15);position:relative;margin:auto;">
+    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;color:var(--danger)">
+      <svg style="width:18px;height:18px;vertical-align:-2px;color:var(--danger);margin-right:6px;" aria-hidden="true"><use href="#i-trash"/></svg>
+      Permanently Delete Account
+    </h3>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;line-height:1.5;">
+      <strong style="color:var(--danger)">Warning:</strong> This action cannot be undone. All your job listings, applicant submissions, credits, and company profile records will be permanently deleted.
+    </p>
+    <form method="post" action="<?= base_url('employer/settings/delete-account') ?>">
+      <?= csrf_field() ?>
+      <div style="margin-bottom:16px;">
+        <label class="lbl" for="confirm_password" style="font-size:0.8rem;">Enter your account password to confirm:</label>
+        <input type="password" name="confirm_password" id="confirm_password" class="input" placeholder="Your password" required>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" onclick="closeDeleteAccountModal()">Cancel</button>
+        <button type="submit" class="emp-btn emp-btn-danger emp-btn-sm">Delete My Account Permanently</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openDeactivateModal() {
+  var modal = document.getElementById('deactivateModal');
+  if (modal) { modal.style.display = 'flex'; modal.setAttribute('aria-hidden', 'false'); }
+}
+function closeDeactivateModal() {
+  var modal = document.getElementById('deactivateModal');
+  if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
+}
+function openDeleteAccountModal() {
+  var modal = document.getElementById('deleteAccountModal');
+  if (modal) { modal.style.display = 'flex'; modal.setAttribute('aria-hidden', 'false'); }
+}
+function closeDeleteAccountModal() {
+  var modal = document.getElementById('deleteAccountModal');
+  if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
+}
+</script>
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>

@@ -8349,12 +8349,4 @@ ul li:last-child .card-list-4 {
     display: none;
   }
 }
-
-/* Hide mobile bottom nav on desktop */
-@media (min-width: 768px) {
-  .mobile-bottom-nav {
-    display: none !important;
-  }
-}
-
 /*# sourceMappingURL=style.css.map */

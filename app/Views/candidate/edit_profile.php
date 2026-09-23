@@ -97,20 +97,13 @@ $wallet = $walletModel->where('user_id', $user->id)->first();
 $walletBalance = $wallet ? $wallet->balance : 0;
 
 // Dynamic Profile completion calculation
-$fields = ['full_name','dob','gender','phone','location','job_title','employment_type','skills','experience_years','education_level'];
-$completed = 0;
-foreach ($fields as $f) {
-    if (!empty($candidate->$f)) $completed++;
-}
-if (!empty($candidate->resume)) $completed++;
-$totalFields = count($fields) + 1;
-$completion = round(($completed / $totalFields) * 100);
+$completion = $candidate->getProfileCompletion();
 
 // Section completion status
 $basicComplete  = !empty($candidate->full_name) && !empty($candidate->phone) && !empty($candidate->state_id);
 $careerComplete = !empty($candidate->job_title) && !empty($candidateIndustryIds);
 $docsComplete   = !empty($candidate->resume);
-$summaryDone    = !empty($candidate->description);
+$summaryDone    = !empty($candidate->bio);
 $langsDone      = !empty($candidate->languages);
 $portfolioDone  = !empty($candidate->portfolio);
 ?>
@@ -134,16 +127,14 @@ $portfolioDone  = !empty($candidate->portfolio);
             <div class="progress-left">
                 <div class="progress-track" aria-hidden="true">
                     <div class="progress-fill" style="width:<?= $completion ?>%;"></div>
-                    <div class="milestone-marker <?= $completion >= 60 ? 'achieved' : 'next' ?>" style="left:60%;" title="Earn ₦200 at 60%"><span class="milestone-label">₦200</span></div>
-                    <div class="milestone-marker <?= $completion >= 80 ? 'achieved' : ($completion >= 60 ? 'next' : '') ?>" style="left:80%;" title="Earn ₦500 at 80%"><span class="milestone-label">₦500</span></div>
+                    <div class="milestone-marker <?= $completion >= 80 ? 'achieved' : 'next' ?>" style="left:80%;" title="Earn ₦500 bonus at 80%"><span class="milestone-label">₦500</span></div>
                 </div>
                 <span class="progress-text"><?= $completion ?>% Completed</span>
                 <span class="progress-tip">
                     <svg aria-hidden="true"><use href="#i-zap"/></svg>
                     <span>
-                        <?php if ($completion < 60): ?>Complete <?= 60 - $completion ?>% more to unlock ₦200
-                        <?php elseif ($completion < 80): ?>Complete <?= 80 - $completion ?>% more to unlock ₦500
-                        <?php else: ?>All profile milestones achieved!
+                        <?php if ($completion < 80): ?>Complete <?= 80 - $completion ?>% more to unlock your ₦500 wallet reward
+                        <?php else: ?>🎉 ₦500 profile completion incentive unlocked!
                         <?php endif; ?>
                     </span>
                 </span>
@@ -168,6 +159,20 @@ $portfolioDone  = !empty($candidate->portfolio);
 
         <div class="edit-wrap">
 
+            <!-- ══ PROFILE VISIBILITY TOGGLE ══ -->
+            <div class="visibility-banner" style="display:flex;align-items:center;gap:14px;padding:14px 20px;background:<?= !empty($candidate->is_visible) ? '#f0fdf4' : '#fef2f2' ?>;border:1px solid <?= !empty($candidate->is_visible) ? '#bbf7d0' : '#fecaca' ?>;border-radius:var(--radius-lg);margin-bottom:12px;">
+                <svg aria-hidden="true" width="20" height="20" style="flex-shrink:0;color:<?= !empty($candidate->is_visible) ? '#16a34a' : '#dc2626' ?>"><use href="#i-eye"/></svg>
+                <div style="flex:1">
+                    <div style="font-weight:600;font-size:.88rem">Profile Visibility</div>
+                    <div style="font-size:.76rem;color:var(--muted)">When OFF, employers cannot find your profile through Candidate Search. You can still apply to jobs.</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-size:.82rem;font-weight:600">
+                    <input type="hidden" name="is_visible" value="0">
+                    <input type="checkbox" name="is_visible" value="1" <?= !empty($candidate->is_visible) ? 'checked' : '' ?> style="width:18px;height:18px;accent-color:#16a34a">
+                    <?= !empty($candidate->is_visible) ? 'Visible' : 'Hidden' ?>
+                </label>
+            </div>
+
             <!-- ══ 1. PERSONAL INFORMATION ══ -->
             <details class="cv-card <?= $basicComplete ? 'is-complete' : '' ?>" open>
                 <summary class="cv-card-header">
@@ -178,7 +183,7 @@ $portfolioDone  = !empty($candidate->portfolio);
                 <div class="cv-card-body">
                     <div class="cv-card-hint">Provide your core contact details. Ensure your phone number is correct so recruiters can reach you easily.</div>
 
-                    <!-- Profile photo upload -->
+                    <!-- Profile photo upload (Headshot) -->
                     <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px;">
                         <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:#f5f7fb;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);flex-shrink:0;">
                             <?php if (!empty($candidate->profile_picture) && file_exists(FCPATH . $candidate->profile_picture)): ?>
@@ -189,9 +194,9 @@ $portfolioDone  = !empty($candidate->portfolio);
                             <img id="profilePreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;" alt="">
                         </div>
                         <div>
-                            <label class="btn btn-outline btn-sm" for="profileInput" style="cursor:pointer;margin-bottom:6px;">Upload photo</label>
+                            <label class="btn btn-outline btn-sm" for="profileInput" style="cursor:pointer;margin-bottom:6px;">Upload Profile Photo (Headshot)</label>
                             <input type="file" name="profile_picture" id="profileInput" accept="image/*" class="sr-only">
-                            <p style="font-size:.74rem;color:var(--muted);margin:0;">JPEG or PNG · Max 2MB · Square crop recommended</p>
+                            <p style="font-size:.74rem;color:var(--muted);margin:0;">JPEG or PNG · Max 2MB · Square crop recommended · This is your profile headshot, not your CV.</p>
                             <?php if (!empty($candidate->profile_picture)): ?>
                                 <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.78rem;">
                                     <input type="checkbox" name="remove_profile_picture" value="1"> Remove current photo
@@ -328,7 +333,43 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ 3. PROFESSIONAL SUMMARY ══ -->
+            <!-- ══ 3. RESUME / CV DOCUMENT (12%) ══ -->
+            <details class="cv-card <?= $docsComplete ? 'is-complete' : '' ?>" open>
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Resume (CV Document)</span>
+                    <span class="cv-card-done <?= $docsComplete ? 'complete' : 'incomplete' ?>"><?= $docsComplete ? 'Complete' : 'Incomplete' ?></span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <div class="cv-card-hint">Upload your latest resume in PDF or Word format (.pdf, .doc, .docx). Your CV is automatically attached when you apply for jobs on JobberRecruit.</div>
+                    <div class="form-grid">
+                        <div class="form-field full">
+                            <label for="resumeInput" style="font-weight:600;">Upload / Manage Resume (CV Document)</label>
+                            <input type="file" name="resume" id="resumeInput" accept=".pdf,.doc,.docx" class="input" style="margin-bottom:8px;">
+                            <?php if (!empty($candidate->resume)): ?>
+                                <div style="display:flex;align-items:center;gap:12px;margin-top:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #d0e3ff;border-radius:8px;">
+                                    <svg aria-hidden="true" width="20" height="20" style="color:var(--brand);"><use href="#i-doc"/></svg>
+                                    <span style="font-size:.84rem;font-weight:500;color:var(--text);flex:1;"><?= esc(basename($candidate->resume)) ?></span>
+                                    <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline btn-sm">
+                                        <svg aria-hidden="true"><use href="#i-eye"/></svg> View Current Resume
+                                    </a>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#dc2626;cursor:pointer;margin:0;">
+                                        <input type="checkbox" name="remove_resume" value="1"> Remove Resume
+                                    </label>
+                                </div>
+                            <?php endif; ?>
+                            <div id="resumePreview" style="display:none;margin-top:8px;">
+                                <div style="background:#f5f7fb;border-radius:8px;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;">
+                                    <svg aria-hidden="true"><use href="#i-doc"/></svg>
+                                    <span id="resumePreviewText" style="font-size:.8rem;font-weight:500;"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- ══ 4. PROFESSIONAL SUMMARY ══ -->
             <details class="cv-card <?= $summaryDone ? 'is-complete' : '' ?>">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-note"/></svg> Professional Summary</span>
@@ -351,11 +392,11 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ WORK EXPERIENCE ══ -->
+            <!-- ══ 4. WORK EXPERIENCE (20%) ══ -->
             <details class="cv-card <?= !empty($experiences) ? 'is-complete' : '' ?>">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience</span>
-                    <span class="cv-card-done <?= !empty($experiences) ? 'complete' : 'incomplete' ?>"><?= !empty($experiences) ? count($experiences) . ' added' : 'Optional' ?></span>
+                    <span class="cv-card-done <?= !empty($experiences) ? 'complete' : 'incomplete' ?>"><?= !empty($experiences) ? count($experiences) . ' added' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
@@ -381,20 +422,38 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ EDUCATION ══ -->
+            <!-- ══ 5. EDUCATION (12%) ══ -->
             <details class="cv-card <?= !empty($education) ? 'is-complete' : '' ?>">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education</span>
-                    <span class="cv-card-done <?= !empty($education) ? 'complete' : 'incomplete' ?>"><?= !empty($education) ? count($education) . ' added' : 'Optional' ?></span>
+                    <span class="cv-card-done <?= !empty($education) ? 'complete' : 'incomplete' ?>"><?= !empty($education) ? count($education) . ' added' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
-                    <div class="cv-card-hint">Add your qualifications. Degrees, diplomas, and professional certifications all count.</div>
+                    <div class="cv-card-hint">Add your qualifications. Degrees, diplomas, and professional qualifications all count.</div>
+                    <datalist id="ng-degree-list">
+                        <option value="B.Sc. - Bachelor of Science">
+                        <option value="B.A. - Bachelor of Arts">
+                        <option value="B.Eng. - Bachelor of Engineering">
+                        <option value="B.Tech. - Bachelor of Technology">
+                        <option value="LL.B - Bachelor of Laws">
+                        <option value="MBBS - Medicine & Surgery">
+                        <option value="HND - Higher National Diploma">
+                        <option value="OND / ND - National Diploma">
+                        <option value="NCE - Nigeria Certificate in Education">
+                        <option value="M.Sc. - Master of Science">
+                        <option value="M.A. - Master of Arts">
+                        <option value="MBA - Master of Business Administration">
+                        <option value="Ph.D. - Doctorate">
+                        <option value="PGD - Postgraduate Diploma">
+                        <option value="SSCE / WAEC / NECO">
+                        <option value="Professional Certificate">
+                    </datalist>
                     <div id="edu-list" class="rep-list">
                         <?php foreach (($education ?? []) as $ed): ?>
                         <div class="rep-row">
                             <div class="rep-grid">
-                                <div class="form-field"><label>Qualification / Degree</label><input type="text" name="edu_degree[]" class="input" value="<?= esc($ed->degree, 'attr') ?>" placeholder="e.g. B.Sc."></div>
+                                <div class="form-field"><label>Qualification / Degree</label><input type="text" name="edu_degree[]" list="ng-degree-list" class="input" value="<?= esc($ed->degree, 'attr') ?>" placeholder="e.g. B.Sc."></div>
                                 <div class="form-field"><label>Field of study</label><input type="text" name="edu_field[]" class="input" value="<?= esc($ed->field_of_study ?? '', 'attr') ?>" placeholder="e.g. Accounting"></div>
                                 <div class="form-field"><label>School</label><input type="text" name="edu_school[]" class="input" value="<?= esc($ed->school ?? '', 'attr') ?>" placeholder="e.g. University of Lagos"></div>
                                 <div class="form-field"><label>Start year</label><input type="text" name="edu_start_year[]" class="input" maxlength="4" value="<?= esc($ed->start_year ?? '', 'attr') ?>" placeholder="2014"></div>
@@ -406,6 +465,139 @@ $portfolioDone  = !empty($candidate->portfolio);
                         <?php endforeach; ?>
                     </div>
                     <button type="button" class="btn btn-outline btn-sm" id="add-edu"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add education</button>
+                </div>
+            </details>
+
+            <!-- ══ 6. SKILLS (10%) ══ -->
+            <details class="cv-card <?= !empty($candidate->skills) ? 'is-complete' : '' ?>">
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Skills</span>
+                    <span class="cv-card-done <?= !empty($candidate->skills) ? 'complete' : 'incomplete' ?>"><?= !empty($candidate->skills) ? 'Complete' : 'Incomplete' ?></span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <div class="cv-card-hint">Add your key skills, comma-separated. These power our job-matching engine — be specific (e.g. "Python, React, SQL" instead of just "programming").</div>
+                    <div class="form-field">
+                        <label>Skills (comma-separated)</label>
+                        <textarea name="skills" class="input" rows="3" placeholder="e.g. PHP, UI/UX Design, Figma, React, Communication"><?= old('skills', $candidate->skills) ?></textarea>
+                    </div>
+                    <p style="font-size:.74rem;color:var(--muted);margin-top:8px;">Tip: Add 8–15 specific skills for the best match results.</p>
+                </div>
+            </details>
+
+            <!-- ══ 8. LICENCES & CERTIFICATIONS (2%) ══ -->
+            <details class="cv-card <?= (!empty($certifications) || !empty($myCerts)) ? 'is-complete' : '' ?>">
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Licences &amp; Certifications <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
+                    <span class="cv-card-done optional">Optional</span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <!-- Auto-synced JR certificates -->
+                    <?php
+                    $certModel = model(\App\Models\CourseCertificateModel::class);
+                    $myCerts   = $certModel->getUserCertificates($user->id);
+                    ?>
+                    <?php if (!empty($myCerts)): ?>
+                    <div class="jr-auto-certs">
+                        <div class="jr-auto-header">
+                            <svg aria-hidden="true"><use href="#i-award"/></svg>
+                            JobberRecruit Verified Certificates
+                            <span class="jr-verified-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Auto-synced</span>
+                        </div>
+                        <?php foreach ($myCerts as $cert): ?>
+                        <div class="jr-cert-item">
+                            <div class="jr-cert-icon"><svg aria-hidden="true"><use href="#i-grad"/></svg></div>
+                            <div class="jr-cert-body">
+                                <strong><?= esc($cert['course_name'] ?? 'Course Certificate') ?></strong>
+                                <span>Completed <?= esc(date('d M Y', strtotime($cert['issued_at']))) ?> · Code: <?= esc($cert['certificate_code']) ?> · <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>" target="_blank">Download</a></span>
+                            </div>
+                            <span class="jr-verified-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> JR Verified</span>
+                        </div>
+                        <?php endforeach; ?>
+                        <a href="<?= base_url('training') ?>" class="jr-auto-link">Complete more courses to earn certificates →</a>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="cv-card-hint" style="margin-top:10px;">Add external licences and certifications (e.g. PMP, ICAN, COREN, AWS, ACCA). JobberRecruit-earned certificates appear above automatically.</div>
+
+                    <!-- External certifications list -->
+                    <div id="cert-list" class="rep-list">
+                        <?php foreach (($certifications ?? []) as $certItem): ?>
+                        <div class="rep-row">
+                            <div class="rep-grid">
+                                <div class="form-field full"><label>Certification Name</label><input type="text" name="cert_name[]" class="input" value="<?= esc($certItem->name, 'attr') ?>" placeholder="e.g. Project Management Professional (PMP)"></div>
+                                <div class="form-field"><label>Issuing Organisation</label><input type="text" name="cert_org[]" class="input" value="<?= esc($certItem->issuing_organization ?? '', 'attr') ?>" placeholder="e.g. PMI / ICAN / AWS"></div>
+                                <div class="form-field"><label>Credential ID (optional)</label><input type="text" name="cert_id[]" class="input" value="<?= esc($certItem->credential_id ?? '', 'attr') ?>" placeholder="e.g. ABC-12345"></div>
+                                <div class="form-field"><label>Credential URL (optional)</label><input type="url" name="cert_url[]" class="input" value="<?= esc($certItem->credential_url ?? '', 'attr') ?>" placeholder="https://"></div>
+                                <div class="form-field">
+                                    <label>Issue Date</label>
+                                    <div style="display:flex;gap:6px;">
+                                        <select name="cert_issue_month[]" class="select">
+                                            <option value="">Month</option>
+                                            <?php foreach (['January','February','March','April','May','June','July','August','September','October','November','December'] as $m): ?>
+                                                <option value="<?= $m ?>" <?= ($certItem->issue_month ?? '') == $m ? 'selected' : '' ?>><?= $m ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <input type="text" name="cert_issue_year[]" class="input" maxlength="4" value="<?= esc($certItem->issue_year ?? '', 'attr') ?>" placeholder="Year">
+                                    </div>
+                                </div>
+                                <div class="form-field full">
+                                    <label class="rep-current"><input type="checkbox" class="cert-no-expire-toggle" <?= !empty($certItem->does_not_expire) ? 'checked' : '' ?>> This credential does not expire</label>
+                                    <input type="hidden" name="cert_no_expire[]" value="<?= !empty($certItem->does_not_expire) ? '1' : '0' ?>">
+                                </div>
+                                <div class="form-field cert-expiry-wrap" style="<?= !empty($certItem->does_not_expire) ? 'display:none;' : '' ?>">
+                                    <label>Expiry Date</label>
+                                    <div style="display:flex;gap:6px;">
+                                        <select name="cert_exp_month[]" class="select" <?= !empty($certItem->does_not_expire) ? 'disabled' : '' ?>>
+                                            <option value="">Month</option>
+                                            <?php foreach (['January','February','March','April','May','June','July','August','September','October','November','December'] as $m): ?>
+                                                <option value="<?= $m ?>" <?= ($certItem->expiry_month ?? '') == $m ? 'selected' : '' ?>><?= $m ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <input type="text" name="cert_exp_year[]" class="input" maxlength="4" value="<?= esc($certItem->expiry_year ?? '', 'attr') ?>" placeholder="Year" <?= !empty($certItem->does_not_expire) ? 'disabled' : '' ?>>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" id="add-cert"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another certification</button>
+                </div>
+            </details>
+
+            <!-- ══ 9. PORTFOLIO & WORK SAMPLES (3%) ══ -->
+            <details class="cv-card <?= $portfolioDone ? 'is-complete' : '' ?>">
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-globe"/></svg> Portfolio &amp; Work Samples <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
+                    <span class="cv-card-done optional">Optional</span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <div class="cv-card-hint">Add a link to your GitHub, Behance, a published article, or a live project. Portfolios significantly boost employer interest for creative and technical roles.</div>
+                    <div class="form-field">
+                        <label>Portfolio Website URL</label>
+                        <input type="text" name="portfolio" id="portfolioInput" class="input"
+                               value="<?= old('portfolio', $candidate->portfolio) ?>" placeholder="https://myportfolio.com">
+                        <span style="font-size:.72rem;color:var(--muted);margin-top:4px;display:block;">Include https:// — we'll add it automatically if missing.</span>
+                    </div>
+                </div>
+            </details>
+
+            <!-- ══ 10. LANGUAGES (1%) ══ -->
+            <details class="cv-card <?= $langsDone ? 'is-complete' : '' ?>">
+                <summary class="cv-card-header">
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-chat"/></svg> Languages <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
+                    <span class="cv-card-done optional">Optional</span>
+                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+                </summary>
+                <div class="cv-card-body">
+                    <div class="cv-card-hint">For Nigerian employers, listing Yoruba, Igbo, or Hausa alongside English is often a real advantage — especially for field, sales, and community roles.</div>
+                    <div class="form-field">
+                        <label>Languages (comma-separated)</label>
+                        <input type="text" name="languages" class="input" value="<?= old('languages', $candidate->languages) ?>" placeholder="e.g. English, Yoruba, French">
+                    </div>
                 </div>
             </details>
 
@@ -438,134 +630,41 @@ $portfolioDone  = !empty($candidate->portfolio);
                     <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
                 </div>
             </template>
-
-            <!-- ══ 4. SKILLS ══ -->
-            <details class="cv-card <?= !empty($candidate->skills) ? 'is-complete' : '' ?>">
-                <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Skills</span>
-                    <span class="cv-card-done <?= !empty($candidate->skills) ? 'complete' : 'incomplete' ?>"><?= !empty($candidate->skills) ? 'Complete' : 'Incomplete' ?></span>
-                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
-                </summary>
-                <div class="cv-card-body">
-                    <div class="cv-card-hint">Add your key skills, comma-separated. These power our job-matching engine — be specific (e.g. "Python, React, SQL" instead of just "programming").</div>
-                    <div class="form-field">
-                        <label>Skills (comma-separated)</label>
-                        <textarea name="skills" class="input" rows="3" placeholder="e.g. PHP, UI/UX Design, Figma, React, Communication"><?= old('skills', $candidate->skills) ?></textarea>
-                    </div>
-                    <p style="font-size:.74rem;color:var(--muted);margin-top:8px;">Tip: Add 8–15 specific skills for the best match results.</p>
-                </div>
-            </details>
-
-            <!-- ══ 5. LANGUAGES ══ -->
-            <details class="cv-card <?= $langsDone ? 'is-complete' : '' ?>">
-                <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-chat"/></svg> Languages</span>
-                    <span class="cv-card-done <?= $langsDone ? 'complete' : 'incomplete' ?>"><?= $langsDone ? 'Complete' : 'Incomplete' ?></span>
-                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
-                </summary>
-                <div class="cv-card-body">
-                    <div class="cv-card-hint">For Nigerian employers, listing Yoruba, Igbo, or Hausa alongside English is often a real advantage — especially for field, sales, and community roles.</div>
-                    <div class="form-field">
-                        <label>Languages (comma-separated)</label>
-                        <input type="text" name="languages" class="input" value="<?= old('languages', $candidate->languages) ?>" placeholder="e.g. English, Yoruba, French">
-                    </div>
-                </div>
-            </details>
-
-            <!-- ══ 6. PORTFOLIO &amp; WORK SAMPLES ══ -->
-            <details class="cv-card <?= $portfolioDone ? 'is-complete' : '' ?>">
-                <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-globe"/></svg> Portfolio &amp; Work Samples <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
-                    <span class="cv-card-done optional">Optional</span>
-                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
-                </summary>
-                <div class="cv-card-body">
-                    <div class="cv-card-hint">Add a link to your GitHub, Behance, a published article, or a live project. Portfolios significantly boost employer interest for creative and technical roles.</div>
-                    <div class="form-field">
-                        <label>Portfolio Website URL</label>
-                        <input type="text" name="portfolio" id="portfolioInput" class="input"
-                               value="<?= old('portfolio', $candidate->portfolio) ?>" placeholder="https://myportfolio.com">
-                        <span style="font-size:.72rem;color:var(--muted);margin-top:4px;display:block;">Include https:// — we'll add it automatically if missing.</span>
-                    </div>
-                </div>
-            </details>
-
-            <!-- ══ 7. CERTIFICATIONS (auto-sync from training) ══ -->
-            <details class="cv-card">
-                <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Licences &amp; Certifications <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
-                    <span class="cv-card-done optional">Optional</span>
-                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
-                </summary>
-                <div class="cv-card-body">
-                    <!-- Auto-synced JR certificates -->
-                    <?php
-                    $certModel = model(\App\Models\CourseCertificateModel::class);
-                    $myCerts   = $certModel->getUserCertificates($user->id);
-                    ?>
-                    <?php if (!empty($myCerts)): ?>
-                    <div class="jr-auto-certs">
-                        <div class="jr-auto-header">
-                            <svg aria-hidden="true"><use href="#i-award"/></svg>
-                            JobberRecruit Verified Certificates
-                            <span class="jr-verified-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> Auto-synced</span>
-                        </div>
-                        <?php foreach ($myCerts as $cert): ?>
-                        <div class="jr-cert-item">
-                            <div class="jr-cert-icon"><svg aria-hidden="true"><use href="#i-grad"/></svg></div>
-                            <div class="jr-cert-body">
-                                <strong><?= esc($cert['course_name'] ?? 'Course Certificate') ?></strong>
-                                <span>Completed <?= esc(date('d M Y', strtotime($cert['issued_at']))) ?> · Code: <?= esc($cert['certificate_code']) ?> · <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>" target="_blank">Download</a></span>
-                            </div>
-                            <span class="jr-verified-tag"><svg aria-hidden="true"><use href="#i-check"/></svg> JR Verified</span>
-                        </div>
-                        <?php endforeach; ?>
-                        <a href="<?= base_url('training') ?>" class="jr-auto-link">Complete more courses to earn certificates →</a>
-                    </div>
-                    <?php else: ?>
-                    <div class="jr-auto-certs">
-                        <div class="jr-auto-header"><svg aria-hidden="true"><use href="#i-award"/></svg> JobberRecruit Verified Certificates</div>
-                        <p style="font-size:.82rem;color:var(--muted);">No certificates yet. <a href="<?= base_url('training') ?>">Complete a course</a> to earn a verifiable certificate that automatically appears on your profile and CV.</p>
-                    </div>
-                    <?php endif; ?>
-                    <div class="cv-card-hint">External licences and certifications (e.g. PMP, ICAN, COREN) strengthen your profile for senior roles. <a href="<?= base_url('training') ?>">Browse courses →</a></div>
-                </div>
-            </details>
-
-            <!-- ══ 8. DOCUMENTS — CV Upload ══ -->
-            <details class="cv-card <?= $docsComplete ? 'is-complete' : '' ?>">
-                <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Profile Picture &amp; Resume</span>
-                    <span class="cv-card-done <?= $docsComplete ? 'complete' : 'optional' ?>"><?= $docsComplete ? 'Complete' : 'Optional' ?></span>
-                    <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
-                </summary>
-                <div class="cv-card-body">
-                    <div class="cv-card-hint">Upload your latest resume in PDF or Word format. Your CV is shared with employers when you apply.</div>
-                    <div class="form-grid">
-                        <!-- RESUME -->
+            <template id="cert-template">
+                <div class="rep-row">
+                    <div class="rep-grid">
+                        <div class="form-field full"><label>Certification Name</label><input type="text" name="cert_name[]" class="input" placeholder="e.g. Project Management Professional (PMP)"></div>
+                        <div class="form-field"><label>Issuing Organisation</label><input type="text" name="cert_org[]" class="input" placeholder="e.g. PMI / ICAN / AWS"></div>
+                        <div class="form-field"><label>Credential ID (optional)</label><input type="text" name="cert_id[]" class="input" placeholder="e.g. ABC-12345"></div>
+                        <div class="form-field"><label>Credential URL (optional)</label><input type="url" name="cert_url[]" class="input" placeholder="https://"></div>
                         <div class="form-field">
-                            <label>Resume / CV Document</label>
-                            <input type="file" name="resume" id="resumeInput" accept=".pdf,.doc,.docx" class="input" style="margin-bottom:8px;">
-                            <?php if (!empty($candidate->resume)): ?>
-                                <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-                                    <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline btn-sm">
-                                        <svg aria-hidden="true"><use href="#i-eye"/></svg> View Current CV
-                                    </a>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;">
-                                        <input type="checkbox" name="remove_resume" value="1"> Remove CV
-                                    </label>
-                                </div>
-                            <?php endif; ?>
-                            <div id="resumePreview" style="display:none;margin-top:8px;">
-                                <div style="background:#f5f7fb;border-radius:8px;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;">
-                                    <svg aria-hidden="true"><use href="#i-doc"/></svg>
-                                    <span id="resumePreviewText" style="font-size:.8rem;"></span>
-                                </div>
+                            <label>Issue Date</label>
+                            <div style="display:flex;gap:6px;">
+                                <select name="cert_issue_month[]" class="select">
+                                    <option value="">Month</option>
+                                    <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+                                </select>
+                                <input type="text" name="cert_issue_year[]" class="input" maxlength="4" placeholder="Year">
+                            </div>
+                        </div>
+                        <div class="form-field full">
+                            <label class="rep-current"><input type="checkbox" class="cert-no-expire-toggle"> This credential does not expire</label>
+                            <input type="hidden" name="cert_no_expire[]" value="0">
+                        </div>
+                        <div class="form-field cert-expiry-wrap">
+                            <label>Expiry Date</label>
+                            <div style="display:flex;gap:6px;">
+                                <select name="cert_exp_month[]" class="select">
+                                    <option value="">Month</option>
+                                    <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+                                </select>
+                                <input type="text" name="cert_exp_year[]" class="input" maxlength="4" placeholder="Year">
                             </div>
                         </div>
                     </div>
+                    <button type="button" class="btn btn-outline btn-sm rep-remove"><svg aria-hidden="true"><use href="#i-x"/></svg> Remove</button>
                 </div>
-            </details>
+            </template>
 
         </div><!-- /edit-wrap -->
 
@@ -718,23 +817,44 @@ $(document).ready(function () {
         });
     });
 
-    // ── Repeatable Work Experience / Education rows ──
+    // ── Repeatable Work Experience / Education / Certification rows ──
     function wireRepRow(row) {
-        var toggle = row.querySelector('.exp-current-toggle');
-        if (toggle) {
-            var hidden = row.querySelector('input[name="exp_is_current[]"]');
-            var endInput = row.querySelector('input[name="exp_end[]"]');
-            var sync = function () {
-                if (hidden) hidden.value = toggle.checked ? '1' : '0';
-                if (endInput) { endInput.disabled = toggle.checked; if (toggle.checked) endInput.value = ''; }
+        // Work experience current job toggle
+        var expToggle = row.querySelector('.exp-current-toggle');
+        if (expToggle) {
+            var expHidden = row.querySelector('input[name="exp_is_current[]"]');
+            var expEndInput = row.querySelector('input[name="exp_end[]"]');
+            var syncExp = function () {
+                if (expHidden) expHidden.value = expToggle.checked ? '1' : '0';
+                if (expEndInput) { expEndInput.disabled = expToggle.checked; if (expToggle.checked) expEndInput.value = ''; }
             };
-            toggle.addEventListener('change', sync);
-            sync();
+            expToggle.addEventListener('change', syncExp);
+            syncExp();
         }
+
+        // Certification does not expire toggle
+        var certToggle = row.querySelector('.cert-no-expire-toggle');
+        if (certToggle) {
+            var certHidden = row.querySelector('input[name="cert_no_expire[]"]');
+            var certExpiryWrap = row.querySelector('.cert-expiry-wrap');
+            var certExpirySelect = row.querySelector('select[name="cert_exp_month[]"]');
+            var certExpiryYear = row.querySelector('input[name="cert_exp_year[]"]');
+            var syncCert = function () {
+                if (certHidden) certHidden.value = certToggle.checked ? '1' : '0';
+                if (certExpiryWrap) {
+                    certExpiryWrap.style.display = certToggle.checked ? 'none' : '';
+                }
+                if (certExpirySelect) certExpirySelect.disabled = certToggle.checked;
+                if (certExpiryYear) certExpiryYear.disabled = certToggle.checked;
+            };
+            certToggle.addEventListener('change', syncCert);
+            syncCert();
+        }
+
         var removeBtn = row.querySelector('.rep-remove');
         if (removeBtn) removeBtn.addEventListener('click', function () { row.remove(); });
     }
-    document.querySelectorAll('#exp-list .rep-row, #edu-list .rep-row').forEach(wireRepRow);
+    document.querySelectorAll('#exp-list .rep-row, #edu-list .rep-row, #cert-list .rep-row').forEach(wireRepRow);
 
     function addRepRow(templateId, listId) {
         var tpl = document.getElementById(templateId);
@@ -748,6 +868,8 @@ $(document).ready(function () {
     if (addExpBtn) addExpBtn.addEventListener('click', function () { addRepRow('exp-template', 'exp-list'); });
     var addEduBtn = document.getElementById('add-edu');
     if (addEduBtn) addEduBtn.addEventListener('click', function () { addRepRow('edu-template', 'edu-list'); });
+    var addCertBtn = document.getElementById('add-cert');
+    if (addCertBtn) addCertBtn.addEventListener('click', function () { addRepRow('cert-template', 'cert-list'); });
 
 });
 </script>

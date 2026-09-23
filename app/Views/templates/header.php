@@ -54,7 +54,7 @@
                     <ul class="main-menu">
                             <li><a <?= (uri_string() == '' || uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                         <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                        <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
+                        <?php if (get_site_setting('feature_elearning', true) && get_site_setting('feature_webinars', true)): ?>
                         <li class="has-children">
                             <a <?= (uri_string() == 'training' || uri_string() == 'webinars' || uri_string() == 'cv-review' || strpos(uri_string(), 'cv-review/') === 0) ? 'class="active"' : '' ?> href="#">Training</a>
                             <ul class="sub-menu">
@@ -63,9 +63,9 @@
                                 <li><a href="<?= base_url('cv-review'); ?>">CV Review</a></li>
                             </ul>
                         </li>
-                        <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
+                        <?php elseif (get_site_setting('feature_elearning', true)): ?>
                         <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
-                        <?php elseif (env('feature_webinars', 'true') == 'true'): ?>
+                        <?php elseif (get_site_setting('feature_webinars', true)): ?>
                         <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
                         <?php endif; ?>
                         <li><a <?= (uri_string() == 'blog') ? 'class="active"' : '' ?> href="<?= base_url('blog'); ?>">Blog</a></li>
@@ -110,7 +110,7 @@
                         <ul class="mobile-menu font-heading">
 <li><a <?= (uri_string() == '' || uri_string() == '/') ? 'class="active"' : '' ?> href="<?= base_url(); ?>">Home</a></li>
                             <li><a <?= (uri_string() == 'jobs') ? 'class="active"' : '' ?> href="<?= base_url('jobs'); ?>">Find a Job</a></li>
-                            <?php if (env('feature_elearning', 'true') == 'true' && env('feature_webinars', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_elearning', true) && get_site_setting('feature_webinars', true)): ?>
                             <li class="has-children">
                                 <a <?= (uri_string() == 'training' || uri_string() == 'webinars' || uri_string() == 'cv-review' || strpos(uri_string(), 'cv-review/') === 0) ? 'class="active"' : '' ?> href="#">Training</a>
                                 <ul class="sub-menu">
@@ -119,9 +119,9 @@
                                     <li><a href="<?= base_url('cv-review'); ?>">CV Review</a></li>
                                 </ul>
                             </li>
-                            <?php elseif (env('feature_elearning', 'true') == 'true'): ?>
+                            <?php elseif (get_site_setting('feature_elearning', true)): ?>
                             <li><a <?= (uri_string() == 'training') ? 'class="active"' : '' ?> href="<?= base_url('training'); ?>">Training</a></li>
-                            <?php elseif (env('feature_webinars', 'true') == 'true'): ?>
+                            <?php elseif (get_site_setting('feature_webinars', true)): ?>
                             <li><a <?= (uri_string() == 'webinars') ? 'class="active"' : '' ?> href="<?= base_url('webinars'); ?>">Webinars</a></li>
                             <?php endif; ?>
                             <li><a <?= (uri_string() == 'blog') ? 'class="active"' : '' ?> href="<?= base_url('blog'); ?>">Blog</a></li>

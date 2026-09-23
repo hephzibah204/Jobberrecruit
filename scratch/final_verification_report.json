@@ -1,0 +1,274 @@
+{
+  "public": [
+    {
+      "url": "/",
+      "status": 200
+    },
+    {
+      "url": "/jobs",
+      "status": 200
+    },
+    {
+      "url": "/employers",
+      "status": 200
+    },
+    {
+      "url": "/career-advice",
+      "status": 200
+    },
+    {
+      "url": "/training",
+      "status": 200
+    },
+    {
+      "url": "/cv-review",
+      "status": 200
+    },
+    {
+      "url": "/webinars",
+      "status": 200
+    },
+    {
+      "url": "/candidates",
+      "status": 200
+    },
+    {
+      "url": "/about-us",
+      "status": 200
+    },
+    {
+      "url": "/contact-us",
+      "status": 200
+    },
+    {
+      "url": "/blog",
+      "status": 200
+    },
+    {
+      "url": "/privacy-policy",
+      "status": 200
+    },
+    {
+      "url": "/terms-and-conditions",
+      "status": 200
+    },
+    {
+      "url": "/faq",
+      "status": 200
+    },
+    {
+      "url": "/recruitment",
+      "status": 200
+    },
+    {
+      "url": "/job-ads",
+      "status": 200
+    },
+    {
+      "url": "/login",
+      "status": 200
+    },
+    {
+      "url": "/register",
+      "status": 200
+    },
+    {
+      "url": "/forgot-password",
+      "status": 200
+    },
+    {
+      "url": "/admin/login",
+      "status": 200
+    }
+  ],
+  "candidate": [
+    {
+      "url": "/candidate/dashboard",
+      "status": 200
+    },
+    {
+      "url": "/candidate/applications",
+      "status": 200
+    },
+    {
+      "url": "/candidate/saved-jobs",
+      "status": 200
+    },
+    {
+      "url": "/candidate/notifications",
+      "status": 200
+    },
+    {
+      "url": "/candidate/profile",
+      "status": 200
+    },
+    {
+      "url": "/candidate/profile/edit",
+      "status": 200
+    },
+    {
+      "url": "/candidate/settings/security",
+      "status": 200
+    },
+    {
+      "url": "/candidate/resumes",
+      "status": 200
+    },
+    {
+      "url": "/candidate/resumes/build",
+      "status": 200
+    },
+    {
+      "url": "/candidate/career-tools",
+      "status": 200
+    },
+    {
+      "url": "/candidate/my-courses",
+      "status": 200
+    },
+    {
+      "url": "/candidate/certificates",
+      "status": 200
+    },
+    {
+      "url": "/candidate/wallet",
+      "status": 200
+    },
+    {
+      "url": "/candidate/transactions",
+      "status": 200
+    },
+    {
+      "url": "/candidate/referrals",
+      "status": 200
+    }
+  ],
+  "employer": [
+    {
+      "url": "/employer/dashboard",
+      "error": "page.goto: net::ERR_ABORTED at http://localhost:8085/employer/dashboard\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/employer/dashboard\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "url": "/employer/jobs",
+      "status": 200
+    },
+    {
+      "url": "/employer/post-job",
+      "status": 500
+    },
+    {
+      "url": "/employer/applications",
+      "status": 200
+    },
+    {
+      "url": "/employer/profile",
+      "status": 200
+    },
+    {
+      "url": "/employer/pricing",
+      "status": 200
+    },
+    {
+      "url": "/employer/bundles",
+      "status": 200
+    },
+    {
+      "url": "/employer/candidates",
+      "status": 200
+    },
+    {
+      "url": "/employer/messages",
+      "status": 200
+    },
+    {
+      "url": "/employer/settings",
+      "status": 200
+    },
+    {
+      "url": "/employer/wallet",
+      "status": 200
+    },
+    {
+      "url": "/employer/transactions",
+      "status": 200
+    }
+  ],
+  "admin": [
+    {
+      "url": "/admin/dashboard",
+      "error": "page.goto: net::ERR_ABORTED at http://localhost:8085/admin/dashboard\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/admin/dashboard\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "url": "/admin/users",
+      "status": 200
+    },
+    {
+      "url": "/admin/jobs",
+      "status": 200
+    },
+    {
+      "url": "/admin/applications",
+      "status": 200
+    },
+    {
+      "url": "/admin/candidates",
+      "status": 200
+    },
+    {
+      "url": "/admin/employers",
+      "status": 200
+    },
+    {
+      "url": "/admin/blogs",
+      "status": 200
+    },
+    {
+      "url": "/admin/elearning",
+      "status": 200
+    },
+    {
+      "url": "/admin/cv-reviews",
+      "status": 200
+    },
+    {
+      "url": "/admin/aptitude",
+      "status": 200
+    },
+    {
+      "url": "/admin/newsletters",
+      "status": 200
+    },
+    {
+      "url": "/admin/webinars",
+      "status": 200
+    },
+    {
+      "url": "/admin/locations",
+      "status": 200
+    },
+    {
+      "url": "/admin/categories",
+      "status": 200
+    },
+    {
+      "url": "/admin/industries",
+      "status": 200
+    },
+    {
+      "url": "/admin/bundles",
+      "status": 200
+    },
+    {
+      "url": "/admin/plans",
+      "status": 200
+    },
+    {
+      "url": "/admin/chatbot",
+      "status": 200
+    },
+    {
+      "url": "/admin/testimonials",
+      "status": 200
+    }
+  ]
+}

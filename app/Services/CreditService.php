@@ -46,6 +46,10 @@ class CreditService
      */
     public function hasUnlimitedAccess(int $userId): bool
     {
+        if (is_site_free_mode()) {
+            return true;
+        }
+
         $employer = $this->employerModel->where('user_id', $userId)->first();
 
         if (!$employer) {

@@ -75,19 +75,28 @@
             </div>
         </section>
  
-        <!-- escrow alert card -->
-        <section class="card" aria-label="Wallet Policy" style="padding: 24px; display: flex; flex-direction: column; justify-content: space-between; background: #fff8f0; border-color: #ffd9a8;">
-            <div>
-                <h4 style="font-family:'Sora',sans-serif; font-size: 0.94rem; font-weight: 800; color: var(--accent-dark); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                    <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-shield"/></svg> Escrow Policy
-                </h4>
-                <p style="font-size: 0.8rem; color: var(--accent-dark); line-height: 1.5; margin: 0;">All funded wallet balances are kept safely in escrow and strictly cannot be withdrawn or refunded. Wallet funds can be used at any time to purchase platform services.</p>
-            </div>
-            <div style="margin-top: 14px; font-size: 0.72rem; color: var(--accent-dark); font-weight: 700;">
-                • Withdrawals Disabled
+        <!-- Wallet Spending Features Grid -->
+        <section class="card" aria-label="Wallet Uses" style="padding: 24px; background: #f8fafc;">
+            <h4 style="font-family:'Sora',sans-serif; font-size: 0.94rem; font-weight: 800; color: var(--brand-deep); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-shopping-bag"/></svg> Use Wallet Balance For:
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                <a href="<?= base_url('training/courses') ?>" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: #ffffff; border: 1px solid var(--border-c); border-radius: 8px; text-decoration: none; transition: transform 0.15s ease;">
+                    <strong style="font-size: 0.82rem; color: var(--brand);">E-Learning Courses</strong>
+                    <span style="font-size: 0.74rem; color: var(--muted);">Enroll in premium courses &amp; certifications</span>
+                </a>
+                <a href="<?= base_url('candidate/pricing') ?>" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: #ffffff; border: 1px solid var(--border-c); border-radius: 8px; text-decoration: none; transition: transform 0.15s ease;">
+                    <strong style="font-size: 0.82rem; color: var(--brand);">Candidate Subscriptions</strong>
+                    <span style="font-size: 0.74rem; color: var(--muted);">Upgrade for AI tools &amp; premium applications</span>
+                </a>
+                <a href="<?= base_url('candidate/career-tools') ?>" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: #ffffff; border: 1px solid var(--border-c); border-radius: 8px; text-decoration: none; transition: transform 0.15s ease;">
+                    <strong style="font-size: 0.82rem; color: var(--brand);">CV &amp; Career Review</strong>
+                    <span style="font-size: 0.74rem; color: var(--muted);">Order expert CV &amp; profile enhancements</span>
+                </a>
             </div>
         </section>
     </div>
+
  
     <!-- Transaction History -->
     <div style="margin-top: 24px;">

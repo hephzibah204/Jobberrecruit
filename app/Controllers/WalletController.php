@@ -265,6 +265,25 @@ class WalletController extends BaseController
             }
             $price = (float) $plan->base_price;
             $description = 'Paid with wallet for plan: ' . $plan->name;
+        } elseif ($type === 'course') {
+            $courseModel = model(\App\Models\CourseModel::class);
+            $course = $courseModel->find($itemId);
+            if (!$course) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Invalid course specified.'
+                ]);
+            }
+            $price = (float) $course->price;
+            $description = 'Paid with wallet for course: ' . $course->title;
+        } elseif ($type === 'cv_review') {
+            $cvPlan = $payload['plan'] ?? 'professional';
+            $amounts = [
+                'professional' => (int) env('cv_review_pro_price', 15000),
+                'premium'      => (int) env('cv_review_prem_price', 30000),
+            ];
+            $price = (float) ($amounts[$cvPlan] ?? 15000);
+            $description = 'Paid with wallet for CV Review plan: ' . ucfirst($cvPlan);
         } elseif ($type === 'employer_plan' || $type === 'subscription') {
             $plan = $this->planModel->find($itemId);
             if (!$plan) {
@@ -274,9 +293,14 @@ class WalletController extends BaseController
                 ]);
             }
             
-            $tiers = is_string($plan->pricing_tiers) ? json_decode($plan->pricing_tiers, true) : ($plan->pricing_tiers ?? []);
-            $price = (float) ($tiers[$durationMonths] ?? ($plan->base_price * $durationMonths));
+            $subService = new \App\Services\SubscriptionService();
+            $proration  = $subService->calculateUpgradeProration($user->id, (int)$plan->id, $durationMonths);
+            $price      = (float) $proration['net_amount_due'];
+
             $description = 'Paid with wallet for subscription: ' . $plan->name . ' (' . $durationMonths . ' Month' . ($durationMonths > 1 ? 's' : '') . ')';
+            if ($proration['proration_discount'] > 0) {
+                $description .= ' (Prorated credit: ₦' . number_format($proration['proration_discount'], 2) . ')';
+            }
         } elseif ($type === 'bundle') {
             $bundleModel = model(PlanBundleModel::class);
             $bundle = $bundleModel->find($itemId);
@@ -288,6 +312,17 @@ class WalletController extends BaseController
             }
             $price = (float) $bundle->price;
             $description = 'Paid with wallet for bundle: ' . $bundle->name . ' (' . $bundle->job_credits . ' Credits)';
+        } elseif ($type === 'webinar') {
+            $webinarModel = model(\App\Models\WebinarModel::class);
+            $webinar = $webinarModel->find($itemId);
+            if (!$webinar) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Invalid webinar specified.'
+                ]);
+            }
+            $price = (float) $webinar->price;
+            $description = 'Paid with wallet for webinar: ' . $webinar->title;
         } else {
             return $this->response->setJSON([
                 'success' => false,
@@ -300,7 +335,7 @@ class WalletController extends BaseController
         if ((float) $wallet->balance < $price) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Insufficient wallet balance. Please fund your wallet first.',
+                'message' => 'Insufficient wallet balance. (Balance: ₦' . number_format($wallet->balance, 2) . '). Please top up your wallet first.',
                 'insufficient' => true
             ]);
         }
@@ -310,20 +345,22 @@ class WalletController extends BaseController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // 3. Debit Wallet
-        $this->walletService->debit(
-            userId: $user->id,
-            amount: $price,
-            source: 'wallet_checkout',
-            reference: $reference,
-            sourceId: $itemId,
-            description: $description
-        );
+        // 3. Debit Wallet (if price > 0)
+        if ($price > 0) {
+            $this->walletService->debit(
+                userId: $user->id,
+                amount: $price,
+                source: 'wallet_checkout',
+                reference: $reference,
+                sourceId: $itemId ?: null,
+                description: $description
+            );
+        }
 
         // 4. Insert Payment Ledger record
-        $this->paymentModel->insert([
+        $paymentId = $this->paymentModel->insert([
             'user_id'          => $user->id,
-            'plan_id'          => ($type === 'bundle') ? null : $itemId,
+            'plan_id'          => in_array($type, ['bundle', 'course', 'cv_review']) ? null : $itemId,
             'reference'        => $reference,
             'amount'           => $price,
             'status'           => 'paid',
@@ -353,6 +390,30 @@ class WalletController extends BaseController
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+        } elseif ($type === 'course') {
+            $enrollmentModel = model(\App\Models\CourseEnrollmentModel::class);
+            $existing = $enrollmentModel->where(['course_id' => $itemId, 'user_id' => $user->id])->first();
+            if (!$existing) {
+                $enrollmentModel->insert([
+                    'course_id'         => $itemId,
+                    'user_id'           => $user->id,
+                    'status'            => 'enrolled',
+                    'payment_reference' => $reference,
+                    'amount'            => $price,
+                ]);
+
+                try {
+                    $emailNotifService = new \App\Services\EmailNotificationService();
+                    $courseObj = model(\App\Models\CourseModel::class)->find($itemId);
+                    if ($courseObj) {
+                        $emailNotifService->sendCourseEnrollmentNotification($user, $courseObj);
+                    }
+                } catch (\Throwable $e) {
+                    log_message('error', 'Wallet course enrollment notification error: ' . $e->getMessage());
+                }
+            }
+        } elseif ($type === 'cv_review') {
+            log_message('info', "Wallet paid CV review for user #{$user->id}, plan: " . ($payload['plan'] ?? 'professional'));
         } elseif ($type === 'employer_plan' || $type === 'subscription') {
             // Deactivate employer old active subscriptions
             $this->subModel->where('user_id', $user->id)->where('is_active', 1)->set(['is_active' => 0])->update();
@@ -361,7 +422,7 @@ class WalletController extends BaseController
             $endsAt = date('Y-m-d H:i:s', strtotime("+{$durationMonths} months"));
 
             // Create new active subscription
-            $this->subModel->insert([
+            $subscriptionId = $this->subModel->insert([
                 'user_id'    => $user->id,
                 'plan_id'    => $itemId,
                 'starts_at'  => $startsAt,
@@ -370,15 +431,38 @@ class WalletController extends BaseController
                 'auto_renew' => 0
             ]);
 
+            $creditService = new \App\Services\CreditService();
+            $employerModel = model(\App\Models\EmployerModel::class);
+            $employer = $employerModel->where('user_id', $user->id)->first();
+            if ($employer && $creditService->planProvidesUnlimitedPosting($plan)) {
+                $employerModel->update($employer->id, [
+                    'unlimited_access' => 1,
+                    'unlimited_until'  => $endsAt
+                ]);
+            }
+
             // Add monthly job credits to credit wallet
             if ($plan->monthly_job_credits > 0) {
-                (new \App\Services\CreditService())->addCredits(
+                $creditService->addCredits(
                     $user->id,
                     $plan->monthly_job_credits * $durationMonths,
                     'subscription',
                     $reference,
                     $endsAt
                 );
+            }
+
+            try {
+                (new \App\Services\InvoiceService())->sendSubscriptionInvoice(
+                    $user->id,
+                    $subscriptionId,
+                    $paymentId,
+                    $price,
+                    $durationMonths,
+                    $proration ?? null
+                );
+            } catch (\Exception $e) {
+                log_message('error', 'Failed to send subscription invoice via wallet checkout: ' . $e->getMessage());
             }
         } elseif ($type === 'bundle') {
             // Credit Bundle Credits
@@ -388,6 +472,24 @@ class WalletController extends BaseController
                 reference: $reference,
                 source: 'wallet'
             );
+        } elseif ($type === 'webinar') {
+            $registrationModel = model(\App\Models\WebinarRegistrationModel::class);
+            $existing = $registrationModel->where(['webinar_id' => $itemId, 'user_id' => $user->id])->first();
+            if (!$existing) {
+                $registrationModel->insert([
+                    'webinar_id' => $itemId,
+                    'user_id'    => $user->id
+                ]);
+                model(\App\Models\WebinarModel::class)->where('id', $itemId)->increment('registrants_count', 1);
+            }
+            try {
+                $webinarObj = model(\App\Models\WebinarModel::class)->find($itemId);
+                if ($webinarObj) {
+                    (new \App\Services\EmailNotificationService())->sendWebinarRegistrationNotification($user, $webinarObj);
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Wallet webinar registration notification error: ' . $e->getMessage());
+            }
         }
 
         $db->transComplete();
@@ -399,9 +501,22 @@ class WalletController extends BaseController
             ]);
         }
 
+        $redirectUrl = null;
+        if ($type === 'course') {
+            $redirectUrl = base_url('training/payment-acknowledgement/' . $itemId . '?reference=' . urlencode($reference) . '&method=wallet');
+        } elseif ($type === 'candidate_plan') {
+            $redirectUrl = base_url('candidate/dashboard');
+        } elseif ($type === 'cv_review') {
+            $redirectUrl = base_url('candidate/career-tools');
+        } elseif ($type === 'webinar') {
+            $redirectUrl = base_url('training/webinars/registered?id=' . $itemId);
+        }
+
         return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Payment completed successfully using your escrow wallet balance!'
+            'success'      => true,
+            'message'      => 'Payment completed successfully using your wallet balance!',
+            'redirect_url' => $redirectUrl
         ]);
     }
+
 }

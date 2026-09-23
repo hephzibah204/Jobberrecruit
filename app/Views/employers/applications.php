@@ -167,6 +167,7 @@
               </td>
               <td data-lbl="Actions">
                 <div class="row-actions">
+                  <button class="ic-btn open-apt-invite-btn" data-id="<?= $app->id ?>" aria-label="Invite to Aptitude Test" title="Invite to Aptitude Test"><svg aria-hidden="true" style="color:#0d6efd;"><use href="#i-bulb"/></svg></button>
                   <a class="ic-btn" href="<?= site_url('employer/applications/view/' . $app->id) ?>" aria-label="View application details" title="View"><svg aria-hidden="true"><use href="#i-eye"/></svg></a>
                   <?php if (!empty($app->cv_path)): ?>
                     <a class="ic-btn" href="<?= base_url($app->cv_path) ?>" download aria-label="Download CV" title="Download CV"><svg aria-hidden="true"><use href="#i-download"/></svg></a>
@@ -232,11 +233,82 @@
   </div>
 </div>
 
+<!-- Aptitude Test Invitation Modal -->
+<div class="modal" id="aptitude-invite-modal" role="dialog" aria-modal="true" aria-labelledby="apt-invite-title" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:var(--radius-lg, 12px); width:92%; max-width:500px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+    <div style="padding:18px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa;">
+      <h3 id="apt-invite-title" style="font-size:1.05rem; font-weight:700; color:#0d6efd; margin:0; display:flex; align-items:center; gap:8px;">
+        <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Invite Candidate to Aptitude Test
+      </h3>
+      <button class="close-modal-btn" type="button" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:#6c757d;">&times;</button>
+    </div>
+    <form id="aptitude-invite-form" style="padding:20px;">
+      <input type="hidden" name="application_id" id="invite-app-id" value="">
+      
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Select Aptitude Assessment <span style="color:red">*</span></label>
+        <select class="select" name="test_id" id="invite-test-id" required style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;">
+          <option value="">-- Loading tests... --</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Completion Deadline</label>
+        <select class="select" name="days_to_complete" id="invite-days" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;">
+          <option value="3">3 Days</option>
+          <option value="5">5 Days</option>
+          <option value="7" selected>7 Days (Standard)</option>
+          <option value="14">14 Days</option>
+          <option value="30">30 Days</option>
+        </select>
+      </div>
+
+      <div id="ai-custom-options" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #e9ecef;">
+        <h4 style="font-size: 0.95rem; margin-top: 0; margin-bottom: 12px; color: #495057;">✨ AI Test Settings</h4>
+        
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Number of Questions</label>
+          <input type="number" name="num_questions" id="invite-num-questions" class="input" min="3" max="50" value="5" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Duration (Minutes)</label>
+          <input type="number" name="duration_mins" id="invite-duration" class="input" min="5" max="120" value="15" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+
+        <div style="margin-bottom:0;">
+          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Difficulty Level</label>
+          <select name="difficulty" id="invite-difficulty" class="select" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Instructions / Message to Candidate (Optional)</label>
+        <textarea class="textarea" name="message" id="invite-message" rows="3" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;" placeholder="e.g. Please complete this assessment before your upcoming interview..."></textarea>
+      </div>
+
+      <div style="padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm close-modal-btn" style="padding:8px 16px;">Cancel</button>
+        <button type="submit" class="emp-btn emp-btn-primary emp-btn-sm" id="submit-invite-btn" style="background:#0d6efd; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:600; cursor:pointer;">Send Test Invitation</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '<?= csrf_hash() ?>';
+  }
+
   const searchInput = document.getElementById('app-search');
   const filterJob = document.getElementById('filter-job');
   const filterStatus = document.getElementById('filter-status');
@@ -332,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest'
         },
-        body: '<?= csrf_token() ?>=<?= csrf_hash() ?>'
+        body: '<?= csrf_token() ?>=' + encodeURIComponent(getCsrfToken())
       })
       .then(response => response.json())
       .then(data => {
@@ -387,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const params = new URLSearchParams();
     ids.forEach(id => params.append('ids[]', id));
     params.append('status', status);
-    params.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    params.append('<?= csrf_token() ?>', getCsrfToken());
 
     fetch('<?= site_url("employer/applications/bulk-update-status") ?>', {
       method: 'POST',
@@ -422,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const params = new URLSearchParams();
       selectedIds.forEach(id => params.append('ids[]', id));
-      params.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+      params.append('<?= csrf_token() ?>', getCsrfToken());
 
       fetch('<?= site_url("employer/applications/bulk-delete") ?>', {
         method: 'POST',
@@ -448,6 +520,125 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmBulkDeleteBtn.disabled = false;
         confirmBulkDeleteBtn.textContent = 'Delete All';
         hideModals();
+      });
+    });
+  }
+
+  // --- Aptitude Test Invitation Handler ---
+  const aptModal = document.getElementById('aptitude-invite-modal');
+  const aptForm = document.getElementById('aptitude-invite-form');
+  const openAptBtns = document.querySelectorAll('.open-apt-invite-btn');
+
+  function openAptModal(appId) {
+    if (!aptModal) return;
+    document.getElementById('invite-app-id').value = appId;
+    
+    const testSelect = document.getElementById('invite-test-id');
+    testSelect.innerHTML = '<option value="">Loading tests...</option>';
+
+    fetch('<?= site_url("employer/aptitude-tests/list") ?>')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.tests.length) {
+          testSelect.innerHTML = '<option value="ai_custom" selected>✨ AI Custom Test (Generated by Gemini AI for this Job)</option>' +
+            '<optgroup label="Preset Standard Tests">' +
+            data.tests.map(t => `<option value="${t.id}">${t.title} (${t.num_questions} questions · ${t.duration_mins} mins)</option>`).join('') +
+            '</optgroup>';
+        } else {
+          testSelect.innerHTML = '<option value="ai_custom" selected>✨ AI Custom Test (Generated by Gemini AI for this Job)</option>';
+        }
+      })
+      .catch(() => {
+        testSelect.innerHTML = '<option value="">Error loading tests</option>';
+      });
+
+    // Toggle AI options visibility
+    testSelect.addEventListener('change', function() {
+      const aiOptions = document.getElementById('ai-custom-options');
+      if (this.value === 'ai_custom') {
+        aiOptions.style.display = 'block';
+      } else {
+        aiOptions.style.display = 'none';
+      }
+    });
+
+    setTimeout(() => {
+      testSelect.dispatchEvent(new Event('change'));
+    }, 500);
+
+    aptModal.classList.add('show');
+    aptModal.style.display = 'flex';
+  }
+
+  function closeAptModal() {
+    if (!aptModal) return;
+    aptModal.classList.remove('show');
+    aptModal.style.display = 'none';
+  }
+
+  openAptBtns.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const appId = this.getAttribute('data-id');
+      openAptModal(appId);
+    });
+  });
+
+  if (aptModal) {
+    aptModal.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeAptModal));
+  }
+
+  if (aptForm) {
+    aptForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-invite-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Sending Invitation...';
+
+      const formData = new FormData(this);
+      formData.append('<?= csrf_token() ?>', getCsrfToken());
+
+      fetch('<?= site_url("employer/applications/invite-test") ?>', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(response => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Send Test Invitation';
+        if (response.success) {
+          if (response.invitation_url) {
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(response.invitation_url);
+              if (typeof toastr !== 'undefined') {
+                toastr.info('Test Link copied to clipboard: ' + response.invitation_url, 'Link Copied', {timeOut: 6000});
+              }
+            }
+          }
+          if (typeof toastr !== 'undefined') {
+            toastr.success(response.message || 'Invitation sent successfully!');
+          } else {
+            alert(response.message || 'Invitation sent successfully!');
+          }
+          closeAptModal();
+          setTimeout(() => location.reload(), 2000);
+        } else {
+          if (typeof toastr !== 'undefined') {
+            toastr.error(response.message || 'Failed to send invitation');
+          } else {
+            alert(response.message || 'Failed to send invitation');
+          }
+        }
+      })
+      .catch(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Send Test Invitation';
+        if (typeof toastr !== 'undefined') {
+          toastr.error('Connection error sending invitation');
+        } else {
+          alert('Connection error sending invitation');
+        }
       });
     });
   }

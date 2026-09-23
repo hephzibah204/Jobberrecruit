@@ -475,7 +475,7 @@
       <div class="ai-actions">
         <a href="<?= base_url('jobs') ?>" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-search"/></svg> Browse Jobs</a>
         <a href="<?= base_url('candidate/applications') ?>" class="btn btn-ghost-w"><svg aria-hidden="true"><use href="#i-doc"/></svg> My Applications</a>
-        <?php if (env('feature_ai_career_tools', 'true') == 'true'): ?>
+        <?php if (get_site_setting('feature_ai_career_tools', true)): ?>
         <a href="<?= base_url('candidate/career-tools') ?>" class="btn btn-ghost-w"><svg aria-hidden="true"><use href="#i-zap"/></svg> AI Career Tools</a>
         <?php endif; ?>
       </div>
@@ -521,7 +521,7 @@
         <span style="font-size:.72rem;color:var(--muted);font-weight:500">Jobs viewed · last 7 days</span></div>
       <div class="card-body">
         <?php
-        $weeklyActivity = $weeklyChartData ?? [1, 2, 4, 3, 5, 8, 0];
+        $weeklyActivity = $weeklyChartData ?? [0, 0, 0, 0, 0, 0, 0];
         $maxVal = max(1, max($weeklyActivity));
         $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         ?>
@@ -545,7 +545,7 @@
             <text class="axis-lbl" x="<?= 61 + ($i * 74) ?>" y="124" text-anchor="middle"><?= $day ?></text>
           <?php endforeach; ?>
         </svg>
-        <p style="font-size:.74rem;color:var(--muted);margin-top:10px;display:flex;gap:6px;align-items:center"><svg aria-hidden="true"><use href="#i-bulb"/></svg> The most active candidates are first in line when new jobs drop.</p>
+        <p style="font-size:.74rem;color:var(--muted);margin-top:10px;display:flex;gap:6px;align-items:center"><svg aria-hidden="true" width="14" height="14" style="width:14px;height:14px;flex-shrink:0"><use href="#i-bulb"/></svg> The most active candidates are first in line when new jobs drop.</p>
       </div>
     </div>
 
@@ -555,16 +555,23 @@
         <?php
           $donutColors = ['#0861A9', '#16a34a', '#ED9020', '#8b5cf6'];
           $donutTop = array_slice($skillCategories ?? [], 0, 4);
-          $donutSum = array_sum(array_map(fn($c) => max($c->match, 1), $donutTop));
-          $overallMatch = !empty($skillCategories)
-            ? (int) round(array_sum(array_map(fn($c) => $c->match, $skillCategories)) / count($skillCategories))
+          $hasSkills = !empty($skillCategories);
+          $rawMatchesSum = array_sum(array_map(fn($c) => (int)($c->match ?? 0), $donutTop));
+          $overallMatch = $hasSkills && count($skillCategories) > 0
+            ? (int) round(array_sum(array_map(fn($c) => (int)($c->match ?? 0), $skillCategories)) / count($skillCategories))
             : 0;
+
           $donutOffset = 0;
           $donutSegments = [];
-          foreach ($donutTop as $i => $cat) {
-              $len = $donutSum > 0 ? round((max($cat->match, 1) / $donutSum) * 320) : 0;
-              $donutSegments[] = ['len' => $len, 'offset' => -$donutOffset, 'color' => $donutColors[$i] ?? '#94a3b8', 'name' => $cat->name];
-              $donutOffset += $len;
+          if ($hasSkills && $rawMatchesSum > 0) {
+              foreach ($donutTop as $i => $cat) {
+                  $catMatch = (int)($cat->match ?? 0);
+                  if ($catMatch > 0) {
+                      $len = round(($catMatch / $rawMatchesSum) * 320);
+                      $donutSegments[] = ['len' => $len, 'offset' => -$donutOffset, 'color' => $donutColors[$i] ?? '#94a3b8', 'name' => $cat->name, 'match' => $catMatch];
+                      $donutOffset += $len;
+                  }
+              }
           }
         ?>
         <div class="donut-wrap">
@@ -578,12 +585,12 @@
             <span class="c"><b><?= $overallMatch ?>%</b><i>Match rate</i></span>
           </div>
           <ul class="leg">
-            <?php if (!empty($donutSegments)): ?>
-              <?php foreach ($donutSegments as $seg): ?>
-                <li><i style="background:<?= $seg['color'] ?>"></i><?= esc($seg['name']) ?></li>
+            <?php if (!empty($skillCategories)): ?>
+              <?php foreach (array_slice($skillCategories, 0, 4) as $i => $cat): ?>
+                <li><i style="background:<?= $donutColors[$i] ?? '#94a3b8' ?>"></i><?= esc($cat->name) ?> (<?= (int)$cat->match ?>%)</li>
               <?php endforeach; ?>
             <?php else: ?>
-              <li><i style="background:#94a3b8"></i>Add skills to see your match rate</li>
+              <li><i style="background:#94a3b8"></i>0 skills added · Update profile</li>
             <?php endif; ?>
           </ul>
         </div>
@@ -591,18 +598,14 @@
           <?php if (!empty($skillCategories)): ?>
               <?php foreach ($skillCategories as $cat): ?>
                   <div>
-                    <div class="mcat-row"><span><?= esc($cat->name) ?></span><b><?= $cat->match ?>%</b></div>
-                    <div class="mcat-track"><div class="mcat-fill" style="width:<?= $cat->match ?>%;background:#0861A9"></div></div>
+                    <div class="mcat-row"><span><?= esc($cat->name) ?></span><b><?= (int)$cat->match ?>%</b></div>
+                    <div class="mcat-track"><div class="mcat-fill" style="width:<?= (int)$cat->match ?>%;background:#0861A9"></div></div>
                   </div>
               <?php endforeach; ?>
           <?php else: ?>
-              <div>
-                <div class="mcat-row"><span>Software Development</span><b>85%</b></div>
-                <div class="mcat-track"><div class="mcat-fill" style="width:85%;background:#0861A9"></div></div>
-              </div>
-              <div>
-                <div class="mcat-row"><span>UI/UX Product Design</span><b>75%</b></div>
-                <div class="mcat-track"><div class="mcat-fill" style="width:75%;background:#064A85"></div></div>
+              <div style="text-align:center;padding:12px 8px;color:var(--muted);font-size:.82rem;">
+                <p style="margin:0 0 8px;">0 skill matches recorded.</p>
+                <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 10px;">Add skills to profile</a>
               </div>
           <?php endif; ?>
         </div>
@@ -610,26 +613,155 @@
     </div>
   </section>
 
+  <?php
+    $pendingInvitations = array_filter($aptitudeInvitations ?? [], function($inv) {
+        $isCompleted = ($inv->status === 'completed' || (!empty($inv->attempt_status) && $inv->attempt_status === 'submitted'));
+        $isExpired = (!$isCompleted && !empty($inv->due_date) && strtotime($inv->due_date) < time());
+        return !$isCompleted && !$isExpired;
+    });
+  ?>
+  <?php if (!empty($pendingInvitations)): ?>
+  <section class="mid" aria-label="Assessment invitations" style="margin-top:0">
+    <div class="card" style="grid-column:1/-1">
+      <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Employer Assessment Invitations</span>
+        <span class="pill pill--pending"><?= count($pendingInvitations) ?> pending</span></div>
+      <div class="card-body">
+        <div style="display:grid;gap:14px">
+          <?php foreach ($pendingInvitations as $inv):
+              $isInProgress = (!empty($inv->attempt_status) && $inv->attempt_status === 'in_progress');
+              $statusLabel = $isInProgress ? 'In Progress' : 'Invited';
+              $statusClass = $isInProgress ? 'pill--info' : 'pill--pending';
+              $actionUrl = !empty($inv->invitation_code) ? base_url('aptitude/invite/' . $inv->invitation_code) : base_url('aptitude');
+              $actionText = $isInProgress ? 'Resume Test' : 'Start Assessment';
+          ?>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--card-bg,#f8fafc);border:1px solid var(--border,#e2e8f0);border-radius:10px;">
+              <?php if (!empty($inv->company_logo)): ?>
+                <img src="<?= base_url($inv->company_logo) ?>" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">
+              <?php else: ?>
+                <span style="width:36px;height:36px;border-radius:8px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;color:#64748b"><?= strtoupper(substr($inv->company_name ?? 'E', 0, 1)) ?></span>
+              <?php endif; ?>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:.88rem"><?= esc($inv->test_title ?? 'Aptitude Assessment') ?></div>
+                <div style="font-size:.76rem;color:var(--muted)"><?= esc($inv->company_name ?? 'Employer') ?><?= !empty($inv->job_title) ? ' · ' . esc($inv->job_title) : '' ?></div>
+                <?php if (!empty($inv->due_date)): ?>
+                  <div style="font-size:.72rem;color:#ef4444;margin-top:2px">Due: <?= date('M j, Y', strtotime($inv->due_date)) ?></div>
+                <?php endif; ?>
+              </div>
+              <span class="pill <?= $statusClass ?>" style="flex-shrink:0"><?= $statusLabel ?></span>
+              <a href="<?= $actionUrl ?>" class="btn btn-sm" style="flex-shrink:0;font-size:.76rem;padding:6px 14px"><?= $actionText ?></a>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+  </section>
+  <?php endif; ?>
+
   <!-- picks · profile tasks · learning -->
   <section class="tri" aria-label="Recommendations and next steps">
     <div class="card">
       <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Finish Your Profile</span>
-        <span class="pill <?= $profileCompletion == 100 ? 'pill--success' : 'pill--pending' ?>"><?= $profileCompletion == 100 ? 'Completed' : 'Incomplete' ?></span></div>
+        <span class="pill <?= $profileCompletion >= 80 ? 'pill--success' : 'pill--pending' ?>">
+          <?php if ($profileCompletion == 100): ?>
+            100% Completed
+          <?php elseif ($profileCompletion >= 80): ?>
+            <?= $profileCompletion ?>% · 80%+ Bonus Unlocked
+          <?php else: ?>
+            <?= $profileCompletion ?>% · Incomplete
+          <?php endif; ?>
+        </span>
+      </div>
       <div class="card-body">
-        <div class="task <?= !empty($candidate->full_name) && !empty($candidate->phone) ? 'done' : 'todo' ?>">
-          <svg aria-hidden="true"><use href="<?= !empty($candidate->full_name) && !empty($candidate->phone) ? '#i-check-c' : '#i-circle' ?>"/></svg> Personal details added
+        <!-- Progress bar towards 80% and 100% milestone -->
+        <div style="margin-bottom: 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:0.78rem;">
+            <span style="font-weight:600;color:var(--brand-deep);">Profile Score</span>
+            <span style="font-weight:700;color:<?= $profileCompletion >= 80 ? 'var(--success)' : 'var(--accent-dark)' ?>;"><?= $profileCompletion ?>% / 100%</span>
+          </div>
+          <div style="height:8px;background:var(--bg);border:1px solid var(--border);border-radius:20px;overflow:hidden;position:relative;">
+            <div style="height:100%;width:<?= min(100, $profileCompletion) ?>%;background:<?= $profileCompletion >= 80 ? 'linear-gradient(90deg, #0D609E, #25D366)' : 'linear-gradient(90deg, #0D609E, #F08F1A)' ?>;border-radius:20px;transition:width 0.4s ease;"></div>
+          </div>
         </div>
-        <div class="task <?= !empty($candidate->resume) ? 'done' : 'todo' ?>">
-          <svg aria-hidden="true"><use href="<?= !empty($candidate->resume) ? '#i-check-c' : '#i-circle' ?>"/></svg> CV uploaded
-        </div>
-        <div class="task <?= !empty($candidate->skills) ? 'done' : 'todo' ?>">
-          <svg aria-hidden="true"><use href="<?= !empty($candidate->skills) ? '#i-check-c' : '#i-circle' ?>"/></svg> Skills &amp; preferences set
-        </div>
-        <div class="task <?= !empty($candidate->photo) ? 'done' : 'todo' ?>">
-          <svg aria-hidden="true"><use href="<?= !empty($candidate->photo) ? '#i-check-c' : '#i-circle' ?>"/></svg> 
-          <a href="<?= base_url('candidate/profile/edit') ?>">Upload a profile photo</a>
-        </div>
-        <p style="font-size:.72rem;color:var(--muted);margin-top:10px">&#8358;200 earned at the 60% milestone. Finish all steps to reach 100% and earn <b style="color:var(--accent-dark)">&#8358;500 more</b> — credited straight to your wallet.</p>
+
+        <?php if (!empty($profileChecklist)): ?>
+          <?php foreach ($profileChecklist as $task): ?>
+            <div class="task <?= $task['done'] ? 'done' : 'todo' ?>">
+              <svg aria-hidden="true"><use href="<?= $task['done'] ? '#i-check-c' : '#i-circle' ?>"/></svg>
+              <span><?= esc($task['title']) ?> (<?= $task['max_points'] ?>%)</span>
+              <?php if (!$task['done']): ?>
+                <a href="<?= esc($task['url']) ?>" style="margin-left:auto;font-size:0.75rem;white-space:nowrap;">Complete →</a>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <div class="task <?= !empty($candidate->full_name) && !empty($candidate->phone) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->full_name) && !empty($candidate->phone) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Personal details added (15%)</span>
+            <?php if (empty($candidate->full_name) || empty($candidate->phone)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->job_title) && !empty($candidate->employment_type) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->job_title) && !empty($candidate->employment_type) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Job preferences set (15%)</span>
+            <?php if (empty($candidate->job_title) || empty($candidate->employment_type)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->experience_years) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->experience_years) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Work experience added (20%)</span>
+            <?php if (empty($candidate->experience_years)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->education_level) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->education_level) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Education history added (12%)</span>
+            <?php if (empty($candidate->education_level)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->resume) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->resume) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Resume uploaded (12%)</span>
+            <?php if (empty($candidate->resume)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->skills) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->skills) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Skills added (10%)</span>
+            <?php if (empty($candidate->skills)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->bio) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->bio) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Professional summary added (10%)</span>
+            <?php if (empty($candidate->bio)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->portfolio) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->portfolio) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Portfolio & certs added (6%)</span>
+            <?php if (empty($candidate->portfolio)): ?>
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($profileCompletion >= 80): ?>
+          <p style="font-size:.74rem;color:var(--success);margin-top:12px;font-weight:600;display:flex;align-items:flex-start;gap:6px;line-height:1.4;">
+            <svg aria-hidden="true" style="width:15px;height:15px;flex-shrink:0;margin-top:1px;fill:currentColor;"><use href="#i-check-c"/></svg>
+            <span>Congratulations! You reached <strong><?= $profileCompletion ?>% completion</strong> and unlocked your <b style="color:var(--accent-dark);">&#8358;500 wallet bonus reward</b>.</span>
+          </p>
+        <?php else: ?>
+          <p style="font-size:.72rem;color:var(--muted);margin-top:12px;line-height:1.4;">
+            Reach at least <strong style="color:var(--brand-deep)">80% profile completion</strong> (<strong><?= max(0, 80 - $profileCompletion) ?>% more</strong>) to earn your <b style="color:var(--accent-dark)">&#8358;500 bonus reward</b> — credited straight to your wallet.
+          </p>
+        <?php endif; ?>
       </div>
     </div>
 

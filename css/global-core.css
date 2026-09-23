@@ -1433,6 +1433,7 @@ a:hover {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: border-color var(--transition), box-shadow var(--transition);
+  -webkit-appearance: none;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235b6577' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -2092,3 +2093,143 @@ body {
     color: rgba(255, 255, 255, 0.6) !important;
 }
 
+/* Global custom cursor fallback */
+html, body, a, button, select, input, textarea, [role="button"] {
+    cursor: url('/images/favicon_cursor.png'), auto !important;
+}
+
+
+/* iOS Safari auto-zooms the whole page when a focused input's font-size is
+   under 16px â€” force 16px on every text input on touch-width viewports so
+   tapping a field doesn't zoom. */
+@media (max-width: 768px) {
+  .form-control,
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ====================================================================
+   Global mobile hardening — cross-page fixes for small viewports.
+   ==================================================================== */
+
+html, body { overflow-x: hidden; }
+img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
+
+/* Sticky elements get the safe-area padding so they don't sit under the
+   iOS notch / Android cutout. */
+@media (max-width: 767.98px) {
+  .navbar, .header, .topbar, .main-header,
+  .sidebar, .left-sidebar, .right-sidebar, .settings-sidebar,
+  .footer, .pwa-install-banner, #btt, .chatbot-toggle {
+    padding-left: max(0px, env(safe-area-inset-left, 0px));
+    padding-right: max(0px, env(safe-area-inset-right, 0px));
+  }
+  .footer, .pwa-install-banner, #btt, .chatbot-toggle,
+  .mobile-bottom-nav, .jr-action-bar {
+    padding-bottom: max(0px, env(safe-area-inset-bottom, 0px));
+  }
+  .navbar, .header, .topbar, .main-header {
+    padding-top: max(0px, env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Touch target floor for legacy icon-only controls. */
+@media (max-width: 767.98px) {
+  .mobile_btn, .sidebar-close, .menu-icon,
+  .header .nav-link, .topbar .nav-link,
+  .icon-btn, .btn-icon, [class*="icon-btn"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Long strings should not break the layout. */
+p, li, a, button, span, h1, h2, h3, h4, h5, h6, td, th, label, small {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Tables: card-stack view on phones. We rely on data-label attributes:
+   <td data-label="Email">value</td>. */
+@media (max-width: 767.98px) {
+  .table-responsive, .table-wrap, .table {
+    background: transparent;
+  }
+  .table-responsive > .table,
+  .table,
+  .data-table,
+  .table-card,
+  table.table-stack {
+    border: 0;
+    background: transparent;
+  }
+  .table thead, .data-table thead, .table-card thead, table.table-stack thead,
+  .table-responsive > .table thead { display: none; }
+  .table tbody tr, .data-table tbody tr, .table-card tbody tr,
+  table.table-stack tbody tr {
+    display: block;
+    background: var(--bg-white, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 6px 14px;
+    box-shadow: 0 1px 4px rgba(10,47,87,.04);
+  }
+  .table tbody td, .data-table tbody td, .table-card tbody td,
+  table.table-stack tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border: 0;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    text-align: right;
+    min-height: 40px;
+  }
+  .table tbody td:last-child, .data-table tbody td:last-child,
+  .table-card tbody td:last-child, table.table-stack tbody td:last-child {
+    border-bottom: 0;
+  }
+  .table tbody td::before, .data-table tbody td::before,
+  .table-card tbody td::before, table.table-stack tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    text-align: left;
+    flex: 0 0 auto;
+    max-width: 50%;
+  }
+}
+
+/* Form rows should collapse to a single column on small phones. */
+@media (max-width: 767.98px) {
+  .form-row, .form-grid, .input-row,
+  .row.g-3 > [class*="col-"] { grid-template-columns: 1fr !important; }
+}
+
+/* Modal/offcanvas fits the viewport. */
+@media (max-width: 767.98px) {
+  .modal-dialog { margin: 8px; max-width: calc(100vw - 16px); }
+  .modal-content { border-radius: 14px; }
+  .modal-header, .modal-footer { padding: 14px 16px; }
+  .modal-body { padding: 14px 16px; }
+  .offcanvas { width: min(360px, 90vw) !important; }
+}
+
+/* Keep keyboard focus visible. */
+:focus-visible {
+  outline: 3px solid var(--accent, #ED9020);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

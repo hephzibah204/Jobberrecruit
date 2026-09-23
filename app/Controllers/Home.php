@@ -67,6 +67,8 @@ class Home extends BaseController
                     'MAX(employers.logo) as company_logo'
                 ])
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->groupBy('jobs.title')
                 ->orderBy('job_count', 'DESC')
                 ->findAll(12);
@@ -88,16 +90,9 @@ class Home extends BaseController
         $categories = $cache->get($categoriesCacheKey);
 
         if (!$categories) {
-            // $categories = $categoryModel
-            //     ->select('job_categories.*, COUNT(jobs.id) as job_count')
-            //     ->join('jobs', 'jobs.category_id = job_categories.id', 'left')
-            //     ->where('job_categories.parent_id', null)
-            //     ->groupBy('job_categories.id')
-            //     ->orderBy('job_count', 'DESC')
-            //     ->findAll(12);
             $categories = $industryModel
                 ->select('industries.*, COUNT(jobs.id) as job_count')
-                ->join('jobs', 'jobs.industry_id = industries.id', 'left')
+                ->join('jobs', 'jobs.industry_id = industries.id AND jobs.status = "open" AND jobs.admin_status = "approved"', 'left')
                 ->where('industries.parent_id', null)
                 ->groupBy('industries.id')
                 ->orderBy('job_count', 'DESC')
@@ -148,7 +143,8 @@ class Home extends BaseController
         if (!$jobs) {
             $jobs = $jobModel
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified')
-                ->where('status', 'open')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -214,7 +210,8 @@ class Home extends BaseController
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
-                ->where('status', 'open')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->where('jobs.is_featured', 1)
                 ->orderBy('jobs.created_at', 'DESC')
                 ->findAll(18);
@@ -230,6 +227,8 @@ class Home extends BaseController
                 ->select('employers.id, employers.company_name, employers.user_id as employer_user_id, employers.logo, employers.state_id, COUNT(jobs.id) as job_count, states.name as location, employers.is_verified')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 ->join('states', 'states.id = employers.state_id', 'left')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->where('is_anonymous', '0')
                 ->groupBy('employers.id')
                 ->orderBy('job_count', 'DESC')
@@ -319,7 +318,7 @@ class Home extends BaseController
         $jobAppModel = new \App\Models\JobApplicationModel();
         $courseModel = new \App\Models\CourseModel();
 
-        $activeJobsCount = $jobModel->where('status', 'open')->countAllResults();
+        $activeJobsCount = $jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults();
 
         $verifiedEmployersCount = $employerModel->groupStart()
             ->where('verification_status', 'verified')
@@ -343,7 +342,7 @@ class Home extends BaseController
 
         $data = [
             'title' => 'Find Jobs in Nigeria | JobberRecruit — Hire Top Talent',
-            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt and more. Employers can post jobs and hire top Nigerian talent today.',
+            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.',
             'og_title' => 'JobberRecruit — Nigeria\'s Leading Job Portal',
             'og_description' => 'Find verified jobs and hire top talent across Nigeria. Browse thousands of opportunities in Lagos, Abuja, and more.',
             'og_image' => base_url('images/default-og-image.jpg'),
@@ -408,6 +407,7 @@ class Home extends BaseController
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->where('jobs.state_id', $state->id)
             ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
             ->orderBy('jobs.created_at', 'DESC')
             ->limit(12)
             ->get()
@@ -416,6 +416,7 @@ class Home extends BaseController
         $totalJobs = $db->table('jobs')
             ->where('state_id', $state->id)
             ->where('status', 'open')
+            ->where('admin_status', 'approved')
             ->countAllResults();
 
         // --- 3. Fetch all active states for the sidebar/related links ---
@@ -424,10 +425,10 @@ class Home extends BaseController
         // --- 4. Build SEO fields ---
             $seoH1   = !empty($state->seo_h1)
             ? $state->seo_h1
-            : 'Jobs in ' . $state->name . ', Nigeria — Find Verified Vacancies';
+            : 'Jobs in ' . $state->name . ', Nigeria | Find Vacancies — JobberRecruit';
         $seoMeta = !empty($state->meta_description)
             ? $state->meta_description
-            : 'Browse verified jobs in ' . $state->name . '. Apply to the latest vacancies from top employers in Nigeria.';
+            : 'Browse verified jobs in ' . $state->name . ', Nigeria. Apply to top vacancies from verified employers across ' . $state->name . ' state.';
 
         return view('home/location_hub', [
             'title'            => $seoH1,
@@ -515,6 +516,7 @@ class Home extends BaseController
         }
 
         $jobs = $builder->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
             ->orderBy('jobs.is_featured', 'DESC')
             ->orderBy('jobs.created_at',  'DESC')
             ->limit(12)
@@ -524,6 +526,7 @@ class Home extends BaseController
         $totalJobs = $db->table('jobs')
             ->where($isCategory ? 'category_id' : 'industry_id', $industry->id)
             ->where('status', 'open')
+            ->where('admin_status', 'approved')
             ->countAllResults();
 
         // Fetch sibling industries for the "Browse other categories" section
@@ -536,10 +539,10 @@ class Home extends BaseController
         // Build SEO fields
         $seoH1   = !empty($industry->seo_h1)
             ? $industry->seo_h1
-            : $industry->name . ' Jobs in Nigeria';
+            : $industry->name . ' Jobs in Nigeria | JobberRecruit';
         $seoMeta = !empty($industry->meta_description)
             ? $industry->meta_description
-            : 'Browse verified ' . $industry->name . ' jobs in Nigeria. Apply to the latest vacancies from top employers today.';
+            : 'Browse verified ' . $industry->name . ' jobs in Nigeria. Apply to the latest vacancies from top employers today on JobberRecruit.';
 
         return view('home/industry_hub', [
             'title'            => $seoH1,
@@ -600,7 +603,8 @@ class Home extends BaseController
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
-            ->where('status', 'open');
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved');
 
         $selectedIndustryName = null;
         $selectedStateName = null;
@@ -640,7 +644,7 @@ class Home extends BaseController
         if ($position) {
             $query->where('jobs.position', $position);
         }
-        if ($workArrangement) {
+        if ($workArrangement && $this->db->fieldExists('work_arrangement', 'jobs')) {
             $query->where('jobs.work_arrangement', $workArrangement);
         }
         if ($jobType) {
@@ -882,6 +886,15 @@ class Home extends BaseController
     {
         $jobModel = model(JobModel::class);
 
+        // Auto-detect and 301 redirect if an external URL was passed into the jobs/ route
+        if (preg_match('#^https?://#i', $jobId) || strpos($jobId, 'http:') === 0 || strpos($jobId, 'https:') === 0) {
+            $targetUrl = urldecode($jobId);
+            if (!preg_match('#^https?://#i', $targetUrl)) {
+                $targetUrl = 'https://' . ltrim($targetUrl, ':/');
+            }
+            return redirect()->to($targetUrl, 301);
+        }
+
         // SEO: Handle 301 Redirects from old ID-based URLs to new slugs
         if (is_numeric($jobId)) {
             $basicJob = $jobModel->find($jobId);
@@ -1046,7 +1059,7 @@ class Home extends BaseController
 
         // Clean description for meta tags
         $cleanDescription = strip_tags($job->description);
-        $metaDescription = mb_substr($cleanDescription, 0, 160) . '...';
+        $metaDescription = (mb_strlen($cleanDescription) > 148) ? mb_substr($cleanDescription, 0, 145) . '...' : $cleanDescription;
 
         $data = [
             'title' => esc($job->title) . ' in ' . esc($job->location ?? 'Nigeria') . ' — JobberRecruit',
@@ -1091,7 +1104,8 @@ class Home extends BaseController
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->where('jobs.is_featured', 1)
-            ->where('jobs.status', 'open');
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved');
 
         if ($jobType) $query->where('jobs.job_type', $jobType);
         if ($stateId) $query->where('jobs.state_id', $stateId);
@@ -1141,7 +1155,7 @@ class Home extends BaseController
 
         $data = [
             'title' => 'Home',
-            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt.',
+            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.',
             'og_title' => 'JobberRecruit — Nigeria\'s Leading Job Portal',
             'og_description' => 'Find verified jobs and hire top talent across Nigeria.',
             'og_image' => base_url('images/default-og-image.jpg'),
@@ -1170,6 +1184,7 @@ class Home extends BaseController
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->where('jobs.category_id', $categoryId)
             ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
             ->orderBy('jobs.is_featured', 'DESC')
             ->orderBy('jobs.featured_until', 'DESC')
             ->findAll($limit, $offset);
@@ -1490,23 +1505,38 @@ class Home extends BaseController
         }
 
         $method = $job->application_method ?? 'form';
-        $redirectUrl = base_url('job/application/' . $jobId);
+        $redirectUrl = null;
 
         switch ($method) {
             case 'whatsapp':
-                $redirectUrl = $job->whatsapp_link;
-                break;
-            case 'email':
-                $email = $job->application_email ?? $job->contact_email;
-                $subject = rawurlencode("Application: {$job->title}");
-                $redirectUrl = "mailto:{$email}?subject={$subject}";
-                break;
-            case 'external':
-                $url = $job->external_url;
-                if ($url && preg_match('#^https?://#i', $url)) {
-                    $redirectUrl = $url;
+                $link = trim((string)($job->whatsapp_link ?? ''));
+                if ($link !== '') {
+                    $redirectUrl = preg_match('#^https?://#i', $link) ? $link : 'https://' . $link;
                 }
                 break;
+            case 'email':
+                $email = trim((string)($job->application_email ?? $job->contact_email ?? ''));
+                if ($email !== '') {
+                    $subject = rawurlencode("Application: {$job->title}");
+                    $redirectUrl = "mailto:{$email}?subject={$subject}";
+                }
+                break;
+            case 'external':
+                $url = trim((string)($job->external_url ?? $job->external_link ?? ''));
+                if ($url !== '') {
+                    $redirectUrl = preg_match('#^https?://#i', $url) ? $url : 'https://' . $url;
+                }
+                break;
+            case 'form':
+            default:
+                $redirectUrl = base_url('job/application/' . $jobId);
+                break;
+        }
+
+        if (!$redirectUrl) {
+            $jobSlug = !empty($job->slug) ? $job->slug : $jobId;
+            return redirect()->to(base_url('jobs/' . $jobSlug))
+                ->with('error', 'The external application link for this position is currently unavailable.');
         }
 
         $clickModel = new JobClickModel();
@@ -1855,6 +1885,11 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
+        // If application method is not internal form (external, whatsapp, email), redirect to tracking handler
+        if (($job->application_method ?? 'form') !== 'form') {
+            return $this->startApplication($jobId);
+        }
+
         if ($job->application_access === 'authenticated' && !auth()->user()) {
             return redirect()->to('/login')->with('error', 'You must log in to apply for this job.');
         }
@@ -1931,6 +1966,26 @@ class Home extends BaseController
                     'status' => 'error',
                     'message' => 'You have already applied for this job.'
                 ]);
+            }
+
+            // Minimum Profile Completion gate for registered candidates (60%)
+            if ($loggedIn && ($user->user_type ?? '') !== 'employer') {
+                $candidate = $candidateModel->where('user_id', $user->id)->first();
+                if ($candidate) {
+                    $fields = ['full_name', 'phone', 'location', 'job_title', 'skills', 'education_level', 'experience_years', 'resume'];
+                    $filled = 0;
+                    foreach ($fields as $f) {
+                        if (!empty($candidate->$f)) $filled++;
+                    }
+                    $pct = round(($filled / count($fields)) * 100);
+                    if ($pct < 60) {
+                        return $this->response->setJSON([
+                            'status' => 'error',
+                            'message' => 'Your profile is ' . $pct . '% complete. A minimum of 60% profile completion is required to submit job applications. Please complete your profile before applying.',
+                            'redirect' => base_url('candidate/profile')
+                        ]);
+                    }
+                }
             }
 
             $cvPath = null;
@@ -2789,22 +2844,53 @@ class Home extends BaseController
         return view('terms-of-service', $data);
     }
 
-    public function viewCompany($id)
+    public function viewCompany($identifier)
     {
         $employerModel = new EmployerModel();
         $jobsModel = new JobModel();
         $industryMap = new EmployerIndustryModel();
         $industryModel = new IndustryModel();
 
-        $company = $employerModel
-            ->select('employers.*, states.name as location')
-            ->where('employers.id', $id)
-            ->join('states', 'states.id = employers.state_id', 'left')
-            ->first();
+        if (is_numeric($identifier)) {
+            $company = $employerModel
+                ->select('employers.*, states.name as location')
+                ->where('employers.id', (int)$identifier)
+                ->join('states', 'states.id = employers.state_id', 'left')
+                ->first();
+
+            if ($company && !empty($company->company_name)) {
+                $slug = url_title($company->company_name, '-', true);
+                return redirect()->to(base_url("employer/{$slug}"), 301);
+            }
+        } else {
+            $slugTarget = strtolower(trim((string)$identifier));
+            $slugClean = str_replace('-', ' ', $slugTarget);
+            $company = $employerModel
+                ->select('employers.*, states.name as location')
+                ->where('LOWER(employers.company_name)', $slugClean)
+                ->orWhere('LOWER(REPLACE(employers.company_name, " ", "-"))', $slugTarget)
+                ->join('states', 'states.id = employers.state_id', 'left')
+                ->first();
+
+            if (!$company) {
+                $allEmployers = $employerModel
+                    ->select('employers.*, states.name as location')
+                    ->join('states', 'states.id = employers.state_id', 'left')
+                    ->findAll();
+                foreach ($allEmployers as $emp) {
+                    if (!empty($emp->company_name) && url_title($emp->company_name, '-', true) === $slugTarget) {
+                        $company = $emp;
+                        break;
+                    }
+                }
+            }
+        }
 
         if (!$company) {
             return redirect()->to('/')->with('error', 'Company not found.');
         }
+
+        $id = $company->id;
 
         $subscriptionModel = model(UserSubscriptionModel::class);
 
@@ -2830,12 +2916,13 @@ class Home extends BaseController
         // Jobs by employer
         $openJobs = $jobsModel
             ->select('jobs.*, states.name as location, employers.user_id as employer_user_id, employers.company_name, employers.logo, employers.is_verified')
-            ->where('employer_id', $id)
-            ->where('status', 'open')
-            ->where('is_anonymous', '0')
+            ->where('jobs.employer_id', $id)
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
+            ->where('jobs.is_anonymous', '0')
             ->join('employers', 'employers.id = jobs.employer_id')
             ->join('states', 'states.id = jobs.state_id', 'left')
-            ->orderBy('created_at', 'DESC')
+            ->orderBy('jobs.created_at', 'DESC')
             ->findAll();
 
         foreach ($openJobs as &$job) {
@@ -2860,18 +2947,28 @@ class Home extends BaseController
         ]);
     }
 
-    public function talents()
+    /**
+     * Public Candidate Hub Page — /candidates
+     */
+    public function candidateHub()
     {
-        $data = [
-            'title'            => 'Become a Candidate - Find Remote & Local Jobs | JobberRecruit',
-            'meta_description' => 'Join 10,000+ professionals finding high-paying remote and local jobs at verified companies. Create your free candidate profile and get matched with premium opportunities in tech, design, marketing, and more.',
-            'og_title'         => 'Become a Candidate | Find Premium Remote & Local Jobs',
-            'og_description'   => 'Join top talents connecting with verified companies worldwide. Get matched with high-quality remote and local opportunities.',
-            'og_image'         => base_url('assets/og-candidate-cover.jpg'),
-            'keywords'         => 'remote jobs, job seekers, candidates, talent platform, hire developers, global opportunities, tech jobs, remote work, career opportunities, verified employers',
-            'auth' => $this->auth,
-        ];
-        return view('talents', $data);
+        $jobModel      = model(\App\Models\JobModel::class);
+        $blogModel     = model(\App\Models\BlogModel::class);
+        $employerModel = model(\App\Models\EmployerModel::class);
+
+        $liveJobsCount = $jobModel->where('status', 'approved')->countAllResults();
+        $employerCount = $employerModel->where('is_verified', 1)->countAllResults();
+        $recentBlogs   = $blogModel->where('status', 'published')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(3);
+
+        return view('home/candidate_hub', [
+            'title'          => 'Candidate Hub — Find Jobs & Grow Your Career | JobberRecruit',
+            'liveJobsCount'  => $liveJobsCount,
+            'employerCount'  => $employerCount,
+            'recentBlogs'    => $recentBlogs,
+            'auth'           => $this->auth,
+        ]);
     }
 
 
@@ -3038,7 +3135,8 @@ class Home extends BaseController
         if (!$jobs) {
             $jobs = $jobModel
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.company_name as employer_name')
-                ->where('status', 'open')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -3193,6 +3291,7 @@ class Home extends BaseController
 
         return view('cv_review', [
             'title'           => 'Professional CV Review Service | JobberRecruit',
+            'meta_description'=> 'Get your resume professionally reviewed by HR experts in Nigeria. ATS optimization, CV formatting, and expert feedback to land top jobs.',
             'isLoggedIn'      => $this->auth->loggedIn(),
             'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
             'reviewId'        => $reviewId ? (int) $reviewId : null,

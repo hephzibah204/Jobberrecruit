@@ -25,7 +25,7 @@ class InvoiceService
     /**
      * Send invoice for subscription purchase
      */
-    public function sendSubscriptionInvoice($userId, $subscriptionId, $paymentId, $amount, $months)
+    public function sendSubscriptionInvoice($userId, $subscriptionId, $paymentId, $amount, $months, $prorationData = null)
     {
         $subscriptionModel = model(UserSubscriptionModel::class);
         $planModel = model(PlanModel::class);
@@ -39,6 +39,9 @@ class InvoiceService
         $employer = $this->employerModel->where('user_id', $userId)->first();
         $payment = $this->paymentModel->find($paymentId);
 
+        $newPlanPrice = !empty($prorationData['new_plan_price']) ? (float)$prorationData['new_plan_price'] : $amount;
+        $prorationDiscount = !empty($prorationData['proration_discount']) ? (float)$prorationData['proration_discount'] : 0.0;
+
         $invoiceData = [
             'invoice_number' => 'INV-' . date('Ymd') . '-' . str_pad($paymentId, 5, '0', STR_PAD_LEFT),
             'date' => date('F d, Y'),
@@ -50,8 +53,11 @@ class InvoiceService
             'item_name' => "{$plan->name} Subscription",
             'item_description' => "{$months} Month(s) - Unlimited job postings + Premium Features",
             'quantity' => $months,
-            'unit_price' => number_format($amount / $months, 2),
-            'subtotal' => number_format($amount, 2),
+            'unit_price' => number_format($newPlanPrice / $months, 2),
+            'subtotal' => number_format($newPlanPrice, 2),
+            'proration_discount' => number_format($prorationDiscount, 2),
+            'has_proration' => $prorationDiscount > 0,
+            'days_remaining_credited' => $prorationData['days_remaining'] ?? 0,
             'tax' => '0.00',
             'total' => number_format($amount, 2),
             'payment_method' => ucfirst($payment['payment_method']),
@@ -264,8 +270,7 @@ class InvoiceService
                         <p>' . htmlspecialchars($data['company_phone']) . '</p>
                         <p>' . htmlspecialchars($data['company_address']) . '</p>
                     </div>
-                    
-                    <table>
+                                        <table>
                         <thead>
                             <tr>
                                 <th>Item</th>
@@ -282,7 +287,20 @@ class InvoiceService
                                 <td>' . $data['quantity'] . '</td>
                                 <td>₦' . $data['unit_price'] . '</td>
                                 <td>₦' . $data['subtotal'] . '</td>
-                            </tr>
+                            </tr>';
+
+        if (!empty($data['has_proration'])) {
+            $html .= '
+                            <tr style="background: #e8f4fd;">
+                                <td><strong style="color: #0861A9;">Upgrade Proration Credit</strong></td>
+                                <td style="color: #0861A9;">Credit from remaining ' . ($data['days_remaining_credited'] ?? 0) . ' days on active subscription</td>
+                                <td>1</td>
+                                <td style="color: #0861A9;">-₦' . $data['proration_discount'] . '</td>
+                                <td style="color: #0861A9; font-weight: bold;">-₦' . $data['proration_discount'] . '</td>
+                            </tr>';
+        }
+
+        $html .= '
                         </tbody>
                     </table>';
 
@@ -305,16 +323,23 @@ class InvoiceService
 
         $html .= '
                     <div class="total-section">
-                        <div>Subtotal: ₦' . $data['subtotal'] . '</div>
+                        <div>Subtotal: ₦' . $data['subtotal'] . '</div>';
+        if (!empty($data['has_proration'])) {
+            $html .= '
+                        <div style="color: #0861A9;">Proration Discount: -₦' . $data['proration_discount'] . '</div>';
+        }
+        $html .= '
                         <div>Tax (0%): ₦' . $data['tax'] . '</div>
-                        <div class="total-amount">Total: ₦' . $data['total'] . '</div>
-                    </div>
-                    
+                        <div class="total-amount">Total Paid: ₦' . $data['total'] . '</div>
+                    </div>';
+
+        $html .= '
                     <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
                         <strong>Payment Details</strong><br>
                         Method: ' . $data['payment_method'] . '<br>
                         Reference: ' . $data['payment_reference'] . '<br>
                         Date: ' . $data['payment_date'] . '
+                    </div>
                     </div>
                 </div>
                 

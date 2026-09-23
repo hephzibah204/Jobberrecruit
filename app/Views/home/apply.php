@@ -4,6 +4,20 @@
 <?php
 $savedCvPath = $user ? ($candidate->resume ?? null) : null;
 $hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
+
+$candidateProfilePct = 100;
+if ($user && ($user->user_type ?? '') !== 'employer') {
+    $cModel = model(\App\Models\JobSeekerModel::class);
+    $candRec = $candidate ?? $cModel->where('user_id', $user->id)->first();
+    if ($candRec) {
+        $fields = ['full_name', 'phone', 'location', 'job_title', 'skills', 'education_level', 'experience_years', 'resume'];
+        $filled = 0;
+        foreach ($fields as $f) {
+            if (!empty($candRec->$f)) $filled++;
+        }
+        $candidateProfilePct = (int) round(($filled / count($fields)) * 100);
+    }
+}
 ?>
 
   <!-- HERO STRIP -->
@@ -103,6 +117,20 @@ $hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
             <div class="guest-notice" id="guest-notice">
               <svg aria-hidden="true"><use href="#i-flag"/></svg>
               <span>You're applying as a guest. <a href="<?= base_url('login') ?>">Log in</a> or <a href="<?= base_url('register') ?>">create an account</a> to save your CV and track applications.</span>
+            </div>
+          <?php elseif (($user->user_type ?? '') !== 'employer' && $candidateProfilePct < 60): ?>
+            <!-- 60% PROFILE COMPLETION GATE (PDF Requirement 12.1) -->
+            <div class="alert alert-warning mb-3" role="alert" style="background:#fff8e6; border:1.5px solid #fed7aa; border-radius:10px; padding:14px 16px; color:#9a3412;">
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <svg aria-hidden="true" width="20" height="20" style="flex-shrink:0; margin-top:2px; color:#ea580c;"><use href="#i-alert-triangle"/></svg>
+                <div>
+                  <strong style="font-size:0.92rem;">Profile Incomplete (<?= $candidateProfilePct ?>% / 60% Required)</strong>
+                  <p style="margin:4px 0 10px; font-size:0.83rem; line-height:1.45; color:#7c2d12;">Internal applications require at least <strong>60% profile completion</strong> so employers have enough information to evaluate your application.</p>
+                  <a href="<?= base_url('candidate/profile') ?>" class="emp-btn emp-btn-primary emp-btn-sm" style="font-size:0.8rem; padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    Complete Profile Now &rarr;
+                  </a>
+                </div>
+              </div>
             </div>
           <?php endif; ?>
 
@@ -558,24 +586,39 @@ $hasSavedCv = $user && $savedCvPath && file_exists(FCPATH . $savedCvPath);
         let btn = $(this);
         let jobId = btn.data("job-id");
 
+        if (!jobId) return;
+
         btn.prop("disabled", true).find('span').text("Processing...");
 
         $.ajax({
             url: "<?= site_url('jobs/toggle-save') ?>/" + jobId,
             method: "POST",
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            },
             success: function(response) {
                 if (response.success) {
                     btn.toggleClass("saved", response.saved);
                     btn.find('span').text(response.saved ? "Unsave" : "Save");
+                    toastr.success(response.message || "Saved status updated.");
                 } else {
-                    toastr.error(response.message);
+                    if (response.message && response.message.indexOf("logged in") !== -1) {
+                        window.location.href = "<?= base_url('login') ?>?redirect=" + encodeURIComponent(window.location.pathname);
+                    } else {
+                        toastr.error(response.message || "Could not save job.");
+                    }
                 }
             },
             complete: function() {
                 btn.prop("disabled", false);
             },
-            error: function() {
-                toastr.error("Network error. Try again.");
+            error: function(xhr) {
+                if (xhr.status === 401 || xhr.status === 403) {
+                    window.location.href = "<?= base_url('login') ?>?redirect=" + encodeURIComponent(window.location.pathname);
+                } else {
+                    toastr.error("Unable to save job right now. Please try again.");
+                }
                 btn.prop("disabled", false);
             }
         });

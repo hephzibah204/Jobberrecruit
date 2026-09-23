@@ -1,8 +1,7 @@
 <?= $this->extend('admin/layouts/app') ?>
 
 <?= $this->section('section') ?>
-<div class="main-content app-content">
-    <div class="container-fluid">
+<div class="container-fluid page-container main-body-container">
         <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
             <h1 class="page-title fw-semibold fs-18 mb-0">Issued Certificates</h1>
             <div class="ms-md-1 ms-0">
@@ -119,5 +118,4 @@
             </div>
         </div>
     </div>
-</div>
 <?= $this->endSection() ?>

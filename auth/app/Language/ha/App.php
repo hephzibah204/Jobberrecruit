@@ -1,0 +1,22 @@
+<?php
+return [
+    'welcome' => 'Barka da zuwa JobberRecruit',
+    'sign_in' => 'Shiga',
+    'register' => 'Yi Rijista',
+    'post_job' => 'Ƙara Sabon Aiki',
+    'home' => 'Gida',
+    'find_jobs' => 'Nemi Aiki',
+    'employers' => 'Masu Daukar Ma’aikata',
+    'manage_jobs' => 'Sarrafa Ayyuka',
+    'company_profile' => 'Bayanin Kamfani',
+    'candidates' => 'Masu Neman Aiki',
+    'pricing_plans' => 'Tsarin Farashi',
+    'blog' => 'Blog',
+    'about_us' => 'Game da Mu',
+    'contact' => 'Tuntube Mu',
+    'faqs' => 'Tambayoyi da Ake Yawan Yi',
+    'language' => 'Harshe',
+    'nigeria' => 'Najeriya',
+    'phone' => 'Lambar Waya',
+    'country_language' => 'Najeriya (Harshe)',
+];

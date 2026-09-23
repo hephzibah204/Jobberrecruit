@@ -419,30 +419,73 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border:none;border-radius:12px;overflow:hidden;box-shadow:0 14px 40px rgba(10,47,87,.16)">
       <div class="modal-header" style="background:var(--brand-light);color:var(--brand);padding:18px 22px">
-        <h5 class="modal-title fw-bold" id="paymentModalLabel">Purchase Course</h5>
+        <h5 class="modal-title fw-bold" id="paymentModalLabel"><i class="ti ti-shopping-cart me-1"></i> Course Checkout</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" style="padding:22px">
-        <p>You are about to purchase <strong><?= esc($course->title) ?></strong>.</p>
-        <div style="background:#f5f7fb;padding:15px;border-radius:8px;margin-bottom:15px;border:1px solid var(--border);">
+        <p class="mb-3">You are enrolling in <strong><?= esc($course->title) ?></strong>.</p>
+        
+        <div style="background:#f5f7fb;padding:15px;border-radius:8px;margin-bottom:18px;border:1px solid var(--border);">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-            <span style="color:var(--muted)">Price:</span>
+            <span style="color:var(--muted)">Course Fee:</span>
             <strong>₦<?= number_format((float)$course->price, 2) ?></strong>
           </div>
           <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted)">Total:</span>
-            <strong style="color:var(--brand);font-size:1.1rem">₦<?= number_format((float)$course->price, 2) ?></strong>
+            <span style="color:var(--muted)">Total Due:</span>
+            <strong style="color:var(--brand);font-size:1.15rem">₦<?= number_format((float)$course->price, 2) ?></strong>
           </div>
         </div>
-        <p style="font-size:0.9rem;color:var(--muted)"><i class="ti ti-lock"></i> Secure payment processed by Paystack.</p>
+
+        <?php $wBal = isset($walletBalance) ? (float)$walletBalance : 0.0; ?>
+        <?php $hasSufficientWallet = ($wBal >= (float)$course->price); ?>
+
+        <div class="mb-3 p-3 rounded border" style="background: <?= $hasSufficientWallet ? '#eefbf3; border-color: #bbf2d0!important;' : '#fff8f0; border-color: #ffd9a8!important;' ?>">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold fs-13" style="color: <?= $hasSufficientWallet ? '#166534' : '#9a3412' ?>;">
+              <i class="ti ti-wallet me-1"></i> Your Wallet Balance:
+            </span>
+            <strong class="fs-14" style="color: <?= $hasSufficientWallet ? '#166534' : '#9a3412' ?>;">₦<?= number_format($wBal, 2) ?></strong>
+          </div>
+          <?php if (!$hasSufficientWallet): ?>
+            <small class="d-block text-muted">
+              Top up your wallet balance or proceed with card payment via Paystack. 
+              <a href="<?= base_url('candidate/wallet') ?>" class="fw-bold text-primary underline" target="_blank">Top up Wallet →</a>
+            </small>
+          <?php else: ?>
+            <small class="d-block text-success fw-semibold">
+              <i class="ti ti-circle-check me-1"></i> You have sufficient wallet balance for instant 1-click purchase!
+            </small>
+          <?php endif; ?>
+        </div>
+
+        <div class="d-grid gap-2">
+          <?php if ($hasSufficientWallet): ?>
+            <form action="<?= base_url('training/enroll/' . $course->id) ?>" method="POST" class="mb-0">
+              <?= csrf_field() ?>
+              <input type="hidden" name="payment_method" value="wallet">
+              <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+                <i class="ti ti-wallet me-1"></i> Pay ₦<?= number_format((float)$course->price, 2) ?> with Wallet Balance
+              </button>
+            </form>
+          <?php endif; ?>
+
+          <form action="<?= base_url('training/enroll/' . $course->id) ?>" method="POST" class="mb-0">
+            <?= csrf_field() ?>
+            <input type="hidden" name="payment_method" value="paystack">
+            <button type="submit" class="btn <?= $hasSufficientWallet ? 'btn-outline-primary' : 'btn-primary' ?> w-100 py-2 fw-bold">
+              <i class="ti ti-credit-card me-1"></i> Pay with Card / Paystack
+            </button>
+          </form>
+        </div>
       </div>
-      <div class="modal-footer" style="padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-        <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
-        <a href="<?= base_url('training/enroll/' . $course->id) ?>" class="btn btn-primary">Proceed to Payment</a>
+      <div class="modal-footer" style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span class="fs-12 text-muted"><i class="ti ti-shield-lock me-1"></i> 256-bit Encrypted Checkout</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>
 </div>
+
 
 <?= $this->endSection() ?>
 

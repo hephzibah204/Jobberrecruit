@@ -191,13 +191,23 @@ img{max-width:100%;display:block}
 <?= $this->renderSection('styles') ?>
 </head>
 <body>
+<?= $this->include('partials/svg_sprites') ?>
 
 <header class="auth-head">
   <div class="auth-head-in">
     <a href="<?= base_url('') ?>" class="auth-logo" aria-label="JobberRecruit Home">
         <img class="auth-logo-img" src="<?= base_url('images/logo.png') ?>" alt="JobberRecruit" width="232" height="60" loading="eager" decoding="async" fetchpriority="high">
       </a>
-    <div class="auth-head-alt">New to JobberRecruit? <a href="<?= base_url('register') ?>"/>Create an account</a></div>
+    <?php
+    $isRegister = (uri_string() === 'register' || strpos(uri_string(), 'register') !== false);
+    ?>
+    <div class="auth-head-alt">
+      <?php if ($isRegister): ?>
+        Already have an account? <a href="<?= base_url('login') ?>">Log in</a>
+      <?php else: ?>
+        New to JobberRecruit? <a href="<?= base_url('register') ?>">Create an account</a>
+      <?php endif; ?>
+    </div>
   </div>
 </header>
 
@@ -206,16 +216,9 @@ img{max-width:100%;display:block}
 </main>
 
 
-<script src="<?= base_url('admin/code.jquery.com/jquery-3.6.1.min.js') ?>"></script>
-<script src="<?= base_url('admin/js/toastr.min.js') ?>"></script>
-<script>
-  toastr.options = {
-    closeButton: true,
-    progressBar: true,
-    positionClass: "toast-top-right",
-    timeOut: 4000
-  };
-</script>
+<script src="<?= base_url('js/jquery-3.7.1.min.js') ?>"></script>
+<script src="<?= base_url('js/toastr.min.js') ?>"></script>
+
 <?= $this->renderSection('scripts') ?>
 
 </body>

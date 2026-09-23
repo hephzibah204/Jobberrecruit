@@ -4,10 +4,10 @@
 <head>
     <script>
         (function() {
-            const savedTheme = localStorage.getItem('jr-theme');
-            const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (preferDark ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.removeItem('jr-theme');
+            localStorage.removeItem('valynadarktheme');
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.documentElement.setAttribute('data-theme-mode', 'light');
         })();
     </script>
 
@@ -70,6 +70,7 @@
     <?php endif; ?>
     <!-- Brand Styles Overlay -->
     <link href="<?= base_url('admin/css/admin-brand.css'); ?>" rel="stylesheet">
+    <link href="<?= base_url('css/modal-scroll.css'); ?>?v=<?= time() ?>" rel="stylesheet">
     <?= $this->renderSection('styles') ?>
 
 

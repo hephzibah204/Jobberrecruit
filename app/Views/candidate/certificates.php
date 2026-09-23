@@ -61,6 +61,9 @@
                     <?= esc($cert['certificate_code']) ?>
                 </div>
                 <div class="cert-actions">
+                    <a href="<?= base_url('training/certificate/view/' . $cert['id']) ?>" class="btn btn-outline btn-sm" target="_blank" rel="noopener">
+                        <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-eye"/></svg> View Certificate
+                    </a>
                     <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>" class="btn btn-primary btn-sm" target="_blank">
                         <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-download"/></svg> Download PDF
                     </a>

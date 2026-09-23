@@ -12,9 +12,11 @@ class CandidateSubscriptionController extends BaseController
     protected $planModel;
     protected $subModel;
     protected $paymentModel;
+    protected $session;
 
     public function __construct()
     {
+        $this->session = service('session');
         $this->planModel = model(PlanModel::class);
         $this->subModel = model(UserSubscriptionModel::class);
         $this->paymentModel = model(PaymentModel::class);
@@ -45,7 +47,7 @@ class CandidateSubscriptionController extends BaseController
             $walletBalance = (float) ($wallet->balance ?? 0.0);
         }
 
-        $isFreeMode = env('site_free_mode') === 'true';
+        $isFreeMode = is_site_free_mode();
 
         return view('candidate/pricing', [
             'title' => 'Candidate Premium Plans',
@@ -66,6 +68,7 @@ class CandidateSubscriptionController extends BaseController
         }
 
         $planId = (int) $this->request->getPost('plan_id');
+        $paymentMethod = $this->request->getPost('payment_method');
         $plan = $this->planModel->find($planId);
 
         if (!$plan || $plan->plan_type !== 'candidate') {
@@ -74,6 +77,44 @@ class CandidateSubscriptionController extends BaseController
 
         if ((float) $plan->base_price <= 0) {
             return $this->activateFreePlan($plan);
+        }
+
+        // Handle Wallet Payment
+        if ($paymentMethod === 'wallet') {
+            $userId = auth()->id();
+            $walletService = new \App\Services\WalletService();
+            $wallet = $walletService->getOrCreateWallet($userId);
+
+            if ((float) $wallet->balance < (float) $plan->base_price) {
+                return redirect()->back()->with('error', 'Insufficient wallet balance (₦' . number_format($wallet->balance, 2) . '). Please top up your wallet or pay via Paystack.');
+            }
+
+            $reference = 'cand_sub_w_' . uniqid();
+            $walletService->debit(
+                userId: $userId,
+                amount: (float) $plan->base_price,
+                source: 'wallet_checkout',
+                reference: $reference,
+                sourceId: $planId,
+                description: 'Paid with wallet for plan: ' . $plan->name
+            );
+
+            // Record Payment
+            $paymentModel = model(\App\Models\PaymentModel::class);
+            $paymentModel->insert([
+                'user_id'        => $userId,
+                'plan_id'        => $planId,
+                'reference'      => $reference,
+                'amount'         => $plan->base_price,
+                'status'         => 'paid',
+                'payment_method' => 'wallet',
+                'paid_at'        => date('Y-m-d H:i:s'),
+                'created_at'     => date('Y-m-d H:i:s'),
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->activatePlan($planId, $reference, $plan->base_price);
+            return redirect()->to('candidate/dashboard')->with('success', 'Subscription plan activated successfully using your wallet balance!');
         }
 
         $paystack = new PaystackService();

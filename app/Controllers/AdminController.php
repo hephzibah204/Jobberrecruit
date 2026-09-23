@@ -51,7 +51,7 @@ class AdminController extends BaseController
 
     public function __construct()
     {
-        helper(['auth', 'text', 'form', 'url', 'env', 'date']);
+        helper(['auth', 'text', 'form', 'url', 'env', 'date', 'image']);
 
         $this->auth           = service('auth');
         $this->config         = config('Auth');
@@ -82,39 +82,52 @@ class AdminController extends BaseController
     {
         if ($this->request->getMethod() === 'POST') {
             try {
-                $credentials = [
-                    'email'    => $this->request->getPost('email'),
-                    'password' => $this->request->getPost('password'),
-                ];
+                $email = trim((string) $this->request->getPost('email'));
+                $password = (string) $this->request->getPost('password');
 
-                // Ensure no existing auth state
+                // 1) Hard reset any previous session
                 if ($this->auth->loggedIn()) {
                     $this->auth->logout();
                 }
-
-                // Extra safety: regenerate session
                 session()->regenerate(true);
 
-                $auth = auth()->attempt($credentials);
+                // 2) Resolve user & identity from DB
+                $db = db_connect();
+                $identity = $db->table('auth_identities')
+                    ->select('user_id, secret2')
+                    ->where('type', 'email_password')
+                    ->where('secret', $email)
+                    ->get()
+                    ->getRow();
 
-                if (! $auth->isOK()) {
+                $userModel = model(UserModel::class);
+                $user = $identity ? $userModel->find((int) $identity->user_id) : null;
+
+                if (!$identity || !$user) {
                     return $this->response->setJSON([
                         'success' => false,
-                        'message' => $auth->reason()
+                        'message' => 'Invalid administrator credentials.'
                     ])->setStatusCode(401);
                 }
 
-                $user = auth()->user();
-
-                // Ensure admin
-                if ($user->user_type !== 'admin') {
-                    auth()->logout();
-
+                // 3) Verify password
+                if (!service('passwords')->verify($password, (string) $identity->secret2)) {
                     return $this->response->setJSON([
                         'success' => false,
-                        'message' => 'Unauthorized access'
-                    ]);
+                        'message' => 'Invalid administrator credentials.'
+                    ])->setStatusCode(401);
                 }
+
+                // 4) Ensure admin user_type
+                if ($user->user_type !== 'admin') {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Unauthorized access: administrator permissions required.'
+                    ])->setStatusCode(403);
+                }
+
+                // 5) Log in admin
+                $this->auth->login($user, true);
 
                 $redirect = session()->get('admin_redirect') ?? base_url('admin/dashboard');
                 session()->remove('admin_redirect');
@@ -124,10 +137,11 @@ class AdminController extends BaseController
                     'message'  => 'Welcome back!',
                     'redirect' => $redirect
                 ]);
-            } catch (ValidationException $e) {
+            } catch (\Throwable $e) {
                 return $this->response->setJSON([
-                    'errors' => $e->getMessage()
-                ])->setStatusCode(422);
+                    'success' => false,
+                    'message' => 'Authentication error: ' . $e->getMessage()
+                ])->setStatusCode(500);
             }
         }
 
@@ -250,18 +264,25 @@ class AdminController extends BaseController
 
         // Items awaiting an admin decision, surfaced as the "Needs attention" queue
         $db = \Config\Database::connect();
+        $docSubmittedSql = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
+        $pendingEmployersCount = (int) $db->table('employers')
+            ->where('verification_status', 'pending')
+            ->where($docSubmittedSql, null, false)
+            ->countAllResults();
+        $pendingJobsCount = (int) $this->jobModel->where('admin_status', 'pending')->countAllResults();
+
         $attention = [
             'jobs' => [
                 'label' => 'Jobs awaiting approval',
-                'count' => $this->jobModel->where('admin_status', 'pending')->countAllResults(),
-                'url'   => base_url('admin/jobs'),
+                'count' => $pendingJobsCount,
+                'url'   => base_url('admin/jobs?status=pending_approval'),
                 'icon'  => 'ti-briefcase',
             ],
-            'documents' => [
-                'label' => 'Employer documents to verify',
-                'count' => (int) $db->table('employer_documents')->where('status', 'pending')->countAllResults(),
-                'url'   => base_url('admin/employers'),
-                'icon'  => 'ti-file-certificate',
+            'employers' => [
+                'label' => 'Employers awaiting verification',
+                'count' => $pendingEmployersCount,
+                'url'   => base_url('admin/employers?status=pending'),
+                'icon'  => 'ti-building',
             ],
             'reports' => [
                 'label' => 'Job reports to resolve',
@@ -549,36 +570,45 @@ class AdminController extends BaseController
     public function candidates()
     {
         $filters = [
-            'keyword'          => $this->request->getGet('keyword'),
-            'state_id'         => $this->request->getGet('state'),
-            'employment_type'  => $this->request->getGet('job_type'),
-            'experience_years' => $this->request->getGet('experience'),
-            'job_title'        => (array) $this->request->getGet('job_title'),
-            'availability'     => (array) $this->request->getGet('availability'),
-            'employment_type'  => (array) $this->request->getGet('employment_type'),
-            'education_level'  => (array) $this->request->getGet('education_level'),
+            'keyword'             => $this->request->getGet('keyword'),
+            'state_id'            => $this->request->getGet('state') ?? $this->request->getGet('state_id'),
+            'employment_type'     => $this->request->getGet('employment_type') ?? $this->request->getGet('job_type'),
+            'experience_years'    => $this->request->getGet('experience') ?? $this->request->getGet('experience_years'),
+            'job_title'           => $this->request->getGet('job_title'),
+            'availability'        => $this->request->getGet('availability'),
+            'education_level'     => $this->request->getGet('education_level'),
+            'resume_status'       => $this->request->getGet('resume_status') ?? 'all',
+            'verification_status' => $this->request->getGet('verification_status') ?? $this->request->getGet('status') ?? 'all',
+            'visibility'          => $this->request->getGet('visibility') ?? 'all',
+            'sort'                => $this->request->getGet('sort') ?? 'newest',
         ];
 
-        $candidates = $this->jobSeekerModel->getCandidates($filters, 20);
+        $candidates = $this->jobSeekerModel->getCandidates($filters, 20, true);
+        $candidateStats = $this->jobSeekerModel->getCandidateStats();
+        $states = $this->stateModel->orderBy('name', 'ASC')->findAll();
 
         $data = [
-            'title'      => 'Candidates',
-            'user'       => $this->auth->user(),
-            'admin'      => $this->admin,
-            'candidates' => $candidates,
-            'pager'      => $this->jobSeekerModel->pager,
-            'total'      => $this->jobSeekerModel->pager->getTotal(),
-
-            // sidebar counts
+            'title'               => 'Candidate Management',
+            'user'                => $this->auth->user(),
+            'admin'               => $this->admin,
+            'candidates'          => $candidates,
+            'pager'               => $this->jobSeekerModel->pager,
+            'total'               => $this->jobSeekerModel->pager->getTotal(),
+            'candidateStats'      => $candidateStats,
+            'states'              => $states,
+            'filters'             => $filters,
             'jobTitleCounts'      => $this->jobSeekerModel->countByJobTitle(),
-            'availabilityCounts' => $this->jobSeekerModel->countByAvailability(),
-            'jobTypeCounts'      => $this->jobSeekerModel->countByEmploymentType(),
-            'educationCounts'    => $this->jobSeekerModel->countByEducation(),
+            'availabilityCounts'  => $this->jobSeekerModel->countByAvailability(),
+            'jobTypeCounts'       => $this->jobSeekerModel->countByEmploymentType(),
+            'educationCounts'     => $this->jobSeekerModel->countByEducation(),
         ];
 
-        // 🔴 THIS LINE FIXES EVERYTHING
         if ($this->request->isAJAX()) {
-            return view('admin/partials/candidates_results', $data);
+            return view('admin/partials/candidates_results', [
+                'candidates' => $candidates,
+                'pager'      => $this->jobSeekerModel->pager,
+                'filters'    => $filters,
+            ]);
         }
 
         return view('admin/candidates', $data);
@@ -586,13 +616,30 @@ class AdminController extends BaseController
 
     public function filterCandidates()
     {
-        $filters = $this->request->getGet();
+        return $this->candidates();
+    }
 
-        $candidates = $this->jobSeekerModel->getCandidates($filters, 10);
+    /**
+     * Toggle candidate verification status
+     */
+    public function toggleCandidateVerification($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method not allowed']);
+        }
 
-        return view('admin/partials/candidates_table', [
-            'candidates' => $candidates,
-            'pager'      => $this->jobSeekerModel->pager,
+        $candidate = $this->jobSeekerModel->find($id);
+        if (!$candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Candidate not found']);
+        }
+
+        $newStatus = empty($candidate->is_verified) ? 1 : 0;
+        $this->jobSeekerModel->update($id, ['is_verified' => $newStatus]);
+
+        return $this->response->setJSON([
+            'success'     => true,
+            'is_verified' => $newStatus,
+            'message'     => $newStatus ? 'Candidate verified successfully' : 'Candidate unverified'
         ]);
     }
 
@@ -601,12 +648,15 @@ class AdminController extends BaseController
     {
         $candidate = $this->jobSeekerModel
             ->select('
-            job_seekers.*,
-            auth_identities.secret as email,
-            states.name AS state_name,
-        ')
+                job_seekers.*,
+                auth_identities.secret as email,
+                states.name AS state_name,
+                users.username,
+                users.active as user_active
+            ')
+            ->join('users', 'users.id = job_seekers.user_id', 'left')
             ->join('states', 'states.id = job_seekers.state_id', 'left')
-            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id AND auth_identities.type = "email_password"', 'left')
             ->where('job_seekers.id', $id)
             ->first();
 
@@ -621,19 +671,47 @@ class AdminController extends BaseController
             ->where('job_seeker_id', $id)
             ->findAll();
 
+        // Applications
+        $db = \Config\Database::connect();
+        $applications = [];
+        if ($db->tableExists('job_applications')) {
+            $applications = $db->table('job_applications')
+                ->select('job_applications.*, jobs.title as job_title, employers.company_name')
+                ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
+                ->join('employers', 'employers.id = jobs.employer_id', 'left')
+                ->where('job_applications.job_seeker_id', $id)
+                ->orderBy('job_applications.created_at', 'DESC')
+                ->get()
+                ->getResultArray();
+        }
+
+        // Course enrollments
+        $courses = [];
+        if ($db->tableExists('course_enrollments')) {
+            $courses = $db->table('course_enrollments')
+                ->select('course_enrollments.*, courses.title as course_title')
+                ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
+                ->where('course_enrollments.user_id', $candidate->user_id)
+                ->orderBy('course_enrollments.created_at', 'DESC')
+                ->get()
+                ->getResultArray();
+        }
+
         return view('admin/candidate', [
-            'title'      => $candidate->full_name,
-            'user'       => $this->auth->user(),
-            'admin'      => $this->admin,
-            'candidate'  => $candidate,
-            'industries' => $industries,
+            'title'        => $candidate->full_name,
+            'user'         => $this->auth->user(),
+            'admin'        => $this->admin,
+            'candidate'    => $candidate,
+            'industries'   => $industries,
+            'applications' => $applications,
+            'courses'      => $courses,
         ]);
     }
 
     public function shortlistCandidate($id)
     {
         model('CandidateShortlistModel')->insert([
-            'admin_id' => $this->auth->user()->id,
+            'admin_id'      => $this->auth->user()->id,
             'job_seeker_id' => $id
         ]);
 
@@ -643,7 +721,20 @@ class AdminController extends BaseController
     public function downloadCv($id)
     {
         $candidate = $this->jobSeekerModel->find($id);
-        return $this->response->download($candidate->resume, null);
+        if (!$candidate || empty($candidate->resume)) {
+            return redirect()->back()->with('error', 'Resume not available for this candidate');
+        }
+
+        $path = FCPATH . ltrim($candidate->resume, '/');
+        if (file_exists($path)) {
+            return $this->response->download($path, null);
+        }
+
+        if (str_starts_with($candidate->resume, 'http://') || str_starts_with($candidate->resume, 'https://')) {
+            return redirect()->to($candidate->resume);
+        }
+
+        return redirect()->back()->with('error', 'Resume file not found');
     }
 
     // Employers
@@ -651,16 +742,18 @@ class AdminController extends BaseController
     {
         $employerModel = model(\App\Models\EmployerModel::class);
         $verificationStatus = $this->request->getGet('status') ?? 'all';
+        $docSubmittedSql = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
 
         // Build query with filters
         $builder = $employerModel
             ->select([
                 'employers.*',
                 'MAX(states.name) AS state_name',
-                'MAX(auth_identities.secret) AS email',
+                'COALESCE(MAX(CAST(auth_identities.secret AS CHAR)), MAX(CAST(employers.contact_email AS CHAR))) AS email',
                 'MAX(users.username) AS username',
                 'GROUP_CONCAT(DISTINCT industries.name SEPARATOR ", ") AS industries',
-                'COUNT(DISTINCT jobs.id) AS total_jobs'
+                'COUNT(DISTINCT jobs.id) AS total_jobs',
+                'COUNT(DISTINCT employer_documents.id) AS submitted_docs_count'
             ])
             ->join('users', 'users.id = employers.user_id', 'left')
             ->join('auth_identities', 'auth_identities.user_id = employers.user_id', 'left')
@@ -668,28 +761,43 @@ class AdminController extends BaseController
             ->join('employer_industries', 'employer_industries.employer_id = employers.id', 'left')
             ->join('industries', 'industries.id = employer_industries.industry_id', 'left')
             ->join('jobs', 'jobs.employer_id = employers.id', 'left')
+            ->join('employer_documents', 'employer_documents.employer_id = employers.id', 'left')
             ->groupBy('employers.id');
 
         // Apply verification status filter
-        if ($verificationStatus !== 'all') {
+        if ($verificationStatus === 'pending') {
+            $builder->where('employers.verification_status', 'pending')
+                    ->where($docSubmittedSql, null, false);
+        } elseif ($verificationStatus === 'unverified' || $verificationStatus === 'no_documents') {
+            $builder->where('(employers.verification_status = "unverified" OR (employers.verification_status = "pending" AND NOT ' . $docSubmittedSql . '))', null, false)
+                    ->where('employers.verification_status !=', 'verified')
+                    ->where('employers.verification_status !=', 'rejected');
+        } elseif ($verificationStatus !== 'all') {
             $builder->where('employers.verification_status', $verificationStatus);
         }
 
         $employers = $builder->paginate(20);
 
+        if ($this->request->isAJAX()) {
+            return view('admin/partials/employers_results', [
+                'employers' => $employers,
+                'pager'     => $employerModel->pager
+            ]);
+        }
+
         // Get verification stats
         $verificationStats = $employerModel->getVerificationStats();
 
         $data = [
-            'title' => 'Employers',
-            'user' => $this->auth->user(),
-            'admin' => $this->admin,
-            'employers' => $employers,
-            'pager' => $employerModel->pager,
-            'total' => $employerModel->pager->getTotal(),
-            'industryCounts' => $this->industryCounts(),
+            'title'             => 'Employers',
+            'user'              => $this->auth->user(),
+            'admin'             => $this->admin,
+            'employers'         => $employers,
+            'pager'             => $employerModel->pager,
+            'total'             => $employerModel->pager->getTotal(),
+            'industryCounts'    => $this->industryCounts(),
             'verificationStats' => $verificationStats,
-            'currentStatus' => $verificationStatus
+            'currentStatus'     => $verificationStatus
         ];
 
         return view('admin/employers', $data);
@@ -708,46 +816,6 @@ class AdminController extends BaseController
             ->findAll();
     }
 
-    // public function filterEmployers()
-    // {
-    //     if (! $this->request->isAJAX()) {
-    //         return redirect()->back();
-    //     }
-
-    //     $industryIds = (array) $this->request->getGet('industries');
-    //     $perPage     = 20;
-
-    //     $builder = $this->employerModel
-    //         ->select([
-    //             'employers.*',
-    //             'states.name AS state_name',
-    //             'COUNT(DISTINCT jobs.id) AS total_jobs',
-    //         ])
-    //         ->join('states', 'states.id = employers.state_id', 'left')
-    //         ->join('jobs', 'jobs.employer_id = employers.id', 'left');
-
-    //     // Join employer_industries ONLY when filtering
-    //     if (! empty($industryIds)) {
-    //         $builder
-    //             ->join(
-    //                 'employer_industries ei',
-    //                 'ei.employer_id = employers.id',
-    //                 'inner'
-    //             )
-    //             ->whereIn('ei.industry_id', $industryIds);
-    //     }
-
-    //     // IMPORTANT: Always group when using COUNT()
-    //     $builder->groupBy('employers.id');
-
-    //     $employers = $builder->paginate($perPage);
-
-    //     return view('admin/partials/employers_results', [
-    //         'employers' => $employers,
-    //         'pager'     => $this->employerModel->pager,
-    //     ]);
-    // }
-
     // Add AJAX filter for employers
     public function filterEmployers()
     {
@@ -756,24 +824,35 @@ class AdminController extends BaseController
         $industries = $this->request->getGet('industries') ?? [];
         $verificationStatus = $this->request->getGet('status') ?? 'all';
         $page = $this->request->getGet('page') ?? 1;
+        $docSubmittedSql = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
 
         $builder = $employerModel
             ->select([
                 'employers.*',
                 'MAX(states.name) AS state_name',
-                'MAX(users.email) AS email',
+                'COALESCE(MAX(CAST(auth_identities.secret AS CHAR)), MAX(CAST(employers.contact_email AS CHAR))) AS email',
                 'GROUP_CONCAT(DISTINCT industries.name SEPARATOR ", ") AS industries',
-                'COUNT(DISTINCT jobs.id) AS total_jobs'
+                'COUNT(DISTINCT jobs.id) AS total_jobs',
+                'COUNT(DISTINCT employer_documents.id) AS submitted_docs_count'
             ])
             ->join('users', 'users.id = employers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = employers.user_id', 'left')
             ->join('states', 'states.id = employers.state_id', 'left')
             ->join('employer_industries', 'employer_industries.employer_id = employers.id', 'left')
             ->join('industries', 'industries.id = employer_industries.industry_id', 'left')
             ->join('jobs', 'jobs.employer_id = employers.id', 'left')
+            ->join('employer_documents', 'employer_documents.employer_id = employers.id', 'left')
             ->groupBy('employers.id');
 
         // Apply verification status filter
-        if ($verificationStatus !== 'all') {
+        if ($verificationStatus === 'pending') {
+            $builder->where('employers.verification_status', 'pending')
+                    ->where($docSubmittedSql, null, false);
+        } elseif ($verificationStatus === 'unverified' || $verificationStatus === 'no_documents') {
+            $builder->where('(employers.verification_status = "unverified" OR (employers.verification_status = "pending" AND NOT ' . $docSubmittedSql . '))', null, false)
+                    ->where('employers.verification_status !=', 'verified')
+                    ->where('employers.verification_status !=', 'rejected');
+        } elseif ($verificationStatus !== 'all') {
             $builder->where('employers.verification_status', $verificationStatus);
         }
 
@@ -1796,15 +1875,18 @@ class AdminController extends BaseController
      */
     public function jobs()
     {
+        $status = $this->request->getGet('status');
+
         $stats = [
-            'total'           => $this->jobModel->countAll(),
-            'open'            => $this->jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults(),
+            'total'            => $this->jobModel->countAll(),
+            'open'             => $this->jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults(),
             'pending_approval' => $this->jobModel->where('admin_status', 'pending')->countAllResults(),
-            'closed'          => $this->jobModel->where('status', 'closed')->countAllResults(),
-            'rejected'        => $this->jobModel->where('admin_status', 'rejected')->countAllResults(),
+            'closed'           => $this->jobModel->where('status', 'closed')->countAllResults(),
+            'rejected'         => $this->jobModel->where('admin_status', 'rejected')->countAllResults(),
+            'deleted'          => $this->jobModel->where('status', 'deleted')->countAllResults(),
         ];
 
-        $jobs = $this->jobModel
+        $builder = $this->jobModel
             ->select([
                 'jobs.*',
                 'employers.company_name',
@@ -1814,17 +1896,34 @@ class AdminController extends BaseController
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_applications', 'job_applications.job_id = jobs.id', 'left')
-            ->groupBy('jobs.id')
-            ->orderBy('jobs.created_at', 'DESC')
-            ->paginate(20);
+            ->groupBy('jobs.id');
+
+        if ($status) {
+            if ($status === 'pending_approval' || $status === 'pending') {
+                $builder->where('jobs.admin_status', 'pending');
+            } elseif ($status === 'rejected') {
+                $builder->where('jobs.admin_status', 'rejected');
+            } elseif ($status === 'open' || $status === 'active') {
+                $builder->where('jobs.status', 'open')->where('jobs.admin_status', 'approved');
+            } elseif ($status === 'closed') {
+                $builder->where('jobs.status', 'closed');
+            } elseif ($status === 'deleted') {
+                $builder->where('jobs.status', 'deleted');
+            } else {
+                $builder->where('jobs.status', $status);
+            }
+        }
+
+        $jobs = $builder->orderBy('jobs.created_at', 'DESC')->paginate(20);
 
         return view('admin/jobs', [
-            'title' => 'Jobs',
-            'user'  => $this->auth->user(),
-            'admin' => $this->admin,
-            'jobs'  => $jobs,
-            'pager' => $this->jobModel->pager,
-            'stats' => $stats,
+            'title'          => 'Jobs',
+            'user'           => $this->auth->user(),
+            'admin'          => $this->admin,
+            'jobs'           => $jobs,
+            'pager'          => $this->jobModel->pager,
+            'stats'          => $stats,
+            'selectedStatus' => $status ?? '',
         ]);
     }
 
@@ -1936,20 +2035,38 @@ class AdminController extends BaseController
             );
         }
 
-        // Send email notification if job was rejected
-        if ($newStatus === 'rejected') {
+        // Send email notifications
+        $userModel = model(UserModel::class);
+        $user = $userModel->find($employer->user_id);
+        $recipientEmail = $employer->contact_email ?? ($user->email ?? null);
+
+        if ($recipientEmail) {
             $emailService = service('mailer');
-            $emailService->sendTemplate(
-                $employer->contact_email,
-                'Job Update - ' . $job->title,
-                'emails/job_rejected',
-                [
-                    'employer_name' => $employer->company_name,
-                    'job_title' => $job->title,
-                    'reason' => 'Your job posting did not meet our guidelines. Please contact support for more information.',
-                    'platform_name' => config('App')->appName ?? 'JobberRecruit'
-                ]
-            );
+            if ($newStatus === 'open') {
+                $emailService->sendTemplate(
+                    $recipientEmail,
+                    'Job Approved - ' . $job->title,
+                    'emails/job_approved',
+                    [
+                        'employer_name' => $employer->company_name ?? 'Employer',
+                        'job_title'     => $job->title,
+                        'job_url'       => base_url('jobs/' . $job->id),
+                        'platform_name' => config('App')->appName ?? 'JobberRecruit'
+                    ]
+                );
+            } elseif ($newStatus === 'rejected') {
+                $emailService->sendTemplate(
+                    $recipientEmail,
+                    'Job Update - ' . $job->title,
+                    'emails/job_rejected',
+                    [
+                        'employer_name' => $employer->company_name ?? 'Employer',
+                        'job_title'     => $job->title,
+                        'reason'        => 'Your job posting did not meet our guidelines. Please contact support for more information.',
+                        'platform_name' => config('App')->appName ?? 'JobberRecruit'
+                    ]
+                );
+            }
         }
     }
 
@@ -1977,10 +2094,16 @@ class AdminController extends BaseController
 
         // Filter by status (can be regular status or admin_status)
         if ($status) {
-            if ($status === 'pending_approval') {
+            if ($status === 'pending_approval' || $status === 'pending') {
                 $builder->where('jobs.admin_status', 'pending');
             } elseif ($status === 'rejected') {
                 $builder->where('jobs.admin_status', 'rejected');
+            } elseif ($status === 'open' || $status === 'active') {
+                $builder->where('jobs.status', 'open')->where('jobs.admin_status', 'approved');
+            } elseif ($status === 'closed') {
+                $builder->where('jobs.status', 'closed');
+            } elseif ($status === 'deleted') {
+                $builder->where('jobs.status', 'deleted');
             } else {
                 $builder->where('jobs.status', $status);
             }
@@ -2243,10 +2366,214 @@ class AdminController extends BaseController
             );
         }
 
+        // Dispatch immediate job alerts to matching candidates
+        try {
+            (new \App\Services\JobAlertService())->sendImmediateMatchAlerts((int) $jobId);
+        } catch (\Throwable $e) {
+            log_message('error', 'Immediate job alert dispatch failed for job #' . $jobId . ': ' . $e->getMessage());
+        }
+
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Job approved successfully'
         ]);
+    }
+
+    /**
+     * Bulk Approve Jobs (AJAX)
+     */
+    public function bulkApproveJobs()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $jobIds = $this->request->getPost('job_ids');
+        if (empty($jobIds) || !is_array($jobIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No jobs selected']);
+        }
+
+        $approvedCount = 0;
+        $now = date('Y-m-d H:i:s');
+        $notificationModel = model(JobNotificationModel::class);
+
+        foreach ($jobIds as $jobId) {
+            $job = $this->jobModel->find((int)$jobId);
+            if (!$job) continue;
+
+            $this->jobModel->update($job->id, [
+                'admin_status'      => 'approved',
+                'admin_reviewed_at' => $now,
+                'status'            => 'open'
+            ]);
+
+            $notificationModel->createNotification(
+                $job->employer_id,
+                'job_approved',
+                'Job Approved - ' . $job->title,
+                "Your job '{$job->title}' has been approved and is now live on our platform.",
+                $job->id
+            );
+
+            // Dispatch immediate job alerts to matching candidates
+            try {
+                (new \App\Services\JobAlertService())->sendImmediateMatchAlerts((int) $job->id);
+            } catch (\Throwable $e) {
+                log_message('error', 'Immediate job alert dispatch failed for job #' . $job->id . ': ' . $e->getMessage());
+            }
+
+            $approvedCount++;
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "{$approvedCount} job(s) approved successfully!"
+        ]);
+    }
+
+    /**
+     * Bulk Reject Jobs (AJAX)
+     */
+    public function bulkRejectJobs()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $jobIds = $this->request->getPost('job_ids');
+        $reason = trim((string)($this->request->getPost('reason') ?? 'Does not meet platform posting guidelines.'));
+
+        if (empty($jobIds) || !is_array($jobIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No jobs selected']);
+        }
+
+        $rejectedCount = 0;
+        $now = date('Y-m-d H:i:s');
+        $notificationModel = model(JobNotificationModel::class);
+
+        foreach ($jobIds as $jobId) {
+            $job = $this->jobModel->find((int)$jobId);
+            if (!$job) continue;
+
+            $this->jobModel->update($job->id, [
+                'admin_status'      => 'rejected',
+                'admin_reviewed_at' => $now,
+                'status'            => 'closed'
+            ]);
+
+            $notificationModel->createNotification(
+                $job->employer_id,
+                'job_rejected',
+                'Job Rejection Notice - ' . $job->title,
+                "Your job '{$job->title}' was rejected. Reason: " . substr($reason, 0, 100),
+                $job->id
+            );
+
+            $rejectedCount++;
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "{$rejectedCount} job(s) rejected."
+        ]);
+    }
+
+    /**
+     * Unapprove Job (AJAX)
+     */
+    public function unapproveJob()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $jobId = $this->request->getPost('job_id');
+        $job = $this->jobModel->find($jobId);
+
+        if (!$job) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Job not found']);
+        }
+
+        // Update job status to pending & closed
+        $this->jobModel->update($jobId, [
+            'admin_status'      => 'pending',
+            'admin_reviewed_at' => date('Y-m-d H:i:s'),
+            'status'            => 'closed'
+        ]);
+
+        // Send notification to employer
+        $notificationModel = model(JobNotificationModel::class);
+        $notificationModel->createNotification(
+            $job->employer_id,
+            'job_unapproved',
+            'Job Status Updated - ' . $job->title,
+            "Your job '{$job->title}' status has been set back to pending review by an administrator.",
+            $jobId
+        );
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Job unapproved successfully'
+        ]);
+    }
+
+    /**
+     * Bulk Unapprove Jobs (AJAX)
+     */
+    public function bulkUnapproveJobs()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $jobIds = $this->request->getPost('job_ids');
+        if (empty($jobIds) || !is_array($jobIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No jobs selected']);
+        }
+
+        $unapprovedCount = 0;
+        $now = date('Y-m-d H:i:s');
+        $notificationModel = model(JobNotificationModel::class);
+
+        foreach ($jobIds as $jobId) {
+            $job = $this->jobModel->find((int)$jobId);
+            if (!$job) continue;
+
+            $this->jobModel->update($job->id, [
+                'admin_status'      => 'pending',
+                'admin_reviewed_at' => $now,
+                'status'            => 'closed'
+            ]);
+
+            $notificationModel->createNotification(
+                $job->employer_id,
+                'job_unapproved',
+                'Job Status Updated - ' . $job->title,
+                "Your job '{$job->title}' status has been set back to pending review by an administrator.",
+                $job->id
+            );
+
+            $unapprovedCount++;
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "{$unapprovedCount} job(s) unapproved successfully!"
+        ]);
+    }
+
+    /**
+     * Preview Job on Candidate/Public Frontend (Before & After Live)
+     */
+    public function previewJob(int $id)
+    {
+        $job = $this->jobModel->find($id);
+        if (!$job) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $targetUrl = base_url('jobs/' . ($job->slug ?? $job->id)) . '?admin_preview=1';
+        return redirect()->to($targetUrl);
     }
 
     /**
@@ -2458,29 +2785,107 @@ class AdminController extends BaseController
         }
 
         return view('admin/job-edit', [
-            'title' => 'Edit Job',
-            'job'   => $job,
+            'title'      => 'Edit Job Post',
+            'job'        => $job,
+            'employers'  => model('EmployerModel')->orderBy('company_name', 'ASC')->findAll(),
             'states'     => model('StateModel')->findAll(),
             'industries' => model('IndustryModel')->findAll(),
             'categories' => model('JobCategoryModel')->findAll(),
-            'user'  => $this->auth->user(),
-            'admin' => $this->admin,
+            'user'       => $this->auth->user(),
+            'admin'      => $this->admin,
         ]);
     }
 
     public function updateJob(int $id)
     {
-        if (! $this->request->isAJAX()) {
-            return redirect()->back();
+        $job = $this->jobModel->find($id);
+        if (!$job) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Job not found']);
         }
 
-        $data = $this->request->getPost();
+        $postData = $this->request->getPost();
 
-        $this->jobModel->update($id, $data);
+        // Parse Tagify JSON skills if present
+        if (isset($postData['skills']) && is_string($postData['skills']) && strpos($postData['skills'], '[{') !== false) {
+            $decoded = json_decode($postData['skills'], true);
+            if (is_array($decoded)) {
+                $postData['skills'] = implode(', ', array_filter(array_column($decoded, 'value')));
+            }
+        }
+
+        $actionType = $postData['action_type'] ?? 'save';
+        $wasAlreadyApproved = ($job->admin_status === 'approved');
+
+        if ($actionType === 'save_approve') {
+            $postData['admin_status'] = 'approved';
+            $postData['status']       = 'open';
+        }
+
+        // Auto update admin_reviewed_at if status updated
+        if (isset($postData['admin_status']) && $postData['admin_status'] !== $job->admin_status) {
+            $postData['admin_reviewed_at'] = date('Y-m-d H:i:s');
+            if ($postData['admin_status'] === 'approved') {
+                $postData['status'] = 'open';
+            }
+        }
+
+        unset($postData['action_type']);
+        $this->jobModel->update($id, $postData);
+
+        // If job was just approved during edit, trigger approval notifications
+        if (!$wasAlreadyApproved && isset($postData['admin_status']) && $postData['admin_status'] === 'approved') {
+            try {
+                $employerModel = model(EmployerModel::class);
+                $employer = $employerModel->find($job->employer_id);
+
+                if ($employer) {
+                    $notificationModel = model(JobNotificationModel::class);
+                    $notificationModel->createNotification(
+                        $job->employer_id,
+                        'job_approved',
+                        'Job Approved - ' . ($postData['title'] ?? $job->title),
+                        "Your job '" . ($postData['title'] ?? $job->title) . "' has been approved and is now live on our platform.",
+                        $id
+                    );
+
+                    $creditService = new \App\Services\CreditService();
+                    $creditBalance = $creditService->getAvailableCredits($employer->user_id);
+                    $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($employer->user_id);
+
+                    $jobPreferences = is_string($job->notification_preferences)
+                        ? json_decode($job->notification_preferences, true)
+                        : ($job->notification_preferences ?? []);
+                    $notificationEmail = $jobPreferences['notification_email_address'] ?? $employer->contact_email;
+
+                    if ($notificationEmail) {
+                        $emailService = service('mailer');
+                        $emailService->sendTemplate(
+                            $notificationEmail,
+                            'Job Approved - ' . ($postData['title'] ?? $job->title),
+                            'emails/job_approved',
+                            [
+                                'employer_name' => $employer->company_name,
+                                'job_title'     => $postData['title'] ?? $job->title,
+                                'job_url'       => base_url('jobs/' . ($job->slug ?? $job->id)),
+                                'credits_balance' => $creditBalance,
+                                'has_unlimited' => $hasUnlimitedAccess,
+                                'platform_name' => config('App')->appName ?? 'JobberRecruit'
+                            ]
+                        );
+                    }
+                }
+            } catch (\Throwable $ex) {
+                log_message('error', 'Error sending job approval email during edit: ' . $ex->getMessage());
+            }
+        }
+
+        $msg = ($actionType === 'save_approve' || (isset($postData['admin_status']) && $postData['admin_status'] === 'approved')) 
+            ? 'Job saved and approved successfully!' 
+            : 'Job updated successfully';
 
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Job updated successfully'
+            'message' => $msg
         ]);
     }
 
@@ -2613,14 +3018,33 @@ class AdminController extends BaseController
         $bundleModel = model(PlanBundleModel::class);
 
         $employerPlans = $planModel->where('plan_type', 'employer')->orderBy('base_price', 'ASC')->findAll();
+        
+        // Auto-seed default candidate search plans if empty
+        if (empty($employerPlans)) {
+            $defaultSearchPlans = [
+                ['name' => 'Monthly Search Plan', 'code' => 'monthly_search', 'base_price' => 150000.00, 'billing_type' => 'subscription', 'plan_type' => 'employer', 'monthly_job_credits' => 10, 'features' => json_encode(['candidate_search_credits' => 10, 'duration_months' => 1, 'candidate_messaging' => true, 'priority_support' => true]), 'is_active' => 1],
+                ['name' => 'Quarterly Search Plan', 'code' => 'quarterly_search', 'base_price' => 250000.00, 'billing_type' => 'subscription', 'plan_type' => 'employer', 'monthly_job_credits' => 35, 'features' => json_encode(['candidate_search_credits' => 35, 'duration_months' => 3, 'candidate_messaging' => true, 'priority_support' => true]), 'is_active' => 1],
+                ['name' => 'Semi-Annual Search Plan', 'code' => 'semi_annual_search', 'base_price' => 450000.00, 'billing_type' => 'subscription', 'plan_type' => 'employer', 'monthly_job_credits' => 80, 'features' => json_encode(['candidate_search_credits' => 80, 'duration_months' => 6, 'candidate_messaging' => true, 'priority_support' => true]), 'is_active' => 1],
+                ['name' => 'Annual Search Plan', 'code' => 'annual_search', 'base_price' => 750000.00, 'billing_type' => 'subscription', 'plan_type' => 'employer', 'monthly_job_credits' => 180, 'features' => json_encode(['candidate_search_credits' => 180, 'duration_months' => 12, 'candidate_messaging' => true, 'priority_support' => true]), 'is_active' => 1],
+            ];
+            foreach ($defaultSearchPlans as $dsp) {
+                try {
+                    $planModel->insert($dsp);
+                } catch (\Throwable $e) {}
+            }
+            $employerPlans = $planModel->where('plan_type', 'employer')->orderBy('base_price', 'ASC')->findAll();
+        }
         $candidatePlans = $planModel->where('plan_type', 'candidate')->orderBy('base_price', 'ASC')->findAll();
-        $bundles = $bundleModel->where('is_active', 1)->orderBy('job_credits', 'ASC')->findAll();
+        $bundles = $bundleModel->orderBy('job_credits', 'ASC')->findAll();
 
         $subscriptions = $subscriptionModel
-            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.company_name, job_seekers.full_name AS candidate_name')
+            ->asObject()
+            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.id AS employer_id, employers.company_name, employers.user_id AS emp_user_id, job_seekers.id AS candidate_id, job_seekers.full_name AS candidate_name, job_seekers.user_id AS cand_user_id, users.username, users.first_name, users.last_name, users.user_type, auth_identities.secret AS user_email')
             ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
             ->join('employers', 'employers.user_id = user_subscriptions.user_id', 'left')
             ->join('job_seekers', 'job_seekers.user_id = user_subscriptions.user_id', 'left')
+            ->join('users', 'users.id = user_subscriptions.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = user_subscriptions.user_id', 'left')
             ->orderBy('user_subscriptions.ends_at', 'ASC')
             ->findAll();
 
@@ -2651,7 +3075,7 @@ class AdminController extends BaseController
         $allEmployers = $employerModel->findAll();
         $allCandidates = $candidateModel->findAll();
 
-        $isFreeMode = env('site_free_mode') === 'true';
+        $isFreeMode = is_site_free_mode();
 
         return view('admin/plans', [
             'title' => 'Plans & Subscriptions',
@@ -2698,41 +3122,34 @@ class AdminController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $envFile = ROOTPATH . '.env';
-        if (!is_file($envFile)) {
-            return $this->response->setJSON(['success' => false, 'message' => '.env file not found']);
-        }
+        $current = is_site_free_mode();
+        $newValue = !$current;
 
-        $content = file_get_contents($envFile);
-        $current = env('site_free_mode') == 'true';
-        $newValue = $current ? 'false' : 'true';
+        set_site_setting('site_free_mode', $newValue ? 'true' : 'false');
 
-        if (preg_match('/^site_free_mode\s*=\s*.+$/m', $content)) {
-            $content = preg_replace('/^site_free_mode\s*=\s*.+$/m', "site_free_mode = \"{$newValue}\"", $content);
-        } else {
-            $content .= "\nsite_free_mode = \"{$newValue}\"\n";
-        }
-
-        file_put_contents($envFile, $content);
-        return $this->response->setJSON(['success' => true, 'message' => "Free mode " . ($newValue === 'true' ? 'enabled' : 'disabled')]);
+        return $this->response->setJSON([
+            'success'    => true,
+            'isFreeMode' => $newValue,
+            'message'    => "Site Free Access " . ($newValue ? 'enabled' : 'disabled') . ' (Saved to Database Configuration)'
+        ]);
     }
 
     public function features()
     {
         $data = [
             'title'                     => 'Feature Management',
-            'feature_webinars'          => env('feature_webinars', 'true') == 'true',
-            'feature_elearning'         => env('feature_elearning', 'true') == 'true',
-            'feature_ai_resume'         => env('feature_ai_resume', 'true') == 'true',
-            'feature_ai_career_tools'   => env('feature_ai_career_tools', 'true') == 'true',
-            'ai_tools_paid_mode'        => env('ai_tools_paid_mode', 'false') == 'true',
-            'feature_messaging'         => env('feature_messaging', 'true') == 'true',
-            'feature_referrals'         => env('feature_referrals', 'true') == 'true',
-            'email_use_queue'           => env('email_use_queue', 'true') == 'true',
-            'site_free_mode'            => env('site_free_mode', 'false') == 'true',
-            'cv_review_pro_price'       => (int) env('cv_review_pro_price', 15000),
-            'cv_review_prem_price'      => (int) env('cv_review_prem_price', 30000),
-            'cv_review_mode'            => env('cv_review_mode', 'semi'),
+            'feature_webinars'          => get_site_setting('feature_webinars', true),
+            'feature_elearning'         => get_site_setting('feature_elearning', true),
+            'feature_ai_resume'         => get_site_setting('feature_ai_resume', true),
+            'feature_ai_career_tools'   => get_site_setting('feature_ai_career_tools', true),
+            'ai_tools_paid_mode'        => is_ai_tools_paid_mode(),
+            'feature_messaging'         => get_site_setting('feature_messaging', true),
+            'feature_referrals'         => get_site_setting('feature_referrals', true),
+            'email_use_queue'           => get_site_setting('email_use_queue', true),
+            'site_free_mode'            => is_site_free_mode(),
+            'cv_review_pro_price'       => (int) get_site_setting('cv_review_pro_price', 15000),
+            'cv_review_prem_price'      => (int) get_site_setting('cv_review_prem_price', 30000),
+            'cv_review_mode'            => get_site_setting('cv_review_mode', 'semi'),
         ];
 
         return view('admin/feature_settings', $data);
@@ -2749,42 +3166,24 @@ class AdminController extends BaseController
             'feature_messaging',
             'feature_referrals',
             'email_use_queue',
+            'site_free_mode',
             'cv_review_pro_price',
             'cv_review_prem_price',
             'cv_review_mode',
         ];
 
-        $updateData = [];
         foreach ($keys as $key) {
             if ($key === 'cv_review_mode') {
                 $val = $this->request->getPost($key) === 'auto' ? 'auto' : 'semi';
+            } elseif ($key === 'cv_review_pro_price' || $key === 'cv_review_prem_price') {
+                $val = (int)$this->request->getPost($key);
             } else {
                 $val = $this->request->getPost($key) ? 'true' : 'false';
             }
-            $updateData[$key] = $val;
+            set_site_setting($key, (string)$val);
         }
 
-        $envFile = ROOTPATH . '.env';
-        if (!is_file($envFile)) {
-            return redirect()->back()->with('error', '.env file not found.');
-        }
-
-        $content = file_get_contents($envFile);
-
-        foreach ($updateData as $key => $value) {
-            $newValueLine = "{$key} = \"{$value}\"";
-            if (preg_match('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $content)) {
-                $content = preg_replace('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $newValueLine, $content);
-            } else {
-                $content .= "\n{$newValueLine}\n";
-            }
-        }
-
-        if (file_put_contents($envFile, $content) === false) {
-            return redirect()->back()->with('error', 'Failed to update feature settings.');
-        }
-
-        return redirect()->back()->with('success', 'Feature settings updated successfully.');
+        return redirect()->back()->with('success', 'Feature settings updated and saved to Database Configuration.');
     }
 
     /**
@@ -2794,9 +3193,9 @@ class AdminController extends BaseController
     {
         $data = [
             'title' => 'Chatbot Management',
-            'chatbot_enabled' => env('chatbot_enabled', 'true') === 'true',
-            'chatbot_welcome_message' => env('chatbot_welcome_message', 'Hello! How can I help you today?'),
-            'chatbot_suggestions' => env('chatbot_suggestions', 'Browse Jobs,Post a Job,Resume Builder,Career Advice'),
+            'chatbot_enabled' => get_site_setting('chatbot_enabled', true),
+            'chatbot_welcome_message' => get_site_setting('chatbot_welcome_message', 'Hello! How can I help you today?'),
+            'chatbot_suggestions' => get_site_setting('chatbot_suggestions', 'Browse Jobs,Post a Job,Resume Builder,Career Advice'),
         ];
 
         return view('admin/chatbot_settings', $data);
@@ -2807,13 +3206,6 @@ class AdminController extends BaseController
      */
     public function saveChatbotSettings()
     {
-        $envFile = ROOTPATH . '.env';
-        if (!is_file($envFile)) {
-            return redirect()->back()->with('error', '.env file not found.');
-        }
-
-        $content = file_get_contents($envFile);
-
         $updates = [
             'chatbot_enabled' => $this->request->getPost('chatbot_enabled') ? 'true' : 'false',
             'chatbot_welcome_message' => trim($this->request->getPost('chatbot_welcome_message') ?? 'Hello! How can I help you today?'),
@@ -2821,20 +3213,12 @@ class AdminController extends BaseController
         ];
 
         foreach ($updates as $key => $value) {
-            $newValueLine = "{$key} = \"{$value}\"";
-            if (preg_match('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $content)) {
-                $content = preg_replace('/^' . preg_quote($key, '/') . '\s*=\s*.+$/m', $newValueLine, $content);
-            } else {
-                $content .= "\n{$newValueLine}\n";
-            }
+            set_site_setting($key, (string)$value);
         }
 
-        if (file_put_contents($envFile, $content) === false) {
-            return redirect()->back()->with('error', 'Failed to update chatbot settings.');
-        }
-
-        return redirect()->back()->with('success', 'Chatbot settings updated successfully.');
+        return redirect()->back()->with('success', 'Chatbot settings updated and saved to Database Configuration.');
     }
+
 
     public function bundles()
     {
@@ -2901,17 +3285,7 @@ class AdminController extends BaseController
         /* -------------------------------------------------
      * GET - Show Bundles Page
      * ------------------------------------------------- */
-        $bundles = $bundleModel
-            ->where('is_active', 1)
-            ->orderBy('job_credits', 'ASC')
-            ->findAll();
-
-        return view('admin/bundles', [
-            'title'   => 'Growth Bundles',
-            'user'    => $this->auth->user(),
-            'admin'   => $this->admin,
-            'bundles' => $bundles
-        ]);
+        return redirect()->to(base_url('admin/plans#bundleTab'));
     }
 
     public function assignPlan()
@@ -3462,7 +3836,7 @@ class AdminController extends BaseController
         if ($geminiKey) {
             try {
                 $client = \Config\Services::curlrequest();
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" . $geminiKey;
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . $geminiKey;
                 $payload = [
                     'contents' => [
                         [

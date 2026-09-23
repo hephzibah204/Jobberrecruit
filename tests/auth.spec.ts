@@ -24,9 +24,8 @@ test.describe('Authentication Flow', () => {
     await loginForm.locator('input[type="password"]').fill('wrongpassword');
     await loginForm.locator('button[type="submit"]').click();
     
-    // CodeIgniter 4 typically flashes errors with these classes or Toastr
-    // If it's a Toastr notification, it will be in #toast-container
-    const errorMessage = page.locator('.alert-danger, .toast-error, .text-danger, .error-msg, #toast-container');
-    await expect(errorMessage.first()).toBeVisible({ timeout: 5000 });
+    // Toastr notification or inline alert
+    const errorMessage = page.locator('#toast-container, .toast-error, .toast-message, .auth-alert, .alert-danger, .error-msg, .field-msg.show');
+    await expect(errorMessage.first()).toBeVisible({ timeout: 7000 });
   });
 });

@@ -28,11 +28,11 @@ $pipeApplicants = (int) ($pipeline['applicants'] ?? $pipeline['applications'] ??
 $pipeShortlisted = (int) ($pipeline['shortlisted'] ?? 0);
 $pipeHired = (int) ($pipeline['hired'] ?? $totalHires ?? 0);
 
-$maxPipeline = max($pipeJobs, 1);
-$widthJobs = 100;
-$widthApplicants = max(2, min(100, round(($pipeApplicants / $maxPipeline) * 100)));
-$widthShortlisted = max(2, min(100, round(($pipeShortlisted / $maxPipeline) * 100)));
-$widthHired = max(2, min(100, round(($pipeHired / $maxPipeline) * 100)));
+$maxPipeline = max($pipeJobs, $pipeApplicants, $pipeShortlisted, $pipeHired, 1);
+$widthJobs = $pipeJobs > 0 ? max(2, min(100, round(($pipeJobs / $maxPipeline) * 100))) : 0;
+$widthApplicants = $pipeApplicants > 0 ? max(2, min(100, round(($pipeApplicants / $maxPipeline) * 100))) : 0;
+$widthShortlisted = $pipeShortlisted > 0 ? max(2, min(100, round(($pipeShortlisted / $maxPipeline) * 100))) : 0;
+$widthHired = $pipeHired > 0 ? max(2, min(100, round(($pipeHired / $maxPipeline) * 100))) : 0;
 
 // Profile Completion dashoffset
 $profilePct = (int) ($profileCompletion ?? 75);
@@ -60,7 +60,7 @@ $taskLogo = !empty($employer->logo);
       <svg aria-hidden="true" style="width: 20px; height: 20px; margin-right: 10px; color: var(--brand); flex-shrink: 0;"><use href="#i-bulb"/></svg>
       <div class="text-main">
           <strong>Recommendation:</strong> Upload your CAC certificate to get a verified badge and increase trust with job seekers.
-          <a href="<?= base_url('employer/profile') ?>" class="alert-link text-primary text-decoration-underline ms-2" style="color: var(--brand); font-weight: 600;">Upload now</a>
+          <a href="<?= base_url('employer/profile/upload-document') ?>" class="alert-link text-primary text-decoration-underline ms-2" style="color: var(--brand); font-weight: 600;">Upload now</a>
       </div>
   </div>
 <?php endif; ?>
@@ -71,10 +71,10 @@ $taskLogo = !empty($employer->logo);
     <div>
       <span class="ai-badge"><span class="pulse" aria-hidden="true"></span> JobberRecruit AI Recruiter · Active</span>
       <h2 id="ai-title">Find the perfect match, <span>faster.</span></h2>
-      <div class="ai-sub">
+      <a href="<?= base_url('employer/candidates') ?>" class="ai-sub text-white text-decoration-none" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; color:#fff;" title="View matching candidate profiles">
         <span class="ai-avatars" aria-hidden="true"><span>AO</span><span>CN</span><span>FE</span><span class="more">+1</span></span>
-        <span><b><?= number_format($totalApplicants) ?> new matching profiles</b> found for your open roles today.</span>
-      </div>
+        <span><b style="text-decoration:underline;"><?= number_format($matchingCandidatesCount ?? 5) ?> new matching profile<?= ($matchingCandidatesCount ?? 5) == 1 ? '' : 's' ?></b> found for your open roles today &rarr;</span>
+      </a>
     </div>
     <div class="ai-actions">
       <!-- ORANGE = the single conversion CTA on this page -->

@@ -1,0 +1,392 @@
+<?php
+
+namespace App\Controllers;
+
+use CodeIgniter\Controller;
+use App\Models\PaymentModel;
+use App\Models\UserSubscriptionModel;
+use App\Models\SubscriptionPlanModel;
+use App\Models\JobCreditWalletModel;
+use App\Models\UserModel;
+use App\Models\EmployerModel; // Assuming you have this for company_name
+
+class WebhookController extends Controller
+{
+    public function paystack()
+    {
+        $payload = file_get_contents('php://input');
+
+        // --------------------------------------------------
+        // 1. HMAC-SHA512 SIGNATURE VERIFICATION (Paystack signs with SHA512)
+        // --------------------------------------------------
+        $signature = $this->request->getHeaderLine('x-paystack-signature');
+        $secretKey = env('PAYSTACK_SECRET_KEY');
+        if (!$secretKey) {
+            // No secret configured means we cannot verify the sender — refuse rather than
+            // silently trust an unsigned payload (this previously let ANY POST through unverified).
+            log_message('critical', 'Paystack webhook: PAYSTACK_SECRET_KEY is not configured — rejecting webhook.');
+            return $this->response->setStatusCode(401)->setBody('Unauthorized');
+        }
+        $computed = hash_hmac('sha512', $payload, $secretKey);
+        if (!$signature || !hash_equals($computed, $signature)) {
+            log_message('error', 'Paystack webhook: Invalid HMAC signature');
+            return $this->response->setStatusCode(401)->setBody('Unauthorized');
+        }
+
+        // --------------------------------------------------
+        // 2. READ & PARSE PAYLOAD
+        // --------------------------------------------------
+        $event   = json_decode($payload, true);
+
+        if (! is_array($event) || empty($event['event'])) {
+            return $this->response->setStatusCode(200);
+        }
+
+        $eventType = $event['event'];
+        $data      = $event['data'] ?? [];
+
+        // --------------------------------------------------
+        // MODELS
+        // --------------------------------------------------
+        $paymentModel = model(PaymentModel::class);
+        $subModel     = model(UserSubscriptionModel::class);
+        $planModel    = model(SubscriptionPlanModel::class);
+        $userModel    = model(UserModel::class);
+        $employerModel = model(EmployerModel::class); // For company_name
+
+        $requestIp = $this->request->getIPAddress();
+        log_message('info', "Paystack webhook received from {$requestIp}: {$eventType}");
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1) SUBSCRIPTION CREATED → STORE SUBSCRIPTION CODE
+        |--------------------------------------------------------------------------
+        */
+        if ($eventType === 'subscription.create') {
+            $subscriptionCode = $data['subscription_code'] ?? null;
+            $customerEmail    = $data['customer']['email'] ?? null;
+
+            if ($subscriptionCode && $customerEmail) {
+                $user = $userModel->where('email', $customerEmail)->first();
+
+                if ($user) {
+                    $subModel
+                        ->where('user_id', $user->id)
+                        ->where('is_active', 1)
+                        ->set(['subscription_code' => $subscriptionCode])
+                        ->update();
+
+                    log_message('info', "Stored Paystack subscription code {$subscriptionCode} for user {$user->id}");
+                }
+            }
+
+            return $this->response->setStatusCode(200);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2) CHARGE.SUCCESS → INITIAL PAYMENT OR RENEWAL → SEND INVOICE
+        |--------------------------------------------------------------------------
+        */
+        if ($eventType === 'charge.success') {
+
+            $reference     = $data['reference'] ?? null;
+            $amount        = ($data['amount'] ?? 0) / 100;
+            $paidAt        = $data['paid_at'] ?? date('Y-m-d H:i:s');
+            $customerEmail = $data['customer']['email'] ?? null;
+            $channel       = $data['channel'] ?? 'card';
+            $planData      = $data['plan'] ?? [];
+            $planCode      = $planData['plan_code'] ?? null;
+
+            // Prevent duplicate processing
+            if ($reference && $paymentModel->where('reference', $reference)->countAllResults() > 0) {
+                return $this->response->setStatusCode(200);
+            }
+
+            // Find user
+            $user = $customerEmail ? $userModel->where('email', $customerEmail)->first() : null;
+            if (! $user) {
+                log_message('warning', "Webhook charge.success: User not found for email {$customerEmail}");
+                return $this->response->setStatusCode(200);
+            }
+
+            // Find employer for company name (optional fallback)
+            $employer = $employerModel->where('user_id', $user->id)->first();
+
+            // Find plan
+            $plan = null;
+            if ($planCode) {
+                $plan = $planModel->where('paystack_plan_code', $planCode)->first();
+            }
+            if (! $plan && $amount > 0) {
+                $plan = $planModel->where('price', $amount)->first();
+            }
+
+            if (! $plan) {
+                log_message('error', "Webhook charge.success: Plan not found for amount {$amount} / code {$planCode}");
+                return $this->response->setStatusCode(200);
+            }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            // Record payment
+            $paymentModel->insert([
+                'user_id'          => $user->id,
+                'plan_id'          => $plan->id,
+                'reference'        => $reference,
+                'amount'           => $amount,
+                'amount_paid'      => $amount,
+                'currency'         => $data['currency'] ?? 'NGN',
+                'status'           => 'paid',
+                'channel'          => $channel,
+                'ip_address'       => $data['ip_address'] ?? null,
+                'gateway_response' => json_encode($data),
+                'paid_at'          => $paidAt,
+                'created_at'       => date('Y-m-d H:i:s'),
+                'updated_at'       => date('Y-m-d H:i:s'),
+            ]);
+
+            // Extend/activate subscription
+            $now   = new \DateTime();
+            $start = $now->format('Y-m-d H:i:s');
+            $end   = (clone $now)->modify("+{$plan->duration} days")->format('Y-m-d H:i:s');
+
+            $subModel
+                ->where('user_id', $user->id)
+                ->where('is_active', 1)
+                ->set(['is_active' => 0, 'updated_at' => $now->format('Y-m-d H:i:s')])
+                ->update();
+
+            $subModel->insert([
+                'user_id'                 => $user->id,
+                'plan_id'                 => $plan->id,
+                'starts_at'               => $start,
+                'ends_at'                 => $end,
+                'is_active'               => 1,
+                'subscription_code' => $data['subscription']['subscription_code'] ?? null,
+                'authorization'           => isset($data['authorization']) ? json_encode($data['authorization']) : null,
+                'created_at'              => $start,
+                'updated_at'              => $start,
+            ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                log_message('error', "Webhook charge.success transaction failed for user {$user->id}");
+                return $this->response->setStatusCode(500)->setBody('Internal Server Error');
+            }
+
+            // --------------------------------------------------
+            // SEND INVOICE EMAIL TO CUSTOMER
+            // --------------------------------------------------
+            $this->sendSubscriptionInvoiceEmail([
+                'email'      => $user->email,
+                'employer'   => $employer,                    // May be null
+                'user'       => $user,
+                'plan'       => $plan,
+                'amountPaid' => $amount,
+                'reference'  => $reference,
+                'paidAt'     => $paidAt,
+                'channel'    => $channel,
+            ]);
+
+            // Monthly credit refill for subscription renewals
+            if (!empty($data['subscription']['subscription_code'])) {
+                try {
+                    (new \App\Services\SubscriptionService())->creditMonthly(
+                        userId: (int) $user->id,
+                        planId: (int) $plan->id,
+                        reference: 'sub_renew_' . $reference,
+                        source: 'subscription_renewal'
+                    );
+                    log_message('info', "Monthly credits refilled for user {$user->id}");
+                } catch (\Throwable $e) {
+                    log_message('error', "Failed to credit monthly for user {$user->id}: " . $e->getMessage());
+                }
+            }
+
+            log_message('info', "Subscription activated/renewed and invoice emailed for user {$user->id}");
+
+            return $this->response->setStatusCode(200);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3) INVOICE.PAYMENT_FAILED → SUSPEND + OPTIONAL EMAIL
+        |--------------------------------------------------------------------------
+        */
+        if ($eventType === 'invoice.payment_failed') {
+            $customerEmail = $data['customer']['email'] ?? null;
+
+            if ($customerEmail) {
+                $user = $userModel->where('email', $customerEmail)->first();
+                if ($user) {
+                    $subModel
+                        ->where('user_id', $user->id)
+                        ->where('is_active', 1)
+                        ->set(['is_active' => 0])
+                        ->update();
+
+                    // Optional: Send payment failed notification
+                    // $this->sendPaymentFailedEmail($user);
+
+                    log_message('warning', "Subscription suspended for user {$user->id} – renewal failed");
+                }
+            }
+
+            return $this->response->setStatusCode(200);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4) SUBSCRIPTION DISABLED / CANCELLED
+        |--------------------------------------------------------------------------
+        */
+        if (in_array($eventType, ['subscription.disable', 'subscription.cancellation'])) {
+            $subscriptionCode = $data['subscription_code'] ?? null;
+
+            if ($subscriptionCode) {
+                $subscription = $subModel
+                    ->where('subscription_code', $subscriptionCode)
+                    ->first();
+
+                if ($subscription) {
+                    $subModel
+                        ->where('user_id', $subscription->user_id)
+                        ->where('is_active', 1)
+                        ->set(['is_active' => 0])
+                        ->update();
+
+                    // Optional: Send cancellation confirmation
+                    // $this->sendSubscriptionCancelledEmail($subscription->user_id);
+
+                    log_message('info', "Subscription cancelled on Paystack – deactivated locally for user {$subscription->user_id}");
+                }
+            }
+
+            return $this->response->setStatusCode(200);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5) SUBSCRIPTION.NOT_RENEW → MARK AS NON-RENEWING (UPCOMING CANCELLATION)
+        |--------------------------------------------------------------------------
+        | This event is sent when a subscription is cancelled/disabled but still active
+        | until the current billing period ends (next_payment_date becomes null).
+        | We keep the subscription active locally until the actual end.
+        | Optional: Send a confirmation email that cancellation is scheduled.
+        */
+        if ($eventType === 'subscription.not_renew') {
+
+            $subscriptionCode = $data['subscription_code'] ?? null;
+            $customerEmail    = $data['customer']['email'] ?? null;
+
+            if ($subscriptionCode && $customerEmail) {
+                $user = $userModel->where('email', $customerEmail)->first();
+
+                if ($user) {
+                    // Update the active subscription record
+                    $updated = $subModel
+                        ->where('user_id', $user->id)
+                        ->where('subscription_code', $subscriptionCode)
+                        ->set([
+                            'will_not_renew' => 1,
+                            'updated_at'     => date('Y-m-d H:i:s')
+                        ])
+                        ->update();
+
+                    if ($updated) {
+                        log_message('info', "Subscription marked as will_not_renew=1 for user {$user->id} (code: {$subscriptionCode})");
+
+                        // Send cancellation scheduled confirmation email
+                        $this->sendSubscriptionCancellationScheduledEmail($user);
+                    }
+                }
+            }
+
+            return $this->response->setStatusCode(200);
+        }
+
+        return $this->response->setStatusCode(200);
+    }
+
+    /**
+     * Send subscription invoice/receipt email after successful charge
+     */
+    private function sendSubscriptionInvoiceEmail(array $data)
+    {
+        $emailService = \Config\Services::email();
+
+        $emailService->setTo($data['email']);
+        $emailService->setFrom('billing@jobberrecruit.com', 'JobberRecruit');
+        $emailService->setSubject('Your JobberRecruit Subscription Invoice - ' . $data['reference']);
+
+        $viewData = [
+            'fullname'       => ($data['employer']->company_name ?? $data['user']->username) ?? 'Employer',
+            'planName'       => $data['plan']->name,
+            'amount'         => number_format($data['amountPaid'], 2),
+            'reference'      => $data['reference'],
+            'paidAt'         => date('F j, Y \a\t g:i A', strtotime($data['paidAt'])),
+            'channel'        => ucfirst($data['channel']),
+            'companyAddress' => '6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria',
+            'supportEmail'   => 'support@jobberrecruit.com',
+            'logoUrl'        => base_url('images/logo-white.png'),
+        ];
+
+        $message = view('emails/subscription_invoice', $viewData);
+
+        $emailService->setMessage($message);
+        $emailService->setMailType('html');
+
+        if (! $emailService->send()) {
+            log_message('error', 'Failed to send invoice email to ' . $data['email'] . ': ' . print_r($emailService->printDebugger(['headers']), true));
+        } else {
+            log_message('info', 'Subscription invoice emailed to ' . $data['email'] . ' (Ref: ' . $data['reference'] . ')');
+        }
+    }
+
+    /**
+     * Send email confirming that subscription cancellation has been scheduled
+     * (access continues until end of current period)
+     */
+    private function sendSubscriptionCancellationScheduledEmail($user)
+    {
+        $emailService = \Config\Services::email();
+
+        $emailService->setTo($user->email);
+        $emailService->setFrom('support@jobberrecruit.com', 'JobberRecruit');
+        $emailService->setSubject('Subscription Cancellation Confirmed');
+
+        // Fetch current active subscription to get end date
+        $subModel = model(UserSubscriptionModel::class);
+        $subscription = $subModel
+            ->where('user_id', $user->id)
+            ->where('is_active', 1)
+            ->first();
+
+        $endDate = $subscription ? date('F j, Y', strtotime($subscription->ends_at)) : 'your current billing period';
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        $viewData = [
+            'fullname'       => $employer->company_name ?? $user->username ?? 'Employer',
+            'endDate'        => $endDate,
+            'companyAddress' => '6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria',
+            'supportEmail'   => 'support@jobberrecruit.com',
+            'logoUrl'        => base_url('images/logo-white.png'),
+        ];
+
+        $message = view('emails/subscription_cancellation_scheduled', $viewData);
+
+        $emailService->setMessage($message);
+        $emailService->setMailType('html');
+
+        if (! $emailService->send()) {
+            log_message('error', 'Failed to send cancellation scheduled email to ' . $user->email . ': ' . print_r($emailService->printDebugger(['headers']), true));
+        } else {
+            log_message('info', 'Cancellation scheduled email sent to ' . $user->email);
+        }
+    }
+}

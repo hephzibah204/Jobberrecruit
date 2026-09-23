@@ -24,9 +24,14 @@
     </div>
 <?php endif; ?>
 
-<div class="notice notice--info" role="status">
+<div class="notice <?= !empty($hasUnlimitedAccess) ? 'notice--info' : 'notice--info' ?>" role="status"
+    <?= !empty($hasUnlimitedAccess) ? 'style="background:#d4edda;border-color:#b8dfc6;color:#1a5c32;"' : '' ?>>
     <svg aria-hidden="true"><use href="#i-zap"/></svg>
-    <span>You have <b><?= number_format($creditBalance ?? 0) ?> job credits</b> available. Credits are used automatically when you post a job.</span>
+    <?php if (!empty($hasUnlimitedAccess)): ?>
+        <span>🎉 You have <b>Unlimited Job Postings</b>. Post as many jobs as you like — no credits needed.</span>
+    <?php else: ?>
+        <span>You have <b><?= number_format($creditBalance ?? 0) ?> job credits</b> available. Credits are used automatically when you post a job.</span>
+    <?php endif; ?>
 </div>
 
 <div class="plans">
@@ -203,6 +208,11 @@ $(function() {
         timeOut: 5000
     };
 
+    function getCsrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '<?= csrf_hash() ?>';
+    }
+
     $('.buy-bundle-btn').on('click', function() {
         const btn = $(this);
         const bundleCode = btn.data('code');
@@ -213,7 +223,11 @@ $(function() {
             url: "<?= base_url('employer/bundles/buy') ?>/" + bundleCode,
             type: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
+            data: {
+                <?= csrf_token() ?>: getCsrfToken()
             },
             success: function(res) {
                 if (!res.success) {
@@ -257,12 +271,16 @@ $(function() {
     });
 
     function verifyPayment(reference) {
+        var data = { reference: reference };
+        data['<?= csrf_token() ?>'] = getCsrfToken();
+
         $.ajax({
             url: "<?= base_url('employer/bundles/payments/verify') ?>",
             type: 'POST',
-            data: { reference: reference },
+            data: data,
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken()
             },
             success: function(res) {
                 if (res.success && res.verified) {

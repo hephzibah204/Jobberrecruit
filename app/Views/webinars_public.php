@@ -50,50 +50,9 @@ svg{flex-shrink:0}
 .section-title{font-size:clamp(1.6rem,2.9vw,2.25rem);font-weight:800;line-height:1.15;margin-bottom:12px}
 .section-title span{color:var(--brand)}
 .section-sub{color:var(--muted);font-size:.95rem;max-width:560px}
-.skip-link{position:absolute;top:-50px;left:16px;background:var(--brand);color:var(--white);padding:8px 16px;border-radius:0 0 6px 6px;font-weight:600;z-index:9999;transition:top .2s}
-.skip-link:focus{top:0}
-
-
-
-
-
-
-
-
-
-
-
-
-/* LOGO — exact homepage image structure */
-.nav-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
-.nav-logo img{height:60px;width:auto;display:block}
-
-/* EXACT NAVBAR — homepage */
-
-
-
-
-
-
-
-.nav-caret{width:13px;height:13px;transition:transform var(--transition)}
-
-
-
-
-
-.mob-group{display:flex;flex-direction:column}
-.mob-group-label{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:4px 0;margin-top:6px}
-.mob-group 
-.nav-actions{display:flex;align-items:center;gap:8px}
-.nav-actions 
-.nav-actions 
-
-
-
 
 .hero-grid{position:absolute;inset:0;pointer-events:none;opacity:.45;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 30%,#000 30%,transparent 80%);mask-image:radial-gradient(ellipse 90% 80% at 50% 30%,#000 30%,transparent 80%)}
-.hero-inner{position:relative;z-index:1;display:grid;grid-template-columns:1fr 400px;gap:52px;align-items:center;padding-bottom:0}
+.hero-inner{position:relative;z-index:1;display:grid;grid-template-columns:1fr 420px;gap:52px;align-items:center;padding-bottom:0}
 .hero-tag{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 14px;color:rgba(255,255,255,.92);margin-bottom:18px}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
@@ -110,30 +69,30 @@ svg{flex-shrink:0}
 .stat-lbl{font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:3px}
 
 /* FEATURED CARD */
-.feat-card{background:var(--white);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,.32);overflow:hidden;transform:translateY(32px)}
-.fc-thumb{height:120px;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(135deg,#0A2F57,#0D609E)}
-.fc-thumb-icon{width:48px;height:48px;color:rgba(255,255,255,.25)}
-.fc-avatar{position:absolute;bottom:-20px;left:18px;width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:var(--brand);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:.82rem;font-weight:800;color:#fff}
-.fc-badges{position:absolute;top:10px;right:10px;display:flex;gap:6px}
-.fc-badge{font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:.04em}
-.fc-badge-next{background:var(--accent);color:var(--brand-deep)}
-.fc-badge-cat{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3)}
-.fc-
-.fc-spk-name{font-weight:700;font-size:.82rem;color:var(--text)}
-.fc-spk-role{font-size:.72rem;color:var(--muted);margin-bottom:10px}
-.fc-title{font-family:'Sora',sans-serif;font-size:.98rem;font-weight:800;color:var(--text);line-height:1.32;margin-bottom:11px}
-.fc-met
-.fc-mi{display:flex;align-items:center;gap:4px;font-size:.74rem;color:var(--muted)}
-.fc-mi svg{width:12px;height:12px}
-.prov-z{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:.7rem;font-weight:600;background:var(--brand-light);color:var(--brand)}
-.countdown{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
-.cd-box{background:var(--brand-deep);border-radius:8px;padding:8px 4px;text-align:center}
-.cd-n{font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:800;color:#fff;line-height:1}
-.cd-l{font-size:.58rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
-.fc-ct
-.fc-ct
-.fc-note{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px;font-size:.72rem;color:var(--muted)}
-.fc-note svg{width:13px;height:13px;color:var(--success)}
+.feat-card{background:var(--white,#fff);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.28);overflow:hidden;border:1px solid rgba(255,255,255,.15);position:relative;z-index:2;max-width:100%;width:100%}
+.fc-thumb{height:100px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:relative;background:linear-gradient(135deg,#07304F 0%,#0D609E 100%);overflow:hidden}
+.fc-thumb-icon{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;color:rgba(255,255,255,.15);pointer-events:none}
+.fc-avatar{width:50px;height:50px;border-radius:50%;border:3px solid #fff;background:var(--brand,#0D609E);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2);flex-shrink:0;position:relative;z-index:2}
+.fc-badges{display:flex;flex-direction:row;align-items:center;gap:8px;position:relative;z-index:2}
+.fc-badge{font-size:.7rem;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:.04em;display:inline-flex;align-items:center;white-space:nowrap;text-transform:uppercase}
+.fc-badge-next{background:var(--accent,#F08F1A);color:#07304F;box-shadow:0 2px 8px rgba(240,143,26,.35)}
+.fc-badge-cat{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.fc-body{padding:24px 20px 20px;background:#fff}
+.fc-spk-name{font-weight:800;font-size:.88rem;color:var(--text);line-height:1.2}
+.fc-spk-role{font-size:.74rem;color:var(--muted);margin-bottom:10px}
+.fc-title{font-family:'Sora',sans-serif;font-size:1.05rem;font-weight:800;color:var(--text);line-height:1.35;margin-bottom:12px}
+.fc-meta{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.fc-mi{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted);font-weight:500}
+.fc-mi svg{width:14px;height:14px;color:var(--brand)}
+.prov-z{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;background:var(--brand-light);color:var(--brand)}
+.countdown{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+.cd-box{background:linear-gradient(180deg,#0A2F57 0%,#0D609E 100%);border-radius:10px;padding:10px 4px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+.cd-n{font-family:'Sora',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;line-height:1}
+.cd-l{font-size:.6rem;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.fc-cta{display:flex;align-items:center;justify-content:center;width:100%;padding:13px 20px;border-radius:10px;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;color:#fff;background:linear-gradient(135deg,#ED9020 0%,#d97706 100%);border:none;cursor:pointer;transition:all .25s ease;box-shadow:0 4px 14px rgba(237,144,32,.35);text-decoration:none}
+.fc-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(237,144,32,.45);filter:brightness(1.08);color:#fff}
+.fc-note{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;font-size:.74rem;color:var(--muted);font-weight:500}
+.fc-note svg{width:14px;height:14px;color:var(--success)}
 
 /* STATS BAND */
 .stats-band{background:var(--brand-deep);padding:20px 0}
@@ -174,12 +133,12 @@ svg{flex-shrink:0}
 .t-purple{background:linear-gradient(135deg,#064A85,#7c3aed)}
 .t-teal{background:linear-gradient(135deg,#0A2F57,#0891b2)}
 .t-amber{background:linear-gradient(135deg,#064A85,#d97706)}
-.wb-
+.wb-body{padding:20px 16px 16px;flex:1;display:flex;flex-direction:column}
 .wb-cat{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);margin-bottom:8px}
 .wb-title{font-family:'Sora',sans-serif;font-size:.92rem;font-weight:800;color:var(--text);line-height:1.35;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em}
 .wb-spk{font-size:.76rem;color:var(--muted);margin-bottom:12px}
 .wb-spk strong{color:var(--text);font-weight:600}
-.wb-met
+.wb-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:.74rem;color:var(--muted);margin-bottom:12px}
 .wb-mi{display:flex;align-items:center;gap:4px}
 .wb-mi svg{width:12px;height:12px}
 .wb-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -187,7 +146,7 @@ svg{flex-shrink:0}
 .wp-z{background:var(--brand-light);color:var(--brand)}
 .wp-m{background:#fefce8;color:#92400e}
 .wp-t{background:#f3efff;color:#5b21b6}
-.wb-foot 
+.wb-cal{background:none;border:none;color:var(--brand);font-size:.74rem;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:0} 
 
 /* WHY ATTEND */
 .why-section{background:var(--white);padding:72px 0}
@@ -430,8 +389,8 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       <div class="fc-thumb" <?= !empty($featured->flyer_image) ? 'style="background:url(\''.base_url($featured->flyer_image).'\') center/cover no-repeat;"' : '' ?>>
         <?php if (empty($featured->flyer_image)): ?>
           <svg class="fc-thumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <div class="fc-avatar"><?= esc($initials) ?></div>
         <?php endif; ?>
+        <div class="fc-avatar"><?= esc($initials) ?></div>
         <div class="fc-badges"><span class="fc-badge fc-badge-next">UP NEXT</span><span class="fc-badge fc-badge-cat">Live Webinar</span></div>
       </div>
       <div class="fc-body">
@@ -439,8 +398,8 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         <div class="fc-spk-role">Industry Guest Speaker &middot; JobberRecruit Guest</div>
         <div class="fc-title"><?= esc($featured->title) ?></div>
         <div class="fc-meta">
-          <div class="fc-mi"><svg aria-hidden="true"><use href="#ic-cal"/></svg><?= $dateFormatted ?></div>
-          <div class="fc-mi"><svg aria-hidden="true"><use href="#ic-clk"/></svg><?= $timeFormatted ?></div>
+          <div class="fc-mi"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--brand);"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><?= $dateFormatted ?></div>
+          <div class="fc-mi"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--brand);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><?= $timeFormatted ?></div>
           <div class="fc-mi"><span class="prov-z">&#x25CF; <?= esc($provider['name']) ?></span></div>
         </div>
         <div class="countdown" aria-label="Countdown" data-time="<?= date('c', $wTimestamp) ?>">
@@ -454,7 +413,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         <?php else: ?>
           <button class="fc-cta btn-register" data-id="<?= $featured->id ?>">Reserve your free seat &#x2192;</button>
         <?php endif; ?>
-        <div class="fc-note"><svg aria-hidden="true"><use href="#ic-cc"/></svg><?= ($featured->access_type ?? 'free') === 'paid' ? 'Paid Workshop' : 'Free' ?> &middot; Live interactive session</div>
+        <div class="fc-note"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--success);"><polyline points="20 6 9 17 4 12"/></svg><?= ($featured->access_type ?? 'free') === 'paid' ? 'Paid Workshop' : 'Free' ?> &middot; Live interactive session</div>
       </div>
     </div>
     <?php endif; ?>
@@ -672,6 +631,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const btns = document.querySelectorAll('.btn-register');
@@ -680,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const webinarId = this.getAttribute('data-id');
       const originalHtml = this.innerHTML;
       this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
       
       fetch('<?= base_url('webinars/register/') ?>' + webinarId, {
         method: 'POST',
@@ -689,20 +649,90 @@ document.addEventListener('DOMContentLoaded', function() {
           '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
         }
       })
-      .then(response => response.json())
+      .then(response => {
+        if (response.status === 401) {
+          window.location.href = '<?= base_url('login') ?>';
+          return null;
+        }
+        return response.json();
+      })
       .then(data => {
+        if (!data) return;
+
+        // Paid Webinar - Open Paystack Modal
+        if (data.requires_payment) {
+          if (window.PaystackPop && data.public_key) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Opening payment...';
+            const handler = PaystackPop.setup({
+              key: data.public_key,
+              email: data.user_email,
+              amount: Math.round(Number(data.amount) * 100),
+              currency: 'NGN',
+              ref: data.reference,
+              metadata: {
+                custom_fields: [
+                  { display_name: "Webinar", variable_name: "webinar_title", value: data.webinar_title || "Webinar" },
+                  { display_name: "Webinar ID", variable_name: "webinar_id", value: String(webinarId) }
+                ]
+              },
+              callback: function(response) {
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying payment...';
+                
+                const formBody = new URLSearchParams();
+                formBody.append('reference', response.reference);
+                
+                fetch('<?= base_url('webinars/register/') ?>' + webinarId, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+                  },
+                  body: formBody.toString()
+                })
+                .then(res => res.json())
+                .then(resData => {
+                  if (resData.status === 201 || resData.status === 200 || !resData.error) {
+                    window.location.href = resData.redirect || ('<?= base_url('training/webinars/registered') ?>?id=' + webinarId);
+                  } else {
+                    alert(resData.messages ? resData.messages.error : (resData.message || 'Payment verification failed'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                  }
+                })
+                .catch(err => {
+                  window.location.href = '<?= base_url('training/webinars/registered') ?>?id=' + webinarId;
+                });
+              },
+              onClose: function() {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+              }
+            });
+            handler.openIframe();
+          } else if (data.authorization_url) {
+            window.location.href = data.authorization_url;
+          } else {
+            alert('Paystack key is not configured. Please contact support.');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+          }
+          return;
+        }
+
+        // Free Webinar or already registered
         if (data.status === 201 || data.status === 200 || !data.error) {
-          window.location.href = '<?= base_url('training/webinars/registered') ?>';
+          window.location.href = data.redirect || ('<?= base_url('training/webinars/registered') ?>?id=' + webinarId);
         } else {
           alert(data.messages ? data.messages.error : (data.message || 'An error occurred'));
-          this.disabled = false;
-          this.innerHTML = originalHtml;
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
         }
       })
       .catch(error => {
         alert('An error occurred. Please try again.');
-        this.disabled = false;
-        this.innerHTML = originalHtml;
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
       });
     });
   });

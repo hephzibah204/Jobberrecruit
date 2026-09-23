@@ -15,10 +15,10 @@
             <!-- Start::header-element -->
             <div class="header-element">
                 <div class="horizontal-logo">
-                    <a href="<?= base_url('admin/dashboard') ?>" class="header-logo">
-                        <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="desktop-logo">
+                    <a href="<?= base_url('admin/dashboard') ?>" class="header-logo" aria-label="JobberRecruit Admin Dashboard">
+                        <img src="<?= base_url('images/logo.png'); ?>" alt="logo" class="desktop-logo">
                         <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="toggle-logo">
-                        <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="desktop-dark">
+                        <img src="<?= base_url('images/logo.png'); ?>" alt="logo" class="desktop-dark">
                         <img src="<?= base_url('images/favicon.png'); ?>" alt="logo" class="toggle-dark">
                     </a>
                 </div>
@@ -30,6 +30,11 @@
                 <a aria-label="Hide Sidebar" class="sidemenu-toggle header-link animated-arrow hor-toggle horizontal-navtoggle" data-bs-toggle="sidebar" href="javascript:void(0);"><span></span></a>
             </div>
             <!-- End::header-element -->
+
+            <!-- Mobile Admin Logo -->
+            <a href="<?= base_url('admin/dashboard') ?>" class="d-md-none d-flex align-items-center ms-2 text-decoration-none" aria-label="JobberRecruit Admin Dashboard">
+                <img src="<?= base_url('images/logo.png'); ?>" alt="JobberRecruit" style="height:26px;width:auto;max-width:120px;object-fit:contain;">
+            </a>
 
             <div class="header-element  header-search header-search-content d-md-block d-none">
                 <!-- Start::header-link -->
@@ -64,40 +69,57 @@
             </li>
             <!-- End::header-element -->
 
-            <!-- Start::header-element -->
-            <li class="header-element header-theme-mode">
-                <!-- Start::header-link|layout-setting -->
-                <a href="javascript:void(0);" class="header-link layout-setting">
-                    <span class="light-layout">
-                        <!-- Start::header-link-icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" opacity="0.2" />
-                            <path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <!-- End::header-link-icon -->
-                    </span>
-                    <span class="dark-layout">
-                        <!-- Start::header-link-icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon" viewBox="0 0 256 256">
-                            <rect width="256" height="256" fill="none" />
-                            <circle cx="128" cy="128" r="56" opacity="0.2" />
-                            <line x1="128" y1="40" x2="128" y2="32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <circle cx="128" cy="128" r="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="64" y1="64" x2="56" y2="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="64" y1="192" x2="56" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="192" y1="64" x2="200" y2="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="192" y1="192" x2="200" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="40" y1="128" x2="32" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="128" y1="216" x2="128" y2="224" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                            <line x1="216" y1="128" x2="224" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
-                        </svg>
-                        <!-- End::header-link-icon -->
-                    </span>
+            <!-- Start::Admin Notifications Dropdown -->
+            <li class="header-element dropdown">
+                <a href="javascript:void(0);" class="header-link dropdown-toggle" id="mainHeaderNotification" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Notifications">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                    </svg>
+                    <span class="badge bg-danger rounded-pill header-icon-badge" style="font-size:9px;padding:2px 5px;">3</span>
                 </a>
-                <!-- End::header-link|layout-setting -->
+                <div class="main-header-dropdown dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="mainHeaderNotification" style="min-width: 290px; border-radius: 12px;">
+                    <div class="p-3 bg-primary text-fixed-white d-flex align-items-center justify-content-between rounded-top">
+                        <p class="mb-0 fs-15 fw-semibold">Notifications</p>
+                        <a href="<?= base_url('admin/reports') ?>" class="text-fixed-white fs-12 text-decoration-underline">Reports</a>
+                    </div>
+                    <div class="dropdown-divider my-0"></div>
+                    <ul class="list-unstyled mb-0 p-2">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="<?= base_url('admin/jobs') ?>">
+                                <div class="avatar avatar-sm bg-primary-transparent text-primary rounded"><i class="ti ti-briefcase fs-16"></i></div>
+                                <div>
+                                    <span class="d-block fw-semibold fs-13">Jobs Management</span>
+                                    <span class="text-muted fs-11">Review posted jobs</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="<?= base_url('admin/employers') ?>">
+                                <div class="avatar avatar-sm bg-warning-transparent text-warning rounded"><i class="ti ti-building fs-16"></i></div>
+                                <div>
+                                    <span class="d-block fw-semibold fs-13">Employer Approvals</span>
+                                    <span class="text-muted fs-11">Verify employer accounts</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="<?= base_url('admin/cv-reviews') ?>">
+                                <div class="avatar avatar-sm bg-success-transparent text-success rounded"><i class="ti ti-file-text fs-16"></i></div>
+                                <div>
+                                    <span class="d-block fw-semibold fs-13">CV Reviews</span>
+                                    <span class="text-muted fs-11">Pending candidate reviews</span>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="dropdown-divider my-0"></div>
+                    <div class="p-2 text-center">
+                        <a href="<?= base_url('admin/dashboard') ?>" class="fs-12 text-primary fw-semibold">Admin Overview &rarr;</a>
+                    </div>
+                </div>
             </li>
-            <!-- End::header-element -->
+            <!-- End::Admin Notifications Dropdown -->
 
             <!-- Start::header-element -->
             <li class="header-element header-fullscreen">

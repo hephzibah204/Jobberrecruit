@@ -48,6 +48,26 @@ class ChatbotController extends BaseController
             return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Please log in to use the assistant.']);
         }
 
+        // Candidate Subscription Check for AI Chatbot
+        $user = auth()->user();
+        if ($user && ($user->user_type === 'candidate' || $user->role === 'candidate')) {
+            if (!is_site_free_mode() && is_ai_tools_paid_mode()) {
+                $subModel = model(\App\Models\UserSubscriptionModel::class);
+                $hasActiveSub = $subModel->where('user_id', $user->id)
+                    ->where('is_active', 1)
+                    ->where('ends_at >=', date('Y-m-d H:i:s'))
+                    ->first();
+
+                if (!$hasActiveSub) {
+                    return $this->response->setStatusCode(403)->setJSON([
+                        'success'  => false,
+                        'message'  => 'Access to the AI Assistant requires an active Premium Candidate Subscription. Please upgrade your plan to access AI tools.',
+                        'redirect' => base_url('candidate/subscription/pricing')
+                    ]);
+                }
+            }
+        }
+
         $message = trim((string) $this->request->getPost('message'));
         if ($message === '') {
             return $this->response->setJSON(['success' => false, 'message' => 'Empty message']);

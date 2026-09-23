@@ -24,9 +24,48 @@
   --line:#d9e2ee;--paper:#ffffff;
 }
 .certificate{
-  position:relative;width:1056px;max-width:100%;aspect-ratio:1056/748;
+  position:relative;width:1056px;height:748px;max-width:100%;
   background:#fdfbf4 url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4QAC/9sAhAAIBgYHBgUIBwcHCQkICgwUDQwLCwwZEhMPFB0aHx4dGhwcICQuJyAiLCMcHCg3KSwwMTQ0NB8nOT04MjwuMzQyAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL') center/cover no-repeat;
   box-shadow:0 24px 70px rgba(10,47,87,.28);overflow:hidden;border-radius:4px;
+}
+.cert-additional-text{font-size:.78rem;letter-spacing:.06em;color:var(--navy);font-weight:600;margin-top:6px;min-height:1.2em}
+.draggable-item {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: outline 0.15s ease, box-shadow 0.15s ease;
+  border: 1px dashed transparent;
+  border-radius: 2px;
+  position: relative;
+  z-index: 10;
+}
+.draggable-item:hover {
+  border-color: rgba(13, 96, 158, 0.5);
+  background-color: rgba(13, 96, 158, 0.04);
+}
+.draggable-item.active-element {
+  border: 2px dashed #0D609E !important;
+  box-shadow: 0 0 10px rgba(13, 96, 158, 0.35);
+  background-color: rgba(13, 96, 158, 0.06);
+  z-index: 100 !important;
+  cursor: grabbing;
+}
+.draggable-item .drag-badge {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  background: #0D609E;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+}
+.draggable-item.active-element .drag-badge {
+  display: block;
 }
 .cert-frame{position:absolute;inset:18px;border:2px solid var(--navy)}
 .cert-frame::before{content:"";position:absolute;inset:6px;border:1px solid var(--gold)}
@@ -130,7 +169,7 @@
                   </defs>
                 </svg>
 
-                <div class="certificate" id="certPreview">
+                <div class="certificate" id="certPreview" style="--brand: <?= $template['primary_color'] ?? '#0D609E' ?>; --navy: <?= $template['primary_color'] ?? '#0A2F57' ?>; --accent: <?= $template['secondary_color'] ?? '#ED9020' ?>; <?= !empty($template['background_image']) ? "background-image: url('" . base_url($template['background_image']) . "'); background-size: cover;" : '' ?>">
                   <div class="cert-texture-overlay"></div>
                   <div class="cert-paper-grain"></div>
                   <div class="cert-vignette"></div>
@@ -170,40 +209,56 @@
                   <span class="cert-corner cc-bl"></span><span class="cert-corner cc-br"></span>
 
                   <div class="cert-inner">
-                    <div class="cert-top">
+                    <div class="cert-top draggable-item" data-elem-id="logo">
+                      <span class="drag-badge">Logo</span>
                       <img src="<?= base_url('auth/img/logo.png') ?>" alt="JobberRecruit" class="cert-logo-real">
                     </div>
-                    <span class="cert-type-ribbon" id="prev-ribbon">
+                    <span class="cert-type-ribbon draggable-item" id="prev-ribbon" data-elem-id="ribbon">
+                      <span class="drag-badge">Ribbon</span>
                       <svg aria-hidden="true"><use href="#i-cap-prev"/></svg>
                       <span id="prev-ribbon-text">Professional Training Programme</span>
                     </span>
 
-                    <h2 class="cert-title" id="prev-title">Certificate of Completion</h2>
-                    <div class="cert-sub">This certifies that</div>
+                    <h2 class="cert-title draggable-item" id="prev-title" data-elem-id="title">
+                      <span class="drag-badge">Title</span>Certificate of Completion
+                    </h2>
+                    <div class="cert-sub draggable-item" data-elem-id="sub">
+                      <span class="drag-badge">Subtitle</span>This certifies that
+                    </div>
 
                     <div class="cert-divider"><i></i></div>
 
-                    <div class="cert-name" id="prev-name">Adebayo Martins</div>
+                    <div class="cert-name draggable-item" id="prev-name" data-elem-id="name">
+                      <span class="drag-badge">Student Name</span>Adebayo Martins
+                    </div>
                     <div class="cert-name-rule"></div>
 
-                    <p class="cert-statement" id="prev-statement">has successfully completed all requirements of the professional training programme</p>
-                    <div class="cert-course-wrap">
+                    <p class="cert-statement draggable-item" id="prev-statement" data-elem-id="statement">
+                      <span class="drag-badge">Statement</span>has successfully completed all requirements of the professional training programme
+                    </p>
+                    <div class="cert-course-wrap draggable-item" data-elem-id="course">
+                      <span class="drag-badge">Course Title</span>
                       <div class="cert-course" id="prev-course">Mastering the ATS: Build a CV That Gets Interviews</div>
                     </div>
+                    <div class="cert-additional-text draggable-item" id="prev-additional" data-elem-id="additional_text">
+                      <span class="drag-badge">Additional Text</span><?= esc($template['additional_text'] ?? '') ?>
+                    </div>
 
-                    <div class="cert-meta">
+                    <div class="cert-meta draggable-item" data-elem-id="meta">
+                      <span class="drag-badge">Meta Info</span>
                       <div class="cert-meta-item">
                         <div class="lbl">Date Issued</div>
                         <div class="val"><?= date('j F Y') ?></div>
                       </div>
                       <div class="cert-meta-item" id="prev-duration-wrap">
                         <div class="lbl">Duration</div>
-                        <div class="val" id="prev-duration">6 Modules · 8 Hours</div>
+                        <div class="val" id="prev-duration">8 Hours</div>
                       </div>
                     </div>
 
                     <div class="cert-bottom">
-                      <div class="cert-seal" aria-hidden="false">
+                      <div class="cert-seal draggable-item" data-elem-id="seal" aria-hidden="false">
+                        <span class="drag-badge">Gold Seal</span>
                         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                           <defs>
                             <radialGradient id="gR" cx="50%" cy="35%" r="70%"><stop offset="0%" stop-color="#F4DD94"/><stop offset="35%" stop-color="#E4C878"/><stop offset="65%" stop-color="#C9A24B"/><stop offset="100%" stop-color="#9A7728"/></radialGradient>
@@ -236,7 +291,8 @@
                         </svg>
                       </div>
 
-                      <div class="cert-sign" id="prev-sign-wrap">
+                      <div class="cert-sign draggable-item" id="prev-sign-wrap" data-elem-id="sign">
+                        <span class="drag-badge">Signature</span>
                         <?php if (setting('Elearning.certificate_signature')): ?>
                           <img src="<?= base_url(setting('Elearning.certificate_signature')) ?>" class="cert-sign-img" alt="Signature">
                         <?php endif; ?>
@@ -246,7 +302,8 @@
                       </div>
                     </div>
 
-                    <div class="cert-verify" id="prev-verify-wrap">
+                    <div class="cert-verify draggable-item" id="prev-verify-wrap" data-elem-id="verify">
+                      <span class="drag-badge">Verification QR</span>
                       <div class="cert-qr-box">
                         <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
                           <rect width="80" height="80" fill="#fff"/>
@@ -289,8 +346,8 @@
                     <select name="course_id" id="courseSelect" class="form-select form-select-sm">
                         <option value="">Global Default (all courses)</option>
                         <?php foreach ($courses as $c): ?>
-                            <option value="<?= $c['id'] ?>" <?= ($template['course_id'] ?? '') == $c['id'] ? 'selected' : '' ?>>
-                                <?= esc($c['title']) ?>
+                            <option value="<?= $c->id ?>" <?= ($template['course_id'] ?? '') == $c->id ? 'selected' : '' ?>>
+                                <?= esc($c->title) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -347,6 +404,81 @@
                     <?php if (!empty($template['background_image'])): ?>
                         <p class="fs-11 mt-1"><span class="badge bg-success">Current BG:</span> <?= esc(basename($template['background_image'])) ?></p>
                     <?php endif; ?>
+
+                    <!-- Canvas Toolset -->
+                    <span class="ctrl-label mt-3">Add / Reset Elements</span>
+                    <div class="d-grid gap-2 mt-1 mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="addTextElemBtn"><i class="ti ti-plus me-1"></i> Add Custom Text</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="addImageElemBtn"><i class="ti ti-photo-plus me-1"></i> Add Image / Badge</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="addLineElemBtn"><i class="ti ti-line me-1"></i> Add Decorative Line</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="resetLayoutBtn"><i class="ti ti-rotate-clockwise me-1"></i> Reset Canvas Layout</button>
+                    </div>
+
+                    <!-- Selected Element Inspector Panel -->
+                    <div class="border rounded p-2 bg-light mt-3" id="elementInspector" style="display:none">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="ctrl-label mb-0">Element Inspector</span>
+                            <span class="badge bg-primary fs-10" id="inspectorElemId">None</span>
+                        </div>
+                        
+                        <div class="mb-2" id="inspectorTextWrap">
+                            <label class="fs-11 text-muted fw-bold">Text Content</label>
+                            <input type="text" id="inspectorText" class="form-control form-control-sm" placeholder="Text content">
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="fs-11 text-muted fw-bold">Font Size (px)</label>
+                                <input type="number" id="inspectorFontSize" class="form-control form-control-sm" min="8" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="fs-11 text-muted fw-bold">Font Weight</label>
+                                <select id="inspectorFontWeight" class="form-select form-select-sm">
+                                    <option value="400">Normal (400)</option>
+                                    <option value="500">Medium (500)</option>
+                                    <option value="600">Semi-Bold (600)</option>
+                                    <option value="700">Bold (700)</option>
+                                    <option value="800">Extra Bold (800)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="fs-11 text-muted fw-bold">Text Color</label>
+                                <input type="color" id="inspectorColor" class="form-control form-control-sm p-0" style="height:32px">
+                            </div>
+                            <div class="col-6">
+                                <label class="fs-11 text-muted fw-bold">Alignment</label>
+                                <select id="inspectorAlign" class="form-select form-select-sm">
+                                    <option value="left">Left</option>
+                                    <option value="center">Center</option>
+                                    <option value="right">Right</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="fs-11 text-muted fw-bold">Left (X px)</label>
+                                <input type="number" id="inspectorLeft" class="form-control form-control-sm" min="0" max="1056">
+                            </div>
+                            <div class="col-6">
+                                <label class="fs-11 text-muted fw-bold">Top (Y px)</label>
+                                <input type="number" id="inspectorTop" class="form-control form-control-sm" min="0" max="748">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="inspectorVisible" checked>
+                                <label class="form-check-label fs-12" for="inspectorVisible">Visible</label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="deleteElemBtn">
+                                <i class="ti ti-trash me-1"></i> Delete Element
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- HTML Mode -->
@@ -380,7 +512,7 @@
                 <!-- Additional text -->
                 <div class="ctrl-section">
                     <label class="ctrl-label">Additional Text / Notes <small class="text-muted fw-normal">(optional footer line)</small></label>
-                    <input type="text" name="additional_text" class="form-control form-control-sm" value="<?= esc($template['additional_text'] ?? '') ?>" placeholder="e.g. Accredited by IBMEC Nigeria">
+                    <input type="text" name="additional_text" id="additionalText" class="form-control form-control-sm" value="<?= esc($template['additional_text'] ?? '') ?>" placeholder="e.g. Accredited by IBMEC Nigeria">
                 </div>
             </form>
         </div>
@@ -428,20 +560,58 @@ const typeData = {
     webinar:  { ribbon: 'Professional Webinar',            statement: 'attended and successfully completed the professional webinar' },
     course:   { ribbon: 'Course Completion',               statement: 'has successfully completed the online course' },
 };
-document.getElementById('certType').addEventListener('change', function() {
-    const d = typeData[this.value] || typeData.training;
-    document.getElementById('prev-ribbon-text').textContent  = d.ribbon;
-    document.getElementById('prev-statement').textContent    = d.statement;
+const certTypeElem = document.getElementById('certType');
+function updateCertType(val) {
+    const d = typeData[val] || typeData.training;
+    document.getElementById('prev-ribbon-text').textContent = d.ribbon;
+    document.getElementById('prev-statement').textContent   = d.statement;
+}
+certTypeElem.addEventListener('change', function() {
+    updateCertType(this.value);
+});
+// Apply initial cert type
+<?php if (!empty($template['cert_type'])): ?>
+certTypeElem.value = <?= json_encode($template['cert_type']) ?>;
+updateCertType(<?= json_encode($template['cert_type']) ?>);
+<?php endif; ?>
+
+// ── Course selector → dynamic course title & duration ─────
+const courseData = {
+<?php foreach ($courses as $c): ?>
+    "<?= $c->id ?>": {
+        title: <?= json_encode($c->title) ?>,
+        duration: <?= json_encode($c->duration ?: '8 Hours') ?>
+    },
+<?php endforeach; ?>
+};
+document.getElementById('courseSelect').addEventListener('change', function() {
+    const selected = courseData[this.value];
+    if (selected) {
+        document.getElementById('prev-course').textContent = selected.title;
+        document.getElementById('prev-duration').textContent = selected.duration;
+    } else {
+        document.getElementById('prev-course').textContent = 'Mastering the ATS: Build a CV That Gets Interviews';
+        document.getElementById('prev-duration').textContent = '8 Hours';
+    }
 });
 
-// ── Color pickers → live CSS vars ────────────────────────
+// ── Color pickers → live CSS vars on #certPreview ────────
+const certPreview = document.getElementById('certPreview');
 document.getElementById('primaryColor').addEventListener('input', function() {
-    document.documentElement.style.setProperty('--brand', this.value);
-    document.documentElement.style.setProperty('--navy',  this.value);
+    certPreview.style.setProperty('--brand', this.value);
+    certPreview.style.setProperty('--navy',  this.value);
 });
 document.getElementById('secondaryColor').addEventListener('input', function() {
-    document.documentElement.style.setProperty('--accent', this.value);
+    certPreview.style.setProperty('--accent', this.value);
 });
+
+// ── Additional Text live listener ─────────────────────────
+const addTxtElem = document.getElementById('additionalText');
+if (addTxtElem) {
+    addTxtElem.addEventListener('input', function() {
+        document.getElementById('prev-additional').textContent = this.value;
+    });
+}
 
 // ── Visibility toggles ────────────────────────────────────
 document.getElementById('showQr').addEventListener('change', function() {
@@ -483,6 +653,461 @@ document.getElementById('previewHtmlBtn').addEventListener('click', function() {
     doc.open(); doc.write(html); doc.close();
     new bootstrap.Modal(document.getElementById('htmlPreviewModal')).show();
 });
+
+// ─────────────────────────────────────────────────────────
+// ── INTERACTIVE DRAG & DROP & LAYOUT EDITOR ENGINE ──────
+// ─────────────────────────────────────────────────────────
+let layoutState = <?= json_encode(is_string($template['layout_json'] ?? null) ? json_decode($template['layout_json'], true) : ($template['layout_json'] ?? [])) ?> || {};
+if (typeof layoutState !== 'object' || Array.isArray(layoutState)) {
+    layoutState = {};
+}
+
+let activeElem = null;
+let isDragging = false;
+let startMouseX = 0, startMouseY = 0;
+let startElemLeft = 0, startElemTop = 0;
+
+function getScaleFactor() {
+    const scaler = document.getElementById('certPreviewScaler');
+    if (!scaler) return 1;
+    const transform = scaler.style.transform;
+    const match = transform ? transform.match(/scale\(([^)]+)\)/) : null;
+    return match ? parseFloat(match[1]) : 1;
+}
+
+function updateLayoutJsonInput() {
+    const input = document.getElementById('layout_json');
+    if (input) {
+        input.value = JSON.stringify(layoutState);
+    }
+}
+
+function rgbToHex(rgb) {
+    if (!rgb || rgb === 'transparent') return '#000000';
+    if (rgb.startsWith('#')) return rgb;
+    const parts = rgb.match(/\d+/g);
+    if (!parts || parts.length < 3) return '#000000';
+    return '#' + parts.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+}
+
+function selectElement(elem) {
+    if (activeElem) {
+        activeElem.classList.remove('active-element');
+    }
+    activeElem = elem;
+    const inspector = document.getElementById('elementInspector');
+    if (!activeElem) {
+        if (inspector) inspector.style.display = 'none';
+        return;
+    }
+    activeElem.classList.add('active-element');
+    if (inspector) inspector.style.display = 'block';
+
+    const elemId = activeElem.getAttribute('data-elem-id') || 'Custom Element';
+    document.getElementById('inspectorElemId').textContent = elemId;
+
+    const certRect = document.getElementById('certPreview').getBoundingClientRect();
+    const elemRect = activeElem.getBoundingClientRect();
+    const scale = getScaleFactor();
+
+    const currentLeft = Math.round(parseFloat(activeElem.style.left) || ((elemRect.left - certRect.left) / scale));
+    const currentTop  = Math.round(parseFloat(activeElem.style.top)  || ((elemRect.top  - certRect.top)  / scale));
+
+    document.getElementById('inspectorLeft').value = currentLeft;
+    document.getElementById('inspectorTop').value  = currentTop;
+
+    // Text Content
+    const textWrap = document.getElementById('inspectorTextWrap');
+    if (activeElem.classList.contains('cert-type-ribbon')) {
+        document.getElementById('inspectorText').value = document.getElementById('prev-ribbon-text').textContent;
+        textWrap.style.display = 'block';
+    } else if (activeElem.classList.contains('custom-text-item') || activeElem.children.length === 0 || activeElem.tagName === 'H2' || activeElem.tagName === 'P' || activeElem.classList.contains('cert-name') || activeElem.classList.contains('cert-course') || activeElem.classList.contains('cert-additional-text')) {
+        document.getElementById('inspectorText').value = activeElem.innerText.trim().replace(/^(Logo|Ribbon|Title|Subtitle|Student Name|Statement|Course Title|Additional Text|Meta Info|Gold Seal|Signature|Verification QR)\s*/i, '').trim() || activeElem.innerText.trim();
+        textWrap.style.display = 'block';
+    } else {
+        textWrap.style.display = 'none';
+    }
+
+    const style = window.getComputedStyle(activeElem);
+    const fs = parseFloat(activeElem.style.fontSize) || parseFloat(style.fontSize) || 16;
+    document.getElementById('inspectorFontSize').value = Math.round(fs);
+
+    const fw = activeElem.style.fontWeight || style.fontWeight || '400';
+    document.getElementById('inspectorFontWeight').value = parseInt(fw) || 400;
+
+    const col = activeElem.style.color || style.color;
+    document.getElementById('inspectorColor').value = rgbToHex(col);
+
+    document.getElementById('inspectorAlign').value = activeElem.style.textAlign || style.textAlign || 'left';
+    document.getElementById('inspectorVisible').checked = activeElem.style.display !== 'none';
+}
+
+function onPointerDown(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+    const elem = e.currentTarget;
+    selectElement(elem);
+
+    isDragging = true;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+
+    const certRect = document.getElementById('certPreview').getBoundingClientRect();
+    const elemRect = elem.getBoundingClientRect();
+    const scale = getScaleFactor();
+
+    startElemLeft = parseFloat(elem.style.left) || ((elemRect.left - certRect.left) / scale);
+    startElemTop  = parseFloat(elem.style.top)  || ((elemRect.top  - certRect.top)  / scale);
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+}
+
+function onPointerMove(e) {
+    if (!isDragging || !activeElem) return;
+    const scale = getScaleFactor();
+    const deltaX = (e.clientX - startMouseX) / scale;
+    const deltaY = (e.clientY - startMouseY) / scale;
+
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3 || activeElem.style.position === 'absolute') {
+        if (activeElem.style.position !== 'absolute') {
+            activeElem.style.position = 'absolute';
+            activeElem.style.margin = '0';
+        }
+        let newLeft = Math.round(startElemLeft + deltaX);
+        let newTop  = Math.round(startElemTop  + deltaY);
+
+        newLeft = Math.max(0, Math.min(1000, newLeft));
+        newTop  = Math.max(0, Math.min(700,  newTop));
+
+        activeElem.style.left = newLeft + 'px';
+        activeElem.style.top  = newTop  + 'px';
+
+        document.getElementById('inspectorLeft').value = newLeft;
+        document.getElementById('inspectorTop').value  = newTop;
+
+        const elemId = activeElem.getAttribute('data-elem-id');
+        if (elemId) {
+            if (!layoutState[elemId]) layoutState[elemId] = {};
+            layoutState[elemId].left = newLeft;
+            layoutState[elemId].top  = newTop;
+            layoutState[elemId].position = 'absolute';
+            updateLayoutJsonInput();
+        }
+    }
+}
+
+function onPointerUp(e) {
+    if (isDragging) {
+        isDragging = false;
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+    }
+}
+
+function initDraggableItems() {
+    const cert = document.getElementById('certPreview');
+    if (!cert) return;
+    const items = cert.querySelectorAll('.draggable-item');
+    items.forEach(item => {
+        item.removeEventListener('pointerdown', onPointerDown);
+        item.addEventListener('pointerdown', onPointerDown);
+    });
+}
+
+// ── Inspector Input Event Listeners ───────────────────────
+document.getElementById('inspectorText').addEventListener('input', function() {
+    if (!activeElem) return;
+    if (activeElem.classList.contains('cert-type-ribbon')) {
+        document.getElementById('prev-ribbon-text').textContent = this.value;
+    } else if (activeElem.classList.contains('custom-text-item')) {
+        activeElem.childNodes[activeElem.childNodes.length - 1].nodeValue = this.value;
+    } else {
+        const badge = activeElem.querySelector('.drag-badge');
+        if (badge) {
+            activeElem.innerHTML = '';
+            activeElem.appendChild(badge);
+            activeElem.appendChild(document.createTextNode(this.value));
+        } else {
+            activeElem.innerText = this.value;
+        }
+    }
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].text = this.value;
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorFontSize').addEventListener('input', function() {
+    if (!activeElem) return;
+    const val = this.value + 'px';
+    activeElem.style.fontSize = val;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].fontSize = val;
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorFontWeight').addEventListener('change', function() {
+    if (!activeElem) return;
+    activeElem.style.fontWeight = this.value;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].fontWeight = this.value;
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorColor').addEventListener('input', function() {
+    if (!activeElem) return;
+    activeElem.style.color = this.value;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].color = this.value;
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorAlign').addEventListener('change', function() {
+    if (!activeElem) return;
+    activeElem.style.textAlign = this.value;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].textAlign = this.value;
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorLeft').addEventListener('input', function() {
+    if (!activeElem) return;
+    const val = (parseInt(this.value) || 0) + 'px';
+    activeElem.style.position = 'absolute';
+    activeElem.style.left = val;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].left = parseInt(this.value) || 0;
+        layoutState[elemId].position = 'absolute';
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorTop').addEventListener('input', function() {
+    if (!activeElem) return;
+    const val = (parseInt(this.value) || 0) + 'px';
+    activeElem.style.position = 'absolute';
+    activeElem.style.top = val;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].top = parseInt(this.value) || 0;
+        layoutState[elemId].position = 'absolute';
+        updateLayoutJsonInput();
+    }
+});
+
+document.getElementById('inspectorVisible').addEventListener('change', function() {
+    if (!activeElem) return;
+    const isVis = this.checked;
+    activeElem.style.display = isVis ? '' : 'none';
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (!layoutState[elemId]) layoutState[elemId] = {};
+        layoutState[elemId].visible = isVis;
+        updateLayoutJsonInput();
+    }
+});
+
+// Delete Element button
+document.getElementById('deleteElemBtn').addEventListener('click', function() {
+    if (!activeElem) return;
+    const elemId = activeElem.getAttribute('data-elem-id');
+    if (elemId) {
+        if (elemId.startsWith('custom_')) {
+            delete layoutState[elemId];
+            activeElem.remove();
+        } else {
+            if (!layoutState[elemId]) layoutState[elemId] = {};
+            layoutState[elemId].visible = false;
+            activeElem.style.display = 'none';
+        }
+        updateLayoutJsonInput();
+    }
+    selectElement(null);
+});
+
+// ── Toolbar Add Buttons ───────────────────────────────────
+document.getElementById('addTextElemBtn').addEventListener('click', function() {
+    const id = 'custom_text_' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'draggable-item custom-text-item';
+    div.setAttribute('data-elem-id', id);
+    div.style.position = 'absolute';
+    div.style.left = '400px';
+    div.style.top = '350px';
+    div.style.fontSize = '16px';
+    div.style.color = '#15233a';
+    div.style.fontWeight = '600';
+    
+    const badge = document.createElement('span');
+    badge.className = 'drag-badge';
+    badge.textContent = 'Custom Text';
+    div.appendChild(badge);
+    div.appendChild(document.createTextNode('New Custom Text Block'));
+
+    document.getElementById('certPreview').appendChild(div);
+    initDraggableItems();
+    selectElement(div);
+
+    layoutState[id] = { type: 'text', text: 'New Custom Text Block', left: 400, top: 350, fontSize: '16px', color: '#15233a', fontWeight: '600', position: 'absolute' };
+    updateLayoutJsonInput();
+});
+
+document.getElementById('addImageElemBtn').addEventListener('click', function() {
+    const url = prompt('Enter Image / Badge URL:', 'https://jobberrecruit.com/auth/img/logo.png');
+    if (!url) return;
+    const id = 'custom_img_' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'draggable-item custom-img-item';
+    div.setAttribute('data-elem-id', id);
+    div.style.position = 'absolute';
+    div.style.left = '450px';
+    div.style.top = '300px';
+
+    const badge = document.createElement('span');
+    badge.className = 'drag-badge';
+    badge.textContent = 'Custom Image';
+    div.appendChild(badge);
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxWidth = '140px';
+    img.style.maxHeight = '140px';
+    div.appendChild(img);
+
+    document.getElementById('certPreview').appendChild(div);
+    initDraggableItems();
+    selectElement(div);
+
+    layoutState[id] = { type: 'image', url: url, left: 450, top: 300, position: 'absolute' };
+    updateLayoutJsonInput();
+});
+
+document.getElementById('addLineElemBtn').addEventListener('click', function() {
+    const id = 'custom_line_' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'draggable-item custom-line-item';
+    div.setAttribute('data-elem-id', id);
+    div.style.position = 'absolute';
+    div.style.left = '250px';
+    div.style.top = '400px';
+    div.style.width = '556px';
+    div.style.height = '2px';
+    div.style.backgroundColor = '#C9A24B';
+
+    const badge = document.createElement('span');
+    badge.className = 'drag-badge';
+    badge.textContent = 'Decorative Line';
+    div.appendChild(badge);
+
+    document.getElementById('certPreview').appendChild(div);
+    initDraggableItems();
+    selectElement(div);
+
+    layoutState[id] = { type: 'line', left: 250, top: 400, width: '556px', height: '2px', backgroundColor: '#C9A24B', position: 'absolute' };
+    updateLayoutJsonInput();
+});
+
+document.getElementById('resetLayoutBtn').addEventListener('click', function() {
+    if (!confirm('Are you sure you want to reset all positions and remove custom elements?')) return;
+    layoutState = {};
+    updateLayoutJsonInput();
+
+    document.querySelectorAll('.custom-text-item, .custom-img-item, .custom-line-item').forEach(el => el.remove());
+
+    document.querySelectorAll('#certPreview .draggable-item').forEach(el => {
+        el.style.position = '';
+        el.style.left = '';
+        el.style.top = '';
+        el.style.margin = '';
+        el.style.fontSize = '';
+        el.style.fontWeight = '';
+        el.style.color = '';
+        el.style.textAlign = '';
+        el.style.display = '';
+    });
+    selectElement(null);
+});
+
+function loadSavedLayout() {
+    if (!layoutState || Object.keys(layoutState).length === 0) {
+        initDraggableItems();
+        return;
+    }
+    for (const [id, cfg] of Object.entries(layoutState)) {
+        let elem = document.querySelector(`[data-elem-id="${id}"]`);
+        
+        if (!elem && cfg.type === 'text') {
+            elem = document.createElement('div');
+            elem.className = 'draggable-item custom-text-item';
+            elem.setAttribute('data-elem-id', id);
+            const badge = document.createElement('span');
+            badge.className = 'drag-badge';
+            badge.textContent = 'Custom Text';
+            elem.appendChild(badge);
+            elem.appendChild(document.createTextNode(cfg.text || 'Custom Text'));
+            document.getElementById('certPreview').appendChild(elem);
+        } else if (!elem && cfg.type === 'image') {
+            elem = document.createElement('div');
+            elem.className = 'draggable-item custom-img-item';
+            elem.setAttribute('data-elem-id', id);
+            const badge = document.createElement('span');
+            badge.className = 'drag-badge';
+            badge.textContent = 'Custom Image';
+            elem.appendChild(badge);
+            const img = document.createElement('img');
+            img.src = cfg.url || '';
+            img.style.maxWidth = '140px';
+            elem.appendChild(img);
+            document.getElementById('certPreview').appendChild(elem);
+        } else if (!elem && cfg.type === 'line') {
+            elem = document.createElement('div');
+            elem.className = 'draggable-item custom-line-item';
+            elem.setAttribute('data-elem-id', id);
+            const badge = document.createElement('span');
+            badge.className = 'drag-badge';
+            badge.textContent = 'Decorative Line';
+            elem.appendChild(badge);
+            document.getElementById('certPreview').appendChild(elem);
+        }
+
+        if (elem) {
+            if (cfg.position === 'absolute' && cfg.left !== undefined && cfg.top !== undefined) {
+                elem.style.position = 'absolute';
+                elem.style.left = cfg.left + 'px';
+                elem.style.top  = cfg.top  + 'px';
+                elem.style.margin = '0';
+            }
+            if (cfg.fontSize) elem.style.fontSize = cfg.fontSize;
+            if (cfg.fontWeight) elem.style.fontWeight = cfg.fontWeight;
+            if (cfg.color) elem.style.color = cfg.color;
+            if (cfg.textAlign) elem.style.textAlign = cfg.textAlign;
+            if (cfg.width) elem.style.width = cfg.width;
+            if (cfg.height) elem.style.height = cfg.height;
+            if (cfg.backgroundColor) elem.style.backgroundColor = cfg.backgroundColor;
+            if (cfg.visible === false) elem.style.display = 'none';
+        }
+    }
+    initDraggableItems();
+}
+
+loadSavedLayout();
 
 // ── Save ──────────────────────────────────────────────────
 document.getElementById('saveTemplateBtn').addEventListener('click', function() {

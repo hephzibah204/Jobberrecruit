@@ -582,8 +582,23 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
     .tr-stat-num { font-family: 'Sora', sans-serif; font-size: 1.7rem; font-weight: 800; color: #ffffff; }
     .tr-stat-label { font-size: .8rem; color: rgba(255,255,255,.8); font-weight: 500; }
 
+    /* ── CONTAINER & LAYOUT ── */
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: clamp(16px, 3vw, 32px);
+      padding-right: clamp(16px, 3vw, 32px);
+      box-sizing: border-box;
+    }
+
     /* ── FEATURED GRID ── */
-    .section { padding: 76px 0; }
+    .section {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 76px 0;
+    }
     .section-label {
       display: inline-flex; align-items: center; gap: 7px;
       font-size: .72rem; font-weight: 700; letter-spacing: .1em;
@@ -600,7 +615,14 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
     .section-title span { color: var(--brand); }
     .section-sub { color: var(--muted); font-size: .95rem; max-width: 560px; margin-bottom: 24px; }
 
-    .feat-course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 28px; }
+    .feat-course-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 24px;
+      margin-top: 28px;
+      box-sizing: border-box;
+    }
     .feat-course-card {
       position: relative;
       background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius);
@@ -667,7 +689,7 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
     .filter-chip.active { background: var(--brand); color: #ffffff; border-color: var(--brand); }
 
     /* ── COURSE CATALOG GRID ── */
-    .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; margin-top: 28px; }
+    .course-grid { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 28px; box-sizing: border-box; }
     .course-card { position: relative; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--white); transition: var(--transition); display: flex; flex-direction: column; }
     .course-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: var(--brand); }
 

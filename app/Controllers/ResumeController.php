@@ -188,6 +188,81 @@ class ResumeController extends BaseController
 
         $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
 
+        // Auto-fill from candidate profile for new resumes or when sections are empty
+        if ($candidate) {
+            if (!$id) {
+                $resume = (object)[
+                    'id'          => null,
+                    'title'       => !empty($candidate->job_title) ? $candidate->job_title . ' Resume' : 'My Professional Resume',
+                    'full_name'   => $candidate->full_name ?? '',
+                    'email'       => $user->email ?? '',
+                    'phone'       => $candidate->phone ?? '',
+                    'location'    => $candidate->location ?? '',
+                    'summary'     => $candidate->bio ?? '',
+                    'template_id' => 'classic',
+                    'ai_optimization_meta' => null,
+                ];
+            } else if ($resume && empty($resume->summary) && !empty($candidate->bio)) {
+                $resume->summary = $candidate->bio;
+            }
+
+            // Auto-pull work experience from candidate profile if empty
+            if (empty($experiences)) {
+                $expModel = new \App\Models\JobSeekerExperienceModel();
+                $profileExps = $expModel->forSeeker((int) $candidate->id);
+                if (!empty($profileExps)) {
+                    foreach ($profileExps as $pe) {
+                        $experiences[] = (object)[
+                            'company'     => $pe->company ?? '',
+                            'position'    => $pe->job_title ?? '',
+                            'description' => $pe->description ?? '',
+                            'start_date'  => $pe->start_date ?? null,
+                            'end_date'    => $pe->end_date ?? null,
+                            'is_current'  => (int) ($pe->is_current ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            // Auto-pull education from candidate profile if empty
+            if (empty($education)) {
+                $eduModel = new \App\Models\JobSeekerEducationModel();
+                $profileEdus = $eduModel->forSeeker((int) $candidate->id);
+                if (!empty($profileEdus)) {
+                    foreach ($profileEdus as $pedu) {
+                        $gradDate = !empty($pedu->end_year) ? $pedu->end_year . '-12-31' : null;
+                        $education[] = (object)[
+                            'institution'     => $pedu->school ?? '',
+                            'degree'          => $pedu->degree ?? '',
+                            'field_of_study'  => $pedu->field_of_study ?? '',
+                            'graduation_date' => $gradDate,
+                        ];
+                    }
+                } elseif (!empty($candidate->education_level)) {
+                    $education[] = (object)[
+                        'institution'     => '',
+                        'degree'          => $candidate->education_level,
+                        'field_of_study'  => '',
+                        'graduation_date' => null,
+                    ];
+                }
+            }
+
+            // Auto-pull skills from candidate profile if empty
+            if (empty($skills) && !empty($candidate->skills)) {
+                $skillsArr = is_array($candidate->skills) ? $candidate->skills : array_filter(array_map('trim', explode(',', $candidate->skills)));
+                foreach ($skillsArr as $sk) {
+                    $skName = trim(is_array($sk) ? ($sk['value'] ?? $sk['skill_name'] ?? '') : $sk);
+                    if ($skName) {
+                        $skills[] = (object)[
+                            'skill_name'        => $skName,
+                            'proficiency_level' => 'intermediate'
+                        ];
+                    }
+                }
+            }
+        }
+
         $tailorJobs = model(\App\Models\JobModel::class)
             ->select(['jobs.id', 'jobs.title', 'jobs.description', 'employers.company_name'])
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
@@ -328,6 +403,58 @@ class ResumeController extends BaseController
     }
 
     /**
+     * Get Candidate Profile JSON for 1-click Auto-Fill in Resume Builder
+     */
+    public function getProfileData()
+    {
+        $user = auth()->user();
+        $candidateModel = model(\App\Models\JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $user->id)->first();
+
+        if (!$candidate) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No profile found. Please complete your profile first.'
+            ]);
+        }
+
+        // Experiences
+        $expModel = new \App\Models\JobSeekerExperienceModel();
+        $experiences = $expModel->forSeeker((int) $candidate->id);
+
+        // Education
+        $eduModel = new \App\Models\JobSeekerEducationModel();
+        $education = $eduModel->forSeeker((int) $candidate->id);
+
+        // Skills
+        $skills = [];
+        if (!empty($candidate->skills)) {
+            $skillsArr = is_array($candidate->skills) ? $candidate->skills : array_filter(array_map('trim', explode(',', $candidate->skills)));
+            foreach ($skillsArr as $sk) {
+                $skName = trim(is_array($sk) ? ($sk['value'] ?? $sk['skill_name'] ?? '') : $sk);
+                if ($skName) {
+                    $skills[] = $skName;
+                }
+            }
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data'    => [
+                'full_name'   => $candidate->full_name ?? '',
+                'email'       => $user->email ?? '',
+                'phone'       => $candidate->phone ?? '',
+                'location'    => $candidate->location ?? '',
+                'job_title'   => $candidate->job_title ?? '',
+                'bio'         => $candidate->bio ?? '',
+                'skills'      => $skills,
+                'experiences' => $experiences,
+                'education'   => $education,
+            ]
+        ]);
+    }
+
+    /**
      * Clone an existing resume into a new copy and redirect to builder
      */
     public function cloneResume($id)
@@ -439,8 +566,20 @@ class ResumeController extends BaseController
             }
         }
 
+        $currentSummary = trim($this->request->getPost('current_summary') ?? '');
+        if (!empty($currentSummary)) {
+            $improved = $this->aiService->improveDescription($currentSummary);
+            if (!empty($improved)) {
+                return $this->respond(['summary' => $improved]);
+            }
+        }
+
         if (empty($expStrings) && empty($skills) && empty($eduStrings)) {
-            return $this->fail('Please provide some experience, education, or skills to generate a summary.');
+            $user = auth()->user();
+            $seeker = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id ?? 0)->first();
+            $roleTitle = $seeker?->job_title ?? 'Professional';
+            $summary = "Results-driven {$roleTitle} with a strong track record of success, proactive problem-solving, and cross-functional team leadership. Committed to driving operational excellence, continuous learning, and delivering measurable business impact.";
+            return $this->respond(['summary' => $summary]);
         }
 
         $summary = $this->aiService->generateProfessionalSummary($expStrings, $skills, $eduStrings);
@@ -452,23 +591,16 @@ class ResumeController extends BaseController
      */
     public function generateBullets()
     {
-        $description = $this->request->getPost('description');
-        $jobTitle = $this->request->getPost('job_title') ?? '';
+        $description = $this->request->getPost('description')
+            ?? $this->request->getVar('description')
+            ?? ($this->request->getJSON(true)['description'] ?? '');
+        $jobTitle = $this->request->getPost('job_title') ?? $this->request->getVar('job_title') ?? '';
 
         if (empty($description)) {
             return $this->fail('Description is required to generate bullets.');
         }
 
-        // Build a prompt context to improve bullet generation
-        $context = '';
-        if ($jobTitle) {
-            $context .= "Job Title: {$jobTitle}\n";
-        }
-
-        $prompt = "Generate 3-5 concise, achievement-oriented resume bullet points based on the following experience description. Use action verbs, quantify results when possible, and keep each bullet under 20 words. Return bullets separated by newline characters.\n\n";
-        $prompt .= $context . "\n" . $description;
-
-        $bullets = $this->aiService->generate($prompt);
+        $bullets = $this->aiService->generateBullets($description, $jobTitle);
 
         return $this->respond(['bullets' => $bullets]);
     }
@@ -478,12 +610,18 @@ class ResumeController extends BaseController
      */
     public function improveDescription()
     {
-        $description = $this->request->getPost('description');
+        $description = $this->request->getPost('description')
+            ?? $this->request->getVar('description')
+            ?? ($this->request->getJSON(true)['description'] ?? '');
+
         if (empty($description)) {
             return $this->fail('Description cannot be empty.');
         }
 
         $improved = $this->aiService->improveDescription($description);
+        if (empty($improved)) {
+            $improved = $description;
+        }
         return $this->respond(['description' => $improved]);
     }
 
@@ -516,6 +654,84 @@ class ResumeController extends BaseController
 
         $coverLetter = $this->aiService->generateCoverLetter($params);
         return $this->respond(['cover_letter' => $coverLetter]);
+    }
+
+    /**
+     * AJAX: Parse uploaded CV file (.pdf, .docx, .doc, .txt) and extract structured data
+     */
+    public function parseCvFile()
+    {
+        $file = $this->request->getFile('cv');
+        if (!$file || !$file->isValid()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Please upload a valid CV file (.pdf, .docx, .doc, or .txt).'
+            ]);
+        }
+
+        $ext = strtolower($file->getClientExtension());
+        $text = '';
+        if ($ext === 'txt') {
+            $text = (string) file_get_contents($file->getTempName());
+        } elseif ($ext === 'docx') {
+            $zip = new \ZipArchive();
+            if ($zip->open($file->getTempName()) === true) {
+                if (($index = $zip->locateName('word/document.xml')) !== false) {
+                    $xml = $zip->getFromIndex($index);
+                    $text = strip_tags($xml);
+                }
+                $zip->close();
+            }
+        } elseif ($ext === 'pdf') {
+            $content = (string) file_get_contents($file->getTempName());
+            preg_match_all('/BT[\s\S]*?ET/m', $content, $matches);
+            if (!empty($matches[0])) {
+                $text = strip_tags(implode(' ', $matches[0]));
+            }
+            if (empty($text) || strlen($text) < 50) {
+                $text = preg_replace('/[^\x20-\x7E\r\n\t]/', ' ', $content);
+            }
+        } else {
+            $text = (string) file_get_contents($file->getTempName());
+        }
+
+        $prompt = "You are an expert resume parser. Extract structured information from the following CV text.\n"
+            . "Return a valid JSON object ONLY with the exact keys:\n"
+            . "{\n"
+            . '  "full_name": "...",' . "\n"
+            . '  "job_title": "...",' . "\n"
+            . '  "email": "...",' . "\n"
+            . '  "phone": "...",' . "\n"
+            . '  "location": "...",' . "\n"
+            . '  "linkedin": "...",' . "\n"
+            . '  "summary": "...",' . "\n"
+            . '  "skills": ["Skill 1", "Skill 2"],' . "\n"
+            . '  "experiences": [{"position": "...", "company": "...", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "is_current": false, "description": "..."}],' . "\n"
+            . '  "education": [{"school": "...", "degree": "...", "field": "...", "year": "YYYY"}],' . "\n"
+            . '  "certifications": "...",' . "\n"
+            . '  "languages": "..."' . "\n"
+            . "}\n"
+            . "CV TEXT:\n" . substr($text, 0, 4000);
+
+        try {
+            $aiRaw = $this->aiService->generate($prompt);
+            if (preg_match('/\{[\s\S]*\}/', $aiRaw, $matches)) {
+                $parsed = json_decode($matches[0], true);
+                if (is_array($parsed)) {
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'data' => $parsed
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'CV parsing error: ' . $e->getMessage());
+        }
+
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Could not automatically extract all CV fields. Please verify or fill in remaining sections.'
+        ]);
     }
 
     /**
@@ -830,12 +1046,73 @@ class ResumeController extends BaseController
         }
         $pdfPath = $tempPath . 'resume-' . $id . '-' . time() . '.pdf';
 
-        Browsershot::html($html)
-            ->format('A4')
-            ->margins(0, 0, 0, 0)
-            ->showBackground()
-            ->noSandbox()
-            ->save($pdfPath);
+        try {
+            $browsershot = Browsershot::html($html)
+                ->format('A4')
+                ->margins(0, 0, 0, 0)
+                ->showBackground()
+                ->noSandbox();
+
+            // Automatically detect Node and npm on Linux/cPanel (or custom .env override)
+            $envNode = env('node_binary_path') ?: env('NODE_BINARY_PATH');
+            $envNpm  = env('npm_binary_path')  ?: env('NPM_BINARY_PATH');
+
+            $linuxNodePaths = [
+                '/usr/bin/node',
+                '/usr/local/bin/node',
+                '/opt/cpanel/ea-nodejs18/bin/node',
+                '/opt/cpanel/ea-nodejs20/bin/node',
+                '/opt/alt/alt-nodejs18/root/usr/bin/node',
+                '/opt/alt/alt-nodejs20/root/usr/bin/node',
+                '/opt/alt/alt-nodejs22/root/usr/bin/node',
+                '/home/jobbcfsf/bin/node',
+                '/home/jobbcfsf/.nvm/versions/node/current/bin/node',
+            ];
+            $linuxNpmPaths = [
+                '/usr/bin/npm',
+                '/usr/local/bin/npm',
+                '/opt/cpanel/ea-nodejs18/bin/npm',
+                '/opt/cpanel/ea-nodejs20/bin/npm',
+                '/opt/alt/alt-nodejs18/root/usr/bin/npm',
+                '/opt/alt/alt-nodejs20/root/usr/bin/npm',
+                '/opt/alt/alt-nodejs22/root/usr/bin/npm',
+                '/home/jobbcfsf/bin/npm',
+                '/home/jobbcfsf/.nvm/versions/node/current/bin/npm',
+            ];
+
+            if ($envNode && file_exists($envNode)) {
+                $browsershot->setNodeBinary($envNode);
+            } elseif (DIRECTORY_SEPARATOR === '\\' && file_exists('C:\\Program Files\\nodejs\\node.exe')) {
+                $browsershot->setNodeBinary('C:\\Program Files\\nodejs\\node.exe');
+            } else {
+                foreach ($linuxNodePaths as $p) {
+                    if (file_exists($p)) { $browsershot->setNodeBinary($p); break; }
+                }
+            }
+
+            if ($envNpm && file_exists($envNpm)) {
+                $browsershot->setNpmBinary($envNpm);
+            } elseif (DIRECTORY_SEPARATOR === '\\' && file_exists('C:\\Program Files\\nodejs\\npm.cmd')) {
+                $browsershot->setNpmBinary('C:\\Program Files\\nodejs\\npm.cmd');
+            } else {
+                foreach ($linuxNpmPaths as $p) {
+                    if (file_exists($p)) { $browsershot->setNpmBinary($p); break; }
+                }
+            }
+
+            $browsershot->save($pdfPath);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Browsershot resume generation failed, falling back to Dompdf: ' . $e->getMessage());
+
+            $dompdf = new \Dompdf\Dompdf([
+                'isRemoteEnabled' => true,
+                'isHtml5ParserEnabled' => true,
+            ]);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            file_put_contents($pdfPath, $dompdf->output());
+        }
 
         return $this->response->download($pdfPath, null)
             ->setFileName(url_title($resume->title) . ".pdf");
@@ -916,6 +1193,176 @@ class ResumeController extends BaseController
         exit();
     }
 
+    /**
+     * Download Resume as Plain Text (.txt / ATS Friendly)
+     */
+    public function downloadTxt($id)
+    {
+        $user = auth()->user();
+        $resume = $this->resumeModel->where('user_id', $user->id)->find($id);
+
+        if (!$resume) {
+            return redirect()->to('candidate/resumes')->with('error', 'Resume not found');
+        }
+
+        $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+        $experiences = $this->experienceModel->where('resume_id', $id)->findAll();
+        $education = $this->educationModel->where('resume_id', $id)->findAll();
+        $skills = $this->skillModel->where('resume_id', $id)->findAll();
+
+        $fullName = strtoupper($candidate?->full_name ?? $user->username ?? 'CANDIDATE NAME');
+        $email = $user->email ?? '';
+        $phone = $candidate?->phone ?? '';
+        $location = $candidate?->location ?? '';
+
+        $lines = [];
+        $lines[] = $fullName;
+        $contact = array_filter([$email, $phone, $location]);
+        if (!empty($contact)) {
+            $lines[] = implode(' | ', $contact);
+        }
+        $lines[] = str_repeat('=', 60);
+        $lines[] = "";
+
+        if (!empty($resume->summary)) {
+            $lines[] = "PROFESSIONAL SUMMARY";
+            $lines[] = str_repeat('-', 30);
+            $lines[] = wordwrap(strip_tags($resume->summary), 75);
+            $lines[] = "";
+        }
+
+        if (!empty($experiences)) {
+            $lines[] = "WORK EXPERIENCE";
+            $lines[] = str_repeat('-', 30);
+            foreach ($experiences as $exp) {
+                $pos = $exp->position ?? 'Role';
+                $co  = $exp->company ?? '';
+                $dates = ($exp->start_date ? date('M Y', strtotime($exp->start_date)) : '') . ' - ' . ($exp->is_current ? 'Present' : ($exp->end_date ? date('M Y', strtotime($exp->end_date)) : ''));
+                $lines[] = "{$pos}" . ($co ? " | {$co}" : "") . ($dates ? " ({$dates})" : "");
+                if (!empty($exp->description)) {
+                    $descLines = explode("\n", strip_tags($exp->description));
+                    foreach ($descLines as $dl) {
+                        $dl = trim($dl);
+                        if ($dl) {
+                            $lines[] = "  • " . wordwrap($dl, 70, "\n    ");
+                        }
+                    }
+                }
+                $lines[] = "";
+            }
+        }
+
+        if (!empty($education)) {
+            $lines[] = "EDUCATION";
+            $lines[] = str_repeat('-', 30);
+            foreach ($education as $edu) {
+                $deg = $edu->degree ?? '';
+                $field = $edu->field_of_study ?? '';
+                $inst = $edu->institution ?? '';
+                $year = !empty($edu->graduation_date) ? date('Y', strtotime($edu->graduation_date)) : '';
+                $degLine = $deg . ($field ? " in {$field}" : "");
+                $lines[] = "{$degLine}" . ($inst ? " | {$inst}" : "") . ($year ? " ({$year})" : "");
+            }
+            $lines[] = "";
+        }
+
+        if (!empty($skills)) {
+            $lines[] = "SKILLS & EXPERTISE";
+            $lines[] = str_repeat('-', 30);
+            $skillNames = array_map(fn($s) => $s->skill_name, $skills);
+            $lines[] = implode(', ', $skillNames);
+            $lines[] = "";
+        }
+
+        $lines[] = str_repeat('-', 60);
+        $lines[] = "Crafted with JobberRecruit · " . base_url();
+
+        $txtContent = implode("\r\n", $lines);
+        $filename = url_title($resume->title) . ".txt";
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/plain; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($txtContent);
+    }
+
+    /**
+     * Download Resume as JSON (JSON Resume Standard)
+     */
+    public function downloadJson($id)
+    {
+        $user = auth()->user();
+        $resume = $this->resumeModel->where('user_id', $user->id)->find($id);
+
+        if (!$resume) {
+            return redirect()->to('candidate/resumes')->with('error', 'Resume not found');
+        }
+
+        $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+        $experiences = $this->experienceModel->where('resume_id', $id)->findAll();
+        $education = $this->educationModel->where('resume_id', $id)->findAll();
+        $skills = $this->skillModel->where('resume_id', $id)->findAll();
+
+        $meta = !empty($resume->ai_optimization_meta) ? json_decode($resume->ai_optimization_meta, true) : [];
+
+        $jsonResume = [
+            '$schema' => 'https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json',
+            'basics' => [
+                'name'     => $candidate?->full_name ?? $user->username ?? 'Candidate',
+                'label'    => $candidate?->job_title ?? $resume->title ?? '',
+                'email'    => $user->email ?? '',
+                'phone'    => $candidate?->phone ?? '',
+                'summary'  => strip_tags($resume->summary ?? ''),
+                'location' => [
+                    'city'        => $candidate?->location ?? '',
+                    'countryCode' => 'NG',
+                ],
+                'profiles' => !empty($meta['linkedin']) ? [
+                    [
+                        'network' => 'LinkedIn',
+                        'url'     => $meta['linkedin'],
+                    ]
+                ] : [],
+            ],
+            'work' => array_map(function($e) {
+                return [
+                    'name'       => $e->company ?? '',
+                    'position'   => $e->position ?? '',
+                    'startDate'  => $e->start_date ?? '',
+                    'endDate'    => $e->is_current ? '' : ($e->end_date ?? ''),
+                    'summary'    => strip_tags($e->description ?? ''),
+                    'highlights' => array_filter(array_map('trim', explode("\n", strip_tags($e->description ?? '')))),
+                ];
+            }, $experiences),
+            'education' => array_map(function($ed) {
+                return [
+                    'institution' => $ed->institution ?? '',
+                    'area'        => $ed->field_of_study ?? '',
+                    'studyType'   => $ed->degree ?? '',
+                    'endDate'     => $ed->graduation_date ?? '',
+                ];
+            }, $education),
+            'skills' => [
+                [
+                    'name'     => 'Skills',
+                    'keywords' => array_map(fn($s) => $s->skill_name, $skills),
+                ]
+            ],
+            'meta' => [
+                'canonical' => base_url('candidate/resumes/build/' . $id),
+                'version'   => 'v1.0.0',
+                'lastModified' => $resume->updated_at ?? date('c'),
+            ]
+        ];
+
+        $filename = url_title($resume->title) . ".json";
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/json; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody(json_encode($jsonResume, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
     public function delete($id)
     {
         $user = auth()->user();
@@ -944,5 +1391,170 @@ class ResumeController extends BaseController
         }
 
         return $this->response->setJSON(['status' => 'success', 'message' => 'Resume deleted successfully']);
+    }
+
+    /**
+     * AJAX: Generate specific AI outputs (Headline, Pitch, About, Bio)
+     */
+    public function generateAiOutput()
+    {
+        $type = $this->request->getPost('type') ?? '';
+        
+        $experiences = $this->request->getPost('experience') ?? [];
+        $skills = $this->request->getPost('skills') ?? [];
+
+        $expStrings = [];
+        if (!empty($experiences) && is_array($experiences)) {
+            foreach ($experiences as $e) {
+                $parts = [];
+                if (!empty($e['position'])) $parts[] = $e['position'];
+                if (!empty($e['company'])) $parts[] = 'at ' . $e['company'];
+                if (!empty($e['description'])) $parts[] = '(' . substr($e['description'], 0, 150) . ')';
+                if (!empty($parts)) $expStrings[] = implode(' ', $parts);
+            }
+        }
+        
+        $context = "";
+        if (!empty($expStrings)) $context .= "Experience: " . implode("; ", $expStrings) . "\n";
+        if (!empty($skills)) $context .= "Skills: " . (is_array($skills) ? implode(", ", $skills) : $skills) . "\n";
+
+        if (empty($context)) {
+            return $this->fail('Please provide some experience or skills to generate output.');
+        }
+
+        $prompt = "You are an expert career coach. Based on the following resume facts, generate a professional {$type}.\n";
+        $prompt .= "Return ONLY the {$type} text. Do not invent any facts.\n\n";
+        $prompt .= $context;
+
+        $output = $this->aiService->generate($prompt);
+        return $this->respond(['output' => $output]);
+    }
+
+    /**
+     * AJAX: Generate a writing review
+     */
+    public function generateWritingReview()
+    {
+        $experiences = $this->request->getPost('experience') ?? [];
+        $summary = $this->request->getPost('summary') ?? '';
+
+        $context = "";
+        if (!empty($summary)) $context .= "Summary: " . $summary . "\n";
+        if (!empty($experiences) && is_array($experiences)) {
+            foreach ($experiences as $e) {
+                if (!empty($e['description'])) {
+                    $context .= "Experience: " . $e['description'] . "\n";
+                }
+            }
+        }
+
+        if (empty($context)) {
+            return $this->fail('Please provide a summary or experience to review.');
+        }
+
+        $prompt = "You are an expert resume reviewer. Review the following text for writing style. ";
+        $prompt .= "Identify clichés, passive voice, or weak verbs. Provide a short, constructive critique.\n\n";
+        $prompt .= "Format your response as a simple HTML fragment (<ul>, <li>, <strong>). No markdown. Return ONLY the HTML.\n\n";
+        $prompt .= $context;
+
+        $output = $this->aiService->generate($prompt);
+        return $this->respond(['review' => $output]);
+    }
+
+    /**
+     * AJAX: Generate Recruiter View (ATS and Keyword check)
+     */
+    public function generateRecruiterView()
+    {
+        $experiences = $this->request->getPost('experience') ?? [];
+        $skills = $this->request->getPost('skills') ?? [];
+        $targetTitle = $this->request->getPost('title') ?? 'Professional';
+
+        $context = "Target Role: {$targetTitle}\n";
+        if (!empty($skills)) $context .= "Skills: " . (is_array($skills) ? implode(", ", $skills) : $skills) . "\n";
+        if (!empty($experiences) && is_array($experiences)) {
+            foreach ($experiences as $e) {
+                if (!empty($e['description'])) {
+                    $context .= "Experience: " . $e['description'] . "\n";
+                }
+            }
+        }
+
+        $prompt = "You are an ATS (Applicant Tracking System) simulator and recruiter. ";
+        $prompt .= "Based on the following resume data for a '{$targetTitle}', evaluate the keyword coverage, impact, and overall ATS score (out of 100).\n";
+        $prompt .= "Provide a short, direct recruiter verdict and a score.\n";
+        $prompt .= "Format your response as a simple HTML fragment (e.g. <h4>ATS Score: X/100</h4><p>Verdict: ...</p>). No markdown. Return ONLY the HTML.\n\n";
+        $prompt .= $context;
+
+        $output = $this->aiService->generate($prompt);
+        return $this->respond(['recruiter_view' => $output]);
+    }
+
+    /**
+     * AJAX: Generate Career Tools (Interview Questions / Salary Negotiation)
+     */
+    public function generateCareerTools()
+    {
+        $toolType = $this->request->getPost('tool_type') ?? 'interview'; // 'interview' or 'salary'
+        $industry = $this->request->getPost('industry') ?? 'general';
+        $title = $this->request->getPost('title') ?? 'Professional';
+
+        $prompt = "You are a career coach for the {$industry} industry. The candidate is a {$title}.\n";
+        
+        if ($toolType === 'interview') {
+            $prompt .= "Generate 3 highly tailored, challenging interview questions for this role in this industry. ";
+            $prompt .= "Format as a simple HTML list (<ul><li>...</li></ul>). No markdown.";
+        } else {
+            $prompt .= "Provide 3 key salary negotiation talking points or strategies for this role in this industry based on current market trends. ";
+            $prompt .= "Format as a simple HTML list (<ul><li>...</li></ul>). No markdown.";
+        }
+
+        $output = $this->aiService->generate($prompt);
+        return $this->respond(['output' => $output]);
+    }
+
+    /**
+     * AI Tailor Resume — adjust resume content to match a specific job description
+     */
+    public function tailorResume()
+    {
+        $userId = auth()->id();
+        if (!$userId) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $resumeJson = $this->request->getPost('resume_json');
+        $jobDescription = $this->request->getPost('job_description');
+
+        if (empty($resumeJson) || empty($jobDescription)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Resume data and job description are required.']);
+        }
+
+        $aiService = new \App\Services\AiService();
+
+        $prompt = "You are an expert resume consultant. Given the following resume data (JSON) and a target job description, tailor the resume content to better match the job. Adjust the professional summary, work experience bullet points, and skills to highlight relevant experience. Keep the content truthful — only rephrase and emphasize, never fabricate experience.\n\nResume JSON:\n" . $resumeJson . "\n\nTarget Job Description:\n" . $jobDescription . "\n\nReturn the tailored resume as valid JSON in the exact same structure as the input. Only return the JSON, no markdown fences or explanation.";
+
+        try {
+            $result = $aiService->chat($prompt);
+            $tailored = is_string($result) ? $result : ($result['content'] ?? $result['text'] ?? json_encode($result));
+
+            // Try to parse to validate it's proper JSON
+            $decoded = json_decode($tailored, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // Try to extract JSON from markdown fences
+                if (preg_match('/```(?:json)?\s*([\s\S]*?)```/', $tailored, $m)) {
+                    $tailored = trim($m[1]);
+                    $decoded = json_decode($tailored, true);
+                }
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return $this->response->setJSON(['status' => 'error', 'message' => 'AI returned invalid JSON. Please try again.']);
+                }
+            }
+
+            return $this->response->setJSON(['status' => 'success', 'tailored' => $decoded]);
+        } catch (\Throwable $e) {
+            log_message('error', 'AI tailor resume error: ' . $e->getMessage());
+            return $this->response->setJSON(['status' => 'error', 'message' => 'AI service error. Please try again.']);
+        }
     }
 }

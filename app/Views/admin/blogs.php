@@ -1,4 +1,4 @@
-<?= $this->extend('admin/layouts/app') ?>
+﻿<?= $this->extend('admin/layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -123,13 +123,18 @@
     };
 
     function deleteBlog(id) {
-        if (!confirm('Delete this blog post?')) return;
+        if (!confirm('Delete this blog post? This action cannot be undone.')) return;
 
         fetch(`<?= base_url('admin/blogs/delete') ?>/${id}`, {
                 method: 'POST',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                body: JSON.stringify({
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                })
             })
             .then(res => res.json())
             .then(res => {
@@ -140,7 +145,7 @@
                     toastr.error(res.message);
                 }
             })
-            .catch(() => toastr.error('Server error'));
+            .catch(() => toastr.error('Server error deleting blog post'));
     }
 </script>
 <?= $this->endSection() ?>

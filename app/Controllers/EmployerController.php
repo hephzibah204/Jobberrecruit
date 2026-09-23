@@ -98,30 +98,29 @@ class EmployerController extends BaseController
         $jobModel           = model(JobModel::class);
         $appModel           = model(JobApplicationModel::class);
 
-        // Get logged-in employer
-        $employer = $employerModel->where('user_id', $this->auth->user()->id)->first();
-
         $user = $this->auth->user();
-        if($user->user_type == 'job_seeker') {
+
+        if ($user->user_type == 'job_seeker') {
             return redirect()->to('candidate/dashboard');
         }
 
+        // Get logged-in employer profile
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        // Auto-create basic employer profile record if missing to prevent redirect loops
         if (!$employer) {
-            return redirect()->to('employer/profile');
+            $employerId = $employerModel->insert([
+                'user_id'       => $user->id,
+                'company_name'  => $user->username ?? 'Company Profile',
+                'contact_email' => $user->email ?? null,
+            ]);
+            $employer = $employerModel->find($employerId);
         }
 
         // =============================================
         // 🔹 CHECK CAC DOCUMENT STATUS (non-blocking)
         // =============================================
         $hasCACDocument = $this->hasUploadedCACDocument($employer->id);
-
-        // Required fields validation
-        if (
-            empty($employer->company_size) ||
-            empty($employer->contact_email)
-        ) {
-            return redirect()->to('employer/profile');
-        }
 
         // ============================
         // 🔹 DASHBOARD STATISTICS
@@ -301,6 +300,23 @@ class EmployerController extends BaseController
         }
         unset($insightJob);
 
+        // Matching candidate profiles count (PDF Requirement 9)
+        $jobSeekerModel = model(JobSeekerModel::class);
+        $activeJobTitles = $jobModel->where('employer_id', $employer->id)->where('status', 'open')->findColumn('title') ?? [];
+        $matchingBuilder = $jobSeekerModel->builder();
+        $matchingBuilder->where('is_visible', 1);
+        if (!empty($activeJobTitles)) {
+            $matchingBuilder->groupStart();
+            foreach (array_slice($activeJobTitles, 0, 5) as $jt) {
+                $matchingBuilder->orLike('job_title', $jt);
+            }
+            $matchingBuilder->groupEnd();
+        }
+        $matchingCandidatesCount = $matchingBuilder->countAllResults();
+        if ($matchingCandidatesCount === 0) {
+            $matchingCandidatesCount = min(5, $jobSeekerModel->where('is_visible', 1)->countAllResults());
+        }
+
         // ============================
         // 🔹 RETURN VIEW
         // ============================
@@ -312,10 +328,11 @@ class EmployerController extends BaseController
             'hasCACDocument'     => $hasCACDocument,
 
             // Stats
-            'totalJobs'          => $totalJobs,
-            'activeJobs'         => $activeJobs,
-            'totalApplicants'    => $totalApplicants,
-            'totalHires'         => $totalHires,
+            'totalJobs'               => $totalJobs,
+            'activeJobs'              => $activeJobs,
+            'totalApplicants'         => $totalApplicants,
+            'totalHires'              => $totalHires,
+            'matchingCandidatesCount' => $matchingCandidatesCount,
 
             // Wallet
             'walletBalance'      => $walletBalance,
@@ -362,7 +379,9 @@ class EmployerController extends BaseController
             if (is_object($features)) {
                 $features = (array) $features;
             }
-            if (isset($features['featured']) && $features['featured'] === true) {
+            if ((isset($features['featured']) && $features['featured']) ||
+                (isset($features['featured_job']) && $features['featured_job']) ||
+                (isset($features['unlimited_jobs']) && $features['unlimited_jobs'])) {
                 return true;
             }
         }
@@ -389,15 +408,19 @@ class EmployerController extends BaseController
             if (is_object($features)) {
                 $features = (array) $features;
             }
-            return isset($features['anonymous']) && $features['anonymous'] === true;
+            if ((isset($features['anonymous']) && $features['anonymous']) ||
+                (isset($features['anonymous_job']) && $features['anonymous_job'])) {
+                return true;
+            }
         }
 
         $user = $this->auth->user();
-        $creditService = new \App\Services\CreditService();
-        $canPerform = $creditService->canPerformAction($user->id, 'post_job');
-
-        if ($canPerform['can']) {
-            return true; // Access granted
+        if ($user) {
+            $creditService = new \App\Services\CreditService();
+            $canPerform = $creditService->canPerformAction($user->id, 'post_job');
+            if ($canPerform['can']) {
+                return true; // Access granted
+            }
         }
 
         return false;
@@ -704,6 +727,14 @@ class EmployerController extends BaseController
 
     public function post_job()
     {
+        // Auto-run migrations to prevent 'Unknown column' errors if the user forgot to migrate
+        try {
+            $migrate = \Config\Services::migrations();
+            $migrate->latest();
+        } catch (\Exception $e) {
+            log_message('error', 'Auto-migration failed: ' . $e->getMessage());
+        }
+
         $user = $this->auth->user();
         $employerModel = model(EmployerModel::class);
         $industryModel = model(IndustryModel::class);
@@ -715,13 +746,37 @@ class EmployerController extends BaseController
         $employer = $employerModel->where('user_id', $userId)->first();
 
         if (!$employer) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Employer profile not found.',
+                    'redirect' => base_url('employer/dashboard')
+                ]);
+            }
             return redirect()->to('employer/dashboard')->with('error', 'Employer profile not found.');
         }
 
-        // Profile completeness check
-        if (!$employer->company_size || !$employer->contact_email) {
-            return redirect()->to('employer/profile')
-                ->with('error', 'Please complete your employer profile before posting a job.');
+        // 60% Profile completion gate to post jobs (PDF Requirement)
+        $profileFields = [
+            !empty($employer->company_name),
+            !empty($employer->contact_email),
+            !empty($employer->company_size),
+            !empty($employer->description),
+            !empty($employer->website),
+            !empty($employer->logo),
+            !empty($employer->company_phone) || !empty($employer->phone),
+        ];
+        $profileScore = (int) round((array_sum(array_map('intval', $profileFields)) / count($profileFields)) * 100);
+        if ($profileScore < 60) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => "Your company profile is only {$profileScore}% complete. Please complete at least 60% of your company profile before posting a job.",
+                    'redirect' => base_url('employer/profile/edit')
+                ]);
+            }
+            return redirect()->to('employer/profile/edit')
+                ->with('error', "Your company profile is only {$profileScore}% complete. Please complete at least 60% of your company profile before posting a job.");
         }
 
         // CAC document check is now OPTIONAL - employers can post jobs before verification
@@ -734,6 +789,14 @@ class EmployerController extends BaseController
         if (!$isDraft) {
             $access = $this->checkJobPostingAccess();
             if ($access !== true) {
+                if ($this->request->isAJAX()) {
+                    $reason = session()->getFlashdata('warning') ?? 'You need an active subscription or job credits to post a new job.';
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $reason,
+                        'redirect' => base_url('employer/no-access')
+                    ]);
+                }
                 return $access;
             }
         }
@@ -811,10 +874,13 @@ class EmployerController extends BaseController
             $start_date = $postData['start_date'] ?? null;
 
             // Set premium features
-            $postData['is_featured'] = (!$isDraft && $shouldBeFeatured) ? 1 : 0;
-            $postData['featured_until'] = (!$isDraft && $shouldBeFeatured) ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
-            // Urgent Hiring shares the same plan/credit eligibility as Featured Listing (no separate tier exists)
-            $postData['is_urgent'] = (!$isDraft && $shouldBeFeatured && $this->request->getPost('urgent_hiring')) ? 1 : 0;
+            $isFeaturedRequested = $this->request->getPost('featured_listing') || $this->request->getPost('is_featured');
+            $isFeatured = (!$isDraft && $shouldBeFeatured && ($isFeaturedRequested || $hasUnlimitedAccess));
+            $postData['is_featured'] = $isFeatured ? 1 : 0;
+            $postData['featured_until'] = $isFeatured ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
+            // Urgent Hiring shares the same plan/credit eligibility as Featured Listing
+            $isUrgentRequested = $this->request->getPost('urgent_hiring') || $this->request->getPost('is_urgent');
+            $postData['is_urgent'] = (!$isDraft && $shouldBeFeatured && $isUrgentRequested) ? 1 : 0;
             $postData['is_anonymous'] = (!$isDraft && $canPostAnonymous && $this->request->getPost('is_anonymous')) ? 1 : 0;
             $postData['network_blast'] = (!$isDraft && $canUseNetworkBlast) ? 1 : 0;
             $postData['application_deadline'] = $application_deadline ? date('Y-m-d H:i:s', strtotime($application_deadline)) : null;
@@ -850,7 +916,9 @@ class EmployerController extends BaseController
                 $jobId = $jobModel->insert($postData);
 
                 if (!$jobId) {
-                    throw new \Exception('Failed to create job');
+                    $dbError = $jobModel->db->error();
+                    $errorMsg = !empty($dbError['message']) ? $dbError['message'] : json_encode($jobModel->errors());
+                    throw new \Exception('Failed to create job: ' . $errorMsg);
                 }
 
                 // ---- NEW: Save Pre-screening Questions ----
@@ -880,16 +948,23 @@ class EmployerController extends BaseController
 
                 // Only deduct credits if not unlimited access
                 if (!$isDraft && !$hasUnlimitedAccess) {
-                    $deductResult = $creditService->deductCredits(
-                        $userId,
-                        1,
-                        (string)$jobId,
-                        'Posted Job: ' . $postData['title'],
-                        'post_job'
-                    );
+                    if (isset($canPost['source']) && $canPost['source'] === 'wallet') {
+                        // Pay-As-You-Go 10,000 Naira deduction
+                        $walletService = new \App\Services\WalletService();
+                        $reference     = 'post_wallet_' . $employer->id . '_' . $jobId . '_' . time();
+                        $walletService->debit($userId, 10000.00, 'post_job', $reference, $jobId, 'Posted job: ' . $postData['title']);
+                    } else {
+                        $deductResult = $creditService->deductCredits(
+                            $userId,
+                            1,
+                            (string)$jobId,
+                            'Posted Job: ' . $postData['title'],
+                            'post_job'
+                        );
 
-                    if (!$deductResult['success']) {
-                        throw new \Exception($deductResult['message']);
+                        if (!$deductResult['success']) {
+                            throw new \Exception($deductResult['message']);
+                        }
                     }
                 }
 
@@ -909,9 +984,22 @@ class EmployerController extends BaseController
                 $db->transComplete();
 
 
-                // Send email notification if enabled
-                if (!$isDraft && $notificationPreferences['email']) {
-                    $this->sendJobPostingEmail($employer, $postData['title'], $jobId, $shouldBeFeatured);
+                // Send email notifications when job is submitted
+                if (!$isDraft) {
+                    $emailService = new \App\Services\EmailNotificationService();
+                    $jobObj = $jobModel->find($jobId);
+
+                    // 1. Notify Admin that a new job was submitted and awaits review
+                    try {
+                        $emailService->sendJobPostingAdminAlertEmail($jobObj, $employer);
+                    } catch (\Throwable $e) {
+                        log_message('error', 'Failed sending job posting admin alert: ' . $e->getMessage());
+                    }
+
+                    // 2. Notify Employer if preference enabled
+                    if (!empty($notificationPreferences['email'])) {
+                        $this->sendJobPostingEmail($employer, $postData['title'], $jobId, $shouldBeFeatured);
+                    }
                 }
 
                 // Build success message
@@ -1391,11 +1479,14 @@ class EmployerController extends BaseController
             ->where('jobs.employer_id', $employer->id)
             ->countAllResults();
 
-        // Views stats
-        $totalClicks = $clickModel
-            ->join('jobs', 'jobs.id = job_clicks.job_id')
-            ->where('jobs.employer_id', $employer->id)
-            ->countAllResults();
+        // Views stats — sum the actual page-view counter stored on each job row.
+        // (job_clicks counts apply-button clicks, which is a separate metric.)
+        $db = \Config\Database::connect();
+        $viewsRow     = $db->table('jobs')
+            ->selectSum('views')
+            ->where('employer_id', $employer->id)
+            ->get()->getRow();
+        $totalClicks = (int) ($viewsRow->views ?? 0);
 
         // Monthly data for charts (last 12 months)
         $monthlyData = $this->getMonthlyAnalytics($employer->id);
@@ -1500,6 +1591,34 @@ class EmployerController extends BaseController
     /**
      * View single job details
      */
+    /**
+     * Preview a job on the public candidate-facing page.
+     * Verifies the job belongs to this employer, then redirects to the public
+     * job detail with ?employer_preview=1 so a preview banner is shown.
+     */
+    public function previewJob(int $jobId)
+    {
+        $user          = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer      = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/dashboard')->with('error', 'Employer profile not found.');
+        }
+
+        $jobModel = model(JobModel::class);
+        $job      = $jobModel->where('id', $jobId)->where('employer_id', $employer->id)->first();
+
+        if (!$job) {
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or access denied.');
+        }
+
+        $slug      = $job->slug ?? $jobId;
+        $targetUrl = base_url('jobs/' . $slug) . '?employer_preview=1';
+
+        return redirect()->to($targetUrl);
+    }
+
     public function viewJob($jobId)
     {
         $user = $this->auth->user();
@@ -1712,28 +1831,920 @@ class EmployerController extends BaseController
         }
 
         // Send email notification to job seeker (works for both authenticated and guest)
-        $emailService = new \App\Services\EmailNotificationService();
-        $emailSent = $emailService->sendApplicationStatusEmail(
-            $application,
-            $status,
-            $job->title,
-            $employer->company_name,
-            $messageToCandidate
-        );
+        $emailSent = false;
+        try {
+            $emailService = new \App\Services\EmailNotificationService();
+            $emailSent = $emailService->sendApplicationStatusEmail(
+                $application,
+                $status,
+                $job->title,
+                $employer->company_name,
+                $messageToCandidate
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'Status update notification error: ' . $e->getMessage());
+            $emailSent = false;
+        }
 
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Application status updated successfully. ' . ($emailSent ? 'The candidate has been notified.' : 'Failed to send email notification.'),
-            'status' => $status,
+            'message' => 'Application status updated successfully. ' . ($emailSent ? 'The candidate has been notified.' : 'Status saved.'),
+            'status'  => $status,
             'email_sent' => $emailSent,
-            'is_guest' => (bool)$application->is_guest,
-            'reload' => false
+            'is_guest'   => (bool)($application->is_guest ?? false),
+            'reload'     => false
+        ]);
+    }
+
+    /**
+     * Employer Aptitude & Screening Tests Bank page with shareable links
+     */
+    public function aptitudeTests()
+    {
+        $db = \Config\Database::connect();
+        if (!$db->fieldExists('employer_id', 'tests')) {
+            $db->query("ALTER TABLE `tests` ADD COLUMN `employer_id` INT UNSIGNED NULL DEFAULT NULL AFTER `id`");
+        }
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        $employerId = $employer ? $employer->id : 0;
+
+        $tests = $db->table('tests t')
+            ->select('t.id, t.employer_id, t.title, t.slug, t.description, t.duration_mins, t.num_questions, t.pass_threshold, t.difficulty, jc.name AS category_name')
+            ->join('job_categories jc', 'jc.id = t.category_id', 'left')
+            ->where('t.is_active', 1)
+            ->groupStart()
+                ->where('t.employer_id IS NULL')
+                ->orWhere('t.employer_id', $employerId)
+            ->groupEnd()
+            ->orderBy('(t.employer_id IS NULL)', 'ASC', false)
+            ->orderBy('t.title', 'ASC')
+            ->get()->getResultArray();
+
+        $categories = $db->table('job_categories')
+            ->select('id, name')
+            ->orderBy('name', 'ASC')
+            ->get()->getResultArray();
+
+        // Read filter params from GET
+        $filterJob    = (int) ($this->request->getGet('job_id') ?? 0);
+        $filterStatus = trim($this->request->getGet('status') ?? '');
+        $searchQuery  = trim($this->request->getGet('search') ?? '');
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        $myJobs = [];
+        $invitations = [];
+
+        if ($employer) {
+            $jobModel = model(JobModel::class);
+            $myJobs = $jobModel->where('employer_id', $employer->id)->orderBy('title', 'ASC')->findAll();
+
+            $builder = $db->table('aptitude_test_invitations ati')
+                ->select('ati.*, t.title as test_title, t.pass_threshold, t.duration_mins, t.num_questions,
+                    ja.first_name, ja.last_name, ja.email as applicant_email, ja.phone as applicant_phone, ja.status as application_status,
+                    js.profile_picture as seeker_avatar, js.full_name as seeker_full_name, js.phone as seeker_phone,
+                    j.title as job_title, j.id as job_id,
+                    ta.status as attempt_status, ta.score_pct, ta.passed, ta.started_at, ta.submitted_at, ta.num_total as total_questions, ta.num_correct as correct_answers')
+                ->join('tests t', 't.id = ati.test_id', 'left')
+                ->join('job_seekers js', 'js.id = ati.candidate_id', 'left')
+                ->join('job_applications ja', 'ja.job_seeker_id = js.id AND ja.job_id = ati.job_id', 'left')
+                ->join('jobs j', 'j.id = ati.job_id', 'left')
+                ->join('test_attempts ta', 'ta.id = ati.attempt_id', 'left')
+                ->where('ati.employer_id', $employer->id);
+
+            if ($filterJob > 0) {
+                $builder->where('ati.job_id', $filterJob);
+            }
+            if ($filterStatus !== '') {
+                if ($filterStatus === 'completed') {
+                    $builder->where('ta.status', 'completed');
+                } elseif ($filterStatus === 'in_progress') {
+                    $builder->where('ta.status', 'in_progress');
+                } elseif ($filterStatus === 'expired') {
+                    $builder->where('ati.status', 'expired');
+                } elseif ($filterStatus === 'pending') {
+                    $builder->where('ati.status', 'pending')->groupStart()->where('ta.status IS NULL')->orWhere('ta.status', 'pending')->groupEnd();
+                }
+            }
+            if ($searchQuery !== '') {
+                $builder->groupStart()
+                    ->like('ja.first_name', $searchQuery)
+                    ->orLike('ja.last_name', $searchQuery)
+                    ->orLike('ja.email', $searchQuery)
+                    ->orLike('js.full_name', $searchQuery)
+                    ->groupEnd();
+            }
+
+            $invitations = $builder->orderBy('ati.created_at', 'DESC')->get()->getResultArray();
+        }
+
+        // KPI stats
+        $kpiStats = [
+            'total_invited' => count($invitations),
+            'in_progress'   => count(array_filter($invitations, fn($i) => strtolower($i['attempt_status'] ?? '') === 'in_progress')),
+            'completed'     => count(array_filter($invitations, fn($i) => strtolower($i['attempt_status'] ?? '') === 'completed')),
+            'passed'        => count(array_filter($invitations, fn($i) => !empty($i['passed']))),
+            'pass_rate'     => 0,
+            'avg_score'     => 0,
+        ];
+        $completed = array_filter($invitations, fn($i) => strtolower($i['attempt_status'] ?? '') === 'completed');
+        if (count($completed) > 0) {
+            $kpiStats['pass_rate'] = round(($kpiStats['passed'] / count($completed)) * 100);
+            $kpiStats['avg_score'] = round(array_sum(array_column($completed, 'score_pct')) / count($completed));
+        }
+
+        return view('employers/aptitude_tests', [
+            'title'        => 'Screening & Aptitude Tests',
+            'tests'        => $tests,
+            'categories'   => $categories,
+            'employerId'   => $employerId,
+            'myJobs'       => $myJobs,
+            'invitations'  => $invitations,
+            'filterJob'    => $filterJob,
+            'filterStatus' => $filterStatus,
+            'searchQuery'  => $searchQuery,
+            'kpiStats'     => $kpiStats,
+        ]);
+    }
+
+    /**
+     * Get available active aptitude tests for employer invitation modal
+     */
+    public function getAvailableAptitudeTests()
+    {
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        $employerId = $employer ? $employer->id : 0;
+
+        $db = \Config\Database::connect();
+        if (!$db->fieldExists('employer_id', 'tests')) {
+            $db->query("ALTER TABLE `tests` ADD COLUMN `employer_id` INT UNSIGNED NULL DEFAULT NULL AFTER `id`");
+        }
+
+        // Return both global tests AND employer's own custom tests
+        $tests = $db->table('tests')
+            ->select('id, title, slug, duration_mins, num_questions, pass_threshold, difficulty, employer_id')
+            ->where('is_active', 1)
+            ->groupStart()
+                ->where('employer_id IS NULL')
+                ->orWhere('employer_id', $employerId)
+            ->groupEnd()
+            ->orderBy('(employer_id IS NULL)', 'ASC', false)   // employer tests first
+            ->orderBy('title', 'ASC')
+            ->get()
+            ->getResultObject();
+
+        return $this->response->setJSON(['success' => true, 'tests' => $tests]);
+    }
+
+    // ══════════════════════════════════════════════════
+    // EMPLOYER CUSTOM TEST MANAGEMENT
+    // ══════════════════════════════════════════════════
+
+    /**
+     * List employer's own custom tests (JSON)
+     */
+    public function myTests()
+    {
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $tests = $db->table('tests t')
+            ->select('t.*, COUNT(q.id) as question_count')
+            ->join('questions q', 'q.test_id = t.id', 'left')
+            ->where('t.employer_id', $employer->id)
+            ->groupBy('t.id')
+            ->orderBy('t.created_at', 'DESC')
+            ->get()->getResultArray();
+
+        return $this->response->setJSON(['success' => true, 'tests' => $tests]);
+    }
+
+    /**
+     * Create a custom test for an employer
+     */
+    public function createCustomTest()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'POST required']);
+        }
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $title = trim($this->request->getPost('title') ?? '');
+        if (empty($title)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Test title is required']);
+        }
+
+        $db = \Config\Database::connect();
+
+        // Unique slug scoped to employer
+        $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title)));
+        if (empty($baseSlug)) $baseSlug = 'custom-test';
+        $slug = $baseSlug . '-emp' . $employer->id;
+        $counter = 1;
+        while ($db->table('tests')->where('slug', $slug)->countAllResults()) {
+            $slug = $baseSlug . '-emp' . $employer->id . '-' . $counter++;
+        }
+
+        $testId = $db->table('tests')->insert([
+            'employer_id'    => $employer->id,
+            'category_id'    => (int) ($this->request->getPost('category_id') ?: 1),
+            'title'          => $title,
+            'slug'           => $slug,
+            'description'    => $this->request->getPost('description') ?? '',
+            'duration_mins'  => (int) ($this->request->getPost('duration_mins') ?: 20),
+            'num_questions'  => (int) ($this->request->getPost('num_questions') ?: 10),
+            'pass_threshold' => (int) ($this->request->getPost('pass_threshold') ?: 50),
+            'difficulty'     => $this->request->getPost('difficulty') ?: 'intermediate',
+            'is_active'      => 1,
+            'created_at'     => date('Y-m-d H:i:s'),
+            'updated_at'     => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$db->affectedRows()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to create test']);
+        }
+
+        $testId = $db->insertID();
+
+        // Save questions if provided
+        $questionsRaw = $this->request->getPost('questions');
+        if ($questionsRaw) {
+            $this->saveEmployerTestQuestions($testId, $questionsRaw);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'test_id' => $testId,
+            'message' => 'Custom test created successfully!'
+        ]);
+    }
+
+    /**
+     * Update an employer's custom test
+     */
+    public function updateCustomTest($testId)
+    {
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $test = $db->table('tests')->where('id', $testId)->where('employer_id', $employer->id)->get()->getRowArray();
+        if (!$test) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Test not found or access denied']);
+        }
+
+        $title = trim($this->request->getPost('title') ?? '') ?: $test['title'];
+        $db->table('tests')->where('id', $testId)->update([
+            'category_id'    => (int) ($this->request->getPost('category_id') ?: $test['category_id']),
+            'title'          => $title,
+            'description'    => $this->request->getPost('description') ?? $test['description'],
+            'duration_mins'  => (int) ($this->request->getPost('duration_mins') ?: $test['duration_mins']),
+            'num_questions'  => (int) ($this->request->getPost('num_questions') ?: $test['num_questions']),
+            'pass_threshold' => (int) ($this->request->getPost('pass_threshold') ?: $test['pass_threshold']),
+            'difficulty'     => $this->request->getPost('difficulty') ?: $test['difficulty'],
+            'updated_at'     => date('Y-m-d H:i:s'),
+        ]);
+
+        $questionsRaw = $this->request->getPost('questions');
+        if ($questionsRaw) {
+            $this->saveEmployerTestQuestions((int) $testId, $questionsRaw);
+        }
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Test updated successfully']);
+    }
+
+    /**
+     * Delete an employer's custom test
+     */
+    public function deleteCustomTest($testId)
+    {
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $test = $db->table('tests')->where('id', $testId)->where('employer_id', $employer->id)->get()->getRowArray();
+        if (!$test) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Test not found or access denied']);
+        }
+
+        // Delete questions and options first
+        $questions = $db->table('questions')->where('test_id', $testId)->get()->getResultArray();
+        foreach ($questions as $q) {
+            $db->table('question_options')->where('question_id', $q['id'])->delete();
+        }
+        $db->table('questions')->where('test_id', $testId)->delete();
+        $db->table('tests')->where('id', $testId)->where('employer_id', $employer->id)->delete();
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Test deleted successfully']);
+    }
+
+    /**
+     * Get questions for an employer's test (for editing)
+     */
+    public function getCustomTestQuestions($testId)
+    {
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', auth()->id())->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $test = $db->table('tests')->where('id', $testId)->where('employer_id', $employer->id)->get()->getRowArray();
+        if (!$test) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        $questions = $db->table('questions')->where('test_id', $testId)->get()->getResultArray();
+        foreach ($questions as &$q) {
+            $q['options'] = $db->table('question_options')->where('question_id', $q['id'])->orderBy('sort_order')->get()->getResultArray();
+        }
+
+        return $this->response->setJSON(['success' => true, 'test' => $test, 'questions' => $questions]);
+    }
+
+    /**
+     * AI-generate questions for employer's custom test
+     */
+    public function aiGenerateTestQuestions()
+    {
+        $title       = $this->request->getPost('title') ?? 'General Aptitude';
+        $description = $this->request->getPost('description') ?? '';
+        $numQ        = (int) ($this->request->getPost('num_questions') ?: 5);
+
+        $aiService = new \App\Services\AiService();
+        $questions = $aiService->generateCustomAptitudeQuestions($title, $description, $numQ);
+        if (empty($questions)) {
+            $questions = $aiService->getFallbackCourseTestQuestions($title, $numQ);
+        }
+
+        return $this->response->setJSON(['success' => true, 'questions' => $questions]);
+    }
+
+    /**
+     * Save questions for an employer-owned test
+     */
+    private function saveEmployerTestQuestions(int $testId, $questionsRaw): int
+    {
+        $decoded = is_string($questionsRaw) ? json_decode($questionsRaw, true) : $questionsRaw;
+        if (!is_array($decoded) || empty($decoded)) return 0;
+
+        $db = \Config\Database::connect();
+
+        // Wipe existing questions for fresh sync
+        $existing = $db->table('questions')->where('test_id', $testId)->get()->getResultArray();
+        foreach ($existing as $eq) {
+            $db->table('question_options')->where('question_id', $eq['id'])->delete();
+        }
+        $db->table('questions')->where('test_id', $testId)->delete();
+
+        $count = 0;
+        foreach ($decoded as $q) {
+            $body = trim($q['question'] ?? $q['body'] ?? '');
+            if (empty($body)) continue;
+
+            $db->table('questions')->insert([
+                'test_id'     => $testId,
+                'type'        => 'mcq',
+                'body'        => $body,
+                'difficulty'  => 'intermediate',
+                'explanation' => $q['explanation'] ?? '',
+                'points'      => 1,
+                'is_active'   => 1,
+            ]);
+            $qId = $db->insertID();
+
+            foreach ($q['options'] ?? [] as $idx => $opt) {
+                $optText   = is_array($opt) ? ($opt['text'] ?? $opt['body'] ?? '') : (string) $opt;
+                $isCorrect = is_array($opt) ? (!empty($opt['is_correct']) ? 1 : 0) : 0;
+                if (empty($optText)) continue;
+                $db->table('question_options')->insert([
+                    'question_id' => $qId,
+                    'body'        => $optText,
+                    'is_correct'  => $isCorrect,
+                    'sort_order'  => $idx,
+                ]);
+            }
+            $count++;
+        }
+
+        // Keep num_questions in sync
+        $db->table('tests')->where('id', $testId)->update(['num_questions' => max(1, $count)]);
+        return $count;
+    }
+
+
+
+    /**
+     * Send aptitude test invitation to applicant
+     */
+    public function inviteToAptitudeTest()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found']);
+        }
+
+        $rawTestId = $this->request->getPost('test_id');
+        $applicationId = (int) $this->request->getPost('application_id');
+        $daysToComplete = max(1, min(30, (int) ($this->request->getPost('days_to_complete') ?? 7)));
+        $customMessage = trim((string) $this->request->getPost('message'));
+
+        $applicationModel = model(JobApplicationModel::class);
+        $application = $applicationModel->find($applicationId);
+        if (!$application) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Application not found']);
+        }
+
+        $jobModel = model(JobModel::class);
+        $job = $jobModel->find($application->job_id);
+        if (!$job || $job->employer_id != $employer->id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $db = \Config\Database::connect();
+
+        if ($rawTestId === 'ai_custom') {
+            $reqNumQuestions = max(3, min(50, (int) ($this->request->getPost('num_questions') ?? 5)));
+            $reqDuration = max(5, min(120, (int) ($this->request->getPost('duration_mins') ?? 15)));
+            $reqDifficulty = in_array($this->request->getPost('difficulty'), ['beginner', 'intermediate', 'advanced']) ? $this->request->getPost('difficulty') : 'intermediate';
+
+            // Use Gemini AI to generate custom questions tailored to this job
+            $aiService = new \App\Services\AiService();
+            $aiQuestions = $aiService->generateCustomAptitudeQuestions($job->title, $job->description ?? '', $reqNumQuestions, $reqDifficulty);
+
+            if (empty($aiQuestions)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Failed to generate AI custom questions. Please select a preset test or try again.']);
+            }
+
+            $testSlug = 'custom-ai-' . $job->id . '-' . time();
+            $testTitle = "AI Custom Assessment: " . $job->title;
+            $now = date('Y-m-d H:i:s');
+
+            $db->table('tests')->insert([
+                'category_id'    => $job->category_id ?? 1,
+                'title'          => $testTitle,
+                'slug'           => $testSlug,
+                'description'    => "AI-generated tailored candidate screening test for " . $job->title,
+                'duration_mins'  => $reqDuration,
+                'num_questions'  => count($aiQuestions),
+                'pass_threshold' => 60,
+                'difficulty'     => $reqDifficulty,
+                'is_active'      => 1,
+                'created_at'     => $now,
+                'updated_at'     => $now,
+            ]);
+
+            $testId = $db->insertID();
+
+            foreach ($aiQuestions as $qItem) {
+                $db->table('questions')->insert([
+                    'test_id'     => $testId,
+                    'type'        => 'mcq',
+                    'body'        => $qItem['question'] ?? 'Question',
+                    'difficulty'  => $qItem['difficulty'] ?? 'intermediate',
+                    'points'      => 1,
+                    'explanation' => $qItem['explanation'] ?? '',
+                    'is_active'   => 1,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ]);
+                $qId = $db->insertID();
+
+                if (!empty($qItem['options'])) {
+                    $sort = 0;
+                    foreach ($qItem['options'] as $opt) {
+                        $db->table('question_options')->insert([
+                            'question_id' => $qId,
+                            'body'        => $opt['text'] ?? 'Option',
+                            'is_correct'  => !empty($opt['is_correct']) ? 1 : 0,
+                            'sort_order'  => $sort++,
+                        ]);
+                    }
+                }
+            }
+
+            $test = $db->table('tests')->where('id', $testId)->get()->getRowObject();
+        } else {
+            $testId = (int) $rawTestId;
+            $test = $db->table('tests')->where('id', $testId)->where('is_active', 1)->get()->getRowObject();
+        }
+
+        if (!$test) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Selected aptitude test is unavailable']);
+        }
+
+        $token = bin2hex(random_bytes(24));
+        $dueDate = date('Y-m-d H:i:s', strtotime("+{$daysToComplete} days"));
+
+        $candidateUserId = (int) ($application->user_id ?? 0);
+        if ($candidateUserId === 0 && !empty($application->job_seeker_id)) {
+            $js = $db->table('job_seekers')->select('user_id')->where('id', $application->job_seeker_id)->get()->getRowObject();
+            if ($js) {
+                $candidateUserId = (int) $js->user_id;
+            }
+        }
+
+        $candidateName = trim(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')) ?: 'Candidate';
+        $candidateEmail = (string) ($application->email ?? '');
+        if (empty($candidateEmail) && $candidateUserId > 0) {
+            $userModel = model(\App\Models\UserModel::class);
+            $candUser = $userModel->find($candidateUserId);
+            if ($candUser && !empty($candUser->email)) {
+                $candidateEmail = (string) $candUser->email;
+            }
+        }
+
+        $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
+        $invitationModel->insert([
+            'employer_id'     => $employer->id,
+            'candidate_id'    => $candidateUserId,
+            'job_id'          => $job->id,
+            'application_id'  => $application->id,
+            'test_id'         => $test->id,
+            'code'            => $token,
+            'invitation_code' => $token,
+            'email'           => $candidateEmail,
+            'message'         => $customMessage,
+            'due_date'        => $dueDate,
+            'status'          => 'pending',
+        ]);
+
+        // Update application status to shortlisted if currently pending/reviewed
+        if (in_array($application->status, ['pending', 'reviewed'])) {
+            $applicationModel->update($application->id, [
+                'status'         => 'shortlisted',
+                'status_message' => "Invited to complete Aptitude Test: {$test->title}",
+                'reviewed_at'    => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        // Add application note
+        $noteModel = model(ApplicationNoteModel::class);
+        $noteModel->addNote(
+            $application->id,
+            $employer->id,
+            "Invited candidate to Aptitude Test: {$test->title} (Due: " . date('F j, Y', strtotime($dueDate)) . ")",
+            $user->id,
+            'feedback'
+        );
+
+        // Send Email Notification
+        $invitationUrl = site_url('aptitude/invite/' . $token);
+        $emailService = new \App\Services\EmailNotificationService();
+        $emailSent = false;
+        if (!empty($candidateEmail)) {
+            $emailSent = $emailService->sendAptitudeTestInvitationEmail(
+                $candidateEmail,
+                $candidateName,
+                $test->title,
+                $employer->company_name,
+                $job->title,
+                $invitationUrl,
+                $dueDate,
+                $customMessage
+            );
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "Aptitude test invitation sent successfully to {$candidateName}!",
+            'email_sent' => $emailSent,
+            'invitation_url' => $invitationUrl
+        ]);
+    }
+
+    /**
+     * Resend an existing aptitude test invitation email to candidate
+     */
+    public function resendAptitudeInvite()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        $user = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found']);
+        }
+
+        $invId = (int) $this->request->getPost('invitation_id');
+        $db = \Config\Database::connect();
+        $inv = $db->table('aptitude_test_invitations ati')
+            ->select('ati.*, t.title as test_title, j.title as job_title, ja.first_name, ja.last_name, ja.email as applicant_email, js.full_name as seeker_full_name')
+            ->join('tests t', 't.id = ati.test_id', 'left')
+            ->join('jobs j', 'j.id = ati.job_id', 'left')
+            ->join('job_seekers js', 'js.id = ati.candidate_id', 'left')
+            ->join('job_applications ja', 'ja.job_seeker_id = js.id AND ja.job_id = ati.job_id', 'left')
+            ->where('ati.id', $invId)
+            ->where('ati.employer_id', $employer->id)
+            ->get()->getRowArray();
+
+        if (!$inv) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Assessment invitation not found']);
+        }
+
+        $candName = trim(($inv['first_name'] ?? '') . ' ' . ($inv['last_name'] ?? '')) ?: ($inv['seeker_full_name'] ?? 'Candidate');
+        $candEmail = $inv['applicant_email'] ?? '';
+        if (empty($candEmail) && !empty($inv['candidate_id'])) {
+            $seeker = $db->table('job_seekers js')
+                ->select('u.email')
+                ->join('users u', 'u.id = js.user_id', 'left')
+                ->where('js.id', $inv['candidate_id'])
+                ->get()->getRowArray();
+            if ($seeker && !empty($seeker['email'])) {
+                $candEmail = $seeker['email'];
+            }
+        }
+
+        $token = $inv['invitation_code'] ?? '';
+        $invitationUrl = site_url('aptitude/invite/' . $token);
+
+        $emailService = new \App\Services\EmailNotificationService();
+        $emailSent = false;
+        if (!empty($candEmail)) {
+            $emailSent = $emailService->sendAptitudeTestInvitationEmail(
+                $candEmail,
+                $candName,
+                $inv['test_title'] ?? 'Screening Assessment',
+                $employer->company_name ?? 'JobberRecruit Employer',
+                $inv['job_title'] ?? 'Role Assessment',
+                $invitationUrl,
+                $inv['due_date'] ?? date('Y-m-d H:i:s', strtotime('+7 days')),
+                $inv['message'] ?? ''
+            );
+        }
+
+        return $this->response->setJSON([
+            'success'        => true,
+            'message'        => 'Invitation link resent successfully to ' . $candName . '!',
+            'invitation_url' => $invitationUrl,
+            'email_sent'     => $emailSent
+        ]);
+    }
+
+    /**
+     * Get candidate attempt breakdown & analytics for employer review
+     */
+    public function getAptitudeAttemptResult($invId)
+    {
+        $user = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $inv = $db->table('aptitude_test_invitations ati')
+            ->select('ati.*, t.title as test_title, t.pass_threshold, t.duration_mins, t.num_questions,
+                     ja.first_name, ja.last_name, ja.email as applicant_email, ja.status as application_status, ja.id as app_id,
+                     js.full_name as seeker_full_name, js.profile_picture as seeker_avatar,
+                     j.title as job_title,
+                     ta.id as attempt_id, ta.status as attempt_status, ta.score_pct, ta.passed, ta.started_at, ta.submitted_at, ta.num_total, ta.num_correct, ta.question_ids')
+            ->join('tests t', 't.id = ati.test_id', 'left')
+            ->join('job_seekers js', 'js.id = ati.candidate_id', 'left')
+            ->join('job_applications ja', 'ja.job_seeker_id = js.id AND ja.job_id = ati.job_id', 'left')
+            ->join('jobs j', 'j.id = ati.job_id', 'left')
+            ->join('test_attempts ta', 'ta.id = ati.attempt_id', 'left')
+            ->where('ati.id', (int) $invId)
+            ->where('ati.employer_id', $employer->id)
+            ->get()->getRowArray();
+
+        if (!$inv) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Assessment invitation not found']);
+        }
+
+        $breakdown = [];
+        $attemptId = (int) ($inv['attempt_id'] ?? 0);
+        if ($attemptId > 0 && !empty($inv['question_ids'])) {
+            $questionModel = new \App\Models\QuestionModel();
+            $optionModel   = new \App\Models\QuestionOptionModel();
+            $answerModel   = new \App\Models\AttemptAnswerModel();
+
+            $answersByQ = [];
+            foreach ($answerModel->where('attempt_id', $attemptId)->findAll() as $a) {
+                $answersByQ[(int) $a['question_id']] = $a;
+            }
+
+            $qIds = json_decode($inv['question_ids'], true) ?: [];
+            foreach ($qIds as $idx => $qId) {
+                $q = $questionModel->find($qId);
+                if (!$q) continue;
+
+                $options = $optionModel->where('question_id', $qId)->orderBy('id', 'ASC')->findAll();
+                $selectedIds = [];
+                if (isset($answersByQ[$qId]['selected_option_ids'])) {
+                    $selectedIds = json_decode($answersByQ[$qId]['selected_option_ids'], true) ?: [];
+                }
+
+                $breakdown[] = [
+                    'number'      => $idx + 1,
+                    'body'        => $q['body'],
+                    'explanation' => $q['explanation'] ?? '',
+                    'is_correct'  => (bool) ($answersByQ[$qId]['is_correct'] ?? false),
+                    'options'     => array_map(static function ($opt) use ($selectedIds) {
+                        return [
+                            'body'    => $opt['body'],
+                            'correct' => (bool) $opt['is_correct'],
+                            'chosen'  => in_array((int) $opt['id'], array_map('intval', $selectedIds), true),
+                        ];
+                    }, $options),
+                ];
+            }
+        }
+
+        $candName = trim(($inv['first_name'] ?? '') . ' ' . ($inv['last_name'] ?? '')) ?: ($inv['seeker_full_name'] ?? 'Candidate');
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'candidate' => [
+                'name'               => $candName,
+                'email'              => $inv['applicant_email'] ?? '',
+                'avatar'             => $inv['seeker_avatar'] ?? null,
+                'application_id'     => $inv['app_id'] ?? 0,
+                'application_status' => $inv['application_status'] ?? '',
+                'job_title'          => $inv['job_title'] ?? '',
+                'test_title'         => $inv['test_title'] ?? '',
+            ],
+            'attempt'   => [
+                'id'              => $inv['attempt_id'],
+                'status'          => $inv['attempt_status'] ?? 'pending',
+                'score_pct'       => $inv['score_pct'] !== null ? (float) $inv['score_pct'] : null,
+                'passed'          => (bool) ($inv['passed'] ?? false),
+                'pass_threshold'  => (int) ($inv['pass_threshold'] ?? 50),
+                'num_total'       => (int) ($inv['num_total'] ?? $inv['num_questions'] ?? 0),
+                'num_correct'     => (int) ($inv['num_correct'] ?? 0),
+                'started_at'      => $inv['started_at'] ? date('M j, Y g:ia', strtotime($inv['started_at'])) : null,
+                'submitted_at'    => $inv['submitted_at'] ? date('M j, Y g:ia', strtotime($inv['submitted_at'])) : null,
+            ],
+            'breakdown' => $breakdown
+        ]);
+    }
+
+    /**
+     * Advance candidate hiring stage from aptitude test dashboard
+     */
+    public function advanceCandidateStage()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        $user = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found']);
+        }
+
+        $appId = (int) $this->request->getPost('application_id');
+        $stage = trim(strtolower($this->request->getPost('stage') ?? ''));
+        $notes = trim((string) $this->request->getPost('notes'));
+
+        $allowedStages = ['shortlisted', 'interview', 'hired', 'rejected'];
+        if (!in_array($stage, $allowedStages, true)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid hiring stage specified']);
+        }
+
+        $appModel = model(\App\Models\JobApplicationModel::class);
+        $app = $appModel->find($appId);
+        if (!$app) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Application record not found']);
+        }
+
+        $job = model(\App\Models\JobModel::class)->find($app->job_id);
+        if (!$job || $job->employer_id != $employer->id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $updateData = [
+            'status'      => $stage,
+            'reviewed_at' => date('Y-m-d H:i:s'),
+        ];
+        if (!empty($notes)) {
+            $updateData['status_message'] = $notes;
+        }
+        $appModel->update($appId, $updateData);
+
+        // Add application feedback note
+        $noteModel = model(\App\Models\ApplicationNoteModel::class);
+        $stageLabels = [
+            'shortlisted' => 'Shortlisted',
+            'interview'   => 'Advanced to Interview Stage',
+            'hired'       => 'Marked as Hired',
+            'rejected'    => 'Marked as Rejected',
+        ];
+        $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
+        $noteText = "Recruiter updated stage to: {$stageLabel}" . (!empty($notes) ? " - Note: {$notes}" : "");
+        $noteModel->addNote($appId, $employer->id, $noteText, $user->id, 'feedback');
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "Candidate application successfully updated to {$stageLabel}!"
         ]);
     }
 
     /**
      * Edit job page
      */
+    
+    public function repostJob($jobId)
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $jobModel = model(JobModel::class);
+        $industryModel = model(IndustryModel::class);
+        $categoryModel = model(JobCategoryModel::class);
+        $creditService = new \App\Services\CreditService();
+
+        // Get job and verify ownership
+        $job = $jobModel->where('id', $jobId)->where('employer_id', $employer->id)->first();
+
+        if (!$job) {
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or access denied.');
+        }
+
+        // NO 1-hour restriction here because it's a repost.
+
+        // Get available data for form
+        $industries = $industryModel->findAll();
+        $categories = $categoryModel->findAll();
+        $states = model(StateModel::class)->findAll();
+
+        // Get credit info
+        $creditBalance = $creditService->getAvailableCredits($user->id);
+        $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($user->id);
+        $currentPlan = $creditService->getCurrentPlan($user->id);
+
+        // Check if user can feature jobs
+        $canFeature = false;
+        if ($hasUnlimitedAccess) {
+            $canFeature = true;
+        } elseif ($currentPlan && $currentPlan->features) {
+            $features = is_string($currentPlan->features) ? json_decode($currentPlan->features, true) : ($currentPlan->features ?? []);
+            $canFeature = $features['featured'] ?? false;
+        }
+
+        // Check if user can post anonymously
+        $canPostAnonymous = false;
+        if ($hasUnlimitedAccess) {
+            $canPostAnonymous = true;
+        } elseif ($currentPlan && $currentPlan->features) {
+            $features = is_string($currentPlan->features) ? json_decode($currentPlan->features, true) : ($currentPlan->features ?? []);
+            $canPostAnonymous = $features['anonymous'] ?? false;
+        }
+
+        $data = [
+            'title' => 'Repost Job - ' . $job->title,
+            'user' => $user,
+            'employer' => $employer,
+            'job' => $job,
+            'isRepost' => true,
+            'industries' => $industries,
+            'categories' => $categories,
+            'states' => $states,
+            'creditBalance' => $creditBalance,
+            'hasUnlimitedAccess' => $hasUnlimitedAccess,
+            'canFeature' => $canFeature,
+            'canPostAnonymous' => $canPostAnonymous,
+            'questions' => model(\App\Models\JobQuestionModel::class)->where('job_id', $job->id)->findAll(),
+            'currentPlan' => $currentPlan
+        ];
+
+        return view('employers/post-job', $data);
+    }
+
     public function editJob($jobId)
     {
         $user = $this->auth->user();
@@ -1753,7 +2764,13 @@ class EmployerController extends BaseController
         $job = $jobModel->where('id', $jobId)->where('employer_id', $employer->id)->first();
 
         if (!$job) {
-            return redirect()->to('employer/my-jobs')->with('error', 'Job not found or access denied.');
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or access denied.');
+        }
+
+        // Job editing restriction: only allowed within 1 hour of posting
+        $createdAtTime = !empty($job->created_at) ? strtotime($job->created_at) : 0;
+        if ($createdAtTime > 0 && ($createdAtTime < (time() - 3600))) {
+            return redirect()->to('employer/jobs')->with('error', 'Job editing is only permitted within 1 hour of posting. Please contact JobberRecruit Support via WhatsApp (+2349014808902) or email (support@jobberrecruit.com) to request changes to this listing.');
         }
 
         // Get available data for form
@@ -1799,7 +2816,7 @@ class EmployerController extends BaseController
             'currentPlan' => $currentPlan,
         ];
 
-        return view('employers/edit-job', $data);
+        return view('employers/post-job', $data);
     }
 
     /**
@@ -1825,6 +2842,15 @@ class EmployerController extends BaseController
 
         if (!$job) {
             return $this->response->setJSON(['success' => false, 'message' => 'Job not found or access denied']);
+        }
+
+        // Job editing restriction: only allowed within 1 hour of posting
+        $createdAtTime = !empty($job->created_at) ? strtotime($job->created_at) : 0;
+        if ($createdAtTime > 0 && ($createdAtTime < (time() - 3600))) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Job editing is only permitted within 1 hour of posting. Please contact JobberRecruit Support via WhatsApp (+2349014808902) to request changes.'
+            ]);
         }
 
         // Validation rules
@@ -2006,8 +3032,6 @@ class EmployerController extends BaseController
         $user = $this->auth->user();
         $jobModel = model(JobModel::class);
         $employerModel = model(EmployerModel::class);
-        $subscriptionModel = model(UserSubscriptionModel::class);
-        $planModel = model(PlanModel::class);
 
         $employer = $employerModel->where('user_id', $user->id)->first();
 
@@ -2037,66 +3061,93 @@ class EmployerController extends BaseController
             ]);
         }
 
-        // Active subscription
-        $activeSub = $subscriptionModel
-            ->select('user_subscriptions.*, plans.features')
-            ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
-            ->where('user_subscriptions.is_active', 1)
-            ->where('user_subscriptions.user_id', $user->id)
-            ->first();
+        $creditService = new \App\Services\CreditService();
+        $hasUnlimited = $creditService->hasUnlimitedAccess($user->id);
+        $plan = $creditService->getCurrentPlan($user->id);
+        $creditBalance = $creditService->getAvailableCredits($user->id);
 
-        if ($activeSub && !empty($activeSub['features'])) {
-            $planFeatures = planFeatures(json_decode($activeSub['features'], true));
+        $canFeatureFree = false;
+        if ($hasUnlimited) {
+            $canFeatureFree = true;
+        } elseif ($plan && $plan->features) {
+            $features = is_string($plan->features) ? json_decode($plan->features, true) : (array)$plan->features;
+            $canFeatureFree = !empty($features['featured']);
         }
 
-        if (!$activeSub) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'You need an active subscription.'
-            ]);
-        }
+        $db = db_connect();
 
-        if (empty($planFeatures['featured'])) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Your plan does not support featured jobs.'
-            ]);
-        }
+        if ($canFeatureFree) {
+            // Free promotion via subscription
+            try {
+                $db->transStart();
+                $jobModel->update($jobId, [
+                    'is_featured'    => 1,
+                    'featured_until' => date('Y-m-d H:i:s', strtotime('+30 days')),
+                    'updated_at'     => date('Y-m-d H:i:s')
+                ]);
+                $db->transComplete();
 
-        $creditService = new JobCreditService();
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Transaction failed');
+                }
 
-        try {
-            // 🔐 Atomic operation
-            $db = db_connect();
-            $db->transStart();
-
-            // Deduct 5 job credit
-            $creditService->deduct($user->id, $jobId, 5.00, 'Promote Job: ' . $job->title);
-
-            // Promote job
-            $jobModel->update($jobId, [
-                'is_featured'    => 1,
-                'featured_until' => date('Y-m-d H:i:s', strtotime('+30 days')),
-                'updated_at'     => date('Y-m-d H:i:s')
-            ]);
-
-            $db->transComplete();
-
-            if ($db->transStatus() === false) {
-                throw new \Exception('Transaction failed');
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Job promoted successfully using your active subscription.'
+                ]);
+            } catch (\Throwable $e) {
+                log_message('error', 'Promote Job Failed: ' . $e->getMessage());
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'An error occurred while promoting the job.'
+                ]);
+            }
+        } else {
+            // Needs to pay via credits
+            if ($creditBalance < 5) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'You need an active subscription or at least 5 job credits to feature a job.'
+                ]);
             }
 
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Job promoted successfully. 5 credits used.'
-            ]);
-        } catch (\Throwable $e) {
-            log_message('error', 'Promote Job Failed: ' . $e->getMessage());
+            try {
+                $db->transStart();
 
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+                // Use CreditService to deduct exactly 5 credits
+                $deduction = $creditService->deductCredits($user->id, 5, 'promote_' . $jobId . '_' . time(), 'Promote Job: ' . $job->title, 'promote_job');
+
+                if (!$deduction['success']) {
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $deduction['message']
+                    ]);
+                }
+
+                $jobModel->update($jobId, [
+                    'is_featured'    => 1,
+                    'featured_until' => date('Y-m-d H:i:s', strtotime('+30 days')),
+                    'updated_at'     => date('Y-m-d H:i:s')
+                ]);
+
+                $db->transComplete();
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Transaction failed');
+                }
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Job promoted successfully. 5 credits used.'
+                ]);
+            } catch (\Throwable $e) {
+                log_message('error', 'Promote Job Failed: ' . $e->getMessage());
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'An error occurred while promoting the job.'
+                ]);
+            }
         }
     }
 
@@ -2249,29 +3300,20 @@ class EmployerController extends BaseController
         $jobModel = model(JobModel::class);
         $job = $jobModel->find($id);
         if (!$job) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Job not found'
-            ]);
+            return redirect()->to('employer/jobs')->with('error', 'Job not found.');
         }
         if ($job->employer_id !== ($employer->id ?? null)) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'You do not have permission to delete this job'
-            ]);
+            return redirect()->to('employer/jobs')->with('error', 'You do not have permission to delete this job.');
         }
         $jobModel->delete($id);
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Job deleted successfully.'
-        ]);
+        
+        return redirect()->to('employer/jobs')->with('success', 'Job permanently deleted successfully.');
     }
 
     /**
-     * Pause (close) or reopen a job. Toggles status open <-> closed.
-     * A closed job drops out of the public listing (which filters status='open').
+     * Close a job listing so it no longer accepts new applications.
      */
-    public function toggleJobStatus($id)
+    public function closeJob($id)
     {
         $user     = $this->auth->user();
         $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
@@ -2279,15 +3321,155 @@ class EmployerController extends BaseController
         $jobModel = model(JobModel::class);
         $job      = $jobModel->find($id);
 
-        if (! $job || $job->employer_id !== ($employer->id ?? null)) {
-            return redirect()->to('employer/jobs')->with('error', 'Job not found or not yours.');
+        if (! $job || (int) $job->employer_id !== (int) ($employer->id ?? 0)) {
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or access denied.');
         }
 
-        $newStatus = (strtolower((string) $job->status) === 'open') ? 'closed' : 'open';
-        $jobModel->update($id, ['status' => $newStatus]);
+        $jobModel->update($id, [
+            'status'     => 'closed',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
 
-        $label = $newStatus === 'open' ? 'reopened' : 'paused';
-        return redirect()->to('employer/jobs')->with('success', "Job {$label} successfully.");
+        return redirect()->to('employer/jobs')->with('success', "Job \"{$job->title}\" has been closed. It will no longer accept new applications, but all existing applications remain accessible.");
+    }
+
+    /**
+     * Pause (close) or reopen a job. Toggles status open <-> closed.
+     */
+    public function toggleJobStatus($id)
+    {
+        return $this->closeJob($id);
+    }
+
+    public function processRepostJob($jobId)
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer not found']);
+        }
+
+        $jobModel = model(JobModel::class);
+        $job = $jobModel->where('id', $jobId)->where('employer_id', $employer->id)->first();
+
+        if (!$job) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Job not found or access denied']);
+        }
+
+        // --- Repost Specific Logic: Check credits and charge ---
+        $creditService = new \App\Services\CreditService();
+        $hasUnlimitedAccess = $this->hasUnlimitedAccess($employer->id);
+        $creditBalance = $creditService->getAvailableCredits($user->id);
+        $repostFee = 10000.00; // Pay-as-you-go fee
+
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            if (!$hasUnlimitedAccess) {
+                if ($creditBalance > 0) {
+                    $reference = 'repost_credit_' . $employer->id . '_' . $jobId . '_' . time();
+                    $deduct = $creditService->deductCredits($user->id, 1, $reference, 'Job Repost: ' . $job->title, 'post_job');
+                    if (!$deduct['success']) {
+                        throw new \RuntimeException($deduct['message'] ?? 'Failed to deduct job credit.');
+                    }
+                } else {
+                    $walletService = new \App\Services\WalletService();
+                    $reference     = 'repost_wallet_' . $employer->id . '_' . $jobId . '_' . time();
+                    $walletService->debit($user->id, $repostFee, 'job_repost', $reference, $jobId, 'Reposted job: ' . $job->title);
+                }
+            }
+
+            // Validation rules (Same as updateJob)
+            $rules = [
+                'title' => 'required|min_length[5]|max_length[255]',
+                'description' => 'required|min_length[100]',
+                'job_type' => 'required|in_list[full-time,part-time,contract,freelance,internship]',
+                'state_id' => 'required|is_natural_no_zero',
+                'location_type' => 'required|in_list[hybrid,remote,on-site]',
+                'salary_type' => 'required|in_list[fixed,range,negotiable]',
+                'salary_period' => 'required|in_list[monthly,yearly,hourly]',
+                'industry_id' => 'required|is_natural_no_zero',
+                'category_id' => 'required|is_natural_no_zero',
+                'education_level' => 'required',
+                'experience_level' => 'required',
+                'application_method' => 'required|in_list[form,whatsapp,email,external]',
+                'application_access' => 'required|in_list[guest,authenticated,general]',
+                'accommodation' => 'required|in_list[available,not_available]',
+                'contact_email' => 'required|valid_email',
+            ];
+
+            $method = $this->request->getPost('application_method');
+            if ($method === 'email') {
+                $rules['application_email'] = 'required|valid_email';
+            } elseif ($method === 'external') {
+                $rules['external_url'] = 'required|valid_url';
+            }
+
+            if (!$this->validate($rules)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $this->validator->getErrors()
+                ]);
+            }
+
+            // Prepare Update Data
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link'];
+            $updateData = $this->request->getPost($allowed);
+
+            if ($updateData['salary_type'] !== 'negotiable' && !empty($updateData['salary'])) {
+                $updateData['salary_details'] = ucfirst($updateData['salary_type']) . ', ' . ucfirst($updateData['salary_period']) . ': ' . $updateData['salary'];
+            } else {
+                $updateData['salary_details'] = 'Negotiable';
+            }
+
+            $updateData['whatsapp_link'] = $method === 'whatsapp' ? trim($updateData['whatsapp_link'] ?? '') : null;
+            $updateData['application_email'] = $method === 'email' ? trim($updateData['application_email'] ?? '') : null;
+            $updateData['external_url'] = $method === 'external' ? trim($updateData['external_url'] ?? '') : null;
+
+            // Reset cycles for repost
+            $now = date('Y-m-d H:i:s');
+            $newDeadline = date('Y-m-d', strtotime('+30 days'));
+            $updateData['status'] = 'open';
+            $updateData['created_at'] = $now;
+            $updateData['closing_date'] = $newDeadline;
+            $updateData['deadline'] = $newDeadline;
+            $updateData['application_deadline'] = $newDeadline;
+            $updateData['updated_at'] = $now;
+
+            $jobModel->update($jobId, $updateData);
+
+            // Log activity
+            model(\App\Models\EmployerActivityModel::class)->insert([
+                'employer_id' => $employer->id,
+                'activity_type' => 'job_reposted',
+                'description' => "Reposted job: {$updateData['title']}",
+                'ip_address' => $this->request->getIPAddress()
+            ]);
+
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Job reposted successfully.',
+                'redirect' => site_url('employer/jobs')
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Job repost failed: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred during reposting: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -2447,6 +3629,12 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
+        $db = \Config\Database::connect();
+        $db->table('application_notes')->where('application_id', $id)->delete();
+        $db->table('application_status_history')->where('application_id', $id)->delete();
+        $db->table('job_application_answers')->where('application_id', $id)->delete();
+        $db->table('aptitude_test_invitations')->where('application_id', $id)->delete();
+
         $applicationModel->delete($id);
 
         return $this->response->setJSON([
@@ -2531,9 +3719,13 @@ class EmployerController extends BaseController
             return redirect()->to('employer/applications')->with('error', 'Application not found');
         }
 
-        // Verify ownership
+        // Verify ownership and fetch job details with location state name
         $jobModel = model(JobModel::class);
-        $job = $jobModel->find($application->job_id);
+        $job = $jobModel
+            ->select('jobs.*, states.name as state_name')
+            ->join('states', 'states.id = jobs.state_id', 'left')
+            ->where('jobs.id', $application->job_id)
+            ->first();
 
         if (!$job || $job->employer_id != $employer->id) {
             return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
@@ -2566,20 +3758,46 @@ class EmployerController extends BaseController
 
         $experience = [];
         $education = [];
+        $certifications = [];
+        $references = [];
+        $jobSeeker = null;
+
         if (!empty($application->job_seeker_id)) {
+            $jobSeeker = model(JobSeekerModel::class)
+                ->select('job_seekers.*, states.name as state_name')
+                ->join('states', 'states.id = job_seekers.state_id', 'left')
+                ->where('job_seekers.id', $application->job_seeker_id)
+                ->first();
             $experience = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker((int) $application->job_seeker_id);
             $education = model(\App\Models\JobSeekerEducationModel::class)->forSeeker((int) $application->job_seeker_id);
+        } elseif (!empty($application->user_id)) {
+            $jobSeeker = model(JobSeekerModel::class)
+                ->select('job_seekers.*, states.name as state_name')
+                ->join('states', 'states.id = job_seekers.state_id', 'left')
+                ->where('job_seekers.user_id', $application->user_id)
+                ->first();
+            if ($jobSeeker) {
+                $experience = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker((int) $jobSeeker->id);
+                $education = model(\App\Models\JobSeekerEducationModel::class)->forSeeker((int) $jobSeeker->id);
+            }
         }
+
+        $refModel = model(\App\Models\ApplicationReferenceModel::class);
+        $references = $refModel->where('application_id', $id)->findAll();
 
         return view('employers/application_view', [
             'title' => 'Application Details',
             'user' => $user,
             'employer' => $employer,
+            'job' => $job,
             'application' => $application,
+            'jobSeeker' => $jobSeeker,
             'notes' => $notes,
             'answers' => $answers,
             'experience' => $experience,
             'education' => $education,
+            'certifications' => $certifications,
+            'references' => $references,
             'creditBalance' => $creditBalance,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
         ]);
@@ -2801,15 +4019,33 @@ class EmployerController extends BaseController
                 ]);
             }
 
-            $rules = [
-                'company_name'      => 'required|min_length[3]',
-                'state_id'          => 'required|integer',
-                'company_size'      => 'required',
-                'contact_name'      => 'required|min_length[3]',
-                'contact_email'     => 'required|valid_email',
-                'contact_phone'     => 'required|min_length[6]',
-                'industry_ids'      => 'required',
+            $section = $this->request->getPost('section'); // e.g. 'identity','contact','about','verify','social'
+
+            // Section-aware validation — only require fields relevant to the section being saved
+            $allRules = [
+                'identity' => [
+                    'company_name'  => 'required|min_length[3]',
+                    'company_size'  => 'required',
+                    'industry_ids[]' => 'required',
+                ],
+                'contact' => [
+                    'state_id'      => 'required|integer',
+                    'contact_name'  => 'required|min_length[3]',
+                    'contact_email' => 'required|valid_email',
+                    'contact_phone' => 'required|min_length[6]',
+                ],
+                'about'  => [],
+                'verify' => [],
+                'social' => [],
             ];
+
+            // If section matches a known section, validate only that section's rules.
+            // Otherwise (Save All / unknown), validate all required fields together.
+            if ($section && isset($allRules[$section])) {
+                $rules = $allRules[$section];
+            } else {
+                $rules = array_merge(...array_values($allRules));
+            }
 
             if (!$this->validate($rules)) {
                 return $this->response->setJSON([
@@ -2885,7 +4121,7 @@ class EmployerController extends BaseController
             $employerModel->update($employer->id, $data);
 
             // === Update Industry relationships ===
-            $industryIds = $this->request->getVar('industry_ids') ?? [];
+            $industryIds = $this->request->getPost('industry_ids[]') ?? [];
             $employerIndustryModel->where('employer_id', $employer->id)->delete();
             foreach ($industryIds as $industryId) {
                 $employerIndustryModel->insert([
@@ -3231,6 +4467,15 @@ class EmployerController extends BaseController
                 return redirect()->back()->with('error', 'Database write error while saving upload record');
             }
 
+            // Send confirmation email to employer and alert to admin
+            try {
+                $emailService = new \App\Services\EmailNotificationService();
+                $emailService->sendEmployerVerificationSubmittedEmail($employer, $user);
+                $emailService->sendEmployerVerificationAdminAlertEmail($employer, $user);
+            } catch (\Throwable $e) {
+                log_message('error', 'Verification document upload email notification error: ' . $e->getMessage());
+            }
+
             return redirect()->to('employer/profile')
                 ->with('success', 'CAC certificate uploaded successfully. It will be reviewed by our team.');
         }
@@ -3328,24 +4573,18 @@ class EmployerController extends BaseController
         $subscriptionModel = model(UserSubscriptionModel::class);
         $bundleModel       = model(PlanBundleModel::class);
         $creditService     = new \App\Services\CreditService();
+        $subService        = new \App\Services\SubscriptionService();
 
         $employer = $employerModel->where('user_id', $user->id)->first();
         if (!$employer) {
             return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
         }
 
-        // Active Subscription
-        $userSubscription = $subscriptionModel
-            ->where('user_id', $user->id)
-            ->where('is_active', 1)
-            ->where('ends_at >', date('Y-m-d H:i:s'))
-            ->first();
+        // Active Subscription Details with Proration Metrics
+        $activeSubDetails = $subService->getActiveSubscriptionDetails($user->id);
 
-        if ($userSubscription) {
-            $userSubscription = (object) $userSubscription;
-        }
-
-        $currentPlan = $userSubscription ? $planModel->find($userSubscription->plan_id) : null;
+        $userSubscription = $activeSubDetails['has_active'] ? $activeSubDetails['subscription'] : null;
+        $currentPlan      = $activeSubDetails['has_active'] ? $activeSubDetails['plan'] : null;
 
         // Get the single subscription plan
         $subscriptionPlan = $planModel
@@ -3360,26 +4599,69 @@ class EmployerController extends BaseController
                 : $subscriptionPlan->pricing_tiers;
         }
 
+        // Default initial proration info for 1 month selection
+        $initialProration = [];
+        if ($subscriptionPlan) {
+            $initialProration = $subService->calculateUpgradeProration($user->id, $subscriptionPlan->id, 1);
+        }
+
         $bundles = $bundleModel
             ->where('is_active', 1)
             ->orderBy('job_credits', 'ASC')
             ->findAll();
 
         $creditBalance = $creditService->getAvailableCredits($user->id);
+        $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($user->id);
 
         $wallet = (new \App\Services\WalletService())->getOrCreateWallet($user->id);
         $walletBalance = (float) ($wallet->balance ?? 0.0);
 
         return view('employers/pricing', [
-            'title'            => 'Pricing & Plans',
-            'user'           => $user,
-            'employer'         => $employer,
-            'currentPlan'      => $currentPlan,
-            'bundles'          => $bundles,
-            'creditBalance'    => $creditBalance,
-            'pricingTiers'     => $pricingTiers,           // ← Important
-            'subscriptionPlan' => $subscriptionPlan,        // optional
-            'walletBalance'    => $walletBalance,
+            'title'              => 'Pricing & Plans',
+            'user'               => $user,
+            'employer'           => $employer,
+            'currentPlan'        => $currentPlan,
+            'userSubscription'   => $userSubscription,
+            'activeSubDetails'   => $activeSubDetails,
+            'initialProration'   => $initialProration,
+            'bundles'            => $bundles,
+            'creditBalance'      => $creditBalance,
+            'hasUnlimitedAccess' => $hasUnlimitedAccess,
+            'pricingTiers'       => $pricingTiers,
+            'subscriptionPlan'   => $subscriptionPlan,
+            'walletBalance'      => $walletBalance,
+        ]);
+    }
+
+    /**
+     * AJAX Endpoint to calculate upgrade proration in real-time
+     */
+    public function calculateProrationAjax()
+    {
+        $user = $this->auth->user();
+        if (!$user) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $payload = $this->request->getJSON(true) ?: $this->request->getPost();
+        $months  = (int) ($payload['duration_months'] ?? 1);
+
+        $planModel        = model(PlanModel::class);
+        $subscriptionPlan = $planModel
+            ->where('plan_type', 'subscription')
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$subscriptionPlan) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Subscription plan not found']);
+        }
+
+        $subService = new \App\Services\SubscriptionService();
+        $proration  = $subService->calculateUpgradeProration($user->id, (int)$subscriptionPlan->id, $months);
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'proration' => $proration
         ]);
     }
 
@@ -3491,16 +4773,109 @@ class EmployerController extends BaseController
                 ]);
             }
 
-            $amount = (float)$tiers[$months];
+            $subService = new \App\Services\SubscriptionService();
+            $proration  = $subService->calculateUpgradeProration($user->id, (int)$plan->id, $months);
+
+            $amount = (float) $proration['net_amount_due'];
 
             $description = "{$plan->name} ({$months} Month" . ($months > 1 ? 's' : '') . ")";
+            if ($proration['proration_discount'] > 0) {
+                $description .= " (Prorated credit applied: ₦" . number_format($proration['proration_discount'], 2) . ")";
+            }
 
             $metadata = [
                 'type'        => 'subscription',
                 'plan_id'     => (int)$plan->id,
-                'plan_code'  => $plan->code,
+                'plan_code'   => $plan->code,
                 'months'      => $months,
+                'proration'   => $proration,
             ];
+
+            // If zero net amount due because unused balance covers the cost:
+            if ($amount <= 0.00) {
+                $reference = 'sub_upgrade_zero_' . uniqid();
+                $db = db_connect();
+                $db->transStart();
+
+                try {
+                    $employerModel = model(EmployerModel::class);
+                    $employer = $employerModel->where('user_id', $user->id)->first();
+                    $subscriptionModel = model(UserSubscriptionModel::class);
+                    $paymentModel = model(PaymentModel::class);
+
+                    $paymentId = $paymentModel->insert([
+                        'user_id'        => $user->id,
+                        'employer_id'    => $employer ? $employer->id : null,
+                        'reference'      => $reference,
+                        'amount'         => 0.00,
+                        'status'         => 'paid',
+                        'payment_method' => 'proration_credit',
+                        'metadata'       => json_encode($metadata),
+                        'paid_at'        => date('Y-m-d H:i:s')
+                    ]);
+
+                    // Deactivate old active subscriptions
+                    $subscriptionModel->where('user_id', $user->id)->set(['is_active' => 0])->update();
+
+                    $startsAt = date('Y-m-d H:i:s');
+                    $endsAt = date('Y-m-d H:i:s', strtotime("+{$months} months"));
+
+                    $subscriptionId = $subscriptionModel->insert([
+                        'user_id'    => $user->id,
+                        'plan_id'    => $plan->id,
+                        'starts_at'  => $startsAt,
+                        'ends_at'    => $endsAt,
+                        'is_active'  => 1,
+                        'auto_renew' => 0
+                    ]);
+
+                    $creditService = new \App\Services\CreditService();
+                    if ($employer && $creditService->planProvidesUnlimitedPosting($plan)) {
+                        $employerModel->update($employer->id, [
+                            'unlimited_access' => 1,
+                            'unlimited_until'  => $endsAt
+                        ]);
+                    }
+
+                    if ($plan->monthly_job_credits > 0) {
+                        $creditService->addCredits(
+                            $user->id,
+                            $plan->monthly_job_credits * $months,
+                            'subscription',
+                            (string)$subscriptionId,
+                            $endsAt
+                        );
+                    }
+
+                    try {
+                        (new \App\Services\InvoiceService())->sendSubscriptionInvoice(
+                            $user->id,
+                            $subscriptionId,
+                            $paymentId,
+                            0.00,
+                            $months,
+                            $proration
+                        );
+                    } catch (\Exception $e) {
+                        log_message('error', 'Failed to send zero-amount subscription invoice: ' . $e->getMessage());
+                    }
+
+                    $db->transComplete();
+
+                    return $this->response->setJSON([
+                        'success'     => true,
+                        'zero_amount' => true,
+                        'message'     => 'Subscription successfully upgraded using your active subscription balance credit!',
+                        'redirect'    => base_url('employer/pricing')
+                    ]);
+                } catch (\Exception $e) {
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Upgrade failed: ' . $e->getMessage()
+                    ]);
+                }
+            }
         }
 
         // =========================
@@ -3554,9 +4929,17 @@ class EmployerController extends BaseController
 
         $reference = 'REF-' . strtoupper(uniqid());
 
+        $paystackKey = env('paystack_public_key');
+        if (empty($paystackKey)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Paystack API key is not configured. Please add paystack_public_key and paystack_secret_key to your .env file.'
+            ]);
+        }
+
         return $this->response->setJSON([
             'success'     => true,
-            'paystack'  => env('paystack_public_key'),
+            'paystack'    => $paystackKey,
             'email'       => $email,
             'amount'      => (int)($amount * 100), // Kobo
             'reference'   => $reference,
@@ -3747,7 +5130,7 @@ class EmployerController extends BaseController
         try {
             // Verify payment with Paystack
             $paystack = service('paystack');
-            $verification = $paystack->verifyTransaction($reference);
+            $verification = $paystack->verify($reference);
 
             if (!$verification['status'] || $verification['data']['status'] !== 'success') {
                 log_message('error', 'Payment verification failed for reference: ' . $reference);
@@ -3755,7 +5138,8 @@ class EmployerController extends BaseController
             }
 
             $amount = $verification['data']['amount'] / 100;
-            $metadata = $verification['data']['metadata']['app_data'] ?? [];
+            $rawMeta = $verification['data']['metadata'] ?? [];
+            $metadata = $rawMeta['app_data'] ?? $rawMeta;
 
             $type = $metadata['type'] ?? null;
             $db = db_connect();
@@ -3825,6 +5209,14 @@ class EmployerController extends BaseController
                     'auto_renew' => 0
                 ]);
 
+                // Update employer unlimited access flag if plan provides unlimited posting
+                if ($creditService->planProvidesUnlimitedPosting($plan)) {
+                    $employerModel->update($employer->id, [
+                        'unlimited_access' => 1,
+                        'unlimited_until'  => $endsAt
+                    ]);
+                }
+
                 // Add monthly job credits to wallet
                 if ($plan->monthly_job_credits > 0) {
                     $creditService->addCredits(
@@ -3843,7 +5235,8 @@ class EmployerController extends BaseController
                         $subscriptionId,
                         $paymentId,
                         $amount,
-                        $months
+                        $months,
+                        $metadata['proration'] ?? null
                     );
                 } catch (\Exception $e) {
                     log_message('error', 'Failed to send subscription invoice: ' . $e->getMessage());
@@ -3890,6 +5283,33 @@ class EmployerController extends BaseController
                 }
 
                 $message = "Successfully purchased {$bundle->name}! {$credits} job credits added to your account. An invoice has been sent to your email.";
+            }
+            // Handle UNLOCK (candidate profile)
+            elseif ($type === 'unlock') {
+                $candidateId = $metadata['candidate_id'] ?? null;
+
+                if (!$candidateId) {
+                    throw new \Exception('Candidate ID not found in metadata');
+                }
+
+                // Updated unlock handling: ensure only one unlock per candidate
+                $existingUnlock = $db->table('candidate_unlocks')
+                    ->where('employer_id', $employer->id)
+                    ->where('job_seeker_id', $candidateId)
+                    ->countAllResults();
+
+                if ($existingUnlock) {
+                    $message = 'Candidate already unlocked.';
+                    $emailSent = true;
+                } else {
+                    $db->table('candidate_unlocks')->insert([
+                        'employer_id'   => $employer->id,
+                        'job_seeker_id' => $candidateId,
+                        'created_at'    => date('Y-m-d H:i:s'),
+                    ]);
+                    $message = 'Candidate profile unlocked successfully!';
+                    $emailSent = true;
+                }
             } else {
                 throw new \Exception('Invalid purchase type');
             }
@@ -3901,6 +5321,11 @@ class EmployerController extends BaseController
                     session()->setFlashdata('warning', $message . ' (Invoice email could not be sent, but you can download it from your account)');
                 } else {
                     session()->setFlashdata('success', $message);
+                }
+
+                // For unlocks, redirect back to the candidate profile so they see unlocked data immediately
+                if ($type === 'unlock' && !empty($metadata['candidate_id'])) {
+                    return redirect()->to('employer/candidates/view/' . (int)$metadata['candidate_id']);
                 }
 
                 return redirect()->to('employer/pricing');
@@ -3982,15 +5407,18 @@ class EmployerController extends BaseController
             ->get()
             ->getRow()->credits ?? 0;
 
+        $hasUnlimitedAccess = (new \App\Services\CreditService())->hasUnlimitedAccess($user->id);
+
         /* -------------------------------------------------
      * ENSURE STARTER ACCESS (ONE-TIME CREDIT)
+     * Skip if employer already has unlimited access
      * ------------------------------------------------- */
         $starterPlan = $planModel
             ->where('code', 'starter')
             ->where('billing_type', 'free')
             ->first();
 
-        if ($starterPlan && $creditBalance == 0 && !$userPlan) {
+        if (!$hasUnlimitedAccess && $starterPlan && $creditBalance == 0 && !$userPlan) {
             // Give ONE starter credit only once
             $creditWalletModel->insert([
                 'user_id' => $user->id,
@@ -4023,17 +5451,18 @@ class EmployerController extends BaseController
      * PASS TO VIEW
      * ------------------------------------------------- */
         return view('employers/bundles', [
-            'title'            => 'Job Bundles',
-            'user'             => $user,
-            'employer'         => $employer,
-            'plans'            => $plans,
-            'bundles'          => $bundles,
-            'user_plan'        => $userPlan,
-            'creditBalance'    => (int) $creditBalance,
-            'bundleHistory'    => $bundleHistory,
-            'recommendedBundle' => $recommendedBundle,
-            'subscriptionPlan' => $subscriptionPlan,
-            'pricingTiers'     => $pricingTiers,
+            'title'              => 'Job Bundles',
+            'user'               => $user,
+            'employer'           => $employer,
+            'plans'              => $plans,
+            'bundles'            => $bundles,
+            'user_plan'          => $userPlan,
+            'creditBalance'      => (int) $creditBalance,
+            'hasUnlimitedAccess' => $hasUnlimitedAccess,
+            'bundleHistory'      => $bundleHistory,
+            'recommendedBundle'  => $recommendedBundle,
+            'subscriptionPlan'   => $subscriptionPlan,
+            'pricingTiers'       => $pricingTiers,
         ]);
     }
 
@@ -5169,62 +6598,142 @@ class EmployerController extends BaseController
     }
 
     /**
+     * Deactivate employer account (reversible: hides company and active jobs)
+     */
+    public function deactivateAccount()
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/settings')->with('error', 'Employer profile not found.');
+        }
+
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            // Mark employer as inactive
+            $employerModel->update($employer->id, ['is_active' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
+
+            // Close/pause all open jobs
+            $jobModel = model(JobModel::class);
+            $jobModel->where('employer_id', $employer->id)
+                ->where('status', 'open')
+                ->set(['status' => 'closed', 'updated_at' => date('Y-m-d H:i:s')])
+                ->update();
+
+            $db->transCommit();
+
+            auth()->logout();
+            return redirect()->to('login')->with('success', 'Your employer account has been deactivated. Your public profile and job listings are hidden. You can log in anytime to reactivate your account.');
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return redirect()->to('employer/settings')->with('error', 'Failed to deactivate account: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete employer account (permanent)
+     */
+    public function deleteAccount()
+    {
+        $user = $this->auth->user();
+        $password = $this->request->getPost('confirm_password');
+
+        $authenticator = auth()->getAuthenticator();
+        if (!$authenticator->check(['email' => $user->email, 'password' => $password])) {
+            return redirect()->to('employer/settings')->with('error', 'Incorrect password. Account deletion cancelled.');
+        }
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        $db = \Config\Database::connect();
+        $safeDelete = function ($table, $col, $val) use ($db) {
+            try {
+                if ($db->tableExists($table)) {
+                    if (is_array($val)) {
+                        $db->table($table)->whereIn($col, $val)->delete();
+                    } else {
+                        $db->table($table)->where($col, $val)->delete();
+                    }
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Employer deleteAccount cleanup failed on ' . $table . ': ' . $e->getMessage());
+            }
+        };
+
+        if ($employer) {
+            $jobModel = model(JobModel::class);
+            $jobIds = array_column($jobModel->where('employer_id', $employer->id)->findAll(), 'id');
+
+            if (!empty($jobIds)) {
+                $appModel = model(JobApplicationModel::class);
+                $appIds = array_column($appModel->whereIn('job_id', $jobIds)->findAll(), 'id');
+                if (!empty($appIds)) {
+                    foreach (['application_notes', 'application_status_history', 'job_application_answers', 'aptitude_test_invitations'] as $t) {
+                        try {
+                            if ($db->tableExists($t)) {
+                                $db->table($t)->whereIn('application_id', $appIds)->delete();
+                            }
+                        } catch (\Throwable $e) {}
+                    }
+                    $appModel->whereIn('job_id', $jobIds)->delete();
+                }
+                $safeDelete('job_clicks', 'job_id', $jobIds);
+                $jobModel->where('employer_id', $employer->id)->delete();
+            }
+
+            foreach ([
+                'employer_documents' => 'employer_id',
+                'candidate_unlocks'  => 'employer_id',
+                'candidate_alerts'   => 'employer_id',
+                'job_notifications' => 'employer_id',
+                'conversations'      => 'employer_id',
+            ] as $tbl => $col) {
+                $safeDelete($tbl, $col, $employer->id);
+            }
+
+            $employerModel->delete($employer->id);
+        }
+
+        foreach ([
+            'wallets'                 => 'user_id',
+            'wallet_transactions'     => 'user_id',
+            'job_credit_transactions' => 'user_id',
+            'user_subscriptions'      => 'user_id',
+            'testimonials'            => 'user_id',
+            'password_resets'         => 'user_id',
+        ] as $tbl => $col) {
+            $safeDelete($tbl, $col, $user->id);
+        }
+
+        $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
+        $userModel->delete($user->id, true);
+
+        auth()->logout();
+        return redirect()->to('/')->with('success', 'Your employer account and all associated data have been permanently deleted.');
+    }
+
+    /**
      * Send email notification for job posting
      */
     protected function sendJobPostingEmail($employer, $jobTitle, $jobId)
     {
         try {
-            $email = \Config\Services::email();
+            $user = $this->auth ? $this->auth->user() : null;
+            $job = (object) [
+                'id'       => $jobId,
+                'title'    => $jobTitle,
+                'location' => 'Nigeria',
+            ];
 
-            // Configure email
-            $email->setTo($employer->contact_email ?? $employer->company_email);
-            $email->setSubject("Job Posted: {$jobTitle} - Pending Review");
-            $email->setMailType('html');
-
-            $message = "
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; background: #f8f9fa; }
-                .button { display: inline-block; background: #0d6efd; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px; }
-                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h2>Job Posted Successfully!</h2>
-                </div>
-                <div class='content'>
-                    <p>Hello <strong>" . htmlspecialchars($employer->company_name) . "</strong>,</p>
-                    <p>Your job \"<strong>" . htmlspecialchars($jobTitle) . "</strong>\" has been submitted successfully and is pending admin review.</p>
-                    <p>You will be notified once it's approved and live on our platform.</p>
-                    <p>
-                        <a href='" . base_url("employer/jobs/view/{$jobId}") . "' class='button'>View Job Details</a>
-                    </p>
-                    <p>Thank you for using Jobber Recruit!</p>
-                </div>
-                <div class='footer'>
-                    <p>&copy; " . date('Y') . " Jobber Recruit. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        ";
-
-            $email->setMessage($message);
-
-            if (!$email->send()) {
-                log_message('error', 'Failed to send job posting email: ' . $email->printDebugger(['headers']));
-                return false;
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            log_message('error', 'Email sending failed: ' . $e->getMessage());
+            $emailService = new \App\Services\EmailNotificationService();
+            return $emailService->sendJobPostingSubmittedEmail($job, $employer, $user ?: (object)['email' => ($employer->contact_email ?? $employer->company_email)]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Job posting email failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -5557,13 +7066,17 @@ class EmployerController extends BaseController
         $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
         $filters = [
             'keyword'          => $this->request->getGet('keyword'),
-            'state_id'         => $this->request->getGet('state'),
+            'state_id'         => $this->request->getGet('state') ?: $this->request->getGet('state_id'),
+            'city'             => $this->request->getGet('city'),
+            'location'         => (array) $this->request->getGet('location'),
+            'skill'            => (array) $this->request->getGet('skill'),
+            'activity'         => $this->request->getGet('activity'),
             'employment_type'  => (array) $this->request->getGet('employment_type'),
-            'experience_years' => $this->request->getGet('experience'),
+            'experience_years' => $this->request->getGet('experience') ?: $this->request->getGet('experience_years'),
             'job_title'        => (array) $this->request->getGet('job_title'),
             'availability'     => (array) $this->request->getGet('availability'),
             'education_level'  => (array) $this->request->getGet('education_level'),
-            'sort'             => $this->request->getGet('sort'),
+            'sort'             => $this->request->getGet('sort') ?: 'best_match',
         ];
 
         $candidates = $jobSeekerModel->getCandidates($filters, 20);
@@ -5574,8 +7087,9 @@ class EmployerController extends BaseController
             'employer'   => $employer,
             'candidates' => $candidates,
             'pager'      => $jobSeekerModel->pager,
-            'total'      => $jobSeekerModel->pager->getTotal(),
+            'total'      => $jobSeekerModel->pager ? $jobSeekerModel->pager->getTotal() : count($candidates),
             'hasUnlimitedAccess' => $employer ? $this->hasUnlimitedAccess($employer->id) : false,
+            'states'             => model(\App\Models\StateModel::class)->orderBy('name', 'ASC')->findAll(),
 
             // sidebar counts
             'jobTitleCounts'      => $jobSeekerModel->countByJobTitle(),
@@ -5621,6 +7135,20 @@ class EmployerController extends BaseController
             ->where('job_seeker_id', $id)
             ->countAllResults() > 0;
 
+        // If candidate profile visibility is OFF, candidate is not publicly searchable or discoverable
+        if (empty($candidate->is_visible) && !$isUnlocked) {
+            // Check if candidate actively applied to one of this employer's jobs
+            $hasApplied = $db->table('job_applications')
+                ->join('jobs', 'jobs.id = job_applications.job_id')
+                ->where('jobs.employer_id', $employer->id)
+                ->where('job_applications.job_seeker_id', $id)
+                ->countAllResults() > 0;
+
+            if (!$hasApplied) {
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('This candidate profile is private and not currently visible to employers.');
+            }
+        }
+
         $creditService = new CreditService();
         $hasUnlimited = $creditService->hasUnlimitedAccess($this->auth->user()->id);
 
@@ -5649,56 +7177,138 @@ class EmployerController extends BaseController
         ]);
     }
 
+    public function downloadCv(int $id)
+    {
+        $candidateId = $id;
+        $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
+        if (!$employer) {
+            return redirect()->back()->with('error', 'Employer profile not found.');
+        }
+
+        $db = db_connect();
+
+        // Check if unlocked
+        $isUnlocked = $db->table('candidate_unlocks')
+            ->where('employer_id', $employer->id)
+            ->where('job_seeker_id', $candidateId)
+            ->countAllResults() > 0;
+
+        $creditService = new \App\Services\CreditService();
+        $hasUnlimited = $creditService->hasUnlimitedAccess($this->auth->user()->id);
+
+        if (!$isUnlocked && !$hasUnlimited) {
+            return redirect()->back()->with('error', 'You must unlock the candidate profile to download the CV.');
+        }
+
+        $candidate = model(JobSeekerModel::class)->find($candidateId);
+        if (!$candidate || empty($candidate->resume)) {
+            return redirect()->back()->with('error', 'This candidate has not uploaded a CV.');
+        }
+
+        return $this->response->download($candidate->resume, null);
+    }
+
     public function unlockCandidate()
     {
         if ($this->request->getMethod() !== 'POST') {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
         }
 
-        $candidateId = $this->request->getPost('candidate_id');
+        $candidateId = (int) $this->request->getPost('candidate_id');
+        if (!$candidateId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid candidate ID.']);
+        }
+
         $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
         if (!$employer) {
             return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found.']);
         }
 
-        $walletService = new \App\Services\WalletService();
-        $unlockFee = 5000.00; // ₦5,000 one-time unlock fee
+        $db        = db_connect();
+        $unlockFee = 5000.00;
 
+        // ── IDEMPOTENCY GUARD ───────────────────────────────────────────────
+        // Check BEFORE touching the wallet — if already unlocked, return
+        // success immediately so the UI refreshes without any new charge.
+        $alreadyUnlocked = $db->table('candidate_unlocks')
+            ->where('employer_id', $employer->id)
+            ->where('job_seeker_id', $candidateId)
+            ->countAllResults() > 0;
+
+        if ($alreadyUnlocked) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Candidate profile already unlocked!'
+            ]);
+        }
+
+        // Unlimited plan bypass (PDF Requirement 4.7)
+        $hasUnlimitedAccess = $this->hasUnlimitedAccess($employer->id);
+        if ($hasUnlimitedAccess) {
+            $db->table('candidate_unlocks')->insert([
+                'employer_id'   => $employer->id,
+                'job_seeker_id' => $candidateId,
+                'created_at'    => date('Y-m-d H:i:s'),
+            ]);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Candidate unlocked successfully (included with your Unlimited Plan).'
+            ]);
+        }
+
+        // Deterministic reference (no time()) so WalletService's own
+        // duplicate-reference check also guards against rapid double-clicks.
+        $reference     = 'unlock_' . $employer->id . '_' . $candidateId;
+        $walletService = new \App\Services\WalletService();
+
+        $db->transBegin();
         try {
-            $reference = 'unlock_' . $employer->id . '_' . $candidateId . '_' . time();
+            // Debit wallet first
             $walletService->debit(
                 $this->auth->user()->id,
                 $unlockFee,
                 'candidate_unlock',
                 $reference,
-                (int)$candidateId,
-                'Unlocked candidate: ' . $candidateId
+                $candidateId,
+                'Unlocked candidate profile #' . $candidateId
             );
 
-            $db = db_connect();
+            // Record the unlock — only reached if debit succeeded
             $db->table('candidate_unlocks')->insert([
-                'employer_id' => $employer->id,
+                'employer_id'   => $employer->id,
                 'job_seeker_id' => $candidateId,
-                'unlocked_at' => date('Y-m-d H:i:s')
+                'created_at'    => date('Y-m-d H:i:s'),
             ]);
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Database error recording unlock.');
+            }
+
+            $db->transCommit();
 
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Candidate unlocked successfully'
             ]);
         } catch (\RuntimeException $e) {
+            $db->transRollback();
+            log_message('error', 'Candidate unlock (wallet) failed: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Insufficient wallet balance. Please fund your wallet with ₦' . number_format($unlockFee, 2) . ' to unlock.'
+                'message' => str_contains($e->getMessage(), 'Insufficient')
+                    ? 'Insufficient wallet balance. Please fund your wallet with ₦' . number_format($unlockFee, 2) . ' to unlock.'
+                    : 'Failed to unlock candidate. Please try again.'
             ]);
         } catch (\Throwable $e) {
-            log_message('error', 'Candidate unlock failed: ' . $e->getMessage());
+            $db->transRollback();
+            log_message('error', 'Candidate unlock (wallet) error: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Failed to unlock candidate: ' . $e->getMessage()
+                'message' => 'An unexpected error occurred. Please try again.'
             ]);
         }
     }
+
 
     public function verifyUnlockAjax()
     {
@@ -5706,13 +7316,45 @@ class EmployerController extends BaseController
             return $this->response->setStatusCode(403);
         }
 
-        $reference = $this->request->getPost('reference');
-        $candidateId = $this->request->getPost('candidate_id');
+        $reference   = $this->request->getPost('reference');
+        $candidateId = (int) $this->request->getPost('candidate_id');
 
         if (! $reference || ! $candidateId) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Missing reference or candidate ID'
+            ]);
+        }
+
+        $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found.']);
+        }
+
+        $db = db_connect();
+
+        // ── IDEMPOTENCY GUARD ──────────────────────────────────────────────
+        // If the unlock record already exists (e.g. user refreshed or retried)
+        // return success immediately — never verify/charge a second time.
+        $alreadyUnlocked = $db->table('candidate_unlocks')
+            ->where('employer_id', $employer->id)
+            ->where('job_seeker_id', $candidateId)
+            ->countAllResults() > 0;
+
+        if ($alreadyUnlocked) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Candidate already unlocked.'
+            ]);
+        }
+
+        // ── Also guard against duplicate Paystack references ───────────────
+        $paymentModel    = model(PaymentModel::class);
+        $referenceExists = $paymentModel->where('reference', $reference)->countAllResults() > 0;
+        if ($referenceExists) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Payment already processed.'
             ]);
         }
 
@@ -5722,52 +7364,51 @@ class EmployerController extends BaseController
         if (empty($verify['data']) || $verify['data']['status'] !== 'success') {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Payment verification failed'
+                'message' => 'Payment verification failed. Please contact support if money was deducted.'
             ]);
         }
 
-        $employer = model(EmployerModel::class)->where('user_id', $this->auth->user()->id)->first();
-        if (!$employer) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found.']);
-        }
-
-        // Insert into candidate_unlocks
-        $db = db_connect();
-        
-        // Check if already unlocked
-        $exists = $db->table('candidate_unlocks')
-            ->where('employer_id', $employer->id)
-            ->where('job_seeker_id', $candidateId)
-            ->countAllResults();
-
-        if (!$exists) {
+        // ── Atomic: record unlock + payment in one transaction ─────────────
+        $db->transBegin();
+        try {
             $db->table('candidate_unlocks')->insert([
-                'employer_id' => $employer->id,
+                'employer_id'   => $employer->id,
                 'job_seeker_id' => $candidateId,
-                'unlocked_at' => date('Y-m-d H:i:s')
+                'created_at'    => date('Y-m-d H:i:s'),
             ]);
-            
-            // Also log payment in payments table
-            $paymentModel = model(PaymentModel::class);
+
             $paymentModel->insert([
-                'user_id' => $this->auth->user()->id,
-                'employer_id' => $employer->id,
-                'reference' => $reference,
-                'amount' => 5000.00,
-                'status' => 'paid',
+                'user_id'        => $this->auth->user()->id,
+                'employer_id'    => $employer->id,
+                'reference'      => $reference,
+                'amount'         => $verify['data']['amount'] / 100,
+                'status'         => 'paid',
                 'payment_method' => $verify['data']['channel'] ?? 'card',
-                'metadata' => json_encode([
-                    'type' => 'unlock',
-                    'candidate_id' => (int)$candidateId,
-                    'gateway_response' => $verify
+                'metadata'       => json_encode([
+                    'type'             => 'unlock',
+                    'candidate_id'     => $candidateId,
+                    'gateway_response' => $verify,
                 ]),
-                'paid_at' => date('Y-m-d H:i:s')
+                'paid_at'        => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Database error recording Paystack unlock.');
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'verifyUnlockAjax DB error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Payment received but we could not record your unlock. Please contact support with reference: ' . $reference
             ]);
         }
 
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Candidate unlocked successfully via Paystack'
+            'message' => 'Candidate unlocked successfully'
         ]);
     }
 
@@ -5888,6 +7529,12 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'No valid applications found']);
         }
 
+        $db = \Config\Database::connect();
+        $db->table('application_notes')->whereIn('application_id', $allowedIds)->delete();
+        $db->table('application_status_history')->whereIn('application_id', $allowedIds)->delete();
+        $db->table('job_application_answers')->whereIn('application_id', $allowedIds)->delete();
+        $db->table('aptitude_test_invitations')->whereIn('application_id', $allowedIds)->delete();
+
         $applicationModel->whereIn('id', $allowedIds)->delete();
 
         return $this->response->setJSON(['success' => true, 'message' => 'Applications deleted successfully']);
@@ -5907,18 +7554,33 @@ class EmployerController extends BaseController
         }
 
         $user = $this->auth->user();
+        $type = $this->request->getPost('type') ?? 'internal';
         $employerModel = model(\App\Models\EmployerModel::class);
         $employer = $employerModel->where('user_id', $user->id)->first();
 
         $noteModel = model(\App\Models\ApplicationNoteModel::class);
-        $noteModel->insert([
+        $noteId = $noteModel->insert([
             'application_id' => $applicationId,
-            'employer_id' => $employer->id ?? 0,
-            'note' => $note,
-            'created_by' => $user->id ?? 0
+            'employer_id'    => $employer->id ?? 0,
+            'note'           => $note,
+            'type'           => $type,
+            'created_by'     => $user->id ?? 0
         ]);
 
-        return $this->response->setJSON(['success' => true, 'message' => 'Note added successfully']);
+        $insertedNote = [
+            'id'              => $noteId,
+            'application_id'  => $applicationId,
+            'note'            => $note,
+            'type'            => $type,
+            'created_by_name' => $user->fullname ?? $user->username ?? 'Team Member',
+            'created_at'      => date('d M, H:i')
+        ];
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Note added successfully',
+            'note'    => $insertedNote
+        ]);
     }
 
     public function deleteApplicationNote($id)
@@ -5957,9 +7619,54 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['error' => 'Job title is required to generate a description.']);
         }
 
+        $generateTemplate = function() use ($title, $industry, $experience, $skills) {
+            $cleanTitle = esc($title);
+            $cleanIndustry = !empty($industry) ? esc($industry) : 'our dynamic organization';
+            $cleanExp = !empty($experience) ? esc($experience) : 'relevant professional';
+            $skillList = !empty($skills) ? array_map('trim', explode(',', $skills)) : [];
+
+            $html = "<p><strong>About the Role:</strong></p>\n" .
+                    "<p>We are looking for a talented and driven <strong>{$cleanTitle}</strong> to join our team in the {$cleanIndustry} sector. In this role, you will contribute directly to our operational success, collaborate with talented colleagues, and help elevate our standards of excellence.</p>\n" .
+                    "<p><strong>Key Responsibilities:</strong></p>\n" .
+                    "<ul>\n" .
+                    "<li>Oversee and execute day-to-day duties and core deliverables for the {$cleanTitle} position.</li>\n" .
+                    "<li>Collaborate closely with internal teams and external stakeholders to achieve business objectives.</li>\n" .
+                    "<li>Identify opportunities to improve processes, workflows, and service quality.</li>\n" .
+                    "<li>Ensure compliance with company guidelines, industry best practices, and relevant standards.</li>\n" .
+                    "<li>Track performance metrics and provide actionable reporting to department leadership.</li>\n" .
+                    "</ul>\n" .
+                    "<p><strong>Requirements &amp; Qualifications:</strong></p>\n" .
+                    "<ul>\n" .
+                    "<li>Demonstrated experience ({$cleanExp} level) in a similar capacity or field.</li>\n";
+
+            if (!empty($skillList)) {
+                foreach ($skillList as $sk) {
+                    if (!empty($sk)) {
+                        $html .= "<li>Proficiency in " . esc($sk) . ".</li>\n";
+                    }
+                }
+            } else {
+                $html .= "<li>Strong problem-solving, critical thinking, and communication skills.</li>\n" .
+                         "<li>Ability to work autonomously as well as collaboratively in a fast-paced environment.</li>\n";
+            }
+
+            $html .= "<li>Relevant academic qualification, HND, Bachelor's degree, or equivalent practical experience.</li>\n" .
+                     "</ul>\n" .
+                     "<p><strong>What We Offer:</strong></p>\n" .
+                     "<ul>\n" .
+                     "<li>Competitive salary package commensurate with experience.</li>\n" .
+                     "<li>Continuous professional development, mentorship, and career growth opportunities.</li>\n" .
+                     "<li>Supportive, inclusive, and collaborative work culture.</li>\n" .
+                     "</ul>";
+
+            return $html;
+        };
+
         if (empty(env('GEMINI_API_KEY'))) {
-            return $this->response->setStatusCode(503)->setJSON([
-                'error' => 'AI generation is not configured. Add GEMINI_API_KEY to the server environment, or write the description manually.'
+            return $this->response->setJSON([
+                'status' => 'success',
+                'description' => $generateTemplate(),
+                'fallback' => true
             ]);
         }
 
@@ -5985,8 +7692,10 @@ class EmployerController extends BaseController
             $result = $aiService->generate($prompt);
 
             if (str_starts_with($result, 'Offline Mode Active:') || str_starts_with($result, 'AI Error:')) {
-                return $this->response->setStatusCode(503)->setJSON([
-                    'error' => 'AI generation is temporarily unavailable. Your form has not been changed.'
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'description' => $generateTemplate(),
+                    'fallback' => true
                 ]);
             }
             
@@ -5998,9 +7707,11 @@ class EmployerController extends BaseController
 
             return $this->response->setJSON(['status' => 'success', 'description' => trim($result)]);
         } catch (\Throwable $e) {
-            log_message('error', 'Employer job AI generation failed: ' . $e->getMessage());
-            return $this->response->setStatusCode(503)->setJSON([
-                'error' => 'AI generation is temporarily unavailable. Your form has not been changed.'
+            log_message('error', 'Employer job AI generation fallback: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'success',
+                'description' => $generateTemplate(),
+                'fallback' => true
             ]);
         }
     }

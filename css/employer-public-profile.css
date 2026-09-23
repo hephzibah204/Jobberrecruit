@@ -143,7 +143,7 @@ svg { flex-shrink: 0; }
 /* ══ NAVBAR ══ */
 .navbar {
   position: sticky; top: 0; z-index: 1000;
-  background: rgba(255,255,255,.92); backdrop-filter: saturate(180%) blur(12px);
+  background: rgba(255,255,255,.92); -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 6px rgba(10,47,87,.06);
   padding-top: env(safe-area-inset-top, 0);
@@ -328,7 +328,7 @@ svg { flex-shrink: 0; }
   position: relative; z-index: 1;
   background: rgba(10,47,87,.55);
   border-top: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   overflow: hidden; display: flex; align-items: stretch;
 }
 .ticker-label {
@@ -925,7 +925,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
   .filters.open { transform: translateX(0); }
   .filters-overlay {
     position: fixed; inset: 0; background: rgba(10,47,87,.5); z-index: 1100;
-    opacity: 0; visibility: hidden; transition: opacity .2s; backdrop-filter: blur(2px);
+    opacity: 0; visibility: hidden; transition: opacity .2s; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
   }
   .filters-overlay.open { opacity: 1; visibility: visible; }
   .filters-toggle {
@@ -1254,7 +1254,7 @@ main, .section, .jobs-layout, .container,
 /* ── Report modal (single instance) ── */
 .report-modal { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
 .report-modal[hidden] { display:none; }
-.report-overlay { position:absolute; inset:0; background:rgba(10,47,87,.5); backdrop-filter:blur(2px); }
+.report-overlay { position:absolute; inset:0; background:rgba(10,47,87,.5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 .report-dialog { position:relative; background:#fff; border-radius:16px; width:100%; max-width:460px; box-shadow:0 24px 60px rgba(10,47,87,.3); overflow:hidden; animation:reportIn .18s ease; }
 @keyframes reportIn { from{opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:none;} }
 .report-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:linear-gradient(180deg,#0A2F57,var(--brand)); color:#fff; }
@@ -1305,8 +1305,9 @@ main, .section, .jobs-layout, .container,
 .ep-name {
   font-family: 'Sora',sans-serif; font-size: 1.8rem; font-weight: 800;
   letter-spacing: -.03em; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  color: var(--white) !important;
 }
-.ep-tagline { font-size: .95rem; opacity: .85; margin-bottom: 12px; }
+.ep-tagline { font-size: .95rem; opacity: .85; margin-bottom: 12px; color: rgba(255,255,255,.9) !important; }
 .ep-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .ep-pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -1319,7 +1320,7 @@ main, .section, .jobs-layout, .container,
 
 /* Tabs */
 .ep-tabs {
-  background: rgba(10,47,87,.4); backdrop-filter: blur(6px);
+  background: rgba(10,47,87,.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   border-top: 1px solid rgba(255,255,255,.1);
 }
 .ep-tab-list { display: flex; gap: 0; list-style: none; }

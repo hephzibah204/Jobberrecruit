@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class StateModel extends Model
+{
+    protected $table      = 'states';
+    protected $primaryKey = 'id';
+    protected $returnType = \App\Entities\State::class;
+    protected $allowedFields = ['name', 'slug', 'capital', 'region', 'is_active', 'description', 'meta_description', 'seo_h1'];
+
+    protected $validationRules = [
+        'name' => 'required|min_length[2]|max_length[100]|is_unique[states.name,id,{id}]',
+    ];
+
+    protected $validationMessages = [
+        'name' => [
+            'required' => 'Location name is required',
+            'min_length' => 'Location name must be at least 2 characters',
+            'max_length' => 'Location name cannot exceed 100 characters',
+            'is_unique' => 'This location already exists'
+        ]
+    ];
+
+    protected $useTimestamps = true;
+    protected $dateFormat = 'datetime';
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
+
+    public function findBySlug(string $slug): ?object
+    {
+        return $this->where('slug', $slug)->first()
+            ?? $this->where('slug', rtrim($slug, '-state') . '-state')->first();
+    }
+
+    public function getStatesWithStats()
+    {
+        return $this->db->table('states s')
+            ->select('s.*, COUNT(DISTINCT e.id) as employer_count, COUNT(DISTINCT j.id) as job_count')
+            ->join('employers e', 'e.state_id = s.id', 'left')
+            ->join('jobs j', 'j.state_id = s.id', 'left')
+            ->groupBy('s.id')
+            ->orderBy('s.name', 'ASC')
+            ->get()
+            ->getResult();
+    }
+
+    public function getActiveStates()
+    {
+        return $this->where('is_active', 1)
+            ->orderBy('name', 'ASC')
+            ->findAll();
+    }
+
+    public function getRegions()
+    {
+        return $this->distinct()
+            ->select('region')
+            ->where('region IS NOT NULL')
+            ->where('region !=', '')
+            ->orderBy('region', 'ASC')
+            ->findAll();
+    }
+}

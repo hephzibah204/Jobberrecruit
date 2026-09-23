@@ -1,0 +1,47 @@
+# JobberRecruit — Full Platform Documentation & Entity Index
+
+## Overview
+JobberRecruit (https://jobberrecruit.com) is Nigeria's trusted recruitment platform and digital career hub. It provides job discovery, AI-driven candidate preparation, online skill training, instant certification, and direct employer hiring.
+
+## Detailed Services & Features
+
+### 1. Job Search & Matching
+- Search jobs by Keyword, Industry Category, State/Location, and Work Arrangement (On-site, Hybrid, Remote).
+- Daily job alerts via Email and Telegram.
+- Direct quick-apply system with pre-filled profiles and resume attachments.
+
+### 2. AI-Powered Career Tools
+- **AI Resume Builder**: Generates ATS-friendly resume templates tailored to Nigerian and multinational employers.
+- **AI Mock Interview Engine**: Simulates realistic interview scenarios with voice/text feedback and scoring.
+- **CV Revamp Service**: Professional resume review by certified HR specialists.
+
+### 3. E-Learning & Professional Certification
+- Skill-building courses across Data Analytics (Excel & Python), Digital Marketing, Project Management, and Cybersecurity.
+- Employer-verifiable digital certificates with unique verification codes.
+- Live webinars and interactive masterclasses hosted by industry professionals.
+
+### 4. Employer & Recruitment Solutions
+- **Free Job Posting**: First job post is 100% free for verified businesses in Nigeria.
+- **Pre-Screened Candidate Database**: Search candidate profiles filtered by qualifications, experience, and location.
+- **Smart Employer Dashboard**: Track applications, schedule interviews, and manage hiring workflows.
+
+## Primary Categories & Hubs
+
+- Tech & Software Engineering: https://jobberrecruit.com/jobs?category_id=1
+- Banking & Finance: https://jobberrecruit.com/jobs?category_id=2
+- Marketing & Communications: https://jobberrecruit.com/jobs?category_id=3
+- Sales & Business Development: https://jobberrecruit.com/jobs?category_id=4
+- Administrative & HR: https://jobberrecruit.com/jobs?category_id=5
+
+## Coverage & Geography
+- Lagos State (Yaba, Victoria Island, Ikeja, Lekki)
+- Federal Capital Territory (Abuja)
+- Rivers State (Port Harcourt)
+- Oyo State (Ibadan)
+- All 36 States in Nigeria + Remote Opportunities across Africa.
+
+## Contact & Verification
+- Official Website: https://jobberrecruit.com
+- Contact Page: https://jobberrecruit.com/contact-us
+- Certificate Verification: https://jobberrecruit.com/certificates/verify
+- Sitemap: https://jobberrecruit.com/sitemap.xml

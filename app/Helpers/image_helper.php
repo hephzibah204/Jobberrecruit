@@ -12,22 +12,32 @@ if (!function_exists('resolve_image_url')) {
     function resolve_image_url(?string $path, string $type = 'company', string $name = ''): string
     {
         if (empty($path)) {
-            $nameParam = 'U';
+            $nameParam = 'Company';
             if (!empty($name)) {
                 $nameParam = urlencode(trim($name));
             } else {
                 $nameParam = $type === 'candidate' ? 'User' : 'Company';
             }
             
-            // Generate initials using ui-avatars.com
-            return "https://ui-avatars.com/api/?name={$nameParam}&background=random&color=fff&size=128";
+            // Generate clean branded initials avatar
+            return "https://ui-avatars.com/api/?name={$nameParam}&background=0A2F57&color=fff&size=128&bold=true";
         }
 
-        // Check if it's already an absolute HTTP/HTTPS URL
-        if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
+        // Check if it's already an absolute HTTP/HTTPS URL (e.g. Cloudinary, S3, external)
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             return $path;
         }
 
-        return base_url($path);
+        // Normalize relative path
+        $cleanPath = ltrim($path, '/');
+
+        // If path doesn't start with uploads/ or images/ but exists in uploads/
+        if (!str_starts_with($cleanPath, 'uploads/') && !str_starts_with($cleanPath, 'images/')) {
+            if (file_exists(FCPATH . 'uploads/' . $cleanPath)) {
+                return base_url('uploads/' . $cleanPath);
+            }
+        }
+
+        return base_url($cleanPath);
     }
 }

@@ -81,10 +81,10 @@ class BundleService
             throw new \RuntimeException('Invalid bundle');
         }
 
-        // Credit wallet
+        // Credit job credit wallet
         (new JobCreditWalletModel())->insert([
             'user_id' => $userId,
-            'credits' => $bundle['job_credits'],
+            'credits' => (int) $bundle->job_credits,
             'source'  => 'bundle'
         ]);
 
@@ -92,7 +92,7 @@ class BundleService
         (new JobCreditTransactionModel())->insert([
             'user_id'     => $userId,
             'type'        => 'credit',
-            'credits'     => $bundle['job_credits'],
+            'credits'     => (int) $bundle->job_credits,
             'reference'   => $reference,
             'description' => 'Bundle purchase via ' . $source,
             'meta'        => json_encode([

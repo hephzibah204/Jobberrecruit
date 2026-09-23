@@ -19,8 +19,9 @@
             <img src="<?= base_url('images/logo.png') ?>" alt="JobberRecruit" class="img-fluid" style="height:60px;width:auto">
           </a>
           <ul class="nav-links" role="list">
-            <li><a href="<?= base_url('jobs') ?>">Find jobs</a></li>
-            <li><a href="<?= base_url('blog') ?>">Blog</a></li>
+            <li><a href="<?= base_url('jobs') ?>" <?= (uri_string() === 'jobs') ? 'aria-current="page"' : '' ?>>Find jobs</a></li>
+            <li><a href="<?= base_url('candidates') ?>" <?= (uri_string() === 'candidates') ? 'aria-current="page"' : '' ?>>Candidate hub</a></li>
+            <li><a href="<?= base_url('blog') ?>" <?= (uri_string() === 'blog') ? 'aria-current="page"' : '' ?>>Blog</a></li>
             <li class="nav-dropdown">
               <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Training <svg class="nav-caret" aria-hidden="true"><use href="#i-chev-down"/></svg></button>
               <div class="nav-dropdown-menu" role="menu">
@@ -59,6 +60,7 @@
         </nav>
         <nav id="mob-nav" class="mobile-nav" role="navigation" aria-label="Mobile navigation">
           <a href="<?= base_url('jobs') ?>">Find jobs</a>
+          <a href="<?= base_url('candidates') ?>">Candidate hub</a>
           <a href="<?= base_url('blog') ?>">Blog</a>
           <div class="mob-group"><p class="mob-group-label">Training</p><a href="<?= base_url('training') ?>">Courses</a><a href="<?= base_url('webinars') ?>">Webinars</a><a href="<?= base_url('cv-review') ?>">CV Review</a></div>
           <div class="mob-group"><p class="mob-group-label">Recruitment</p><a href="<?= base_url('recruitment') ?>">Recruitment services</a><a href="<?= base_url('job-ads') ?>">Job ad pricing</a></div>

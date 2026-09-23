@@ -141,27 +141,8 @@ $walletModel = new \App\Models\WalletModel();
 $wallet = $walletModel->where('user_id', $user->id)->first();
 $walletBalance = $wallet ? $wallet->balance : 0;
 
-// Dynamic Profile completion calculation
-$fields = [
-    'full_name',
-    'dob',
-    'gender',
-    'phone',
-    'location',
-    'job_title',
-    'employment_type',
-    'skills',
-    'experience_years',
-    'education_level',
-];
-
-$completed = 0;
-foreach ($fields as $f) {
-    if (!empty($candidate->$f)) $completed++;
-}
-if (!empty($candidate->resume)) $completed++;
-$totalFields = count($fields) + 1;
-$completion = round(($completed / $totalFields) * 100);
+// Dynamic Profile completion calculation (unified via JobSeeker entity)
+$completion = method_exists($candidate, 'getProfileCompletion') ? $candidate->getProfileCompletion() : 0;
 ?>
 
 <div class="content">
@@ -173,7 +154,7 @@ $completion = round(($completed / $totalFields) * 100);
             <p>View and manage your job seeker profile</p>
         </div>
         <div class="page-actions">
-            <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-primary btn-sm">
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-primary btn-sm" style="background:#0861A9;color:#fff;border-color:#0861A9">
                 <svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile
             </a>
         </div>
@@ -205,7 +186,7 @@ $completion = round(($completed / $totalFields) * 100);
             <?php endif; ?>
           </div>
           <div class="id-actions">
-            <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-outline btn-sm btn-block"><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile</a>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-primary btn-sm btn-block" style="background:#0861A9;color:#fff;border-color:#0861A9"><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Profile</a>
           </div>
         </section>
 
@@ -222,7 +203,10 @@ $completion = round(($completed / $totalFields) * 100);
                 <b><?= $completion == 100 ? 'Fully Complete' : 'Almost complete' ?></b>
                 <p>
                     <?php if ($completion < 100):
-                        // Identify the first missing field so we can give specific advice
+                        // Identify missing items including work experience and education
+                        $expCountCheck = model(\App\Models\JobSeekerExperienceModel::class)->where('job_seeker_id', $candidate->id)->countAllResults();
+                        $eduCountCheck = model(\App\Models\JobSeekerEducationModel::class)->where('job_seeker_id', $candidate->id)->countAllResults();
+
                         $missingHints = [];
                         if (empty($candidate->full_name))       $missingHints[] = 'add your full name';
                         if (empty($candidate->dob))             $missingHints[] = 'add your date of birth';
@@ -232,19 +216,18 @@ $completion = round(($completed / $totalFields) * 100);
                         if (empty($candidate->job_title))       $missingHints[] = 'add your job title';
                         if (empty($candidate->employment_type)) $missingHints[] = 'set your employment type';
                         if (empty($candidate->skills))          $missingHints[] = 'add your skills';
-                        if (empty($candidate->experience_years))$missingHints[] = 'set your years of experience';
-                        if (empty($candidate->education_level)) $missingHints[] = 'set your education level';
+                        if ($expCountCheck === 0)               $missingHints[] = 'add at least one work experience entry';
+                        if ($eduCountCheck === 0)               $missingHints[] = 'add at least one education entry';
                         if (empty($candidate->resume))          $missingHints[] = '<a href="' . base_url('candidate/profile/edit') . '">upload your CV</a>';
                         $nextStep = !empty($missingHints) ? ucfirst($missingHints[0]) . ' to move to the next milestone.' : 'Almost there!';
                     ?>
-                        Next step: <?= $nextStep ?> Complete profiles rank higher in employer searches and unlock &#8358;500 in wallet rewards.
+                        Next step: <?= $nextStep ?> Complete profiles rank higher in employer searches and unlock up to &#8358;500 in wallet rewards.
                     <?php else: ?>
                         Excellent! Your profile is complete and optimised for employer searches.
                     <?php endif; ?>
                 </p>
                 <p style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap">
-                    <span class="pill <?= $completion >= 60 ? 'pill--success' : 'pill--pending' ?>"><svg aria-hidden="true"><use href="#i-check"/></svg> &#8358;200 at 60%</span>
-                    <span class="pill <?= $completion >= 100 ? 'pill--success' : 'pill--pending' ?>"><svg aria-hidden="true"><use href="#i-wallet"/></svg> &#8358;500 at 100%</span>
+                    <span class="pill <?= $completion >= 80 ? 'pill--success' : 'pill--pending' ?>"><svg aria-hidden="true"><use href="#i-check"/></svg> &#8358;500 bonus at 80% completion</span>
                 </p>
               </div>
             </div>
@@ -381,20 +364,48 @@ $completion = round(($completed / $totalFields) * 100);
           </div>
         </section>
 
-        <!-- Certifications (auto-attached JobberRecruit certificates) -->
+        <!-- Certifications (Auto-attached JR certificates & External Certifications) -->
         <section class="card" aria-label="Certifications">
-          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Certifications</span>
-            <a href="<?= base_url('candidate/certificates') ?>" class="card-link">My certificates <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Licences &amp; Certifications</span>
+            <a href="<?= base_url('candidate/profile/edit') ?>" class="card-link">Manage <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
           <div class="card-body">
+            <?php 
+            $hasAnyCerts = !empty($certificates) || !empty($externalCertifications);
+            ?>
             <?php if (!empty($certificates)): ?>
                 <?php foreach ($certificates as $cert): ?>
                     <div class="xp"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-award"/></svg></span>
-                      <div><b><?= esc($cert['course_name'] ?? 'Course Certificate') ?></b><i>JobberRecruit Training · <?= esc(date('M Y', strtotime($cert['issued_at']))) ?> · <?= esc($cert['certificate_code']) ?> · <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>" target="_blank">Download</a></i></div></div>
+                      <div><b><?= esc($cert['course_name'] ?? 'Course Certificate') ?></b><i>JobberRecruit Verified · Completed <?= esc(date('M Y', strtotime($cert['issued_at']))) ?> · Code: <?= esc($cert['certificate_code']) ?> · <a href="<?= base_url('training/certificate/download/' . $cert['id']) ?>" target="_blank">Download</a></i></div></div>
                 <?php endforeach; ?>
-                <p style="font-size:.72rem;color:var(--muted);margin-top:10px">JobberRecruit certificates attach to your profile automatically and are verifiable by employers.</p>
-            <?php else: ?>
+            <?php endif; ?>
+
+            <?php if (!empty($externalCertifications)): ?>
+                <?php foreach ($externalCertifications as $extCert): ?>
+                    <?php
+                    $issueStr = trim(($extCert->issue_month ?? '') . ' ' . ($extCert->issue_year ?? ''));
+                    $expStr   = !empty($extCert->does_not_expire) ? 'No Expiry' : trim(($extCert->expiry_month ?? '') . ' ' . ($extCert->expiry_year ?? ''));
+                    $metaParts = [];
+                    if (!empty($extCert->issuing_organization)) $metaParts[] = $extCert->issuing_organization;
+                    if ($issueStr) $metaParts[] = 'Issued ' . $issueStr;
+                    if ($expStr) $metaParts[] = $expStr;
+                    if (!empty($extCert->credential_id)) $metaParts[] = 'ID: ' . $extCert->credential_id;
+                    ?>
+                    <div class="xp"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-award"/></svg></span>
+                      <div>
+                        <b><?= esc($extCert->name) ?></b>
+                        <i><?= esc(implode(' · ', $metaParts)) ?>
+                          <?php if (!empty($extCert->credential_url)): ?>
+                            · <a href="<?= esc($extCert->credential_url, 'attr') ?>" target="_blank" rel="noopener">Verify Credential →</a>
+                          <?php endif; ?>
+                        </i>
+                      </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <?php if (!$hasAnyCerts): ?>
                 <div class="xp" style="border:none;padding:2px 0"><span class="xp-ic" aria-hidden="true"><svg aria-hidden="true"><use href="#i-award"/></svg></span>
-                  <div><b>No certificates yet</b><i>Complete a course in <a href="<?= base_url('training') ?>">Training</a> to earn a verifiable certificate.</i></div></div>
+                  <div><b>No licences or certifications added yet</b><i><a href="<?= base_url('candidate/profile/edit') ?>">Add external certifications</a> or complete courses in <a href="<?= base_url('training') ?>">Training</a> to boost your profile strength.</i></div></div>
             <?php endif; ?>
           </div>
         </section>

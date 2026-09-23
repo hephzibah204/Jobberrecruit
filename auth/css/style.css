@@ -3731,7 +3731,7 @@ button:focus {
 
 .dropdown-menu.dropmenu-light-primary {
   background-color: rgba(var(#092C4C), 0.1);
-  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem);
 }
 .dropdown-menu.dropmenu-light-primary .dropdown-item:hover, .dropdown-menu.dropmenu-light-primary .dropdown-item:focus, .dropdown-menu.dropmenu-light-primary .dropdown-item:active, .dropdown-menu.dropmenu-light-primary .dropdown-item.active {
   color: #ffffff;
@@ -3739,7 +3739,7 @@ button:focus {
 }
 .dropdown-menu.dropmenu-light-secondary {
   background-color: rgba(var(#092C4C), 0.1);
-  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem);
 }
 .dropdown-menu.dropmenu-light-secondary .dropdown-item:hover, .dropdown-menu.dropmenu-light-secondary .dropdown-item:focus, .dropdown-menu.dropmenu-light-secondary .dropdown-item:active, .dropdown-menu.dropmenu-light-secondary .dropdown-item.active {
   color: #ffffff;
@@ -3747,7 +3747,7 @@ button:focus {
 }
 .dropdown-menu.dropmenu-light-info {
   background-color: rgba(21, 94, 239, 0.1);
-  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem);
 }
 .dropdown-menu.dropmenu-light-info .dropdown-item:hover, .dropdown-menu.dropmenu-light-info .dropdown-item:focus, .dropdown-menu.dropmenu-light-info .dropdown-item:active, .dropdown-menu.dropmenu-light-info .dropdown-item.active {
   color: #ffffff;
@@ -3755,7 +3755,7 @@ button:focus {
 }
 .dropdown-menu.dropmenu-light-warning {
   background-color: rgba(255, 202, 24, 0.1);
-  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem);
 }
 .dropdown-menu.dropmenu-light-warning .dropdown-item:hover, .dropdown-menu.dropmenu-light-warning .dropdown-item:focus, .dropdown-menu.dropmenu-light-warning .dropdown-item:active, .dropdown-menu.dropmenu-light-warning .dropdown-item.active {
   color: #ffffff;
@@ -3763,7 +3763,7 @@ button:focus {
 }
 .dropdown-menu.dropmenu-light-success {
   background-color: rgba(62, 183, 128, 0.1);
-  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem);
 }
 .dropdown-menu.dropmenu-light-success .dropdown-item:hover, .dropdown-menu.dropmenu-light-success .dropdown-item:focus, .dropdown-menu.dropmenu-light-success .dropdown-item:active, .dropdown-menu.dropmenu-light-success .dropdown-item.active {
   color: #ffffff;
@@ -3771,7 +3771,7 @@ button:focus {
 }
 .dropdown-menu.dropmenu-light-danger {
   background-color: rgba(var(--danger-rgb), 0.1);
-  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem);
 }
 .dropdown-menu.dropmenu-light-danger .dropdown-item:hover, .dropdown-menu.dropmenu-light-danger .dropdown-item:focus, .dropdown-menu.dropmenu-light-danger .dropdown-item:active, .dropdown-menu.dropmenu-light-danger .dropdown-item.active {
   color: #ffffff;
@@ -34625,7 +34625,7 @@ a.link-hover:hover {
 }
 .login-wrapper.bg-img .login-content {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(17px);
+  -webkit-backdrop-filter: blur(17px); backdrop-filter: blur(17px);
 }
 .login-wrapper.bg-img.register-wrap {
   background-image: url(../img/authentication/register-img.jpg);

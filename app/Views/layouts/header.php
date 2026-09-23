@@ -75,7 +75,7 @@ if (count($words) >= 2) {
             </li>
             <!-- /Search -->
 
-            <?php if (env('feature_elearning', 'true') == 'true'): ?>
+            <?php if (get_site_setting('feature_elearning', true)): ?>
             <li class="nav-item">
                 <a href="<?= base_url('training') ?>" class="btn btn-light btn-md d-inline-flex align-items-center">
                     <i class="ti ti-book me-1"></i>Training

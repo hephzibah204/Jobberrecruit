@@ -26,8 +26,20 @@
     <link rel="apple-touch-icon" href="<?= base_url('images/pwa/icon-192.png'); ?>">
     <meta name="apple-mobile-web-app-title" content="JobberRecruit">
 
+    <!-- Google Analytics (gtag.js) -->
+    <?php $gaId = env('GA_MEASUREMENT_ID', env('GOOGLE_ANALYTICS_ID', 'G-D84YSE03K9')); ?>
+    <?php if (!empty($gaId)): ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc($gaId) ?>"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '<?= esc($gaId) ?>');
+    </script>
+    <?php endif; ?>
+
     <!-- SEO Meta Description -->
-    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt. Post jobs and hire top Nigerian talent.'); ?>">
+    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.'); ?>">
 
     <!-- Keywords -->
     <meta name="keywords" content="<?= $keywords ?? 'jobs in Nigeria, African job portal, find jobs, hire talent, recruitment platform, jobber recruit, employment portal'; ?>">
@@ -35,8 +47,11 @@
     <meta name="author" content="JobberRecruit">
     <meta name="robots" content="<?= (isset($noindex) && $noindex) ? 'noindex, nofollow' : 'index, follow' ?>">
 
-    <!-- Canonical URL -->
+    <!-- Canonical URL & Hreflang Tags -->
     <link rel="canonical" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="en-NG" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="en" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= current_url(); ?>">
 
     <!-- Favicons -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.png'); ?>" type="image/png">
@@ -131,7 +146,7 @@
 
     <style>
         html, body, a, button, select, input, [role="button"] {
-            cursor: url('<?= base_url("images/favicon_cursor.png"); ?>'), auto !important;
+            cursor: url('/images/favicon_cursor.png'), auto !important;
         }
     </style>
 </head>
@@ -394,9 +409,16 @@
         const nav = document.getElementById('mob-nav');
         if (!nav) return;
         const open = nav.classList.toggle('open');
-        btn.setAttribute('aria-expanded', String(open));
-        document.body.style.overflow = open ? 'hidden' : '';
+        if (btn) btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          document.documentElement.classList.add('menu-open');
+          document.body.classList.add('menu-open');
+        } else {
+          document.documentElement.classList.remove('menu-open');
+          document.body.classList.remove('menu-open');
+        }
       }
+      window.togglePublicMenu = toggleMenu;
       document.addEventListener('DOMContentLoaded', function() {
         const mobNav = document.getElementById('mob-nav');
         if (mobNav) {
@@ -405,7 +427,8 @@
               this.classList.remove('open');
               const hamburger = document.querySelector('.hamburger');
               if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
-              document.body.style.overflow = '';
+              document.documentElement.classList.remove('menu-open');
+              document.body.classList.remove('menu-open');
             }
           });
         }

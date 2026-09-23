@@ -26,12 +26,24 @@
             <div class="card custom-card">
                 <div class="card-body">
                     <div class="d-flex gap-3 align-items-start">
-                        <span class="avatar avatar-xl">
-                            <?php if ($employer->logo): ?>
-                                <img src="<?= base_url($employer->logo) ?>">
-                            <?php else: ?>
-                                <?= strtoupper(substr($employer->company_name, 0, 1)) ?>
-                            <?php endif ?>
+                        <?php
+                            $coName = $employer->company_name ?? 'Company';
+                            $fallbackAvatar = "https://ui-avatars.com/api/?name=" . urlencode(trim($coName)) . "&background=0A2F57&color=fff&size=128&bold=true";
+                            if (function_exists('resolve_image_url')) {
+                                $logoUrl = resolve_image_url($employer->logo ?? '', 'company', $coName);
+                            } else {
+                                $rawLogo = $employer->logo ?? '';
+                                if (empty($rawLogo)) {
+                                    $logoUrl = $fallbackAvatar;
+                                } elseif (str_starts_with($rawLogo, 'http://') || str_starts_with($rawLogo, 'https://')) {
+                                    $logoUrl = $rawLogo;
+                                } else {
+                                    $logoUrl = base_url(ltrim($rawLogo, '/'));
+                                }
+                            }
+                        ?>
+                        <span class="avatar avatar-xl rounded flex-shrink-0" style="background:#f1f5f9; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; overflow:hidden; width:64px; height:64px;">
+                            <img src="<?= esc($logoUrl) ?>" alt="<?= esc($coName) ?>" style="width:100%; height:100%; object-fit:contain;" onerror="this.onerror=null; this.src='<?= esc($fallbackAvatar) ?>';">
                         </span>
 
                         <div class="flex-fill">
@@ -49,7 +61,7 @@
 
                             <div class="text-muted mb-2">
                                 <i class="bi bi-geo-alt"></i>
-                                <?= esc($employer->state_name . ' State' ?? '—') ?>
+                                <?= esc(($employer->state_name ?? '') ? ($employer->state_name . ' State') : '—') ?>
                             </div>
 
                             <!-- Industries -->

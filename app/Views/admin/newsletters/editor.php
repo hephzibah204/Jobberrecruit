@@ -37,28 +37,58 @@
                     <label class="form-label fw-semibold text-dark d-block mb-2">Target Audience Segment</label>
                     <div class="row g-2">
                         <?php $tg = $newsletter ? $newsletter->target_group : 'all'; ?>
-                        <div class="col-md-3 col-6">
+                        <div class="col-lg-3 col-md-4 col-6">
                             <input type="radio" class="btn-check" name="target_group" id="tg_all" value="all" <?= $tg == 'all' ? 'checked' : '' ?>>
-                            <label class="btn btn-outline-primary w-100 py-3 text-start transition-all rounded-md" for="tg_all" style="border: 1px solid #dee2e6">
-                                <div class="fw-bold fs-13">All</div>
+                            <label class="btn btn-outline-primary w-100 py-2 text-center transition-all rounded-md" for="tg_all" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">All Users &amp; Subscribers</div>
                             </label>
                         </div>
-                        <div class="col-md-3 col-6">
+                        <div class="col-lg-3 col-md-4 col-6">
                             <input type="radio" class="btn-check" name="target_group" id="tg_candidates" value="candidates" <?= $tg == 'candidates' ? 'checked' : '' ?>>
-                            <label class="btn btn-outline-info w-100 py-3 text-start transition-all rounded-md" for="tg_candidates" style="border: 1px solid #dee2e6">
-                                <div class="fw-bold fs-13">Candidates</div>
+                            <label class="btn btn-outline-info w-100 py-2 text-center transition-all rounded-md" for="tg_candidates" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">Registered Candidates</div>
                             </label>
                         </div>
-                        <div class="col-md-3 col-6">
+                        <div class="col-lg-3 col-md-4 col-6">
                             <input type="radio" class="btn-check" name="target_group" id="tg_employers" value="employers" <?= $tg == 'employers' ? 'checked' : '' ?>>
-                            <label class="btn btn-outline-warning w-100 py-3 text-start transition-all rounded-md" for="tg_employers" style="border: 1px solid #dee2e6">
-                                <div class="fw-bold fs-13">Employers</div>
+                            <label class="btn btn-outline-warning w-100 py-2 text-center transition-all rounded-md" for="tg_employers" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">Registered Employers</div>
                             </label>
                         </div>
-                        <div class="col-md-3 col-6">
-                            <input type="radio" class="btn-check" name="target_group" id="tg_subscribers" value="subscribers" <?= $tg == 'subscribers' ? 'checked' : '' ?>>
-                            <label class="btn btn-outline-secondary w-100 py-3 text-start transition-all rounded-md" for="tg_subscribers" style="border: 1px solid #dee2e6">
-                                <div class="fw-bold fs-13">Subscribers</div>
+                        <div class="col-lg-3 col-md-4 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_guest_subscribers" value="guest_subscribers" <?= $tg == 'guest_subscribers' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary w-100 py-2 text-center transition-all rounded-md" for="tg_guest_subscribers" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">Guest Subscribers</div>
+                            </label>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_registered_subscribers" value="registered_subscribers" <?= $tg == 'registered_subscribers' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-dark w-100 py-2 text-center transition-all rounded-md" for="tg_registered_subscribers" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">Registered Subscribers</div>
+                            </label>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_new_candidates" value="new_candidates" <?= $tg == 'new_candidates' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-info w-100 py-2 text-center transition-all rounded-md" for="tg_new_candidates" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">🆕 New Candidates</div>
+                            </label>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_new_employers" value="new_employers" <?= $tg == 'new_employers' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-warning w-100 py-2 text-center transition-all rounded-md" for="tg_new_employers" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">🆕 New Employers</div>
+                            </label>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_webinar_registered" value="webinar_registered" <?= $tg == 'webinar_registered' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-success w-100 py-2 text-center transition-all rounded-md" for="tg_webinar_registered" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">🎓 Webinar Registrants</div>
+                            </label>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_training_registered" value="training_registered" <?= $tg == 'training_registered' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-purple w-100 py-2 text-center transition-all rounded-md" for="tg_training_registered" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">📚 Training Registrants</div>
                             </label>
                         </div>
                     </div>

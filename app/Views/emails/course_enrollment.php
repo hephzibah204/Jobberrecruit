@@ -16,8 +16,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h2><?= esc(config('App')->appName ?? 'JobberRecruit') ?></h2>
+        <div class="header" style="background-color: #0D609E; padding: 25px; border-radius: 8px 8px 0 0; text-align: center;">
+            <a href="<?= base_url() ?>">
+                <img src="<?= base_url('assets/imgs/template/logo-white.png') ?>" alt="JobberRecruit Logo" width="180" style="max-width: 180px; height: auto; display: block; margin: 0 auto; border: 0;">
+            </a>
         </div>
         <h1>Welcome to <?= esc($course_title) ?>!</h1>
         <p>Hi <?= esc($user_name) ?>,</p>

@@ -27,6 +27,39 @@ class ReferralController extends BaseController
     public function index()
     {
         $user = auth()->user();
+        if (!$user) {
+            return redirect()->to('login');
+        }
+
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS affiliate_terms_acceptances (
+            user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+            accepted_at DATETIME NOT NULL,
+            ip_address VARCHAR(45) NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $termsAccepted = $db->table('affiliate_terms_acceptances')->where('user_id', $user->id)->countAllResults() > 0;
+        if (!$termsAccepted) {
+            $sessionKey = 'referral_terms_accepted_' . $user->id;
+            $termsAccepted = (bool) session()->get($sessionKey);
+        }
+
+        if (!$termsAccepted) {
+            // If user has not accepted terms yet, display the terms acceptance view
+            $userType = $user->user_type ?? 'candidate';
+            $data = [
+                'title'    => 'Referral Program Terms & Conditions',
+                'user'     => $user,
+                'userType' => $userType,
+            ];
+
+            if ($userType === 'employer') {
+                $employer = model(\App\Models\EmployerModel::class)->where('user_id', $user->id)->first();
+                $data['employer'] = $employer;
+            }
+
+            return view('common/referral_terms', $data);
+        }
         
         // Generate code if missing
         $referralCode = $this->referralService->generateCode($user->id);
@@ -69,6 +102,40 @@ class ReferralController extends BaseController
         }
 
         return view('common/referral_dashboard', $data);
+    }
+
+    /**
+     * Accept Referral Terms
+     */
+    public function acceptTerms()
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->to('login');
+        }
+
+        $sessionKey = 'referral_terms_accepted_' . $user->id;
+        session()->set($sessionKey, true);
+
+        // Record in database permanently
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS affiliate_terms_acceptances (
+            user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+            accepted_at DATETIME NOT NULL,
+            ip_address VARCHAR(45) NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->table('affiliate_terms_acceptances')->ignore(true)->insert([
+            'user_id'     => $user->id,
+            'accepted_at' => date('Y-m-d H:i:s'),
+            'ip_address'  => $this->request->getIPAddress(),
+        ]);
+
+        // Generate code immediately upon accepting terms
+        $this->referralService->generateCode($user->id);
+
+        $prefix = ($user->user_type === 'employer') ? 'employer' : 'candidate';
+        return redirect()->to($prefix . '/referrals')->with('success', 'Thank you for accepting the Referral Program Terms. Welcome to the referral dashboard!');
     }
 
     /**

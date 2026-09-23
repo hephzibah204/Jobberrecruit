@@ -66,6 +66,11 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
+                            <a class="dropdown-item" href="<?= base_url('employer/jobs/preview/' . $job->id) ?>" target="_blank">
+                                <svg aria-hidden="true" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 6px;"><use href="#i-external-link"/></svg>Preview listing
+                            </a>
+                        </li>
+                        <li>
                             <a class="dropdown-item" href="<?= base_url('employer/jobs/edit/' . $job->id) ?>">
                                 <svg aria-hidden="true" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 6px;"><use href="#i-edit"/></svg>Edit Job
                             </a>
@@ -495,6 +500,11 @@
         }
     });
 
+    function getCsrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '<?= csrf_hash() ?>';
+    }
+
     // Update application status
     $(document).on('change', '.status-select', function() {
         const select = $(this);
@@ -504,10 +514,14 @@
         $.ajax({
             url: '<?= base_url('employer/applications/update-status') ?>',
             type: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
             data: {
                 application_id: applicationId,
                 status: status,
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                <?= csrf_token() ?>: getCsrfToken()
             },
             dataType: 'json',
             success: function(response) {
@@ -565,8 +579,12 @@
         $.ajax({
             url: '<?= base_url('employer/jobs/feature/') ?>/' + jobId,
             type: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
             data: {
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                <?= csrf_token() ?>: getCsrfToken()
             },
             dataType: 'json',
             success: function(response) {
@@ -601,8 +619,12 @@
             $.ajax({
                 url: '<?= base_url('employer/jobs/delete/') ?>/' + jobId,
                 type: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken()
+                },
                 data: {
-                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    <?= csrf_token() ?>: getCsrfToken()
                 },
                 dataType: 'json',
                 success: function(response) {

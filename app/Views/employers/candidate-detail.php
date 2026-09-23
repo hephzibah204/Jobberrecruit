@@ -123,9 +123,15 @@ if (isset($user)) {
           <svg aria-hidden="true"><use href="#i-doc"/></svg>
           <span>
             <span class="lbl2">CV / Resume</span>
-            <b style="font-family:'Inter',sans-serif"><?= $unlocked ? 'Available' : 'Available after unlock' ?></b>
+            <b style="font-family:'Inter',sans-serif">
+              <?php if (empty($candidate->resume)): ?>
+                <span style="color:var(--danger)">Not Uploaded</span>
+              <?php else: ?>
+                <?= $unlocked ? 'Available' : 'Available after unlock' ?>
+              <?php endif; ?>
+            </b>
           </span>
-          <?php if (!$unlocked): ?>
+          <?php if (!$unlocked && !empty($candidate->resume)): ?>
             <span class="lock-tag"><svg aria-hidden="true"><use href="#i-shield"/></svg> Locked</span>
           <?php endif; ?>
         </div>
@@ -135,12 +141,18 @@ if (isset($user)) {
             <svg aria-hidden="true"><use href="#i-chat"/></svg> Send Message — Free
           </button>
           <?php if ($unlocked): ?>
-            <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="emp-btn emp-btn-primary emp-btn-block">
-              <svg aria-hidden="true"><use href="#i-download"/></svg> Download Resume
-            </a>
+            <?php if (!empty($candidate->resume)): ?>
+              <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="emp-btn emp-btn-primary emp-btn-block">
+                <svg aria-hidden="true"><use href="#i-download"/></svg> Download Resume
+              </a>
+            <?php else: ?>
+              <button class="emp-btn emp-btn-outline emp-btn-block" disabled style="opacity: 0.6; cursor: not-allowed;">
+                <svg aria-hidden="true"><use href="#i-download"/></svg> No Resume Uploaded
+              </button>
+            <?php endif; ?>
           <?php else: ?>
             <button class="emp-btn emp-btn-primary emp-btn-block" data-unlock="<?= esc($candidate->full_name) ?>">
-              <svg aria-hidden="true"><use href="#i-shield"/></svg> Unlock Contact &amp; CV · ₦5,000
+              <svg aria-hidden="true"><use href="#i-shield"/></svg> Unlock Contact <?= !empty($candidate->resume) ? '&amp; CV ' : '' ?>· ₦5,000
             </button>
           <?php endif; ?>
         </div>
@@ -400,6 +412,11 @@ if (isset($user)) {
     document.body.style.overflow='hidden';
   }
   
+  function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '<?= csrf_hash() ?>';
+  }
+
   function close(){
     scrim.classList.remove('show');
     document.body.style.overflow='';
@@ -426,7 +443,8 @@ if (isset($user)) {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
-                  'X-Requested-With': 'XMLHttpRequest'
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'X-CSRF-TOKEN': getCsrfToken()
               },
               body: JSON.stringify({
                   type: 'unlock',
@@ -450,11 +468,14 @@ if (isset($user)) {
                           var verifyData = new FormData();
                           verifyData.append('reference', response.reference);
                           verifyData.append('candidate_id', <?= (int)$candidate->id ?>);
-                          verifyData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                          verifyData.append('<?= csrf_token() ?>', getCsrfToken());
 
                           fetch("<?= base_url('employer/candidates/unlock-verify') ?>", {
                               method: 'POST',
-                              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                              headers: {
+                                  'X-Requested-With': 'XMLHttpRequest',
+                                  'X-CSRF-TOKEN': getCsrfToken()
+                              },
                               body: verifyData
                           })
                           .then(function(vr) { return vr.json(); })
@@ -509,14 +530,16 @@ function executeUnlock(id) {
     btn.disabled = true;
     btn.innerHTML = 'Unlocking...';
 
+    var metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?= csrf_hash() ?>';
     const formData = new FormData();
     formData.append('candidate_id', id);
-    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    formData.append('<?= csrf_token() ?>', metaToken);
 
     fetch('<?= base_url("employer/candidates/unlock") ?>', {
         method: 'POST',
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': metaToken
         },
         body: formData
     })
@@ -540,13 +563,17 @@ function executeUnlock(id) {
 }
 
 function startMessage(candidateId) {
+    var metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?= csrf_hash() ?>';
     const formData = new FormData();
     formData.append('seeker_id', candidateId);
-    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    formData.append('<?= csrf_token() ?>', metaToken);
 
     fetch('<?= base_url("employer/messages/start") ?>', {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': metaToken
+        },
         body: formData
     })
     .then(r => r.json())

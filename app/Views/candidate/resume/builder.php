@@ -3,61 +3,108 @@
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
+<link rel="stylesheet" href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css') ?>">
 <?= $this->include('candidate/resume/ai_replies_css') ?>
+<style>
+@media print {
+    #print-root .wm { display: flex !important; }
+}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="jr-mark" viewBox="0 0 925.5 1269.15"><path fill="#F08F1C" stroke="#F08F1C" stroke-width="5.25" stroke-miterlimit="2.61313" d="M292.08 333.8c-199.04,44 -324.72,241.02 -280.72,440.05 44,199.04 241.02,324.72 440.05,280.72 50.72,-11.21 96.67,-32.38 136.27,-60.97l259.28 271.83 74.82 -70.68 -259.88 -272.45c65.88,-83.89 95.06,-195.51 70.24,-307.79 -44,-199.03 -241.02,-324.72 -440.05,-280.72zm23.48 106.2c-140.39,31.03 -229.04,169.99 -198,310.38 31.03,140.39 169.99,229.04 310.38,198.01 140.39,-31.04 229.04,-170 198,-310.39 -31.03,-140.39 -169.99,-229.04 -310.38,-198z"/><path fill="#F08F1C" d="M372.31 0c76.1,0 137.78,61.69 137.78,137.79 0,76.1 -61.69,137.78 -137.78,137.78 -76.09,0 -137.78,-61.69 -137.78,-137.78 0,-76.1 61.69,-137.79 137.78,-137.79z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-arrow-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l6 6-6 6"/></symbol>
+    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-1 8 11-13h-8Z"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-grad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2.5 3 6 3s6-1 6-3v-5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></symbol>
+    <symbol id="i-cloud-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  </defs>
+</svg>
 <!-- ═══════ MOCKUP LAYOUT: rb-bar + design-bar + rb-tabs + rb-split ═══════ -->
-<div class="rb-bar">
-  <div class="rb-title">
-    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
-    <input type="text" value="<?= esc($resume->title ?? 'Untitled Resume') ?>" id="resume-name-input" aria-label="Resume name">
-  </div>
-  <div class="rb-actions">
-    <span class="rb-chip green" id="autosave-chip">✓ Saved</span>
-    <span class="rb-chip"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/></svg> 1 page</span>
-    <select id="template-select-top" aria-label="Template" onchange="selectTemplate(this.value)">
-      <option value="t-classic" selected>Classic</option>
-      <option value="t-creative">Creative</option>
-      <option value="t-exec">Executive</option>
-      <option value="t-minimal">Minimal</option>
-      <option value="t-modern">Modern</option>
+<div class="rb-bar" role="toolbar" aria-label="Resume tools">
+  <a href="<?= site_url('candidate/resumes') ?>" class="ic-btn" id="back-list" title="Back to my resumes" style="text-decoration:none;" aria-label="Back to my resumes">
+    <svg aria-hidden="true"><use href="#i-arrow-l"/></svg>
+  </a>
+  <input type="text" class="rb-name-in" value="<?= esc($resume->title ?? 'Untitled Resume') ?>" id="resume-name-input" name="title" aria-label="Resume name">
+  <span class="autosave" id="autosave"><svg aria-hidden="true"><use href="#i-check-c"/></svg> <span id="autosave-t">Saved</span></span>
+  <span class="pagepill" id="pagepill" aria-live="polite"><svg aria-hidden="true"><use href="#i-doc"/></svg> <b id="pagepill-n">1 page</b></span>
+  <div class="rb-bar-right">
+    <select id="template-select-top" class="select" aria-label="Template" onchange="selectTemplate(this.value)">
+      <option value="t-exec" <?= ($resume->template_id ?? '') === 't-exec' ? 'selected' : '' ?>>Executive</option>
+      <option value="t-pro" <?= ($resume->template_id ?? '') === 't-pro' ? 'selected' : '' ?>>Professional</option>
+      <option value="t-modern" <?= ($resume->template_id ?? '') === 't-modern' || empty($resume->template_id) ? 'selected' : '' ?>>Modern</option>
+      <option value="t-serif" <?= ($resume->template_id ?? '') === 't-serif' ? 'selected' : '' ?>>Elegant Serif</option>
+      <option value="t-tech" <?= ($resume->template_id ?? '') === 't-tech' ? 'selected' : '' ?>>Tech / Startup</option>
+      <option value="t-classic" <?= ($resume->template_id ?? '') === 't-classic' ? 'selected' : '' ?>>Classic</option>
+      <option value="t-minimal" <?= ($resume->template_id ?? '') === 't-minimal' ? 'selected' : '' ?>>Minimal</option>
     </select>
-    <a href="#" class="btn btn-sm btn-primary" style="font-size:.76rem" onclick="return false;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Word</a>
-    <a href="#" class="btn btn-sm btn-outline download-pdf-btn" style="font-size:.76rem" onclick="return false;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF</a>
+    <button type="button" class="btn btn-outline btn-sm me-1" id="btn-import-profile-top" onclick="importFromProfile()"><svg aria-hidden="true"><use href="#i-user"/></svg> Auto-fill from Profile</button>
+    <button type="button" class="btn btn-outline btn-sm me-1" id="btn-cover-top"><svg aria-hidden="true"><use href="#i-mail"/></svg> Cover Letter</button>
+    <button type="button" class="btn btn-outline btn-sm me-1" id="btn-delete-resume" title="Delete this resume" data-id="<?= esc($resume->id ?? '') ?>" style="color:#ef4444;border-color:rgba(239,68,68,0.3);"><svg aria-hidden="true" style="color:#ef4444;"><use href="#i-trash"/></svg> Delete</button>
+    <div class="export-dropdown" style="position:relative;display:inline-flex;">
+      <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>" class="btn btn-accent btn-sm download-pdf-btn" style="border-top-right-radius:0;border-bottom-right-radius:0;"><svg aria-hidden="true"><use href="#i-download"/></svg> PDF</a>
+      <button type="button" class="btn btn-accent btn-sm dropdown-toggle" style="border-left:1px solid rgba(255,255,255,0.3);padding:8px 8px;border-top-left-radius:0;border-bottom-left-radius:0;" onclick="var m=document.getElementById('export-menu');m.style.display=(m.style.display==='none'||!m.style.display)?'block':'none';" aria-label="Export options">▾</button>
+      <div class="export-menu" id="export-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 25px rgba(10,47,87,.15);min-width:200px;z-index:1000;overflow:hidden;">
+        <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> PDF Document (.pdf)</a>
+        <a href="<?= site_url('candidate/resumes/download-docx/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> Word Document (.docx)</a>
+        <a href="<?= site_url('candidate/resumes/download-txt/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> Plain Text / ATS (.txt)</a>
+        <a href="<?= site_url('candidate/resumes/download-json/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> JSON Resume (.json)</a>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="rb-design-bar">
-  <span class="db-label">Design</span>
-  <div class="swatches">
-    <span class="swatch active" style="background:#0861A9" onclick="setAccentColor('#0861A9',this)"></span>
-    <span class="swatch" style="background:#0A2F57" onclick="setAccentColor('#0A2F57',this)"></span>
-    <span class="swatch" style="background:#16a34a" onclick="setAccentColor('#16a34a',this)"></span>
-    <span class="swatch" style="background:#7c3aed" onclick="setAccentColor('#7c3aed',this)"></span>
-    <span class="swatch" style="background:#dc2626" onclick="setAccentColor('#dc2626',this)"></span>
-    <span class="swatch" style="background:#ED9020" onclick="setAccentColor('#ED9020',this)"></span>
+<div class="design-bar" aria-label="Design controls">
+  <span class="lbl">Accent</span>
+  <div class="swatches" role="group" aria-label="Accent colour">
+    <button class="sw on" data-acc="#0861A9" data-acc2="#ED9020" style="background:linear-gradient(135deg,#0861A9 50%,#ED9020 50%)" onclick="setAccentColor('#0861A9','#ED9020',this)" aria-label="JobberRecruit brand"></button>
+    <button class="sw" data-acc="#0861A9" style="background:#0861A9" onclick="setAccentColor('#0861A9','#0861A9',this)" aria-label="Brand blue"></button>
+    <button class="sw" data-acc="#0A2F57" style="background:#0A2F57" onclick="setAccentColor('#0A2F57','#0A2F57',this)" aria-label="Navy"></button>
+    <button class="sw" data-acc="#0e7a5f" style="background:#0e7a5f" onclick="setAccentColor('#0e7a5f','#0e7a5f',this)" aria-label="Teal"></button>
+    <button class="sw" data-acc="#7a1f3d" style="background:#7a1f3d" onclick="setAccentColor('#7a1f3d','#7a1f3d',this)" aria-label="Burgundy"></button>
+    <button class="sw" data-acc="#3c4657" style="background:#3c4657" onclick="setAccentColor('#3c4657','#3c4657',this)" aria-label="Graphite"></button>
   </div>
-  <select id="font-select" aria-label="Font" onchange="setFontFamily(this.value)" style="font-size:.72rem">
-    <option value="Inter">Inter</option>
-    <option value="Georgia">Georgia</option>
-    <option value="Garamond">Garamond</option>
-    <option value="Roboto">Roboto</option>
+  <span class="lbl">Font</span>
+  <select id="font-select" class="select" aria-label="Font pairing" onchange="setFontFamily(this.value)">
+    <option value="" selected>Sora + Inter</option>
+    <option value="f-serif">Georgia serif</option>
+    <option value="f-clean">System clean</option>
   </select>
-  <div class="spacing-btns">
-    <button class="spacing-btn active" onclick="setSpacing('roomy',this)">Roomy</button>
-    <button class="spacing-btn" onclick="setSpacing('tight',this)">Tight</button>
+  <span class="lbl" title="Space between lines and sections">Spacing</span>
+  <div class="dens" role="group" aria-label="Line and section spacing">
+    <button type="button" id="spacing-roomy-btn" class="on" data-dense="0" title="More breathing room" onclick="setSpacingMode('roomy', this)">Roomy</button>
+    <button type="button" id="spacing-tight-btn" data-dense="1" title="Tighter lines and sections" onclick="setSpacingMode('tight', this)">Tight</button>
   </div>
-  <span class="verified-chip"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Verified by JobberRecruit</span>
+  <span class="wm-note" title="Every resume carries the JobberRecruit mark as proof it was professionally built on the platform"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Verified by JobberRecruit</span>
 </div>
 
 <div class="rb-tabs" role="tablist">
-  <button class="active" onclick="switchMobileTab('edit',this)" role="tab">Edit</button>
-  <button onclick="switchMobileTab('preview',this)" role="tab">Preview</button>
+  <button type="button" class="rb-tab on" data-tab="edit" onclick="switchMobileTab('edit',this)" role="tab" aria-selected="true">Edit</button>
+  <button type="button" class="rb-tab" data-tab="view" onclick="switchMobileTab('preview',this)" role="tab" aria-selected="false">Preview</button>
 </div>
 
-<div class="rb-split">
+<div class="rb-split tab-edit" id="rb-split">
   <div class="rb-editor-col" id="rb-editor-col">
 <?php if (!$resume): ?>
 <!-- =================== RESUME ONBOARDING GATEWAY MODAL =================== -->
@@ -66,13 +113,14 @@
         position: fixed;
         inset: 0;
         z-index: 9999;
-        background: linear-gradient(135deg, #0f0c29 0%, #1a1040 40%, #0d1b3e 100%);
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(8px);
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
         animation: fadeInOverlay 0.4s ease forwards;
         overflow-y: auto;
-        padding: 2rem 1rem;
+        padding: 4rem 1rem 2rem 1rem;
     }
     @keyframes fadeInOverlay {
         from { opacity: 0; }
@@ -80,11 +128,16 @@
     }
     .onboarding-card-wrap {
         width: 100%;
-        max-width: 960px;
+        max-width: 800px;
+        background: linear-gradient(135deg, #0f0c29 0%, #1a1040 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     }
     .onboarding-header {
         text-align: center;
-        margin-bottom: 2.5rem;
+        margin-bottom: 1.25rem;
     }
     .onboarding-header .badge-pill {
         display: inline-flex;
@@ -93,19 +146,19 @@
         background: rgba(13, 96, 158, 0.15);
         border: 1px solid rgba(13, 96, 158, 0.4);
         color: #a5b4fc;
-        padding: 5px 16px;
+        padding: 4px 12px;
         border-radius: 50px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
         letter-spacing: 0.04em;
-        margin-bottom: 1.25rem;
+        margin-bottom: 0.5rem;
     }
     .onboarding-header h2 {
-        font-size: clamp(1.75rem, 4vw, 2.5rem);
+        font-size: clamp(1.4rem, 3.5vw, 1.85rem);
         font-weight: 800;
         color: #f8fafc;
         line-height: 1.2;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.25rem;
     }
     .onboarding-header h2 span {
         background: linear-gradient(90deg, #818cf8, #c084fc);
@@ -114,20 +167,20 @@
     }
     .onboarding-header p {
         color: #94a3b8;
-        font-size: 1.05rem;
-        max-width: 560px;
+        font-size: 0.9rem;
+        max-width: 500px;
         margin: 0 auto;
     }
     .ob-options-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
     }
     .ob-option-card {
         background: rgba(255,255,255,0.04);
         border: 1.5px solid rgba(255,255,255,0.08);
-        border-radius: 20px;
-        padding: 2rem 1.75rem;
+        border-radius: 12px;
+        padding: 1.25rem;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         position: relative;
@@ -143,13 +196,13 @@
         background: var(--ob-glow);
         opacity: 0;
         transition: opacity 0.3s;
-        border-radius: 20px;
+        border-radius: 12px;
     }
     .ob-option-card:hover::before { opacity: 1; }
     .ob-option-card:hover {
-        transform: translateY(-6px) scale(1.02);
+        transform: translateY(-4px) scale(1.01);
         border-color: var(--ob-border);
-        box-shadow: 0 20px 60px var(--ob-shadow);
+        box-shadow: 0 15px 40px var(--ob-shadow);
     }
     .ob-option-card.ob-scratch {
         --ob-glow: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.06) 100%);
@@ -167,14 +220,14 @@
         --ob-shadow: rgba(245,158,11,0.25);
     }
     .ob-icon-wrap {
-        width: 62px;
-        height: 62px;
-        border-radius: 16px;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1.25rem;
-        font-size: 1.8rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.4rem;
     }
     .ob-scratch .ob-icon-wrap { background: linear-gradient(135deg, #0d609e, #8b5cf6); }
     .ob-profile .ob-icon-wrap { background: linear-gradient(135deg, #10b981, #06b6d4); }
@@ -182,22 +235,22 @@
     .ob-icon-wrap i { color: white; }
     .ob-option-card h4 {
         color: #f1f5f9;
-        font-size: 1.15rem;
+        font-size: 1rem;
         font-weight: 700;
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.4rem;
     }
     .ob-option-card p {
         color: #94a3b8;
-        font-size: 0.88rem;
-        line-height: 1.6;
+        font-size: 0.78rem;
+        line-height: 1.5;
         margin: 0;
     }
     .ob-badge {
         position: absolute;
-        top: 1.25rem;
-        right: 1.25rem;
-        font-size: 0.7rem;
-        padding: 3px 10px;
+        top: 0.75rem;
+        right: 0.75rem;
+        font-size: 0.65rem;
+        padding: 2px 8px;
         border-radius: 50px;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -206,11 +259,11 @@
     .ob-profile .ob-badge { background: rgba(16,185,129,0.2); color: #34d399; }
     .ob-clone   .ob-badge { background: rgba(245,158,11,0.2); color: #fbbf24; }
     .ob-arrow {
-        margin-top: 1.5rem;
+        margin-top: 0.75rem;
         display: flex;
         align-items: center;
         color: #64748b;
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         font-weight: 600;
         transition: color 0.2s, gap 0.2s;
         gap: 6px;
@@ -330,7 +383,7 @@
         color: #475569;
         font-size: 0.85rem;
         text-decoration: none;
-        margin-top: 2.5rem;
+        margin-top: 1.25rem;
         transition: color 0.2s;
     }
     .ob-back-link:hover { color: #94a3b8; }
@@ -451,9 +504,16 @@
     }
 
     function importFromProfile() {
+        const form = document.getElementById('import-profile-form');
         const card = document.getElementById('ob-profile-card');
-        card.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner" role="status"></div><p style="color:#94a3b8;margin-top:1rem;font-size:0.9rem;">Creating your resume from profile...</p></div>';
-        document.getElementById('import-profile-form').submit();
+        if (form && card) {
+            card.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner" role="status"></div><p style="color:#94a3b8;margin-top:1rem;font-size:0.9rem;">Creating your resume from profile...</p></div>';
+            form.submit();
+            return;
+        }
+        if (typeof window.performProfileAutofill === 'function') {
+            window.performProfileAutofill();
+        }
     }
 
     function toggleClonePanel() {
@@ -472,98 +532,134 @@
 
 <?php endif; ?>
 
-<div class="content">
-        <div class="page-header">
-        <div class="page-title">
-            <h4 class="fw-bold">AI Resume Builder</h4>
-            <h6>Design your professional resume with AI assistance</h6>
-        </div>
-        <div class="page-btn">
-            <!-- Save button moved to bottom of builder for better flow -->
-            <button type="button" id="undo-ai-apply" class="btn btn-outline-secondary me-2" title="Undo last AI apply">
-                <i class="ti ti-rotate-ccw"></i> Undo AI
-            </button>
-        </div>
-    </div>
-
             <!-- ATS Score panel -->
-            <div class="score-card shadow-sm mb-3" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
-                <div class="score-top d-flex align-items-center gap-3">
-                    <div class="gauge position-relative" id="gauge-wrap" aria-label="ATS score 0 out of 100" style="width: 74px; height: 74px;">
-                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;">
-                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
-                            <circle class="p" id="gauge-p" cx="37" cy="37" r="33" style="fill: none; stroke: rgb(220, 38, 38); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;"></circle>
+            <div class="score-card" aria-label="ATS score">
+                <div class="score-top">
+                    <div class="gauge" role="img" aria-label="ATS score" id="gauge-wrap">
+                        <svg viewBox="0 0 74 74" aria-hidden="true">
+                            <circle class="t" cx="37" cy="37" r="33"></circle>
+                            <circle class="p" id="gauge-p" cx="37" cy="37" r="33"></circle>
                         </svg>
-                        <b id="ats-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0</b>
+                        <b id="ats-num">0</b>
                     </div>
                     <div class="score-info">
-                        <b style="font-family: 'Sora', sans-serif; font-size: 1.05rem; color: #0a192f; display: block;">Resume Intelligence</b>
-                        <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">ATS readiness plus recruiter-grade writing checks — all recalculated as you type.</p>
+                        <b>Resume Intelligence</b>
+                        <p>ATS readiness plus recruiter-grade writing checks — all recalculated as you type.</p>
                     </div>
                 </div>
                 
                 <!-- 6 Metric Gauges Grid -->
-                <div class="met-grid" id="met-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px; margin-top: 18px; border-top: 1px solid #edf2f7; padding-top: 15px;">
+                <div class="met-grid" id="met-grid">
                     <!-- Dynamically populated from JS -->
                 </div>
                 
                 <!-- Writing review issues header -->
-                <div class="mt-4 pt-3 border-top">
-                    <b style="font-family: 'Sora', sans-serif; font-size: 0.9rem; color: #0a192f; display: block; margin-bottom: 8px;">Detailed Audit & Checklist</b>
-                    <ul class="score-list" id="ats-list" style="list-style: none; padding-left: 0; margin-bottom: 0;">
-                        <!-- Dynamic Checklist items go here -->
-                    </ul>
-                </div>
+                <ul class="score-list" id="ats-list">
+                    <!-- Dynamic Checklist items go here -->
+                </ul>
             </div>
 
-            <form id="resume-form" onsubmit="return false;" class="pb-3 mb-3">
+            <form id="resume-form" onsubmit="return false;">
                 <input type="hidden" name="id" value="<?= $resume->id ?? '' ?>">
                 <?= csrf_field() ?>
                 
-                <!-- Step: Basic Information -->
-                <div class="ed-sec open" id="sec-info" data-step="info">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Personal Information <span class="ed-tag">Required</span></span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                <!-- job tailoring -->
+                <div class="ed-sec open" id="sec-jd">
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-zap"/></svg> Tailor to a Job</span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
-                    <div class="card custom-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Basic Information</h5>
+                        <label class="lbl" for="job-pick">Pick a JobberRecruit listing</label>
+                        <select class="select" id="job-pick" aria-label="Tailor to a listed job">
+                            <option value="">— Choose a live job on JobberRecruit —</option>
+                            <?php foreach ($tailorJobs ?? [] as $tj): ?>
+                                <option value="<?= $tj->id ?>" data-desc="<?= esc($tj->description ?? '') ?>"><?= esc($tj->title) ?><?= !empty($tj->company_name) ? ' — ' . esc($tj->company_name) : '' ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <label class="lbl" for="jd">Or paste any job description</label>
+                        <textarea class="input" id="jd" rows="4" placeholder="Paste the job advert here and we'll score the match and surface missing keywords…"></textarea>
+                        <div class="ai-row" style="margin-top:10px;">
+                            <button type="button" class="btn-ai" id="btn-ai-tailor"><svg aria-hidden="true"><use href="#i-sparkles"/></svg> Tailor Resume with AI</button>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label class="form-label fw-semibold text-dark">Resume Title <span class="text-danger">*</span></label>
-                                    <input type="text" name="title" class="form-control" value="<?= esc($resume->title ?? 'My Professional Resume') ?>" placeholder="e.g. Senior Software Engineer Resume">
+                        <div id="match-wrap" hidden>
+                            <div class="score-top" style="margin-top:12px">
+                                <div class="gauge"><svg viewBox="0 0 74 74" aria-hidden="true"><circle class="t" cx="37" cy="37" r="33"/><circle class="p" id="match-p" cx="37" cy="37" r="33" style="stroke:var(--brand)"/></svg><b id="match-num">0%</b></div>
+                                <div class="score-info"><b>Job Match Score</b><p>Keyword overlap between this resume and the job description.</p></div>
+                            </div>
+                            <div class="lbl" style="margin-top:12px">Missing keywords — tap to add to skills</div>
+                            <div class="kw-chips" id="kw-chips"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- import existing CV -->
+                <div class="ed-sec open" id="sec-import">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-title" style="display:inline-flex;gap:9px;align-items:center"><span class="imp-badge" aria-hidden="true"><svg><use href="#i-download"/></svg></span> Import Existing CV <span class="pill-new">New</span></span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                        <p class="hint" style="font-size:.74rem;color:var(--muted);margin-top:12px">Already have a CV? Import it — we keep your original safe so you can always come back to it, and use it to fill this resume's sections.</p>
+                        <label class="dropzone" for="cv-file">
+                            <span class="dz-ic" aria-hidden="true"><svg><use href="#i-download"/></svg></span>
+                            <b>Tap to upload your CV</b>
+                            <i>.pdf, .doc, .docx or .txt — your original stays untouched</i>
+                            <span class="dz-file" id="dz-file"><svg aria-hidden="true"><use href="#i-doc"/></svg><span id="dz-name"></span></span>
+                            <input type="file" id="cv-file" accept=".txt,.pdf,.doc,.docx" aria-label="Upload existing CV">
+                        </label>
+                        <div id="import-note" hidden></div>
+                        <div id="import-orig" hidden>
+                            <div class="lbl" style="margin-top:14px">Your original CV — preserved, never modified</div>
+                            <textarea class="input" id="orig-txt" rows="6" readonly></textarea>
+                            <div class="ai-row">
+                                <button type="button" class="btn-ai" id="orig-fill"><svg aria-hidden="true"><use href="#i-zap"/></svg> Fill sections from this CV</button>
+                                <button type="button" class="btn btn-outline btn-sm" id="orig-copy"><svg aria-hidden="true"><use href="#i-copy"/></svg> Copy Original</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step: Basic Information -->
+                <div class="ed-sec" id="sec-info" data-step="info">
+                    <div class="ed-head" onclick="toggleEdSec(this)" role="button" tabindex="0" aria-expanded="true">
+                        <span class="ed-grip" title="Drag to reorder" aria-hidden="true"><svg><use href="#i-menu"/></svg></span>
+                        <span class="ed-title">Personal Information <span class="ed-tag">Required</span></span>
+                        <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Personal Information up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Personal Information down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                        <label class="lbl">Resume Title (Internal) <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="input" value="<?= esc($resume->title ?? 'My Professional Resume') ?>" placeholder="e.g. Senior Software Engineer Resume" style="margin-bottom:12px;">
+
+                        <label class="lbl" for="f-name">Full name</label>
+                        <input type="text" name="full_name" id="f-name" class="input" value="<?= esc($resume->full_name ?? $candidate->full_name ?? auth()->user()->username ?? '') ?>" placeholder="Your Full Name">
+
+                        <div class="xp-entry" style="border:none;padding:0;margin-top:0">
+                            <div class="row2">
+                                <div>
+                                    <label class="lbl" for="f-email">Email</label>
+                                    <input type="email" name="email" id="f-email" class="input" value="<?= esc($resume->email ?? auth()->user()->email ?? '') ?>" placeholder="Your Email Address">
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold text-dark">Full Name</label>
-                                    <input type="text" name="full_name" class="form-control" value="<?= esc($resume->full_name ?? $candidate->full_name ?? auth()->user()->username ?? '') ?>" placeholder="Your Full Name">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold text-dark">Email Address</label>
-                                    <input type="email" name="email" class="form-control" value="<?= esc($resume->email ?? auth()->user()->email ?? '') ?>" placeholder="Your Email Address">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold text-dark">Phone Number</label>
-                                    <input type="text" name="phone" class="form-control" value="<?= esc($resume->phone ?? $candidate->phone ?? '') ?>" placeholder="e.g. +1 234 567 890">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold text-dark">Location</label>
-                                    <input type="text" name="location" class="form-control" value="<?= esc($resume->location ?? $candidate->location ?? '') ?>" placeholder="e.g. New York, USA">
-                                </div>
-                                <div class="col-md-12 mb-3">
-                                    <label class="form-label fw-semibold text-dark">LinkedIn Profile URL</label>
-                                    <input type="text" name="linkedin" class="form-control" value="<?= esc($linkedin ?? '') ?>" placeholder="e.g. https://linkedin.com/in/yourprofile">
+                                <div>
+                                    <label class="lbl" for="f-phone">Phone</label>
+                                    <input type="text" name="phone" id="f-phone" class="input" value="<?= esc($resume->phone ?? $candidate->phone ?? '') ?>" placeholder="e.g. +1 234 567 890">
                                 </div>
                             </div>
-                            <div class="mt-4 d-flex justify-content-end">
-                                <button type="button" class="btn btn-primary next-step" data-step-target="experience">Next: Experience <i class="ti ti-arrow-right ms-1"></i></button>
+                        </div>
+
+                        <div class="xp-entry" style="border:none;padding:0;margin-top:0">
+                            <div class="row2">
+                                <div>
+                                    <label class="lbl" for="f-loc">Location</label>
+                                    <input type="text" name="location" id="f-loc" class="input" value="<?= esc($resume->location ?? $candidate->location ?? '') ?>" placeholder="e.g. New York, USA">
+                                </div>
+                                <div>
+                                    <label class="lbl" for="f-linkedin">LinkedIn Profile URL</label>
+                                    <input type="text" name="linkedin" id="f-linkedin" class="input" value="<?= esc($linkedin ?? '') ?>" placeholder="e.g. https://linkedin.com/in/yourprofile">
+                                </div>
                             </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
+                        </div>
                     </div><!-- /ed-body -->
                 </div><!-- /ed-sec info -->
 
@@ -572,464 +668,286 @@
 
                 <!-- Step: Experience -->
                 <div class="ed-sec" id="sec-experience" data-step="experience">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Work Experience</span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    <div class="ed-head" onclick="toggleEdSec(this)" role="button" tabindex="0" aria-expanded="false">
+                        <span class="ed-grip" title="Drag to reorder" aria-hidden="true"><svg><use href="#i-menu"/></svg></span>
+                        <span class="ed-title">Work Experience</span>
+                        <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Work Experience up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Work Experience down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
                     </div>
-                    <div class="ed-body">
-                    <div class="card custom-card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Work Experience</h5>
-                            <button type="button" class="btn btn-sm btn-outline-primary add-experience">
-                                <i class="ti ti-plus"></i> Add Experience
-                            </button>
-                        </div>
-                        <div class="card-body" id="experience-container">
-                            <!-- Loop through and render existing experiences -->
-                            <?php if (empty($experiences)): ?>
-                                <div class="text-center py-4 text-muted no-items">
-                                    <p>No experience added yet. Click "Add Experience" to start.</p>
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($experiences as $index => $exp): ?>
-                                    <div class="experience-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd;">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Company Name</label>
-                                                <input type="text" name="exp_company[]" class="form-control form-control-sm" placeholder="Company Name" value="<?= esc($exp->company ?? '') ?>">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Job Position</label>
-                                                <input type="text" name="exp_position[]" class="form-control form-control-sm" placeholder="Job Position" value="<?= esc($exp->position ?? '') ?>">
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Start Date</label>
-                                                <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="<?= esc($exp->start_date ?? '') ?>">
-                                            </div>
-                                            <div class="col-md-4 mb-3 exp-end-date-col" style="<?= !empty($exp->is_current) ? 'display: none;' : '' ?>">
-                                                <label class="form-label small fw-semibold text-muted">End Date</label>
-                                                <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="<?= esc($exp->end_date ?? '') ?>">
-                                            </div>
-                                            <div class="col-md-4 mb-3 d-flex align-items-end">
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="<?= $index ?>" <?= !empty($exp->is_current) ? 'checked' : '' ?>>
-                                                    <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-12 mb-2">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <label class="small fw-semibold text-muted">Description & Achievements</label>
-                                                    <div>
-                                                        <button type="button" class="ai-assist-btn improve-desc-ai">
-                                                            <i class="ti ti-wand"></i> Improve with AI
-                                                        </button>
-                                                        <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
-                                                            <i class="ti ti-list"></i> Generate Bullets
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements..."><?= esc($exp->description ?? '') ?></textarea>
+                    <div class="ed-body" id="experience-container">
+                        <!-- Loop through and render existing experiences -->
+                        <?php if (empty($experiences)): ?>
+                            <div class="text-center py-4 text-muted no-items" style="font-size: 0.85rem;">
+                                <p>No experience added yet. Click "Add Experience" to start.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($experiences as $index => $exp): ?>
+                                <div class="xp-entry position-relative experience-item">
+                                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                    <div class="row2">
+                                        <div>
+                                            <label class="lbl">Role</label>
+                                            <input type="text" name="exp_position[]" class="input" placeholder="Job Position" value="<?= esc($exp->position ?? '') ?>">
+                                        </div>
+                                        <div>
+                                            <label class="lbl">Dates (Start - End)</label>
+                                            <div style="display:flex; gap:6px; align-items:center;">
+                                                <input type="date" name="exp_start_date[]" class="input" value="<?= esc($exp->start_date ?? '') ?>" style="padding-left:4px; padding-right:4px;">
+                                                <span class="exp-end-date-col" style="<?= !empty($exp->is_current) ? 'display: none;' : '' ?>">-</span>
+                                                <input type="date" name="exp_end_date[]" class="input exp-end-date-col" value="<?= esc($exp->end_date ?? '') ?>" style="<?= !empty($exp->is_current) ? 'display: none;' : '' ?> padding-left:4px; padding-right:4px;">
                                             </div>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                            <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="info"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-step-target="education">Next: Education <i class="ti ti-arrow-right ms-1"></i></button>
-                            </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div style="flex:1;">
+                                            <label class="lbl">Company</label>
+                                            <input type="text" name="exp_company[]" class="input" placeholder="Company Name" value="<?= esc($exp->company ?? '') ?>">
+                                        </div>
+                                        <div class="form-check" style="margin-left:15px; margin-top:20px;">
+                                            <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="<?= $index ?>" <?= !empty($exp->is_current) ? 'checked' : '' ?> id="exp_current_<?= $index ?>">
+                                            <label class="form-check-label lbl" for="exp_current_<?= $index ?>" style="cursor:pointer; display:inline-block; margin-left:4px; margin-bottom:0;">Current</label>
+                                        </div>
+                                    </div>
+                                    <label class="lbl">Achievements — one per line</label>
+                                    <textarea name="exp_description[]" class="input" rows="4" placeholder="Describe your responsibilities and achievements..."><?= esc($exp->description ?? '') ?></textarea>
+                                    <div class="ai-row">
+                                        <button type="button" class="btn-ai improve-desc-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Strengthen achievements</button>
+                                        <button type="button" class="btn-ai generate-bullets-ai"><svg aria-hidden="true"><use href="#i-edit"/></svg> Generate Bullets</button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        
+                        <button type="button" class="btn btn-outline btn-sm btn-addxp add-experience" style="margin-top:15px; width: 100%;"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another role</button>
+                        <p class="hint" style="font-size:.7rem;color:var(--muted);margin-top:10px;text-align:center;">Strong bullets answer: what problem was solved, what improved, what impact was made.</p>
+                        
                     </div><!-- /ed-body -->
                 </div><!-- /ed-sec experience -->
-
-                <!-- Step: Education -->
+                       <!-- Step: Education -->
                 <div class="ed-sec" id="sec-education" data-step="education">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Education</span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    <div class="ed-head" onclick="toggleEdSec(this)" role="button" tabindex="0" aria-expanded="false">
+                        <span class="ed-grip" title="Drag to reorder" aria-hidden="true"><svg><use href="#i-menu"/></svg></span>
+                        <span class="ed-title">Education</span>
+                        <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Education up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Education down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
                     </div>
-                    <div class="ed-body">
-                    <div class="card custom-card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Education</h5>
-                            <button type="button" class="btn btn-sm btn-outline-primary add-education">
-                                <i class="ti ti-plus"></i> Add Education
-                            </button>
-                        </div>
-                        <div class="card-body" id="education-container">
-                            <!-- Loop through and render existing education -->
-                            <?php if (empty($education)): ?>
-                                <div class="text-center py-4 text-muted no-items">
-                                    <p>No education added yet. Click "Add Education" to start.</p>
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($education as $edu): ?>
-                                    <div class="education-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd;">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">School / University</label>
-                                                <input type="text" name="edu_school[]" class="form-control form-control-sm" placeholder="School / University" value="<?= esc($edu->institution ?? '') ?>">
-                                            </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Degree</label>
-                                                <select name="edu_degree[]" class="form-select form-select-sm">
-                                                    <option value="">Select Degree</option>
-                                                    <option value="High School" <?= ($edu->degree ?? '') === 'High School' ? 'selected' : '' ?>>High School</option>
-                                                    <option value="Associate" <?= ($edu->degree ?? '') === 'Associate' ? 'selected' : '' ?>>Associate Degree</option>
-                                                    <option value="Bachelor" <?= ($edu->degree ?? '') === 'Bachelor' ? 'selected' : '' ?>>Bachelor's Degree</option>
-                                                    <option value="Master" <?= ($edu->degree ?? '') === 'Master' ? 'selected' : '' ?>>Master's Degree</option>
-                                                    <option value="PhD" <?= ($edu->degree ?? '') === 'PhD' ? 'selected' : '' ?>>PhD / Doctorate</option>
-                                                    <option value="Certificate" <?= ($edu->degree ?? '') === 'Certificate' ? 'selected' : '' ?>>Certificate</option>
-                                                    <option value="Other" <?= ($edu->degree ?? '') === 'Other' ? 'selected' : '' ?>>Other</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Field of Study</label>
-                                                <input type="text" name="edu_field[]" class="form-control form-control-sm" placeholder="Field of Study" value="<?= esc($edu->field_of_study ?? '') ?>">
-                                            </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Graduation Year</label>
-                                                <?php 
-                                                    $gradYear = !empty($edu->graduation_date) ? date('Y', strtotime($edu->graduation_date)) : '';
-                                                ?>
-                                                <input type="number" name="edu_year[]" class="form-control form-control-sm" placeholder="Graduation Year" min="1950" max="2030" value="<?= esc($gradYear) ?>">
-                                            </div>
+                    <div class="ed-body" id="education-container">
+                        <!-- Loop through and render existing education -->
+                        <?php if (empty($education)): ?>
+                            <div class="text-center py-4 text-muted no-items" style="font-size: 0.85rem;">
+                                <p>No education added yet. Click "Add Education" to start.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($education as $edu): ?>
+                                <div class="xp-entry position-relative education-item">
+                                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                    <div class="row2">
+                                        <div>
+                                            <label class="lbl">School / University</label>
+                                            <input type="text" name="edu_school[]" class="input" placeholder="School / University" value="<?= esc($edu->institution ?? '') ?>">
+                                        </div>
+                                        <div>
+                                            <label class="lbl">Degree</label>
+                                            <select name="edu_degree[]" class="input select">
+                                                <option value="">Select Degree / Qualification</option>
+                                                <option value="B.Sc." <?= in_array(($edu->degree ?? ''), ['B.Sc.', 'B.Sc', 'Bachelor', "Bachelor's Degree"]) ? 'selected' : '' ?>>B.Sc. / Bachelor of Science</option>
+                                                <option value="B.A." <?= in_array(($edu->degree ?? ''), ['B.A.', 'B.A']) ? 'selected' : '' ?>>B.A. / Bachelor of Arts</option>
+                                                <option value="B.Eng." <?= in_array(($edu->degree ?? ''), ['B.Eng.', 'B.Eng', 'B.Tech.', 'B.Tech']) ? 'selected' : '' ?>>B.Eng. / B.Tech. (Engineering &amp; Tech)</option>
+                                                <option value="LL.B" <?= ($edu->degree ?? '') === 'LL.B' ? 'selected' : '' ?>>LL.B / Law Degree</option>
+                                                <option value="MBBS" <?= in_array(($edu->degree ?? ''), ['MBBS', 'MB.BS']) ? 'selected' : '' ?>>MBBS / Medicine &amp; Surgery</option>
+                                                <option value="HND" <?= ($edu->degree ?? '') === 'HND' ? 'selected' : '' ?>>HND / Higher National Diploma</option>
+                                                <option value="OND / ND" <?= in_array(($edu->degree ?? ''), ['OND / ND', 'OND', 'ND', 'National Diploma']) ? 'selected' : '' ?>>OND / ND (National Diploma)</option>
+                                                <option value="NCE" <?= ($edu->degree ?? '') === 'NCE' ? 'selected' : '' ?>>NCE / Nigeria Certificate in Education</option>
+                                                <option value="M.Sc." <?= in_array(($edu->degree ?? ''), ['M.Sc.', 'M.Sc', 'Master', "Master's Degree", 'M.A.', 'M.A']) ? 'selected' : '' ?>>M.Sc. / M.A. (Master's Degree)</option>
+                                                <option value="MBA" <?= ($edu->degree ?? '') === 'MBA' ? 'selected' : '' ?>>MBA / Master of Business Admin</option>
+                                                <option value="PhD" <?= in_array(($edu->degree ?? ''), ['PhD', 'Ph.D.', 'Doctorate']) ? 'selected' : '' ?>>Ph.D. / Doctorate</option>
+                                                <option value="PGD" <?= in_array(($edu->degree ?? ''), ['PGD', 'Postgraduate Diploma']) ? 'selected' : '' ?>>PGD / Postgraduate Diploma</option>
+                                                <option value="SSCE / WAEC" <?= in_array(($edu->degree ?? ''), ['SSCE / WAEC', 'WAEC', 'NECO', 'High School', 'GCE']) ? 'selected' : '' ?>>SSCE / WAEC / NECO</option>
+                                                <option value="Associate" <?= ($edu->degree ?? '') === 'Associate' ? 'selected' : '' ?>>Associate Degree</option>
+                                                <option value="Certificate" <?= ($edu->degree ?? '') === 'Certificate' ? 'selected' : '' ?>>Professional Certificate</option>
+                                                <option value="Other" <?= ($edu->degree ?? '') === 'Other' ? 'selected' : '' ?>>Other Qualification</option>
+                                            </select>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                            <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="experience"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-step-target="skills">Next: Skills <i class="ti ti-arrow-right ms-1"></i></button>
-                            </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
+                                    <div class="row2" style="margin-top: 10px;">
+                                        <div>
+                                            <label class="lbl">Field of Study</label>
+                                            <input type="text" name="edu_field[]" class="input" placeholder="Field of Study" value="<?= esc($edu->field_of_study ?? '') ?>">
+                                        </div>
+                                        <div>
+                                            <label class="lbl">Graduation Year</label>
+                                            <?php 
+                                                $gradYear = !empty($edu->graduation_date) ? date('Y', strtotime($edu->graduation_date)) : '';
+                                            ?>
+                                            <input type="text" name="edu_year[]" class="input" placeholder="YYYY" value="<?= esc($gradYear) ?>">
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        
+                        <button type="button" class="btn btn-outline btn-sm btn-addxp add-education" style="margin-top:15px; width: 100%;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Education</button>
+                        
                     </div><!-- /ed-body -->
                 </div><!-- /ed-sec education -->
 
                 <!-- Step: Skills -->
                 <div class="ed-sec" id="sec-skills" data-step="skills">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 11-13h-8Z"/></svg> Skills</span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    <div class="ed-head" onclick="toggleEdSec(this)" role="button" tabindex="0" aria-expanded="false">
+                        <span class="ed-grip" title="Drag to reorder" aria-hidden="true"><svg><use href="#i-menu"/></svg></span>
+                        <span class="ed-title">Skills & Certs</span>
+                        <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Skills & Certs up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Skills & Certs down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
-                <div class="card custom-card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Skills</h5>
-                    </div>
-                    <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark">Add Skills (Comma separated)</label>
-                                <?php 
-                                    $skillsList = [];
-                                    if (!empty($skills)) {
-                                        foreach ($skills as $skill) {
-                                            $skillsList[] = $skill->skill_name;
-                                        }
-                                    }
-                                    $skillsVal = implode(', ', $skillsList);
-                                ?>
-                                <input type="text" name="skills" class="form-control tags-input" value="<?= esc($skillsVal) ?>" placeholder="e.g. PHP, JavaScript, Project Management">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark">Certifications (One per line)</label>
-                                <textarea name="certs" class="form-control" rows="3" placeholder="e.g. Project Management Professional (PMP)&#10;ICAN Chartered Accountant"><?= esc($certs ?? '') ?></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark">Languages (Comma separated)</label>
-                                <input type="text" name="languages" class="form-control" value="<?= esc($languages ?? '') ?>" placeholder="e.g. English, French, Spanish">
-                            </div>
-                            <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-step-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
-                            </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
+
+                        <label class="lbl">Skills — comma separated</label>
+                        <?php 
+                            $skillsList = [];
+                            if (!empty($skills)) {
+                                foreach ($skills as $skill) {
+                                    $skillsList[] = $skill->skill_name;
+                                }
+                            }
+                            $skillsVal = implode(', ', $skillsList);
+                        ?>
+                        <textarea name="skills" class="input" rows="2" placeholder="e.g. PHP, JavaScript, Project Management"><?= esc($skillsVal) ?></textarea>
+                        <p class="hint" style="font-size:.7rem;color:var(--muted);margin-top:8px; margin-bottom: 15px;">Aim for 6–10 skills that mirror the job description wording.</p>
+
+                        <label class="lbl">Certifications — one per line</label>
+                        <textarea name="certs" class="input" rows="3" placeholder="e.g. Project Management Professional (PMP)&#10;ICAN Chartered Accountant"><?= esc($certs ?? '') ?></textarea>
+                        <p class="hint" style="font-size:.7rem;color:var(--muted);margin-top:8px; margin-bottom: 15px;">Your JobberRecruit certificates are verifiable — the code lets employers confirm them online.</p>
+
+                        <label class="lbl">Languages</label>
+                        <input type="text" name="languages" class="input" value="<?= esc($languages ?? '') ?>" placeholder="e.g. English, French, Spanish">
+                        
                     </div><!-- /ed-body -->
                 </div><!-- /ed-sec skills -->
 
                 <!-- Step: Summary (moved after Skills so AI can use experience/education/skills) -->
                 <div class="ed-sec" id="sec-summary" data-step="summary">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg> Professional Summary</span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    <div class="ed-head" onclick="toggleEdSec(this)" role="button" tabindex="0" aria-expanded="false">
+                        <span class="ed-grip" title="Drag to reorder" aria-hidden="true"><svg><use href="#i-menu"/></svg></span>
+                        <span class="ed-title">Professional Summary</span>
+                        <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Professional Summary up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Professional Summary down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
-                    <div class="card custom-card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Professional Summary</h5>
-                            <button type="button" class="ai-assist-btn" id="generate-summary-ai">
-                                <i class="ti ti-sparkles"></i> Generate with AI
-                            </button>
+                        <label class="lbl" for="resume-summary">Summary</label>
+                        <textarea name="summary" id="resume-summary" class="input" rows="4" placeholder="A brief overview of your professional background and key achievements..."><?= esc($resume->summary ?? '') ?></textarea>
+                        <div class="ai-row" style="margin-top: 10px;">
+                            <button type="button" class="btn-ai" id="generate-summary-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Improve with AI</button>
                         </div>
-                        <div class="card-body">
-                            <textarea name="summary" id="resume-summary" class="form-control" rows="6" placeholder="A brief overview of your professional background and key achievements..."><?= esc($resume->summary ?? '') ?></textarea>
-                            <div class="mt-4 d-flex justify-content-between">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                                <button type="button" class="btn btn-primary next-step" data-step-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
-                            </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
+                        
                     </div><!-- /ed-body -->
                 </div><!-- /ed-sec summary -->
 
-                <!-- Step: Tailor to a Job -->
-                <div class="ed-sec" id="sec-jd-match" data-step="jd-match">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg> Tailor to Job</span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
-                    </div>
+                <!-- writing review (auto) -->
+                <div class="ed-sec open" id="sec-review">
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-eye"/></svg> Writing Review</span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                    <div class="ed-body"><div id="issues"></div></div>
+                </div>
+
+                <!-- recruiter view -->
+                <div class="ed-sec" id="sec-recruiter">
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-users"/></svg> Recruiter View</span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                    <div class="ed-body" id="recruiter-body"></div>
+                </div>
+
+                <!-- more AI outputs -->
+                <div class="ed-sec" id="sec-outputs">
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-zap"/></svg> More AI Outputs</span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body">
-                    <div class="card custom-card">
-                        <div class="card-header d-flex align-items-center gap-2">
-                            <i class="ti ti-target text-primary"></i>
-                            <h5 class="card-title mb-0">Tailor to a Job</h5>
+                        <div class="out-btns">
+                            <button class="btn-ai" data-out="headline">Professional Headline</button>
+                            <button class="btn-ai" data-out="pitch">Elevator Pitch</button>
+                            <button class="btn-ai" data-out="about">LinkedIn About</button>
+                            <button class="btn-ai" data-out="bio">Executive Bio</button>
                         </div>
-                        <div class="card-body">
-                            <p class="text-muted mb-3" style="font-size: 0.85rem;">Paste a job description and we'll score your resume's keyword match, then surface missing skills you can add with one click.</p>
-                            
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark" for="job-pick">Pick a JobberRecruit listing</label>
-                                <select class="form-select" id="job-pick" aria-label="Tailor to a listed job">
-                                    <option value="">— Choose a live job on JobberRecruit —</option>
-                                    <?php foreach ($tailorJobs ?? [] as $tj): ?>
-                                        <option value="<?= $tj->id ?>" data-desc="<?= esc($tj->description ?? '') ?>"><?= esc($tj->title) ?><?= !empty($tj->company_name) ? ' — ' . esc($tj->company_name) : '' ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark" for="jd">Or paste any job description</label>
-                                <textarea class="form-control" id="jd" rows="5" placeholder="Paste the job advert here and we'll score the match and surface missing keywords…" style="font-size: 0.85rem; resize: vertical;"></textarea>
-                            </div>
-                            
-                            <div id="match-wrap" class="d-none">
-                                <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-3" style="background: #f8fafd; border: 1px solid #e2e8f0;">
-                                    <div class="gauge position-relative flex-shrink-0" style="width: 64px; height: 64px;">
-                                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;" aria-hidden="true">
-                                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
-                                            <circle class="p" id="match-p" cx="37" cy="37" r="33" style="fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset .4s ease;"></circle>
-                                        </svg>
-                                        <b id="match-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0%</b>
-                                    </div>
-                                    <div>
-                                        <b style="font-family: 'Sora', sans-serif; font-size: 0.95rem; color: #0a192f; display: block;">Job Match Score</b>
-                                        <p class="mb-0 text-muted" style="font-size: 0.78rem;">Keyword overlap between your resume and the job description.</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-2" style="font-size: .68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em;">
-                                    Missing Keywords — click to add to Skills
-                                </div>
-                                <div id="kw-chips" class="d-flex flex-wrap gap-2 mb-3"></div>
-                            </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
-                    </div><!-- /ed-body -->
-                </div><!-- /ed-sec jd-match -->
-
-                <!-- Step: Choose World-Class Template -->
-                <div class="ed-sec" id="sec-templates" data-step="templates">
-                    <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
-                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Layout & Template</span>
-                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                        <div class="out-txt" id="out-wrap" hidden>
+                            <textarea class="input" id="out-txt" rows="7" aria-label="Generated output"></textarea>
+                            <div class="ai-row"><button class="btn btn-outline btn-sm" id="out-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button></div>
+                        </div>
+                        <p class="hint" style="font-size:.7rem;color:var(--muted);margin-top:10px">Generated from this resume's facts only — nothing is invented.</p>
                     </div>
+                </div>
+
+                <!-- career tools -->
+                <div class="ed-sec" id="sec-career">
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-award"/></svg> Career Tools</span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body">
-                    <div class="card custom-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Choose Resume Template</h5>
+                        <label class="lbl" for="industry-pick">Tailor tone to industry</label>
+                        <select class="select" id="industry-pick" aria-label="Target industry">
+                            <option value="">General</option>
+                            <option value="Tech">Tech</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Creative">Creative</option>
+                            <option value="Marketing">Marketing</option>
+                        </select>
+                        <div class="out-btns" style="margin-top:12px">
+                            <button type="button" class="btn-ai" data-career="interview">Interview Questions</button>
+                            <button type="button" class="btn-ai" data-career="salary">Salary Negotiation</button>
                         </div>
-                        <div class="card-body">
-                            <input type="hidden" name="template_id" id="template_id" value="<?= esc($resume->template_id ?? 'classic') ?>">
-                            <div class="row">
-                                <!-- Classic Template Choice -->
-                                <div class="col-xl-2-4 col-lg-4 col-md-6 mb-4">
-                                    <div class="template-choice border rounded p-3 text-center cursor-pointer transition-all <?= ($resume->template_id ?? 'classic') === 'classic' ? 'active border-primary border-2 shadow-sm' : '' ?>" data-template="classic">
-                                        <div class="template-preview classic-preview mb-2 rounded position-relative" style="height: 150px; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff;">
-                                            <div style="height: 12px; background: #2563eb; width: 100%;"></div>
-                                            <div class="p-2 text-start">
-                                                <div style="height: 8px; background: #1e40af; width: 60%; margin-bottom: 6px;"></div>
-                                                <div style="height: 4px; background: #cbd5e1; width: 80%; margin-bottom: 12px;"></div>
-                                                <div style="height: 6px; background: #94a3b8; width: 40%; margin-bottom: 4px;"></div>
-                                                <div style="height: 4px; background: #e2e8f0; width: 90%; margin-bottom: 4px;"></div>
-                                                <div style="height: 4px; background: #e2e8f0; width: 85%; margin-bottom: 8px;"></div>
-                                                <div style="height: 6px; background: #94a3b8; width: 35%; margin-bottom: 4px;"></div>
-                                                <div style="height: 4px; background: #e2e8f0; width: 90%; margin-bottom: 4px;"></div>
-                                            </div>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Classic Professional</h6>
-                                        <span class="text-muted small">Traditional & clean layout</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Modern Template Choice -->
-                                <div class="col-xl-2-4 col-lg-4 col-md-6 mb-4">
-                                    <div class="template-choice border rounded p-3 text-center cursor-pointer transition-all <?= ($resume->template_id ?? '') === 'modern' ? 'active border-primary border-2 shadow-sm' : '' ?>" data-template="modern">
-                                        <div class="template-preview modern-preview mb-2 rounded position-relative" style="height: 150px; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff; display: flex;">
-                                            <div style="width: 30%; background: #f8fafc; border-right: 1px solid #e2e8f0; height: 100%; padding: 8px 4px; box-sizing: border-box; text-align: left;">
-                                                <div style="height: 6px; background: #0a4d7e; width: 80%; margin-bottom: 6px;"></div>
-                                                <div style="height: 3px; background: #cbd5e1; width: 90%; margin-bottom: 3px;"></div>
-                                                <div style="height: 3px; background: #cbd5e1; width: 70%; margin-bottom: 12px;"></div>
-                                                <div style="height: 6px; background: #0a4d7e; width: 80%; margin-bottom: 6px;"></div>
-                                                <div style="height: 3px; background: #cbd5e1; width: 85%; margin-bottom: 3px;"></div>
-                                                <div style="height: 3px; background: #cbd5e1; width: 75%; margin-bottom: 3px;"></div>
-                                            </div>
-                                            <div style="width: 70%; padding: 8px; box-sizing: border-box; text-align: left;">
-                                                <div style="height: 10px; background: #1e3a8a; width: 70%; margin-bottom: 4px;"></div>
-                                                <div style="height: 4px; background: #0a4d7e; width: 40%; margin-bottom: 10px;"></div>
-                                                <div style="height: 6px; background: #94a3b8; width: 50%; margin-bottom: 4px;"></div>
-                                                <div style="height: 3px; background: #e2e8f0; width: 90%; margin-bottom: 3px;"></div>
-                                                <div style="height: 3px; background: #e2e8f0; width: 85%; margin-bottom: 3px;"></div>
-                                            </div>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Modern & Sleek</h6>
-                                        <span class="text-muted small">Elegant double-column</span>
-                                    </div>
-                                </div>
-
-                                <!-- Creative Template Choice -->
-                                <div class="col-xl-2-4 col-lg-4 col-md-6 mb-4">
-                                    <div class="template-choice border rounded p-3 text-center cursor-pointer transition-all <?= ($resume->template_id ?? '') === 'creative' ? 'active border-primary border-2 shadow-sm' : '' ?>" data-template="creative">
-                                        <div class="template-preview creative-preview mb-2 rounded position-relative" style="height: 150px; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff;">
-                                            <div style="background: #6b21a8; padding: 8px; text-align: left; height: 35px; box-sizing: border-box;">
-                                                <div style="height: 8px; background: #ffffff; width: 50%; margin-bottom: 4px;"></div>
-                                                <div style="height: 3px; background: #e9d5ff; width: 75%;"></div>
-                                            </div>
-                                            <div class="p-2 text-start">
-                                                <div style="height: 6px; background: #6b21a8; width: 35%; margin-bottom: 6px; border-left: 2px solid #a855f7; padding-left: 2px;"></div>
-                                                <div style="height: 3px; background: #e2e8f0; width: 90%; margin-bottom: 3px;"></div>
-                                                <div style="height: 3px; background: #e2e8f0; width: 85%; margin-bottom: 12px;"></div>
-                                                <div style="height: 6px; background: #6b21a8; width: 30%; margin-bottom: 6px; border-left: 2px solid #a855f7; padding-left: 2px;"></div>
-                                                <span style="display: inline-block; height: 8px; background: #faf5ff; border: 1px solid #e9d5ff; width: 25%; margin-right: 2px; border-radius: 4px;"></span>
-                                                <span style="display: inline-block; height: 8px; background: #faf5ff; border: 1px solid #e9d5ff; width: 20%; margin-right: 2px; border-radius: 4px;"></span>
-                                                <span style="display: inline-block; height: 8px; background: #faf5ff; border: 1px solid #e9d5ff; width: 30%; border-radius: 4px;"></span>
-                                            </div>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Creative & Bold</h6>
-                                        <span class="text-muted small">Stunning vibrant banner</span>
-                                    </div>
-                                </div>
-
-                                <!-- Executive Template Choice -->
-                                <div class="col-xl-2-4 col-lg-4 col-md-6 mb-4">
-                                    <div class="template-choice border rounded p-3 text-center cursor-pointer transition-all <?= ($resume->template_id ?? '') === 'executive' ? 'active border-primary border-2 shadow-sm' : '' ?>" data-template="executive">
-                                        <div class="template-preview executive-preview mb-2 rounded position-relative" style="height: 150px; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff;">
-                                            <div class="p-2 text-center" style="border-bottom: 2px double #b45309;">
-                                                <div style="height: 10px; background: #1e3a8a; width: 50%; margin: 0 auto 3px auto;"></div>
-                                                <div style="height: 4px; background: #b45309; width: 30%; margin: 0 auto;"></div>
-                                            </div>
-                                            <div class="p-2 text-start">
-                                                <div style="height: 5px; background: #1e3a8a; width: 40%; margin-bottom: 6px; border-bottom: 1px solid #1e3a8a;"></div>
-                                                <div style="height: 4px; background: #334155; width: 90%; margin-bottom: 3px;"></div>
-                                                <div style="height: 4px; background: #334155; width: 85%; margin-bottom: 10px;"></div>
-                                                <div style="height: 5px; background: #1e3a8a; width: 45%; margin-bottom: 6px; border-bottom: 1px solid #1e3a8a;"></div>
-                                                <div style="height: 4px; background: #334155; width: 88%; margin-bottom: 3px;"></div>
-                                            </div>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Executive Serif</h6>
-                                        <span class="text-muted small">Centred stately design</span>
-                                    </div>
-                                </div>
-
-                                <!-- Minimalist Template Choice -->
-                                <div class="col-xl-2-4 col-lg-4 col-md-6 mb-4">
-                                    <div class="template-choice border rounded p-3 text-center cursor-pointer transition-all <?= ($resume->template_id ?? '') === 'minimalist' ? 'active border-primary border-2 shadow-sm' : '' ?>" data-template="minimalist">
-                                        <div class="template-preview minimalist-preview mb-2 rounded position-relative" style="height: 150px; overflow: hidden; border: 1px solid #e2e8f0; background: #ffffff; padding: 12px 10px; box-sizing: border-box; text-align: left;">
-                                            <div style="height: 10px; background: #0f172a; width: 40%; margin-bottom: 2px;"></div>
-                                            <div style="height: 4px; background: #94a3b8; width: 60%; margin-bottom: 10px;"></div>
-                                            <div style="height: 1px; background: #f1f5f9; width: 100%; margin-bottom: 10px;"></div>
-                                            <div style="height: 6px; background: #0f172a; width: 25%; margin-bottom: 6px;"></div>
-                                            <div style="height: 3px; background: #475569; width: 90%; margin-bottom: 3px;"></div>
-                                            <div style="height: 3px; background: #475569; width: 85%; margin-bottom: 8px;"></div>
-                                            <div style="height: 6px; background: #0f172a; width: 30%; margin-bottom: 6px;"></div>
-                                            <div style="height: 3px; background: #475569; width: 88%; margin-bottom: 3px;"></div>
-                                        </div>
-                                        <h6 class="fw-semibold mb-1">Minimalist Clean</h6>
-                                        <span class="text-muted small">Sophisticated airy space</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 d-flex justify-content-start">
-                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="summary"><i class="ti ti-arrow-left me-1"></i> Previous</button>
-                            </div>
-                        </div><!-- /card-body -->
-                    </div><!-- /card -->
-                    </div><!-- /ed-body -->
-                </div><!-- /ed-sec templates -->
-
-                            <!-- Download Section -->
-                            <div class="mt-4 pt-4 border-top text-center">
-                                <h5 class="fw-bold text-dark mb-2">✨ Ready to apply? Download your resume!</h5>
-                                <p class="text-muted small mb-4">Export your freshly built resume in your chosen template style. We save your progress automatically.</p>
-                                
-                                <div class="d-flex flex-wrap justify-content-center gap-3">
-                                    <button type="button" class="btn btn-danger btn-lg px-4 py-3 fw-bold download-pdf-btn d-flex align-items-center shadow-sm transition-all" style="border-radius: 12px; font-size: 0.95rem;">
-                                        <i class="ti ti-file-type-pdf me-2 fs-4"></i> Download Professional PDF
-                                    </button>
-                                    <button type="button" class="btn btn-primary btn-lg px-4 py-3 fw-bold download-docx-btn d-flex align-items-center shadow-sm transition-all" style="border-radius: 12px; font-size: 0.95rem; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%); border: none;">
-                                        <i class="ti ti-file-text me-2 fs-4"></i> Download Word (DOCX)
-                                    </button>
-                                </div>
-
-                                <div class="mt-3 text-center">
-                                    <div class="d-flex justify-content-center gap-2 align-items-center">
-                                        <button type="button" id="save-resume-btn" class="btn btn-primary px-4 py-2 fw-semibold">
-                                        <i class="ti ti-device-floppy me-1"></i> Save Resume
-                                        </button>
-                                        <button type="button" id="open-revisions-btn" class="btn btn-outline-secondary px-3 py-2" title="Revision History">
-                                            <i class="ti ti-history me-1"></i> Revisions
-                                        </button>
-                                    </div>
-                                </div>
-                            </div><!-- /Download Section -->
-                        </form><!-- /resume-form -->
-            </div><!-- /content -->
-        </div><!-- /rb-editor-col -->
-
-        <!-- Right Side: Live Premium Preview -->
-        <div class="rb-preview-col" id="rb-preview-col">
-            <!-- Customization Bar (hidden — controls moved to top toolbar) -->
-            <div class="design-bar shadow-sm" style="display:none">
-                <span class="lbl fw-bold text-dark">Template:</span>
-                <select class="form-select form-select-sm select border-secondary" id="tpl-select" style="min-width:130px; font-weight: 600;">
-                    <option value="t-classic">Classic Professional</option>
-                    <option value="t-creative">Creative & Bold</option>
-                    <option value="t-exec">Executive Serif</option>
-                    <option value="t-minimal">Minimalist Clean</option>
-                    <option value="t-modern">Modern & Sleek</option>
-                </select>
-
-                <span class="lbl fw-bold text-dark ms-2">Spacing:</span>
-                <div class="dens border border-secondary rounded p-1">
-                    <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 border-0 on" id="spacing-roomy-btn" data-spacing="roomy">Roomy</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 border-0" id="spacing-tight-btn" data-spacing="tight">Tight</button>
+                        <div class="career-out d-none mt-3" id="career-out"></div>
+                    </div>
                 </div>
 
-                <div class="wm-note ms-auto">
-                    <i class="ti ti-shield-check text-success"></i> Anti-Crop Protection
+                <!-- version history -->
+                <div class="ed-sec" id="sec-history">
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-clock"/></svg> Version History</span>
+                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                    <div class="ed-body"><div id="hist-list"><p class="hint" style="font-size:.74rem;color:var(--muted);margin-top:10px">Snapshots are captured automatically as you edit.</p></div></div>
                 </div>
-            </div>
 
-            <!-- Live Rendering Shell -->
-            <div class="pv-shell shadow-sm mb-3">
-                <div id="doc" class="doc t-classic spacing-roomy wm-tile guides">
-                    <!-- Live Document Compiled Here -->
+                <!-- Expert Review Upsell & Save Actions (Retained for backend functionality) -->
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: center; gap: 10px;">
+                    <button type="button" id="save-resume-btn" class="btn btn-accent px-4 py-2">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save Resume
+                    </button>
+                    <button type="button" id="open-revisions-btn" class="btn btn-outline px-3 py-2" title="Revision History">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Revisions
+                    </button>
                 </div>
-            </div>
-            <div class="pv-hint">A4 Page-break guidance shown above. Adjust text spacing to fit exactly <b>1 Page</b>.</div>
-        </div><!-- /rb-preview-col -->
-    </div><!-- /rb-split -->
+            </form><!-- /resume-form -->
+
+    </div><!-- /rb-editor-col -->
+
+    <!-- ══ PREVIEW ══ -->
+    <div class="rb-preview-col" id="rb-preview-col">
+        <!-- Hidden tpl select sync for topbar select -->
+        <select id="tpl-select" style="display:none;">
+            <option value="t-exec">Executive</option>
+            <option value="t-pro">Professional</option>
+            <option value="t-modern">Modern</option>
+            <option value="t-serif">Elegant Serif</option>
+            <option value="t-tech">Tech / Startup</option>
+            <option value="t-classic">Classic</option>
+            <option value="t-minimal">Minimal</option>
+        </select>
+
+        <div class="pv-shell"><article class="doc t-modern guides wm-tile" id="doc" aria-label="Resume preview"></article></div>
+        <p class="pv-hint" id="pv-hint" hidden>The <b>orange line</b> marks where page 2 begins on A4.</p>
+        <div class="fit-row" id="fit-row" hidden><span class="fit-dot" id="fit-dot" aria-hidden="true"></span><span id="fit-txt"></span></div>
+    </div><!-- /rb-preview-col -->
+</div><!-- /rb-split -->
+
+<!-- Human Expert Review Banner -->
+<div class="review-up">
+    <span class="rz-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5.5 5.5 0 0 0-4-5.3"/></svg></span>
+    <div class="grow"><b>Want human eyes on it?</b><p>Get a professional review from the JobberRecruit team before you send it out.</p></div>
+    <a href="/cv-review" class="btn btn-outline btn-sm">Get Expert Review</a>
+</div>
 
 <!-- AI Modal Loader -->
 <div class="modal fade" id="aiLoaderModal" data-bs-backdrop="static" tabindex="-1">
@@ -1102,9 +1020,62 @@
 </button>
                 </div>
             </form>
-        </div><!-- /rb-preview-col -->
-    </div><!-- /rb-split -->
-</div><!-- /rb-layout -->
+        </div><!-- /coach-input-area -->
+    </div><!-- /coach-chat-container -->
+</div><!-- /aiResumeCoachDrawer -->
+
+<!-- Cover Letter Generator Modal -->
+<div class="modal fade" id="coverLetterModal" tabindex="-1" aria-labelledby="coverLetterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="coverLetterModalLabel">
+          <svg style="width:20px;height:20px;color:var(--primary,#0861a9)" aria-hidden="true"><use href="#i-mail"/></svg>
+          AI Cover Letter Generator
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="coverLetterForm" onsubmit="return false;">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" for="cl-job-title">Target Job Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="cl-job-title" placeholder="e.g. Senior Product Designer" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold" for="cl-company-name">Company Name (Optional)</label>
+              <input type="text" class="form-control" id="cl-company-name" placeholder="e.g. Acme Fintech Ltd">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" for="cl-job-desc">Job Description / Requirements (Optional)</label>
+              <textarea class="form-control" id="cl-job-desc" rows="3" placeholder="Paste requirements or key duties here to tailor specifically to this opportunity..."></textarea>
+            </div>
+            <div class="col-12 text-end">
+              <button type="button" class="btn btn-primary" id="btn-generate-cl">
+                <svg style="width:16px;height:16px;margin-right:6px;vertical-align:-2px" aria-hidden="true"><use href="#i-zap"/></svg> Generate Cover Letter
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div id="cl-result-wrap" class="mt-4 pt-3 border-top d-none">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label fw-bold mb-0 text-dark">Generated Cover Letter</label>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-copy-cl">
+                <svg style="width:14px;height:14px;margin-right:4px;vertical-align:-1px" aria-hidden="true"><use href="#i-copy"/></svg> Copy Text
+              </button>
+            </div>
+          </div>
+          <textarea class="form-control font-monospace" id="cl-result-text" rows="12" style="font-size:0.88rem;line-height:1.6"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?= $this->include('candidate/resume/partials/revisions_modal') ?>
 
@@ -1120,33 +1091,44 @@
         }
     }
 
-    // ═══ MOCKUP: Mobile tabs (edit / preview) ═══
-    function switchMobileTab(mode, btn) {
-        var editor = document.getElementById('rb-editor-col');
-        var preview = document.getElementById('rb-preview-col');
-        var tabs = document.querySelectorAll('.rb-tabs button');
-        tabs.forEach(function(t) { t.classList.remove('active'); });
-        btn.classList.add('active');
-        if (mode === 'preview') {
-            editor.classList.add('preview-active');
-            preview.classList.add('show-mobile');
-        } else {
-            editor.classList.remove('preview-active');
-            preview.classList.remove('show-mobile');
+    // ═══ MOCKUP: Mobile tab switcher ═══
+    function switchMobileTab(mode, el) {
+        document.querySelectorAll('.rb-tab').forEach(function(b) {
+            b.classList.remove('on', 'active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        if (el) {
+            el.classList.add('on', 'active');
+            el.setAttribute('aria-selected', 'true');
+        }
+        var split = document.getElementById('rb-split') || document.querySelector('.rb-split');
+        if (split) {
+            split.className = 'rb-split tab-' + (mode === 'edit' ? 'edit' : 'view');
         }
     }
 
     // ═══ MOCKUP: Design-bar accent color ═══
-    function setAccentColor(hex, el) {
-        document.documentElement.style.setProperty('--primary-color', hex);
-        document.querySelectorAll('.design-bar .swatch').forEach(function(s) { s.classList.remove('active'); });
-        if (el) el.classList.add('active');
+    function setAccentColor(acc, acc2, el) {
+        if (typeof acc2 === 'object' || acc2 instanceof HTMLElement) {
+            el = acc2;
+            acc2 = acc;
+        }
+        document.querySelectorAll('.swatches .sw').forEach(function(s) { s.classList.remove('active', 'on'); });
+        if (el) el.classList.add('active', 'on');
+        var doc = document.querySelector('#doc');
+        if (doc) {
+            doc.style.setProperty('--acc', acc);
+            doc.style.setProperty('--acc2', acc2 || acc);
+        }
     }
 
     // ═══ MOCKUP: Design-bar font family ═══
-    function setFontFamily(family) {
-        var doc = document.querySelector('.doc');
-        if (doc) doc.style.fontFamily = family;
+    function setFontFamily(fontClass) {
+        var doc = document.querySelector('#doc');
+        if (doc) {
+            doc.classList.remove('f-serif', 'f-clean');
+            if (fontClass) doc.classList.add(fontClass);
+        }
     }
 
     // ═══ MOCKUP: Select template from topbar ═══
@@ -1156,30 +1138,191 @@
 
     // ═══ MOCKUP: Design-bar spacing toggle ═══
     function setSpacing(mode, el) {
-        document.querySelectorAll('.design-bar .spacing-btn').forEach(function(b) { b.classList.remove('active'); });
-        if (el) el.classList.add('active');
-        var doc = document.querySelector('.doc');
+        document.querySelectorAll('.dens button').forEach(function(b) { b.classList.remove('active', 'on'); });
+        if (el) el.classList.add('active', 'on');
+        var doc = document.querySelector('#doc');
         if (doc) {
             doc.classList.remove('spacing-roomy', 'spacing-tight');
-            doc.classList.add('spacing-' + mode);
+            doc.classList.add('spacing-' + (mode === 'tight' || mode === true ? 'tight' : 'roomy'));
         }
     }
+    // Alias: HTML calls setSpacingMode but function is named setSpacing
+    window.setSpacingMode = setSpacing;
 
     // ═══ MOCKUP: Accordion open on next/prev click ═══
     function openEdSec(step) {
         var sec = document.querySelector('.ed-sec[data-step="' + step + '"]');
-        if (sec && !sec.classList.contains('open')) {
+        if (sec) {
+            $('.ed-sec').removeClass('open');
             sec.classList.add('open');
             sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            var firstInput = sec.querySelector('input:not([type="hidden"]), textarea');
+            if (firstInput) {
+                try { firstInput.focus(); } catch(e){}
+            }
         }
     }
 
     $(document).ready(function() {
+        // Delete Resume via AJAX with confirmation dialog
+        $('#btn-delete-resume').on('click', function(e) {
+            e.preventDefault();
+            var resumeId = $(this).data('id') || $('input[name="id"]').val();
+            if (!resumeId) {
+                if (typeof toastr !== 'undefined') toastr.error('No resume ID found to delete.');
+                else alert('No resume ID found to delete.');
+                return;
+            }
+            if (!confirm('Are you sure you want to delete this resume? This cannot be undone.')) {
+                return;
+            }
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/delete") ?>/' + resumeId,
+                type: 'POST',
+                data: {
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                dataType: 'json',
+                success: function(res) {
+                    if (res && res.status === 'success') {
+                        if (typeof toastr !== 'undefined') toastr.success(res.message || 'Resume deleted successfully.');
+                        setTimeout(function() {
+                            window.location.href = '<?= site_url("candidate/resumes") ?>';
+                        }, 500);
+                    } else {
+                        var msg = (res && res.message) ? res.message : 'Could not delete resume.';
+                        if (typeof toastr !== 'undefined') toastr.error(msg);
+                        else alert(msg);
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function(xhr) {
+                    if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
+                    else alert('Network error. Please try again.');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // Cover letter modal trigger & handler
+        $('#btn-cover-top').on('click', function() {
+            var currentTitle = $('input[name="title"]').val() || '';
+            if (currentTitle && !$('#cl-job-title').val()) {
+                $('#cl-job-title').val(currentTitle);
+            }
+            var activeJd = $('#jd').val() || '';
+            if (activeJd && !$('#cl-job-desc').val()) {
+                $('#cl-job-desc').val(activeJd);
+            }
+            $('#coverLetterModal').modal('show');
+        });
+
+        // Cover letter generation
+        $('#btn-generate-cl').on('click', function() {
+            var jobTitle = $('#cl-job-title').val().trim();
+            if (!jobTitle) {
+                alert('Please enter a target job title.');
+                $('#cl-job-title').focus();
+                return;
+            }
+            var btn = $(this);
+            var origText = btn.html();
+            btn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1" role="status"></i> Generating Cover Letter...');
+
+            $.post('<?= site_url("candidate/resumes/generate-cover-letter") ?>', {
+                job_title: jobTitle,
+                company_name: $('#cl-company-name').val().trim(),
+                job_description: $('#cl-job-desc').val().trim(),
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            }, function(res) {
+                btn.prop('disabled', false).html(origText);
+                if (res && res.cover_letter) {
+                    $('#cl-result-text').val(res.cover_letter);
+                    $('#cl-result-wrap').removeAttr('hidden').removeClass('d-none');
+                } else {
+                    alert('Could not generate cover letter. Please try again.');
+                }
+            }).fail(function(err) {
+                btn.prop('disabled', false).html(origText);
+                alert(err.responseJSON?.message || 'Failed to generate cover letter.');
+            });
+        });
+
+        // Cover letter copy button
+        $('#btn-copy-cl').on('click', function() {
+            var txt = $('#cl-result-text').val();
+            if (!txt) return;
+            navigator.clipboard.writeText(txt).then(function() {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Cover letter copied to clipboard!');
+                } else {
+                    alert('Cover letter copied to clipboard!');
+                }
+            });
+        });
+
+        // Universal modal and offcanvas close handler
+        $(document).on('click', '[data-bs-dismiss="modal"], [data-dismiss="modal"], .modal .btn-close, .modal .close-btn', function() {
+            var $modal = $(this).closest('.modal');
+            if ($modal.length) {
+                $modal.modal('hide');
+                $modal.removeClass('show').css('display', 'none');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
+            }
+        });
+
+        $(document).on('click', '[data-bs-dismiss="offcanvas"], .offcanvas .btn-close', function() {
+            var $off = $(this).closest('.offcanvas');
+            if ($off.length) {
+                $off.removeClass('show');
+                $('.offcanvas-backdrop').remove();
+                $('body').css('overflow', '');
+            }
+        });
+
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $('.modal.show, .modal[style*="display: block"]').modal('hide').removeClass('show').css('display', 'none');
+                $('.offcanvas.show').removeClass('show');
+                $('.modal-backdrop, .offcanvas-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
+            }
+        });
+
+        // More AI Outputs copy button
+        $('#out-copy').on('click', function() {
+            var txt = $('#out-txt').val();
+            if (!txt) return;
+            navigator.clipboard.writeText(txt).then(function() {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Copied to clipboard!');
+                } else {
+                    alert('Copied to clipboard!');
+                }
+            });
+        });
+
         // Utility: escape HTML for safe insertion into preview
         function escapeHtml(str) {
-            return String(str).replace(/[&<>"']/g, function (s) {
+            return String(str || '').replace(/[&<>"']/g, function (s) {
                 return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]);
             });
+        }
+        window.escapeHtml = escapeHtml;
+
+        var CLICHES = ["results-driven","results driven","highly motivated","dynamic professional","proven track record","passionate professional","detail-oriented","detail oriented","team player","self-starter","self starter","go-getter","go getter","hardworking individual","think outside the box","synergy"];
+        var STRONG_VERBS = ["led","built","cut","grew","launched","delivered","reduced","improved","designed","owned","negotiated","recovered","streamlined","automated","prepared","produced","rebuilt","cleared","processed","reconciled","managed","implemented","run","ran","handle","handled","maintain","maintained","supported","created","trained"];
+        var IMPACT_WORDS = ["cut","reduced","grew","saved","improved","increased","delivered","cleared","recovered","shortened","eliminated","doubled"];
+
+        if (typeof renderLivePreview === 'function') {
+            renderLivePreview();
+        }
+        if (typeof refreshAts === 'function') {
+            refreshAts();
         }
 
         // Matches PHP's date('M Y', strtotime($date)) used by the download templates
@@ -1191,37 +1334,260 @@
             return months[d.getMonth()] + ' ' + d.getFullYear();
         }
 
-        // ── LIVE PREVIEW GENERATION ──
+        // --- NEW AI AJAX HANDLERS ---
+        const gatherResumeData = () => {
+            let exp = [];
+            $('.experience-item').each(function() {
+                exp.push({
+                    position: $(this).find('input[name="exp_position[]"]').val(),
+                    company: $(this).find('input[name="exp_company[]"]').val(),
+                    description: $(this).find('textarea[name="exp_description[]"]').val()
+                });
+            });
+            let skills = ($('textarea[name="skills"], input[name="skills"]').val() || '').split(',').map(s => s.trim()).filter(Boolean);
+
+            return {
+                title: $('input[name="title"]').val(),
+                summary: $('#resume-summary').val(),
+                experience: exp,
+                skills: skills,
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            };
+        };
+
+        // More AI Outputs
+        $('[data-out]').on('click', function(e) {
+            e.preventDefault();
+            let btn = $(this);
+            let type = btn.data('out');
+            let data = gatherResumeData();
+            data.type = type;
+            
+            let originalText = btn.html();
+            btn.html('<i class="ti ti-loader fa-spin"></i> Generating...').prop('disabled', true);
+            
+            $.post('<?= site_url("candidate/resumes/ai/generate-output") ?>', data, function(res) {
+                $('#out-wrap').removeAttr('hidden').removeClass('d-none');
+                $('#out-txt').val(res.output);
+                btn.html(originalText).prop('disabled', false);
+            }).fail(function(err) {
+                alert(err.responseJSON?.message || 'Failed to generate output.');
+                btn.html(originalText).prop('disabled', false);
+            });
+        });
+
+        // Career Tools
+        $('[data-career]').on('click', function(e) {
+            e.preventDefault();
+            let btn = $(this);
+            let toolType = btn.data('career');
+            let data = gatherResumeData();
+            data.tool_type = toolType;
+            data.industry = $('#industry-pick').val() || 'general';
+            
+            let originalText = btn.html();
+            btn.html('<i class="ti ti-loader fa-spin"></i> Loading...').prop('disabled', true);
+            
+            $.post('<?= site_url("candidate/resumes/ai/career-tools") ?>', data, function(res) {
+                $('#career-out').removeClass('d-none').html(res.output);
+                btn.html(originalText).prop('disabled', false);
+            }).fail(function(err) {
+                alert(err.responseJSON?.message || 'Failed to load career tools.');
+                btn.html(originalText).prop('disabled', false);
+            });
+        });
+
+        // Writing Review trigger (could be on section open)
+        // Deferred via setTimeout so this always reads the state AFTER the
+        // inline onclick="toggleEdSec(this)" on the same header has toggled
+        // the 'open' class — the two handlers otherwise race and this one
+        // can see the stale pre-toggle state.
+        $('#sec-review .ed-head').on('click', function() {
+            let sec = $(this).closest('.ed-sec');
+            setTimeout(function() {
+                if (sec.hasClass('open') && $('#issues').is(':empty')) {
+                    $('#issues').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Analyzing writing style...</p>');
+                    $.post('<?= site_url("candidate/resumes/ai/writing-review") ?>', gatherResumeData(), function(res) {
+                        $('#issues').html(res.review);
+                    }).fail(function() {
+                        $('#issues').html('<p class="text-danger">Failed to analyze.</p>');
+                    });
+                }
+            }, 0);
+        });
+
+        // Recruiter View trigger
+        $('#sec-recruiter .ed-head').on('click', function() {
+            let sec = $(this).closest('.ed-sec');
+            setTimeout(function() {
+                if (sec.hasClass('open') && $('#recruiter-body').is(':empty')) {
+                    $('#recruiter-body').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Evaluating ATS score...</p>');
+                    $.post('<?= site_url("candidate/resumes/ai/recruiter-view") ?>', gatherResumeData(), function(res) {
+                        $('#recruiter-body').html(res.recruiter_view);
+                    }).fail(function() {
+                        $('#recruiter-body').html('<p class="text-danger">Failed to evaluate.</p>');
+                    });
+                }
+            }, 0);
+        });
+
+        // Import CV upload & extraction handler
+        $('#cv-file').on('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+            $('#import-note').removeClass('d-none').html('<p class="text-primary"><i class="spinner-border spinner-border-sm me-1" role="status"></i> Uploading and extracting CV with AI...</p>');
+            
+            let fd = new FormData();
+            fd.append('cv', file);
+            fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/parse-cv-file") ?>',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(res) {
+                    $('#import-note').addClass('d-none');
+                    if (res && res.success && res.data) {
+                        $('#import-orig').removeClass('d-none');
+                        $('#dz-name').text(file.name);
+                        var d = res.data;
+                        if (d.full_name) $('input[name="full_name"]').val(d.full_name);
+                        if (d.email) $('input[name="email"]').val(d.email);
+                        if (d.phone) $('input[name="phone"]').val(d.phone);
+                        if (d.location) $('input[name="location"]').val(d.location);
+                        if (d.linkedin) $('input[name="linkedin"]').val(d.linkedin);
+                        if (d.job_title && !$('input[name="title"]').val()) $('input[name="title"]').val(d.job_title + ' Resume');
+                        if (d.summary) {
+                            $('#resume-summary').val(d.summary);
+                            $('textarea[name="summary"]').val(d.summary);
+                        }
+                        if (d.skills && Array.isArray(d.skills)) {
+                            $('textarea[name="skills"], input[name="skills"]').val(d.skills.join(', '));
+                        }
+                        if (d.certifications) {
+                            $('textarea[name="certs"]').val(Array.isArray(d.certifications) ? d.certifications.join('\n') : d.certifications);
+                        }
+                        if (d.languages) {
+                            $('input[name="languages"]').val(Array.isArray(d.languages) ? d.languages.join(', ') : d.languages);
+                        }
+                        // Fill experiences
+                        if (d.experiences && Array.isArray(d.experiences) && d.experiences.length > 0) {
+                            $('#experience-container').find('.experience-item').remove();
+                            d.experiences.forEach(function(exp) {
+                                if (typeof addExperienceItem === 'function') {
+                                    addExperienceItem(exp.company || '', exp.position || exp.job_title || '', exp.start_date || '', exp.end_date || '', exp.description || '', exp.is_current || false);
+                                }
+                            });
+                        }
+                        // Fill education
+                        if (d.education && Array.isArray(d.education) && d.education.length > 0) {
+                            $('#education-container').find('.education-item').remove();
+                            d.education.forEach(function(edu) {
+                                if (typeof addEducationItem === 'function') {
+                                    addEducationItem(edu.school || edu.institution || '', edu.degree || '', edu.field || edu.field_of_study || '', edu.year || '');
+                                }
+                            });
+                        }
+                        renderLivePreview();
+                        refreshAts();
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success('CV extracted and loaded into builder!');
+                        }
+                    } else {
+                        alert(res.message || 'Could not parse CV file automatically. Please enter details manually.');
+                    }
+                },
+                error: function() {
+                    $('#import-note').addClass('d-none');
+                    alert('Error connecting to CV extraction service. Please check your connection.');
+                }
+            });
+        });
+
+        // Version History (Local Snapshots)
+        function takeSnapshot() {
+            let data = gatherResumeData();
+            let snapshots = JSON.parse(localStorage.getItem('resume_snapshots_' + $('input[name="id"]').val()) || '[]');
+            let time = new Date().toLocaleTimeString();
+            snapshots.push({ time: time, data: data });
+            if (snapshots.length > 10) snapshots.shift(); // Keep last 10
+            localStorage.setItem('resume_snapshots_' + $('input[name="id"]').val(), JSON.stringify(snapshots));
+            renderSnapshots(snapshots);
+        }
+
+        function renderSnapshots(snapshots) {
+            let html = '<p class="text-muted mb-3" style="font-size:.75rem;">Snapshots are captured automatically as you edit.</p>';
+            if (snapshots.length === 0) {
+                html += '<p class="text-muted fst-italic">No snapshots yet.</p>';
+            } else {
+                html += '<div class="list-group list-group-flush">';
+                snapshots.reverse().forEach((s, i) => {
+                    html += `<button type="button" class="list-group-item list-group-item-action py-2 px-1" style="font-size:0.85rem;">
+                                <i class="ti ti-clock me-2 text-primary"></i> Snapshot at ${s.time}
+                             </button>`;
+                });
+                html += '</div>';
+            }
+            $('#hist-list').html(html);
+        }
+
+        // Trigger snapshot periodically if changes were made, or just when the section opens
+        $('#sec-history .ed-head').on('click', function() {
+            let sec = $(this).closest('.ed-sec');
+            if (sec.hasClass('open')) {
+                takeSnapshot();
+            }
+        });
+
+        // ── LIVE PREVIEW GENERATION (Truthful candidate data only, no fake defaults) ──
         function renderLivePreview() {
-            var name = $('input[name="full_name"]').val() || '';
-            var title = $('input[name="title"]').val() || '';
-            var email = $('input[name="email"]').val() || '';
-            var phone = $('input[name="phone"]').val() || '';
-            var locationStr = $('input[name="location"]').val() || '';
-            var summary = $('#resume-summary').val() || '';
+            var rawName = $('input[name="full_name"]').val() || '';
+            var rawTitle = $('input[name="title"]').val() || '';
+            var rawEmail = $('input[name="email"]').val() || '';
+            var rawPhone = $('input[name="phone"]').val() || '';
+            var rawLoc = $('input[name="location"]').val() || '';
+            var rawLinkedin = $('input[name="linkedin"]').val() || '';
+            var rawSummary = $('#resume-summary').val() || '';
+
+            var name = rawName.trim();
+            var title = rawTitle.trim();
+            var email = rawEmail.trim();
+            var phone = rawPhone.trim();
+            var locationStr = rawLoc.trim();
+            var linkedin = rawLinkedin.trim();
+            var summary = rawSummary.trim();
             
             // Selected layout & density
-            var tpl = $('#tpl-select').val() || 't-classic';
+            var tpl = $('#template-select-top').val() || $('#tpl-select').val() || 't-modern';
+            if (!tpl.startsWith('t-')) {
+                var tplMap = { 'classic':'t-classic', 'modern':'t-modern', 'creative':'t-creative', 'executive':'t-exec', 'minimalist':'t-minimal' };
+                tpl = tplMap[tpl] || ('t-' + tpl);
+            }
             var spacing = $('#spacing-roomy-btn').hasClass('on') ? 'spacing-roomy' : 'spacing-tight';
             
             // Container update
             var $doc = $('#doc');
             $doc.removeClass().addClass('doc ' + tpl + ' ' + spacing + ' wm-tile guides');
             
-            var linkedin = $('input[name="linkedin"]').val() || '';
             var contactHtml = '';
             if (email) contactHtml += '<span>' + escapeHtml(email) + '</span>';
             if (phone) contactHtml += '<span>' + escapeHtml(phone) + '</span>';
             if (locationStr) contactHtml += '<span>' + escapeHtml(locationStr) + '</span>';
             if (linkedin) contactHtml += '<span>' + escapeHtml(linkedin.replace(/^https?:\/\/(www\.)?/, '')) + '</span>';
             
-            var html = '<header class="d-head"><h1>' + escapeHtml(name) + '</h1>';
-            if (title) html += '<div class="d-title">' + escapeHtml(title) + '</div>';
-            if (contactHtml) html += '<div class="d-contact">' + contactHtml + '</div>';
-            html += '</header>';
+            var html = '';
+            if (name || title || contactHtml) {
+                html += '<header class="d-head"><h1>' + escapeHtml(name || 'Resume Header') + '</h1>';
+                if (title) html += '<div class="d-title">' + escapeHtml(title) + '</div>';
+                if (contactHtml) html += '<div class="d-contact">' + contactHtml + '</div>';
+                html += '</header>';
+            }
             
             // Professional Summary
-            if (summary.trim()) {
+            if (summary) {
                 html += '<div class="d-sec"><h2>Professional Summary</h2><p>' + escapeHtml(summary).replace(/\n/g, '<br>') + '</p></div>';
             }
             
@@ -1246,6 +1612,7 @@
                         (company ? '<p class="co">' + escapeHtml(company) + '</p>' : '') + bulletsUl + '</div>';
                 }
             });
+
             if (experienceHtml) {
                 html += '<div class="d-sec"><h2>Work Experience</h2>' + experienceHtml + '</div>';
             }
@@ -1260,15 +1627,16 @@
                 
                 if (school || degree || field) {
                     educationHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml((degree ? degree + ' in ' : '') + field) + '</b><i>' + escapeHtml(year) + '</i></div>' +
-                        '<p class="co">' + escapeHtml(school) + '</p></div>';
+                        (school ? '<p class="co">' + escapeHtml(school) + '</p>' : '') + '</div>';
                 }
             });
+
             if (educationHtml) {
                 html += '<div class="d-sec"><h2>Education</h2>' + educationHtml + '</div>';
             }
             
             // Skills List
-            var skillsStr = $('input[name="skills"]').val() || '';
+            var skillsStr = $('textarea[name="skills"], input[name="skills"]').val() || '';
             var skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
             if (skills.length) {
                 var skillsLi = skills.map(s => '<li>' + escapeHtml(s) + '</li>').join('');
@@ -1324,16 +1692,18 @@
                 if (wm) $doc.append(wm);
             }
             
-            // Check fit pages
+            // Check fit pages & dynamic page count indicator
             var scrollHeight = $doc[0].scrollHeight;
             var maxOnePageHeight = 1074;
             var fitDot = $('.fit-dot');
-            if (scrollHeight > maxOnePageHeight) {
+            var totalPages = Math.max(1, Math.ceil(scrollHeight / maxOnePageHeight));
+            $('#pagepill-n').text(totalPages + (totalPages === 1 ? ' page' : ' pages'));
+            if (totalPages > 1) {
                 fitDot.removeClass('ok').addClass('over');
-                $('.pv-hint').html('Currently spanning multiple pages. Switch Spacing to <b>Tight</b> or shorten text.');
+                $('.pv-hint').removeAttr('hidden').html('Spanning <b>' + totalPages + ' Pages</b> on A4. Switch Spacing to <b>Tight</b> or trim text to fit 1 page.');
             } else {
                 fitDot.removeClass('over').addClass('ok');
-                $('.pv-hint').html('Perfect! Fits cleanly on <b>1 Page</b>.');
+                $('.pv-hint').removeAttr('hidden').html('Perfect! Fits cleanly on <b>1 Page</b>.');
             }
         }
         
@@ -1400,10 +1770,6 @@
             payables:["payable","vendors","suppliers"], leadership:["led","managed","supervised","mentored"],
             communication:["stakeholder","presented","liaised"], analysis:["analysed","analyzed","analytical","insights"]
         };
-        var CLICHES = ["results-driven","results driven","highly motivated","dynamic professional","proven track record","passionate professional","detail-oriented","detail oriented","team player","self-starter","self starter","go-getter","go getter","hardworking individual","think outside the box","synergy"];
-        var STRONG_VERBS = ["led","built","cut","grew","launched","delivered","reduced","improved","designed","owned","negotiated","recovered","streamlined","automated","prepared","produced","rebuilt","cleared","processed","reconciled","managed","implemented","run","ran","handle","handled","maintain","maintained","supported","created","trained"];
-        var IMPACT_WORDS = ["cut","reduced","grew","saved","improved","increased","delivered","cleared","recovered","shortened","eliminated","doubled"];
-        
         function pct(n, d) { return d ? Math.round(n / d * 100) : 0; }
         
         function semHit(kw, txt) {
@@ -1599,11 +1965,13 @@
             });
             $('#ats-list').html(listHtml);
 
-            $('.fix-ats').on('click', function() {
-                var target = $(this).data('target');
-                openEdSec(target);
-            });
         }
+
+        // Delegated listener for ATS fix buttons
+        $(document).on('click', '.fix-ats', function() {
+            var target = $(this).data('target');
+            openEdSec(target);
+        });
 
         // Input change listeners
         $(document).on('input change keyup', '#resume-form input, #resume-form textarea, #resume-form select', function() {
@@ -1669,6 +2037,166 @@
                 $('#jd').val('');
                 $('#match-wrap').addClass('d-none');
             }
+        });
+
+        // AI Tailor Resume button
+        $(document).on('click', '#btn-ai-tailor', function() {
+            var jd = $('#jd').val().trim();
+            if (!jd) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Please paste a job description or select a job first.');
+                } else {
+                    alert('Please paste a job description or select a job first.');
+                }
+                $('#jd').focus();
+                return;
+            }
+
+            var $btn = $(this);
+            var origHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Tailoring with AI...');
+
+            // Build structured resume JSON
+            var resumeData = {
+                id: $('input[name="id"]').val() || null,
+                title: $('input[name="title"]').val() || '',
+                full_name: $('input[name="full_name"]').val() || '',
+                email: $('input[name="email"]').val() || '',
+                phone: $('input[name="phone"]').val() || '',
+                location: $('input[name="location"]').val() || '',
+                summary: $('#resume-summary').val() || '',
+                template_id: $('#template-select-top').val() || $('#template_id').val() || 't-modern',
+                experiences: [],
+                education: [],
+                skills: $('input[name="skills"]').val() || '',
+                linkedin: $('input[name="linkedin"]').val() || '',
+                certs: $('textarea[name="certs"]').val() || '',
+                languages: $('input[name="languages"]').val() || ''
+            };
+
+            $('.experience-item').each(function() {
+                resumeData.experiences.push({
+                    company: $(this).find('input[name="exp_company[]"]').val() || '',
+                    position: $(this).find('input[name="exp_position[]"]').val() || '',
+                    description: $(this).find('textarea[name="exp_description[]"]').val() || '',
+                    start_date: $(this).find('input[name="exp_start_date[]"]').val() || '',
+                    end_date: $(this).find('input[name="exp_end_date[]"]').val() || '',
+                    is_current: $(this).find('.exp-current-check').is(':checked') ? 1 : 0
+                });
+            });
+
+            $('.education-item').each(function() {
+                resumeData.education.push({
+                    institution: $(this).find('input[name="edu_school[]"]').val() || '',
+                    degree: $(this).find('select[name="edu_degree[]"]').val() || '',
+                    field_of_study: $(this).find('input[name="edu_field[]"]').val() || '',
+                    graduation_year: $(this).find('input[name="edu_year[]"]').val() || ''
+                });
+            });
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/ai/tailor-resume") ?>',
+                type: 'POST',
+                data: {
+                    resume_json: JSON.stringify(resumeData),
+                    job_description: jd,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                dataType: 'json',
+                success: function(res) {
+                    $btn.prop('disabled', false).html(origHtml);
+                    if (res && res.status === 'success' && res.tailored) {
+                        var snap = res.tailored;
+                        if (typeof snap === 'string') {
+                            try { snap = JSON.parse(snap); } catch(e) {}
+                        }
+
+                        if (snap.title !== undefined) $('input[name="title"]').val(snap.title).trigger('input');
+                        if (snap.full_name !== undefined && snap.full_name) $('input[name="full_name"]').val(snap.full_name).trigger('input');
+                        if (snap.summary !== undefined) $('#resume-summary').val(snap.summary).trigger('input');
+                        if (snap.skills !== undefined) {
+                            var skillsVal = Array.isArray(snap.skills) ? snap.skills.join(', ') : snap.skills;
+                            $('input[name="skills"]').val(skillsVal).trigger('input');
+                        }
+                        if (snap.certs !== undefined) $('textarea[name="certs"]').val(snap.certs).trigger('input');
+
+                        // Update or rebuild experiences if provided in tailored response
+                        if (Array.isArray(snap.experiences) && snap.experiences.length > 0) {
+                            var $expItems = $('.experience-item');
+                            if ($expItems.length === snap.experiences.length) {
+                                snap.experiences.forEach(function(e, i) {
+                                    var $row = $expItems.eq(i);
+                                    if (e.position) $row.find('input[name="exp_position[]"]').val(e.position).trigger('input');
+                                    if (e.company) $row.find('input[name="exp_company[]"]').val(e.company).trigger('input');
+                                    var desc = Array.isArray(e.description) ? e.description.join("\n") : (e.description || '');
+                                    $row.find('textarea[name="exp_description[]"]').val(desc).trigger('input');
+                                });
+                            } else {
+                                var $expContainer = $('#experience-container');
+                                $expContainer.find('.experience-item').remove();
+                                $expContainer.find('.no-items').remove();
+                                snap.experiences.forEach(function(e, idx) {
+                                    var desc = Array.isArray(e.description) ? e.description.join("\n") : (e.description || '');
+                                    var html = `
+                                        <div class="xp-entry position-relative experience-item">
+                                            <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                            <div class="row2">
+                                                <div>
+                                                    <label class="lbl">Role</label>
+                                                    <input type="text" name="exp_position[]" class="input" placeholder="Job Position" value="${escapeHtml(e.position || '')}">
+                                                </div>
+                                                <div>
+                                                    <label class="lbl">Dates (Start - End)</label>
+                                                    <div style="display:flex; gap:6px; align-items:center;">
+                                                        <input type="date" name="exp_start_date[]" class="input" value="${escapeHtml(e.start_date || '')}" style="padding-left:4px; padding-right:4px;">
+                                                        <span class="exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">-</span>
+                                                        <input type="date" name="exp_end_date[]" class="input exp-end-date-col" value="${escapeHtml(e.end_date || '')}" style="${e.is_current ? 'display: none;' : ''} padding-left:4px; padding-right:4px;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <div style="flex:1;">
+                                                    <label class="lbl">Company</label>
+                                                    <input type="text" name="exp_company[]" class="input" placeholder="Company Name" value="${escapeHtml(e.company || '')}">
+                                                </div>
+                                                <div class="form-check" style="margin-left:15px; margin-top:20px;">
+                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''} id="exp_current_${idx}">
+                                                    <label class="form-check-label lbl" for="exp_current_${idx}" style="cursor:pointer; display:inline-block; margin-left:4px; margin-bottom:0;">Current</label>
+                                                </div>
+                                            </div>
+                                            <label class="lbl">Achievements — one per line</label>
+                                            <textarea name="exp_description[]" class="input" rows="4" placeholder="Describe your responsibilities and achievements...">${escapeHtml(desc)}</textarea>
+                                            <div class="ai-row">
+                                                <button type="button" class="btn-ai improve-desc-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Strengthen achievements</button>
+                                                <button type="button" class="btn-ai generate-bullets-ai"><svg aria-hidden="true"><use href="#i-edit"/></svg> Generate Bullets</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                    $expContainer.append(html);
+                                });
+                            }
+                        }
+
+                        if (typeof renderLivePreview === 'function') renderLivePreview();
+                        if (typeof refreshAts === 'function') refreshAts();
+                        if (typeof runMatch === 'function') runMatch();
+
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success('Resume tailored to the job description successfully!');
+                        }
+                    } else {
+                        var msg = (res && res.message) ? res.message : 'Failed to tailor resume.';
+                        if (typeof toastr !== 'undefined') toastr.error(msg);
+                        else alert(msg);
+                    }
+                },
+                error: function(xhr) {
+                    $btn.prop('disabled', false).html(origHtml);
+                    var msg = 'An error occurred while tailoring the resume. Please try again.';
+                    if (typeof toastr !== 'undefined') toastr.error(msg);
+                    else alert(msg);
+                }
+            });
         });
 
         // Template Selection mapping
@@ -1779,16 +2307,19 @@
         // AI Summary Generation
         $('#generate-summary-ai').on('click', function() {
             const btn = $(this);
+            const currentSummary = $('#resume-summary').val() || '';
             const experiences = [];
             const education = [];
-            const skills = $('input[name="skills"]').val();
+            const skills = $('input[name="skills"]').val() || '';
+
+            lastFocusedTextarea = $('#resume-summary');
 
             // Extract experience details from inputs to build rich prompt
-            $('.experience-item').each(function() {
+            $('.experience-item, .xp-entry').each(function() {
                 const company = $(this).find('input[name="exp_company[]"]').val();
                 const position = $(this).find('input[name="exp_position[]"]').val();
                 const desc = $(this).find('textarea[name="exp_description[]"]').val();
-                if (company || position) {
+                if (company || position || desc) {
                     experiences.push({ company, position, description: desc });
                 }
             });
@@ -1796,17 +2327,12 @@
             // Collect education entries
             $('.education-item').each(function() {
                 const school = $(this).find('input[name="edu_school[]"]').val();
-                const degree = $(this).find('select[name="edu_degree[]"]').val();
+                const degree = $(this).find('select[name="edu_degree[]"], input[name="edu_degree[]"]').val();
                 const field = $(this).find('input[name="edu_field[]"]').val();
-                if (school || degree) {
+                if (school || degree || field) {
                     education.push({ school, degree, field });
                 }
             });
-
-            if (experiences.length === 0 && !skills) {
-                toastr.warning('Please add some experience or skills so AI can write a personalized summary.');
-                return;
-            }
 
             btn.prop('disabled', true);
             $('#aiLoaderModal').modal('show');
@@ -1815,6 +2341,7 @@
                 url: '<?= site_url("candidate/resumes/ai/generate-summary") ?>',
                 type: 'POST',
                 data: {
+                    current_summary: currentSummary,
                     experiences: experiences,
                     education: education,
                     skills: skills,
@@ -1823,7 +2350,7 @@
                 success: function(response) {
                     if (response.summary) {
                         // Show preview modal with sanitized HTML (server already sanitized)
-                        $('#aiPreviewRender').html(response.summary);
+                        $('#aiPreviewRender').html(response.summary.replace(/\n/g, '<br>'));
                         $('#aiPreviewModal').modal('show');
                         // store raw in the preview container for apply action
                         $('#aiPreviewRender').data('raw', response.summary);
@@ -1849,45 +2376,37 @@
             const count = $('.experience-item').length;
             
             const html = `
-                <div class="experience-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd; display: none;">
-                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label small fw-semibold text-muted">Company Name</label>
-                            <input type="text" name="exp_company[]" class="form-control form-control-sm" placeholder="e.g. Google">
+                <div class="xp-entry position-relative experience-item" style="display: none;">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                    <div class="row2">
+                        <div>
+                            <label class="lbl">Role</label>
+                            <input type="text" name="exp_position[]" class="input" placeholder="Job Position">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label small fw-semibold text-muted">Job Position</label>
-                            <input type="text" name="exp_position[]" class="form-control form-control-sm" placeholder="e.g. Senior Developer">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label small fw-semibold text-muted">Start Date</label>
-                            <input type="date" name="exp_start_date[]" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-4 mb-3 exp-end-date-col">
-                            <label class="form-label small fw-semibold text-muted">End Date</label>
-                            <input type="date" name="exp_end_date[]" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-4 mb-3 d-flex align-items-end">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${count}">
-                                <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                        <div>
+                            <label class="lbl">Dates (Start - End)</label>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="date" name="exp_start_date[]" class="input" style="padding-left:4px; padding-right:4px;">
+                                <span class="exp-end-date-col">-</span>
+                                <input type="date" name="exp_end_date[]" class="input exp-end-date-col" style="padding-left:4px; padding-right:4px;">
                             </div>
                         </div>
-                        <div class="col-md-12 mb-2">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="small fw-semibold text-muted">Description & Achievements</label>
-                                <div>
-                                    <button type="button" class="ai-assist-btn improve-desc-ai">
-                                        <i class="ti ti-wand"></i> Improve with AI
-                                    </button>
-                                    <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
-                                        <i class="ti ti-list"></i> Generate Bullets
-                                    </button>
-                                </div>
-                            </div>
-                            <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements..."></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="flex:1;">
+                            <label class="lbl">Company</label>
+                            <input type="text" name="exp_company[]" class="input" placeholder="Company Name">
                         </div>
+                        <div class="form-check" style="margin-left:15px; margin-top:20px;">
+                            <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${count}" id="exp_current_new_${count}">
+                            <label class="form-check-label lbl" for="exp_current_new_${count}" style="cursor:pointer; display:inline-block; margin-left:4px; margin-bottom:0;">Current</label>
+                        </div>
+                    </div>
+                    <label class="lbl">Achievements — one per line</label>
+                    <textarea name="exp_description[]" class="input" rows="4" placeholder="Describe your responsibilities and achievements..."></textarea>
+                    <div class="ai-row">
+                        <button type="button" class="btn-ai improve-desc-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Strengthen achievements</button>
+                        <button type="button" class="btn-ai generate-bullets-ai"><svg aria-hidden="true"><use href="#i-edit"/></svg> Generate Bullets</button>
                     </div>
                 </div>
             `;
@@ -1902,33 +2421,44 @@
             $('#education-container .no-items').hide();
             
             const html = `
-                <div class="education-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd; display: none;">
-                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label small fw-semibold text-muted">School / University</label>
-                            <input type="text" name="edu_school[]" class="form-control form-control-sm" placeholder="School / University">
+                <div class="xp-entry position-relative education-item" style="display: none;">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                    <div class="row2">
+                        <div>
+                            <label class="lbl">School / University</label>
+                            <input type="text" name="edu_school[]" class="input" placeholder="School / University">
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label small fw-semibold text-muted">Degree</label>
-                            <select name="edu_degree[]" class="form-select form-select-sm">
-                                <option value="">Select Degree</option>
-                                <option value="High School">High School</option>
+                        <div>
+                            <label class="lbl">Degree</label>
+                            <select name="edu_degree[]" class="input select">
+                                <option value="">Select Degree / Qualification</option>
+                                <option value="B.Sc.">B.Sc. / Bachelor of Science</option>
+                                <option value="B.A.">B.A. / Bachelor of Arts</option>
+                                <option value="B.Eng.">B.Eng. / B.Tech. (Engineering &amp; Tech)</option>
+                                <option value="LL.B">LL.B / Law Degree</option>
+                                <option value="MBBS">MBBS / Medicine &amp; Surgery</option>
+                                <option value="HND">HND / Higher National Diploma</option>
+                                <option value="OND / ND">OND / ND (National Diploma)</option>
+                                <option value="NCE">NCE / Nigeria Certificate in Education</option>
+                                <option value="M.Sc.">M.Sc. / M.A. (Master's Degree)</option>
+                                <option value="MBA">MBA / Master of Business Admin</option>
+                                <option value="PhD">Ph.D. / Doctorate</option>
+                                <option value="PGD">PGD / Postgraduate Diploma</option>
+                                <option value="SSCE / WAEC">SSCE / WAEC / NECO</option>
                                 <option value="Associate">Associate Degree</option>
-                                <option value="Bachelor">Bachelor's Degree</option>
-                                <option value="Master">Master's Degree</option>
-                                <option value="PhD">PhD / Doctorate</option>
-                                <option value="Certificate">Certificate</option>
-                                <option value="Other">Other</option>
+                                <option value="Certificate">Professional Certificate</option>
+                                <option value="Other">Other Qualification</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label small fw-semibold text-muted">Field of Study</label>
-                            <input type="text" name="edu_field[]" class="form-control form-control-sm" placeholder="Field of Study">
+                    </div>
+                    <div class="row2" style="margin-top: 10px;">
+                        <div>
+                            <label class="lbl">Field of Study</label>
+                            <input type="text" name="edu_field[]" class="input" placeholder="Field of Study">
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label small fw-semibold text-muted">Graduation Year</label>
-                            <input type="number" name="edu_year[]" class="form-control form-control-sm" placeholder="Graduation Year" min="1950" max="2030">
+                        <div>
+                            <label class="lbl">Graduation Year</label>
+                            <input type="text" name="edu_year[]" class="input" placeholder="YYYY">
                         </div>
                     </div>
                 </div>
@@ -1954,12 +2484,18 @@
                 $('#experience-container .exp-current-check').each(function(idx) {
                     $(this).val(idx);
                 });
+                if (typeof renderLivePreview === 'function') {
+                    renderLivePreview();
+                }
+                if (typeof refreshAts === 'function') {
+                    refreshAts();
+                }
             });
         });
 
         // Dynamic change handler for 'Currently Work Here' checkbox
         $(document).on('change', '.exp-current-check', function() {
-            const $endDateCol = $(this).closest('.row').find('.exp-end-date-col');
+            const $endDateCol = $(this).closest('.experience-item').find('.exp-end-date-col');
             if ($(this).is(':checked')) {
                 $endDateCol.slideUp(200).find('input').val('');
             } else {
@@ -1970,7 +2506,7 @@
         // Improve Description with AI
         $(document).on('click', '.improve-desc-ai', function() {
             const btn = $(this);
-            const textarea = btn.closest('.col-md-12').find('textarea');
+            const textarea = btn.closest('.xp-entry, .experience-item').find('textarea[name="exp_description[]"]');
             if (textarea.length) {
                 lastFocusedTextarea = textarea;
             }
@@ -2012,7 +2548,7 @@
         // Generate bullets for experience
         $(document).on('click', '.generate-bullets-ai', function() {
             const btn = $(this);
-            const textarea = btn.closest('.col-md-12').find('textarea');
+            const textarea = btn.closest('.xp-entry, .experience-item').find('textarea[name="exp_description[]"]');
             if (textarea.length) {
                 lastFocusedTextarea = textarea;
             }
@@ -2316,45 +2852,37 @@
                         if (Array.isArray(snap.experiences)) {
                             snap.experiences.forEach(function(e, idx) {
                                 const html = `
-                                    <div class="experience-item border rounded p-3 mb-3 position-relative">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Company Name</label>
-                                                <input type="text" name="exp_company[]" class="form-control form-control-sm" value="${escapeHtml(e.company || '')}">
+                                    <div class="xp-entry position-relative experience-item">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                        <div class="row2">
+                                            <div>
+                                                <label class="lbl">Role</label>
+                                                <input type="text" name="exp_position[]" class="input" placeholder="Job Position" value="${escapeHtml(e.position || '')}">
                                             </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Job Position</label>
-                                                <input type="text" name="exp_position[]" class="form-control form-control-sm" value="${escapeHtml(e.position || '')}">
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Start Date</label>
-                                                <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="${escapeHtml(e.start_date || '')}">
-                                            </div>
-                                            <div class="col-md-4 mb-3 exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">
-                                                <label class="form-label small fw-semibold text-muted">End Date</label>
-                                                <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="${escapeHtml(e.end_date || '')}">
-                                            </div>
-                                            <div class="col-md-4 mb-3 d-flex align-items-end">
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''}>
-                                                    <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                                            <div>
+                                                <label class="lbl">Dates (Start - End)</label>
+                                                <div style="display:flex; gap:6px; align-items:center;">
+                                                    <input type="date" name="exp_start_date[]" class="input" value="${escapeHtml(e.start_date || '')}" style="padding-left:4px; padding-right:4px;">
+                                                    <span class="exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">-</span>
+                                                    <input type="date" name="exp_end_date[]" class="input exp-end-date-col" value="${escapeHtml(e.end_date || '')}" style="${e.is_current ? 'display: none;' : ''} padding-left:4px; padding-right:4px;">
                                                 </div>
                                             </div>
-                                            <div class="col-md-12 mb-2">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <label class="small fw-semibold text-muted">Description & Achievements</label>
-                                                    <div>
-                                                        <button type="button" class="ai-assist-btn improve-desc-ai">
-                                                            <i class="ti ti-wand"></i> Improve with AI
-                                                        </button>
-                                                        <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
-                                                            <i class="ti ti-list"></i> Generate Bullets
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements...">${escapeHtml(e.description || '')}</textarea>
+                                        </div>
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <div style="flex:1;">
+                                                <label class="lbl">Company</label>
+                                                <input type="text" name="exp_company[]" class="input" placeholder="Company Name" value="${escapeHtml(e.company || '')}">
                                             </div>
+                                            <div class="form-check" style="margin-left:15px; margin-top:20px;">
+                                                <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''} id="exp_current_${idx}">
+                                                <label class="form-check-label lbl" for="exp_current_${idx}" style="cursor:pointer; display:inline-block; margin-left:4px; margin-bottom:0;">Current</label>
+                                            </div>
+                                        </div>
+                                        <label class="lbl">Achievements — one per line</label>
+                                        <textarea name="exp_description[]" class="input" rows="4" placeholder="Describe your responsibilities and achievements...">${escapeHtml(e.description || '')}</textarea>
+                                        <div class="ai-row">
+                                            <button type="button" class="btn-ai improve-desc-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Strengthen achievements</button>
+                                            <button type="button" class="btn-ai generate-bullets-ai"><svg aria-hidden="true"><use href="#i-edit"/></svg> Generate Bullets</button>
                                         </div>
                                     </div>
                                 `;
@@ -2368,33 +2896,44 @@
                         if (Array.isArray(snap.education)) {
                             snap.education.forEach(function(ed) {
                                 const html = `
-                                    <div class="education-item border rounded p-3 mb-3 position-relative">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">School / University</label>
-                                                <input type="text" name="edu_school[]" class="form-control form-control-sm" value="${escapeHtml(ed.institution || '')}">
+                                    <div class="xp-entry position-relative education-item">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                        <div class="row2">
+                                            <div>
+                                                <label class="lbl">School / University</label>
+                                                <input type="text" name="edu_school[]" class="input" placeholder="School / University" value="${escapeHtml(ed.institution || '')}">
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Degree</label>
-                                                <select name="edu_degree[]" class="form-select form-select-sm">
-                                                    <option value="">Select Degree</option>
-                                                    <option value="High School" ${ed.degree === 'High School' ? 'selected' : ''}>High School</option>
+                                            <div>
+                                                <label class="lbl">Degree</label>
+                                                <select name="edu_degree[]" class="input select">
+                                                    <option value="">Select Degree / Qualification</option>
+                                                    <option value="B.Sc." ${ed.degree === 'B.Sc.' || ed.degree === 'Bachelor' ? 'selected' : ''}>B.Sc. / Bachelor of Science</option>
+                                                    <option value="B.A." ${ed.degree === 'B.A.' ? 'selected' : ''}>B.A. / Bachelor of Arts</option>
+                                                    <option value="B.Eng." ${ed.degree === 'B.Eng.' || ed.degree === 'B.Tech.' ? 'selected' : ''}>B.Eng. / B.Tech. (Engineering &amp; Tech)</option>
+                                                    <option value="LL.B" ${ed.degree === 'LL.B' ? 'selected' : ''}>LL.B / Law Degree</option>
+                                                    <option value="MBBS" ${ed.degree === 'MBBS' ? 'selected' : ''}>MBBS / Medicine &amp; Surgery</option>
+                                                    <option value="HND" ${ed.degree === 'HND' ? 'selected' : ''}>HND / Higher National Diploma</option>
+                                                    <option value="OND / ND" ${ed.degree === 'OND / ND' || ed.degree === 'OND' ? 'selected' : ''}>OND / ND (National Diploma)</option>
+                                                    <option value="NCE" ${ed.degree === 'NCE' ? 'selected' : ''}>NCE / Nigeria Certificate in Education</option>
+                                                    <option value="M.Sc." ${ed.degree === 'M.Sc.' || ed.degree === 'Master' ? 'selected' : ''}>M.Sc. / M.A. (Master's Degree)</option>
+                                                    <option value="MBA" ${ed.degree === 'MBA' ? 'selected' : ''}>MBA / Master of Business Admin</option>
+                                                    <option value="PhD" ${ed.degree === 'PhD' || ed.degree === 'Ph.D.' ? 'selected' : ''}>Ph.D. / Doctorate</option>
+                                                    <option value="PGD" ${ed.degree === 'PGD' ? 'selected' : ''}>PGD / Postgraduate Diploma</option>
+                                                    <option value="SSCE / WAEC" ${ed.degree === 'SSCE / WAEC' || ed.degree === 'High School' ? 'selected' : ''}>SSCE / WAEC / NECO</option>
                                                     <option value="Associate" ${ed.degree === 'Associate' ? 'selected' : ''}>Associate Degree</option>
-                                                    <option value="Bachelor" ${ed.degree === 'Bachelor' ? 'selected' : ''}>Bachelor's Degree</option>
-                                                    <option value="Master" ${ed.degree === 'Master' ? 'selected' : ''}>Master's Degree</option>
-                                                    <option value="PhD" ${ed.degree === 'PhD' ? 'selected' : ''}>PhD / Doctorate</option>
-                                                    <option value="Certificate" ${ed.degree === 'Certificate' ? 'selected' : ''}>Certificate</option>
-                                                    <option value="Other" ${ed.degree === 'Other' ? 'selected' : ''}>Other</option>
+                                                    <option value="Certificate" ${ed.degree === 'Certificate' ? 'selected' : ''}>Professional Certificate</option>
+                                                    <option value="Other" ${ed.degree === 'Other' ? 'selected' : ''}>Other Qualification</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Field of Study</label>
-                                                <input type="text" name="edu_field[]" class="form-control form-control-sm" value="${escapeHtml(ed.field_of_study || '')}">
+                                        </div>
+                                        <div class="row2" style="margin-top: 10px;">
+                                            <div>
+                                                <label class="lbl">Field of Study</label>
+                                                <input type="text" name="edu_field[]" class="input" placeholder="Field of Study" value="${escapeHtml(ed.field_of_study || '')}">
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Graduation Year</label>
-                                                <input type="number" name="edu_year[]" class="form-control form-control-sm" value="${escapeHtml(ed.graduation_year || '')}" min="1950" max="2030">
+                                            <div>
+                                                <label class="lbl">Graduation Year</label>
+                                                <input type="text" name="edu_year[]" class="input" placeholder="YYYY" value="${escapeHtml(ed.graduation_year || '')}">
                                             </div>
                                         </div>
                                     </div>
@@ -2446,45 +2985,37 @@
                         if (Array.isArray(snap.experiences)) {
                             snap.experiences.forEach(function(e, idx) {
                                 const html = `
-                                    <div class="experience-item border rounded p-3 mb-3 position-relative">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Company Name</label>
-                                                <input type="text" name="exp_company[]" class="form-control form-control-sm" value="${escapeHtml(e.company || '')}">
+                                    <div class="xp-entry position-relative experience-item">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                        <div class="row2">
+                                            <div>
+                                                <label class="lbl">Role</label>
+                                                <input type="text" name="exp_position[]" class="input" placeholder="Job Position" value="${escapeHtml(e.position || '')}">
                                             </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Job Position</label>
-                                                <input type="text" name="exp_position[]" class="form-control form-control-sm" value="${escapeHtml(e.position || '')}">
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label small fw-semibold text-muted">Start Date</label>
-                                                <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="${escapeHtml(e.start_date || '')}">
-                                            </div>
-                                            <div class="col-md-4 mb-3 exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">
-                                                <label class="form-label small fw-semibold text-muted">End Date</label>
-                                                <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="${escapeHtml(e.end_date || '')}">
-                                            </div>
-                                            <div class="col-md-4 mb-3 d-flex align-items-end">
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''}>
-                                                    <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                                            <div>
+                                                <label class="lbl">Dates (Start - End)</label>
+                                                <div style="display:flex; gap:6px; align-items:center;">
+                                                    <input type="date" name="exp_start_date[]" class="input" value="${escapeHtml(e.start_date || '')}" style="padding-left:4px; padding-right:4px;">
+                                                    <span class="exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">-</span>
+                                                    <input type="date" name="exp_end_date[]" class="input exp-end-date-col" value="${escapeHtml(e.end_date || '')}" style="${e.is_current ? 'display: none;' : ''} padding-left:4px; padding-right:4px;">
                                                 </div>
                                             </div>
-                                            <div class="col-md-12 mb-2">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <label class="small fw-semibold text-muted">Description & Achievements</label>
-                                                    <div>
-                                                        <button type="button" class="ai-assist-btn improve-desc-ai">
-                                                            <i class="ti ti-wand"></i> Improve with AI
-                                                        </button>
-                                                        <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
-                                                            <i class="ti ti-list"></i> Generate Bullets
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements...">${escapeHtml(e.description || '')}</textarea>
+                                        </div>
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <div style="flex:1;">
+                                                <label class="lbl">Company</label>
+                                                <input type="text" name="exp_company[]" class="input" placeholder="Company Name" value="${escapeHtml(e.company || '')}">
                                             </div>
+                                            <div class="form-check" style="margin-left:15px; margin-top:20px;">
+                                                <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''} id="exp_current_${idx}">
+                                                <label class="form-check-label lbl" for="exp_current_${idx}" style="cursor:pointer; display:inline-block; margin-left:4px; margin-bottom:0;">Current</label>
+                                            </div>
+                                        </div>
+                                        <label class="lbl">Achievements — one per line</label>
+                                        <textarea name="exp_description[]" class="input" rows="4" placeholder="Describe your responsibilities and achievements...">${escapeHtml(e.description || '')}</textarea>
+                                        <div class="ai-row">
+                                            <button type="button" class="btn-ai improve-desc-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Strengthen achievements</button>
+                                            <button type="button" class="btn-ai generate-bullets-ai"><svg aria-hidden="true"><use href="#i-edit"/></svg> Generate Bullets</button>
                                         </div>
                                     </div>
                                 `;
@@ -2497,33 +3028,44 @@
                         if (Array.isArray(snap.education)) {
                             snap.education.forEach(function(ed) {
                                 const html = `
-                                    <div class="education-item border rounded p-3 mb-3 position-relative">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">School / University</label>
-                                                <input type="text" name="edu_school[]" class="form-control form-control-sm" value="${escapeHtml(ed.institution || '')}">
+                                    <div class="xp-entry position-relative education-item">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
+                                        <div class="row2">
+                                            <div>
+                                                <label class="lbl">School / University</label>
+                                                <input type="text" name="edu_school[]" class="input" placeholder="School / University" value="${escapeHtml(ed.institution || '')}">
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Degree</label>
-                                                <select name="edu_degree[]" class="form-select form-select-sm">
-                                                    <option value="">Select Degree</option>
-                                                    <option value="High School" ${ed.degree === 'High School' ? 'selected' : ''}>High School</option>
+                                            <div>
+                                                <label class="lbl">Degree</label>
+                                                <select name="edu_degree[]" class="input select">
+                                                    <option value="">Select Degree / Qualification</option>
+                                                    <option value="B.Sc." ${ed.degree === 'B.Sc.' || ed.degree === 'Bachelor' ? 'selected' : ''}>B.Sc. / Bachelor of Science</option>
+                                                    <option value="B.A." ${ed.degree === 'B.A.' ? 'selected' : ''}>B.A. / Bachelor of Arts</option>
+                                                    <option value="B.Eng." ${ed.degree === 'B.Eng.' || ed.degree === 'B.Tech.' ? 'selected' : ''}>B.Eng. / B.Tech. (Engineering &amp; Tech)</option>
+                                                    <option value="LL.B" ${ed.degree === 'LL.B' ? 'selected' : ''}>LL.B / Law Degree</option>
+                                                    <option value="MBBS" ${ed.degree === 'MBBS' ? 'selected' : ''}>MBBS / Medicine &amp; Surgery</option>
+                                                    <option value="HND" ${ed.degree === 'HND' ? 'selected' : ''}>HND / Higher National Diploma</option>
+                                                    <option value="OND / ND" ${ed.degree === 'OND / ND' || ed.degree === 'OND' ? 'selected' : ''}>OND / ND (National Diploma)</option>
+                                                    <option value="NCE" ${ed.degree === 'NCE' ? 'selected' : ''}>NCE / Nigeria Certificate in Education</option>
+                                                    <option value="M.Sc." ${ed.degree === 'M.Sc.' || ed.degree === 'Master' ? 'selected' : ''}>M.Sc. / M.A. (Master's Degree)</option>
+                                                    <option value="MBA" ${ed.degree === 'MBA' ? 'selected' : ''}>MBA / Master of Business Admin</option>
+                                                    <option value="PhD" ${ed.degree === 'PhD' || ed.degree === 'Ph.D.' ? 'selected' : ''}>Ph.D. / Doctorate</option>
+                                                    <option value="PGD" ${ed.degree === 'PGD' ? 'selected' : ''}>PGD / Postgraduate Diploma</option>
+                                                    <option value="SSCE / WAEC" ${ed.degree === 'SSCE / WAEC' || ed.degree === 'High School' ? 'selected' : ''}>SSCE / WAEC / NECO</option>
                                                     <option value="Associate" ${ed.degree === 'Associate' ? 'selected' : ''}>Associate Degree</option>
-                                                    <option value="Bachelor" ${ed.degree === 'Bachelor' ? 'selected' : ''}>Bachelor's Degree</option>
-                                                    <option value="Master" ${ed.degree === 'Master' ? 'selected' : ''}>Master's Degree</option>
-                                                    <option value="PhD" ${ed.degree === 'PhD' ? 'selected' : ''}>PhD / Doctorate</option>
-                                                    <option value="Certificate" ${ed.degree === 'Certificate' ? 'selected' : ''}>Certificate</option>
-                                                    <option value="Other" ${ed.degree === 'Other' ? 'selected' : ''}>Other</option>
+                                                    <option value="Certificate" ${ed.degree === 'Certificate' ? 'selected' : ''}>Professional Certificate</option>
+                                                    <option value="Other" ${ed.degree === 'Other' ? 'selected' : ''}>Other Qualification</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Field of Study</label>
-                                                <input type="text" name="edu_field[]" class="form-control form-control-sm" value="${escapeHtml(ed.field_of_study || '')}">
+                                        </div>
+                                        <div class="row2" style="margin-top: 10px;">
+                                            <div>
+                                                <label class="lbl">Field of Study</label>
+                                                <input type="text" name="edu_field[]" class="input" placeholder="Field of Study" value="${escapeHtml(ed.field_of_study || '')}">
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="form-label small fw-semibold text-muted">Graduation Year</label>
-                                                <input type="number" name="edu_year[]" class="form-control form-control-sm" value="${escapeHtml(ed.graduation_year || '')}" min="1950" max="2030">
+                                            <div>
+                                                <label class="lbl">Graduation Year</label>
+                                                <input type="text" name="edu_year[]" class="input" placeholder="YYYY" value="${escapeHtml(ed.graduation_year || '')}">
                                             </div>
                                         </div>
                                     </div>
@@ -2763,7 +3305,10 @@
             const prev = $('#resume-summary').val();
             $('#resume-summary').data('prev', prev);
 
-            $('#resume-summary').val(polishedText);
+            $('#resume-summary').val(polishedText).trigger('input');
+            if (typeof renderLivePreview === 'function') {
+                renderLivePreview();
+            }
             toastr.success('Applied to Professional Summary!');
             
             // Scroll to the professional summary element
@@ -2785,7 +3330,10 @@
             if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
                 // store previous for undo
                 lastFocusedTextarea.data('prev', lastFocusedTextarea.val());
-                lastFocusedTextarea.val(polishedText);
+                lastFocusedTextarea.val(polishedText).trigger('input');
+                if (typeof renderLivePreview === 'function') {
+                    renderLivePreview();
+                }
                 toastr.success('Applied to the active input field!');
                 
                 // Focus it and flash it
@@ -2800,7 +3348,10 @@
                 if (firstExpDesc.length > 0) {
                     // store previous for undo
                     firstExpDesc.data('prev', firstExpDesc.val());
-                    firstExpDesc.val(polishedText);
+                    firstExpDesc.val(polishedText).trigger('input');
+                    if (typeof renderLivePreview === 'function') {
+                        renderLivePreview();
+                    }
                     toastr.info('No active input was selected. Applied to first work experience description.');
                     
                     if (firstExpDesc.is(':visible') && firstExpDesc.offset()) {
@@ -2812,7 +3363,10 @@
                 } else {
                     // Otherwise default to summary
                     const targetSummary = $('#resume-summary');
-                    targetSummary.val(polishedText);
+                    targetSummary.val(polishedText).trigger('input');
+                    if (typeof renderLivePreview === 'function') {
+                        renderLivePreview();
+                    }
                     toastr.info('No active input was selected. Applied to Professional Summary.');
                     
                     if (targetSummary.is(':visible') && targetSummary.offset()) {
@@ -2821,6 +3375,29 @@
                         }, 300);
                     }
                 }
+            }
+        });
+
+        // Generic Apply Suggestion handler for any suggestion buttons
+        $(document).on('click', '.apply-suggestion, .apply-suggestion-btn', function() {
+            const textId = $(this).data('text-id');
+            const targetSel = $(this).data('target');
+            let content = '';
+            if (textId) {
+                const $hidden = $('#' + textId);
+                content = $hidden.length && $hidden.data('raw') ? $hidden.data('raw') : $hidden.text();
+            } else {
+                content = $(this).data('suggestion') || $(this).closest('.suggestion-item, .coach-bubble').find('.suggestion-text, .coach-text').text() || '';
+            }
+            const polished = extractResumeContent(content);
+            const $target = targetSel ? $(targetSel) : (lastFocusedTextarea && lastFocusedTextarea.length ? lastFocusedTextarea : $('#resume-summary'));
+            if ($target.length) {
+                $target.data('prev', $target.val());
+                $target.val(polished).trigger('input');
+                if (typeof renderLivePreview === 'function') {
+                    renderLivePreview();
+                }
+                if (typeof toastr !== 'undefined') toastr.success('Applied suggestion!');
             }
         });
 
@@ -2861,7 +3438,10 @@
             const target = $('#resume-summary');
             if (target.length) {
                 target.data('prev', target.val());
-                target.val(polished);
+                target.val(polished).trigger('input');
+                if (typeof renderLivePreview === 'function') {
+                    renderLivePreview();
+                }
                 // Scroll to summary section if hidden/collapsed
                 const secSummary = $('#sec-summary');
                 if (secSummary.length && !secSummary.hasClass('open')) {
@@ -2892,7 +3472,10 @@
             if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
                 // store previous for undo
                 lastFocusedTextarea.data('prev', lastFocusedTextarea.val());
-                lastFocusedTextarea.val(polished);
+                lastFocusedTextarea.val(polished).trigger('input');
+                if (typeof renderLivePreview === 'function') {
+                    renderLivePreview();
+                }
                 $('#aiPreviewModal').modal('hide');
                 $('.modal-backdrop').remove();
                 $('body').removeClass('modal-open').css('overflow', '');
@@ -2907,7 +3490,10 @@
             const firstExpDesc = $('textarea[name="exp_description[]"]').first();
             if (firstExpDesc.length > 0) {
                 firstExpDesc.data('prev', firstExpDesc.val());
-                firstExpDesc.val(polished);
+                firstExpDesc.val(polished).trigger('input');
+                if (typeof renderLivePreview === 'function') {
+                    renderLivePreview();
+                }
                 $('#aiPreviewModal').modal('hide');
                 $('.modal-backdrop').remove();
                 $('body').removeClass('modal-open').css('overflow', '');
@@ -2922,7 +3508,10 @@
             // Otherwise default to summary
             const targetSummary = $('#resume-summary');
             targetSummary.data('prev', targetSummary.val());
-            targetSummary.val(polished);
+            targetSummary.val(polished).trigger('input');
+            if (typeof renderLivePreview === 'function') {
+                renderLivePreview();
+            }
             $('#aiPreviewModal').modal('hide');
             $('.modal-backdrop').remove();
             $('body').removeClass('modal-open').css('overflow', '');
@@ -2955,7 +3544,6 @@
 
             toastr.info('Nothing to undo');
         });
-    });
 
     // ── PRINT ARCHITECTURE ──
     // beforeprint moves #doc out of the preview wrappers (which may have
@@ -2971,6 +3559,16 @@
         var doc = document.getElementById('doc');
         if (doc && doc.parentElement !== _printRoot) {
             _docHome = doc.parentElement;
+            // Clone SVG defs containing symbol #jr-mark so watermark renders during print
+            var markSymbol = document.getElementById('jr-mark');
+            if (markSymbol) {
+                var svgParent = markSymbol.closest('svg');
+                if (svgParent && !_printRoot.querySelector('#print-svg-defs')) {
+                    var clonedSvg = svgParent.cloneNode(true);
+                    clonedSvg.id = 'print-svg-defs';
+                    _printRoot.appendChild(clonedSvg);
+                }
+            }
             _printRoot.appendChild(doc);
         }
     }
@@ -2979,6 +3577,10 @@
         if (_docHome && doc && doc.parentElement === _printRoot) {
             _docHome.appendChild(doc);
             _docHome = null;
+        }
+        var printSvg = _printRoot.querySelector('#print-svg-defs');
+        if (printSvg) {
+            printSvg.remove();
         }
     }
 
@@ -2998,7 +3600,6 @@
 
     // Download-as-PDF shortcut via browser print dialog
     $(document).on('click', '.btn-print-pdf', function () {
-        // Brief toast advising how to save cleanly
         if (typeof toastr !== 'undefined') {
             toastr.info(
                 'In the print dialog: set <b>Destination → Save as PDF</b>, ' +
@@ -3006,8 +3607,79 @@
                 'Saving as PDF', { timeOut: 6000, extendedTimeOut: 2000 }
             );
         }
-        setTimeout(function () { window.print(); }, 650);
+        window.print();
     });
+
+    // ── 1-CLICK AUTO-FILL FROM CANDIDATE PROFILE ──
+    window.performProfileAutofill = function($btn) {
+        var origHtml = $btn ? $btn.html() : '';
+        if ($btn) $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Filling...');
+
+        $.ajax({
+            url: '<?= base_url('candidate/resumes/profile-data') ?>',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                if (res.success && res.data) {
+                    var d = res.data;
+                    if (d.full_name) $('input[name="full_name"]').val(d.full_name);
+                    if (d.email) $('input[name="email"]').val(d.email);
+                    if (d.phone) $('input[name="phone"]').val(d.phone);
+                    if (d.location) $('input[name="location"]').val(d.location);
+                    if (d.job_title && !$('input[name="title"]').val()) {
+                        $('input[name="title"]').val(d.job_title + ' Resume');
+                    }
+                    if (d.bio) {
+                        $('#resume-summary').val(d.bio);
+                        $('textarea[name="summary"]').val(d.bio);
+                    }
+
+                    // Auto-fill skills
+                    if (d.skills && d.skills.length > 0) {
+                        $('textarea[name="skills"], input[name="skills"]').val(d.skills.join(', '));
+                    }
+
+                    // Auto-fill experiences if container is empty
+                    if (d.experiences && d.experiences.length > 0) {
+                        $('#experience-container').find('.experience-item').remove();
+                        d.experiences.forEach(function(exp) {
+                            if (typeof addExperienceItem === 'function') {
+                                addExperienceItem(exp.company || '', exp.job_title || exp.position || '', exp.start_date || '', exp.end_date || '', exp.description || '', exp.is_current || false);
+                            }
+                        });
+                    }
+
+                    // Auto-fill education if container is empty
+                    if (d.education && d.education.length > 0) {
+                        $('#education-container').find('.education-item').remove();
+                        d.education.forEach(function(edu) {
+                            if (typeof addEducationItem === 'function') {
+                                addEducationItem(edu.school || edu.institution || '', edu.degree || '', edu.field_of_study || edu.field || '', edu.end_year ? edu.end_year + '-12-31' : (edu.year || ''));
+                            }
+                        });
+                    }
+
+                    renderLivePreview();
+                    refreshAts();
+                    if (typeof toastr !== 'undefined') toastr.success('CV auto-filled with your profile info!');
+                } else {
+                    if (typeof toastr !== 'undefined') toastr.warning(res.message || 'Could not fetch profile info.');
+                }
+            },
+            error: function() {
+                if (typeof toastr !== 'undefined') toastr.error('Server error pulling profile data.');
+            },
+            complete: function() {
+                if ($btn) $btn.prop('disabled', false).html(origHtml);
+            }
+        });
+    };
+
+    $(document).on('click', '#btn-autofill-profile, #btn-import-profile-top', function(e) {
+        e.preventDefault();
+        window.performProfileAutofill($(this));
+    });
+});
 </script>
 <?= $this->endSection() ?>
 

@@ -30,9 +30,15 @@
                         class="nav-link <?= $currentStatus == 'pending' ? 'active' : '' ?>">
                         <i class="ti ti-hourglass-high text-warning"></i>
                         Pending Verification
-                        <?php if ($verificationStats['pending'] > 0): ?>
-                            <span class="badge bg-warning ms-1"><?= $verificationStats['pending'] ?></span>
-                        <?php endif; ?>
+                        <span class="badge bg-warning ms-1"><?= $verificationStats['pending'] ?></span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= base_url('admin/employers?status=unverified') ?>"
+                        class="nav-link <?= $currentStatus == 'unverified' ? 'active' : '' ?>">
+                        <i class="ti ti-file-off text-muted"></i>
+                        Unverified (No Docs)
+                        <span class="badge bg-secondary ms-1"><?= $verificationStats['unverified'] ?? 0 ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -258,7 +264,6 @@
             .then(res => res.text())
             .then(html => {
                 body.innerHTML = html;
-                // Re-initialize feather icons if needed
                 if (typeof feather !== 'undefined') {
                     feather.replace();
                 }
@@ -352,23 +357,9 @@
             });
     });
 
-    // View documents
+    // View documents alias
     function viewDocumentss(employerId) {
-        const modal = new bootstrap.Modal(document.getElementById('documentsModal'));
-        const body = document.getElementById('documentsModalBody');
-
-        body.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">Loading documents...</p></div>';
-        modal.show();
-
-        fetch(`<?= base_url('admin/employers/documents/') ?>${employerId}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(res => res.text())
-            .then(html => {
-                body.innerHTML = html;
-            });
+        viewDocuments(employerId);
     }
 
     // Open verification modal
@@ -404,7 +395,8 @@
             .then(html => {
                 document.getElementById('employers-table-wrapper').innerHTML = html;
                 history.pushState({}, '', link.href);
-            });
+            })
+            .catch(err => console.error(err));
     });
 
     // Delete Employer
@@ -414,8 +406,10 @@
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                    },
+                    body: JSON.stringify({ '<?= csrf_token() ?>': '<?= csrf_hash() ?>' })
                 })
                 .then(r => r.json())
                 .then(res => {

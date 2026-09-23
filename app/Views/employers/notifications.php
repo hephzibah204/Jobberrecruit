@@ -1,7 +1,64 @@
-<?php $page_title = 'Candidate Alerts'; ?>
+<?php $page_title = 'Notifications & Alerts'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('styles') ?>
+<style>
+.notif-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  margin-bottom: 20px;
+}
+.notif-tab {
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: all .15s ease;
+}
+.notif-tab:hover {
+  color: var(--brand-deep, #0A2F57);
+}
+.notif-tab.active {
+  color: var(--brand, #0861A9);
+  border-bottom-color: var(--brand, #0861A9);
+}
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border, #edf2f7);
+  transition: background .15s ease;
+}
+.notif-row:hover { background: #f8fafc; }
+.notif-row.unread { background: #f0f7fc; border-left: 3px solid var(--brand, #0861A9); }
+.notif-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--brand-light, #E6F0F8);
+  color: var(--brand, #0861A9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.notif-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.notif-content { flex: 1; min-width: 0; }
+.notif-title { font-size: 0.88rem; font-weight: 700; color: var(--brand-deep, #0A2F57); margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+.notif-msg { font-size: 0.82rem; color: #334155; line-height: 1.45; margin-bottom: 4px; }
+.notif-time { font-size: 0.74rem; color: var(--muted, #64748b); display: flex; align-items: center; gap: 4px; }
+.notif-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -9,17 +66,118 @@
     <div>
         <h1>
             <svg aria-hidden="true"><use href="#i-bell"/></svg> 
-            Candidate Alerts
+            Notifications &amp; Alerts
         </h1>
-        <p>Save a search once — we'll notify you whenever a matching candidate joins or updates their profile.</p>
+        <p>Stay informed about your candidate applications, test screening results, and search alerts.</p>
     </div>
     <div class="page-actions">
-        <a href="#new-alert" class="emp-btn emp-btn-primary emp-btn-sm">
-            <svg aria-hidden="true"><use href="#i-plus"/></svg> New Alert
+        <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
+            <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" id="btn-mark-all-read" onclick="markAllNotificationsRead()">
+                <svg aria-hidden="true" width="14" height="14"><use href="#i-check-c"/></svg> Mark all as read
+            </button>
+        <?php endif; ?>
+        <a href="#new-alert" class="emp-btn emp-btn-primary emp-btn-sm" onclick="switchTab('alerts');">
+            <svg aria-hidden="true"><use href="#i-plus"/></svg> New Candidate Alert
         </a>
     </div>
 </div>
 
+<nav class="notif-tabs" aria-label="Notification sections">
+    <button type="button" class="notif-tab active" id="tab-btn-feed" onclick="switchTab('feed')">
+        <svg aria-hidden="true" width="16" height="16"><use href="#i-bell"/></svg> 
+        Activity Notifications
+        <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
+            <span class="pill pill--reviewed" id="unread-badge"><?= $unreadCount ?> new</span>
+        <?php endif; ?>
+    </button>
+    <button type="button" class="notif-tab" id="tab-btn-alerts" onclick="switchTab('alerts')">
+        <svg aria-hidden="true" width="16" height="16"><use href="#i-users"/></svg> 
+        Candidate Alerts
+        <?php $activeAlertCount = count(array_filter($alerts ?? [], fn($a) => !empty($a->active ?? $a['active'] ?? true))); ?>
+        <span class="pill pill--closed"><?= $activeAlertCount ?> active</span>
+    </button>
+</nav>
+
+<!-- ═══ SECTION 1: ACTIVITY NOTIFICATIONS FEED ═══ -->
+<div id="section-feed">
+    <section class="card" aria-label="Notifications Feed">
+        <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="card-title">
+                <svg aria-hidden="true"><use href="#i-bell"/></svg> 
+                Notifications Feed
+            </span>
+            <div style="font-size:0.78rem; color:var(--muted);">
+                Showing <?= count($notifications ?? []) ?> notification<?= count($notifications ?? []) === 1 ? '' : 's' ?>
+            </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+            <?php if (empty($notifications)): ?>
+                <div class="empty-state" style="padding:48px 20px;">
+                    <div class="empty-ic">
+                        <svg aria-hidden="true"><use href="#i-bell"/></svg>
+                    </div>
+                    <h3>No notifications yet</h3>
+                    <p>When candidates apply to your jobs or screening assessments are completed, updates will appear here.</p>
+                </div>
+            <?php else: ?>
+                <div class="notif-list">
+                    <?php foreach ($notifications as $n): 
+                        $isRead = !empty($n['is_read']);
+                        $nId = (int)($n['id'] ?? 0);
+                        $type = $n['type'] ?? 'system';
+                    ?>
+                        <div class="notif-row <?= !$isRead ? 'unread' : '' ?>" id="notif-row-<?= $nId ?>">
+                            <div class="notif-icon">
+                                <?php if (str_contains($type, 'application')): ?>
+                                    <svg aria-hidden="true"><use href="#i-users"/></svg>
+                                <?php elseif (str_contains($type, 'job')): ?>
+                                    <svg aria-hidden="true"><use href="#i-briefcase"/></svg>
+                                <?php else: ?>
+                                    <svg aria-hidden="true"><use href="#i-bell"/></svg>
+                                <?php endif; ?>
+                            </div>
+                            <div class="notif-content">
+                                <div class="notif-title">
+                                    <?= esc($n['title'] ?? 'Notification') ?>
+                                    <?php if (!$isRead): ?>
+                                        <span class="badge" style="background:var(--brand);color:#fff;font-size:0.64rem;padding:2px 6px;border-radius:4px;">NEW</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="notif-msg"><?= esc($n['message'] ?? '') ?></div>
+                                <div class="notif-time">
+                                    <svg aria-hidden="true" width="12" height="12"><use href="#i-clock"/></svg>
+                                    <?= !empty($n['created_at']) ? date('M d, Y · h:i A', strtotime($n['created_at'])) : 'Recently' ?>
+                                    <?php if (!empty($n['job_title'])): ?>
+                                        &middot; <span style="font-weight:600;"><?= esc($n['job_title']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="notif-actions">
+                                <?php if (!empty($n['application_id'])): ?>
+                                    <a href="<?= base_url('employer/applications/view/' . $n['application_id']) ?>" class="emp-btn emp-btn-outline emp-btn-sm" style="padding:4px 10px; font-size:0.75rem;">
+                                        View Application
+                                    </a>
+                                <?php elseif (!empty($n['job_id'])): ?>
+                                    <a href="<?= base_url('employer/jobs/view/' . $n['job_id']) ?>" class="emp-btn emp-btn-outline emp-btn-sm" style="padding:4px 10px; font-size:0.75rem;">
+                                        View Job
+                                    </a>
+                                <?php endif; ?>
+                                <?php if (!$isRead): ?>
+                                    <button type="button" class="emp-btn emp-btn-ghost emp-btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="markNotificationRead(<?= $nId ?>, this)" title="Mark as read">
+                                        <svg aria-hidden="true" width="13" height="13"><use href="#i-check"/></svg>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
+</div>
+
+<!-- ═══ SECTION 2: CANDIDATE SEARCH ALERTS ═══ -->
+<div id="section-alerts" style="display:none;">
 <section class="card" aria-label="Your alerts">
     <div class="card-head">
         <span class="card-title">
@@ -203,6 +361,7 @@
     <svg aria-hidden="true"><use href="#i-bulb"/></svg>
     <span>Alerts power your AI Recruiter matches on the dashboard. The more specific your criteria, the better the matches — you can create as many alerts as you need.</span>
 </div>
+</div> <!-- /section-alerts -->
 
 <!-- Delete Alert Confirmation Modal -->
 <div class="modal-scrim" id="delete-alert-scrim" style="display:none; position:fixed; inset:0; background:rgba(10,25,45,.55); backdrop-filter:blur(2px); z-index:1400; align-items:center; justify-content:center; padding:24px;">
@@ -229,14 +388,97 @@
 
 <?= $this->section('scripts') ?>
 <script>
+function switchTab(tab) {
+    if (tab === 'feed') {
+        $('#section-feed').show();
+        $('#section-alerts').hide();
+        $('#tab-btn-feed').addClass('active');
+        $('#tab-btn-alerts').removeClass('active');
+    } else {
+        $('#section-feed').hide();
+        $('#section-alerts').show();
+        $('#tab-btn-feed').removeClass('active');
+        $('#tab-btn-alerts').addClass('active');
+    }
+}
+
+function markNotificationRead(id, btn) {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?= csrf_hash() ?>';
+    var csrfName = document.querySelector('meta[name="csrf-header"]')?.getAttribute('content') || '<?= csrf_token() ?>';
+    
+    var data = {
+        notification_id: id
+    };
+    data[csrfName] = csrfToken;
+
+    $.ajax({
+        url: '<?= base_url("employer/notifications/mark-read") ?>',
+        type: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        data: data,
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                var row = $('#notif-row-' + id);
+                row.removeClass('unread');
+                row.find('.badge').remove();
+                if (btn) $(btn).remove();
+                if (res.unreadCount !== undefined) {
+                    if (res.unreadCount <= 0) {
+                        $('#unread-badge').remove();
+                        $('#btn-mark-all-read').remove();
+                    } else {
+                        $('#unread-badge').text(res.unreadCount + ' new');
+                    }
+                }
+            }
+        }
+    });
+}
+
+function markAllNotificationsRead() {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '<?= csrf_hash() ?>';
+    var csrfName = document.querySelector('meta[name="csrf-header"]')?.getAttribute('content') || '<?= csrf_token() ?>';
+    
+    var data = {};
+    data[csrfName] = csrfToken;
+
+    $.ajax({
+        url: '<?= base_url("employer/notifications/mark-all-read") ?>',
+        type: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        data: data,
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                $('.notif-row').removeClass('unread');
+                $('.notif-row .badge').remove();
+                $('.notif-actions button').remove();
+                $('#unread-badge').remove();
+                $('#btn-mark-all-read').remove();
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('All notifications marked as read.');
+                }
+            }
+        }
+    });
+}
+
 $(document).ready(function() {
     // CSRF Token and Hash
     const csrfTokenName = '<?= csrf_token() ?>';
     let csrfHash = '<?= csrf_hash() ?>';
 
     function getAjaxData(extraData = {}) {
+        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || csrfHash;
         return {
-            [csrfTokenName]: csrfHash,
+            [csrfTokenName]: token,
             ...extraData
         };
     }
@@ -245,6 +487,8 @@ $(document).ready(function() {
         if (newHash) {
             csrfHash = newHash;
             $('input[name="' + csrfTokenName + '"]').val(newHash);
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) meta.setAttribute('content', newHash);
         }
     }
 

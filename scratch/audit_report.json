@@ -1,0 +1,422 @@
+{
+  "consoleErrors": [
+    {
+      "url": "http://localhost:8085/",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/jobs",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/training",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/cv-review",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/cv-review",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "url": "http://localhost:8085/webinars",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/candidates",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/candidates",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/candidates",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/employers",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "url": "http://localhost:8085/about-us",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/contact-us",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/blog",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/privacy-policy",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/terms-and-conditions",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/faq",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/recruitment",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/career-advice",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "url": "http://localhost:8085/job-ads",
+      "text": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "http://localhost:8085/candidate/profile",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "url": "http://localhost:8085/candidate/profile/edit",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "url": "http://localhost:8085/employer/bundles",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin"
+    },
+    {
+      "url": "http://localhost:8085/employer/candidates",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "url": "http://localhost:8085/employer/candidates",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin"
+    }
+  ],
+  "httpErrors": [
+    {
+      "page": "http://localhost:8085/cv-review",
+      "url": "http://localhost:8085/assets/cv-review/sample-report.jpg",
+      "status": 404
+    },
+    {
+      "page": "http://localhost:8085/candidates",
+      "url": "http://localhost:8085/employers",
+      "status": 404
+    },
+    {
+      "page": "http://localhost:8085/recruitment",
+      "url": "http://localhost:8085/career-advice",
+      "status": 404
+    },
+    {
+      "page": "http://localhost:8085/candidate/profile",
+      "url": "http://localhost:8085/default_seeker.png",
+      "status": 404
+    },
+    {
+      "page": "http://localhost:8085/candidate/profile/edit",
+      "url": "http://localhost:8085/default_seeker.png",
+      "status": 404
+    },
+    {
+      "page": "http://localhost:8085/employer/candidates",
+      "url": "http://localhost:8085/default_seeker.png",
+      "status": 404
+    }
+  ],
+  "brokenImages": [
+    {
+      "page": "/cv-review",
+      "src": "http://localhost:8085/assets/cv-review/sample-report.jpg"
+    },
+    {
+      "page": "/candidate/profile",
+      "src": "http://localhost:8085/default_seeker.png"
+    },
+    {
+      "page": "/candidate/profile/edit",
+      "src": "http://localhost:8085/default_seeker.png"
+    },
+    {
+      "page": "/employer/candidates",
+      "src": "http://localhost:8085/default_seeker.png"
+    },
+    {
+      "page": "/admin/testimonials",
+      "src": "http://localhost:8085/admin/testimonials"
+    }
+  ],
+  "pagesTested": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/jobs",
+      "status": 200
+    },
+    {
+      "path": "/training",
+      "status": 200
+    },
+    {
+      "path": "/cv-review",
+      "status": 200
+    },
+    {
+      "path": "/webinars",
+      "status": 200
+    },
+    {
+      "path": "/candidates",
+      "status": 200
+    },
+    {
+      "path": "/employers",
+      "status": 404
+    },
+    {
+      "path": "/about-us",
+      "status": 200
+    },
+    {
+      "path": "/contact-us",
+      "status": 200
+    },
+    {
+      "path": "/blog",
+      "status": 200
+    },
+    {
+      "path": "/privacy-policy",
+      "status": 200
+    },
+    {
+      "path": "/terms-and-conditions",
+      "status": 200
+    },
+    {
+      "path": "/faq",
+      "status": 200
+    },
+    {
+      "path": "/recruitment",
+      "status": 200
+    },
+    {
+      "path": "/career-advice",
+      "status": 404
+    },
+    {
+      "path": "/job-ads",
+      "status": 200
+    },
+    {
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "path": "/register",
+      "status": 200
+    },
+    {
+      "path": "/forgot-password",
+      "status": 200
+    },
+    {
+      "path": "/admin/login",
+      "status": 200
+    },
+    {
+      "path": "/candidate/applications",
+      "status": 200
+    },
+    {
+      "path": "/candidate/saved-jobs",
+      "status": 200
+    },
+    {
+      "path": "/candidate/notifications",
+      "status": 200
+    },
+    {
+      "path": "/candidate/profile",
+      "status": 200
+    },
+    {
+      "path": "/candidate/profile/edit",
+      "status": 200
+    },
+    {
+      "path": "/candidate/settings/security",
+      "status": 200
+    },
+    {
+      "path": "/candidate/resumes",
+      "status": 200
+    },
+    {
+      "path": "/candidate/resumes/build",
+      "status": 200
+    },
+    {
+      "path": "/candidate/career-tools",
+      "status": 200
+    },
+    {
+      "path": "/candidate/my-courses",
+      "status": 200
+    },
+    {
+      "path": "/candidate/certificates",
+      "status": 200
+    },
+    {
+      "path": "/candidate/wallet",
+      "status": 200
+    },
+    {
+      "path": "/candidate/transactions",
+      "status": 200
+    },
+    {
+      "path": "/candidate/referrals",
+      "status": 200
+    },
+    {
+      "path": "/employer/jobs",
+      "status": 200
+    },
+    {
+      "path": "/employer/post-job",
+      "status": 200
+    },
+    {
+      "path": "/employer/applications",
+      "status": 200
+    },
+    {
+      "path": "/employer/profile",
+      "status": 200
+    },
+    {
+      "path": "/employer/pricing",
+      "status": 200
+    },
+    {
+      "path": "/employer/bundles",
+      "status": 200
+    },
+    {
+      "path": "/employer/candidates",
+      "status": 200
+    },
+    {
+      "path": "/employer/messages",
+      "status": 200
+    },
+    {
+      "path": "/employer/settings",
+      "status": 200
+    },
+    {
+      "path": "/employer/wallet",
+      "status": 200
+    },
+    {
+      "path": "/employer/transactions",
+      "status": 200
+    },
+    {
+      "path": "/admin/users",
+      "status": 200
+    },
+    {
+      "path": "/admin/jobs",
+      "status": 200
+    },
+    {
+      "path": "/admin/applications",
+      "status": 200
+    },
+    {
+      "path": "/admin/candidates",
+      "status": 200
+    },
+    {
+      "path": "/admin/employers",
+      "status": 200
+    },
+    {
+      "path": "/admin/cv-reviews",
+      "status": 200
+    },
+    {
+      "path": "/admin/aptitude",
+      "status": 200
+    },
+    {
+      "path": "/admin/newsletters",
+      "status": 200
+    },
+    {
+      "path": "/admin/webinars",
+      "status": 200
+    },
+    {
+      "path": "/admin/locations",
+      "status": 200
+    },
+    {
+      "path": "/admin/categories",
+      "status": 200
+    },
+    {
+      "path": "/admin/industries",
+      "status": 200
+    },
+    {
+      "path": "/admin/bundles",
+      "status": 200
+    },
+    {
+      "path": "/admin/plans",
+      "status": 200
+    },
+    {
+      "path": "/admin/chatbot",
+      "status": 200
+    },
+    {
+      "path": "/admin/testimonials",
+      "status": 200
+    }
+  ],
+  "failedActions": [
+    {
+      "action": "visit /candidate/dashboard",
+      "error": "page.goto: net::ERR_ABORTED at http://localhost:8085/candidate/dashboard\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/candidate/dashboard\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "action": "visit /employer/dashboard",
+      "error": "page.goto: net::ERR_ABORTED at http://localhost:8085/employer/dashboard\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/employer/dashboard\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "action": "visit /admin/dashboard",
+      "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/admin/dashboard\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "action": "visit /admin/blogs",
+      "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/admin/blogs\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "action": "visit /admin/elearning",
+      "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/admin/elearning\", waiting until \"networkidle\"\u001b[22m\n"
+    }
+  ]
+}

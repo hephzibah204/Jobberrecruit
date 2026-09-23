@@ -85,8 +85,13 @@ html, body { background: #f5f7fb; }
 main, .section, .container, .jobs-header, .jobs-grid { background-color: transparent; }
 .section { background-color: #f5f7fb; }
 .section.hiw-bg, .section.faq-bg, .section.training-bg, .section.testi-bg { background-color: #ffffff; }
-.section-title, .job-title, .cat-name, .loc-name, .step-title, .course-title, .testi-name, .feat-name, .cta-panel.blue h2,
-.cta-panel.blue p { color: #ffffff; }
+/* All surface text uses the dark text color by default; only the few
+   elements that live INSIDE dark surfaces stay light. .cta-panel.blue
+   is the only light-on-dark text in the homepage. */
+.section-title, .job-title, .cat-name, .loc-name, .step-title, .course-title, .testi-name, .feat-name {
+  color: var(--text);
+}
+.cta-panel.blue h2, .cta-panel.blue p { color: #ffffff; }
 .cta-panel.light h2 { color: #141926; }
 .section-title span { color: var(--brand); }
 .section-sub { color: #5b6577; }
@@ -593,7 +598,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                 </div>
                 <div class="job-logo" aria-hidden="true">
                   <?php if (!empty($coLogo)): ?>
-                    <img src="<?= $coLogo ?>" alt="">
+                    <img src="<?= $coLogo ?>" alt="<?= esc($coName) ?> logo" loading="lazy">
                   <?php else: ?>
                     <?= esc(substr($coName, 0, 2)) ?>
                   <?php endif; ?>
@@ -750,7 +755,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               <span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
               <div class="course-thumb <?= empty($imgUrl) ? $gradientClass : '' ?>">
                 <?php if (!empty($imgUrl)): ?>
-                  <img class="thumb-img" src="<?= $imgUrl ?>" alt="" loading="lazy">
+                  <img class="thumb-img" src="<?= $imgUrl ?>" alt="<?= esc($c->title) ?> course thumbnail" loading="lazy">
                 <?php else: ?>
                   <svg aria-hidden="true"><use href="#i-book"/></svg>
                 <?php endif; ?>
@@ -784,7 +789,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
             </div>
           <?php endforeach; ?>
         <?php else: ?>
-          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb"><img class="thumb-img" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=240&fit=crop" alt="" loading="lazy"></div><div class="course-body"><h3 class="course-title">Data Analysis with Excel &amp; Python</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 8 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol free</a></div></div></div>
+          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb"><img class="thumb-img" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=240&fit=crop" alt="Data Analysis with Excel &amp; Python course thumbnail" loading="lazy"></div><div class="course-body"><h3 class="course-title">Data Analysis with Excel &amp; Python</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 8 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol free</a></div></div></div>
           <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-purple"><svg aria-hidden="true"><use href="#i-mega"/></svg></div><div class="course-body"><h3 class="course-title">Digital Marketing Fundamentals</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 6 hours</span><span><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span></div></div><div class="course-footer"><span class="course-cert"><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span><div class="course-price-row"><span class="course-price course-price--paid">₦15,000</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol now</a></div></div></div>
           <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-green"><svg aria-hidden="true"><use href="#i-bag"/></svg></div><div class="course-body"><h3 class="course-title">Project Management Essentials</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 10 hours</span><span><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span></div></div><div class="course-footer"><span class="course-cert"><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span><div class="course-price-row"><span class="course-price course-price--paid">₦25,000</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol now</a></div></div></div>
           <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-orange"><svg aria-hidden="true"><use href="#i-lock"/></svg></div><div class="course-body"><h3 class="course-title">Cybersecurity for Beginners</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 12 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol free</a></div></div></div>

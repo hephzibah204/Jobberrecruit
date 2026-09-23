@@ -150,10 +150,15 @@ document.getElementById('inlineApplyForm')?.addEventListener('submit', function(
       if (typeof toastr !== 'undefined') {
         toastr.error(data.message || 'Failed to submit application. Please try again.');
       } else {
-        console.error(data.message);
+        alert(data.message || 'Failed to submit application.');
       }
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit Application';
+      if (data.redirect) {
+        setTimeout(function() {
+          window.location.href = data.redirect;
+        }, 2000);
+      }
       return;
     }
 
@@ -227,7 +232,11 @@ switch ($job->application_method ?? 'form') {
         $target = '';
         break;
     case 'external':
-        $url = esc($job->external_url, 'url');
+        $rawExtUrl = trim((string)($job->external_url ?? $job->external_link ?? ''));
+        if ($rawExtUrl !== '' && !preg_match('#^https?://#i', $rawExtUrl)) {
+            $rawExtUrl = 'https://' . $rawExtUrl;
+        }
+        $url = esc($rawExtUrl, 'url');
         $label = 'Apply on External Site';
         $icon  = 'i-rocket';
         $btnBg = 'var(--accent)';
@@ -549,7 +558,7 @@ svg { flex-shrink: 0; }
 .job-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand); transform: translateY(-3px); }
 .job-card--featured { background: linear-gradient(180deg, #fffaf0, #fff); border-color: rgba(245,160,32,.35); border-left: 3px solid var(--accent); }
 .job-card--featured:hover { border-color: var(--accent); }
-/* Featured badge as a corner ribbon â€” top-left, where nothing else sits â€” so it
+/* Featured badge as a corner ribbon — top-left, where nothing else sits — so it
    doesn't take a content row and featured/non-featured cards stay aligned. */
 .job-card .badge-featured {
   position: absolute; top: -9px; left: 16px; z-index: 2;
@@ -1485,6 +1494,77 @@ main, .section, .jobs-layout, .container,
 </svg>
 <main id="main-content">
 
+<?php if (!empty($_GET['admin_preview']) || (function_exists('session') && (session()->get('admin_logged_in') || session()->get('user_role') === 'admin'))): ?>
+  <div style="background: #0f172a; color: #fff; padding: 12px 20px; position: sticky; top: 0; z-index: 99999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-family: system-ui, -apple-system, sans-serif;">
+    <div style="max-width: 1160px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="background: #3b82f6; color: #fff; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;">
+          👁️ ADMIN PREVIEW MODE
+        </span>
+        <span style="font-size: 13px; opacity: 0.95;">
+          Admin Status: <strong style="color: <?= ($job->admin_status ?? '') === 'approved' ? '#4ade80' : (($job->admin_status ?? '') === 'pending' ? '#facc15' : '#f87171') ?>;"><?= ucfirst($job->admin_status ?? 'Pending') ?></strong> &nbsp;|&nbsp; Public Status: <strong><?= ucfirst($job->status ?? 'Draft') ?></strong>
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <a href="<?= base_url('admin/jobs/edit/' . $job->id) ?>" style="background: #3b82f6; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 13px;">
+          ✏️ Edit Job
+        </a>
+        <?php if (($job->admin_status ?? '') !== 'approved'): ?>
+          <button type="button" onclick="adminQuickPreviewAction('approve', <?= $job->id ?>)" style="background: #22c55e; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">
+            ✓ Approve Job Now
+          </button>
+        <?php else: ?>
+          <button type="button" onclick="adminQuickPreviewAction('unapprove', <?= $job->id ?>)" style="background: #eab308; color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">
+            ⏸ Unapprove Job
+          </button>
+        <?php endif; ?>
+        <a href="<?= base_url('admin/jobs/view/' . $job->id) ?>" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 6px; font-weight: 500; text-decoration: none; font-size: 13px;">
+          ← Admin Details
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    function adminQuickPreviewAction(action, jobId) {
+      const url = action === 'approve' ? '<?= base_url("admin/jobs/approve") ?>' : '<?= base_url("admin/jobs/unapprove") ?>';
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        body: `job_id=${jobId}&<?= csrf_token() ?>=<?= csrf_hash() ?>`
+      }).then(r => r.json()).then(d => {
+        alert(d.message || 'Updated successfully');
+        window.location.reload();
+      });
+    }
+  </script>
+<?php endif; ?>
+
+<?php if (!empty($_GET['employer_preview'])): ?>
+  <div style="background: #0A2F57; color: #fff; padding: 12px 20px; position: sticky; top: 0; z-index: 99999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-family: system-ui, -apple-system, sans-serif;">
+    <div style="max-width: 1160px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="background: #ED9020; color: #fff; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;">
+          👁️ PREVIEW MODE
+        </span>
+        <span style="font-size: 13px; opacity: 0.95;">
+          This is how your job looks to candidates &nbsp;|&nbsp; Approval status:
+          <strong style="color: <?= ($job->admin_status ?? '') === 'approved' ? '#4ade80' : (($job->admin_status ?? '') === 'pending' ? '#facc15' : '#f87171') ?>;">
+            <?= ucfirst($job->admin_status ?? 'Pending') ?>
+          </strong>
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <a href="<?= base_url('employer/jobs/edit/' . $job->id) ?>" style="background: #ED9020; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 13px;">
+          ✏️ Edit Job
+        </a>
+        <a href="<?= base_url('employer/jobs/view/' . $job->id) ?>" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 6px; font-weight: 500; text-decoration: none; font-size: 13px;">
+          ← Back to dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+
 
   <!-- HERO STRIP -->
   <section class="detail-hero" aria-label="Job details">
@@ -1521,7 +1601,7 @@ main, .section, .jobs-layout, .container,
               <div class="detail-company">
                 at <strong><?= esc($coName) ?></strong>
                 <?php if (empty($job->anonymous) && empty($job->is_anonymous) && !empty($job->is_verified)): ?>
-                  <button type="button" class="verified-check" aria-label="Verified employer â€” tap for details"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span></button>
+                  <button type="button" class="verified-check" aria-label="Verified employer — tap for details"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span></button>
                 <?php endif; ?>
               </div>
               <div class="detail-badges">
@@ -1616,7 +1696,7 @@ main, .section, .jobs-layout, .container,
         </div>
 
         <?php if (!empty($job->job_schedule) || !empty($job->working_hours) || !empty($job->accommodation) || !empty($job->probation_period)): ?>
-        <!-- Job Conditions â€” schedule, hours, accommodation, probation -->
+        <!-- Job Conditions — schedule, hours, accommodation, probation -->
         <div class="detail-card">
           <h2 class="detail-section-title"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Job Conditions</h2>
           <div class="conditions-grid">
@@ -1659,7 +1739,7 @@ main, .section, .jobs-layout, .container,
           <!-- Urgently hiring strip (show if urgent/featured) -->
           <?php if ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time())): ?>
             <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-bottom:12px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> Urgently hiring â€” apply before deadline
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> Urgently hiring &mdash; apply before deadline
             </div>
           <?php endif; ?>
 
@@ -1676,7 +1756,7 @@ main, .section, .jobs-layout, .container,
             ?>
             <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;color:#7c2d12;background:#fff7ed;border:1px solid #ffedd5;border-radius:8px;padding:8px 12px;margin-bottom:12px">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-              <?= $spotsRemaining ?> spots remaining â€” closes at <?= $appLimit ?> applications
+              <?= $spotsRemaining ?> spots remaining &mdash; closes at <?= $appLimit ?> applications
             </div>
           <?php endif; ?>
 
@@ -1696,6 +1776,10 @@ main, .section, .jobs-layout, .container,
               <?php if (($job->application_method ?? 'form') === 'form'): ?>
                   <a href="<?= base_url("job/application/{$job->id}") ?>" class="btn btn-primary btn-lg apply-external" style="width:100%;justify-content:center">
                   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Apply Now
+                </a>
+              <?php elseif (($job->application_method ?? 'form') === 'external'): ?>
+                <a href="<?= base_url("job/start-application/{$job->id}") ?>" target="_blank" rel="noopener" class="btn btn-primary btn-lg apply-external" style="width:100%;justify-content:center">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Apply on External Site
                 </a>
               <?php else: ?>
                 <a href="<?= $url ?>" class="btn btn-primary btn-lg apply-external" <?= $targetAttr ?> style="width:100%;justify-content:center">
@@ -1785,7 +1869,10 @@ main, .section, .jobs-layout, .container,
           </div>
           <p><?= esc($coName) ?> is a verified employer on JobberRecruit.</p>
           <?php if (empty($job->anonymous) && empty($job->is_anonymous)): ?>
-            <a href="<?= base_url('employer/' . $job->employer_id) ?>" class="btn btn-outline btn-sm">View company profile</a>
+            <?php 
+              $companySlug = url_title($job->employer_name ?? 'company', '-', true);
+            ?>
+            <a href="<?= base_url('employer/' . $companySlug) ?>" class="btn btn-outline btn-sm">View company profile</a>
           <?php endif; ?>
         </div>
       </aside>
@@ -1804,7 +1891,7 @@ main, .section, .jobs-layout, .container,
       <div class="related-grid">
         <?php foreach ($related_jobs as $related): ?>
           <?php 
-            $relCoName = (!empty($related->anonymous) || !empty($related->is_anonymous)) ? 'Confidential Employer' : esc($related->company_name);
+            $relCoName = (!empty($related->anonymous) || !empty($related->is_anonymous)) ? 'Confidential Employer' : (string)($related->company_name ?? 'Employer');
             $relInitials = '';
             foreach (explode(' ', $relCoName) as $p) { $relInitials .= substr($p, 0, 1); }
             $relInitials = strtoupper(substr($relInitials, 0, 2));
@@ -1838,15 +1925,15 @@ main, .section, .jobs-layout, .container,
             </div>
             <div class="job-meta" style="display:flex;gap:10px;font-size:.78rem;color:var(--muted);margin:8px 0">
               <span><?= esc($related->state_name ?? 'Nigeria') ?></span>
-              <span>â€¢</span>
+              <span>&bull;</span>
               <span><?= esc(ucfirst($related->job_type)) ?></span>
             </div>
             <div class="job-salary-row" style="margin-top:auto">
               <span class="job-salary" style="font-weight:700;color:var(--brand);font-size:.88rem">
                 <?php if ($related->salary_type === 'range'): ?>
-                  â‚¦<?= number_format($related->salary) ?> - â‚¦<?= number_format($related->salary_max) ?>
+                  ₦<?= number_format((float) ($related->salary ?? 0)) ?> - ₦<?= number_format((float) ($related->salary_max ?? 0)) ?>
                 <?php elseif ($related->salary_type === 'fixed'): ?>
-                  â‚¦<?= number_format($related->salary) ?>
+                  ₦<?= number_format((float) ($related->salary ?? 0)) ?>
                 <?php else: ?>
                   Negotiable
                 <?php endif; ?>
@@ -1990,26 +2077,46 @@ $(document).ready(function() {
   $("#saveJobBtn").on("click", function() {
     const btn = $(this);
     const jobId = btn.data("job-id");
+
+    if (!jobId) return;
+
     btn.prop("disabled", true);
     $.ajax({
       url: "<?= site_url('jobs/toggle-save') ?>/" + jobId,
       method: "POST",
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+      },
       success: function(r) {
         if (r.success) {
           btn.toggleClass("saved", r.saved);
           if (r.saved) {
             btn.addClass("saved");
             btn.html('<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:16px;height:16px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved');
+            toastr.success(r.message || "Job saved successfully.");
           } else {
             btn.removeClass("saved");
             btn.html('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:16px;height:16px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save job');
+            toastr.info(r.message || "Job removed from saved list.");
           }
         } else {
-          toastr.error(r.message);
+          if (r.message && r.message.indexOf("logged in") !== -1) {
+            window.location.href = "<?= base_url('login') ?>?redirect=" + encodeURIComponent(window.location.pathname);
+          } else {
+            toastr.error(r.message || "Could not save job.");
+          }
         }
       },
       complete: function() { btn.prop("disabled", false); },
-      error: function() { toastr.error("Network error. Try again."); btn.prop("disabled", false); }
+      error: function(xhr) {
+        if (xhr.status === 401 || xhr.status === 403) {
+          window.location.href = "<?= base_url('login') ?>?redirect=" + encodeURIComponent(window.location.pathname);
+        } else {
+          toastr.error("Unable to save job right now. Please try again.");
+        }
+        btn.prop("disabled", false);
+      }
     });
   });
 

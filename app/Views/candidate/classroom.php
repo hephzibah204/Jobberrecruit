@@ -1,4 +1,10 @@
-<?php $page_title = esc($course->title) . ' – Classroom'; ?>
+<?php 
+$page_title = esc($course->title) . ' – Classroom'; 
+$isCompleted = (($enrollment->status ?? '') === 'completed' || !empty($certificate));
+$totalModules = count($modules);
+$currentProgress = $isCompleted ? 100 : (int)($enrollment->progress ?? 0);
+$completedCount = $isCompleted ? $totalModules : ($totalModules > 0 ? (int)round(($currentProgress / 100) * $totalModules) : 0);
+?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('styles') ?>
@@ -438,16 +444,16 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         </div>
 
         <div class="ring-wrap">
-          <?php if ($enrollment->status === 'completed'): ?>
+          <?php if ($isCompleted): ?>
             <div class="ring-done" id="progress-indicator"><svg aria-hidden="true"><use href="#i-award"/></svg></div>
             <div class="verify-chip" id="verify-badge"><span class="vv"></span><b>Verified Complete</b></div>
           <?php else: ?>
-            <div class="ring" id="progress-indicator" style="--p: 50">
-              <b>50%</b>
+            <div class="ring" id="progress-indicator" style="--p: <?= $currentProgress ?>">
+              <b><?= $currentProgress ?>%</b>
               <i>Progress</i>
             </div>
             <div class="cls-hero-cta">
-              <button class="btn btn-on-dark" id="continue-btn"><svg aria-hidden="true"><use href="#i-zap"/></svg> Continue Learning</button>
+              <button class="btn btn-on-dark" id="continue-btn"><svg aria-hidden="true"><use href="#i-zap"/></svg> <?= $currentProgress > 0 ? 'Continue Learning' : 'Start Learning' ?></button>
             </div>
           <?php endif; ?>
         </div>
@@ -475,7 +481,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
             <?php foreach ($modules as $idx => $mod): ?>
               <?php 
                 $isActive = $activeModule && (int)$activeModule->id === (int)$mod->id;
-                $isDone = ($enrollment->status === 'completed' || $idx === 0);
+                $isDone = ($isCompleted || $idx < $completedCount);
                 $typeClass = ($mod->content_source === 'youtube') ? 'video' : 'reading';
               ?>
               <a href="<?= base_url('candidate/my-courses/' . $course->id . '?module_id=' . $mod->id) ?>" 
@@ -497,9 +503,9 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
           <?php endif; ?>
         </div>
         <div class="cur-foot">
-          <div class="cur-prog-lbl">Curriculum Progress <b id="foot-progress-pct"><?= $enrollment->status === 'completed' ? '100%' : '50%' ?></b></div>
+          <div class="cur-prog-lbl">Curriculum Progress <b id="foot-progress-pct"><?= $currentProgress ?>%</b></div>
           <div class="cur-bar">
-            <div class="cur-fill" id="foot-progress-fill" style="width: <?= $enrollment->status === 'completed' ? '100' : '50' ?>%"></div>
+            <div class="cur-fill" id="foot-progress-fill" style="width: <?= $currentProgress ?>%"></div>
           </div>
         </div>
       </aside>
@@ -630,24 +636,57 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
           </div>
 
           <div class="assess-body" id="assess-body">
-            <div class="q-block">
-              <p class="q-text"><b>1.</b> What is the most critical metric indicating learning application?</p>
-              <label class="q-opt"><input type="radio" name="q1" value="a"> Length of study hours</label>
-              <label class="q-opt"><input type="radio" name="q1" value="b"> Practical conversion and verifiable skill outcomes</label>
-              <label class="q-opt"><input type="radio" name="q1" value="c"> Number of total sessions started</label>
-            </div>
-            <div class="q-block">
-              <p class="q-text"><b>2.</b> How should you tailor career application portfolios?</p>
-              <label class="q-opt"><input type="radio" name="q2" value="a"> Grounding arguments in target role demands and market metrics</label>
-              <label class="q-opt"><input type="radio" name="q2" value="b"> Submitting uniform CV entries to all listings</label>
-              <label class="q-opt"><input type="radio" name="q2" value="c"> Relying purely on visual layout styling overrides</label>
-            </div>
-            <div class="q-block">
-              <p class="q-text"><b>3.</b> What is the ideal way to address base salary caps?</p>
-              <label class="q-opt"><input type="radio" name="q3" value="a"> Accept the cap silently without further questions</label>
-              <label class="q-opt"><input type="radio" name="q3" value="b"> Leverage alternative benefits, review times, and performance bonuses</label>
-              <label class="q-opt"><input type="radio" name="q3" value="c"> End the conversation immediately in protest</label>
-            </div>
+            <?php 
+              $testQuestions = [];
+              if (!empty($course->test_questions)) {
+                  $decodedQ = json_decode($course->test_questions, true);
+                  if (is_array($decodedQ) && !empty($decodedQ)) {
+                      $testQuestions = $decodedQ;
+                      // Dynamic Question Rotation: Shuffle questions from bank for varied attempts
+                      shuffle($testQuestions);
+                  }
+              }
+            ?>
+            <?php if (!empty($testQuestions)): ?>
+              <?php foreach ($testQuestions as $idx => $q): ?>
+                <div class="q-block">
+                  <p class="q-text"><b><?= ($idx + 1) ?>.</b> <?= esc($q['question']) ?></p>
+                  <?php 
+                    $opts = $q['options'] ?? [];
+                    $valMap = ['a', 'b', 'c', 'd'];
+                  ?>
+                  <?php foreach ($opts as $oIdx => $opt): ?>
+                    <?php 
+                      $optVal = $valMap[$oIdx] ?? ($oIdx . '');
+                      $isCorrect = !empty($opt['is_correct']) ? '1' : '0';
+                    ?>
+                    <label class="q-opt">
+                      <input type="radio" name="q<?= ($idx + 1) ?>" value="<?= esc($optVal) ?>" data-correct="<?= $isCorrect ?>">
+                      <?= esc($opt['text']) ?>
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div class="q-block">
+                <p class="q-text"><b>1.</b> What is the most critical metric indicating learning application?</p>
+                <label class="q-opt"><input type="radio" name="q1" value="a" data-correct="0"> Length of study hours</label>
+                <label class="q-opt"><input type="radio" name="q1" value="b" data-correct="1"> Practical conversion and verifiable skill outcomes</label>
+                <label class="q-opt"><input type="radio" name="q1" value="c" data-correct="0"> Number of total sessions started</label>
+              </div>
+              <div class="q-block">
+                <p class="q-text"><b>2.</b> How should you tailor career application portfolios?</p>
+                <label class="q-opt"><input type="radio" name="q2" value="a" data-correct="1"> Grounding arguments in target role demands and market metrics</label>
+                <label class="q-opt"><input type="radio" name="q2" value="b" data-correct="0"> Submitting uniform CV entries to all listings</label>
+                <label class="q-opt"><input type="radio" name="q2" value="c" data-correct="0"> Relying purely on visual layout styling overrides</label>
+              </div>
+              <div class="q-block">
+                <p class="q-text"><b>3.</b> What is the ideal way to address base salary caps?</p>
+                <label class="q-opt"><input type="radio" name="q3" value="a" data-correct="0"> Accept the cap silently without further questions</label>
+                <label class="q-opt"><input type="radio" name="q3" value="b" data-correct="1"> Leverage alternative benefits, review times, and performance bonuses</label>
+                <label class="q-opt"><input type="radio" name="q3" value="c" data-correct="0"> End the conversation immediately in protest</label>
+              </div>
+            <?php endif; ?>
             <button class="btn btn-primary btn-block" id="assess-submit"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Submit Answers</button>
           </div>
 
@@ -661,7 +700,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
           <div class="assess-result fail" id="assess-fail" hidden>
             <div class="ar-ic fail"><svg aria-hidden="true"><use href="#i-refresh"/></svg></div>
             <h3>Not quite ready yet</h3>
-            <p>You scored <b id="fail-score">33%</b>. (Required: 70%). Review modules and retry when ready.</p>
+            <p id="fail-msg">You scored <b id="fail-score">33%</b>. (Required: 70%). Review modules and retry when ready.</p>
             <button class="btn btn-primary" id="assess-retry"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Retake Assessment</button>
           </div>
         </section>
@@ -674,28 +713,28 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         <div class="dash-card">
           <h4><svg aria-hidden="true"><use href="#i-chart"/></svg> Learning telemetry</h4>
           <div class="stat-row"><span>Status</span><b style="color:var(--success)" id="stat-enrollment-status"><?= ucfirst(esc($enrollment->status)) ?></b></div>
-          <div class="stat-row"><span>Lessons completed</span><b id="stat-lessons-count">1 of <?= count($modules) ?></b></div>
-          <div class="stat-row"><span>Hours studied</span><b>5.4</b></div>
-          <div class="stat-row"><span>Average accuracy</span><b>82%</b></div>
+          <div class="stat-row"><span>Lessons completed</span><b id="stat-lessons-count"><?= $completedCount ?> of <?= $totalModules ?></b></div>
+          <div class="stat-row"><span>Hours studied</span><b><?= esc($hoursStudied ?? '0.0') ?></b></div>
+          <div class="stat-row"><span>Average accuracy</span><b><?= esc($avgAccuracy ?? '85') ?>%</b></div>
         </div>
 
         <div class="dash-card">
           <h4><svg aria-hidden="true"><use href="#i-award"/></svg> Achievements</h4>
           <div class="ach-grid">
-            <div class="ach <?= $enrollment->status === 'completed' ? 'earned' : 'locked' ?>" id="ach-completed"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-grad"/></svg></div><b>Completed</b></div>
-            <div class="ach locked" id="ach-assessment"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></div><b>Passed</b></div>
-            <div class="ach earned"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></div><b>Streak</b></div>
-            <div class="ach locked"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-crown"/></svg></div><b>Top tier</b></div>
+            <div class="ach <?= $isCompleted ? 'earned' : 'locked' ?>" id="ach-completed"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-grad"/></svg></div><b>Completed</b></div>
+            <div class="ach <?= $isCompleted ? 'earned' : 'locked' ?>" id="ach-assessment"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></div><b>Passed</b></div>
+            <div class="ach <?= $currentProgress > 0 ? 'earned' : 'locked' ?>"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></div><b>Streak</b></div>
+            <div class="ach <?= $isCompleted ? 'earned' : 'locked' ?>"><div class="ach-ic"><svg aria-hidden="true"><use href="#i-crown"/></svg></div><b>Top tier</b></div>
           </div>
         </div>
 
         <div class="dash-card">
           <h4><svg aria-hidden="true"><use href="#i-shield"/></svg> Certificate progress</h4>
-          <div class="cert-check done"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Core lessons complete</div>
-          <div class="cert-check <?= $enrollment->status === 'completed' ? 'done' : 'pending' ?>" id="chk-assessment"><svg aria-hidden="true"><use href="<?= $enrollment->status === 'completed' ? '#i-check-c' : '#i-circle' ?>"/></svg> Final assessment passed</div>
-          <div class="cert-check <?= $enrollment->status === 'completed' ? 'done' : 'pending' ?>" id="chk-ready"><svg aria-hidden="true"><use href="<?= $enrollment->status === 'completed' ? '#i-check-c' : '#i-circle' ?>"/></svg> Certificate ready</div>
+          <div class="cert-check <?= ($isCompleted || ($completedCount >= $totalModules && $totalModules > 0)) ? 'done' : 'pending' ?>" id="chk-lessons"><svg aria-hidden="true"><use href="<?= ($isCompleted || ($completedCount >= $totalModules && $totalModules > 0)) ? '#i-check-c' : '#i-circle' ?>"/></svg> Core lessons complete</div>
+          <div class="cert-check <?= $isCompleted ? 'done' : 'pending' ?>" id="chk-assessment"><svg aria-hidden="true"><use href="<?= $isCompleted ? '#i-check-c' : '#i-circle' ?>"/></svg> Final assessment passed</div>
+          <div class="cert-check <?= $isCompleted ? 'done' : 'pending' ?>" id="chk-ready"><svg aria-hidden="true"><use href="<?= $isCompleted ? '#i-check-c' : '#i-circle' ?>"/></svg> Certificate ready</div>
           
-          <div class="cert-locked" id="cert-locked" <?= $enrollment->status === 'completed' ? 'hidden' : '' ?>>
+          <div class="cert-locked" id="cert-locked" <?= $isCompleted ? 'hidden' : '' ?>>
             <p class="cl-note"><svg aria-hidden="true"><use href="#i-shield"/></svg> Complete the final assessment to unlock your verified certificate.</p>
             <button class="btn btn-primary cert-dl" id="start-assessment"><svg aria-hidden="true"><use href="#i-award"/></svg> Take Final Assessment</button>
           </div>
@@ -738,38 +777,105 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         </div>
       </div>
       <div class="ci-grid">
-        <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Career Readiness</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span></div><div class="ci-val">76%</div><div class="ci-track"><div class="ci-fill" data-fill="76"></div></div></div>
-        <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Resume Score</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span></div><div class="ci-val">70%</div><div class="ci-track"><div class="ci-fill" data-fill="70"></div></div></div>
-        <div class="ci-card"><div class="ci-top"><span class="ci-lbl">ATS Match</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span></div><div class="ci-val">84%</div><div class="ci-track"><div class="ci-fill" data-fill="84"></div></div></div>
-        <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Interview prep</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></span></div><div class="ci-val">68%</div><div class="ci-track"><div class="ci-fill" data-fill="68"></div></div></div>
-        <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Employability</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span></div><div class="ci-val">72%</div><div class="ci-track"><div class="ci-fill" data-fill="72"></div></div></div>
-        <div class="ci-card"><div class="ci-top"><span class="ci-lbl">Skill Growth</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></span></div><div class="ci-val">+20%</div><div class="ci-track"><div class="ci-fill" data-fill="90"></div></div></div>
-        <div class="ci-card next"><b>Next course recommendation</b><p>Platform marketing ad strategies</p><a href="<?= base_url('candidate/my-courses') ?>" class="btn btn-primary btn-sm">View details</a></div>
+        <div class="ci-card">
+          <div class="ci-top"><span class="ci-lbl">Career Readiness</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span></div>
+          <div class="ci-val"><?= (int)($careerIntelligence['career_readiness'] ?? 76) ?>%</div>
+          <div class="ci-track"><div class="ci-fill" data-fill="<?= (int)($careerIntelligence['career_readiness'] ?? 76) ?>"></div></div>
+        </div>
+        <div class="ci-card">
+          <div class="ci-top"><span class="ci-lbl">Resume Score</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span></div>
+          <div class="ci-val"><?= (int)($careerIntelligence['resume_score'] ?? 70) ?>%</div>
+          <div class="ci-track"><div class="ci-fill" data-fill="<?= (int)($careerIntelligence['resume_score'] ?? 70) ?>"></div></div>
+        </div>
+        <div class="ci-card">
+          <div class="ci-top"><span class="ci-lbl">ATS Match</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span></div>
+          <div class="ci-val"><?= (int)($careerIntelligence['ats_match'] ?? 84) ?>%</div>
+          <div class="ci-track"><div class="ci-fill" data-fill="<?= (int)($careerIntelligence['ats_match'] ?? 84) ?>"></div></div>
+        </div>
+        <div class="ci-card">
+          <div class="ci-top"><span class="ci-lbl">Interview prep</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-mic"/></svg></span></div>
+          <div class="ci-val"><?= (int)($careerIntelligence['interview_prep'] ?? 68) ?>%</div>
+          <div class="ci-track"><div class="ci-fill" data-fill="<?= (int)($careerIntelligence['interview_prep'] ?? 68) ?>"></div></div>
+        </div>
+        <div class="ci-card">
+          <div class="ci-top"><span class="ci-lbl">Employability</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span></div>
+          <div class="ci-val"><?= (int)($careerIntelligence['employability'] ?? 72) ?>%</div>
+          <div class="ci-track"><div class="ci-fill" data-fill="<?= (int)($careerIntelligence['employability'] ?? 72) ?>"></div></div>
+        </div>
+        <div class="ci-card">
+          <div class="ci-top"><span class="ci-lbl">Skill Growth</span><span class="ci-ic"><svg aria-hidden="true"><use href="#i-zap"/></svg></span></div>
+          <div class="ci-val"><?= esc($careerIntelligence['skill_growth'] ?? '+20%') ?></div>
+          <div class="ci-track"><div class="ci-fill" data-fill="<?= (int)($careerIntelligence['skill_growth_val'] ?? 85) ?>"></div></div>
+        </div>
+        <div class="ci-card next">
+          <b>Next course recommendation</b>
+          <p><?= esc($careerIntelligence['next_course']->title ?? 'Platform marketing ad strategies') ?></p>
+          <a href="<?= !empty($careerIntelligence['next_course']->id) ? base_url('training/classroom/' . $careerIntelligence['next_course']->id) : base_url('candidate/my-courses') ?>" class="btn btn-primary btn-sm">View details</a>
+        </div>
       </div>
     </section>
 
     <!-- 5 · RECOMMENDED JOBS -->
     <section class="info-card">
-      <h3><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Open roles matched to this course</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <h3 style="margin:0;"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Open roles matched to this course</h3>
+        <a href="<?= base_url('jobs') ?>" class="btn btn-outline btn-sm" style="font-size:0.78rem;">Browse all jobs &rarr;</a>
+      </div>
       <div class="jobs-scroll">
-        <div class="job-card">
-          <div class="jc-top"><span class="jc-logo">PL</span><div><b>Social Media Manager</b><span class="jc-co">Paylode · Lagos</span></div></div>
-          <div class="jc-meta"><span><svg aria-hidden="true"><use href="#i-building"/></svg> On-site</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> Full-time</span></div>
-          <div class="jc-sal">₦300k – ₦450k / mo</div>
-          <div class="jc-actions"><a href="<?= base_url('jobs') ?>" class="btn btn-primary btn-sm">Apply</a><button class="btn btn-outline btn-sm jc-save" aria-label="Save job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></button></div>
-        </div>
-        <div class="job-card">
-          <div class="jc-top"><span class="jc-logo">MH</span><div><b>Digital Marketing Executive</b><span class="jc-co">MediaHive · Remote</span></div></div>
-          <div class="jc-meta"><span><svg aria-hidden="true"><use href="#i-link"/></svg> Remote</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> Full-time</span></div>
-          <div class="jc-sal">₦250k – ₦400k / mo</div>
-          <div class="jc-actions"><a href="<?= base_url('jobs') ?>" class="btn btn-primary btn-sm">Apply</a><button class="btn btn-outline btn-sm jc-save" aria-label="Save job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></button></div>
-        </div>
-        <div class="job-card">
-          <div class="jc-top"><span class="jc-logo">BR</span><div><b>Brand &amp; Content Strategist</b><span class="jc-co">Brandr Co · Abuja</span></div></div>
-          <div class="jc-meta"><span><svg aria-hidden="true"><use href="#i-building"/></svg> Hybrid</span><span><svg aria-hidden="true"><use href="#i-clock"/></svg> Contract</span></div>
-          <div class="jc-sal">₦350k – ₦500k / mo</div>
-          <div class="jc-actions"><a href="<?= base_url('jobs') ?>" class="btn btn-primary btn-sm">Apply</a><button class="btn btn-outline btn-sm jc-save" aria-label="Save job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></button></div>
-        </div>
+        <?php 
+          $displayJobs = !empty($matchedJobs) ? $matchedJobs : (!empty($careerIntelligence['matched_jobs']) ? $careerIntelligence['matched_jobs'] : []);
+        ?>
+        <?php if (!empty($displayJobs)): ?>
+          <?php foreach ($displayJobs as $j): 
+            $coName = !empty($j->employer_name) ? $j->employer_name : (!empty($j->company_name) ? $j->company_name : 'Verified Employer');
+            $coInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $coName), 0, 2)) ?: 'JR';
+            $jobLoc = !empty($j->location_name) ? $j->location_name : (!empty($j->location) ? $j->location : 'Nigeria');
+            $jobWorkplace = !empty($j->location_type) ? ucwords(str_replace('_', ' ', $j->location_type)) : (!empty($j->workplace_type) ? ucwords(str_replace('_', ' ', $j->workplace_type)) : 'On-site');
+            $jobTypeLabel = !empty($j->job_type) ? ucwords(str_replace('_', ' ', $j->job_type)) : 'Full-time';
+            $workplaceIcon = strtolower($jobWorkplace) === 'remote' ? 'i-link' : 'i-building';
+            
+            // Salary display formatted in ₦
+            $salaryText = 'Competitive Salary';
+            if (!empty($j->salary_details)) {
+                $salaryText = $j->salary_details;
+            } elseif (!empty($j->salary)) {
+                $salaryText = '₦' . number_format((float)$j->salary) . ' / mo';
+            } elseif (!empty($j->salary_min) || !empty($j->salary_max)) {
+                $minVal = !empty($j->salary_min) ? ('₦' . number_format((float)$j->salary_min)) : '';
+                $maxVal = !empty($j->salary_max) ? ('₦' . number_format((float)$j->salary_max)) : '';
+                $salaryText = trim("{$minVal} – {$maxVal}") . ' / mo';
+            }
+            $targetJobUrl = base_url('jobs/' . (!empty($j->slug) ? $j->slug : $j->id));
+          ?>
+            <div class="job-card">
+              <div class="jc-top">
+                <?php if (!empty($j->employer_logo)): ?>
+                  <img src="<?= base_url('uploads/' . $j->employer_logo) ?>" alt="<?= esc($coName) ?>" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                <?php else: ?>
+                  <span class="jc-logo"><?= esc($coInitials) ?></span>
+                <?php endif; ?>
+                <div>
+                  <b title="<?= esc($j->title ?? 'Open Role') ?>"><?= esc($j->title ?? 'Open Role') ?></b>
+                  <span class="jc-co"><?= esc($coName) ?> · <?= esc($jobLoc) ?></span>
+                </div>
+              </div>
+              <div class="jc-meta">
+                <span><svg aria-hidden="true"><use href="#<?= $workplaceIcon ?>"/></svg> <?= esc($jobWorkplace) ?></span>
+                <span><svg aria-hidden="true"><use href="#i-clock"/></svg> <?= esc($jobTypeLabel) ?></span>
+              </div>
+              <div class="jc-sal"><?= esc($salaryText) ?></div>
+              <div class="jc-actions">
+                <a href="<?= $targetJobUrl ?>" class="btn btn-primary btn-sm" target="_blank">Apply</a>
+                <a href="<?= $targetJobUrl ?>" class="btn btn-outline btn-sm jc-save" aria-label="View job"><svg aria-hidden="true"><use href="#i-bookmark"/></svg></a>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <div style="padding: 24px; text-align: center; width: 100%; color: var(--muted); font-size: 0.88rem;">
+            <p>No open roles currently matching this specific topic. Explore all available job postings on JobberRecruit.</p>
+            <a href="<?= base_url('jobs') ?>" class="btn btn-primary btn-sm" style="margin-top: 8px;">Explore All Active Jobs</a>
+          </div>
+        <?php endif; ?>
       </div>
     </section>
 
@@ -782,15 +888,15 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
             <h5>CERTIFICATE OF COMPLETION</h5>
             <div class="cp-name"><?= esc($candidateName) ?></div>
             <div class="cp-course"><?= esc($course->title) ?></div>
-            <span class="cp-code" id="mock-cert-code">Verification Code: Pending completion</span>
+            <span class="cp-code" id="mock-cert-code"><?= !empty($certificate['certificate_code']) ? ('Verification Code: ' . esc($certificate['certificate_code'])) : 'Verification Code: Pending completion' ?></span>
           </div>
         </div>
         <div class="cert-info">
           <h3>Your verified certificate</h3>
           <p>Upon passing, this certification carries a unique verification identifier code employers can check on JobberRecruit — verified proof of your training.</p>
           <div class="cert-actions">
-            <button class="btn btn-primary" id="btn-cert-view-main" disabled><svg aria-hidden="true"><use href="#i-eye"/></svg> View Certificate</button>
-            <button class="btn btn-outline" id="dl-cert-3" disabled><svg aria-hidden="true"><use href="#i-download"/></svg> Download PDF</button>
+            <button class="btn btn-primary" id="btn-cert-view-main" <?= (!empty($certificate) || ($enrollment->status ?? '') === 'completed') ? '' : 'disabled' ?>><svg aria-hidden="true"><use href="#i-eye"/></svg> View Certificate</button>
+            <button class="btn btn-outline" id="dl-cert-3" <?= (!empty($certificate) || ($enrollment->status ?? '') === 'completed') ? '' : 'disabled' ?>><svg aria-hidden="true"><use href="#i-download"/></svg> Download PDF</button>
           </div>
         </div>
       </div>
@@ -806,12 +912,12 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         </div>
       </div>
       <div class="cs-grid">
-        <a href="<?= base_url('candidate/resume-builder') ?>" class="cs-tool">
+        <a href="<?= base_url('candidate/resumes/build') ?>" class="cs-tool">
           <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span>
           <div><b>AI Resume Builder</b><p>Import your certifications directly into your CV.</p></div>
           <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
         </a>
-        <a href="<?= base_url('candidate/resume-builder') ?>" class="cs-tool">
+        <a href="<?= base_url('cv-review') ?>" class="cs-tool">
           <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span>
           <div><b>ATS CV Auditor</b><p>Analyze how applicant tracking systems read your files.</p></div>
           <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
@@ -821,7 +927,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
           <div><b>Salary Negotiation</b><p>Practice board negotiations before signing agreements.</p></div>
           <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
         </a>
-        <a href="<?= base_url('jobs') ?>" class="cs-tool">
+        <a href="<?= base_url('jobs' . (!empty($course->category_id) ? ('?category=' . $course->category_id) : '')) ?>" class="cs-tool">
           <span class="cs-tool-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
           <div><b>Recommended Jobs</b><p>Browse positions looking for your verified credentials.</p></div>
           <span class="cs-arrow" aria-hidden="true"><svg style="width:15px;height:15px"><use href="#i-arrow-r"/></svg></span>
@@ -888,7 +994,10 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
   <?php endif; ?>
 
   var curLes = 0;
-  var completedLessons = new Set([0]); // Mark first module as complete by default
+  var completedLessons = new Set();
+  <?php for ($i = 0; $i < $completedCount; $i++): ?>
+  completedLessons.add(<?= $i ?>);
+  <?php endfor; ?>
 
   // ── Player Controls ──
   function renderPlayer(i){
@@ -990,19 +1099,43 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
       }
 
       // Calculate progress percentage
-      var pct = Math.round((completedLessons.size / LESSONS.length) * 100);
+      var pct = LESSONS.length > 0 ? Math.round((completedLessons.size / LESSONS.length) * 100) : 0;
       
       // Update UI displays
       var progIndicator = document.getElementById("progress-indicator");
       if (progIndicator) {
         if (progIndicator.classList.contains("ring")) {
           progIndicator.style.setProperty("--p", pct);
-          progIndicator.querySelector("b").textContent = pct + "%";
+          var bVal = progIndicator.querySelector("b");
+          if (bVal) bVal.textContent = pct + "%";
         }
       }
-      document.getElementById("foot-progress-pct").textContent = pct + "%";
-      document.getElementById("foot-progress-fill").style.width = pct + "%";
-      document.getElementById("stat-lessons-count").textContent = completedLessons.size + " of " + LESSONS.length;
+      var footPct = document.getElementById("foot-progress-pct");
+      if (footPct) footPct.textContent = pct + "%";
+      var footFill = document.getElementById("foot-progress-fill");
+      if (footFill) footFill.style.width = pct + "%";
+      var statCount = document.getElementById("stat-lessons-count");
+      if (statCount) statCount.textContent = completedLessons.size + " of " + LESSONS.length;
+
+      var chkLessons = document.getElementById("chk-lessons");
+      if (chkLessons && completedLessons.size >= LESSONS.length && LESSONS.length > 0) {
+        chkLessons.className = "cert-check done";
+        var chkUse = chkLessons.querySelector("use");
+        if (chkUse) chkUse.setAttribute("href", "#i-check-c");
+      }
+
+      // Persist progress to server via AJAX
+      try {
+        fetch('<?= base_url('training/progress/' . $course->id) ?>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+          },
+          body: 'progress=' + encodeURIComponent(pct)
+        }).catch(function(){});
+      } catch (e) {}
 
       toast("Lesson marked complete!");
     });
@@ -1083,119 +1216,147 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
   var submitAssessmentBtn = document.getElementById("assess-submit");
   if (submitAssessmentBtn) {
     submitAssessmentBtn.addEventListener("click", function(){
-      var answers = { q1: "b", q2: "a", q3: "b" };
+      var qBlocks = document.querySelectorAll("#assess-body .q-block");
       var correct = 0;
-      var total = Object.keys(answers).length;
+      var total = qBlocks.length;
+      if (total === 0) total = 3;
 
-      for (var q in answers) {
-        var selected = document.querySelector('input[name="'+q+'"]:checked');
-        if (selected && selected.value === answers[q]) {
-          correct++;
+      qBlocks.forEach(function(block){
+        var selected = block.querySelector('input[type="radio"]:checked');
+        if (selected) {
+          if (selected.getAttribute("data-correct") === "1" || selected.value === "b" || selected.value === "a") {
+            if (selected.getAttribute("data-correct") === "1") {
+              correct++;
+            } else if (!selected.hasAttribute("data-correct") && (selected.value === "b" || selected.value === "a")) {
+              correct++;
+            }
+          }
         }
-      }
+      });
 
       var score = Math.round((correct / total) * 100);
       document.getElementById("assess-body").hidden = true;
 
-      if (score >= 70) {
-        // Pass result
+      var payload = new URLSearchParams();
+      payload.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+      payload.append('score', score);
+
+      function handlePass(data) {
         document.getElementById("pass-score").textContent = score + "%";
         document.getElementById("assess-pass").hidden = false;
+        document.getElementById("assess-fail").hidden = true;
 
-        // Perform AJAX request to finalize database enrollment status and issue certificate
-        fetch('<?= base_url("training/complete/" . $course->id) ?>', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: '<?= csrf_token() ?>=<?= csrf_hash() ?>'
-        })
-        .then(function(res){ return res.json(); })
-        .then(function(data){
-          if (data.success) {
-            // Update sidebar elements
-            var chkAss = document.getElementById("chk-assessment");
-            if (chkAss) {
-              chkAss.classList.remove("pending");
-              chkAss.classList.add("done");
-              chkAss.querySelector("use").setAttribute("href", "#i-check-c");
-            }
-            var chkRdy = document.getElementById("chk-ready");
-            if (chkRdy) {
-              chkRdy.classList.remove("pending");
-              chkRdy.classList.add("done");
-              chkRdy.querySelector("use").setAttribute("href", "#i-check-c");
-            }
+        var chkAss = document.getElementById("chk-assessment");
+        if (chkAss) {
+          chkAss.classList.remove("pending");
+          chkAss.classList.add("done");
+          chkAss.querySelector("use").setAttribute("href", "#i-check-c");
+        }
+        var chkRdy = document.getElementById("chk-ready");
+        if (chkRdy) {
+          chkRdy.classList.remove("pending");
+          chkRdy.classList.add("done");
+          chkRdy.querySelector("use").setAttribute("href", "#i-check-c");
+        }
 
-            var lockedCard = document.getElementById("cert-locked");
-            if (lockedCard) lockedCard.hidden = true;
+        var lockedCard = document.getElementById("cert-locked");
+        if (lockedCard) lockedCard.hidden = true;
 
-            var downloadBtn2 = document.getElementById("dl-cert-2");
-            if (downloadBtn2) downloadBtn2.hidden = false;
+        isCompleted = true;
+        if (data && data.certificate_id) {
+          currentCertId = data.certificate_id;
+        }
+        if (data && data.certificate_code) {
+          currentCertCode = data.certificate_code;
+        }
 
-            // Update Certificate Preview panel
-            var previewCodeText = document.getElementById("mock-cert-code");
-            if (previewCodeText) {
-              previewCodeText.textContent = "Verification Code: " + data.certificate_code;
-            }
+        var previewCodeText = document.getElementById("mock-cert-code");
+        if (previewCodeText && currentCertCode) {
+          previewCodeText.textContent = "Verification Code: " + currentCertCode;
+        }
 
-            // Enable view certificate button
-            var viewCertBtn = document.getElementById("btn-cert-view-main");
-            if (viewCertBtn) {
-              viewCertBtn.disabled = false;
-              viewCertBtn.addEventListener("click", function(){
-                window.location.href = '<?= base_url("training/certificate/view/") ?>' + data.certificate_id;
-              });
-            }
+        var viewCertBtn = document.getElementById("btn-cert-view-main");
+        if (viewCertBtn) {
+          viewCertBtn.disabled = false;
+        }
 
-            // Enable download pdf button
-            var dlCertBtn = document.getElementById("dl-cert-3");
-            if (dlCertBtn) {
-              dlCertBtn.disabled = false;
-              dlCertBtn.addEventListener("click", function(){
-                window.location.href = '<?= base_url("training/certificate/download/") ?>' + data.certificate_id;
-              });
-            }
+        var dlCertBtn = document.getElementById("dl-cert-3");
+        if (dlCertBtn) {
+          dlCertBtn.disabled = false;
+        }
 
-            // Update status indicator
-            document.getElementById("stat-enrollment-status").textContent = "Completed";
-            document.getElementById("ach-completed").classList.remove("locked");
-            document.getElementById("ach-completed").classList.add("earned");
-            document.getElementById("ach-assessment").classList.remove("locked");
-            document.getElementById("ach-assessment").classList.add("earned");
+        var downloadBtn2 = document.getElementById("dl-cert-2");
+        if (downloadBtn2) {
+          downloadBtn2.hidden = false;
+        }
 
-            // Radial Ring completes
-            var hero = document.getElementById("cls-hero");
-            if (hero) hero.classList.add("done");
+        document.getElementById("stat-enrollment-status").textContent = "Completed";
+        document.getElementById("ach-completed").classList.remove("locked");
+        document.getElementById("ach-completed").classList.add("earned");
+        document.getElementById("ach-assessment").classList.remove("locked");
+        document.getElementById("ach-assessment").classList.add("earned");
 
-            var indicator = document.getElementById("progress-indicator");
-            if (indicator) {
-              // Convert indicator element to Completed crown
-              indicator.className = "ring-done";
-              indicator.innerHTML = '<svg aria-hidden="true"><use href="#i-award"/></svg>';
-              
-              // Add verified badge under completion ring
-              var badgeDiv = document.createElement("div");
-              badgeDiv.className = "verify-chip";
-              badgeDiv.innerHTML = '<span class="vv"></span><b>Verified Complete</b>';
-              indicator.parentNode.appendChild(badgeDiv);
-            }
+        var hero = document.getElementById("cls-hero");
+        if (hero) hero.classList.add("done");
 
-            celebrateSuccess();
-            toast("Congratulations! Course verified and certificate unlocked.");
-          } else {
-            toast(data.message || "Failed to issue course certificate.");
-          }
-        })
-        .catch(function(){
-          toast("Network error while completing certification.");
-        });
-      } else {
-        // Fail result
+        var indicator = document.getElementById("progress-indicator");
+        if (indicator) {
+          indicator.className = "ring-done";
+          indicator.innerHTML = '<svg aria-hidden="true"><use href="#i-award"/></svg>';
+          var badgeDiv = document.createElement("div");
+          badgeDiv.className = "verify-chip";
+          badgeDiv.innerHTML = '<span class="vv"></span><b>Verified Complete</b>';
+          indicator.parentNode.appendChild(badgeDiv);
+        }
+
+        celebrateSuccess();
+        toast("Congratulations! Course verified and certificate unlocked.");
+      }
+
+      function handleFail(data) {
         document.getElementById("fail-score").textContent = score + "%";
         document.getElementById("assess-fail").hidden = false;
+        document.getElementById("assess-pass").hidden = true;
+
+        var remaining = data && data.remaining_attempts !== undefined ? data.remaining_attempts : null;
+        var attempts = data && data.attempts !== undefined ? data.attempts : null;
+        var msgEl = document.getElementById("fail-msg");
+
+        if (msgEl) {
+          if (remaining === 0 || (attempts && attempts >= 3)) {
+            msgEl.innerHTML = "You scored <b>" + score + "%</b> (Required: 70%). You have reached the maximum allowed retake attempts (<b>3 of 3</b>).";
+            var retryBtn = document.getElementById("assess-retry");
+            if (retryBtn) retryBtn.disabled = true;
+          } else if (remaining !== null) {
+            msgEl.innerHTML = "You scored <b>" + score + "%</b> (Required: 70%). Attempt <b>" + attempts + " of 3</b> (" + remaining + " retake(s) remaining).";
+          }
+        }
       }
+
+      // Always post to server to record attempt and get updated attempt status
+      fetch('<?= base_url("training/complete/" . $course->id) ?>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: payload.toString()
+      })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if (score >= 70 || (data && data.success)) {
+          handlePass(data);
+        } else {
+          handleFail(data);
+        }
+      })
+      .catch(function(){
+        if (score >= 70) {
+          handlePass(null);
+        } else {
+          handleFail(null);
+        }
+      });
     });
   }
 
@@ -1213,6 +1374,56 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
     continueBtn.addEventListener("click", function(){
       selectLesson(0);
     });
+  }
+
+  // Certificate action handlers
+  var currentCertId = <?= !empty($certificate['id']) ? (int)$certificate['id'] : 'null' ?>;
+  var currentCertCode = '<?= !empty($certificate['certificate_code']) ? esc($certificate['certificate_code']) : '' ?>';
+  var courseId = <?= (int)$course->id ?>;
+  var isCompleted = <?= (($enrollment->status ?? '') === 'completed' || !empty($certificate)) ? 'true' : 'false' ?>;
+
+  function triggerViewCert() {
+    if (currentCertId) {
+      window.open('<?= base_url("training/certificate/view") ?>/' + currentCertId, '_blank');
+    } else if (currentCertCode) {
+      window.open('<?= base_url("training/certificate/view") ?>/' + encodeURIComponent(currentCertCode), '_blank');
+    } else if (isCompleted) {
+      window.open('<?= base_url("training/certificate/view/course") ?>/' + courseId, '_blank');
+    } else {
+      toast("Please complete the course assessment to unlock your certificate.");
+    }
+  }
+
+  function triggerDownloadCert() {
+    if (currentCertId) {
+      window.open('<?= base_url("training/certificate/download") ?>/' + currentCertId, '_blank');
+    } else if (currentCertCode) {
+      window.open('<?= base_url("training/certificate/download") ?>/' + encodeURIComponent(currentCertCode), '_blank');
+    } else if (isCompleted) {
+      window.open('<?= base_url("training/certificate/download/course") ?>/' + courseId, '_blank');
+    } else {
+      toast("Please complete the course assessment to unlock your certificate.");
+    }
+  }
+
+  var assessClaimBtn = document.getElementById("assess-claim");
+  if (assessClaimBtn) {
+    assessClaimBtn.addEventListener("click", triggerDownloadCert);
+  }
+
+  var downloadBtn2 = document.getElementById("dl-cert-2");
+  if (downloadBtn2) {
+    downloadBtn2.addEventListener("click", triggerDownloadCert);
+  }
+
+  var viewCertBtn = document.getElementById("btn-cert-view-main");
+  if (viewCertBtn) {
+    viewCertBtn.addEventListener("click", triggerViewCert);
+  }
+
+  var dlCertBtn = document.getElementById("dl-cert-3");
+  if (dlCertBtn) {
+    dlCertBtn.addEventListener("click", triggerDownloadCert);
   }
 
   // Initial render on load

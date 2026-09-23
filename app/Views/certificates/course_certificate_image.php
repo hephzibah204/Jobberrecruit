@@ -105,9 +105,9 @@
                                     <div style="font-size: 12px;">Authorized Signature</div>
                                 </div>
                             <?php elseif ($key === 'qr_code'): ?>
-                                <div class="qr-code" style="width: <?= $props['width'] ?? '80px' ?>;">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<?= urlencode(base_url('verify/' . $certificate['certificate_code'])) ?>" crossorigin="anonymous">
-                                </div>
+                                <a href="<?= base_url('verify/' . esc($certificate['certificate_code'])) ?>" target="_blank" class="qr-code" style="display:inline-block;width: <?= $props['width'] ?? '80px' ?>;">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<?= urlencode(base_url('verify/' . $certificate['certificate_code'])) ?>" crossorigin="anonymous" alt="Scan to Verify">
+                                </a>
                             <?php elseif ($key === 'certificate_code'): ?>
                                 Code: <?= esc($certificate['certificate_code']) ?>
                             <?php endif; ?>
@@ -118,6 +118,7 @@
                 <!-- HTML Mode Fallback -->
                 <?php
                     $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode(base_url('verify/' . $certificate['certificate_code']));
+                    $verifyUrl = base_url('verify/' . esc($certificate['certificate_code']));
                     $signatureUrl = setting('Elearning.certificate_signature') ? base_url(setting('Elearning.certificate_signature')) : '';
                     
                     $placeholders = [
@@ -125,7 +126,7 @@
                         '{{course}}'    => esc($course->title),
                         '{{date}}'      => date('F j, Y', strtotime($certificate['issued_at'])),
                         '{{code}}'      => esc($certificate['certificate_code']),
-                        '{{qr_code}}'   => '<img src="'.$qrCodeUrl.'" style="width:100px;" crossorigin="anonymous" alt="">',
+                        '{{qr_code}}'   => '<a href="'.$verifyUrl.'" target="_blank"><img src="'.$qrCodeUrl.'" style="width:100px;" crossorigin="anonymous" alt="Scan to Verify"></a>',
                         '{{signature}}' => $signatureUrl ? '<img src="'.$signatureUrl.'" style="width:150px;" crossorigin="anonymous" alt="">' : '',
                     ];
                     

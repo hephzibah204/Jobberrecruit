@@ -1,0 +1,257 @@
+{
+  "candidate": [
+    {
+      "path": "/candidate/dashboard",
+      "error": "page.goto: net::ERR_ABORTED at http://localhost:8085/candidate/dashboard\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/candidate/dashboard\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "path": "/candidate/applications",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/applications"
+    },
+    {
+      "path": "/candidate/saved-jobs",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/saved-jobs"
+    },
+    {
+      "path": "/candidate/notifications",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/notifications"
+    },
+    {
+      "path": "/candidate/profile",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/profile"
+    },
+    {
+      "path": "/candidate/profile/edit",
+      "error": "page.goto: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/candidate/profile/edit\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "path": "/candidate/settings/security",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/settings/security"
+    },
+    {
+      "path": "/candidate/resumes",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/resumes"
+    },
+    {
+      "path": "/candidate/resumes/build",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/resumes/build"
+    },
+    {
+      "path": "/candidate/career-tools",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/career-tools"
+    },
+    {
+      "path": "/candidate/my-courses",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/my-courses"
+    },
+    {
+      "path": "/candidate/certificates",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/certificates"
+    },
+    {
+      "path": "/candidate/wallet",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/wallet"
+    },
+    {
+      "path": "/candidate/transactions",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/transactions"
+    },
+    {
+      "path": "/candidate/referrals",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/candidate/referrals"
+    }
+  ],
+  "employer": [
+    {
+      "path": "/employer/dashboard",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/dashboard"
+    },
+    {
+      "path": "/employer/jobs",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/jobs"
+    },
+    {
+      "path": "/employer/post-job",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/post-job"
+    },
+    {
+      "path": "/employer/applications",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/applications"
+    },
+    {
+      "path": "/employer/profile",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/profile"
+    },
+    {
+      "path": "/employer/pricing",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/pricing"
+    },
+    {
+      "path": "/employer/bundles",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/bundles"
+    },
+    {
+      "path": "/employer/candidates",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/candidates"
+    },
+    {
+      "path": "/employer/messages",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/messages"
+    },
+    {
+      "path": "/employer/settings",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/settings"
+    },
+    {
+      "path": "/employer/wallet",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/wallet"
+    },
+    {
+      "path": "/employer/transactions",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/employer/transactions"
+    }
+  ],
+  "admin": [
+    {
+      "path": "/admin/dashboard",
+      "error": "page.goto: net::ERR_ABORTED at http://localhost:8085/admin/dashboard\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8085/admin/dashboard\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "path": "/admin/users",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/users"
+    },
+    {
+      "path": "/admin/jobs",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/jobs"
+    },
+    {
+      "path": "/admin/applications",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/applications"
+    },
+    {
+      "path": "/admin/candidates",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/candidates"
+    },
+    {
+      "path": "/admin/employers",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/employers"
+    },
+    {
+      "path": "/admin/blogs",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/blogs"
+    },
+    {
+      "path": "/admin/elearning",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/elearning"
+    },
+    {
+      "path": "/admin/cv-reviews",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/cv-reviews"
+    },
+    {
+      "path": "/admin/aptitude",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/aptitude"
+    },
+    {
+      "path": "/admin/newsletters",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/newsletters"
+    },
+    {
+      "path": "/admin/webinars",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/webinars"
+    },
+    {
+      "path": "/admin/locations",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/locations"
+    },
+    {
+      "path": "/admin/categories",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/categories"
+    },
+    {
+      "path": "/admin/industries",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/industries"
+    },
+    {
+      "path": "/admin/bundles",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/bundles"
+    },
+    {
+      "path": "/admin/plans",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/plans"
+    },
+    {
+      "path": "/admin/chatbot",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/chatbot"
+    },
+    {
+      "path": "/admin/testimonials",
+      "status": 200,
+      "finalUrl": "http://localhost:8085/admin/testimonials"
+    }
+  ],
+  "globalErrors": [
+    {
+      "role": "candidate",
+      "url": "http://localhost:8085/candidate/profile",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "role": "employer",
+      "url": "http://localhost:8085/employer/bundles",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin"
+    },
+    {
+      "role": "employer",
+      "url": "http://localhost:8085/employer/candidates",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "role": "employer",
+      "url": "http://localhost:8085/employer/candidates",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin"
+    }
+  ]
+}

@@ -75,10 +75,16 @@ class DemoAccounts extends BaseCommand
             // Email identity creation removed to prevent duplicate entries
             // Employer profile
             $employerModel->save([
-                'user_id'       => $userId,
-                'company_name'  => 'Demo Employer Inc.',
-                'contact_name'  => 'Demo Employer',
-                'contact_phone' => '1234567890',
+                'user_id'          => $userId,
+                'company_name'     => 'Demo Employer Inc.',
+                'contact_name'     => 'Demo Employer',
+                'contact_phone'    => '1234567890',
+                'contact_email'    => 'demo.employer@example.com',
+                'company_size'     => '11-50',
+                'industry_id'      => 1,
+                'state_id'         => 1,
+                'unlimited_access' => 1,
+                'unlimited_until'  => '2099-12-31 23:59:59',
             ]);
             // Mark email verified
             $users->update($userId, ['email_verified_at' => date('Y-m-d H:i:s')]);

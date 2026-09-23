@@ -6,25 +6,85 @@ use App\Models\AiImageModel;
 
 class AiService
 {
-    protected $apiKey;
-    protected $model;
+    /**
+     * Model Router Task Mappings
+     * Automatically routes tasks to the best Gemini model for speed, cost, or reasoning depth.
+     */
+    protected array $taskModelMap = [
+        'chat'      => 'gemini-3.5-flash-lite', // Interactive chatbot widget & turns
+        'fast'      => 'gemini-3.5-flash-lite', // Fast short text generation, summaries & bullet points
+        'balanced'  => 'gemini-3.5-flash-lite', // Career advice, salary negotiation, cover letters
+        'reasoning' => 'gemini-3.5-flash-lite', // CV scoring/reviews, interview evaluations, aptitude test generation
+        'audio'     => 'gemini-3.1-flash',      // Multimodal audio transcription & speech processing
+    ];
+
+    protected ?string $apiKey = null;
+    protected string $model = 'gemini-3.5-flash-lite';
 
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY');
-        $this->model  = env('GEMINI_MODEL') ?: 'gemini-2.5-flash';
+        $this->model  = env('GEMINI_MODEL') ?: 'gemini-3.5-flash-lite';
     }
 
     /**
-     * Generate content using Gemini API
+     * Resolve the target model for a given task type or custom model key
      */
-    public function generate($prompt)
+    public function resolveModel(string $task = 'fast'): string
+    {
+        // Check if specific task override exists in environment variables (e.g. GEMINI_MODEL_CHAT)
+        $envTaskKey = 'GEMINI_MODEL_' . strtoupper($task);
+        if ($envTaskModel = env($envTaskKey)) {
+            return $envTaskModel;
+        }
+
+        return $this->taskModelMap[$task] ?? ($this->taskModelMap['fast']);
+    }
+
+    /**
+     * Get API URL for a specific model or task
+     */
+    protected function getApiUrl(string $task = 'fast'): string
+    {
+        $selectedModel = $this->resolveModel($task);
+        return 'https://generativelanguage.googleapis.com/v1beta/models/' . $selectedModel . ':generateContent';
+    }
+
+    /**
+     * Cache TTL configuration per task (in seconds)
+     */
+    protected array $cacheTtlMap = [
+        'fast'      => 86400,    // 24 hours for short text prompts & summaries
+        'balanced'  => 86400,    // 24 hours for cover letters & career advice
+        'reasoning' => 259200,   // 3 days for CV reviews & aptitude question sets
+        'audio'     => 43200,    // 12 hours for audio transcriptions
+    ];
+
+    /**
+     * Generate content using Gemini API with model routing and intelligent response caching
+     */
+    public function generate($prompt, string $task = 'fast', int $customTtl = 0)
     {
         if (empty($this->apiKey)) {
             return $this->handleGenerateFallback($prompt, "AI Service is not configured. Please add GEMINI_API_KEY to your .env file.");
         }
 
-        $url = $this->getApiUrl() . '?key=' . $this->apiKey;
+        // 1. Check Response Cache (if enabled)
+        $cacheEnabled = env('AI_CACHE_ENABLED', true);
+        $cacheKey = 'ai_gen_' . md5($task . '_' . $prompt);
+        if ($cacheEnabled) {
+            try {
+                $cache = \Config\Services::cache();
+                if ($cachedResponse = $cache->get($cacheKey)) {
+                    log_message('info', "AI Cache HIT for task: {$task} (Key: {$cacheKey})");
+                    return $cachedResponse;
+                }
+            } catch (\Throwable $e) {
+                // Ignore cache read failures
+            }
+        }
+
+        $url = $this->getApiUrl($task) . '?key=' . $this->apiKey;
 
         $payload = [
             'contents' => [
@@ -39,35 +99,66 @@ class AiService
             ],
         ];
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+        $payloadJson = json_encode($payload);
+        $lastErr = '';
+        $maxAttempts = 3;
 
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        $errno = curl_errno($ch);
-        curl_close($ch);
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
-        if ($err || $errno > 0) {
-            return $this->handleGenerateFallback($prompt, $err ?: "cURL error code: " . $errno);
+            $response = curl_exec($ch);
+            $err = curl_error($ch);
+            $errno = curl_errno($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (! $err && $errno === 0 && $httpCode < 500) {
+                $result = json_decode($response, true);
+
+                if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+                    $textResult = $result['candidates'][0]['content']['parts'][0]['text'];
+
+                    // Save response to cache
+                    if ($cacheEnabled && !empty($textResult)) {
+                        try {
+                            $ttl = $customTtl > 0 ? $customTtl : ($this->cacheTtlMap[$task] ?? 86400);
+                            $cache = \Config\Services::cache();
+                            $cache->save($cacheKey, $textResult, $ttl);
+                        } catch (\Throwable $e) {
+                            // Ignore cache write failures
+                        }
+                    }
+
+                    return $textResult;
+                }
+
+                if (isset($result['error'])) {
+                    $lastErr = $result['error']['message'] ?? 'Unknown API error';
+                    log_message('error', "Gemini generate API error (HTTP {$httpCode}, attempt {$attempt}/{$maxAttempts}): {$lastErr}");
+                    break;
+                }
+
+                $lastErr = 'Unrecognized API response shape';
+                log_message('error', "Gemini generate API returned no candidates (HTTP {$httpCode}, attempt {$attempt}/{$maxAttempts}): " . substr((string) $response, 0, 500));
+                break;
+            }
+
+            $lastErr = $err ?: ("HTTP {$httpCode}" . ($errno ? ", cURL error code {$errno}" : ''));
+            log_message('error', "Gemini generate request failed (attempt {$attempt}/{$maxAttempts}): {$lastErr}");
+
+            if ($attempt < $maxAttempts) {
+                usleep(300000 * $attempt);
+            }
         }
 
-        $result = json_decode($response, true);
-        
-        if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-            return $result['candidates'][0]['content']['parts'][0]['text'];
-        }
-
-        if (isset($result['error'])) {
-            return $this->handleGenerateFallback($prompt, $result['error']['message'] ?? 'Unknown API error');
-        }
-
-        return "AI Error: " . ($result['error']['message'] ?? 'Unknown error occurred');
+        return $this->handleGenerateFallback($prompt, $lastErr);
     }
 
     /**
@@ -111,12 +202,76 @@ class AiService
     }
 
     /**
-     * Improve a job description
+     * Improve a candidate's existing professional summary
      */
-    public function improveDescription($description)
+    public function improveSummary($currentSummary, $skills = [])
     {
-        $prompt = "Improve the following job description to be more professional and include action verbs. Use bullet points if appropriate:\n\n";
-        $prompt .= $description;
+        $cleanSummary = trim((string)$currentSummary);
+        $skillsText = '';
+        if (!empty($skills)) {
+            $skillsList = is_array($skills) ? $skills : array_map('trim', explode(',', (string)$skills));
+            $skillsList = array_filter($skillsList);
+            if (!empty($skillsList)) {
+                $skillsText = "\nSkills Context: " . implode(', ', $skillsList);
+            }
+        }
+
+        $prompt = "You are an executive resume writer and professional profile specialist. Elevate and improve the candidate's existing professional summary into a compelling 2-3 sentence executive profile.\n\n" .
+                  "STRICT RULES (CRITICAL):\n" .
+                  "1. Read the candidate's existing summary carefully and understand their authentic role, background, and employment context.\n" .
+                  "2. Improve and polish the wording to be impactful, recruiter-focused, and professional.\n" .
+                  "3. Strictly preserve all underlying facts, actual achievements, and organizations mentioned.\n" .
+                  "4. DO NOT replace their background with a generic profile, and DO NOT invent unrelated industries, degrees, or certifications.\n" .
+                  "5. DO NOT provide conversational commentary, greetings, quotes, or meta-text (such as 'Here is an improved summary' or 'This is how to improve...').\n" .
+                  "6. Return ONLY the improved summary text directly.\n\n" .
+                  "Candidate's existing summary:\n" . $cleanSummary . $skillsText;
+
+        return $this->generate($prompt);
+    }
+
+    /**
+     * Improve a candidate work experience or achievement description
+     */
+    public function improveDescription($description, $jobTitle = '')
+    {
+        $cleanDesc = trim((string)$description);
+        $context = '';
+        if (!empty($jobTitle)) {
+            $context = "Job Title Context: " . trim((string)$jobTitle) . "\n";
+        }
+
+        $prompt = "You are a professional resume writer and talent expert. Improve and strengthen the candidate's entered work experience or achievement description to be more impactful, using strong action verbs and professional phrasing.\n\n" .
+                  "CRITICAL REQUIREMENTS (STRICTLY ENFORCED):\n" .
+                  "1. Read the candidate's existing content carefully and understand the actual context, employment role, and organization (e.g. if the candidate writes 'I recruit for Jobber Recruit', understand that they work in talent acquisition/recruitment for Jobber Recruit).\n" .
+                  "2. Improve the existing wording directly to sound authoritative, accomplished, and professional.\n" .
+                  "3. Preserve all underlying facts, real duties, and organization names. DO NOT invent unrelated experience or different organizations.\n" .
+                  "4. DO NOT provide generic suggestions or boilerplate unrelated to the supplied text.\n" .
+                  "5. Strengthen the entered achievement directly as ONE cohesive professional statement or achievement bullet. DO NOT provide multiple alternative options or lists.\n" .
+                  "6. DO NOT output conversational preamble, explanation, headings, or meta-text (such as 'Here is an improved version', 'This is how to improve that you recruit for...', 'Option 1:', etc.). Return ONLY the strengthened version directly.\n\n" .
+                  $context . "Candidate's existing content:\n" . $cleanDesc;
+
+        return $this->generate($prompt);
+    }
+
+    /**
+     * Generate achievement bullets for candidate resumes
+     */
+    public function generateBullets($description, $jobTitle = '')
+    {
+        $cleanDesc = trim((string)$description);
+        $context = '';
+        if (!empty($jobTitle)) {
+            $context = "Job Title Context: " . trim((string)$jobTitle) . "\n";
+        }
+
+        $prompt = "You are an expert resume writer. Convert the candidate's existing information into 3-5 concise, highly relevant, professional bullet points.\n\n" .
+                  "CRITICAL REQUIREMENTS (STRICTLY ENFORCED):\n" .
+                  "1. Read the candidate's existing content and understand their actual employment context and role.\n" .
+                  "2. Convert their real responsibilities and achievements into professional bullet points starting with strong action verbs.\n" .
+                  "3. Keep the content factually connected to the original information. DO NOT invent unrelated responsibilities, achievements, metrics, or organizations.\n" .
+                  "4. Avoid generic suggestions unrelated to the supplied text.\n" .
+                  "5. Return ONLY the bullet points, each starting with '• ' and separated by newline characters. DO NOT include any conversational preamble, intro text, or explanation.\n\n" .
+                  $context . "Candidate's existing content:\n" . $cleanDesc;
 
         return $this->generate($prompt);
     }
@@ -157,7 +312,7 @@ class AiService
         $language = (string) ($options['language'] ?? '');
         $companyType = (string) ($options['company_type'] ?? '');
 
-        $context = "[[MOCK_INTERVIEW_SESSION]] You are an experienced hiring manager conducting a mock interview for a '{$jobTitle}' position with '{$candidateName}'. ";
+        $context = "[[MOCK_INTERVIEW_SESSION:{$questionPack}]] You are an experienced hiring manager conducting a mock interview for a '{$jobTitle}' position with '{$candidateName}'. ";
         if ($companyName !== '') {
             $context .= "Company: {$companyName}. ";
         }
@@ -412,11 +567,88 @@ class AiService
      */
     public function getSalaryNegotiationResponse($message, $history = [], $offerDetails = '')
     {
-        $context = "You are a tough but fair HR representative in a salary negotiation. ";
-        $context .= "The current offer details are: '{$offerDetails}'. ";
-        $context .= "Engage in a realistic negotiation. Provide tips to the user on how they can improve their negotiation stance.";
-        
-        return $this->getChatResponse($message, $history, $context);
+        if (empty($this->apiKey)) {
+            return $this->getFallbackNegotiationReply($message, $offerDetails);
+        }
+
+        $url = $this->getApiUrl('chat') . '?key=' . $this->apiKey;
+
+        $systemPrompt = "You are a professional Nigerian hiring manager / HR recruiter in a live salary negotiation simulation. "
+            . "Context & Scenario: {$offerDetails}. "
+            . "Rules:\n"
+            . "1. Respond directly in-character to the candidate's last message as the hiring manager/recruiter.\n"
+            . "2. Speak naturally in 1 to 3 concise sentences (max 60 words).\n"
+            . "3. If the candidate makes a strong evidence-backed ask with figures, be willing to move closer to their target or offer non-monetary concessions (review timelines, bonus, flexible work).\n"
+            . "4. If their ask is unsupported or aggressive, push back politely, citing budget limits and internal equity.\n"
+            . "5. Do NOT include markdown formatting like asterisks or quotes around the reply. Speak directly.";
+
+        $contents = [];
+        $contents[] = [
+            'role'  => 'user',
+            'parts' => [['text' => $systemPrompt]]
+        ];
+        $contents[] = [
+            'role'  => 'model',
+            'parts' => [['text' => "Understood. I am ready to negotiate as the hiring manager."]]
+        ];
+
+        // Append recent history
+        $recentHistory = is_array($history) ? array_slice($history, -6) : [];
+        foreach ($recentHistory as $chat) {
+            $sender = ($chat['sender'] ?? 'user') === 'user' ? 'user' : 'model';
+            $msg = (string)($chat['message'] ?? '');
+            if ($msg !== '') {
+                $contents[] = [
+                    'role'  => $sender,
+                    'parts' => [['text' => $msg]]
+                ];
+            }
+        }
+
+        $contents[] = [
+            'role'  => 'user',
+            'parts' => [['text' => (string)$message]]
+        ];
+
+        $payload = [
+            'contents' => $contents,
+            'generationConfig' => [
+                'temperature'     => 0.6,
+                'maxOutputTokens' => 250,
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+        $response = curl_exec($ch);
+        $err = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (!$err && $httpCode === 200) {
+            $result = json_decode($response, true);
+            if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+                $reply = trim($result['candidates'][0]['content']['parts'][0]['text']);
+                return strip_tags(str_replace(['**', '*'], '', $reply));
+            }
+        }
+
+        return $this->getFallbackNegotiationReply($message, $offerDetails);
+    }
+
+    private function getFallbackNegotiationReply($message, $offerDetails)
+    {
+        $responses = [
+            "I hear your point regarding the scope of the role. While our base band is firm at this level, could we look at a 6-month performance review to adjust your compensation?",
+            "That's a reasonable ask given your background. The most I can stretch the base is halfway towards your target, provided we align on immediate quarterly deliverables.",
+            "I understand where you're coming from. We have strict internal pay bands for this grade, but we can offer flexibility on the signing bonus and health coverage.",
+            "I appreciate you sharing those benchmarks. If you're willing to commit to leading the upcoming transition, I can defend a 10% increase to leadership."
+        ];
+        return $responses[array_rand($responses)];
     }
 
     /**
@@ -426,7 +658,7 @@ class AiService
     {
         $prompt = "Act as a senior career coach. Based on this candidate profile: '{$candidateProfile}', provide 3-5 personalized career growth tips, recommended skills to learn, and potential career paths.";
         
-        return $this->generate($prompt);
+        return $this->generate($prompt, 'balanced');
     }
 
     /**
@@ -457,7 +689,7 @@ class AiService
         $prompt .= "- Do NOT include placeholders or bracketed text\n";
         $prompt .= "- Use the candidate's actual name in the greeting";
 
-        return $this->generate($prompt);
+        return $this->generate($prompt, 'balanced');
     }
 
     /**
@@ -501,7 +733,7 @@ class AiService
 
         $prompt .= "\nWrite in a professional, encouraging tone. Be honest but constructive. Format with clear markdown headings and bullet points.";
 
-        $result = $this->generate($prompt);
+        $result = $this->generate($prompt, 'reasoning');
 
         if (empty($result) || str_starts_with($result, 'AI Error') || str_starts_with($result, 'AI Service is not configured')) {
             $result = $this->handleCvReviewFallback($params);
@@ -555,20 +787,21 @@ class AiService
             return $this->handleChatFallback($message, $history, $context, "AI Service is not configured. Please add GEMINI_API_KEY to your .env file.");
         }
 
-        $url = $this->getApiUrl() . '?key=' . $this->apiKey;
+        $url = $this->getApiUrl('chat') . '?key=' . $this->apiKey;
 
         // Construct contents with history
         $contents = [];
         
         // System instruction as first message
-        // Clear system instruction: reply naturally, avoid mentioning the host app, avoid markdown asterisks
+        // Clear system instruction: reply naturally as an expert career advisor/coach.
+        // Follow the 4-step coaching framework: 1. Explain Issue, 2. Recommend Solution, 3. Show Proposed Improvement, 4. Invite candidate to apply using 'Apply Suggestion'.
         $contents[] = [
             'role' => 'user',
-            'parts' => [['text' => "You are ResumeAI, a professional resume assistant embedded in a web application. Context: " . $context . ". Reply directly as the assistant without referring to being inside an app. Keep responses concise and professional. You may use simple HTML tags for formatting (p, br, ul, ol, li, strong, em, h3, h4, div, span) but do NOT include scripts, style blocks, or any attributes on tags. Avoid markdown markers like ** or *. When producing content for fields (summary, experience bullets), prefer plain text, but for chat coaching replies you may include simple HTML. Return only the content to be displayed." ]]
+            'parts' => [['text' => "You are ResumeAI, an expert career coach and resume consultant. Context: " . $context . ". CRITICAL RULE: You must act strictly as an adviser/coach. Never assume changes should be auto-applied. When analyzing or improving content: 1. Explain the issue (why it is weak/problematic). 2. Make a concrete recommendation. 3. Show the proposed improvement clearly. 4. Allow the candidate to decide by prompting them to click 'Apply Suggestion'. Use clean HTML formatting (p, strong, em, ul, ol, li, blockquote, div) but avoid style attributes or scripts. Return only the coaching advice and proposed improvements to be displayed." ]]
         ];
         $contents[] = [
             'role' => 'model',
-            'parts' => [['text' => "Understood. I am ready to help as JobberRecruit AI Assistant."]]
+            'parts' => [['text' => "Understood. I will act as an advisor and career coach following the 4-step framework (Explain Issue, Recommend, Show Proposed Improvement, and Invite Candidate to Apply Suggestion)."]]
         ];
 
         // Add last 4 history turns for speed & context balance
@@ -594,43 +827,57 @@ class AiService
             ]
         ];
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        $payloadJson = json_encode($payload);
+        $lastErr = '';
+        $maxAttempts = 3;
 
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        $errno = curl_errno($ch);
-        curl_close($ch);
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
-        if ($err || $errno > 0) {
-            return $this->handleChatFallback($message, $history, $context, $err ?: "cURL error code: " . $errno);
+            $response = curl_exec($ch);
+            $err = curl_error($ch);
+            $errno = curl_errno($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (! $err && $errno === 0 && $httpCode < 500) {
+                $result = json_decode($response, true);
+
+                if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+                    $raw = $result['candidates'][0]['content']['parts'][0]['text'];
+
+                    // Sanitize via DOM to allow a controlled set of elements and attributes (images, tables)
+                    return $this->sanitizeHtml($raw);
+                }
+
+                if (isset($result['error'])) {
+                    $lastErr = $result['error']['message'] ?? 'Unknown API error';
+                    log_message('error', "Gemini chat API error (HTTP {$httpCode}, attempt {$attempt}/{$maxAttempts}): {$lastErr}");
+                    // Non-retryable API-level error (bad request, invalid key, etc.) — stop retrying.
+                    break;
+                }
+
+                $lastErr = 'Unrecognized API response shape';
+                log_message('error', "Gemini chat API returned no candidates (HTTP {$httpCode}, attempt {$attempt}/{$maxAttempts}): " . substr((string) $response, 0, 500));
+                break;
+            }
+
+            $lastErr = $err ?: ("HTTP {$httpCode}" . ($errno ? ", cURL error code {$errno}" : ''));
+            log_message('error', "Gemini chat request failed (attempt {$attempt}/{$maxAttempts}): {$lastErr}");
+
+            if ($attempt < $maxAttempts) {
+                usleep(300000 * $attempt); // 300ms, 600ms backoff before retrying
+            }
         }
 
-        $result = json_decode($response, true);
-        
-        if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-            $raw = $result['candidates'][0]['content']['parts'][0]['text'];
-
-            // Sanitize via DOM to allow a controlled set of elements and attributes (images, tables)
-            return $this->sanitizeHtml($raw);
-        }
-
-        if (isset($result['error'])) {
-            return $this->handleChatFallback($message, $history, $context, $result['error']['message'] ?? 'Unknown API error');
-        }
-
-        return "AI Error: " . ($result['error']['message'] ?? 'Unknown error occurred');
-    }
-
-    protected function getApiUrl(): string
-    {
-        return 'https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent';
+        return $this->handleChatFallback($message, $history, $context, $lastErr);
     }
 
     /**
@@ -645,7 +892,7 @@ class AiService
             return null;
         }
 
-        $ttsModel = env('GEMINI_TTS_MODEL') ?: 'gemini-2.5-flash-preview-tts';
+        $ttsModel = env('GEMINI_TTS_MODEL') ?: 'gemini-3.1-flash-tts-preview';
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $ttsModel . ':generateContent?key=' . $this->apiKey;
 
         $payload = [
@@ -741,7 +988,7 @@ class AiService
         $dom = new \DOMDocument();
         // Ensure there is a wrapper element
         $htmlWrapped = '<div>' . $html . '</div>';
-        $dom->loadHTML(mb_convert_encoding($htmlWrapped, 'HTML-ENTITIES', 'UTF-8'));
+        @$dom->loadHTML('<?xml encoding="UTF-8">' . $htmlWrapped);
         $body = $dom->getElementsByTagName('body')->item(0);
 
         // Only allow a minimal set of tags. We will also strip all attributes except img[src|alt|width|height].
@@ -933,7 +1180,64 @@ class AiService
         // catch-all labelled every failure as "offline", hiding invalid keys,
         // API restrictions, quota errors, and unsupported models.
         log_message('error', 'Gemini generation failed: ' . (string) $err);
-        // 1. Career Advice Fallback
+
+        // 1a. Improve Existing Professional Summary Fallback
+        if (preg_match('/Candidate\'s existing summary:\s*(.*)/is', $prompt, $matches)) {
+            $existingSummary = trim($matches[1]);
+            if (preg_match('/^(.*?)(?:\nSkills Context:|\Z)/is', $existingSummary, $sumMatches)) {
+                $existingSummary = trim($sumMatches[1]);
+            }
+            if (!empty($existingSummary)) {
+                return $this->formatStrengthenedSummaryFallback($existingSummary, $prompt);
+            }
+        }
+
+        // 1b. Improve Description & Bullets Fallback
+        if (stripos($prompt, 'Candidate\'s existing content:') !== false
+            || stripos($prompt, 'entered work experience or achievement description') !== false
+            || stripos($prompt, 'Improve the following work experience description') !== false
+            || stripos($prompt, 'Convert the candidate\'s existing information into') !== false
+            || stripos($prompt, 'resume bullet points') !== false
+            || stripos($prompt, 'Improve the following job description') !== false
+            || stripos($prompt, 'Improve the following') !== false) {
+
+            $rawDesc = '';
+            if (preg_match('/Candidate\'s existing content:\s*(.*)/is', $prompt, $matches)) {
+                $rawDesc = trim($matches[1]);
+            } else {
+                $rawDesc = trim(substr($prompt, strripos($prompt, "\n\n") + 2));
+            }
+
+            $jobTitle = '';
+            if (preg_match('/Job Title Context:\s*(.*)/i', $prompt, $matches)) {
+                $jobTitle = trim(explode("\n", $matches[1])[0]);
+            }
+
+            $isBullets = (stripos($prompt, 'bullet points') !== false || stripos($prompt, 'Convert the candidate\'s existing information') !== false);
+
+            if ($isBullets) {
+                return $this->formatBulletsFallback($rawDesc, $jobTitle);
+            }
+
+            return $this->formatStrengthenedDescriptionFallback($rawDesc, $jobTitle);
+        }
+
+        // 1c. Professional Summary Fallback (New Generation)
+        if (stripos($prompt, 'professional resume summary') !== false || (stripos($prompt, 'Experiences:') !== false && stripos($prompt, 'Skills:') !== false)) {
+            // Extract experiences and skills
+            $experiencesStr = 'your professional experience';
+            $skillsStr = 'core industry skills';
+            if (preg_match('/Experiences:\s*(.*)/i', $prompt, $matches)) {
+                $experiencesStr = trim(explode("\n", $matches[1])[0]);
+            }
+            if (preg_match('/Skills:\s*(.*)/i', $prompt, $matches)) {
+                $skillsStr = trim(explode("\n", $matches[1])[0]);
+            }
+
+            return "Results-driven professional with expertise in {$skillsStr}. Proven track record of delivering high-impact solutions, optimizing operational workflows, and driving efficiency based on experience in {$experiencesStr}. Skilled at collaborating with cross-functional teams to accelerate project delivery and achieve strategic goals.";
+        }
+
+        // 2. Career Advice Fallback
         if (stripos($prompt, 'career coach') !== false || stripos($prompt, 'career advice') !== false || stripos($prompt, 'career growth') !== false) {
             // Extract name, skills, bio from prompt
             $name = 'Candidate';
@@ -1047,72 +1351,7 @@ class AiService
             }
         }
 
-        // 2. Professional Summary Fallback
-        if (stripos($prompt, 'professional resume summary') !== false || (stripos($prompt, 'Experiences:') !== false && stripos($prompt, 'Skills:') !== false)) {
-            // Extract experiences and skills
-            $experiencesStr = 'your experiences';
-            $skillsStr = 'your core skills';
-            if (preg_match('/Experiences:\s*(.*)/i', $prompt, $matches)) {
-                $experiencesStr = trim(explode("\n", $matches[1])[0]);
-            }
-            if (preg_match('/Skills:\s*(.*)/i', $prompt, $matches)) {
-                $skillsStr = trim(explode("\n", $matches[1])[0]);
-            }
-
-            return "Results-driven professional with expertise in {$skillsStr}. Proven track record of delivering high-impact solutions, optimizing system architectures, and driving operational efficiency based on experience in {$experiencesStr}. Skilled at collaborating with cross-functional teams to accelerate product delivery and achieve strategic goals.";
-        }
-
-        // 3. Improve Description Fallback
-        if (stripos($prompt, 'Improve the following job description') !== false || stripos($prompt, 'Improve the following') !== false) {
-            $rawDesc = '';
-            $pos = strripos($prompt, "Improve the following job description to be more professional and include action verbs. Use bullet points if appropriate:\n\n");
-            if ($pos !== false) {
-                $rawDesc = trim(substr($prompt, $pos + 115));
-            } else {
-                $rawDesc = trim(substr($prompt, strripos($prompt, "\n\n") + 2));
-            }
-
-            // Let's create an improved description by cleaning up the lines and adding high-impact verbs
-            $lines = explode("\n", $rawDesc);
-            $improvedLines = [];
-            
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if (empty($line)) continue;
-                
-                // Strip existing bullet symbols
-                $line = ltrim($line, "*-• \t");
-                
-                // Add some professional action prefixes if missing
-                if (stripos($line, 'write') === 0 || stripos($line, 'writing') === 0) {
-                    $line = "Engineered, deployed, and maintained high-performance software systems using scalable clean-code standards.";
-                } elseif (stripos($line, 'fix') === 0 || stripos($line, 'debugging') === 0) {
-                    $line = "Identified, root-caused, and resolved critical production issues to ensure maximum application uptime and system reliability.";
-                } elseif (stripos($line, 'work with') === 0 || stripos($line, 'collaborate') === 0) {
-                    $line = "Collaborated closely with cross-functional product owners, UI/UX designers, and engineering partners to deliver sleek user features.";
-                } elseif (stripos($line, 'manage') === 0 || stripos($line, 'lead') === 0) {
-                    $line = "Spearheaded complex development sprints and mentored junior engineering team members to foster a culture of technical excellence.";
-                } else {
-                    // Just capitalize and wrap with a robust verb
-                    $verbs = ['Orchestrated', 'Optimized', 'Streamlined', 'Spearheaded', 'Accelerated', 'Leveraged'];
-                    $verb = $verbs[array_rand($verbs)];
-                    $line = $verb . " " . lcfirst($line);
-                }
-                
-                $improvedLines[] = "• " . $line;
-            }
-
-            if (empty($improvedLines)) {
-                return "• Engineered and deployed scalable, high-performance applications based on solid technical standards.\n" .
-                       "• Streamlined database performance, reducing query latencies and optimizing schema architectures.\n" .
-                       "• Collaborated with cross-functional product and engineering partners to deliver sleek user interfaces.\n" .
-                       "• Spearheaded complex development sprints and debugged critical production issues with high reliability.";
-            }
-
-            return implode("\n", $improvedLines);
-        }
-
-        // 4. Cover Letter Fallback
+        // 3. Cover Letter Fallback
         if (stripos($prompt, 'cover letter') !== false) {
             $jobTitle = 'the position';
             $companyName = 'your company';
@@ -1184,32 +1423,31 @@ class AiService
         $messageLower = strtolower($message);
 
         // 1. Mock Interview Session Fallback
-        if (strpos($context, '[[MOCK_INTERVIEW_SESSION]]') !== false) {
-            $questions = [
-                "Could you walk me through a situation where you had to manage conflicting project priorities under a tight deadline?",
-                "Tell me about a time when you engineered a feature or optimization that significantly improved application performance. What metrics did you track?",
-                "Can you describe a situation where you disagreed with a colleague or product owner on a technical decision? How did you resolve it?",
-                "How do you approach learning a completely new language, framework, or technology when starting a high-priority project?",
-                "Tell me about a challenging bug or architecture issue you ran into recently. What was your systematic debugging approach?"
-            ];
+        if (preg_match('/\[\[MOCK_INTERVIEW_SESSION(?::([a-z0-9\-]+))?\]\]/i', $context, $sessionMatch)) {
+            $questionPack = $sessionMatch[1] ?? 'general';
+            $questions = $this->getFallbackInterviewQuestions($questionPack);
 
-            // Pick a question based on history length so it progresses naturally
-            $qIndex = count($history) % count($questions);
+            // Skip questions already asked this session, cycling through the
+            // field-specific pool so a longer interview doesn't repeat itself.
+            $askedCount = (int) floor(count($history) / 2);
+            $qIndex = $askedCount % count($questions);
             $nextQuestion = $questions[$qIndex];
 
+            $eval = $this->evaluateFallbackAnswer($message);
+
             return json_encode([
-                "feedback" => "Your response shows a clear understanding of the situational demands, but focus on structuring it strictly in Situation, Task, Action, and Result (STAR).",
+                "feedback" => $eval['feedback'],
                 "next_question" => $nextQuestion,
-                "interviewer_reply" => "That is a very realistic explanation. Let's move to our next question: {$nextQuestion}",
-                "star_score" => 7,
+                "interviewer_reply" => $eval['opener'] . " Next question: {$nextQuestion}",
+                "star_score" => $eval['score'],
                 "star_breakdown" => [
-                    "situation" => 8,
-                    "task" => 7,
-                    "action" => 7,
-                    "result" => 6
+                    "situation" => $eval['score'],
+                    "task" => $eval['score'],
+                    "action" => $eval['score'],
+                    "result" => $eval['score']
                 ],
-                "star_tip" => "Emphasize the 'Result' phase. Describe exactly how your actions improved system performance, saved development hours, or boosted conversions.",
-                "focus_area" => "STAR Storytelling Structure"
+                "star_tip" => $eval['tip'],
+                "focus_area" => $eval['focus_area']
             ]);
         }
 
@@ -1218,24 +1456,727 @@ class AiService
             $historyCount = count($history);
 
             if ($historyCount === 0 || $historyCount === 2) {
-                return "Hello, I am ResumeAI, your resume consultant. To get started, please tell me your target role and the industry you are focusing on.";
+                return "Hello! I am ResumeAI, your dedicated Career & Resume Coach. My role is to analyze your resume, explain areas for growth, and provide high-impact recommendations you can review and apply with a single click.\n\nTo begin, what is your target role and primary industry?";
             }
 
             if ($historyCount === 4) {
-                return "Let's craft a focused professional summary that will capture a recruiter's attention. Please tell me your years of experience in this field and one specific career achievement you're proud of.";
+                return "Let's review your Professional Summary:\n\n" .
+                       "<strong>1. Issue Identified:</strong> Many summaries default to generic clichés (like 'hardworking individual') without establishing immediate executive presence or scope.\n\n" .
+                       "<strong>2. Coach Recommendation:</strong> Open with your exact professional title, years of specialized experience, and 2-3 core high-value competencies.\n\n" .
+                       "Please share your years of experience and top career achievement so I can craft a tailored recommendation.";
             }
 
             if ($historyCount === 6) {
-                return "Based on your inputs, here is a suggested professional summary:\n\n" .
-                       "Accomplished professional with a proven track record of optimizing systems, delivering high-impact features, and leading cross-functional initiatives to drive measurable business outcomes.\n\n" .
-                       "Would you like to apply this summary to your resume or refine it further?";
+                return "<div class='coach-advice-card'>" .
+                       "<p><strong>1. Issue:</strong> The previous summary needed stronger leadership impact and quantifiable scope.</p>" .
+                       "<p><strong>2. Recommendation:</strong> Frame achievements around driving operational efficiency, cost optimization, and measurable deliverables.</p>" .
+                       "<p><strong>3. Proposed Improvement:</strong></p>" .
+                       "<blockquote>Accomplished professional with a proven track record of optimizing systems, delivering high-impact initiatives, and cross-functional leadership to drive measurable business outcomes.</blockquote>" .
+                       "<p><strong>4. Your Decision:</strong> Review the suggested summary above. Click <strong>Apply Suggestion</strong> below to insert it into your Professional Summary, or reply with edits!</p>" .
+                       "</div>";
             }
 
             // Resume STAR Experience Coaching
-            return "Let's move to your Work Experience. I use the STAR framework (Situation, Task, Action, Result) to craft strong experience bullets. Tell me about a specific project you led: what was the situation, what action did you take, and what were the measurable results?";
+            return "<div class='coach-advice-card'>" .
+                   "<p><strong>1. Experience Review:</strong> Let's sharpen your Work Experience bullets using the <strong>STAR method</strong> (Situation, Task, Action, Result).</p>" .
+                   "<p><strong>2. Recommendation:</strong> Always lead with strong action verbs (e.g. <em>Spearheaded, Engineered, Orchestrated</em>) rather than passive duties ('Responsible for').</p>" .
+                   "<p>Share a project or duty you handled, and I will generate a polished STAR bullet recommendation for you to review and apply.</p>" .
+                   "</div>";
         }
 
         // Default chat response
         return "I am currently online in backup mode. How can I help you progress your career goals today?";
+    }
+
+    /**
+     * Field-specific question pools for the offline mock-interview fallback,
+     * keyed the same as getQuestionPackContext() so every job field selectable
+     * in the interview setup gets realistic, role-relevant questions instead
+     * of generic software-engineering ones.
+     *
+     * @return array<int, string>
+     */
+    protected function getFallbackInterviewQuestions(string $questionPack): array
+    {
+        $banks = [
+            'software-developer' => [
+                "Tell me about a time you engineered a feature or optimization that significantly improved application performance. What metrics did you track?",
+                "Can you describe a situation where you disagreed with a colleague or product owner on a technical decision? How did you resolve it?",
+                "How do you approach learning a completely new language, framework, or technology when starting a high-priority project?",
+                "Tell me about a challenging bug or architecture issue you ran into recently. What was your systematic debugging approach?",
+                "Describe a time you had to balance writing clean, maintainable code against a tight deadline. What tradeoffs did you make?",
+                "Walk me through how you'd design and review a code change that touches a critical, high-traffic part of a system.",
+            ],
+            'data-analysis' => [
+                "Tell me about a time your analysis changed a business decision. How did you communicate the insight to non-technical stakeholders?",
+                "Describe a situation where the data you were given was messy or incomplete. How did you handle it?",
+                "Walk me through how you validated a surprising or counter-intuitive result before presenting it.",
+                "Tell me about a dashboard or report you built that a team actually used regularly. What made it stick?",
+                "Describe a time you had to choose between a quick, rough analysis and a slower, more rigorous one. How did you decide?",
+            ],
+            'accounting-fundamentals' => [
+                "Tell me about a time you caught a discrepancy in the books before it became a bigger problem. What did you do?",
+                "Describe how you've handled a tight month-end or year-end close under pressure.",
+                "Walk me through a time you had to explain a financial variance to a non-finance manager.",
+                "Tell me about a situation where you improved a reconciliation or reporting process.",
+                "Describe a time you identified a compliance or audit risk. How did you address it?",
+            ],
+            'digital-marketing' => [
+                "Tell me about a campaign you ran that underperformed. What did you change, and what was the result?",
+                "Describe how you allocated a limited budget across channels and how you measured ROI.",
+                "Walk me through a time you used data to justify a change in marketing strategy.",
+                "Tell me about a piece of content or campaign that significantly outperformed expectations. Why do you think it worked?",
+                "Describe how you approach A/B testing a landing page or ad creative.",
+            ],
+            'social-media-content' => [
+                "Tell me about a post or campaign that went unexpectedly viral, or unexpectedly flopped. What did you learn?",
+                "Describe how you handle negative comments or a small PR issue on a brand's social account.",
+                "Walk me through your process for planning a month of content for a brand.",
+                "Tell me about a time you had to adapt content strategy based on engagement analytics.",
+                "Describe a collaboration with a designer, photographer, or influencer that didn't go as planned. What happened?",
+            ],
+            'office-admin' => [
+                "Tell me about a time you had to juggle competing priorities from multiple managers. How did you handle it?",
+                "Describe a process you improved that made the office run more smoothly.",
+                "Walk me through how you handle a scheduling conflict between important meetings.",
+                "Tell me about a time you managed a confidential or sensitive matter carefully.",
+                "Describe how you stay organized when handling many small tasks at once.",
+            ],
+            'sales-business-dev' => [
+                "Tell me about a deal you lost. What did you learn, and what would you do differently?",
+                "Walk me through how you handle a prospect who keeps raising the same objection.",
+                "Describe a time you exceeded your sales target. What specifically drove that result?",
+                "Tell me about a long sales cycle you managed — how did you keep the deal moving?",
+                "Describe how you qualify a lead before investing significant time in them.",
+            ],
+            'customer-service' => [
+                "Tell me about the most difficult customer you've handled. How did you resolve the situation?",
+                "Describe a time you went beyond your role to solve a customer's problem.",
+                "Walk me through how you stay calm and professional when a customer is upset.",
+                "Tell me about a time you had to say no to a customer request. How did you handle it?",
+                "Describe how you'd handle a recurring complaint that suggests a deeper process problem.",
+            ],
+            'human-resources' => [
+                "Tell me about a time you mediated a conflict between two employees or teams.",
+                "Describe how you've handled a sensitive disciplinary or performance conversation.",
+                "Walk me through how you'd design an onboarding process for a new team.",
+                "Tell me about a hiring decision you're proud of, and what made that candidate stand out.",
+                "Describe a time you had to balance company policy with an employee's individual circumstances.",
+            ],
+            'engineering-technical' => [
+                "Tell me about a time you identified a safety or quality issue on site. What did you do?",
+                "Describe a project where you had to work within strict technical specifications or regulations.",
+                "Walk me through how you troubleshoot equipment or system failures in the field.",
+                "Tell me about a time you had to coordinate with multiple trades or teams on a project.",
+                "Describe a time a project ran over budget or behind schedule. How did you respond?",
+            ],
+            'logistics-supply-chain' => [
+                "Tell me about a time you resolved a supply disruption or delayed shipment.",
+                "Describe how you've optimized a warehouse process or delivery route.",
+                "Walk me through how you manage inventory accuracy across multiple locations.",
+                "Tell me about a time you negotiated better terms with a supplier or carrier.",
+                "Describe a situation where you had to balance cost savings against delivery reliability.",
+            ],
+            'legal-compliance' => [
+                "Tell me about a time you identified a compliance risk before it became an issue.",
+                "Describe how you've explained a complex legal or regulatory requirement to a non-legal team.",
+                "Walk me through how you review a contract for risk before it's signed.",
+                "Tell me about a time you had to push back on a business decision for compliance reasons.",
+                "Describe how you stay current with changing regulations relevant to your role.",
+            ],
+            'healthcare-medical' => [
+                "Tell me about a time you had to make a quick decision under pressure to protect patient safety.",
+                "Describe how you communicate difficult information to a patient or their family.",
+                "Walk me through how you handle a disagreement with a colleague about a course of treatment.",
+                "Tell me about a time you caught an error before it reached the patient.",
+                "Describe how you manage a high patient load while maintaining quality of care.",
+            ],
+            'education-training' => [
+                "Tell me about a time you adapted your teaching approach for a struggling student.",
+                "Describe how you handle a disruptive classroom or training session.",
+                "Walk me through how you design a lesson or training module from scratch.",
+                "Tell me about a time you used assessment data to change how you taught a topic.",
+                "Describe a time you had a difficult conversation with a parent, student, or trainee.",
+            ],
+            'hospitality' => [
+                "Tell me about a time you turned an unhappy guest into a satisfied one.",
+                "Describe how you handle a service failure during a peak, high-pressure period.",
+                "Walk me through how you'd handle an overbooking or resource shortage situation.",
+                "Tell me about a time you went out of your way to create a memorable guest experience.",
+                "Describe how you coordinate with other departments to deliver smooth service.",
+            ],
+            'manufacturing-production' => [
+                "Tell me about a time you identified and fixed a quality control issue on the line.",
+                "Describe how you've handled a safety incident or near-miss.",
+                "Walk me through how you'd respond to an unexpected production line stoppage.",
+                "Tell me about a time you improved throughput or reduced waste in a process.",
+                "Describe how you balance production speed targets against quality standards.",
+            ],
+            'it-support' => [
+                "Tell me about the most difficult technical issue you've resolved for a user.",
+                "Describe how you prioritize tickets when you have multiple urgent requests at once.",
+                "Walk me through how you explain a technical problem to a non-technical user.",
+                "Tell me about a time you prevented a recurring issue by fixing the root cause.",
+                "Describe how you handle a user who is frustrated or upset about a system outage.",
+            ],
+            'project-management' => [
+                "Tell me about a project that was at risk of missing its deadline. What did you do?",
+                "Describe how you handle scope creep from a stakeholder mid-project.",
+                "Walk me through how you keep a cross-functional team aligned on priorities.",
+                "Tell me about a time you had to deliver bad news about a project's timeline or budget.",
+                "Describe a project retrospective where the team identified a meaningful process improvement.",
+            ],
+            'design-ux' => [
+                "Tell me about a design decision you made that was based on user research, not personal preference.",
+                "Describe a time your design was challenged by an engineer or stakeholder. How did you respond?",
+                "Walk me through your process for taking a project from wireframe to final design.",
+                "Tell me about a usability issue you caught in testing and how you fixed it.",
+                "Describe how you balance visual polish against development feasibility and deadlines.",
+            ],
+            'general' => [
+                "Could you walk me through a situation where you had to manage conflicting priorities under a tight deadline?",
+                "Tell me about a time you took ownership of a problem that wasn't technically your responsibility.",
+                "Describe a time you received difficult feedback. How did you respond?",
+                "Walk me through a goal you set for yourself and how you achieved it.",
+                "Tell me about a time you had to learn something completely new quickly to get a job done.",
+            ],
+        ];
+
+        // Aliases so short-form question_pack values used elsewhere in the app
+        // (e.g. 'engineering', 'sales', 'marketing', 'support') resolve too.
+        $aliases = [
+            'engineering' => 'software-developer',
+            'sales' => 'sales-business-dev',
+            'marketing' => 'digital-marketing',
+            'support' => 'customer-service',
+            'operations' => 'logistics-supply-chain',
+            'product' => 'project-management',
+        ];
+        $questionPack = $aliases[$questionPack] ?? $questionPack;
+
+        return $banks[$questionPack] ?? $banks['general'];
+    }
+
+    /**
+     * Lightweight, rule-based read of an interview answer for the offline
+     * fallback path — not a substitute for the real model, but enough to
+     * avoid rubber-stamping every reply with the same canned praise.
+     *
+     * @return array{score:int, feedback:string, opener:string, tip:string, focus_area:string}
+     */
+    protected function evaluateFallbackAnswer(string $message): array
+    {
+        $message = trim($message);
+        $wordCount = $message === '' ? 0 : str_word_count($message);
+
+        $isNonAnswer = $message === '' || (bool) preg_match(
+            '/^\s*(i\s*don\'?t\s*(know|understand)|not\s*sure|no\s*idea|skip|pass|n\/?a)\W*$/i',
+            $message
+        ) || (bool) preg_match('/\b(i\s*don\'?t\s*(know|understand)|not\s*sure|no\s*idea)\b/i', $message);
+
+        if ($isNonAnswer) {
+            return [
+                'score' => 2,
+                'feedback' => "That's alright — try to give a real example even if it's a rough one; a partial answer scores far better than no answer.",
+                'opener' => "No problem, let's try a different angle.",
+                'tip' => "Pick any real situation from your work or studies, even a small one, and walk through what you did and what happened.",
+                'focus_area' => "Giving a Concrete Example",
+            ];
+        }
+
+        $hasStarCues = (bool) preg_match(
+            '/\b(situation|task|action|result|because|so that|as a result|specifically|for example|led to|which resulted|i decided|i implemented)\b/i',
+            $message
+        );
+        $hasMetrics = (bool) preg_match('/\d+(\.\d+)?\s*(%|percent|hours?|days?|weeks?|months?|₦|naira|\$|users?|customers?|x\b)/i', $message)
+            || (bool) preg_match('/\d/', $message);
+
+        if ($wordCount < 12) {
+            return [
+                'score' => 4,
+                'feedback' => "That's a start, but the answer is quite brief — interviewers want to hear the full story: what the situation was, what you did, and what happened as a result.",
+                'opener' => "Thanks — let's build on that with more detail next time.",
+                'tip' => "Aim for 3-5 sentences: set up the situation, describe your specific action, then state the measurable result.",
+                'focus_area' => "Answer Depth",
+            ];
+        }
+
+        if ($hasStarCues && $hasMetrics) {
+            return [
+                'score' => 8,
+                'feedback' => "Strong answer — it's structured clearly and backed with specifics, which is exactly what interviewers look for.",
+                'opener' => "That's a great, well-structured answer.",
+                'tip' => "Keep leading with numbers like that — quantified results are what make an answer memorable.",
+                'focus_area' => "STAR Storytelling Structure",
+            ];
+        }
+
+        if ($hasStarCues || $hasMetrics) {
+            return [
+                'score' => 6,
+                'feedback' => "Good answer with a clear example, but it would land even stronger with the missing piece — either a concrete number/outcome, or a clearer statement of the result.",
+                'opener' => "Thanks for sharing that.",
+                'tip' => "Close the story with a specific, measurable result — a number, a percentage, or a clear before/after.",
+                'focus_area' => "Quantifying Results",
+            ];
+        }
+
+        return [
+            'score' => 5,
+            'feedback' => "That covers the general idea, but try structuring it more explicitly around Situation, Task, Action, and Result so the interviewer can follow the story.",
+            'opener' => "Thanks for sharing that.",
+            'tip' => "Explicitly separate the four parts: what was happening, what you needed to do, what you actually did, and what the outcome was.",
+            'focus_area' => "STAR Storytelling Structure",
+        ];
+    }
+
+    /**
+     * Generate custom aptitude test questions using Gemini AI for a specific job role
+     */
+    public function generateCustomAptitudeQuestions(string $jobTitle, string $jobDescription = '', int $numQuestions = 5, string $difficulty = 'intermediate'): array
+    {
+        if (empty($this->apiKey)) {
+            return [];
+        }
+
+        $cacheEnabled = env('AI_CACHE_ENABLED', true);
+        $cacheKey = 'ai_aptitude_' . md5($jobTitle . '_' . $jobDescription . '_' . $numQuestions . '_' . $difficulty);
+        if ($cacheEnabled) {
+            try {
+                $cache = \Config\Services::cache();
+                if ($cachedQuestions = $cache->get($cacheKey)) {
+                    log_message('info', "AI Aptitude Cache HIT for job: {$jobTitle}");
+                    return is_array($cachedQuestions) ? $cachedQuestions : (json_decode($cachedQuestions, true) ?? []);
+                }
+            } catch (\Throwable $e) {
+                // Ignore cache read failures
+            }
+        }
+
+        $prompt = "You are an expert HR Assessment & Psychometric Testing Specialist with deep expertise in the Nigerian and African employment market.
+Generate {$numQuestions} high-quality, professional multiple-choice aptitude test questions specifically tailored for candidate screening for the job position: '{$jobTitle}'. The target difficulty level is: {$difficulty}.
+Job Description Context: {$jobDescription}
+
+LOCALIZATION GUIDELINES:
+- All monetary and financial references MUST strictly use Nigerian Naira (₦ or NGN) (e.g. ₦150,000, ₦500,000, ₦1,200,000). Never use USD, EUR, or GBP.
+- Use authentic Nigerian names when using situational case studies or scenarios (e.g. Ade, Ngozi, Emeka, Folake, Amina, Chidi, Babatunde, Fatima, Olumide, Zainab).
+- Use Nigerian workplace locations and contexts (e.g. Lagos, Abuja, Port Harcourt, Ibadan, Kano, Victoria Island, Ikeja) and Nigerian regulatory standards (e.g. FIRS, CAMA, CBN, PENCOM, ITF) where applicable.
+
+Respond strictly in valid JSON format matching this exact schema:
+[
+  {
+    \"question\": \"Question stem text here\",
+    \"difficulty\": \"intermediate\",
+    \"explanation\": \"Brief explanation of why the correct option is right\",
+    \"options\": [
+      {\"text\": \"Option A text\", \"is_correct\": 1},
+      {\"text\": \"Option B text\", \"is_correct\": 0},
+      {\"text\": \"Option C text\", \"is_correct\": 0},
+      {\"text\": \"Option D text\", \"is_correct\": 0}
+    ]
+  }
+]
+Do not include any Markdown code block formatting or backticks, return raw JSON string only.";
+
+        $url = $this->getApiUrl('reasoning') . '?key=' . $this->apiKey;
+        $payload = [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]]
+            ],
+            'generationConfig' => [
+                'response_mime_type' => 'application/json',
+                'temperature' => 0.3,
+                'maxOutputTokens' => 2000,
+            ],
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$response) return [];
+
+        $json = json_decode($response, true);
+        $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+        $text = trim(preg_replace('/^```(?:json)?|```$/m', '', $text));
+        $decoded = json_decode($text, true);
+
+        if (is_array($decoded) && !empty($decoded)) {
+            if ($cacheEnabled) {
+                try {
+                    $cache = \Config\Services::cache();
+                    $cache->save($cacheKey, $decoded, 604800); // Cache generated aptitude questions for 7 days
+                } catch (\Throwable $e) {
+                    // Ignore cache write failures
+                }
+            }
+            return $decoded;
+        }
+
+        return [];
+    }
+
+    /**
+     * Generate custom course test questions using Gemini AI for a course
+     */
+    public function generateCourseTestQuestions(string $courseTitle, string $courseDescription = '', int $numQuestions = 5): array
+    {
+        if (empty($this->apiKey)) {
+            return $this->getFallbackCourseTestQuestions($courseTitle, $numQuestions);
+        }
+
+        $cacheEnabled = env('AI_CACHE_ENABLED', true);
+        $cacheKey = 'ai_course_test_' . md5($courseTitle . '_' . $courseDescription . '_' . $numQuestions);
+        if ($cacheEnabled) {
+            try {
+                $cache = \Config\Services::cache();
+                if ($cachedQuestions = $cache->get($cacheKey)) {
+                    return is_array($cachedQuestions) ? $cachedQuestions : (json_decode($cachedQuestions, true) ?? []);
+                }
+            } catch (\Throwable $e) {
+                // Ignore cache read errors
+            }
+        }
+
+        $prompt = "You are an expert Instructional Designer & Curriculum Assessment Specialist with expertise in Nigerian and African corporate training.
+Generate {$numQuestions} high-quality, professional multiple-choice assessment test questions specifically tailored to evaluate student knowledge for the course: '{$courseTitle}'.
+Course Description Context: {$courseDescription}
+
+LOCALIZATION GUIDELINES:
+- All monetary and financial calculations or case questions MUST strictly use Nigerian Naira (₦ or NGN) (e.g. ₦150,000, ₦500,000, ₦2,500,000). Never use USD, EUR, or GBP.
+- Use authentic Nigerian names for illustrative scenarios (e.g. Ade, Ngozi, Emeka, Folake, Amina, Chidi, Babatunde, Fatima).
+- Reference Nigerian business contexts, logistics, and workplace scenarios where applicable.
+
+Respond strictly in valid JSON format matching this exact schema:
+[
+  {
+    \"question\": \"Question stem text here\",
+    \"options\": [
+      {\"text\": \"Option A text\", \"is_correct\": 1},
+      {\"text\": \"Option B text\", \"is_correct\": 0},
+      {\"text\": \"Option C text\", \"is_correct\": 0},
+      {\"text\": \"Option D text\", \"is_correct\": 0}
+    ],
+    \"explanation\": \"Brief explanation of why the correct option is right\"
+  }
+]
+Do not include any Markdown code block formatting or backticks, return raw JSON string only.";
+
+        $url = $this->getApiUrl('reasoning') . '?key=' . $this->apiKey;
+        $payload = [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]]
+            ],
+            'generationConfig' => [
+                'response_mime_type' => 'application/json',
+                'temperature' => 0.3,
+                'maxOutputTokens' => 4000,
+            ],
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$response) return $this->getFallbackCourseTestQuestions($courseTitle, $numQuestions);
+
+        $json = json_decode($response, true);
+        $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        $text = trim(preg_replace('/^```(?:json)?|```$/m', '', $text));
+        $decoded = json_decode($text, true);
+
+        if (is_array($decoded) && !empty($decoded)) {
+            if ($cacheEnabled) {
+                try {
+                    $cache = \Config\Services::cache();
+                    $cache->save($cacheKey, $decoded, 604800);
+                } catch (\Throwable $e) {}
+            }
+            return $decoded;
+        }
+
+        return $this->getFallbackCourseTestQuestions($courseTitle, $numQuestions);
+    }
+
+    /**
+     * Fallback questions if offline or API key missing
+     */
+    public function getFallbackCourseTestQuestions(string $courseTitle, int $numQuestions = 3): array
+    {
+        $all = [
+            [
+                'question' => "What is the primary objective of the '{$courseTitle}' course?",
+                'options' => [
+                    ['text' => "To build practical, recruiter-ready skills and industry competency", 'is_correct' => 1],
+                    ['text' => "To memorize theoretical concepts without practical application", 'is_correct' => 0],
+                    ['text' => "To fulfill an optional attendance requirement", 'is_correct' => 0],
+                    ['text' => "None of the above", 'is_correct' => 0]
+                ],
+                'explanation' => "The primary goal is practical skill mastery and verifiable industry competence."
+            ],
+            [
+                'question' => "How should candidates apply the knowledge gained in this course?",
+                'options' => [
+                    ['text' => "By building portfolio evidence and updating their professional resume", 'is_correct' => 1],
+                    ['text' => "By keeping their achievements private", 'is_correct' => 0],
+                    ['text' => "By ignoring modern industry standards", 'is_correct' => 0],
+                    ['text' => "By delaying practical application indefinitely", 'is_correct' => 0]
+                ],
+                'explanation' => "Active portfolio building and resume alignment demonstrate verifiable skill mastery."
+            ],
+            [
+                'question' => "What passing score is required on final assessments to earn a verified JobberRecruit certificate?",
+                'options' => [
+                    ['text' => "70%", 'is_correct' => 1],
+                    ['text' => "40%", 'is_correct' => 0],
+                    ['text' => "50%", 'is_correct' => 0],
+                    ['text' => "60%", 'is_correct' => 0]
+                ],
+                'explanation' => "Candidates must achieve at least 70% on the final assessment to earn a certificate."
+            ]
+        ];
+
+        return array_slice($all, 0, max(1, min(count($all), $numQuestions)));
+    }
+    /**
+     * Transcribe audio using Gemini 1.5 Flash multimodal capabilities
+     */
+    public function transcribeAudio(string $base64Data, string $mimeType = 'audio/webm'): ?string
+    {
+        if (empty($this->apiKey)) {
+            log_message('error', 'AiService::transcribeAudio - GEMINI_API_KEY is missing');
+            return null;
+        }
+
+        $url = $this->getApiUrl('audio') . '?key=' . $this->apiKey;
+
+        $prompt = "You are an expert transcriptionist. Transcribe the provided audio accurately. Output ONLY the raw transcribed text with proper punctuation. Do not add any introductory, concluding, or explanatory text.";
+
+        $payload = [
+            'contents' => [
+                [
+                    'parts' => [
+                        ['text' => $prompt],
+                        [
+                            'inlineData' => [
+                                'mimeType' => $mimeType,
+                                'data' => $base64Data,
+                            ],
+                        ],
+                    ],
+                ]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.1,
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if ($err || !$response) {
+            log_message('error', 'Gemini transcription failed: ' . $err);
+            return null;
+        }
+
+        $result = json_decode($response, true);
+        
+        if (isset($result['error'])) {
+            log_message('error', 'Gemini transcription API Error: ' . json_encode($result['error']));
+            return null;
+        }
+
+        $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        return trim($text);
+    }
+
+    /**
+     * Fallback formatter to improve an achievement description preserving context and facts.
+     */
+    protected function formatStrengthenedDescriptionFallback(string $rawDesc, string $jobTitle = ''): string
+    {
+        $text = trim($rawDesc);
+        if (empty($text)) {
+            return "Consistently execute high-priority job responsibilities, driving operational excellence and contributing to key team objectives.";
+        }
+
+        // Clean conversational noise or leading prefixes
+        $cleaned = preg_replace('/^(?:I\s+(?:am\s+responsible\s+for|was\s+responsible\s+for|am\s+|work\s+as\s+a\s+|work\s+as\s+|help\s+with\s+|do\s+|handle\s+)?)/i', '', $text);
+        $cleaned = trim($cleaned, " \t\n\r\0\x0B\"'`*-•");
+
+        // Extract organization/company if mentioned ("for [Company]", "at [Company]")
+        $company = '';
+        if (preg_match('/\b(?:for|at)\s+([A-Z0-9][A-Za-z0-9\s&.\'-]+)/', $text, $m)) {
+            $company = trim($m[1]);
+            $company = rtrim($company, '.,;!');
+        }
+
+        $context = strtolower($text . ' ' . $jobTitle);
+
+        // 1. HR, Recruitment & Talent Acquisition
+        if (preg_match('/\b(recruit|recruiting|recruiter|talent|hiring|headhunt|staffing|sourcing|interviewing|onboard|onboarding)\b/', $context)) {
+            $target = $company ? "for {$company}" : "across organizational units";
+            return "Execute end-to-end recruitment and talent acquisition initiatives {$target}, proactively sourcing, screening, and onboarding top-tier talent aligned with key business and hiring objectives.";
+        }
+
+        // 2. Customer Support & Service
+        if (preg_match('/\b(customer|client service|support|complaint|refund|helpdesk|call center|inquir)\b/', $context)) {
+            $target = $company ? "for {$company}" : "to ensure client satisfaction";
+            return "Deliver high-touch customer support and swift issue resolution {$target}, managing client communications, resolving inquiries, and upholding superior service quality and satisfaction.";
+        }
+
+        // 3. Sales, Business Development & Account Management
+        if (preg_match('/\b(sale|sales|selling|account executive|business development|client acquisition|revenue|quota|closing)\b/', $context)) {
+            $target = $company ? "for {$company}" : "to drive business growth";
+            return "Drive revenue expansion and prospective client acquisition strategies {$target}, consistently identifying market opportunities, cultivating key stakeholder relationships, and closing high-value deals.";
+        }
+
+        // 4. Marketing, Content & Communications
+        if (preg_match('/\b(market|marketing|seo|social media|content|campaign|branding|copywriting|growth|advertis)\b/', $context)) {
+            $target = $company ? "at {$company}" : "to maximize brand reach";
+            return "Design and implement high-impact marketing campaigns {$target}, boosting audience engagement, optimizing digital channels, and driving measurable brand growth.";
+        }
+
+        // 5. Software Engineering & Development
+        if (preg_match('/\b(develop|developer|code|coding|software|engineer|engineering|programming|fullstack|backend|frontend|api|devops)\b/', $context)) {
+            $target = $company ? "at {$company}" : "for core technical systems";
+            return "Architect, develop, and maintain robust software solutions {$target}, writing clean, testable code and optimizing system performance, scalability, and uptime.";
+        }
+
+        // 6. UI/UX & Graphic Design
+        if (preg_match('/\b(design|ui|ux|graphic|figma|designer|wireframe|prototype|visual)\b/', $context)) {
+            $target = $company ? "for {$company}" : "across digital interfaces";
+            return "Design intuitive, user-centered digital interfaces and visual experiences {$target}, translating product requirements into elegant wireframes, prototypes, and production-ready assets.";
+        }
+
+        // 7. Finance, Accounting & Auditing
+        if (preg_match('/\b(finance|accounting|accountant|audit|bookkeeping|tax|payroll|budget|budgeting|ledger)\b/', $context)) {
+            $target = $company ? "at {$company}" : "to maintain fiscal integrity";
+            return "Oversee financial reporting, reconciliation, and budgetary compliance {$target}, maintaining rigorous fiscal controls and delivering actionable financial insights.";
+        }
+
+        // 8. Teaching, Education & Training
+        if (preg_match('/\b(teach|teacher|teaching|instructor|tutor|train|trainer|training|curriculum|students|cohort)\b/', $context)) {
+            $target = $company ? "at {$company}" : "for learner cohorts";
+            return "Deliver engaging instructional curricula and interactive training programs {$target}, evaluating learner progress and fostering an inclusive, high-achievement educational environment.";
+        }
+
+        // 9. Healthcare & Nursing
+        if (preg_match('/\b(nurse|nursing|patient|clinical|hospital|clinic|healthcare|medical|triage)\b/', $context)) {
+            $target = $company ? "at {$company}" : "in clinical settings";
+            return "Provide compassionate, evidence-based patient care and clinical coordination {$target}, adhering strictly to medical protocols, safety standards, and multidisciplinary treatment plans.";
+        }
+
+        // 10. Operations, Administration & Leadership
+        if (preg_match('/\b(manage|manager|management|lead|leadership|supervisor|director|operations|admin|office|logistics)\b/', $context)) {
+            $target = $company ? "at {$company}" : "across operational units";
+            return "Direct operational workflows and team deliverables {$target}, establishing key performance standards and implementing process improvements to achieve strategic milestones.";
+        }
+
+        // Universal factual fallback
+        $firstWord = strtolower(strtok($cleaned, " "));
+        $actionVerbs = ['lead', 'manage', 'organize', 'coordinate', 'create', 'build', 'conduct', 'supervise', 'handle', 'prepare', 'execute', 'implement'];
+        if (in_array($firstWord, $actionVerbs)) {
+            return ucfirst($cleaned) . ($company ? " for {$company}" : "") . ", demonstrating strong professional competence and driving consistent operational impact.";
+        }
+
+        return "Execute " . lcfirst($cleaned) . ($company ? " for {$company}" : "") . ", applying professional best practices to achieve consistent operational efficiency and organizational objectives.";
+    }
+
+    /**
+     * Fallback formatter to generate bullet points preserving context and facts.
+     */
+    protected function formatBulletsFallback(string $rawDesc, string $jobTitle = ''): string
+    {
+        $text = trim($rawDesc);
+        $company = '';
+        if (preg_match('/\b(?:for|at)\s+([A-Z0-9][A-Za-z0-9\s&.\'-]+)/', $text, $m)) {
+            $company = trim($m[1]);
+            $company = rtrim($company, '.,;!');
+        }
+
+        $context = strtolower($text . ' ' . $jobTitle);
+
+        if (preg_match('/\b(recruit|recruiter|recruiting|talent|hiring|headhunt|staffing|sourcing)\b/', $context)) {
+            $compStr = $company ? " for {$company}" : "";
+            return "• Coordinate end-to-end recruitment lifecycle and talent acquisition processes{$compStr}.\n" .
+                   "• Proactively source, screen, and assess qualified candidates across diverse role specifications.\n" .
+                   "• Collaborate closely with hiring managers to optimize applicant pipelines and reduce time-to-hire.\n" .
+                   "• Facilitate structured interview evaluations and provide seamless onboarding support to ensure candidate success.";
+        }
+
+        if (preg_match('/\b(customer|client service|support|complaint|refund|helpdesk|call center)\b/', $context)) {
+            $compStr = $company ? " for {$company}" : "";
+            return "• Deliver professional customer support and prompt inquiry resolution{$compStr}.\n" .
+                   "• Manage high-volume customer correspondence across phone, email, and live communication channels.\n" .
+                   "• Resolve complex client escalations while maintaining exceptional customer satisfaction metrics.\n" .
+                   "• Document common customer pain points and recommend workflow improvements to the leadership team.";
+        }
+
+        if (preg_match('/\b(sale|sales|selling|account executive|business development|client acquisition|revenue)\b/', $context)) {
+            $compStr = $company ? " for {$company}" : "";
+            return "• Drive revenue expansion and prospective client outreach{$compStr}.\n" .
+                   "• Manage the full sales cycle from initial lead qualification to contractual close.\n" .
+                   "• Cultivate enduring client partnerships and deliver persuasive product presentations.\n" .
+                   "• Consistently meet and exceed performance targets through strategic relationship management.";
+        }
+
+        // Generic line-by-line fallback preserving candidate's text
+        $lines = array_filter(array_map('trim', explode("\n", $text)));
+        $bullets = [];
+        foreach ($lines as $line) {
+            $line = ltrim($line, "*-• \t");
+            if (empty($line)) continue;
+            $line = preg_replace('/^(?:I\s+(?:was\s+|am\s+)?)/i', '', $line);
+            $bullets[] = "• " . ucfirst($line);
+        }
+
+        if (count($bullets) <= 1) {
+            $compStr = $company ? " for {$company}" : "";
+            $cleaned = !empty($bullets) ? $bullets[0] : ("• Execute key responsibilities" . $compStr);
+            return $cleaned . "\n" .
+                   "• Maintain high standards of quality, accuracy, and compliance across all daily deliverables.\n" .
+                   "• Collaborate actively with cross-functional stakeholders to optimize operational efficiency.";
+        }
+
+        return implode("\n", $bullets);
+    }
+
+    /**
+     * Fallback formatter to improve an existing professional summary preserving candidate background.
+     */
+    protected function formatStrengthenedSummaryFallback(string $existingSummary, string $prompt = ''): string
+    {
+        $text = trim($existingSummary);
+        $textClean = preg_replace('/^(?:I\s+(?:am\s+(?:an?|experienced)|have\s+been|work\s+as)?\s*)/i', '', $text);
+        $textClean = rtrim(trim($textClean), '.');
+
+        if (preg_match('/^(?:experienced|skilled|certified|dedicated|passionate|seasoned)\s+/i', $textClean)) {
+            return "Accomplished and " . lcfirst($textClean) . ". Proven track record of delivering measurable outcomes, optimizing workflows, and collaborating effectively across teams to achieve strategic goals.";
+        }
+
+        return "Results-driven professional with proven expertise as a " . lcfirst($textClean) . ". Recognized for strategic problem-solving, high-impact execution, and strong cross-functional collaboration. Dedicated to driving operational excellence and delivering measurable value in dynamic organizational environments.";
     }
 }

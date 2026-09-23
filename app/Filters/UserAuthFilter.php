@@ -38,7 +38,10 @@ class UserAuthFilter implements FilterInterface
             $remember = service('rememberer');
             $remember?->login();
             $currentURL = current_url();
-            $session->set('redirect_url', $currentURL);
+            $path = trim(parse_url($currentURL, PHP_URL_PATH) ?? '', '/');
+            if ($path !== '' && $path !== '/' && !str_contains($path, 'login') && !str_contains($path, 'register')) {
+                $session->set('redirect_url', $currentURL);
+            }
 
             if ($request->isAJAX()) {
                 return $response->setJSON([
@@ -55,7 +58,8 @@ class UserAuthFilter implements FilterInterface
         $user = $auth->user();
 
         // Check if user is active (if you have an active status field)
-        if (isset($user->status) && $user->status !== 'active') {
+        // Only block when status is explicitly a non-empty, non-active value
+        if (!empty($user->status) && $user->status !== 'active') {
             $auth->logout();
 
             if ($request->isAJAX()) {

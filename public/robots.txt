@@ -5,7 +5,8 @@ Disallow: /candidate/dashboard/
 Disallow: /login
 Disallow: /register
 Disallow: /auth/
-Disallow: /jobs/apply/
+Allow: /llms.txt
+Allow: /llms-full.txt
 Allow: /
 
 Sitemap: https://jobberrecruit.com/sitemap.xml

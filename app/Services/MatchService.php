@@ -26,29 +26,31 @@ class MatchService
 
         if ($candSkills !== [] && $jobSkills !== []) {
             $matched = count(array_intersect($candSkills, $jobSkills));
-            $ratio   = $matched / max(count($jobSkills), 1);
-            // Soften so a handful of strong matches reads well, cap at 1.
-            $earned += 60 * min(1.0, $ratio * 1.4);
-        } else {
-            $earned += 60 * 0.4; // neutral baseline when either side lacks skill data
+            if ($matched > 0) {
+                $ratio   = $matched / max(count($jobSkills), 1);
+                // Soften so a handful of strong matches reads well, cap at 1.
+                $earned += 60 * min(1.0, $ratio * 1.4);
+            }
         }
 
         // ── Industry alignment (15) ──────────────────────────────────────
         $candIndustry = $candidate->industry_id ?? null;
         $jobIndustry  = $job->industry_id ?? null;
         if (! empty($candIndustry) && ! empty($jobIndustry)) {
-            $earned += ((int) $candIndustry === (int) $jobIndustry) ? 15 : 3;
-        } else {
-            $earned += 15 * 0.5;
+            $earned += ((int) $candIndustry === (int) $jobIndustry) ? 15 : 0;
         }
 
         // ── Education alignment (15) ─────────────────────────────────────
-        $earned += 15 * $this->levelMatch((string) ($candidate->education_level ?? ''), (string) ($job->education_level ?? ''));
+        if (! empty($candidate->education_level) && ! empty($job->education_level)) {
+            $earned += 15 * $this->levelMatch((string) $candidate->education_level, (string) $job->education_level);
+        }
 
         // ── Experience signal (10) ───────────────────────────────────────
-        $earned += 10 * $this->experienceSignal($candidate->experience_years ?? null);
+        if (! empty($candidate->experience_years)) {
+            $earned += 10 * $this->experienceSignal($candidate->experience_years);
+        }
 
-        return max(35, min(99, (int) round($earned)));
+        return max(0, min(99, (int) round($earned)));
     }
 
     /**
@@ -85,21 +87,21 @@ class MatchService
         $a = strtolower(trim($a));
         $b = strtolower(trim($b));
         if ($a === '' || $b === '') {
-            return 0.6; // unknown on either side → neutral-positive
+            return 0.0;
         }
         if ($a === $b) {
             return 1.0;
         }
         // Partial credit if one contains the other (e.g. "bachelor" vs "bachelor's degree").
-        return (str_contains($a, $b) || str_contains($b, $a)) ? 0.8 : 0.4;
+        return (str_contains($a, $b) || str_contains($b, $a)) ? 0.8 : 0.2;
     }
 
     private function experienceSignal($years): float
     {
         $years = (int) $years;
         if ($years <= 0) {
-            return 0.5;
+            return 0.0;
         }
-        return min(1.0, 0.6 + ($years * 0.1));
+        return min(1.0, 0.4 + ($years * 0.1));
     }
 }

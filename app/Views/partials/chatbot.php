@@ -324,7 +324,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (res.success) {
                     addMessage('bot', res.response);
                 } else {
-                    addMessage('bot', "Sorry, I encountered an error. Please try again.");
+                    var msg = res.message || "Sorry, I encountered an error. Please try again.";
+                    if (res.redirect) {
+                        msg += '<br><a href="' + res.redirect + '" class="btn btn-sm btn-primary mt-2 d-inline-block text-white" style="text-decoration:none;padding:6px 14px;border-radius:6px;font-weight:600;"><i class="ti ti-crown me-1"></i> Upgrade Candidate Plan</a>';
+                    }
+                    addMessage('bot', msg);
                 }
             })
             .catch(function() {

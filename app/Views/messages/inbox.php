@@ -2,7 +2,9 @@
 <?= $this->extend(auth()->user()->user_type === 'employer' ? 'layouts/employer' : 'layouts/app') ?>
 
 <?= $this->section('styles') ?>
+<?php if (auth()->user()->user_type !== 'employer'): ?>
 <link rel="stylesheet" href="<?= base_url('css/candidate-profile.css') ?>">
+<?php endif; ?>
 <style>
 /* Premium Polish Layer */
 :root{

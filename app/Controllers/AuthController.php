@@ -138,10 +138,14 @@ class AuthController extends BaseController
         // 7️⃣ LOGIN ONCE (THIS IS THE ONLY LOGIN CALL)
         $this->auth->login($user, true);
 
-        // 8️⃣ Redirect
-        $redirectTo = ($user->user_type === 'employer')
-            ? base_url('employer/dashboard')
-            : base_url('candidate/dashboard');
+        // 8️⃣ Redirect to role dashboard
+        session()->remove('redirect_url');
+
+        $redirectTo = match ($user->user_type) {
+            'employer' => base_url('employer/dashboard'),
+            'admin'    => base_url('admin/dashboard'),
+            default    => base_url('candidate/dashboard'),
+        };
 
         return $this->response->setJSON([
             'status'       => 'success',
