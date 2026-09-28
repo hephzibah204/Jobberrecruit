@@ -69,8 +69,30 @@ if (isset($user)) {
   <div class="cp-col cp-sticky">
     <section class="card cp-id" aria-label="Candidate identity">
       <div class="cp-ava" aria-hidden="true">
-        <?php if (!empty($candidate->profile_picture)): ?>
-          <img src="<?= base_url($candidate->profile_picture) ?>" alt="img" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+        <?php
+            $rawPic = $candidate->profile_picture ?? '';
+            $candName = $candidate->full_name ?? 'Candidate';
+            $hasPic = false;
+            $picUrl = '';
+            if (!empty($rawPic)) {
+                if (filter_var($rawPic, FILTER_VALIDATE_URL) || str_starts_with($rawPic, 'http://') || str_starts_with($rawPic, 'https://')) {
+                    $hasPic = true;
+                    $picUrl = $rawPic;
+                } else {
+                    $cleanPath = ltrim($rawPic, '/\\');
+                    if (file_exists(FCPATH . $cleanPath)) {
+                        $hasPic = true;
+                        $picUrl = base_url($cleanPath);
+                    } elseif (file_exists(FCPATH . 'uploads/' . $cleanPath)) {
+                        $hasPic = true;
+                        $picUrl = base_url('uploads/' . $cleanPath);
+                    }
+                }
+            }
+            $fallbackAvatar = "https://ui-avatars.com/api/?name=" . urlencode(trim($candName)) . "&background=0A2F57&color=fff&size=128&bold=true";
+        ?>
+        <?php if ($hasPic): ?>
+          <img src="<?= esc($picUrl) ?>" alt="<?= esc($candName) ?>" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.onerror=null; this.src='<?= esc($fallbackAvatar) ?>';">
         <?php else: ?>
           <?= esc($candInitials) ?>
         <?php endif; ?>

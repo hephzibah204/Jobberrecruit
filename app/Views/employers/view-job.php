@@ -85,6 +85,16 @@
                                 <?php endif; ?>
                             </a>
                         </li>
+                        <?php if (in_array(strtolower($job->status ?? ''), ['open', 'active', 'success'])): ?>
+                        <li>
+                            <form action="<?= base_url('employer/jobs/close/' . $job->id) ?>" method="post" id="closeJobForm_<?= $job->id ?>" onsubmit="return confirm('Close this job? The listing will no longer accept new applications, but all existing applications will remain accessible.');">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="dropdown-item text-warning" style="border:none;background:none;width:100%;text-align:left;">
+                                    <svg aria-hidden="true" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 6px; color: var(--warning, #f59e0b);"><use href="#i-x"/></svg>Close Job
+                                </button>
+                            </form>
+                        </li>
+                        <?php endif; ?>
                         <li>
                             <hr class="dropdown-divider">
                         </li>

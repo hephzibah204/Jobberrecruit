@@ -1769,14 +1769,57 @@ main, .section, .jobs-layout, .container,
 
           <div class="apply-actions">
             <?php 
+              $isJobClosed = in_array(strtolower($job->status ?? ''), ['closed', 'paused', 'expired', 'rejected']);
               // check application access settings
               $requiresAuth = isset($job->application_access) && $job->application_access === 'authenticated';
             ?>
-            <?php if (auth()->loggedIn() || !$requiresAuth): ?>
+            <?php if ($isJobClosed): ?>
+              <div style="margin-bottom: 12px; padding: 14px 16px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 10px; text-align: center;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #b91c1c; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#b91c1c; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  Applications Closed
+                </div>
+                <p style="font-size: 0.8rem; margin: 0; color: #991b1b; line-height: 1.45;">
+                  This job listing has been closed by the employer and is no longer accepting new applications.
+                </p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-lg" disabled style="width:100%; justify-content:center; opacity:0.75; cursor:not-allowed; background:#94a3b8; border-color:#94a3b8; color:#fff;">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Position Closed
+              </button>
+            <?php elseif (auth()->loggedIn() || !$requiresAuth): ?>
               <?php if (($job->application_method ?? 'form') === 'form'): ?>
+                <?php
+                  $viewCandPct = 100;
+                  if (auth()->loggedIn() && ($user->user_type ?? '') !== 'employer') {
+                      $cModel = model(\App\Models\JobSeekerModel::class);
+                      $candObj = $candidate ?? $cModel->where('user_id', $user->id)->first();
+                      if ($candObj) {
+                          $viewCandPct = $candObj->getProfileCompletion();
+                      }
+                  }
+                ?>
+                <?php if (auth()->loggedIn() && ($user->user_type ?? '') !== 'employer' && $viewCandPct < 60): ?>
+                  <div style="margin-bottom: 12px; padding: 14px 16px; background: #fff8e6; border: 1.5px solid #fed7aa; border-radius: 10px; text-align: left;">
+                    <div style="font-weight: 700; font-size: 0.88rem; color: #9a3412; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#ea580c; flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      Profile Completion Required (<?= $viewCandPct ?>% / 60%)
+                    </div>
+                    <p style="font-size: 0.8rem; margin: 0 0 10px; color: #7c2d12; line-height: 1.45;">
+                      A minimum of 60% profile completion is required to apply for internal positions.
+                    </p>
+                    <a href="<?= base_url('candidate/profile/edit') ?>" class="btn btn-warning btn-sm" style="width:100%; justify-content:center; font-weight:700; font-size:0.82rem; background:#ea580c; border-color:#ea580c; color:#fff; display:inline-flex; align-items:center; gap:6px;">
+                      Complete Profile (<?= $viewCandPct ?>%) &rarr;
+                    </a>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-lg" disabled style="width:100%; justify-content:center; opacity:0.65; cursor:not-allowed;" title="Profile must be at least 60% complete to apply for internal jobs">
+                    Apply Now (Profile Below 60%)
+                  </button>
+                <?php else: ?>
                   <a href="<?= base_url("job/application/{$job->id}") ?>" class="btn btn-primary btn-lg apply-external" style="width:100%;justify-content:center">
-                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Apply Now
-                </a>
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Apply Now
+                  </a>
+                <?php endif; ?>
               <?php elseif (($job->application_method ?? 'form') === 'external'): ?>
                 <a href="<?= base_url("job/start-application/{$job->id}") ?>" target="_blank" rel="noopener" class="btn btn-primary btn-lg apply-external" style="width:100%;justify-content:center">
                   <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Apply on External Site

@@ -1,246 +1,272 @@
+<?php
+$skillLevels = [
+    1 => ['name' => 'Beginner', 'pct' => '20%'],
+    2 => ['name' => 'Elementary', 'pct' => '40%'],
+    3 => ['name' => 'Intermediate', 'pct' => '60%'],
+    4 => ['name' => 'Advanced', 'pct' => '80%'],
+    5 => ['name' => 'Expert', 'pct' => '100%']
+];
+?>
 <!DOCTYPE html>
-<html>
+<html lang="en-NG">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <style>
-    @page { margin: 28mm 24mm 24mm 24mm; }
-    body {
-        font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-        color: #1e293b;
-        font-size: 10pt;
-        line-height: 1.6;
-        margin: 0;
-        padding: 0;
-    }
-    .header {
-        margin-bottom: 28px;
-    }
-    .header .name {
-        font-size: 28pt;
-        font-weight: 300;
-        color: #0f172a;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        margin: 0 0 2px 0;
-    }
-    .header .subtitle {
-        font-size: 10pt;
-        color: #94a3b8;
-        font-weight: 400;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        margin: 0 0 12px 0;
-    }
-    .header .contact {
-        font-size: 8.5pt;
-        color: #64748b;
-        letter-spacing: 0.5px;
-        margin: 0;
-    }
-    .header .contact span.sep {
-        margin: 0 6px;
-        color: #cbd5e1;
-    }
-    .header-rule {
-        height: 1px;
-        background: #e2e8f0;
-        margin-bottom: 20px;
-    }
-    .section-title {
-        font-size: 8.5pt;
-        font-weight: 600;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 2.5px;
-        margin-bottom: 6px;
-    }
-    .section-content {
-        margin-bottom: 18px;
-        padding-left: 0;
-    }
-    .summary-text {
-        font-size: 10pt;
-        color: #334155;
-        line-height: 1.7;
-    }
-    .premium-summary {
-        background: #f4f6f8;
-        background: linear-gradient(90deg, rgba(14,30,66,0.04), rgba(14,30,66,0.02));
-        border-left: 4px solid #0f172a;
-        border-left: 4px solid var(--primary-color, #0f172a);
-        padding: 10px 12px;
-        border-radius: 6px;
-        margin-bottom: 8px;
-    }
-    .exp-item {
-        margin-bottom: 14px;
-    }
-    .exp-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-    }
-    .exp-position {
-        font-size: 10.5pt;
-        font-weight: 600;
-        color: #0f172a;
-    }
-    .exp-date {
-        font-size: 8.5pt;
-        color: #94a3b8;
-        font-weight: 400;
-    }
-    .exp-company {
-        font-size: 9.5pt;
-        color: #475569;
-        font-weight: 500;
-        margin-bottom: 2px;
-    }
-    .exp-desc {
-        font-size: 9.5pt;
-        color: #475569;
-        line-height: 1.6;
-    }
-    .exp-desc ul { margin: 3px 0; padding-left: 16px; }
-    .exp-desc li { margin-bottom: 2px; }
-    .edu-item {
-        margin-bottom: 10px;
-    }
-    .edu-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-    }
-    .edu-school {
-        font-size: 10.5pt;
-        font-weight: 600;
-        color: #0f172a;
-    }
-    .edu-year {
-        font-size: 8.5pt;
-        color: #94a3b8;
-    }
-    .edu-degree {
-        font-size: 9.5pt;
-        color: #475569;
-    }
-    .skill-items {
-        font-size: 9.5pt;
-        color: #475569;
-        line-height: 1.8;
-    }
-    .skill-items .dot {
-        color: #cbd5e1;
-        margin: 0 4px;
-    }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand: #2b3544; --brand-dark: #1a202c; --accent: #0861A9;
+  --text: #1a202c; --muted: #64748b; --bg: #ffffff;
+  --white: #ffffff; --border: #e2e8f0;
+}
+@page { size: A4; margin: 15mm 18mm; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: var(--text); font-size: 13.5px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+h1,h2,h3 { font-family: 'Inter', sans-serif; }
+a { color: var(--accent); text-decoration: none; }
+
+.cv-doc {
+  background: var(--white);
+  padding: 36px 40px;
+  color: #1a202c;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.cv-header {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+.cv-name {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -.03em;
+  margin-bottom: 4px;
+  display: inline-block;
+  border-bottom: 2.5px solid var(--accent);
+  padding-bottom: 4px;
+}
+.cv-headline {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.cv-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cv-contact-item { display: inline-flex; align-items: center; }
+
+.cv-section { margin-bottom: 22px; }
+.cv-section:last-child { margin-bottom: 0; }
+.cv-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.cv-entry { margin-bottom: 14px; }
+.cv-entry:last-child { margin-bottom: 0; }
+.cv-entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+.cv-entry-title { font-size: 13.5px; font-weight: 700; color: #0f172a; }
+.cv-entry-dates { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.cv-entry-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
+.cv-entry-body { font-size: 13px; color: #334155; line-height: 1.6; }
+.cv-entry-body ul { margin-left: 17px; margin-top: 4px; }
+.cv-entry-body li { margin-bottom: 3px; }
+
+.cv-summary { font-size: 13px; line-height: 1.7; color: #334155; }
+
+.cv-skills-wrap { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.cv-skill-item {
+  font-size: 12px;
+  font-weight: 500;
+  background: #f1f5f9;
+  color: #1e293b;
+  border-radius: 4px;
+  padding: 3px 9px;
+}
+
+.cv-lang-list { font-size: 13px; color: #334155; }
+.cv-cert-item { margin-bottom: 6px; font-size: 13px; color: #334155; }
+.cv-footer {
+  text-align: center;
+  padding-top: 20px;
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
 </style>
-<?= $this->include('candidate/resume/ai_replies_css') ?>
 </head>
 <body>
+  <article class="cv-doc" role="main">
+    <header class="cv-header">
+      <h1 class="cv-name"><?= esc($resume->full_name ?? 'Candidate Name') ?></h1>
+      <?php if (!empty($resume->title) && $resume->title !== 'My Professional Resume'): ?>
+        <p class="cv-headline"><?= esc($resume->title) ?></p>
+      <?php endif; ?>
 
-<div class="header">
-    <div class="name"><?= esc($resume->full_name ?? 'CANDIDATE NAME') ?></div>
-    <?php if (!empty($resume->title) && $resume->title !== 'My Professional Resume'): ?>
-    <div class="subtitle"><?= esc($resume->title) ?></div>
-    <?php endif; ?>
-    <div class="contact">
-        <?php if (!empty($resume->email)): ?><?= esc($resume->email) ?><?php endif; ?>
-        <?php if (!empty($resume->email) && (!empty($resume->phone) || !empty($resume->location) || !empty($resume->linkedin))): ?><span class="sep">/</span><?php endif; ?>
-        <?php if (!empty($resume->phone)): ?><?= esc($resume->phone) ?><?php endif; ?>
-        <?php if (!empty($resume->phone) && (!empty($resume->location) || !empty($resume->linkedin))): ?><span class="sep">/</span><?php endif; ?>
-        <?php if (!empty($resume->location)): ?><?= esc($resume->location) ?><?php endif; ?>
-        <?php if (!empty($resume->location) && !empty($resume->linkedin)): ?><span class="sep">/</span><?php endif; ?>
-        <?php if (!empty($resume->linkedin)): ?><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?><?php endif; ?>
+      <div class="cv-contact-row">
+        <?php if (!empty($resume->phone)): ?>
+          <span class="cv-contact-item"><?= esc($resume->phone) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($resume->email)): ?>
+          <span class="cv-contact-item"><?= esc($resume->email) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($resume->location)): ?>
+          <span class="cv-contact-item"><?= esc($resume->location) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($resume->linkedin)): ?>
+          <span class="cv-contact-item"><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?></span>
+        <?php endif; ?>
+      </div>
+    </header>
+
+    <div class="cv-body">
+      <?php if (!empty($resume->summary)): ?>
+        <section class="cv-section">
+          <h2 class="cv-section-title">Summary</h2>
+          <div class="cv-summary">
+            <?php 
+              $summary = $resume->summary;
+              if (strip_tags($summary) === $summary) {
+                  echo nl2br(esc($summary));
+              } else {
+                  echo strip_tags($summary, '<p><br><strong><em><ul><ol><li>');
+              }
+            ?>
+          </div>
+        </section>
+      <?php endif; ?>
+
+      <?php if (!empty($experiences)): ?>
+        <section class="cv-section">
+          <h2 class="cv-section-title">Experience</h2>
+          <?php foreach ($experiences as $exp): ?>
+            <?php
+              $pos = is_object($exp) ? ($exp->position ?? $exp->job_title ?? '') : ($exp['position'] ?? $exp['job_title'] ?? '');
+              $comp = is_object($exp) ? ($exp->company ?? '') : ($exp['company'] ?? '');
+              $start = is_object($exp) ? ($exp->start_date ?? '') : ($exp['start_date'] ?? '');
+              $end = is_object($exp) ? ($exp->end_date ?? '') : ($exp['end_date'] ?? '');
+              $isCur = is_object($exp) ? (!empty($exp->is_current)) : (!empty($exp['is_current']));
+              $desc = is_object($exp) ? ($exp->description ?? '') : ($exp['description'] ?? '');
+
+              $dateStr = '';
+              if ($start) $dateStr .= date('M Y', strtotime($start));
+              if ($isCur) {
+                $dateStr .= ' – Present';
+              } elseif ($end) {
+                $dateStr .= ' – ' . date('M Y', strtotime($end));
+              }
+            ?>
+            <div class="cv-entry">
+              <div class="cv-entry-header">
+                <span class="cv-entry-title"><?= esc($pos ?: 'Position') ?></span>
+                <span class="cv-entry-dates"><?= esc($dateStr) ?></span>
+              </div>
+              <?php if ($comp): ?>
+                <p class="cv-entry-sub"><?= esc($comp) ?></p>
+              <?php endif; ?>
+              <?php if (!empty($desc)): ?>
+                <div class="cv-entry-body">
+                  <?php 
+                    if (strip_tags($desc) === $desc) {
+                        $lines = array_filter(array_map('trim', explode("\n", $desc)));
+                        if (count($lines) > 0) {
+                            echo "<ul>";
+                            foreach ($lines as $line) echo "<li>" . esc($line) . "</li>";
+                            echo "</ul>";
+                        }
+                    } else {
+                        echo strip_tags($desc, '<p><br><strong><em><ul><ol><li>');
+                    }
+                  ?>
+                </div>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </section>
+      <?php endif; ?>
+
+      <?php if (!empty($education)): ?>
+        <section class="cv-section">
+          <h2 class="cv-section-title">Education</h2>
+          <?php foreach ($education as $edu): ?>
+            <?php
+              $deg = is_object($edu) ? ($edu->degree ?? '') : ($edu['degree'] ?? '');
+              $field = is_object($edu) ? ($edu->field_of_study ?? $edu->field ?? '') : ($edu['field_of_study'] ?? $edu['field'] ?? '');
+              $inst = is_object($edu) ? ($edu->institution ?? $edu->school ?? '') : ($edu['institution'] ?? $edu['school'] ?? '');
+              $grad = is_object($edu) ? ($edu->graduation_year ?? $edu->graduation_date ?? $edu->year ?? '') : ($edu['graduation_year'] ?? $edu['graduation_date'] ?? $edu['year'] ?? '');
+            ?>
+            <div class="cv-entry">
+              <div class="cv-entry-header">
+                <span class="cv-entry-title"><?= esc($deg ?: 'Degree') ?><?= !empty($field) ? ' in ' . esc($field) : '' ?></span>
+                <span class="cv-entry-dates"><?= esc($grad) ?></span>
+              </div>
+              <?php if ($inst): ?>
+                <p class="cv-entry-sub"><?= esc($inst) ?></p>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </section>
+      <?php endif; ?>
+
+      <?php if (!empty($skills)): ?>
+        <section class="cv-section">
+          <h2 class="cv-section-title">Skills</h2>
+          <div class="cv-skills-wrap">
+            <?php foreach ($skills as $skill): ?>
+              <?php
+                $sName = is_object($skill) ? ($skill->skill_name ?? $skill->name ?? '') : (is_array($skill) ? ($skill['skill_name'] ?? $skill['name'] ?? '') : (string)$skill);
+                if (empty($sName)) continue;
+              ?>
+              <span class="cv-skill-item"><?= esc($sName) ?></span>
+            <?php endforeach; ?>
+          </div>
+        </section>
+      <?php endif; ?>
+
+      <?php if (!empty($resume->languages)): ?>
+        <section class="cv-section">
+          <h2 class="cv-section-title">Languages</h2>
+          <div class="cv-lang-list">
+            <?= esc(is_array($resume->languages) ? implode(', ', $resume->languages) : $resume->languages) ?>
+          </div>
+        </section>
+      <?php endif; ?>
+
+      <?php if (!empty($resume->certs)): ?>
+        <section class="cv-section">
+          <h2 class="cv-section-title">Certifications</h2>
+          <?php 
+              $certsArr = is_array($resume->certs) ? $resume->certs : explode("\n", $resume->certs);
+              foreach ($certsArr as $c): 
+                  $c = trim($c);
+                  if (empty($c)) continue;
+          ?>
+            <div class="cv-cert-item">
+              <strong><?= esc($c) ?></strong>
+            </div>
+          <?php endforeach; ?>
+        </section>
+      <?php endif; ?>
     </div>
-</div>
-<div class="header-rule"></div>
 
-<?php if (!empty($resume->summary)): ?>
-<div class="section-title">Profile</div>
-<div class="section-content">
-    <?php $summary = $resume->summary; $plain = strip_tags($summary) === $summary; ?>
-    <?php if ($plain): ?>
-        <div class="summary-text"><?= nl2br(esc($summary)) ?></div>
-    <?php else: ?>
-        <?php $allowed = '<p><br><strong><em><ul><ol><li><h3><h4><div><span><table><thead><tbody><tr><th><td><img>'; ?>
-        <div class="summary-text"><?php echo strip_tags($summary, $allowed); ?></div>
-    <?php endif; ?>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($experiences)): ?>
-<div class="section-title">Experience</div>
-<div class="section-content">
-<?php foreach ($experiences as $exp): ?>
-<div class="exp-item">
-    <div class="exp-header">
-        <span class="exp-position"><?= esc($exp->position ?? 'Position') ?></span>
-        <span class="exp-date"><?= date('M Y', strtotime($exp->start_date ?? 'now')) ?> &ndash; <?= !empty($exp->is_current) ? 'Present' : (!empty($exp->end_date) ? date('M Y', strtotime($exp->end_date)) : '') ?></span>
+    <div class="cv-footer">
+      JobberRecruit &bull; Minimalist Clean Resume &bull; jobberrecruit.com
     </div>
-    <div class="exp-company"><?= esc($exp->company ?? 'Company') ?></div>
-    <?php if (!empty($exp->description)): ?>
-    <div class="exp-desc"><?= nl2br(esc($exp->description)) ?></div>
-    <?php endif; ?>
-</div>
-<?php endforeach; ?>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($education)): ?>
-<div class="section-title">Education</div>
-<div class="section-content">
-<?php foreach ($education as $edu): ?>
-<div class="edu-item">
-    <div class="edu-header">
-        <span class="edu-school"><?= esc($edu->institution ?? 'Institution') ?></span>
-        <span class="edu-year"><?= !empty($edu->graduation_date) ? date('Y', strtotime($edu->graduation_date)) : '' ?></span>
-    </div>
-    <div class="edu-degree"><?= esc($edu->degree ?? 'Degree') ?><?= !empty($edu->field_of_study) ? ' in ' . esc($edu->field_of_study) : '' ?></div>
-</div>
-<?php endforeach; ?>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($skills)): ?>
-<div class="section-title">Skills</div>
-<div class="section-content">
-    <div class="skill-items">
-        <?php
-        $skillNames = array_map(function($s) { return $s->skill_name ?? ''; }, $skills);
-        $skillNames = array_filter($skillNames);
-        echo esc(implode(' <span class="dot">·</span> ', $skillNames));
-        ?>
-    </div>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($resume->certs)): ?>
-<div class="section-title">Certifications</div>
-<div class="section-content">
-    <div class="skill-items">
-        <?php 
-            $certs = explode("\n", $resume->certs);
-            $certs = array_map('trim', $certs);
-            $certs = array_filter($certs);
-            echo esc(implode(' <span class="dot">·</span> ', $certs));
-        ?>
-    </div>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($resume->languages)): ?>
-<div class="section-title">Languages</div>
-<div class="section-content">
-    <div class="skill-items">
-        <?php 
-            $langs = explode(",", $resume->languages);
-            $langs = array_map('trim', $langs);
-            $langs = array_filter($langs);
-            echo esc(implode(' <span class="dot">·</span> ', $langs));
-        ?>
-    </div>
-</div>
-<?php endif; ?>
-
+  </article>
 </body>
 </html>

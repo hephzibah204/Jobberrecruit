@@ -135,7 +135,8 @@
   margin-bottom: 24px;
 }
 @media (max-width: 1100px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .stats { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .stats { grid-template-columns: 1fr 1fr; gap: 10px; } }
+@media (max-width: 360px) { .stats { grid-template-columns: 1fr; } }
 .stat {
   background: #fff;
   border: 1px solid var(--border);
@@ -482,6 +483,53 @@
     </div>
   </section>
 
+  <!-- Employer Aptitude Test Invitations (Action Required) -->
+  <?php
+    $pendingOrActiveTests = array_filter($aptitudeInvitations ?? [], static function($inv) {
+        $now = time();
+        $isCompleted = ($inv->status === 'completed' || (!empty($inv->attempt_status) && $inv->attempt_status === 'submitted'));
+        $isExpired = (!$isCompleted && !empty($inv->due_date) && strtotime($inv->due_date) < $now);
+        return !$isCompleted && !$isExpired;
+    });
+  ?>
+  <?php if (!empty($pendingOrActiveTests)): ?>
+  <section class="card" style="margin-bottom:24px;border-left:4px solid var(--accent);background:linear-gradient(to right, #fff, #fefbf6);" aria-labelledby="dash-inv-title">
+    <div class="card-head" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="card-title" id="dash-inv-title" style="font-size:.95rem;color:var(--brand-deep);display:flex;align-items:center;gap:8px;">
+          <svg aria-hidden="true" width="18" height="18" style="color:var(--accent);"><use href="#i-check-c"/></svg>
+          Employer Aptitude Test Invitations
+        </span>
+        <span class="pill pill--pending"><?= count($pendingOrActiveTests) ?> Action Required</span>
+      </div>
+      <a href="<?= base_url('aptitude') ?>" class="btn btn-accent btn-sm">View Test Centre <svg aria-hidden="true" width="14" height="14"><use href="#i-arrow-r"/></svg></a>
+    </div>
+    <div class="card-body" style="padding:14px 18px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+        <?php foreach (array_slice($pendingOrActiveTests, 0, 3) as $inv): 
+          $isInProgress = (!empty($inv->attempt_status) && $inv->attempt_status === 'in_progress');
+        ?>
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:.78rem;font-weight:700;color:var(--brand);"><?= esc($inv->company_name ?: 'Verified Employer') ?></span>
+              <span class="pill <?= $isInProgress ? 'pill--brand' : 'pill--pending' ?>"><?= $isInProgress ? 'In Progress' : 'Not Started' ?></span>
+            </div>
+            <div style="font-size:.88rem;font-weight:700;color:var(--brand-deep);"><?= esc($inv->test_title ?: 'Aptitude Assessment') ?></div>
+            <div style="font-size:.74rem;color:var(--muted);">Role: <b><?= esc($inv->job_title ?: 'Direct Application') ?></b></div>
+            <div style="margin-top:auto;padding-top:6px;">
+              <?php if ($isInProgress && !empty($inv->attempt_id)): ?>
+                <a href="<?= base_url('aptitude/test/' . $inv->attempt_id) ?>" class="btn btn-accent btn-sm btn-block">Continue Test</a>
+              <?php else: ?>
+                <a href="<?= base_url('aptitude/invite/' . $inv->invitation_code) ?>" class="btn btn-primary btn-sm btn-block">Start Test</a>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+  <?php endif; ?>
+
   <!-- KPIs stats grid -->
   <section class="stats" aria-label="Your activity">
     <div class="stat">
@@ -685,69 +733,94 @@
 
         <?php if (!empty($profileChecklist)): ?>
           <?php foreach ($profileChecklist as $task): ?>
-            <div class="task <?= $task['done'] ? 'done' : 'todo' ?>">
-              <svg aria-hidden="true"><use href="<?= $task['done'] ? '#i-check-c' : '#i-circle' ?>"/></svg>
-              <span><?= esc($task['title']) ?> (<?= $task['max_points'] ?>%)</span>
+            <div class="task <?= $task['done'] ? 'done' : 'todo' ?> <?= !empty($task['is_prominent']) ? 'task--prominent' : '' ?>" style="<?= !empty($task['is_prominent']) ? 'background:#f0f7ff;border:1px solid #bae6fd;border-radius:8px;padding:6px 10px;margin-bottom:4px;' : '' ?>">
+              <svg aria-hidden="true" style="<?= !empty($task['is_prominent']) ? 'color:var(--brand);' : '' ?>"><use href="<?= $task['done'] ? '#i-check-c' : '#i-circle' ?>"/></svg>
+              <span style="<?= !empty($task['is_prominent']) ? 'font-weight:600;' : '' ?>">
+                <?= esc($task['title']) ?> (<?= $task['max_points'] ?>%)
+                <?php if (!empty($task['is_prominent'])): ?>
+                  <span style="font-size:0.64rem;padding:1px 6px;border-radius:10px;background:#e0f2fe;color:#0369a1;font-weight:700;margin-left:4px;">Priority</span>
+                <?php elseif (!empty($task['optional'])): ?>
+                  <span style="font-size:0.66rem;color:var(--muted);font-weight:400;">(Optional)</span>
+                <?php endif; ?>
+              </span>
               <?php if (!$task['done']): ?>
-                <a href="<?= esc($task['url']) ?>" style="margin-left:auto;font-size:0.75rem;white-space:nowrap;">Complete →</a>
+                <a href="<?= esc($task['url']) ?>" style="margin-left:auto;font-size:0.75rem;white-space:nowrap;font-weight:600;">Complete →</a>
               <?php endif; ?>
             </div>
           <?php endforeach; ?>
         <?php else: ?>
           <div class="task <?= !empty($candidate->full_name) && !empty($candidate->phone) ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="<?= !empty($candidate->full_name) && !empty($candidate->phone) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Personal details added (15%)</span>
+            <span>Personal Information (15%)</span>
             <?php if (empty($candidate->full_name) || empty($candidate->phone)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+              <a href="<?= base_url('candidate/profile/edit#sec-personal') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
             <?php endif; ?>
           </div>
           <div class="task <?= !empty($candidate->job_title) && !empty($candidate->employment_type) ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="<?= !empty($candidate->job_title) && !empty($candidate->employment_type) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Job preferences set (15%)</span>
+            <span>Job Preference (15%)</span>
             <?php if (empty($candidate->job_title) || empty($candidate->employment_type)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+              <a href="<?= base_url('candidate/profile/edit#sec-preferences') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
             <?php endif; ?>
           </div>
-          <div class="task <?= !empty($candidate->experience_years) ? 'done' : 'todo' ?>">
-            <svg aria-hidden="true"><use href="<?= !empty($candidate->experience_years) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Work experience added (20%)</span>
-            <?php if (empty($candidate->experience_years)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
-            <?php endif; ?>
-          </div>
-          <div class="task <?= !empty($candidate->education_level) ? 'done' : 'todo' ?>">
-            <svg aria-hidden="true"><use href="<?= !empty($candidate->education_level) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Education history added (12%)</span>
-            <?php if (empty($candidate->education_level)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
-            <?php endif; ?>
-          </div>
-          <div class="task <?= !empty($candidate->resume) ? 'done' : 'todo' ?>">
-            <svg aria-hidden="true"><use href="<?= !empty($candidate->resume) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Resume uploaded (12%)</span>
+          <div class="task <?= !empty($candidate->resume) ? 'done' : 'todo' ?> task--prominent" style="background:#f0f7ff;border:1px solid #bae6fd;border-radius:8px;padding:6px 10px;margin-bottom:4px;">
+            <svg aria-hidden="true" style="color:var(--brand);"><use href="<?= !empty($candidate->resume) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span style="font-weight:600;">Resume (CV Document) (12%) <span style="font-size:0.64rem;padding:1px 6px;border-radius:10px;background:#e0f2fe;color:#0369a1;font-weight:700;margin-left:4px;">Priority</span></span>
             <?php if (empty($candidate->resume)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
-            <?php endif; ?>
-          </div>
-          <div class="task <?= !empty($candidate->skills) ? 'done' : 'todo' ?>">
-            <svg aria-hidden="true"><use href="<?= !empty($candidate->skills) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Skills added (10%)</span>
-            <?php if (empty($candidate->skills)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+              <a href="<?= base_url('candidate/profile/edit#sec-resume') ?>" style="margin-left:auto;font-size:0.75rem;font-weight:600;">Upload CV →</a>
             <?php endif; ?>
           </div>
           <div class="task <?= !empty($candidate->bio) ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="<?= !empty($candidate->bio) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Professional summary added (10%)</span>
+            <span>Professional Summary (10%)</span>
             <?php if (empty($candidate->bio)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+              <a href="<?= base_url('candidate/profile/edit#sec-summary') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <?php
+            $expCountFallback = model(\App\Models\JobSeekerExperienceModel::class)->where('job_seeker_id', $candidate->id)->countAllResults();
+            $eduCountFallback = model(\App\Models\JobSeekerEducationModel::class)->where('job_seeker_id', $candidate->id)->countAllResults();
+          ?>
+          <div class="task <?= $expCountFallback > 0 ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= $expCountFallback > 0 ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Work Experience (20%)</span>
+            <?php if ($expCountFallback === 0): ?>
+              <a href="<?= base_url('candidate/profile/edit#sec-experience') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= $eduCountFallback > 0 ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= $eduCountFallback > 0 ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Education History (12%)</span>
+            <?php if ($eduCountFallback === 0): ?>
+              <a href="<?= base_url('candidate/profile/edit#sec-education') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->skills) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->skills) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Skills (10%)</span>
+            <?php if (empty($candidate->skills)): ?>
+              <a href="<?= base_url('candidate/profile/edit#sec-skills') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
             <?php endif; ?>
           </div>
           <div class="task <?= !empty($candidate->portfolio) ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="<?= !empty($candidate->portfolio) ? '#i-check-c' : '#i-circle' ?>"/></svg>
-            <span>Portfolio & certs added (6%)</span>
+            <span>Portfolio &amp; Work Samples (3%) <span style="font-size:0.66rem;color:var(--muted);font-weight:400;">(Optional)</span></span>
             <?php if (empty($candidate->portfolio)): ?>
-              <a href="<?= base_url('candidate/profile/edit') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+              <a href="<?= base_url('candidate/profile/edit#sec-portfolio') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->certifications) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->certifications) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Licences &amp; Certifications (2%) <span style="font-size:0.66rem;color:var(--muted);font-weight:400;">(Optional)</span></span>
+            <?php if (empty($candidate->certifications)): ?>
+              <a href="<?= base_url('candidate/profile/edit#sec-certifications') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
+            <?php endif; ?>
+          </div>
+          <div class="task <?= !empty($candidate->languages) ? 'done' : 'todo' ?>">
+            <svg aria-hidden="true"><use href="<?= !empty($candidate->languages) ? '#i-check-c' : '#i-circle' ?>"/></svg>
+            <span>Languages (1%) <span style="font-size:0.66rem;color:var(--muted);font-weight:400;">(Optional)</span></span>
+            <?php if (empty($candidate->languages)): ?>
+              <a href="<?= base_url('candidate/profile/edit#sec-languages') ?>" style="margin-left:auto;font-size:0.75rem;">Complete →</a>
             <?php endif; ?>
           </div>
         <?php endif; ?>
@@ -848,7 +921,6 @@
     <?php endif; ?>
   </section>
 
-</main>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>

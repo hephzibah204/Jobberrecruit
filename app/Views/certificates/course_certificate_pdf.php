@@ -6,7 +6,7 @@
 <style>
 @page {
     size: 297mm 210mm landscape;
-    margin: 8mm 12mm;
+    margin: 0;
 }
 * {
     box-sizing: border-box;
@@ -14,13 +14,22 @@
     padding: 0;
 }
 body {
-    background-color: #fdfbf4;
+    background-color: #ffffff;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     color: #15233a;
     -webkit-print-color-adjust: exact;
 }
+.cert-container {
+    position: relative;
+    width: 1056px;
+    height: 748px;
+    margin: 0 auto;
+    background-color: #fdfbf4;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
 .cert-border-outer {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     right: 0;
@@ -28,29 +37,30 @@ body {
     border: 2pt solid #0A2F57;
 }
 .cert-border-inner {
-    position: fixed;
-    top: 2mm;
-    left: 2mm;
-    right: 2mm;
-    bottom: 2mm;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
     border: 1pt solid #C9A24B;
 }
 .cert-corner {
-    position: fixed;
-    width: 12mm;
-    height: 12mm;
+    position: absolute;
+    width: 45px;
+    height: 45px;
     border: 0 solid #ED9020;
 }
-.cc-tl { top: 1mm; left: 1mm; border-top: 2.5pt solid #ED9020; border-left: 2.5pt solid #ED9020; }
-.cc-tr { top: 1mm; right: 1mm; border-top: 2.5pt solid #ED9020; border-right: 2.5pt solid #ED9020; }
-.cc-bl { bottom: 1mm; left: 1mm; border-bottom: 2.5pt solid #ED9020; border-left: 2.5pt solid #ED9020; }
-.cc-br { bottom: 1mm; right: 1mm; border-bottom: 2.5pt solid #ED9020; border-right: 2.5pt solid #ED9020; }
+.cc-tl { top: 4px; left: 4px; border-top: 2.5pt solid #ED9020; border-left: 2.5pt solid #ED9020; }
+.cc-tr { top: 4px; right: 4px; border-top: 2.5pt solid #ED9020; border-right: 2.5pt solid #ED9020; }
+.cc-bl { bottom: 4px; left: 4px; border-bottom: 2.5pt solid #ED9020; border-left: 2.5pt solid #ED9020; }
+.cc-br { bottom: 4px; right: 4px; border-bottom: 2.5pt solid #ED9020; border-right: 2.5pt solid #ED9020; }
 
 .cert-content {
     position: relative;
     z-index: 10;
     text-align: center;
     width: 100%;
+    padding-top: 40px; /* offset the outer borders */
 }
 .logo-wrap {
     margin-top: 3mm;
@@ -263,6 +273,7 @@ body {
   $issuedAt = date('F j, Y', strtotime($certificate['issued_at'] ?? 'now'));
   $logoPath = file_exists(FCPATH . 'auth/img/logo.png') ? FCPATH . 'auth/img/logo.png' : base_url('auth/img/logo.png');
 ?>
+<div class="cert-container">
     <div class="cert-border-outer"></div>
     <div class="cert-border-inner"></div>
     <span class="cert-corner cc-tl"></span>
@@ -405,5 +416,6 @@ body {
           <?php endif; ?>
         <?php endforeach; ?>
     </div>
+</div>
 </body>
 </html>

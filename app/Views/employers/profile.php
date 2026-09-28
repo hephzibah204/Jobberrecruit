@@ -225,7 +225,7 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
   </div>
   <div class="page-actions">
     <?php
-      $companySlug = !empty($employer->company_name) ? url_title($employer->company_name, '-', true) : ($employer->id ?? '');
+      $companySlug = !empty(trim($employer->company_name ?? '')) ? url_title(trim($employer->company_name), '-', true) : ($employer->id ?? '');
     ?>
     <a href="<?= base_url('employer/' . esc($companySlug)) ?>" class="emp-btn emp-btn-outline emp-btn-sm" target="_blank"><svg aria-hidden="true" width="14" height="14"><use href="#i-eye"/></svg> View Public Profile</a>
     <a href="<?= base_url('employer/profile/edit') ?>" class="emp-btn emp-btn-primary emp-btn-sm"><svg aria-hidden="true" width="14" height="14"><use href="#i-edit"/></svg> Edit Profile</a>
@@ -530,7 +530,7 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
 <?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
-<a href="<?= base_url('employer/' . esc($employer->user_id ?? '')) ?>" class="emp-btn emp-btn-outline emp-btn-sm"><svg aria-hidden="true" width="14" height="14"><use href="#i-eye"/></svg> View Public Profile</a>
+<a href="<?= base_url('employer/' . esc($companySlug)) ?>" target="_blank" class="emp-btn emp-btn-outline emp-btn-sm"><svg aria-hidden="true" width="14" height="14"><use href="#i-eye"/></svg> View Public Profile</a>
 <a href="<?= base_url('employer/profile/edit') ?>" class="emp-btn emp-btn-primary emp-btn-sm"><svg aria-hidden="true" width="14" height="14"><use href="#i-edit"/></svg> Edit Profile</a>
 <?= $this->endSection() ?>
 

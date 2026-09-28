@@ -195,7 +195,7 @@
                         <?php endif; ?>
 
                         <h3 class="job-title"><?= esc($job->title) ?></h3>
-                        <div class="job-company"><?= esc($job->company_name ?? ($job->employer_name ?? 'Verified Employer')) ?></div>
+                        <div class="job-company"><?= !empty($job->is_anonymous) ? 'Confidential Employer' : esc($job->company_name ?? ($job->employer_name ?? 'Verified Employer')) ?></div>
                         
                         <div class="job-meta">
                             <?php if (!empty($job->location) || !empty($job->state_name)): ?>
@@ -204,8 +204,12 @@
                             <?php if (!empty($job->job_type) || !empty($job->employment_type)): ?>
                                 <span>💼 <?= esc(ucwords(str_replace('_', ' ', $job->job_type ?? $job->employment_type))) ?></span>
                             <?php endif; ?>
-                            <?php if (!empty($job->salary_min) || !empty($job->salary_max) || !empty($job->salary)): ?>
-                                <span>₦ <?= !empty($job->salary_min) ? number_format($job->salary_min) . ' - ' . number_format($job->salary_max) : esc($job->salary) ?></span>
+                            <?php if (!empty($job->salary_details) && $job->salary_details !== 'Negotiable'): ?>
+                                <span>₦ <?= esc($job->salary_details) ?></span>
+                            <?php elseif (!empty($job->salary_min) || !empty($job->salary_max)): ?>
+                                <span>₦ <?= number_format($job->salary_min ?? 0) ?> - <?= number_format($job->salary_max ?? 0) ?></span>
+                            <?php elseif (!empty($job->salary)): ?>
+                                <span>₦ <?= esc($job->salary) ?></span>
                             <?php endif; ?>
                         </div>
 

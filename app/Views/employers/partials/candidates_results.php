@@ -31,8 +31,29 @@ $hasUnlimitedAccess = $user ? $creditService->hasUnlimitedAccess($user->id) : fa
         $isUnlocked = in_array($c->id, $unlockedIds) || ($hasUnlimitedAccess ?? false);
         ?>
         <div class="cand-card">
-            <?php if (!empty($c->profile_picture)): ?>
-                <img src="<?= base_url($c->profile_picture) ?>" alt="<?= esc($c->full_name) ?>" class="ava ava--round cc-ava" style="object-fit: cover; width: 42px; height: 42px;">
+            <?php
+                $rawPic = $c->profile_picture ?? '';
+                $hasPic = false;
+                $picUrl = '';
+                if (!empty($rawPic)) {
+                    if (filter_var($rawPic, FILTER_VALIDATE_URL) || str_starts_with($rawPic, 'http://') || str_starts_with($rawPic, 'https://')) {
+                        $hasPic = true;
+                        $picUrl = $rawPic;
+                    } else {
+                        $cleanPath = ltrim($rawPic, '/\\');
+                        if (file_exists(FCPATH . $cleanPath)) {
+                            $hasPic = true;
+                            $picUrl = base_url($cleanPath);
+                        } elseif (file_exists(FCPATH . 'uploads/' . $cleanPath)) {
+                            $hasPic = true;
+                            $picUrl = base_url('uploads/' . $cleanPath);
+                        }
+                    }
+                }
+                $fallbackAvatar = "https://ui-avatars.com/api/?name=" . urlencode(trim($c->full_name ?? 'Candidate')) . "&background=0A2F57&color=fff&size=128&bold=true";
+            ?>
+            <?php if ($hasPic): ?>
+                <img src="<?= esc($picUrl) ?>" alt="<?= esc($c->full_name) ?>" class="ava ava--round cc-ava" style="object-fit: cover; width: 42px; height: 42px;" onerror="this.onerror=null; this.src='<?= esc($fallbackAvatar) ?>';">
             <?php else: ?>
                 <span class="ava ava--round cc-ava" aria-hidden="true"><?= esc($initials) ?></span>
             <?php endif; ?>

@@ -6,15 +6,18 @@ use App\Models\JobQueueModel;
 
 class CronController extends BaseController
 {
+    protected function validateCronToken(): bool
+    {
+        $token = $this->request->getGet('token') ?? ($_GET['token'] ?? null);
+        $expectedToken = env('cron_token') ?: env('CRON_TOKEN', 'jobber_cron_secret_123');
+
+        return !empty($token) && hash_equals(trim((string)$expectedToken), trim((string)$token));
+    }
+
     public function processQueue()
     {
-        // Simple security check (optional, but good practice to prevent abuse)
-        // You can pass a token e.g., /cron/process-queue?token=YOUR_SECRET_TOKEN
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123'); // Set this in your .env
-        
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $queueModel = new JobQueueModel();
@@ -78,11 +81,8 @@ class CronController extends BaseController
 
     public function processEmailQueue()
     {
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-        
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $queueModel = new JobQueueModel();
@@ -163,11 +163,8 @@ class CronController extends BaseController
      */
     public function archiveInactiveAccounts()
     {
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-        
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $db = \Config\Database::connect();
@@ -204,19 +201,16 @@ class CronController extends BaseController
      */
     public function runAllAutomations()
     {
-        @set_time_limit(120);
+        @set_time_limit(180);
         @ignore_user_abort(true);
 
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $results = [];
 
-        // 1. Process Pending Queue Items (Newsletters, etc. - 15 items per batch)
+        // 1. Process Pending Queue Items (Newsletters, Transactional, etc. - 15 items per batch)
         try {
             $queueModel = new JobQueueModel();
             $pendingJobs = $queueModel->where('status', 'pending')->findAll(15);
@@ -228,7 +222,9 @@ class CronController extends BaseController
                 $data = $payload['data'] ?? [];
 
                 $sent = false;
-                if (!empty($data['email'])) {
+                if ($type === 'transactional_email' || (!empty($data['to']) && !empty($data['message']))) {
+                    $sent = $this->sendTransactionalEmail($data);
+                } elseif (!empty($data['email'])) {
                     $sent = $this->sendEmail($data['email'], $data['subject'] ?? 'Notification', $data['content'] ?? '');
                 }
 
@@ -289,13 +285,13 @@ class CronController extends BaseController
 
         // 3. Run Subscription Expiry Reminders
         try {
-            $subModel  = new \App\Models\UserSubscriptionModel();
-            $planModel = new \App\Models\EmployerPlanModel();
-            $userModel = new \App\Models\UserModel();
-            $emailNotif= new \App\Services\EmailNotificationService();
+            $subModel   = new \App\Models\UserSubscriptionModel();
+            $planModel  = new \App\Models\PlanModel();
+            $userModel  = new \App\Models\UserModel();
+            $emailNotif = new \App\Services\EmailNotificationService();
 
             $now = time();
-            $activeSubs = $subModel->where('status', 'active')->where('ends_at IS NOT NULL', null, false)->findAll();
+            $activeSubs = $subModel->where('is_active', 1)->where('ends_at IS NOT NULL', null, false)->findAll();
             $sSent = 0;
 
             foreach ($activeSubs as $s) {
@@ -305,17 +301,22 @@ class CronController extends BaseController
                 $plan = $planModel->find($sObj->plan_id);
 
                 if ($user && $plan) {
-                    if ($diffDays <= 3.5 && $diffDays >= 2.5 && !$sObj->expiry_reminder_3d_sent) {
-                        $emailNotif->sendSubscriptionExpiringNotification($user, (object)$plan, $sObj, 3);
+                    $subDetails = [
+                        'plan_name' => $plan->name ?? 'Subscription Plan',
+                        'ends_at'   => $sObj->ends_at,
+                    ];
+
+                    if ($diffDays <= 3.5 && $diffDays >= 2.5 && empty($sObj->expiry_reminder_3d_sent)) {
+                        $emailNotif->sendSubscriptionExpiringNotification($user, $subDetails, 3);
                         $subModel->update($sObj->id, ['expiry_reminder_3d_sent' => 1]);
                         $sSent++;
-                    } elseif ($diffDays <= 1.5 && $diffDays >= 0.5 && !$sObj->expiry_reminder_1d_sent) {
-                        $emailNotif->sendSubscriptionExpiringNotification($user, (object)$plan, $sObj, 1);
+                    } elseif ($diffDays <= 1.5 && $diffDays >= 0.5 && empty($sObj->expiry_reminder_1d_sent)) {
+                        $emailNotif->sendSubscriptionExpiringNotification($user, $subDetails, 1);
                         $subModel->update($sObj->id, ['expiry_reminder_1d_sent' => 1]);
                         $sSent++;
-                    } elseif ($diffDays < 0 && !$sObj->expired_notice_sent) {
-                        $emailNotif->sendSubscriptionExpiredNotification($user, (object)$plan);
-                        $subModel->update($sObj->id, ['status' => 'expired', 'expired_notice_sent' => 1]);
+                    } elseif ($diffDays < 0 && empty($sObj->expired_notice_sent)) {
+                        $emailNotif->sendSubscriptionExpiredNotification($user, $subDetails);
+                        $subModel->update($sObj->id, ['is_active' => 0, 'expired_notice_sent' => 1]);
                         $sSent++;
                     }
                 }
@@ -362,11 +363,8 @@ class CronController extends BaseController
      */
     public function sendJobAlerts()
     {
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $frequency = $this->request->getGet('frequency') ?: 'daily';
@@ -386,11 +384,8 @@ class CronController extends BaseController
      */
     public function sendWeeklyDigest()
     {
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $jobAlertService = new \App\Services\JobAlertService();
@@ -415,7 +410,7 @@ class CronController extends BaseController
         $email->setSubject($subject);
         $email->setMessage($content);
         $email->setMailType('html');
-        $email->setSMTPTimeout(5);
+        $email->SMTPTimeout = 5;
 
         if ($email->send()) {
             return true;
@@ -432,11 +427,13 @@ class CronController extends BaseController
         $email = \Config\Services::email(false);
         \Config\Services::$bypassQueue = false;
 
-        $email->setFrom($config->fromEmail, $config->fromName);
+        $fromEmail = !empty($data['from_email']) ? $data['from_email'] : $config->fromEmail;
+        $fromName  = !empty($data['from_name']) ? $data['from_name'] : $config->fromName;
+        $email->setFrom($fromEmail, $fromName);
         $email->setTo($data['to']);
         $email->setSubject($data['subject']);
         $email->setMessage($data['message']);
-        $email->setSMTPTimeout(5);
+        $email->SMTPTimeout = 5;
 
         if (!empty($data['alt_message'])) {
             $email->setAltMessage($data['alt_message']);

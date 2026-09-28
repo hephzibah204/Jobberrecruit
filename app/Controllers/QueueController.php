@@ -98,6 +98,11 @@ class QueueController extends BaseController
         $email = \Config\Services::email(false);
         \Config\Services::$bypassQueue = false;
 
+        $config = config('Email');
+        $fromEmail = !empty($data['from_email']) ? $data['from_email'] : $config->fromEmail;
+        $fromName  = !empty($data['from_name']) ? $data['from_name'] : $config->fromName;
+        $email->setFrom($fromEmail, $fromName);
+
         $email->setTo($data['to']);
         $email->setSubject($data['subject']);
         $email->setMessage($data['message']);

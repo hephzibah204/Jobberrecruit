@@ -39,8 +39,8 @@ $profilePct = (int) ($profileCompletion ?? 75);
 $dashOffset = 264 * (1 - ($profilePct / 100));
 
 // Profile Checklist dynamic resolver
-$taskDetails = !empty($employer->company_name);
-$taskContact = !empty($employer->company_email) || !empty($employer->company_phone);
+$taskDetails = !empty($employer->company_name) && (!empty($employer->description) || !empty($employer->company_address) || !empty($employer->website));
+$taskContact = !empty($employer->contact_email) || !empty($employer->contact_phone) || !empty($employer->company_email) || !empty($employer->company_phone);
 $taskJob = $totalJobs > 0;
 $taskLogo = !empty($employer->logo);
 ?>
@@ -51,7 +51,12 @@ $taskLogo = !empty($employer->logo);
     <h1><?= esc($greeting) ?>, <?= esc($employer->company_name ?? 'Employer') ?> 👋</h1>
     <p>You have <b><?= number_format($totalApplicants) ?> new application<?= $totalApplicants == 1 ? '' : 's' ?></b> waiting for review today.</p>
   </div>
-  <span class="greet-date"><svg aria-hidden="true"><use href="#i-calendar"/></svg> <?= date('l, d F Y') ?></span>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <a href="https://wa.me/2349014808902?text=Hello%20JobberRecruit%20Support%2C%20I%20am%20an%20employer%20and%20need%20assistance." target="_blank" rel="noopener noreferrer" class="emp-btn emp-btn-sm" style="background:#25D366;color:#ffffff !important;border:none;border-radius:24px;padding:8px 16px;font-weight:700;display:inline-flex;align-items:center;gap:8px;box-shadow:0 3px 10px rgba(37,211,102,0.35);text-decoration:none;" title="Chat directly with official JobberRecruit Support on WhatsApp">
+      <svg aria-hidden="true" style="width:18px;height:18px;fill:currentColor;"><use href="#i-whatsapp"/></svg> Contact Us on WhatsApp
+    </a>
+    <span class="greet-date"><svg aria-hidden="true"><use href="#i-calendar"/></svg> <?= date('l, d F Y') ?></span>
+  </div>
 </div>
 
 <!-- CAC Document verification alert -->
@@ -492,42 +497,78 @@ $taskLogo = !empty($employer->logo);
 
   <!-- Company Profile Strength -->
   <div class="card">
-    <div class="card-head">
+    <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
       <span class="card-title"><svg aria-hidden="true"><use href="#i-building"/></svg> Company Profile Strength</span>
+      <a href="<?= base_url('employer/profile/edit') ?>" class="card-link" style="font-size:.78rem;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;">
+        Edit Profile &rarr;
+      </a>
     </div>
     <div class="card-body">
       <div class="pf">
-        <div class="pf-ring" role="img" aria-label="Profile <?= $profilePct ?> percent complete">
+        <a href="<?= base_url('employer/profile/edit') ?>" class="pf-ring" role="img" aria-label="Profile <?= $profilePct ?> percent complete — Click to edit profile" title="Click to complete your profile" style="text-decoration:none;cursor:pointer;">
           <svg viewBox="0 0 96 96" aria-hidden="true">
             <circle class="track" cx="48" cy="48" r="42"/>
             <circle class="prog"  cx="48" cy="48" r="42" style="stroke-dashoffset: <?= $dashOffset ?>;"/>
           </svg>
           <span class="pct"><?= $profilePct ?>%</span>
-        </div>
+        </a>
         <ul class="pf-tasks">
           <li class="pf-task <?= $taskDetails ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="#<?= $taskDetails ? 'i-check-c' : 'i-circle' ?>"/></svg>
-            Company details added
+            <?php if ($taskDetails): ?>
+              <span>Company details added</span>
+            <?php else: ?>
+              <a href="<?= base_url('employer/profile/edit') ?>">Add company details &rarr;</a>
+            <?php endif; ?>
           </li>
           <li class="pf-task <?= $taskContact ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="#<?= $taskContact ? 'i-check-c' : 'i-circle' ?>"/></svg>
-            Contact info verified
+            <?php if ($taskContact): ?>
+              <span>Contact info verified</span>
+            <?php else: ?>
+              <a href="<?= base_url('employer/profile/edit') ?>">Provide contact info &rarr;</a>
+            <?php endif; ?>
           </li>
           <li class="pf-task <?= $taskJob ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="#<?= $taskJob ? 'i-check-c' : 'i-circle' ?>"/></svg>
-            First job posted
+            <?php if ($taskJob): ?>
+              <span>First job posted</span>
+            <?php else: ?>
+              <a href="<?= base_url('employer/jobs/create') ?>">Post your first job &rarr;</a>
+            <?php endif; ?>
           </li>
           <li class="pf-task <?= $taskLogo ? 'done' : 'todo' ?>">
             <svg aria-hidden="true"><use href="#<?= $taskLogo ? 'i-check-c' : 'i-circle' ?>"/></svg>
             <?php if ($taskLogo): ?>
-              Company logo uploaded
+              <span>Company logo uploaded</span>
             <?php else: ?>
-              <a href="<?= base_url('employer/profile') ?>">Upload company logo</a>
+              <a href="<?= base_url('employer/profile/edit') ?>">Upload company logo &rarr;</a>
             <?php endif; ?>
           </li>
         </ul>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- Dedicated WhatsApp Support Banner -->
+<section class="card" style="border: 1px solid #bbf7d0; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); margin-bottom: 24px; border-radius: var(--radius-lg); padding: 20px 24px;" aria-label="Official WhatsApp Support">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="width: 50px; height: 50px; border-radius: 50%; background: #25D366; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);">
+        <svg style="width: 26px; height: 26px; fill: currentColor;" aria-hidden="true"><use href="#i-whatsapp"/></svg>
+      </div>
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: #14532d; margin: 0 0 4px 0; font-family: 'Sora', sans-serif;">Need Help Hiring or Managing Your Jobs?</h3>
+        <p style="font-size: 0.85rem; color: #166534; margin: 0; line-height: 1.45;">
+          Connect directly with your dedicated JobberRecruit Account Manager on WhatsApp. Fast response times for job posting approvals, applicant screening, and technical support.
+        </p>
+      </div>
+    </div>
+    <a href="https://wa.me/2349014808902?text=Hello%20JobberRecruit%20Support%2C%20I%20am%20an%20employer%20and%20need%20assistance." target="_blank" rel="noopener noreferrer" class="emp-btn" style="background: #25D366; color: #ffffff !important; border: none; font-weight: 700; padding: 12px 22px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.45); white-space: nowrap;">
+      <svg style="width: 20px; height: 20px; fill: currentColor;" aria-hidden="true"><use href="#i-whatsapp"/></svg>
+      Chat with Support (+234 901 480 8902)
+    </a>
   </div>
 </section>
 

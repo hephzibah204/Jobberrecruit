@@ -581,9 +581,12 @@ body.tst-blurred .tst-blur-notice { display: flex; }
             option_ids: q.options.map(function(o){ return o.id; })
           };
         });
-        var expiresAt = new Date(data.attempt.expires_at).getTime();
-        var serverTime = data.server_time * 1000;
-        remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        if (typeof data.expires_timestamp !== 'undefined' && typeof data.server_time !== 'undefined') {
+          remaining = Math.max(0, Math.floor(data.expires_timestamp - data.server_time));
+        } else {
+          var expiresAt = data.attempt.expires_at ? new Date(data.attempt.expires_at.replace(' ', 'T')).getTime() : Date.now();
+          remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        }
         if (remaining <= 0 && data.attempt.status !== 'in_progress') {
           window.location.href = RESULT_URL + attemptId;
           return;

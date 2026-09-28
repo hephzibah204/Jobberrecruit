@@ -312,7 +312,32 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
         </section>
 
 
-        <!-- SECTION 2 · NOTIFICATIONS -->
+        <!-- SECTION 2 · PROFILE VISIBILITY & PRIVACY -->
+        <section class="set-card" aria-labelledby="vis-heading">
+            <h3 id="vis-heading">
+                <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+                    <use href="#i-eye"/>
+                </svg>
+                Profile Visibility
+            </h3>
+            <p class="set-sub">Control whether employers and recruiters can find your profile in candidate searches.</p>
+
+            <div class="toggle-row" style="padding-bottom:0;border-bottom:none;">
+                <div class="tr-label">
+                    <b id="settings-vis-status"><?= !empty($candidate->is_visible) ? 'Visible to employers' : 'Hidden from search' ?></b>
+                    <i id="settings-vis-sub"><?= !empty($candidate->is_visible) ? 'Verified employers can discover your profile, review your resume, and invite you to interview.' : 'You will not appear in employer search results. You can still apply for jobs directly.' ?></i>
+                </div>
+                <label class="switch" aria-label="Toggle profile search visibility">
+                    <input type="checkbox"
+                           id="settings-visibility-toggle"
+                           <?= !empty($candidate->is_visible) ? 'checked' : '' ?>>
+                    <span class="sl"></span>
+                </label>
+            </div>
+        </section>
+
+
+        <!-- SECTION 3 · NOTIFICATIONS -->
         <section class="set-card" aria-labelledby="notif-heading">
             <h3 id="notif-heading">
                 <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
@@ -336,6 +361,21 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
                                name="notify_job_alerts"
                                id="notif-job-alerts"
                                <?= ($candidate->notify_job_alerts ?? 1) ? 'checked' : '' ?>>
+                        <span class="sl"></span>
+                    </label>
+                </div>
+
+                <!-- Weekly premium job digest -->
+                <div class="toggle-row">
+                    <div class="tr-label">
+                        <b>Weekly premium job digest</b>
+                        <i>Curated weekly digest of top premium &amp; verified opportunities</i>
+                    </div>
+                    <label class="switch" aria-label="Toggle weekly premium job digest">
+                        <input type="checkbox"
+                               name="notify_weekly_digest"
+                               id="notif-weekly-digest"
+                               <?= ($candidate->notify_weekly_digest ?? 1) ? 'checked' : '' ?>>
                         <span class="sl"></span>
                     </label>
                 </div>
@@ -761,6 +801,47 @@ requestAnimationFrame(function(){document.documentElement.classList.add('anim-re
                 if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
                 confirmBtn.disabled    = false;
                 confirmBtn.textContent = 'Delete permanently';
+            });
+    /* ── 7. PROFILE VISIBILITY TOGGLE ──────────────────────────── */
+    var visToggle = document.getElementById('settings-visibility-toggle');
+    var visStatus = document.getElementById('settings-vis-status');
+    var visSub    = document.getElementById('settings-vis-sub');
+
+    if (visToggle) {
+        visToggle.addEventListener('change', function () {
+            var isChecked = visToggle.checked;
+            visToggle.disabled = true;
+
+            var fd = new FormData();
+            fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+            fd.append('is_visible', isChecked ? '1' : '0');
+
+            fetch('<?= base_url('candidate/profile/visibility') ?>', {
+                method : 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body   : fd
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                visToggle.disabled = false;
+                if (res && res.success) {
+                    if (typeof toastr !== 'undefined') toastr.success(res.message);
+                    if (res.is_visible) {
+                        if (visStatus) visStatus.textContent = 'Visible to employers';
+                        if (visSub) visSub.textContent = 'Verified employers can discover your profile, review your resume, and invite you to interview.';
+                    } else {
+                        if (visStatus) visStatus.textContent = 'Hidden from search';
+                        if (visSub) visSub.textContent = 'You will not appear in employer search results. You can still apply for jobs directly.';
+                    }
+                } else {
+                    visToggle.checked = !isChecked;
+                    if (typeof toastr !== 'undefined') toastr.error((res && res.message) || 'Could not update visibility.');
+                }
+            })
+            .catch(function () {
+                visToggle.disabled = false;
+                visToggle.checked = !isChecked;
+                if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
             });
         });
     }

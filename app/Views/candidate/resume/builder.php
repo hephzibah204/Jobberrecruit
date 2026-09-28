@@ -9,6 +9,43 @@
 @media print {
     #print-root .wm { display: flex !important; }
 }
+
+.cv-doc { background: var(--white, #fff); border-radius: 12px; box-shadow: 0 14px 40px rgba(10,47,87,.16); overflow: hidden; font-family: 'Inter', Arial, sans-serif; font-size: 13.5px; line-height: 1.65; color: #1a1f2e; border-top: 5px solid var(--accent, #ED9020); text-align: left; }
+.cv-header { background: var(--white, #fff); padding: 34px 42px 24px; border-bottom: 1px solid var(--border, #e2e8f2); }
+.cv-header-top { overflow: hidden; margin-bottom: 18px; }
+.cv-photo { float: right; margin-left: 22px; width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--brand-light, #E6F0F8); overflow: hidden; background: var(--bg, #f5f7fb); display: flex; align-items: center; justify-content: center; }
+.cv-photo img { width: 100%; height: 100%; object-fit: cover; }
+.cv-photo-placeholder { width: 44px; height: 44px; color: #b0bec5; }
+.cv-name { font-size: 32px; font-weight: 800; color: var(--brand, #0861A9); letter-spacing: -.04em; line-height: 1; margin-bottom: 6px; }
+.cv-headline { font-size: 14.5px; font-weight: 500; color: var(--muted, #5b6577); margin-bottom: 0; letter-spacing: .01em; }
+.cv-contact-row { border-top: 1px solid var(--border, #e2e8f2); padding-top: 14px; font-size: 12.5px; color: var(--muted, #5b6577); }
+.cv-contact-item { display: inline-block; margin-right: 18px; margin-bottom: 5px; color: var(--muted, #5b6577); }
+.cv-contact-item svg { width: 12px; height: 12px; vertical-align: middle; margin-right: 4px; margin-top: -2px; }
+.cv-body { padding: 30px 42px 28px; }
+.cv-section { margin-bottom: 24px; }
+.cv-section:last-child { margin-bottom: 0; }
+.cv-section-title { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--brand, #0861A9); padding: 5px 0 8px 12px; border-left: 3px solid var(--accent, #ED9020); border-bottom: 1px solid var(--border, #e2e8f2); margin-bottom: 14px; }
+.cv-entry { margin-bottom: 15px; }
+.cv-entry:last-child { margin-bottom: 0; }
+.cv-entry-header { overflow: hidden; margin-bottom: 2px; }
+.cv-entry-title { float: left; font-size: 13.5px; font-weight: 700; color: var(--text, #141926); }
+.cv-entry-dates { float: right; font-size: 12px; color: var(--muted, #5b6577); padding-top: 1px; }
+.cv-entry-sub { clear: both; font-size: 12.5px; color: var(--muted, #5b6577); margin-bottom: 5px; }
+.cv-entry-body { font-size: 13px; color: #2d3748; line-height: 1.7; }
+.cv-entry-body ul { margin-left: 17px; margin-bottom: 0; }
+.cv-entry-body li { margin-bottom: 3px; }
+.cv-summary { font-size: 13.5px; line-height: 1.8; color: #2d3748; }
+.cv-skill-row { margin-bottom: 9px; overflow: hidden; }
+.cv-skill-info { overflow: hidden; margin-bottom: 4px; }
+.cv-skill-name { float: left; font-size: 13px; font-weight: 600; color: var(--text, #141926); }
+.cv-skill-level { float: right; font-size: 11.5px; font-weight: 600; color: var(--muted, #5b6577); padding-top: 2px; }
+.cv-skill-track { clear: both; height: 4px; background: #e8edf5; border-radius: 2px; overflow: hidden; }
+.cv-skill-fill { height: 4px; background: var(--brand, #0861A9); border-radius: 2px; display: block; }
+.cv-lang-list { font-size: 13px; color: var(--text, #141926); line-height: 1.9; }
+.cv-cert-item { margin-bottom: 11px; overflow: hidden; }
+.cv-cert-item:last-child { margin-bottom: 0; }
+.cv-cert-name { font-size: 13.5px; font-weight: 700; color: var(--text, #141926); margin-bottom: 2px; }
+
 </style>
 <?= $this->endSection() ?>
 
@@ -39,6 +76,7 @@
     <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></symbol>
     <symbol id="i-cloud-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5.5 5.5 0 0 0-4-5.3"/></symbol>
   </defs>
 </svg>
 <!-- ═══════ MOCKUP LAYOUT: rb-bar + design-bar + rb-tabs + rb-split ═══════ -->
@@ -573,7 +611,10 @@
                         <select class="select" id="job-pick" aria-label="Tailor to a listed job">
                             <option value="">— Choose a live job on JobberRecruit —</option>
                             <?php foreach ($tailorJobs ?? [] as $tj): ?>
-                                <option value="<?= $tj->id ?>" data-desc="<?= esc($tj->description ?? '') ?>"><?= esc($tj->title) ?><?= !empty($tj->company_name) ? ' — ' . esc($tj->company_name) : '' ?></option>
+                                <?php $matchScore = isset($tj->match_score) ? ' (' . $tj->match_score . '% Match)' : ''; ?>
+                                <option value="<?= esc($tj->id ?? '') ?>" data-desc="<?= esc(strip_tags($tj->description ?? '')) ?>">
+                                    <?= esc($tj->title ?? 'Untitled Job') ?> at <?= esc($tj->company_name ?? 'Unknown Company') ?><?= $matchScore ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                         <label class="lbl" for="jd">Or paste any job description</label>
@@ -643,7 +684,7 @@
                                 </div>
                                 <div>
                                     <label class="lbl" for="f-phone">Phone</label>
-                                    <input type="text" name="phone" id="f-phone" class="input" value="<?= esc($resume->phone ?? $candidate->phone ?? '') ?>" placeholder="e.g. +1 234 567 890">
+                                    <input type="text" name="phone" id="f-phone" class="input" value="<?= esc($resume->phone ?? $candidate->phone ?? '') ?>" placeholder="e.g. +234 801 234 5678">
                                 </div>
                             </div>
                         </div>
@@ -652,12 +693,22 @@
                             <div class="row2">
                                 <div>
                                     <label class="lbl" for="f-loc">Location</label>
-                                    <input type="text" name="location" id="f-loc" class="input" value="<?= esc($resume->location ?? $candidate->location ?? '') ?>" placeholder="e.g. New York, USA">
+                                    <input type="text" name="location" id="f-loc" class="input" value="<?= esc($resume->location ?? $candidate->location ?? '') ?>" placeholder="e.g. Lagos, Nigeria">
                                 </div>
                                 <div>
                                     <label class="lbl" for="f-linkedin">LinkedIn Profile URL</label>
-                                    <input type="text" name="linkedin" id="f-linkedin" class="input" value="<?= esc($linkedin ?? '') ?>" placeholder="e.g. https://linkedin.com/in/yourprofile">
+                                    <input type="text" name="linkedin" id="f-linkedin" class="input" value="<?= esc($linkedin ?? '') ?>" placeholder="https://linkedin.com/in/yourprofile">
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="xp-entry" style="border:none;padding:0;margin-top:0">
+                            <div class="row2">
+                                <div>
+                                    <label class="lbl" for="f-portfolio">Portfolio / Website</label>
+                                    <input type="text" name="portfolio" id="f-portfolio" class="input" value="<?= esc($resume->portfolio ?? '') ?>" placeholder="e.g. https://github.com/yourprofile">
+                                </div>
+                                <div></div>
                             </div>
                         </div>
                     </div><!-- /ed-body -->
@@ -871,9 +922,21 @@
                             <button class="btn-ai" data-out="about">LinkedIn About</button>
                             <button class="btn-ai" data-out="bio">Executive Bio</button>
                         </div>
-                        <div class="out-txt" id="out-wrap" hidden>
-                            <textarea class="input" id="out-txt" rows="7" aria-label="Generated output"></textarea>
-                            <div class="ai-row"><button class="btn btn-outline btn-sm" id="out-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button></div>
+                        <div class="out-txt" id="out-wrap" hidden style="margin-top:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <span style="font-size:.8rem;font-weight:700;color:var(--brand-deep,#0A2F57);" id="out-title">Generated Output</span>
+                                <button type="button" id="out-close" title="Dismiss" aria-label="Close output" style="background:none;border:none;cursor:pointer;padding:2px 6px;color:var(--muted);font-size:1.2rem;line-height:1;">&times;</button>
+                            </div>
+                            <!-- Alternative Cards Container -->
+                            <div id="out-alternatives" style="display:none;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+                            
+                            <!-- Selected / Active text block -->
+                            <label class="lbl" style="font-size:.74rem;color:var(--muted);margin-bottom:4px;">Selected Output (Editable):</label>
+                            <textarea class="input" id="out-txt" rows="6" aria-label="Generated output"></textarea>
+                            <div class="ai-row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn btn-outline btn-sm" id="out-copy"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:4px;"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Text</button>
+                                <button type="button" class="btn btn-accent btn-sm" id="out-apply-btn" style="display:none;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg> Apply to Resume</button>
+                            </div>
                         </div>
                         <p class="hint" style="font-size:.7rem;color:var(--muted);margin-top:10px">Generated from this resume's facts only — nothing is invented.</p>
                     </div>
@@ -897,7 +960,11 @@
                             <button type="button" class="btn-ai" data-career="interview">Interview Questions</button>
                             <button type="button" class="btn-ai" data-career="salary">Salary Negotiation</button>
                         </div>
-                        <div class="career-out d-none mt-3" id="career-out"></div>
+                        <div class="career-out d-none mt-3" id="career-out">
+                            <div style="display:flex;justify-content:flex-end;margin-bottom:4px;">
+                                <button type="button" id="career-out-close" title="Dismiss" aria-label="Close career output" style="background:none;border:none;cursor:pointer;padding:2px 6px;color:var(--muted);line-height:1;font-size:1.1rem;">&times;</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -960,22 +1027,75 @@
     </div>
 </div>
 
-<!-- AI Preview Modal -->
+<!-- AI Preview / Recommendation Modal -->
 <div class="modal fade ai-preview-modal" id="aiPreviewModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">AI Preview</h5>
+      <div class="modal-header bg-light border-bottom">
+        <h5 class="modal-title fw-bold fs-16 d-flex align-items-center gap-2">
+          <i class="ti ti-sparkles text-primary"></i>
+          <span id="aiPreviewModalTitle">AI Coach Proposed Improvement</span>
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body ai-preview-render" id="aiPreviewRender">
+      <div class="modal-body ai-preview-render p-4" id="aiPreviewRender" style="max-height: calc(85vh - 140px); overflow-y: auto;">
         <!-- Rendered AI HTML will appear here -->
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-outline-primary" id="aiCopyPlainBtn">Copy as Plain Text</button>
-        <button type="button" class="btn btn-outline-info" id="aiApplyActiveBtn">Apply to Active Field</button>
-        <button type="button" class="btn btn-primary" id="aiApplyBtn">Apply to Summary</button>
+      <div class="modal-footer bg-light border-top d-flex justify-content-between flex-wrap gap-2">
+        <div>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" id="aiCloseBtn">Dismiss</button>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="aiCopyPlainBtn"><i class="ti ti-copy me-1"></i> Copy as Plain Text</button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-info btn-sm" id="aiApplyActiveBtn"><i class="ti ti-edit me-1"></i> Apply to Active Field</button>
+          <button type="button" class="btn btn-primary btn-sm" id="aiApplyBtn"><i class="ti ti-check me-1"></i> Apply Suggestion</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Tailor Recommendations & Comparison Modal -->
+<div class="modal fade" id="aiTailorModal" tabindex="-1" aria-labelledby="aiTailorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content" style="max-height: 90vh;">
+      <div class="modal-header bg-light border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title fw-bold fs-16 d-flex align-items-center gap-2" id="aiTailorModalLabel">
+            <i class="ti ti-sparkles text-primary"></i>
+            AI Resume Coach – Tailor Recommendations
+          </h5>
+          <div class="text-muted fs-12 mt-1">Review the AI Coach's proposed keyword alignment and improvements before applying them to your resume.</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-primary" id="btn-apply-all-tailor">
+            <i class="ti ti-check-all me-1"></i> Apply All Suggestions
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="modal-body p-4" style="overflow-y: auto;">
+        <!-- Match Score & Overview Banner -->
+        <div class="card border border-primary bg-primary-transparent p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary fs-13 px-3 py-2" id="tailorMatchScoreBadge">85% Keyword Match</span>
+              <span class="fw-semibold fs-14 text-dark">Target Job Alignment Analysis</span>
+            </div>
+          </div>
+          <p class="text-dark fs-13 mb-0" id="tailorOverviewText">Your resume has been analyzed against the job requirements. Review the proposed enhancements below and choose which suggestions to apply.</p>
+        </div>
+
+        <!-- Dynamic Recommendations List -->
+        <div id="tailorRecommendationsContainer" class="d-flex flex-column gap-3">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top d-flex justify-content-between">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Keep Current Resume (Dismiss)</button>
+        <button type="button" class="btn btn-primary px-4" id="btn-apply-all-tailor-footer">
+          <i class="ti ti-check-all me-1"></i> Apply All Suggestions
+        </button>
       </div>
     </div>
   </div>
@@ -1038,6 +1158,18 @@
       <div class="modal-body">
         <form id="coverLetterForm" onsubmit="return false;">
           <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold" for="cl-job-pick">Pick a JobberRecruit listing to auto-fill</label>
+              <select class="form-select" id="cl-job-pick">
+                  <option value="">— Choose a live job on JobberRecruit —</option>
+                  <?php foreach ($tailorJobs ?? [] as $tj): ?>
+                      <?php $matchScore = isset($tj->match_score) ? ' (' . $tj->match_score . '% Match)' : ''; ?>
+                      <option value="<?= esc($tj->id ?? '') ?>" data-title="<?= esc($tj->title ?? '') ?>" data-company="<?= esc($tj->company_name ?? '') ?>" data-desc="<?= esc(strip_tags($tj->description ?? '')) ?>">
+                          <?= esc($tj->title ?? 'Untitled Job') ?> at <?= esc($tj->company_name ?? 'Unknown Company') ?><?= $matchScore ?>
+                      </option>
+                  <?php endforeach; ?>
+              </select>
+            </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold" for="cl-job-title">Target Job Title <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="cl-job-title" placeholder="e.g. Senior Product Designer" required>
@@ -1064,6 +1196,9 @@
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-copy-cl">
                 <svg style="width:14px;height:14px;margin-right:4px;vertical-align:-1px" aria-hidden="true"><use href="#i-copy"/></svg> Copy Text
+              </button>
+              <button type="button" class="btn btn-success btn-sm" id="btn-save-cl">
+                <svg style="width:14px;height:14px;margin-right:4px;vertical-align:-1px" aria-hidden="true"><use href="#i-check"/></svg> Save to Profile
               </button>
             </div>
           </div>
@@ -1169,8 +1304,9 @@
             e.preventDefault();
             var resumeId = $(this).data('id') || $('input[name="id"]').val();
             if (!resumeId) {
-                if (typeof toastr !== 'undefined') toastr.error('No resume ID found to delete.');
-                else alert('No resume ID found to delete.');
+                if (confirm('Discard this draft and return to your resumes?')) {
+                    window.location.href = '<?= site_url("candidate/resumes") ?>';
+                }
                 return;
             }
             if (!confirm('Are you sure you want to delete this resume? This cannot be undone.')) {
@@ -1179,12 +1315,15 @@
             var $btn = $(this);
             $btn.prop('disabled', true);
 
+            var postData = {};
+            var csrfTokenName = '<?= csrf_token() ?>';
+            var csrfTokenValue = $('input[name="' + csrfTokenName + '"]').val() || $('meta[name="csrf-token"]').attr('content') || '<?= csrf_hash() ?>';
+            postData[csrfTokenName] = csrfTokenValue;
+
             $.ajax({
                 url: '<?= site_url("candidate/resumes/delete") ?>/' + resumeId,
                 type: 'POST',
-                data: {
-                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-                },
+                data: postData,
                 dataType: 'json',
                 success: function(res) {
                     if (res && res.status === 'success') {
@@ -1208,6 +1347,19 @@
         });
 
         // Cover letter modal trigger & handler
+        $('#cl-job-pick').on('change', function() {
+            var opt = $(this).find('option:selected');
+            if(opt.val()) {
+                $('#cl-job-title').val(opt.data('title'));
+                $('#cl-company-name').val(opt.data('company'));
+                $('#cl-job-desc').val(opt.data('desc'));
+            } else {
+                $('#cl-job-title').val('');
+                $('#cl-company-name').val('');
+                $('#cl-job-desc').val('');
+            }
+        });
+
         $('#btn-cover-top').on('click', function() {
             var currentTitle = $('input[name="title"]').val() || '';
             if (currentTitle && !$('#cl-job-title').val()) {
@@ -1261,6 +1413,30 @@
                 } else {
                     alert('Cover letter copied to clipboard!');
                 }
+            });
+        });
+
+        // Cover letter save button
+        $('#btn-save-cl').on('click', function() {
+            var txt = $('#cl-result-text').val();
+            if (!txt) return;
+            var btn = $(this);
+            var origText = btn.html();
+            btn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1" role="status"></i> Saving...');
+            $.post('<?= site_url("candidate/resumes/save-cover-letter") ?>', {
+                cover_letter: txt,
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            }, function(res) {
+                btn.prop('disabled', false).html(origText);
+                if (res && res.status === 'success') {
+                    if (typeof toastr !== 'undefined') toastr.success('Cover letter saved to your profile!');
+                    else alert('Cover letter saved to your profile!');
+                } else {
+                    alert(res.message || 'Could not save cover letter.');
+                }
+            }).fail(function(err) {
+                btn.prop('disabled', false).html(origText);
+                alert(err.responseJSON?.message || 'Failed to save cover letter.');
             });
         });
 
@@ -1334,25 +1510,103 @@
             return months[d.getMonth()] + ' ' + d.getFullYear();
         }
 
+        // --- WIRE FIX BUTTONS FOR SECTIONS ---
+        function wireFixButtons() {
+            $('#recruiter-body [data-fix], #issues [data-fix], #ats-list [data-fix]').off('click.fix').on('click.fix', function() {
+                let target = $(this).data('fix');
+                let secMap = {
+                    'contact': '#sec-info',
+                    'info': '#sec-info',
+                    'experience': '#sec-experience',
+                    'education': '#sec-education',
+                    'skills': '#sec-skills',
+                    'summary': '#sec-summary'
+                };
+                let sel = secMap[target] || ('#sec-' + target);
+                let $sec = $(sel);
+                if ($sec.length) {
+                    if (!$sec.hasClass('open')) {
+                        $sec.addClass('open');
+                    }
+                    $sec[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    let $inp = $sec.find('input:not([type=hidden]), textarea').first();
+                    if ($inp.length) {
+                        setTimeout(function() { $inp.focus(); }, 350);
+                    }
+                }
+            });
+        }
+
         // --- NEW AI AJAX HANDLERS ---
         const gatherResumeData = () => {
             let exp = [];
             $('.experience-item').each(function() {
+                let startD = $(this).find('input[name="exp_start_date[]"]').val();
+                let endD = $(this).find('input[name="exp_end_date[]"]').val();
+                let isCurr = $(this).find('.exp-current-check').is(':checked');
+                let datesStr = '';
+                if (startD) {
+                    let startFmt = formatDateShort(startD);
+                    let endFmt = isCurr ? 'Present' : (endD ? formatDateShort(endD) : 'Present');
+                    datesStr = startFmt + ' — ' + endFmt;
+                }
+                let pos = $(this).find('input[name="exp_position[]"]').val() || '';
+                let comp = $(this).find('input[name="exp_company[]"]').val() || '';
+                let desc = $(this).find('textarea[name="exp_description[]"]').val() || '';
+
                 exp.push({
-                    position: $(this).find('input[name="exp_position[]"]').val(),
-                    company: $(this).find('input[name="exp_company[]"]').val(),
-                    description: $(this).find('textarea[name="exp_description[]"]').val()
+                    role: pos,
+                    position: pos,
+                    company: comp,
+                    start_date: startD,
+                    end_date: endD,
+                    is_current: isCurr ? 1 : 0,
+                    dates: datesStr,
+                    description: desc,
+                    bullets: desc
                 });
             });
-            let skills = ($('textarea[name="skills"], input[name="skills"]').val() || '').split(',').map(s => s.trim()).filter(Boolean);
 
-            return {
-                title: $('input[name="title"]').val(),
-                summary: $('#resume-summary').val(),
+            let eduList = [];
+            $('.education-item').each(function() {
+                let school = $(this).find('input[name="edu_school[]"]').val() || '';
+                let degree = $(this).find('select[name="edu_degree[]"]').val() || '';
+                let field = $(this).find('input[name="edu_field[]"]').val() || '';
+                let year = $(this).find('input[name="edu_year[]"]').val() || '';
+                eduList.push({
+                    school: school,
+                    degree: degree,
+                    field: field,
+                    year: year
+                });
+            });
+
+            let skills = ($('textarea[name="skills"], input[name="skills"]').val() || '').split(',').map(s => s.trim()).filter(Boolean);
+            let certs = $('textarea[name="certs"]').val() || '';
+            let location = $('#f-loc').val() || $('input[name="location"]').val() || '';
+            let linkedin = $('#f-linkedin').val() || $('input[name="linkedin"]').val() || '';
+            let fullName = $('#f-name').val() || $('input[name="full_name"]').val() || '';
+            let targetTitle = $('input[name="title"]').val() || '';
+            let jd = $('#jd').length ? $('#jd').val() : ($('#target-jd').length ? $('#target-jd').val() : '');
+
+            let csrfTokenName = '<?= csrf_token() ?>';
+            let csrfTokenVal = $('input[name="' + csrfTokenName + '"]').val() || $('meta[name="csrf-token"]').attr('content') || '<?= csrf_hash() ?>';
+
+            let resultData = {
+                name: fullName,
+                full_name: fullName,
+                title: targetTitle,
+                summary: $('#resume-summary').val() || '',
                 experience: exp,
+                education: eduList,
                 skills: skills,
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                certs: certs,
+                location: location,
+                linkedin: linkedin,
+                job_description: jd
             };
+            resultData[csrfTokenName] = csrfTokenVal;
+            return resultData;
         };
 
         // More AI Outputs
@@ -1362,18 +1616,115 @@
             let type = btn.data('out');
             let data = gatherResumeData();
             data.type = type;
+
+            $('[data-out]').removeClass('active');
+            btn.addClass('active');
+
+            let $sec = $('#sec-outputs');
+            if (!$sec.hasClass('open')) {
+                $sec.addClass('open');
+            }
             
             let originalText = btn.html();
-            btn.html('<i class="ti ti-loader fa-spin"></i> Generating...').prop('disabled', true);
+            btn.html('<span class="spinner-border spinner-border-sm me-1" role="status"></span> Generating...').prop('disabled', true);
             
             $.post('<?= site_url("candidate/resumes/ai/generate-output") ?>', data, function(res) {
-                $('#out-wrap').removeAttr('hidden').removeClass('d-none');
-                $('#out-txt').val(res.output);
                 btn.html(originalText).prop('disabled', false);
+
+                if (res && res.status === 'success') {
+                    $('#out-wrap').removeAttr('hidden').removeClass('d-none').show();
+                    $('#out-title').text((res.title || 'Generated Output') + ' - AI Alternatives');
+                    $('#out-txt').val(res.output || '');
+
+                    // Render multiple alternatives
+                    let $altContainer = $('#out-alternatives').empty();
+                    if (res.alternatives && res.alternatives.length > 0) {
+                        $altContainer.show();
+                        res.alternatives.forEach(function(alt, idx) {
+                            let isFirst = (idx === 0);
+                            let cardHtml = `
+                                <div class="ai-alt-card ${isFirst ? 'active' : ''}" data-idx="${idx}" style="border: 1px solid ${isFirst ? 'var(--brand,#0ea5e9)' : 'var(--border,#e2e8f0)'}; background:${isFirst ? 'rgba(14,165,233,0.04)' : '#fff'}; border-radius:8px; padding:10px 12px; cursor:pointer; transition:all .2s;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                        <span class="badge" style="background:${isFirst ? 'var(--brand,#0ea5e9)' : '#64748b'}; color:#fff; font-size:.7rem; font-weight:600; padding:2px 7px; border-radius:4px;">${escapeHtml(alt.label)}</span>
+                                        <button type="button" class="btn btn-outline btn-xs copy-alt-btn" data-text="${encodeURIComponent(alt.text)}" style="padding:2px 8px; font-size:.72rem; line-height:1.2;">Copy</button>
+                                    </div>
+                                    <div class="alt-text" style="font-size:.83rem; color:var(--text,#1e293b); line-height:1.5; white-space:pre-wrap;">${escapeHtml(alt.text)}</div>
+                                </div>
+                            `;
+                            $altContainer.append(cardHtml);
+                        });
+                    } else {
+                        $altContainer.hide();
+                    }
+
+                    // Configure "Apply to Resume" button
+                    let $applyBtn = $('#out-apply-btn');
+                    if (type === 'headline') {
+                        $applyBtn.html('<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg> Use as Resume Title').show();
+                    } else if (type === 'about' || type === 'bio') {
+                        $applyBtn.html('<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg> Use in Professional Summary').show();
+                    } else {
+                        $applyBtn.hide();
+                    }
+
+                    // Scroll output into view smoothly
+                    let outWrapEl = document.getElementById('out-wrap');
+                    if (outWrapEl) {
+                        outWrapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success('Generated ' + (res.alternatives ? res.alternatives.length : 1) + ' tailored alternatives!');
+                    }
+                } else {
+                    let msg = (res && res.message) ? res.message : 'Could not generate output.';
+                    if (typeof toastr !== 'undefined') toastr.error(msg);
+                    else alert(msg);
+                }
             }).fail(function(err) {
-                alert(err.responseJSON?.message || 'Failed to generate output.');
                 btn.html(originalText).prop('disabled', false);
+                let msg = err.responseJSON?.message || 'Failed to generate output. Please ensure your title or experience is filled.';
+                if (typeof toastr !== 'undefined') toastr.error(msg);
+                else alert(msg);
             });
+        });
+
+        // Click alternative card to select and load into textarea
+        $(document).on('click', '.ai-alt-card', function(e) {
+            if ($(e.target).closest('.copy-alt-btn').length) return;
+            $('.ai-alt-card').css({ 'border-color': 'var(--border,#e2e8f0)', 'background': '#fff' }).removeClass('active');
+            $(this).css({ 'border-color': 'var(--brand,#0ea5e9)', 'background': 'rgba(14,165,233,0.04)' }).addClass('active');
+            let text = $(this).find('.alt-text').text();
+            $('#out-txt').val(text);
+        });
+
+        // Copy individual alternative
+        $(document).on('click', '.copy-alt-btn', function(e) {
+            e.stopPropagation();
+            let text = decodeURIComponent($(this).data('text') || '');
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(function() {
+                if (typeof toastr !== 'undefined') toastr.success('Copied alternative to clipboard!');
+                else alert('Copied alternative to clipboard!');
+            });
+        });
+
+        // Apply selected output directly into resume inputs & preview
+        $('#out-apply-btn').on('click', function() {
+            let activeType = $('[data-out].active').data('out') || '';
+            let text = $('#out-txt').val().trim();
+            if (!text) return;
+
+            if (activeType === 'headline') {
+                $('input[name="title"]').val(text);
+                renderLivePreview();
+                if (typeof toastr !== 'undefined') toastr.success('Applied to resume title!');
+            } else if (activeType === 'about' || activeType === 'bio') {
+                $('#resume-summary').val(text);
+                $('textarea[name="summary"]').val(text);
+                renderLivePreview();
+                if (typeof toastr !== 'undefined') toastr.success('Applied to professional summary!');
+            }
         });
 
         // Career Tools
@@ -1389,7 +1740,8 @@
             btn.html('<i class="ti ti-loader fa-spin"></i> Loading...').prop('disabled', true);
             
             $.post('<?= site_url("candidate/resumes/ai/career-tools") ?>', data, function(res) {
-                $('#career-out').removeClass('d-none').html(res.output);
+                const closeBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;"><button type="button" id="career-out-close" title="Dismiss" aria-label="Close career output" style="background:none;border:none;cursor:pointer;padding:2px 6px;color:var(--muted);line-height:1;font-size:1.1rem;">&times;</button></div>';
+                $('#career-out').removeClass('d-none').html(closeBtn + '<div class="career-out-content">' + res.output + '</div>');
                 btn.html(originalText).prop('disabled', false);
             }).fail(function(err) {
                 alert(err.responseJSON?.message || 'Failed to load career tools.');
@@ -1409,6 +1761,7 @@
                     $('#issues').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Analyzing writing style...</p>');
                     $.post('<?= site_url("candidate/resumes/ai/writing-review") ?>', gatherResumeData(), function(res) {
                         $('#issues').html(res.review);
+                        wireFixButtons();
                     }).fail(function() {
                         $('#issues').html('<p class="text-danger">Failed to analyze.</p>');
                     });
@@ -1421,9 +1774,10 @@
             let sec = $(this).closest('.ed-sec');
             setTimeout(function() {
                 if (sec.hasClass('open') && $('#recruiter-body').is(':empty')) {
-                    $('#recruiter-body').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Evaluating ATS score...</p>');
+                    $('#recruiter-body').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Analyzing recruiter first-pass read...</p>');
                     $.post('<?= site_url("candidate/resumes/ai/recruiter-view") ?>', gatherResumeData(), function(res) {
                         $('#recruiter-body').html(res.recruiter_view);
+                        wireFixButtons();
                     }).fail(function() {
                         $('#recruiter-body').html('<p class="text-danger">Failed to evaluate.</p>');
                     });
@@ -1431,81 +1785,12 @@
             }, 0);
         });
 
-        // Import CV upload & extraction handler
-        $('#cv-file').on('change', function(e) {
-            let file = e.target.files[0];
-            if (!file) return;
-            $('#import-note').removeClass('d-none').html('<p class="text-primary"><i class="spinner-border spinner-border-sm me-1" role="status"></i> Uploading and extracting CV with AI...</p>');
-            
-            let fd = new FormData();
-            fd.append('cv', file);
-            fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        // Import CV upload & extraction — handled by the CV Import block below (delegates to runCvImport + review modal)
+        // The full handler is defined in the "── CV IMPORT ──" section further down.
+        // These stubs are intentionally left to preserve the event ordering without double-binding.
 
-            $.ajax({
-                url: '<?= site_url("candidate/resumes/parse-cv-file") ?>',
-                type: 'POST',
-                data: fd,
-                processData: false,
-                contentType: false,
-                dataType: 'json',
-                success: function(res) {
-                    $('#import-note').addClass('d-none');
-                    if (res && res.success && res.data) {
-                        $('#import-orig').removeClass('d-none');
-                        $('#dz-name').text(file.name);
-                        var d = res.data;
-                        if (d.full_name) $('input[name="full_name"]').val(d.full_name);
-                        if (d.email) $('input[name="email"]').val(d.email);
-                        if (d.phone) $('input[name="phone"]').val(d.phone);
-                        if (d.location) $('input[name="location"]').val(d.location);
-                        if (d.linkedin) $('input[name="linkedin"]').val(d.linkedin);
-                        if (d.job_title && !$('input[name="title"]').val()) $('input[name="title"]').val(d.job_title + ' Resume');
-                        if (d.summary) {
-                            $('#resume-summary').val(d.summary);
-                            $('textarea[name="summary"]').val(d.summary);
-                        }
-                        if (d.skills && Array.isArray(d.skills)) {
-                            $('textarea[name="skills"], input[name="skills"]').val(d.skills.join(', '));
-                        }
-                        if (d.certifications) {
-                            $('textarea[name="certs"]').val(Array.isArray(d.certifications) ? d.certifications.join('\n') : d.certifications);
-                        }
-                        if (d.languages) {
-                            $('input[name="languages"]').val(Array.isArray(d.languages) ? d.languages.join(', ') : d.languages);
-                        }
-                        // Fill experiences
-                        if (d.experiences && Array.isArray(d.experiences) && d.experiences.length > 0) {
-                            $('#experience-container').find('.experience-item').remove();
-                            d.experiences.forEach(function(exp) {
-                                if (typeof addExperienceItem === 'function') {
-                                    addExperienceItem(exp.company || '', exp.position || exp.job_title || '', exp.start_date || '', exp.end_date || '', exp.description || '', exp.is_current || false);
-                                }
-                            });
-                        }
-                        // Fill education
-                        if (d.education && Array.isArray(d.education) && d.education.length > 0) {
-                            $('#education-container').find('.education-item').remove();
-                            d.education.forEach(function(edu) {
-                                if (typeof addEducationItem === 'function') {
-                                    addEducationItem(edu.school || edu.institution || '', edu.degree || '', edu.field || edu.field_of_study || '', edu.year || '');
-                                }
-                            });
-                        }
-                        renderLivePreview();
-                        refreshAts();
-                        if (typeof toastr !== 'undefined') {
-                            toastr.success('CV extracted and loaded into builder!');
-                        }
-                    } else {
-                        alert(res.message || 'Could not parse CV file automatically. Please enter details manually.');
-                    }
-                },
-                error: function() {
-                    $('#import-note').addClass('d-none');
-                    alert('Error connecting to CV extraction service. Please check your connection.');
-                }
-            });
-        });
+        // CV Import handlers — also handled in the CV IMPORT block below
+        // #orig-copy and #orig-fill delegated handlers are registered in the CV IMPORT section.
 
         // Version History (Local Snapshots)
         function takeSnapshot() {
@@ -1543,7 +1828,7 @@
         });
 
         // ── LIVE PREVIEW GENERATION (Truthful candidate data only, no fake defaults) ──
-        function renderLivePreview() {
+                function renderLivePreview() {
             var rawName = $('input[name="full_name"]').val() || '';
             var rawTitle = $('input[name="title"]').val() || '';
             var rawEmail = $('input[name="email"]').val() || '';
@@ -1559,39 +1844,60 @@
             var locationStr = rawLoc.trim();
             var linkedin = rawLinkedin.trim();
             var summary = rawSummary.trim();
-            
-            // Selected layout & density
+
             var tpl = $('#template-select-top').val() || $('#tpl-select').val() || 't-modern';
             if (!tpl.startsWith('t-')) {
-                var tplMap = { 'classic':'t-classic', 'modern':'t-modern', 'creative':'t-creative', 'executive':'t-exec', 'minimalist':'t-minimal' };
+                var tplMap = { 'classic':'t-classic', 'modern':'t-modern', 'creative':'t-creative', 'executive':'t-exec', 'minimalist':'t-minimal', 'pro':'t-pro', 'serif':'t-serif', 'tech':'t-tech' };
                 tpl = tplMap[tpl] || ('t-' + tpl);
             }
-            var spacing = $('#spacing-roomy-btn').hasClass('on') ? 'spacing-roomy' : 'spacing-tight';
             
-            // Container update
+            var cfg = {
+                't-classic': {'brand': '#0861A9', 'brand_dark': '#064A85', 'brand_deep': '#0A2F57', 'brand_light': '#E6F0F8', 'accent': '#ED9020', 'accent_dark': '#C8770E', 'font': "'Sora', 'Inter'"},
+                't-creative': {'brand': '#D946EF', 'brand_dark': '#C026D3', 'brand_deep': '#A21CAF', 'brand_light': '#FDF4FF', 'accent': '#F59E0B', 'accent_dark': '#D97706', 'font': "'Sora', 'Inter'"},
+                't-exec': {'brand': '#0F172A', 'brand_dark': '#020617', 'brand_deep': '#000000', 'brand_light': '#F8FAFC', 'accent': '#10B981', 'accent_dark': '#059669', 'font': "'Inter', sans-serif"},
+                't-minimal': {'brand': '#333333', 'brand_dark': '#111111', 'brand_deep': '#000000', 'brand_light': '#F3F4F6', 'accent': '#6B7280', 'accent_dark': '#4B5563', 'font': "'Inter', sans-serif"},
+                't-modern': {'brand': '#2563EB', 'brand_dark': '#1D4ED8', 'brand_deep': '#1E40AF', 'brand_light': '#EFF6FF', 'accent': '#F43F5E', 'accent_dark': '#E11D48', 'font': "'Sora', 'Inter'"},
+                't-pro': {'brand': '#111827', 'brand_dark': '#030712', 'brand_deep': '#000000', 'brand_light': '#F9FAFB', 'accent': '#3B82F6', 'accent_dark': '#2563EB', 'font': "'Inter', sans-serif"},
+                't-serif': {'brand': '#1E3A8A', 'brand_dark': '#1E3A8A', 'brand_deep': '#172554', 'brand_light': '#EFF6FF', 'accent': '#D97706', 'accent_dark': '#B45309', 'font': "'Merriweather', 'Georgia', serif"},
+                't-tech': {'brand': '#059669', 'brand_dark': '#047857', 'brand_deep': '#064E3B', 'brand_light': '#ECFDF5', 'accent': '#3B82F6', 'accent_dark': '#2563EB', 'font': "'Inter', sans-serif"}
+            }[tpl] || cfg['t-modern'];
+
+            var styleHtml = '<style>:root { ' +
+                '--brand: ' + cfg.brand + '; --brand-dark: ' + cfg.brand_dark + '; --brand-deep: ' + cfg.brand_deep + '; ' +
+                '--brand-light: ' + cfg.brand_light + '; --accent: ' + cfg.accent + '; --accent-dark: ' + cfg.accent_dark + '; ' +
+                '} .cv-doc, .cv-section-title, .cv-name { font-family: ' + cfg.font + ', Arial, sans-serif !important; }</style>';
+            
+            $('#cv-dynamic-style').remove();
+            $('head').append('<div id="cv-dynamic-style">' + styleHtml + '</div>');
+
             var $doc = $('#doc');
-            $doc.removeClass().addClass('doc ' + tpl + ' ' + spacing + ' wm-tile guides');
-            
-            var contactHtml = '';
-            if (email) contactHtml += '<span>' + escapeHtml(email) + '</span>';
-            if (phone) contactHtml += '<span>' + escapeHtml(phone) + '</span>';
-            if (locationStr) contactHtml += '<span>' + escapeHtml(locationStr) + '</span>';
-            if (linkedin) contactHtml += '<span>' + escapeHtml(linkedin.replace(/^https?:\/\/(www\.)?/, '')) + '</span>';
+            $doc.removeClass().addClass('cv-doc wm-tile');
             
             var html = '';
-            if (name || title || contactHtml) {
-                html += '<header class="d-head"><h1>' + escapeHtml(name || 'Resume Header') + '</h1>';
-                if (title) html += '<div class="d-title">' + escapeHtml(title) + '</div>';
-                if (contactHtml) html += '<div class="d-contact">' + contactHtml + '</div>';
-                html += '</header>';
-            }
             
-            // Professional Summary
+            html += '<header class="cv-header">';
+            html += '<div class="cv-header-top">';
+            html += '<h1 class="cv-name">' + escapeHtml(name || 'CANDIDATE NAME') + '</h1>';
+            if (title && title !== 'My Professional Resume') html += '<p class="cv-headline">' + escapeHtml(title) + '</p>';
+            html += '</div>';
+
+            var contactHtml = '';
+            if (phone) contactHtml += '<span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-phone"/></svg>' + escapeHtml(phone) + '</span>';
+            if (email) contactHtml += '<span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-mail"/></svg>' + escapeHtml(email) + '</span>';
+            if (locationStr) contactHtml += '<span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-pin"/></svg>' + escapeHtml(locationStr) + '</span>';
+            if (linkedin) contactHtml += '<span class="cv-contact-item"><svg aria-hidden="true"><use href="#i-globe"/></svg>' + escapeHtml(linkedin.replace(/^https?:\/\/(www\.)?/, '')) + '</span>';
+            
+            if (contactHtml) {
+                html += '<div class="cv-contact-row">' + contactHtml + '</div>';
+            }
+            html += '</header>';
+
+            html += '<div class="cv-body">';
+
             if (summary) {
-                html += '<div class="d-sec"><h2>Professional Summary</h2><p>' + escapeHtml(summary).replace(/\n/g, '<br>') + '</p></div>';
+                html += '<section class="cv-section"><h2 class="cv-section-title">Professional Summary</h2><div class="cv-summary">' + escapeHtml(summary).replace(/\n/g, '<br>') + '</div></section>';
             }
-            
-            // Experience List
+
             var experienceHtml = '';
             $('.experience-item').each(function() {
                 var role = $(this).find('input[name="exp_position[]"]').val() || '';
@@ -1601,23 +1907,18 @@
                 var current = $(this).find('.exp-current-check').is(':checked');
                 var desc = $(this).find('textarea[name="exp_description[]"]').val() || '';
                 
-                var dates = formatMonthYear(start) + ' – ' + (current ? 'Present' : (end ? formatMonthYear(end) : ''));
+                var dates = formatMonthYear(start) + ' &ndash; ' + (current ? 'Present' : (end ? formatMonthYear(end) : ''));
                 if (role || company || desc) {
                     var bulletPoints = desc.split('\n').map(s => s.trim()).filter(Boolean);
                     var bulletsUl = '';
                     if (bulletPoints.length) {
                         bulletsUl = '<ul>' + bulletPoints.map(b => '<li>' + escapeHtml(b) + '</li>').join('') + '</ul>';
                     }
-                    experienceHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml(role) + '</b><i>' + escapeHtml(dates) + '</i></div>' +
-                        (company ? '<p class="co">' + escapeHtml(company) + '</p>' : '') + bulletsUl + '</div>';
+                    experienceHtml += '<div class="cv-entry"><div class="cv-entry-header"><span class="cv-entry-title">' + escapeHtml(role || 'Position') + '</span><span class="cv-entry-dates">' + dates + '</span></div><p class="cv-entry-sub">' + escapeHtml(company || 'Company') + '</p><div class="cv-entry-body">' + bulletsUl + '</div></div>';
                 }
             });
+            if (experienceHtml) html += '<section class="cv-section"><h2 class="cv-section-title">Work Experience</h2>' + experienceHtml + '</section>';
 
-            if (experienceHtml) {
-                html += '<div class="d-sec"><h2>Work Experience</h2>' + experienceHtml + '</div>';
-            }
-            
-            // Education List
             var educationHtml = '';
             $('.education-item').each(function() {
                 var school = $(this).find('input[name="edu_school[]"]').val() || '';
@@ -1626,73 +1927,45 @@
                 var year = $(this).find('input[name="edu_year[]"]').val() || '';
                 
                 if (school || degree || field) {
-                    educationHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml((degree ? degree + ' in ' : '') + field) + '</b><i>' + escapeHtml(year) + '</i></div>' +
-                        (school ? '<p class="co">' + escapeHtml(school) + '</p>' : '') + '</div>';
+                    var degText = escapeHtml(degree) + (field ? ' in ' + escapeHtml(field) : '');
+                    educationHtml += '<div class="cv-entry"><div class="cv-entry-header"><span class="cv-entry-title">' + (degText || 'Degree') + '</span><span class="cv-entry-dates">' + escapeHtml(year) + '</span></div><p class="cv-entry-sub">' + escapeHtml(school || 'Institution') + '</p></div>';
                 }
             });
+            if (educationHtml) html += '<section class="cv-section"><h2 class="cv-section-title">Education</h2>' + educationHtml + '</section>';
 
-            if (educationHtml) {
-                html += '<div class="d-sec"><h2>Education</h2>' + educationHtml + '</div>';
-            }
-            
-            // Skills List
             var skillsStr = $('textarea[name="skills"], input[name="skills"]').val() || '';
             var skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
             if (skills.length) {
-                var skillsLi = skills.map(s => '<li>' + escapeHtml(s) + '</li>').join('');
-                html += '<div class="d-sec"><h2>Skills</h2><ul class="d-skills">' + skillsLi + '</ul></div>';
+                var skillsHtml = '';
+                skills.forEach(function(s) {
+                    skillsHtml += '<div class="cv-skill-row"><div class="cv-skill-info"><span class="cv-skill-name">' + escapeHtml(s) + '</span><span class="cv-skill-level">Intermediate</span></div><div class="cv-skill-track"><span class="cv-skill-fill" style="width:60%"></span></div></div>';
+                });
+                html += '<section class="cv-section"><h2 class="cv-section-title">Skills</h2>' + skillsHtml + '</section>';
             }
 
-            // Certifications List
-            var certsStr = $('textarea[name="certs"]').val() || '';
-            var certs = certsStr.split('\n').map(s => s.trim()).filter(Boolean);
-            if (certs.length) {
-                var certsLi = certs.map(c => '<li>' + escapeHtml(c) + '</li>').join('');
-                html += '<div class="d-sec"><h2>Certifications</h2><ul class="d-skills">' + certsLi + '</ul></div>';
-            }
-
-            // Languages List
             var languagesStr = $('input[name="languages"]').val() || '';
             var languages = languagesStr.split(',').map(s => s.trim()).filter(Boolean);
             if (languages.length) {
-                var languagesLi = languages.map(l => '<li>' + escapeHtml(l) + '</li>').join('');
-                html += '<div class="d-sec"><h2>Languages</h2><ul class="d-skills">' + languagesLi + '</ul></div>';
+                html += '<section class="cv-section"><h2 class="cv-section-title">Languages</h2><div class="cv-lang-list">' + escapeHtml(languages.join(', ')) + '</div></section>';
             }
+
+            var certsStr = $('textarea[name="certs"]').val() || '';
+            var certs = certsStr.split('\n').map(s => s.trim()).filter(Boolean);
+            if (certs.length) {
+                var certsHtml = certs.map(c => '<div class="cv-cert-item"><div class="cv-cert-name">' + escapeHtml(c) + '</div></div>').join('');
+                html += '<section class="cv-section"><h2 class="cv-section-title">Certifications</h2>' + certsHtml + '</section>';
+            }
+
+            html += '</div>';
             
             // Watermark anti-crop element
             html += '<div class="wm" aria-hidden="true">' +
                 '<svg class="wm-ic" viewBox="0 0 925.5 1269.15"><use href="#jr-mark"/></svg>' +
                 '<span class="wm-tx">www.JobberRecruit.com</span>' +
                 '</div>';
-                
+            
             $doc.html(html);
             
-            // Adjust layout for Executive template
-            if (tpl === 't-exec') {
-                var head = $doc.find('.d-head')[0];
-                var wm = $doc.find('.wm')[0];
-                var secs = $doc.find('.d-sec').toArray();
-                var sideKeys = ["Certifications", "Skills", "Languages"];
-                
-                var side = document.createElement("div"); side.className = "exec-side";
-                var main = document.createElement("div"); main.className = "exec-main";
-                
-                secs.forEach(function(sec) {
-                    var titleText = $(sec).find('h2').text() || '';
-                    if (sideKeys.indexOf(titleText.trim()) > -1) {
-                        side.appendChild(sec);
-                    } else {
-                        main.appendChild(sec);
-                    }
-                });
-                
-                $doc.html('');
-                if (head) $doc.append(head);
-                $doc.append(side); $doc.append(main);
-                if (wm) $doc.append(wm);
-            }
-            
-            // Check fit pages & dynamic page count indicator
             var scrollHeight = $doc[0].scrollHeight;
             var maxOnePageHeight = 1074;
             var fitDot = $('.fit-dot');
@@ -2113,76 +2386,122 @@
 
                         if (snap.title !== undefined) $('input[name="title"]').val(snap.title).trigger('input');
                         if (snap.full_name !== undefined && snap.full_name) $('input[name="full_name"]').val(snap.full_name).trigger('input');
-                        if (snap.summary !== undefined) $('#resume-summary').val(snap.summary).trigger('input');
-                        if (snap.skills !== undefined) {
-                            var skillsVal = Array.isArray(snap.skills) ? snap.skills.join(', ') : snap.skills;
-                            $('input[name="skills"]').val(skillsVal).trigger('input');
-                        }
-                        if (snap.certs !== undefined) $('textarea[name="certs"]').val(snap.certs).trigger('input');
+                        window.pendingTailoredResume = snap;
 
-                        // Update or rebuild experiences if provided in tailored response
+                        // Build side-by-side advisory comparison inside #aiTailorModal
+                        $('#tailorMatchScoreBadge').text((res.match_score || 88) + '% Keyword Match');
+                        if (res.match_overview) {
+                            $('#tailorOverviewText').text(res.match_overview);
+                        }
+
+                        var diffHtml = '';
+
+                        // 1. Title / Target Role
+                        if (snap.title !== undefined) {
+                            var curTitle = $('input[name="title"]').val() || 'Not specified';
+                            diffHtml += `
+                                <div class="tailor-diff-card" id="tailor-card-title">
+                                    <div class="diff-header">
+                                        <span class="diff-section-title"><i class="ti ti-briefcase text-primary me-1"></i> Target Role / Resume Title</span>
+                                        <button type="button" class="btn btn-xs btn-primary apply-tailor-item" data-field="title"><i class="ti ti-check me-1"></i> Apply Suggestion</button>
+                                    </div>
+                                    <div class="diff-body">
+                                        <div class="diff-col">
+                                            <div class="diff-col-label">Current:</div>
+                                            <div>${escapeHtml(curTitle)}</div>
+                                        </div>
+                                        <div class="diff-col proposed">
+                                            <div class="diff-col-label">Proposed Improvement:</div>
+                                            <div class="fw-semibold text-success">${escapeHtml(snap.title)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // 2. Professional Summary
+                        if (snap.summary !== undefined) {
+                            var curSummary = $('#resume-summary').val() || 'Not provided yet';
+                            diffHtml += `
+                                <div class="tailor-diff-card" id="tailor-card-summary">
+                                    <div class="diff-header">
+                                        <span class="diff-section-title"><i class="ti ti-blockquote text-primary me-1"></i> Professional Executive Summary</span>
+                                        <button type="button" class="btn btn-xs btn-primary apply-tailor-item" data-field="summary"><i class="ti ti-check me-1"></i> Apply Suggestion</button>
+                                    </div>
+                                    <div class="diff-body">
+                                        <div class="diff-col">
+                                            <div class="diff-col-label">Current:</div>
+                                            <div style="white-space: pre-line;">${escapeHtml(curSummary)}</div>
+                                        </div>
+                                        <div class="diff-col proposed">
+                                            <div class="diff-col-label">Proposed Tailored Version:</div>
+                                            <div style="white-space: pre-line;" class="text-dark">${escapeHtml(snap.summary)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // 3. Skills
+                        if (snap.skills !== undefined) {
+                            var curSkills = $('input[name="skills"]').val() || 'None';
+                            var proposedSkills = Array.isArray(snap.skills) ? snap.skills.join(', ') : snap.skills;
+                            diffHtml += `
+                                <div class="tailor-diff-card" id="tailor-card-skills">
+                                    <div class="diff-header">
+                                        <span class="diff-section-title"><i class="ti ti-checklist text-primary me-1"></i> Core Keywords &amp; Skills</span>
+                                        <button type="button" class="btn btn-xs btn-primary apply-tailor-item" data-field="skills"><i class="ti ti-check me-1"></i> Apply Suggestion</button>
+                                    </div>
+                                    <div class="diff-body">
+                                        <div class="diff-col">
+                                            <div class="diff-col-label">Current:</div>
+                                            <div>${escapeHtml(curSkills)}</div>
+                                        </div>
+                                        <div class="diff-col proposed">
+                                            <div class="diff-col-label">Proposed Keywords to Add:</div>
+                                            <div class="fw-medium text-dark">${escapeHtml(proposedSkills)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // 4. Work Experiences
                         if (Array.isArray(snap.experiences) && snap.experiences.length > 0) {
                             var $expItems = $('.experience-item');
-                            if ($expItems.length === snap.experiences.length) {
-                                snap.experiences.forEach(function(e, i) {
-                                    var $row = $expItems.eq(i);
-                                    if (e.position) $row.find('input[name="exp_position[]"]').val(e.position).trigger('input');
-                                    if (e.company) $row.find('input[name="exp_company[]"]').val(e.company).trigger('input');
-                                    var desc = Array.isArray(e.description) ? e.description.join("\n") : (e.description || '');
-                                    $row.find('textarea[name="exp_description[]"]').val(desc).trigger('input');
-                                });
-                            } else {
-                                var $expContainer = $('#experience-container');
-                                $expContainer.find('.experience-item').remove();
-                                $expContainer.find('.no-items').remove();
-                                snap.experiences.forEach(function(e, idx) {
-                                    var desc = Array.isArray(e.description) ? e.description.join("\n") : (e.description || '');
-                                    var html = `
-                                        <div class="xp-entry position-relative experience-item">
-                                            <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.7rem; opacity: 0.6; z-index: 10;"></button>
-                                            <div class="row2">
-                                                <div>
-                                                    <label class="lbl">Role</label>
-                                                    <input type="text" name="exp_position[]" class="input" placeholder="Job Position" value="${escapeHtml(e.position || '')}">
-                                                </div>
-                                                <div>
-                                                    <label class="lbl">Dates (Start - End)</label>
-                                                    <div style="display:flex; gap:6px; align-items:center;">
-                                                        <input type="date" name="exp_start_date[]" class="input" value="${escapeHtml(e.start_date || '')}" style="padding-left:4px; padding-right:4px;">
-                                                        <span class="exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">-</span>
-                                                        <input type="date" name="exp_end_date[]" class="input exp-end-date-col" value="${escapeHtml(e.end_date || '')}" style="${e.is_current ? 'display: none;' : ''} padding-left:4px; padding-right:4px;">
-                                                    </div>
-                                                </div>
+                            snap.experiences.forEach(function(e, idx) {
+                                var $row = $expItems.eq(idx);
+                                var curDesc = $row.length ? ($row.find('textarea[name="exp_description[]"]').val() || 'No description') : 'New Experience';
+                                var curPos = $row.length ? ($row.find('input[name="exp_position[]"]').val() || ('Experience #' + (idx+1))) : (e.position || ('Experience #' + (idx+1)));
+                                var propDesc = Array.isArray(e.description) ? e.description.join("\n") : (e.description || '');
+
+                                diffHtml += `
+                                    <div class="tailor-diff-card" id="tailor-card-exp-${idx}">
+                                        <div class="diff-header">
+                                            <span class="diff-section-title"><i class="ti ti-history text-primary me-1"></i> Work Experience: ${escapeHtml(curPos)} (${escapeHtml(e.company || '')})</span>
+                                            <button type="button" class="btn btn-xs btn-primary apply-tailor-exp-btn" data-exp-idx="${idx}"><i class="ti ti-check me-1"></i> Apply Suggestion</button>
+                                        </div>
+                                        <div class="diff-body">
+                                            <div class="diff-col">
+                                                <div class="diff-col-label">Current Achievements:</div>
+                                                <div style="white-space: pre-line;">${escapeHtml(curDesc)}</div>
                                             </div>
-                                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                                <div style="flex:1;">
-                                                    <label class="lbl">Company</label>
-                                                    <input type="text" name="exp_company[]" class="input" placeholder="Company Name" value="${escapeHtml(e.company || '')}">
-                                                </div>
-                                                <div class="form-check" style="margin-left:15px; margin-top:20px;">
-                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''} id="exp_current_${idx}">
-                                                    <label class="form-check-label lbl" for="exp_current_${idx}" style="cursor:pointer; display:inline-block; margin-left:4px; margin-bottom:0;">Current</label>
-                                                </div>
-                                            </div>
-                                            <label class="lbl">Achievements — one per line</label>
-                                            <textarea name="exp_description[]" class="input" rows="4" placeholder="Describe your responsibilities and achievements...">${escapeHtml(desc)}</textarea>
-                                            <div class="ai-row">
-                                                <button type="button" class="btn-ai improve-desc-ai"><svg aria-hidden="true"><use href="#i-zap"/></svg> Strengthen achievements</button>
-                                                <button type="button" class="btn-ai generate-bullets-ai"><svg aria-hidden="true"><use href="#i-edit"/></svg> Generate Bullets</button>
+                                            <div class="diff-col proposed">
+                                                <div class="diff-col-label">Proposed STAR Achievements:</div>
+                                                <div style="white-space: pre-line;" class="text-dark">${escapeHtml(propDesc)}</div>
                                             </div>
                                         </div>
-                                    `;
-                                    $expContainer.append(html);
-                                });
-                            }
+                                    </div>
+                                `;
+                            });
                         }
 
-                        if (typeof renderLivePreview === 'function') renderLivePreview();
-                        if (typeof refreshAts === 'function') refreshAts();
-                        if (typeof runMatch === 'function') runMatch();
+                        $('#tailorRecommendationsContainer').html(diffHtml);
+                        var tailorModal = new bootstrap.Modal(document.getElementById('aiTailorModal'));
+                        tailorModal.show();
 
                         if (typeof toastr !== 'undefined') {
-                            toastr.success('Resume tailored to the job description successfully!');
+                            toastr.info('AI Coach has prepared tailored recommendations! Review each item and click "Apply Suggestion".');
                         }
                     } else {
                         var msg = (res && res.message) ? res.message : 'Failed to tailor resume.';
@@ -2199,20 +2518,161 @@
             });
         });
 
+        // ── TAILOR RECOMMENDATIONS MODAL HANDLERS ──
+        $(document).on('click', '.apply-tailor-item', function() {
+            var field = $(this).data('field');
+            var snap = window.pendingTailoredResume;
+            if (!snap) return;
+
+            var $btn = $(this);
+            if (field === 'title' && snap.title !== undefined) {
+                $('input[name="title"]').val(snap.title).trigger('input');
+                $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="ti ti-check me-1"></i> Applied').prop('disabled', true);
+                toastr.success('Applied tailored Title/Target Role to resume!');
+            } else if (field === 'summary' && snap.summary !== undefined) {
+                $('#resume-summary').val(snap.summary).trigger('input');
+                $('textarea[name="summary"]').val(snap.summary);
+                $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="ti ti-check me-1"></i> Applied').prop('disabled', true);
+                toastr.success('Applied tailored Summary to resume!');
+            } else if (field === 'skills' && snap.skills !== undefined) {
+                var proposedSkills = Array.isArray(snap.skills) ? snap.skills.join(', ') : snap.skills;
+                var curSkills = $('input[name="skills"]').val().trim();
+                var mergedSkills = curSkills ? curSkills + ', ' + proposedSkills : proposedSkills;
+                var uniqueSkills = Array.from(new Set(mergedSkills.split(',').map(function(s) { return s.trim(); }).filter(Boolean))).join(', ');
+                $('input[name="skills"]').val(uniqueSkills).trigger('input');
+                $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="ti ti-check me-1"></i> Applied').prop('disabled', true);
+                toastr.success('Applied tailored Skills to resume!');
+            }
+            renderLivePreview();
+            refreshAts();
+        });
+
+        $(document).on('click', '.apply-tailor-exp-btn', function() {
+            var idx = parseInt($(this).data('exp-idx'), 10);
+            var snap = window.pendingTailoredResume;
+            if (!snap || !snap.experiences || !snap.experiences[idx]) return;
+
+            var exp = snap.experiences[idx];
+            var propDesc = Array.isArray(exp.description) ? exp.description.join("\n") : (exp.description || '');
+
+            var $expItems = $('.experience-item');
+            if ($expItems.eq(idx).length) {
+                var $row = $expItems.eq(idx);
+                $row.find('textarea[name="exp_description[]"]').val(propDesc).trigger('input');
+                if (exp.position && !$row.find('input[name="exp_position[]"]').val()) {
+                    $row.find('input[name="exp_position[]"]').val(exp.position).trigger('input');
+                }
+                if (exp.company && !$row.find('input[name="exp_company[]"]').val()) {
+                    $row.find('input[name="exp_company[]"]').val(exp.company).trigger('input');
+                }
+            } else {
+                if (typeof addExperienceItem === 'function') {
+                    addExperienceItem(exp.company || '', exp.position || '', exp.start_date || '', exp.end_date || '', propDesc, exp.is_current || false);
+                }
+            }
+
+            $(this).removeClass('btn-primary').addClass('btn-success').html('<i class="ti ti-check me-1"></i> Applied').prop('disabled', true);
+            renderLivePreview();
+            refreshAts();
+            toastr.success('Applied tailored experience achievements!');
+        });
+
+        $(document).on('click', '#btn-apply-all-tailor, #btn-apply-all-tailor-footer', function() {
+            var snap = window.pendingTailoredResume;
+            if (!snap) return;
+
+            if (snap.title !== undefined) $('input[name="title"]').val(snap.title).trigger('input');
+            if (snap.summary !== undefined) {
+                $('#resume-summary').val(snap.summary).trigger('input');
+                $('textarea[name="summary"]').val(snap.summary);
+            }
+            if (snap.skills !== undefined) {
+                var proposedSkills = Array.isArray(snap.skills) ? snap.skills.join(', ') : snap.skills;
+                var curSkills = $('input[name="skills"]').val().trim();
+                var mergedSkills = curSkills ? curSkills + ', ' + proposedSkills : proposedSkills;
+                var uniqueSkills = Array.from(new Set(mergedSkills.split(',').map(function(s) { return s.trim(); }).filter(Boolean))).join(', ');
+                $('input[name="skills"]').val(uniqueSkills).trigger('input');
+            }
+
+            if (Array.isArray(snap.experiences) && snap.experiences.length > 0) {
+                var $expItems = $('.experience-item');
+                snap.experiences.forEach(function(exp, idx) {
+                    var propDesc = Array.isArray(exp.description) ? exp.description.join("\n") : (exp.description || '');
+                    if ($expItems.eq(idx).length) {
+                        var $row = $expItems.eq(idx);
+                        $row.find('textarea[name="exp_description[]"]').val(propDesc).trigger('input');
+                    } else {
+                        if (typeof addExperienceItem === 'function') {
+                            addExperienceItem(exp.company || '', exp.position || '', exp.start_date || '', exp.end_date || '', propDesc, exp.is_current || false);
+                        }
+                    }
+                });
+            }
+
+            // Close modal
+            var tailorModalEl = document.getElementById('aiTailorModal');
+            if (tailorModalEl) {
+                try {
+                    var inst = bootstrap.Modal.getInstance(tailorModalEl);
+                    if (inst) inst.hide();
+                    else $(tailorModalEl).modal('hide');
+                } catch(e) {
+                    $(tailorModalEl).modal('hide');
+                }
+            }
+            sweepBackdrops();
+            renderLivePreview();
+            refreshAts();
+            toastr.success('Applied all AI Coach tailored recommendations to your resume!');
+        });
+
+        // ── COACH WRITING REVIEW APPLY SUGGESTION HANDLER ──
+        $(document).on('click', '.apply-coach-suggestion', function() {
+            var suggestion = $(this).data('suggestion');
+            if (!suggestion) {
+                var $card = $(this).closest('.coach-review-card');
+                suggestion = $card.find('.proposed-text').text().trim();
+            }
+            if (!suggestion) return;
+
+            var polished = extractResumeContent(suggestion);
+
+            if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
+                lastFocusedTextarea.data('prev', lastFocusedTextarea.val());
+                lastFocusedTextarea.val(polished).trigger('input');
+                toastr.success('Applied suggestion to active field!');
+            } else {
+                var $summary = $('#resume-summary');
+                $summary.data('prev', $summary.val());
+                $summary.val(polished).trigger('input');
+                toastr.success('Applied suggestion to Professional Summary!');
+            }
+
+            $(this).removeClass('btn-primary').addClass('btn-success').html('<i class="ti ti-check me-1"></i> Applied').prop('disabled', true);
+            renderLivePreview();
+            refreshAts();
+        });
+
         // Template Selection mapping
         var tplMap = {
             'classic': 't-classic',
             'modern': 't-modern',
             'creative': 't-creative',
             'executive': 't-exec',
-            'minimalist': 't-minimal'
+            'minimalist': 't-minimal',
+            'pro': 't-pro',
+            'serif': 't-serif',
+            'tech': 't-tech'
         };
         var revTplMap = {
             't-classic': 'classic',
             't-modern': 'modern',
             't-creative': 'creative',
             't-exec': 'executive',
-            't-minimal': 'minimalist'
+            't-minimal': 'minimalist',
+            't-pro': 'pro',
+            't-serif': 'serif',
+            't-tech': 'tech'
         };
 
         // Template Selection changes
@@ -2349,15 +2809,19 @@
                 },
                 success: function(response) {
                     if (response.summary) {
-                        // Show preview modal with sanitized HTML (server already sanitized)
-                        $('#aiPreviewRender').html(response.summary.replace(/\n/g, '<br>'));
-                        $('#aiPreviewModal').modal('show');
-                        // store raw in the preview container for apply action
-                        $('#aiPreviewRender').data('raw', response.summary);
+                        // Wait for loader modal to fully hide before showing preview (avoids backdrop stacking)
+                        var $loader = $('#aiLoaderModal');
+                        $loader.one('hidden.bs.modal', function() {
+                            sweepBackdrops();
+                            $('#aiPreviewRender').html(response.summary.replace(/\n/g, '<br>'));
+                            $('#aiPreviewRender').data('raw', response.summary);
+                            $('#aiPreviewModal').modal('show');
+                        });
+                        $loader.modal('hide');
                     } else {
                         toastr.error('AI returned no content.');
+                        $('#aiLoaderModal').modal('hide');
                     }
-                    $('#aiLoaderModal').modal('hide');
                     btn.prop('disabled', false);
                 },
                 error: function() {
@@ -2520,21 +2984,29 @@
             btn.prop('disabled', true);
             $('#aiLoaderModal').modal('show');
 
+            const position = btn.closest('.xp-entry, .experience-item').find('input[name="exp_position[]"]').val() || '';
+
             $.ajax({
                 url: '<?= site_url("candidate/resumes/ai/improve-description") ?>',
                 type: 'POST',
                 data: {
                     description: description,
+                    job_title: position,
                     '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
                 success: function(response) {
                     if (response.description) {
-                        // Show preview modal with suggested bullets or description
-                        $('#aiPreviewRender').html(response.description.replace(/\n/g, '<br>'));
-                        $('#aiPreviewRender').data('raw', response.description);
-                        $('#aiPreviewModal').modal('show');
+                        var $loader = $('#aiLoaderModal');
+                        $loader.one('hidden.bs.modal', function() {
+                            sweepBackdrops();
+                            $('#aiPreviewRender').html(response.description.replace(/\n/g, '<br>'));
+                            $('#aiPreviewRender').data('raw', response.description);
+                            $('#aiPreviewModal').modal('show');
+                        });
+                        $loader.modal('hide');
+                    } else {
+                        $('#aiLoaderModal').modal('hide');
                     }
-                    $('#aiLoaderModal').modal('hide');
                     btn.prop('disabled', false);
                 },
                 error: function() {
@@ -2553,7 +3025,7 @@
                 lastFocusedTextarea = textarea;
             }
             const description = textarea.length ? textarea.val() : '';
-            const position = btn.closest('.experience-item').find('input[name="exp_position[]"]').val() || '';
+            const position = btn.closest('.xp-entry, .experience-item').find('input[name="exp_position[]"]').val() || '';
 
             if (!description || !description.trim()) {
                 toastr.warning('Please enter an experience description first.');
@@ -2573,15 +3045,19 @@
                 },
                 success: function(response) {
                     if (response.bullets) {
-                        // Show preview modal with bullets
-                        // convert newlines to <li> list for better UX
-                        const bulletsHtml = response.bullets.split(/\r?\n/).filter(Boolean).map(b => '<li>' + escapeHtml(b.trim()) + '</li>').join('');
-                        const html = '<div class="ai-card"><h3>Suggested Bullets</h3><ul>' + bulletsHtml + '</ul></div>';
-                        $('#aiPreviewRender').html(html);
-                        $('#aiPreviewRender').data('raw', response.bullets);
-                        $('#aiPreviewModal').modal('show');
+                        var $loader = $('#aiLoaderModal');
+                        $loader.one('hidden.bs.modal', function() {
+                            sweepBackdrops();
+                            const bulletsHtml = response.bullets.split(/\r?\n/).filter(Boolean).map(b => '<li>' + escapeHtml(b.trim()) + '</li>').join('');
+                            const html = '<div class="ai-card"><h3>Suggested Bullets</h3><ul>' + bulletsHtml + '</ul></div>';
+                            $('#aiPreviewRender').html(html);
+                            $('#aiPreviewRender').data('raw', response.bullets);
+                            $('#aiPreviewModal').modal('show');
+                        });
+                        $loader.modal('hide');
+                    } else {
+                        $('#aiLoaderModal').modal('hide');
                     }
-                    $('#aiLoaderModal').modal('hide');
                     btn.prop('disabled', false);
                 },
                 error: function() {
@@ -3244,11 +3720,17 @@
             if (sender === 'coach') {
                 html += `
                     <div class="mt-2 d-flex flex-wrap gap-1 border-top border-secondary border-opacity-10 pt-2">
+                        <button type="button" class="coach-apply-btn apply-suggestion-btn" data-text-id="${bubbleId}-text" style="font-size: 10px; padding: 3px 8px; border-radius: 12px; background: var(--primary, #0861a9); color: #fff; border: 1px solid var(--primary, #0861a9); font-weight: 600;">
+                            <i class="ti ti-check me-1"></i> Apply Suggestion
+                        </button>
                         <button type="button" class="coach-apply-btn apply-to-summary-btn" data-text-id="${bubbleId}-text" style="font-size: 10px; padding: 3px 8px; border-radius: 12px;">
                             <i class="ti ti-blockquote me-1"></i> Apply to Summary
                         </button>
                         <button type="button" class="coach-apply-btn apply-to-active-btn" data-text-id="${bubbleId}-text" style="font-size: 10px; padding: 3px 8px; border-radius: 12px;">
                             <i class="ti ti-edit me-1"></i> Apply to Active Field
+                        </button>
+                        <button type="button" class="coach-apply-btn copy-suggestion-btn" data-text-id="${bubbleId}-text" style="font-size: 10px; padding: 3px 8px; border-radius: 12px;">
+                            <i class="ti ti-copy me-1"></i> Copy
                         </button>
                     </div>
                 `;
@@ -3401,6 +3883,24 @@
             }
         });
 
+        // Copy suggestion from coach bubble
+        $(document).on('click', '.copy-suggestion-btn', function() {
+            const textId = $(this).data('text-id');
+            let content = '';
+            if (textId) {
+                const $hidden = $('#' + textId);
+                content = $hidden.length && $hidden.data('raw') ? $hidden.data('raw') : $hidden.text();
+            } else {
+                content = $(this).closest('.coach-bubble').find('.coach-text').text() || '';
+            }
+            const polished = extractResumeContent(content);
+            navigator.clipboard.writeText(polished).then(function() {
+                if (typeof toastr !== 'undefined') toastr.success('Copied suggestion to clipboard!');
+            }, function() {
+                if (typeof toastr !== 'undefined') toastr.info('Copy failed.');
+            });
+        });
+
         // Utility: Extract and clean raw markdown, HTML tags or blockquoted suggestions inside AI messages
         function extractResumeContent(text) {
             if (!text || typeof text !== 'string') {
@@ -3545,6 +4045,78 @@
             toastr.info('Nothing to undo');
         });
 
+        // ── UNIVERSAL BACKDROP SWEEPER & AI MODAL DISMISSAL ──
+        function sweepBackdrops() {
+            if ($('.modal.show').length === 0) {
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css({
+                    'overflow': '',
+                    'padding-right': ''
+                });
+            }
+        }
+        window.sweepBackdrops = sweepBackdrops;
+
+        // Clean up when any Bootstrap modal completes hiding
+        $(document).on('hidden.bs.modal', function() {
+            setTimeout(function() {
+                sweepBackdrops();
+            }, 60);
+        });
+
+        // Dedicated handlers for AI Preview Close, Done, and header X
+        $(document).on('click', '#aiDoneBtn, #aiCloseBtn, #aiPreviewModal .btn-close, [data-bs-dismiss="modal"]', function() {
+            const modalEl = document.getElementById('aiPreviewModal');
+            if (modalEl && ($(modalEl).hasClass('show') || $(modalEl).is(':visible'))) {
+                try {
+                    const inst = bootstrap.Modal.getInstance(modalEl);
+                    if (inst) {
+                        inst.hide();
+                    } else {
+                        $(modalEl).modal('hide');
+                    }
+                } catch (e) {
+                    $(modalEl).modal('hide');
+                }
+            }
+            setTimeout(function() {
+                sweepBackdrops();
+            }, 120);
+        });
+
+        // Escape key closes AI preview modal cleanly without leaving/reloading page
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                const modalEl = document.getElementById('aiPreviewModal');
+                if (modalEl && ($(modalEl).hasClass('show') || $(modalEl).is(':visible'))) {
+                    try {
+                        const inst = bootstrap.Modal.getInstance(modalEl);
+                        if (inst) {
+                            inst.hide();
+                        } else {
+                            $(modalEl).modal('hide');
+                        }
+                    } catch (err) {
+                        $(modalEl).modal('hide');
+                    }
+                    setTimeout(function() {
+                        sweepBackdrops();
+                    }, 120);
+                }
+            }
+        });
+
+        // Close handlers for More AI Outputs and Career Tools panels
+        $(document).on('click', '#out-close', function(e) {
+            e.preventDefault();
+            $('#out-wrap').prop('hidden', true).addClass('d-none');
+        });
+
+        $(document).on('click', '#career-out-close', function(e) {
+            e.preventDefault();
+            $('#career-out').addClass('d-none').empty();
+        });
+
     // ── PRINT ARCHITECTURE ──
     // beforeprint moves #doc out of the preview wrappers (which may have
     // transforms / overflow: hidden that clip the printed output).
@@ -3610,6 +4182,31 @@
         window.print();
     });
 
+    window.addExperienceItem = function(company, title, start, end, desc, isCurrent) {
+        $('.add-experience').click();
+        let $item = $('#experience-container .experience-item').last();
+        $item.find('input[name="exp_company[]"]').val(company || '');
+        $item.find('input[name="exp_position[]"]').val(title || '');
+        $item.find('input[name="exp_start_date[]"]').val(start || '');
+        $item.find('textarea[name="exp_description[]"]').val(desc || '');
+        if (isCurrent) {
+            $item.find('.exp-current-check').prop('checked', true);
+            $item.find('input[name="exp_end_date[]"]').hide();
+            $item.find('.exp-end-date-col').hide();
+        } else {
+            $item.find('input[name="exp_end_date[]"]').val(end || '');
+        }
+    };
+
+    window.addEducationItem = function(school, degree, field, year) {
+        $('.add-education').click();
+        let $item = $('#education-container .education-item').last();
+        $item.find('input[name="edu_school[]"]').val(school || '');
+        $item.find('input[name="edu_degree[]"]').val(degree || '');
+        $item.find('input[name="edu_field[]"]').val(field || '');
+        $item.find('input[name="edu_year[]"]').val(year || '');
+    };
+
     // ── 1-CLICK AUTO-FILL FROM CANDIDATE PROFILE ──
     window.performProfileAutofill = function($btn) {
         var origHtml = $btn ? $btn.html() : '';
@@ -3622,41 +4219,47 @@
             success: function(res) {
                 if (res.success && res.data) {
                     var d = res.data;
-                    if (d.full_name) $('input[name="full_name"]').val(d.full_name);
-                    if (d.email) $('input[name="email"]').val(d.email);
-                    if (d.phone) $('input[name="phone"]').val(d.phone);
-                    if (d.location) $('input[name="location"]').val(d.location);
+                    if (d.full_name && !$('input[name="full_name"]').val()) $('input[name="full_name"]').val(d.full_name);
+                    if (d.email && !$('input[name="email"]').val()) $('input[name="email"]').val(d.email);
+                    if (d.phone && !$('input[name="phone"]').val()) $('input[name="phone"]').val(d.phone);
+                    if (d.location && !$('input[name="location"]').val()) $('input[name="location"]').val(d.location);
+                    
                     if (d.job_title && !$('input[name="title"]').val()) {
                         $('input[name="title"]').val(d.job_title + ' Resume');
                     }
-                    if (d.bio) {
+                    if (d.bio && !$('#resume-summary').val()) {
                         $('#resume-summary').val(d.bio);
                         $('textarea[name="summary"]').val(d.bio);
                     }
 
                     // Auto-fill skills
                     if (d.skills && d.skills.length > 0) {
-                        $('textarea[name="skills"], input[name="skills"]').val(d.skills.join(', '));
+                        var existingSkills = $('textarea[name="skills"], input[name="skills"]').val();
+                        if (!existingSkills) {
+                            $('textarea[name="skills"], input[name="skills"]').val(d.skills.join(', '));
+                        }
                     }
 
                     // Auto-fill experiences if container is empty
                     if (d.experiences && d.experiences.length > 0) {
-                        $('#experience-container').find('.experience-item').remove();
-                        d.experiences.forEach(function(exp) {
-                            if (typeof addExperienceItem === 'function') {
-                                addExperienceItem(exp.company || '', exp.job_title || exp.position || '', exp.start_date || '', exp.end_date || '', exp.description || '', exp.is_current || false);
-                            }
-                        });
+                        if ($('#experience-container').find('.experience-item').length === 0) {
+                            d.experiences.forEach(function(exp) {
+                                if (typeof addExperienceItem === 'function') {
+                                    addExperienceItem(exp.company || '', exp.job_title || exp.position || '', exp.start_date || '', exp.end_date || '', exp.description || '', exp.is_current || false);
+                                }
+                            });
+                        }
                     }
 
                     // Auto-fill education if container is empty
                     if (d.education && d.education.length > 0) {
-                        $('#education-container').find('.education-item').remove();
-                        d.education.forEach(function(edu) {
-                            if (typeof addEducationItem === 'function') {
-                                addEducationItem(edu.school || edu.institution || '', edu.degree || '', edu.field_of_study || edu.field || '', edu.end_year ? edu.end_year + '-12-31' : (edu.year || ''));
-                            }
-                        });
+                        if ($('#education-container').find('.education-item').length === 0) {
+                            d.education.forEach(function(edu) {
+                                if (typeof addEducationItem === 'function') {
+                                    addEducationItem(edu.school || edu.institution || '', edu.degree || '', edu.field_of_study || edu.field || '', edu.end_year ? edu.end_year + '-12-31' : (edu.year || ''));
+                                }
+                            });
+                        }
                     }
 
                     renderLivePreview();
@@ -3679,7 +4282,465 @@
         e.preventDefault();
         window.performProfileAutofill($(this));
     });
+
+    // ── CV IMPORT ──────────────────────────────────────────────────────────────
+    // Holds the last parsed CV data so #orig-fill can re-trigger it
+    var _lastParsedCvData = null;
+
+    /**
+     * Applies parsed CV data to the builder form fields.
+     * Called after the candidate confirms the review modal.
+     */
+    function applyCvDataToForm(data) {
+        // Personal information
+        if (data.full_name)  $('input[name="full_name"]').val(data.full_name);
+        if (data.email)      $('input[name="email"]').val(data.email);
+        if (data.phone)      $('input[name="phone"]').val(data.phone);
+        if (data.location)   $('input[name="location"]').val(data.location);
+        if (data.linkedin)   $('input[name="linkedin"]').val(data.linkedin);
+        if (data.portfolio)  $('input[name="portfolio"]').val(data.portfolio);
+
+        // Professional title (job title, not resume title)
+        if (data.job_title) {
+            // Update the resume title input with a suffix, but keep job title for preview
+            var $titleInput = $('input[name="title"]');
+            if (!$titleInput.val() || $titleInput.val() === 'My Professional Resume') {
+                $titleInput.val(data.job_title + ' Resume');
+            }
+        }
+
+        // Professional summary
+        if (data.summary) {
+            $('#resume-summary').val(data.summary);
+            $('textarea[name="summary"]').val(data.summary);
+        }
+
+        // Skills
+        if (data.skills && data.skills.length > 0) {
+            var skillStr = Array.isArray(data.skills) ? data.skills.join(', ') : data.skills;
+            $('textarea[name="skills"], input[name="skills"]').val(skillStr);
+        }
+
+        // Certifications
+        if (data.certifications) {
+            var certStr = Array.isArray(data.certifications)
+                ? data.certifications.join("\n")
+                : data.certifications;
+            $('textarea[name="certs"], input[name="certs"]').val(certStr);
+        }
+
+        // Languages
+        if (data.languages) {
+            var langStr = Array.isArray(data.languages)
+                ? data.languages.join(', ')
+                : data.languages;
+            $('input[name="languages"]').val(langStr);
+        }
+
+        // Work experience — clear empty placeholder then add items
+        if (data.experiences && data.experiences.length > 0) {
+            // Remove the "no items" placeholder if present
+            $('#experience-container .no-items').remove();
+            data.experiences.forEach(function(exp) {
+                if (typeof addExperienceItem === 'function') {
+                    addExperienceItem(
+                        exp.company      || '',
+                        exp.job_title    || exp.position || exp.title || '',
+                        exp.start_date   || '',
+                        exp.end_date     || '',
+                        exp.description  || '',
+                        exp.is_current   || false
+                    );
+                }
+            });
+        }
+
+        // Education — clear empty placeholder then add items
+        if (data.education && data.education.length > 0) {
+            $('#education-container .no-items').remove();
+            data.education.forEach(function(edu) {
+                if (typeof addEducationItem === 'function') {
+                    addEducationItem(
+                        edu.school       || edu.institution || '',
+                        edu.degree       || '',
+                        edu.field        || edu.field_of_study || '',
+                        edu.year         || edu.graduation_year || ''
+                    );
+                }
+            });
+        }
+
+        renderLivePreview();
+        if (typeof refreshAts === 'function') refreshAts();
+        if (typeof toastr !== 'undefined') {
+            toastr.success('CV imported successfully! Review and edit the sections below.', 'Import Complete');
+        }
+    }
+
+    /**
+     * Builds and shows the CV Review modal with extracted data.
+     * Candidate can edit before applying.
+     */
+    function showCvReviewModal(data) {
+        // Populate modal fields
+        $('#cvrm-full-name').val(data.full_name || '');
+        $('#cvrm-email').val(data.email || '');
+        $('#cvrm-phone').val(data.phone || '');
+        $('#cvrm-location').val(data.location || '');
+        $('#cvrm-job-title').val(data.job_title || '');
+        $('#cvrm-linkedin').val(data.linkedin || '');
+        $('#cvrm-portfolio').val(data.portfolio || '');
+        $('#cvrm-summary').val(data.summary || '');
+        $('#cvrm-skills').val(Array.isArray(data.skills) ? data.skills.join(', ') : (data.skills || ''));
+        $('#cvrm-certs').val(Array.isArray(data.certifications) ? data.certifications.join("\n") : (data.certifications || ''));
+        $('#cvrm-languages').val(Array.isArray(data.languages) ? data.languages.join(', ') : (data.languages || ''));
+
+        // Experience list preview
+        var expHtml = '';
+        if (data.experiences && data.experiences.length > 0) {
+            data.experiences.forEach(function(exp, i) {
+                expHtml += '<div class="cvrm-exp-item" style="border-left:3px solid var(--primary,#5b6af0);padding:6px 10px;margin-bottom:8px;">' +
+                    '<strong>' + ($('<span>').text(exp.job_title || exp.position || exp.title || 'Role').html()) + '</strong>' +
+                    ' at ' + ($('<span>').text(exp.company || '').html()) +
+                    '<br><small style="color:var(--muted)">' + ($('<span>').text((exp.start_date || '') + (exp.end_date ? ' – ' + exp.end_date : exp.is_current ? ' – Present' : '')).html()) + '</small>' +
+                    (exp.description ? '<p style="margin:4px 0 0;font-size:.8rem;color:#555">' + ($('<span>').text(exp.description.substring(0,120)).html()) + (exp.description.length > 120 ? '…' : '') + '</p>' : '') +
+                    '</div>';
+            });
+        } else {
+            expHtml = '<p style="color:var(--muted);font-size:.82rem">No work experience extracted.</p>';
+        }
+        $('#cvrm-exp-preview').html(expHtml);
+
+        // Education list preview
+        var eduHtml = '';
+        if (data.education && data.education.length > 0) {
+            data.education.forEach(function(edu) {
+                eduHtml += '<div style="border-left:3px solid var(--accent,#f0a05b);padding:6px 10px;margin-bottom:8px;">' +
+                    '<strong>' + ($('<span>').text(edu.degree || '').html()) + '</strong>' +
+                    (edu.field || edu.field_of_study ? ' in ' + ($('<span>').text(edu.field || edu.field_of_study || '').html()) : '') +
+                    '<br><small style="color:var(--muted)">' + ($('<span>').text(edu.school || edu.institution || '').html()) + (edu.year || edu.graduation_year ? ' (' + (edu.year || edu.graduation_year) + ')' : '') + '</small>' +
+                    '</div>';
+            });
+        } else {
+            eduHtml = '<p style="color:var(--muted);font-size:.82rem">No education extracted.</p>';
+        }
+        $('#cvrm-edu-preview').html(eduHtml);
+
+        // Show the modal
+        var $modal = $('#cv-review-modal');
+        $modal.removeAttr('hidden').addClass('cvrm-visible');
+        $('body').addClass('cvrm-open');
+    }
+
+    /**
+     * Collects any edits from the modal back into the data object before applying.
+     */
+    function collectModalEdits(data) {
+        data.full_name     = $('#cvrm-full-name').val().trim();
+        data.email         = $('#cvrm-email').val().trim();
+        data.phone         = $('#cvrm-phone').val().trim();
+        data.location      = $('#cvrm-location').val().trim();
+        data.job_title     = $('#cvrm-job-title').val().trim();
+        data.linkedin      = $('#cvrm-linkedin').val().trim();
+        data.portfolio     = $('#cvrm-portfolio').val().trim();
+        data.summary       = $('#cvrm-summary').val().trim();
+        var skillsRaw      = $('#cvrm-skills').val().trim();
+        data.skills        = skillsRaw ? skillsRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+        var certsRaw       = $('#cvrm-certs').val().trim();
+        data.certifications = certsRaw ? certsRaw.split("\n").map(function(s){return s.trim();}).filter(Boolean) : [];
+        var langsRaw       = $('#cvrm-languages').val().trim();
+        data.languages     = langsRaw ? langsRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+        // experiences & education come from the original parsed data (not editable in modal preview)
+        return data;
+    }
+
+    function closeCvReviewModal() {
+        $('#cv-review-modal').attr('hidden', true).removeClass('cvrm-visible');
+        $('body').removeClass('cvrm-open');
+    }
+
+    /**
+     * Main CV parse flow — called when a file is selected and when #orig-fill is clicked.
+     */
+    function runCvImport(file) {
+        var $note = $('#import-note');
+        var $dz   = $('label.dropzone');
+
+        $note.removeAttr('hidden').html(
+            '<div class="ai-thinking" style="display:flex;align-items:center;gap:8px;margin-top:10px;">' +
+            '<span class="spinner-border spinner-border-sm" style="width:14px;height:14px;border-width:2px;"></span>' +
+            '<span>Reading your CV&hellip; this may take a moment.</span></div>'
+        );
+
+        var formData = new FormData();
+        formData.append('cv_file', file);
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+        $.ajax({
+            url:         '<?= site_url('candidate/resumes/parse-cv-file') ?>',
+            type:        'POST',
+            data:        formData,
+            processData: false,
+            contentType: false,
+            dataType:    'json',
+            timeout:     90000,
+            success: function(res) {
+                if (res.success && res.data) {
+                    var data = res.data;
+                    _lastParsedCvData = data;
+
+                    // Show original text area
+                    if (res.original_text) {
+                        $('#orig-txt').val(res.original_text);
+                        $('#import-orig').removeAttr('hidden');
+                    }
+
+                    // Update dropzone filename label
+                    $('#dz-name').text(file.name);
+                    $('#dz-file').css('display', 'flex');
+
+                    $note.html(
+                        '<div style="color:var(--success,#28a745);display:flex;align-items:center;gap:6px;margin-top:10px;">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 13 4 10"></polyline></svg>' +
+                        'CV read successfully! Review the extracted data below before applying.</div>'
+                    );
+
+                    // Show the review modal
+                    showCvReviewModal(data);
+
+                } else {
+                    $note.html(
+                        '<div style="color:var(--danger,#dc3545);margin-top:10px;">' +
+                        '<strong>Import failed:</strong> ' + (res.message || 'Could not extract data from your CV.') +
+                        ' Please try a .docx or .txt file for best results.</div>'
+                    );
+                }
+            },
+            error: function(xhr) {
+                var msg = 'Server error. Please try again.';
+                try {
+                    var j = JSON.parse(xhr.responseText);
+                    if (j && j.message) msg = j.message;
+                } catch(e) {}
+                $note.html(
+                    '<div style="color:var(--danger,#dc3545);margin-top:10px;"><strong>Error:</strong> ' + msg + '</div>'
+                );
+            }
+        });
+    }
+
+    // File input change handler
+    $(document).on('change', '#cv-file', function() {
+        var file = this.files && this.files[0];
+        if (!file) return;
+
+        // Reset the input so the same file can be re-selected if needed
+        var $input = $(this);
+
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('File is too large. Please use a file under 5MB.');
+            }
+            $input.val('');
+            return;
+        }
+
+        runCvImport(file);
+    });
+
+    // "Fill sections from this CV" button — re-applies last parsed data (or re-parses)
+    $(document).on('click', '#orig-fill', function() {
+        if (_lastParsedCvData) {
+            showCvReviewModal(_lastParsedCvData);
+        } else {
+            if (typeof toastr !== 'undefined') {
+                toastr.info('Please upload a CV file first using the dropzone above.');
+            }
+        }
+    });
+
+    // "Copy Original" button — copies the original CV text to clipboard
+    $(document).on('click', '#orig-copy', function() {
+        var txt = $('#orig-txt').val();
+        if (!txt) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt).then(function() {
+                if (typeof toastr !== 'undefined') toastr.success('Original CV text copied to clipboard!');
+            }).catch(function() {
+                _fallbackCopy(txt);
+            });
+        } else {
+            _fallbackCopy(txt);
+        }
+    });
+
+    function _fallbackCopy(txt) {
+        var $tmp = $('<textarea>').css({position:'fixed',opacity:0}).val(txt).appendTo('body');
+        $tmp[0].select();
+        document.execCommand('copy');
+        $tmp.remove();
+        if (typeof toastr !== 'undefined') toastr.success('Copied!');
+    }
+
+    // CV Review Modal: "Apply to Resume" confirm button
+    $(document).on('click', '#cvrm-apply', function() {
+        if (!_lastParsedCvData) return;
+        var finalData = collectModalEdits($.extend(true, {}, _lastParsedCvData));
+        closeCvReviewModal();
+        applyCvDataToForm(finalData);
+    });
+
+    // CV Review Modal: close/cancel buttons
+    $(document).on('click', '#cvrm-cancel, #cvrm-close, #cv-review-modal .cvrm-backdrop', function(e) {
+        if ($(e.target).is('#cv-review-modal .cvrm-backdrop') || $(e.target).is('#cvrm-cancel') || $(e.target).is('#cvrm-close')) {
+            closeCvReviewModal();
+        }
+    });
+
+    // Pressing Escape closes the modal
+    $(document).on('keydown.cvrm', function(e) {
+        if (e.key === 'Escape' && $('#cv-review-modal').not('[hidden]').length) {
+            closeCvReviewModal();
+        }
+    });
+    // ── END CV IMPORT ──────────────────────────────────────────────────────────
 });
 </script>
+
+<!-- ── CV Review Modal ─────────────────────────────────────────────────────── -->
+<div id="cv-review-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cvrm-title">
+    <div class="cvrm-backdrop" aria-hidden="true"></div>
+    <div class="cvrm-dialog">
+        <div class="cvrm-header">
+            <h2 class="cvrm-title" id="cvrm-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Review Imported CV
+            </h2>
+            <button type="button" id="cvrm-close" class="cvrm-x" aria-label="Close">&times;</button>
+        </div>
+        <p class="cvrm-subtitle">We extracted the information below from your CV. Edit anything before applying it to your resume.</p>
+        <div class="cvrm-body">
+
+            <fieldset class="cvrm-section">
+                <legend>Personal Information</legend>
+                <div class="cvrm-row2">
+                    <div>
+                        <label class="lbl" for="cvrm-full-name">Full Name</label>
+                        <input type="text" id="cvrm-full-name" class="input" placeholder="Full Name">
+                    </div>
+                    <div>
+                        <label class="lbl" for="cvrm-job-title">Professional Title</label>
+                        <input type="text" id="cvrm-job-title" class="input" placeholder="e.g. Software Engineer">
+                    </div>
+                </div>
+                <div class="cvrm-row2" style="margin-top:10px">
+                    <div>
+                        <label class="lbl" for="cvrm-email">Email</label>
+                        <input type="email" id="cvrm-email" class="input" placeholder="email@example.com">
+                    </div>
+                    <div>
+                        <label class="lbl" for="cvrm-phone">Phone</label>
+                        <input type="tel" id="cvrm-phone" class="input" placeholder="+234...">
+                    </div>
+                </div>
+                <div class="cvrm-row2" style="margin-top:10px">
+                    <div>
+                        <label class="lbl" for="cvrm-location">Location</label>
+                        <input type="text" id="cvrm-location" class="input" placeholder="City, State">
+                    </div>
+                    <div>
+                        <label class="lbl" for="cvrm-linkedin">LinkedIn URL</label>
+                        <input type="url" id="cvrm-linkedin" class="input" placeholder="linkedin.com/in/...">
+                    </div>
+                </div>
+                <div style="margin-top:10px">
+                    <label class="lbl" for="cvrm-portfolio">Portfolio / Website</label>
+                    <input type="url" id="cvrm-portfolio" class="input" placeholder="https://...">
+                </div>
+            </fieldset>
+
+            <fieldset class="cvrm-section">
+                <legend>Professional Summary</legend>
+                <textarea id="cvrm-summary" class="input" rows="4" placeholder="Your professional summary…" style="width:100%;resize:vertical"></textarea>
+            </fieldset>
+
+            <fieldset class="cvrm-section">
+                <legend>Skills</legend>
+                <p class="cvrm-hint">Comma-separated list of skills</p>
+                <textarea id="cvrm-skills" class="input" rows="2" placeholder="e.g. JavaScript, Project Management, SQL" style="width:100%;resize:vertical"></textarea>
+            </fieldset>
+
+            <fieldset class="cvrm-section">
+                <legend>Certifications</legend>
+                <p class="cvrm-hint">One certification per line</p>
+                <textarea id="cvrm-certs" class="input" rows="3" placeholder="e.g. AWS Certified Solutions Architect&#10;Google Data Analytics Certificate" style="width:100%;resize:vertical"></textarea>
+            </fieldset>
+
+            <fieldset class="cvrm-section">
+                <legend>Languages</legend>
+                <p class="cvrm-hint">Comma-separated</p>
+                <input type="text" id="cvrm-languages" class="input" placeholder="e.g. English, Yoruba, French">
+            </fieldset>
+
+            <fieldset class="cvrm-section">
+                <legend>Work Experience <span class="cvrm-badge">Extracted</span></legend>
+                <p class="cvrm-hint">Experience entries are shown below. They'll be added to your resume as-is — you can edit them in the builder after applying.</p>
+                <div id="cvrm-exp-preview"></div>
+            </fieldset>
+
+            <fieldset class="cvrm-section">
+                <legend>Education <span class="cvrm-badge">Extracted</span></legend>
+                <p class="cvrm-hint">Education entries will be added to your resume as-is — you can edit them in the builder after applying.</p>
+                <div id="cvrm-edu-preview"></div>
+            </fieldset>
+
+        </div><!-- /cvrm-body -->
+        <div class="cvrm-footer">
+            <button type="button" id="cvrm-cancel" class="btn btn-outline">Cancel — don't import</button>
+            <button type="button" id="cvrm-apply" class="btn btn-primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 13 4 10"/></svg>
+                Apply to Resume
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── CV Review Modal styles ─── */
+#cv-review-modal { display:none; position:fixed; inset:0; z-index:9999; }
+#cv-review-modal:not([hidden]) { display:flex; align-items:flex-start; justify-content:center; padding:20px 12px; overflow-y:auto; }
+.cvrm-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); }
+.cvrm-dialog {
+    position:relative; z-index:1; background:#fff; border-radius:14px;
+    width:100%; max-width:680px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+    display:flex; flex-direction:column; max-height:calc(100dvh - 40px);
+}
+.cvrm-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 20px 14px; border-bottom:1px solid #eee; flex-shrink:0;
+}
+.cvrm-title { margin:0; font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:8px; }
+.cvrm-x { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#888; line-height:1; padding:0 4px; }
+.cvrm-x:hover { color:#333; }
+.cvrm-subtitle { margin:0; padding:10px 20px 0; font-size:.82rem; color:var(--muted,#6b7280); flex-shrink:0; }
+.cvrm-body { padding:16px 20px; overflow-y:auto; flex:1; }
+.cvrm-section { border:none; padding:0; margin:0 0 18px; }
+.cvrm-section legend { font-weight:600; font-size:.85rem; color:var(--primary,#5b6af0); margin-bottom:8px; padding:0; }
+.cvrm-hint { font-size:.75rem; color:var(--muted,#6b7280); margin:0 0 6px; }
+.cvrm-row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cvrm-badge { display:inline-block; font-size:.68rem; font-weight:600; background:#eef0ff; color:var(--primary,#5b6af0); border-radius:4px; padding:1px 6px; vertical-align:middle; }
+.cvrm-footer {
+    display:flex; align-items:center; justify-content:flex-end; gap:10px;
+    padding:14px 20px; border-top:1px solid #eee; flex-shrink:0;
+}
+body.cvrm-open { overflow:hidden; }
+@media (max-width:520px) {
+    .cvrm-row2 { grid-template-columns:1fr; }
+    .cvrm-footer { flex-direction:column-reverse; }
+    .cvrm-footer .btn { width:100%; text-align:center; justify-content:center; }
+}
+</style>
+
 <?= $this->endSection() ?>
 

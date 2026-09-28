@@ -385,7 +385,8 @@ class AptitudeController extends BaseController
         }
 
         $breakdown = [];
-        foreach (json_decode($attempt['question_ids'], true) as $i => $qId) {
+        $decodedQuestionIds = json_decode($attempt['question_ids'] ?? '[]', true) ?: [];
+        foreach ($decodedQuestionIds as $i => $qId) {
             $q = $questionModel->find($qId);
             if (!$q) continue;
 
@@ -486,12 +487,13 @@ class AptitudeController extends BaseController
         $questionModel = new QuestionModel();
         $allQuestions = $questionModel->where('test_id', $testId)->where('is_active', 1)->findAll();
         
-        if (count($allQuestions) < $test['num_questions']) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Not enough questions in bank.'])->setStatusCode(500);
+        if (empty($allQuestions)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'This test has no questions yet.'])->setStatusCode(400);
         }
 
         shuffle($allQuestions);
-        $selectedQuestions = array_slice($allQuestions, 0, $test['num_questions']);
+        $take = min((int) ($test['num_questions'] ?? 10), count($allQuestions));
+        $selectedQuestions = array_slice($allQuestions, 0, $take);
         $questionIds = array_column($selectedQuestions, 'id');
 
         $startedAt = date('Y-m-d H:i:s');
@@ -528,7 +530,7 @@ class AptitudeController extends BaseController
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized'])->setStatusCode(401);
         }
 
-        $questionIds = json_decode($attempt['question_ids'], true);
+        $questionIds = json_decode($attempt['question_ids'] ?? '[]', true) ?: [];
         $questionModel = new QuestionModel();
         $optionModel = new QuestionOptionModel();
 
@@ -553,10 +555,11 @@ class AptitudeController extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => 'success',
-            'attempt' => $attempt,
-            'questions' => $questions,
-            'server_time' => time()
+            'status'            => 'success',
+            'attempt'           => $attempt,
+            'questions'         => $questions,
+            'server_time'       => time(),
+            'expires_timestamp' => !empty($attempt['expires_at']) ? strtotime($attempt['expires_at']) : (time() + 1200),
         ]);
     }
 
@@ -611,10 +614,11 @@ class AptitudeController extends BaseController
         $optionModel = new QuestionOptionModel();
         
         $numCorrect = 0;
-        $numTotal = count(json_decode($attempt['question_ids'], true));
+        $questionIdList = json_decode($attempt['question_ids'] ?? '[]', true) ?: [];
+        $numTotal = count($questionIdList);
 
-        // Re-check timing
-        $isLate = (time() > strtotime($attempt['expires_at']) + 10); // 10 sec grace period
+        // Re-check timing: allow 120-second grace period for network transit on auto-submission
+        $isLate = (time() > strtotime($attempt['expires_at']) + 120);
 
         foreach ($answers as $ans) {
             $selectedOptIds = json_decode($ans['selected_option_ids'], true);

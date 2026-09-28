@@ -166,10 +166,33 @@ $completion = method_exists($candidate, 'getProfileCompletion') ? $candidate->ge
       <div class="prof-col prof-sticky">
         <section class="card id-card" aria-label="Candidate ID">
           <div class="id-ava">
-            <?php if (!empty($candidate->profile_picture) && file_exists(FCPATH . $candidate->profile_picture)): ?>
-                <img src="<?= base_url($candidate->profile_picture) ?>" alt="Profile Photo" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+            <?php
+                $candPic = $candidate->profile_picture ?? '';
+                $candName = $candidate->full_name ?? 'Candidate';
+                $hasCandImg = false;
+                $candImgSrc = '';
+                if (!empty($candPic)) {
+                    if (filter_var($candPic, FILTER_VALIDATE_URL) || str_starts_with($candPic, 'http://') || str_starts_with($candPic, 'https://')) {
+                        $hasCandImg = true;
+                        $candImgSrc = $candPic;
+                    } else {
+                        $cleanCandPic = ltrim($candPic, '/\\');
+                        if (file_exists(FCPATH . $cleanCandPic)) {
+                            $hasCandImg = true;
+                            $candImgSrc = base_url($cleanCandPic);
+                        } elseif (file_exists(FCPATH . 'uploads/' . $cleanCandPic)) {
+                            $hasCandImg = true;
+                            $candImgSrc = base_url('uploads/' . $cleanCandPic);
+                        }
+                    }
+                }
+                $candInitials = strtoupper(substr($candName, 0, 1));
+                $fallbackAvatar = "https://ui-avatars.com/api/?name=" . urlencode(trim($candName)) . "&background=0A2F57&color=fff&size=128&bold=true";
+            ?>
+            <?php if ($hasCandImg): ?>
+                <img src="<?= esc($candImgSrc) ?>" alt="<?= esc($candName) ?>" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.onerror=null; this.src='<?= esc($fallbackAvatar) ?>';">
             <?php else: ?>
-                <?= esc(substr($candidate->full_name ?? 'C', 0, 1)) ?>
+                <?= esc($candInitials) ?>
             <?php endif; ?>
             <span class="dot" aria-hidden="true"></span>
           </div>
@@ -200,7 +223,7 @@ $completion = method_exists($candidate, 'getProfileCompletion') ? $candidate->ge
                 <span class="pct"><?= $completion ?>%</span>
               </div>
               <div class="pf-body">
-                <b><?= $completion == 100 ? 'Fully Complete' : 'Almost complete' ?></b>
+                <b><?= $completion >= 100 ? 'Fully Complete' : ($completion >= 80 ? 'Almost Complete' : ($completion >= 50 ? 'Partially Complete' : 'Incomplete Profile')) ?></b>
                 <p>
                     <?php if ($completion < 100):
                         // Identify missing items including work experience and education
@@ -478,20 +501,27 @@ $completion = method_exists($candidate, 'getProfileCompletion') ? $candidate->ge
 <script>
 requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 $(function () {
+    var csrfName = '<?= csrf_token() ?>';
+    var csrfHash = '<?= csrf_hash() ?>';
+
     $('#visibility-toggle').on('change', function () {
         var input = $(this);
         var makeVisible = input.is(':checked') ? 1 : 0;
         input.prop('disabled', true);
 
+        var data = { is_visible: makeVisible };
+        data[csrfName] = csrfHash;
+
         $.ajax({
             url: '<?= base_url('candidate/profile/visibility') ?>',
             type: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-                is_visible: makeVisible
-            },
+            data: data,
             success: function (res) {
+                if (res.csrf_token && res.csrf_hash) {
+                    csrfName = res.csrf_token;
+                    csrfHash = res.csrf_hash;
+                }
                 if (res && res.success) {
                     if (typeof toastr !== 'undefined') toastr.success(res.message);
                     if (res.is_visible) {

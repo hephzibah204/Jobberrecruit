@@ -58,7 +58,7 @@ class CreditService
 
         // Check if employer has unlimited access and it hasn't expired
         if ($employer->unlimited_access == 1) {
-            if (empty($employer->unlimited_until) || strtotime($employer->unlimited_until) > time()) {
+            if (empty($employer->unlimited_until) || strpos($employer->unlimited_until, '0000') !== false || strtotime($employer->unlimited_until) > time()) {
                 return true;
             }
         }
@@ -248,24 +248,24 @@ class CreditService
                 ];
             }
 
-            // Case 3: Has active subscription but NO credits left
+            // Case 3: Has active subscription but NO credits left (fallback to wallet)
             if ($subscription && $creditBalance < 1) {
                 return [
-                    'can'       => false,
-                    'reason'    => "You have an active {$plan->name} subscription but no monthly credits remaining. Your next allocation will be on " . date('M d, Y', strtotime($subscription->ends_at)) . ". Purchase a bundle for immediate credits.",
+                    'can'       => true,
+                    'reason'    => '',
                     'unlimited' => false,
                     'credits'   => $creditBalance,
-                    'source'    => 'subscription_no_credits'
+                    'source'    => 'wallet'
                 ];
             }
 
-            // Case 4: No subscription and no credits
+            // Case 4: No subscription and no credits (fallback to wallet)
             return [
-                'can'       => false,
-                'reason'    => 'You need either an active subscription or job credits to post a job. Subscribe now or purchase a bundle.',
+                'can'       => true,
+                'reason'    => '',
                 'unlimited' => false,
                 'credits'   => 0,
-                'source'    => 'none'
+                'source'    => 'wallet'
             ];
         }
 

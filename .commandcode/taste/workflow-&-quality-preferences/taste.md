@@ -8,3 +8,4 @@
 - Wants mobile responsiveness fixed sitewide, and pages to support iOS browsers in addition to desktop. Confidence: 0.85
 - Expects AI features (chatbot, interview, resume/advice generation) to actually call the live AI service/works with real auth, not fall back to local templates; keeps real keys in env config. Confidence: 0.85
 - For cPanel deployments, prefers applying migrations/schema changes as raw SQL that can be run directly in phpMyAdmin (asked for "the SQL codes of the last migration" rather than `php spark migrate` on the server). Confidence: 0.7
+- Tracks outstanding issues in a written list (e.g., a PDF) and expects each item to be verified against the actual codebase and reported item-by-item as fixed/partial/broken rather than a blanket confirmation. Confidence: 0.7

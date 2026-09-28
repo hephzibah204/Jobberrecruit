@@ -1583,7 +1583,7 @@ function runTest(kind, willPass){
   }, 1600);
 }
 $('mic-btn').addEventListener('click', function(){ runTest('mic', true); });
-$('cam-btn').addEventListener('click', function(){ runTest('cam', true); });
+if($('cam-btn')) $('cam-btn').addEventListener('click', function(){ runTest('cam', true); });
 
 /* ── auto-suggest Field from Job Title ── */
 var ROLE_MATCH = {

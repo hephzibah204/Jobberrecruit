@@ -49,8 +49,8 @@ $routes->get('jobs-in-(:segment)', 'Home::location_hub/$1');
 $routes->get('training', 'Home::training');
 $routes->get('training/course/(:num)', 'ElearningController::show/$1');
 $routes->get('training/content/(:num)', 'ElearningController::content/$1');
-$routes->match(['get', 'post'], 'training/enroll', 'ElearningController::enroll');
-$routes->match(['get', 'post'], 'training/enroll/(:num)', 'ElearningController::enroll/$1');
+$routes->match(['GET', 'POST'], 'training/enroll', 'ElearningController::enroll');
+$routes->match(['GET', 'POST'], 'training/enroll/(:num)', 'ElearningController::enroll/$1');
 $routes->post('training/course/(:num)/enroll', 'ElearningController::enroll/$1');
 $routes->get('training/verify/(:num)', 'ElearningController::verify/$1');
 $routes->get('training/payment-acknowledgement/(:num)', 'ElearningController::paymentAcknowledgement/$1');
@@ -195,7 +195,8 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->post('jobs/toggle-anonymous/(:num)', 'EmployerController::toggleAnonymous/$1');
     $routes->post('jobs/pause/(:num)', 'EmployerController::toggleJobStatus/$1');
     $routes->post('jobs/close/(:num)', 'EmployerController::closeJob/$1');
-    $routes->post('jobs/repost/(:num)', 'EmployerController::repostJob/$1');
+    $routes->get('jobs/repost/(:num)', 'EmployerController::repostJob/$1');
+    $routes->post('jobs/repost/(:num)', 'EmployerController::processRepostJob/$1');
     $routes->post('jobs/extend/(:num)', 'EmployerController::extendJob/$1');
     $routes->get('jobs/export', 'EmployerController::exportJobs');
 
@@ -214,7 +215,17 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests/list', 'EmployerController::getAvailableAptitudeTests');
+    $routes->get('aptitude-tests/result/(:num)', 'EmployerController::getAptitudeAttemptResult/$1');
+    $routes->post('aptitude-tests/advance-stage', 'EmployerController::advanceCandidateStage');
+    $routes->post('aptitude-tests/resend-invite', 'EmployerController::resendAptitudeInvite');
     $routes->post('applications/invite-test', 'EmployerController::inviteToAptitudeTest');
+    // Employer Custom Tests
+    $routes->get('aptitude-tests/my-tests', 'EmployerController::myTests');
+    $routes->post('aptitude-tests/create', 'EmployerController::createCustomTest');
+    $routes->post('aptitude-tests/update/(:num)', 'EmployerController::updateCustomTest/$1');
+    $routes->post('aptitude-tests/delete/(:num)', 'EmployerController::deleteCustomTest/$1');
+    $routes->get('aptitude-tests/questions/(:num)', 'EmployerController::getCustomTestQuestions/$1');
+    $routes->post('aptitude-tests/ai-generate', 'EmployerController::aiGenerateTestQuestions');
 
     // Profile
     $routes->get('profile', 'EmployerController::profile');
@@ -350,6 +361,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('resumes/(:num)/autosaves', 'ResumeController::listAutosaves/$1');
     $routes->post('resumes/(:num)/restore-autosave', 'ResumeController::restoreAutosave/$1');
     $routes->post('resumes/generate-cover-letter', 'ResumeController::generateCoverLetter');
+    $routes->post('resumes/save-cover-letter', 'ResumeController::saveCoverLetter');
     $routes->post('resumes/ai/generate-cover-letter', 'ResumeController::generateCoverLetter');
     $routes->post('resumes/parse-cv-file', 'ResumeController::parseCvFile');
     $routes->post('resumes/ai/chat', 'ResumeController::chat');
@@ -363,7 +375,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('resumes/download-docx/(:num)', 'ResumeController::downloadDocx/$1');
     $routes->get('resumes/download-txt/(:num)', 'ResumeController::downloadTxt/$1');
     $routes->get('resumes/download-json/(:num)', 'ResumeController::downloadJson/$1');
-    $routes->post('resumes/delete/(:num)', 'ResumeController::delete/$1');
+    $routes->match(['GET', 'POST'], 'resumes/delete/(:num)', 'ResumeController::delete/$1');
 
     // Referrals
     $routes->get('referrals', 'ReferralController::index');
@@ -410,6 +422,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
 
 
 $routes->get('track/open/(:num)', 'Home::trackOpen/$1');
+$routes->get('track/click/(:num)/(:num)', 'Home::trackClick/$1/$2');
 $routes->get('track/click/(:num)', 'Home::trackClick/$1');
 
 $routes->post('pricing/webhook', 'EmployerController::webhook'); // webhook endpoint (no CSRF)
@@ -679,3 +692,5 @@ $routes->get('temp-login', function() {
     return "User ID 1 not found";
 });
 
+
+$routes->get('employer/test-insert', 'TestInsert::index');

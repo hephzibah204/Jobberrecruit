@@ -64,11 +64,21 @@ $walletUrl       = $isEmployer ? base_url('employer/wallet') : base_url('candida
 
 // Saved jobs count (candidate sidebar badge)
 $savedJobsCount = 0;
+$pendingAptitudeCount = 0;
 if (!$isEmployer && isset($user) && $user) {
     try {
         $savedJobsCount = model(\App\Models\SavedJobModel::class)->where('user_id', $user->id)->countAllResults();
     } catch (\Throwable $e) {
         $savedJobsCount = 0;
+    }
+    try {
+        $pendingAptitudeCount = model(\App\Models\AptitudeTestInvitationModel::class)
+            ->where('candidate_id', $user->id)
+            ->where('status !=', 'completed')
+            ->where('status !=', 'expired')
+            ->countAllResults();
+    } catch (\Throwable $e) {
+        $pendingAptitudeCount = 0;
     }
 }
 
@@ -188,7 +198,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 <link rel="stylesheet" href="<?= base_url('css/mobile-app.css'); ?>">
 
 <!-- Dashboard Design System shell (loaded last so it wins) -->
-<link rel="stylesheet" href="<?= base_url('css/employer-shell.css') ?>">
+<link rel="stylesheet" href="<?= base_url('css/employer-shell.css') ?>?v=<?= time() ?>">
 <link rel="stylesheet" href="<?= base_url('css/modal-scroll.css') ?>?v=<?= time() ?>">
 
 <!-- Page-Level Styles -->
@@ -347,6 +357,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
         <a class="sb-link" href="<?= base_url('aptitude') ?>"
            <?= dashIsActiveStart('aptitude') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-check-c"/></svg> Aptitude Tests
+          <?php if ($pendingAptitudeCount > 0): ?><span class="sb-count"><?= $pendingAptitudeCount ?></span><?php endif; ?>
         </a>
         <a class="sb-link" href="<?= base_url('training/certificates') ?>"
            <?= dashIsActiveStart('training/certificates') ? 'aria-current="page"' : '' ?>>
@@ -511,9 +522,9 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
           <svg aria-hidden="true"><use href="#i-menu"/></svg>
         </button>
 
-        <!-- Mobile Logo -->
-        <a href="<?= $isEmployer ? base_url('employer/dashboard') : base_url('candidate/dashboard') ?>" class="tb-mob-logo" aria-label="JobberRecruit Dashboard">
-          <img src="<?= base_url('images/logo.png') ?>" alt="JobberRecruit" class="tb-logo-img">
+        <!-- Mobile Company / Brand Logo -->
+        <a href="<?= $isEmployer ? base_url('employer/dashboard') : base_url('candidate/dashboard') ?>" class="tb-mob-logo" aria-label="JobberRecruit dashboard">
+          <img src="<?= base_url('images/logo.png') ?>" alt="JobberRecruit" style="height:28px; width:auto; object-fit:contain;">
         </a>
 
         <!-- Breadcrumb (tb-crumb) shown when page_title is set, otherwise fallback to search -->
@@ -706,47 +717,88 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
   });
 })();
 
-// Topbar dropdowns (robust for desktop and touch phones)
+// Topbar dropdowns — touch-safe for mobile (iOS/Android) + desktop click
 (function() {
+  'use strict';
   var drops = document.querySelectorAll('.tb-drop');
+  if (!drops.length) return;
+
+  // Flag set while a touch interaction is inside a drop; prevents the
+  // document-level touchend listener from immediately closing the dropdown
+  // that the button touchstart just opened (a race on iOS Safari).
+  var touchInsideDrop = false;
+
+  function closeAllDrops() {
+    drops.forEach(function(d) {
+      d.classList.remove('open');
+      var b = d.querySelector('button, .tb-icon, .tb-avatar');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  }
+
   drops.forEach(function(d) {
-    var btn = d.querySelector('button, .tb-icon');
+    var btn = d.querySelector('button, .tb-icon, .tb-avatar');
     if (!btn) return;
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
+
+    var menu = d.querySelector('.tb-menu');
+
+    // Keep clicks/touches inside the open menu from closing it immediately.
+    if (menu) {
+      menu.addEventListener('click', function(e) { e.stopPropagation(); });
+      menu.addEventListener('touchstart', function() { touchInsideDrop = true; }, { passive: true });
+      menu.addEventListener('touchend',   function() { touchInsideDrop = false; }, { passive: true });
+    }
+
+    var lastToggleTime = 0;
+
+    function handleToggle(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       var wasOpen = d.classList.contains('open');
-      drops.forEach(function(x) {
-        x.classList.remove('open');
-        var b = x.querySelector('button, .tb-icon');
-        if (b) b.setAttribute('aria-expanded', 'false');
-      });
+      closeAllDrops();
       if (!wasOpen) {
         d.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
+        touchInsideDrop = true;   // mark: we are now inside an open drop
       }
+      lastToggleTime = Date.now();
+    }
+
+    // Touch: open on touchstart so it feels instant on mobile.
+    btn.addEventListener('touchstart', function(e) {
+      touchInsideDrop = true;
+      handleToggle(e);
+    }, { passive: false });
+
+    btn.addEventListener('touchend', function() {
+      // Short grace period so the document touchend doesn't close right away.
+      setTimeout(function() { touchInsideDrop = false; }, 300);
+    }, { passive: true });
+
+    // Mouse click (desktop): guard against the synthetic click fired after
+    // touchstart on mobile (which would double-toggle).
+    btn.addEventListener('click', function(e) {
+      if (Date.now() - lastToggleTime < 400) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      handleToggle(e);
     });
   });
 
-  // Close dropdown when tapping outside, but allow clicks inside the menu to navigate
+  // Close when touching/clicking anywhere outside a tb-drop.
+  document.addEventListener('touchend', function() {
+    if (touchInsideDrop) { touchInsideDrop = false; return; }
+    closeAllDrops();
+  }, { passive: true });
+
   document.addEventListener('click', function(e) {
-    if (e.target && e.target.closest && e.target.closest('.tb-drop')) {
-      return;
-    }
-    drops.forEach(function(d) {
-      d.classList.remove('open');
-      var b = d.querySelector('button, .tb-icon');
-      if (b) b.setAttribute('aria-expanded', 'false');
-    });
+    if (e.target && e.target.closest && e.target.closest('.tb-drop')) return;
+    closeAllDrops();
   });
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      drops.forEach(function(d) {
-        d.classList.remove('open');
-        var b = d.querySelector('button, .tb-icon');
-        if (b) b.setAttribute('aria-expanded', 'false');
-      });
-    }
+    if (e.key === 'Escape') closeAllDrops();
   });
 })();
 </script>
@@ -754,6 +806,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 <?php if (auth()->loggedIn() && !str_starts_with(trim(uri_string(), '/'), 'candidate/resumes/build')): ?>
 <?= $this->include('partials/chatbot'); ?>
 <?php endif; ?>
+<script src="<?= base_url('assets/js/autosave.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

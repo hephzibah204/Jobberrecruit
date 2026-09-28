@@ -37,18 +37,46 @@
   flex-shrink: 0;
 }
 .ic-btn--preview {
-  background: #eff6ff !important;
-  border-color: #bfdbfe !important;
-  color: #1d4ed8 !important;
-}
-.ic-btn--preview:hover {
-  background: #1d4ed8 !important;
-  border-color: #1d4ed8 !important;
-  color: #ffffff !important;
+  background: #e0f2fe !important;
+  border: 1.5px solid #0284c7 !important;
+  color: #0369a1 !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.15) !important;
 }
 .ic-btn--preview svg {
-  stroke: currentColor !important;
+  stroke: #0284c7 !important;
+  color: #0284c7 !important;
   fill: none !important;
+  stroke-width: 2.2px !important;
+}
+.ic-btn--preview:hover {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important;
+}
+.ic-btn--preview:hover svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+@media (prefers-color-scheme: dark) {
+  .ic-btn--preview {
+    background: #0c4a6e !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+  }
+  .ic-btn--preview svg {
+    stroke: #38bdf8 !important;
+    color: #38bdf8 !important;
+  }
+  .ic-btn--preview:hover {
+    background: #0284c7 !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+  }
+  .ic-btn--preview:hover svg {
+    stroke: #ffffff !important;
+    color: #ffffff !important;
+  }
 }
 .ic-btn--close {
   border-color: #fee2e2 !important;
@@ -177,6 +205,12 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                         $applicantsVal = is_object($job) ? ($job->applicants_count ?? $job->applicants ?? 0) : ($job['applicants_count'] ?? $job['applicants'] ?? 0);
 
                         $status = strtolower($statusVal);
+                        // Normalize 'paused' to 'closed' for clear employer distinction
+                        if ($status === 'paused') {
+                            $status = 'closed';
+                            $statusVal = 'Closed';
+                        }
+
                         $pillClass = 'pill--closed';
                         if (in_array($status, ['pending'])) {
                             $pillClass = 'pill--pending';
@@ -186,8 +220,6 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                             $pillClass = 'pill--shortlisted';
                         } elseif (in_array($status, ['hired', 'open', 'active', 'success'])) {
                             $pillClass = 'pill--open';
-                        } elseif (in_array($status, ['paused'])) {
-                            $pillClass = 'pill--paused';
                         } elseif (in_array($status, ['rejected', 'closed', 'expired'])) {
                             $pillClass = 'pill--closed';
                         }
@@ -221,14 +253,16 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                                 <span class="metric"><?= esc(number_format($viewsVal)) ?><i>views</i></span>
                             </td>
                             <td data-lbl="Applicants">
-                                <span class="metric"><?= esc(number_format($applicantsVal)) ?><i>applicants</i></span>
+                                <a href="<?= base_url('employer/applications?job_id=' . esc($jobId)) ?>" class="metric" title="Review applications for this job" style="text-decoration:none;">
+                                    <?= esc(number_format($applicantsVal)) ?><i>applicants</i>
+                                </a>
                             </td>
                             <td data-lbl="Closes">
                                 <?= !empty($deadline) ? date('d M Y', strtotime($deadline)) : 'N/A' ?>
                             </td>
                             <td data-lbl="Actions">
                                 <div class="row-actions">
-                                    <a href="<?= base_url('employer/jobs/view/' . esc($jobId)) ?>" class="ic-btn" aria-label="View job" title="View Details">
+                                    <a href="<?= base_url('employer/jobs/view/' . esc($jobId)) ?>" class="ic-btn" aria-label="View job" title="View Details / Applications">
                                         <svg aria-hidden="true"><use href="#i-eye"/></svg>
                                     </a>
                                     
@@ -243,25 +277,37 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                                     <?php endif; ?>
 
                                     <!-- Public Preview Icon -->
-                                    <?php $previewUrl = !empty($jobSlug) ? base_url('jobs/' . esc($jobSlug)) : base_url('employer/jobs/preview/' . esc($jobId)); ?>
-                                    <a href="<?= $previewUrl ?>" class="ic-btn ic-btn--preview" aria-label="Preview job listing on public site" title="Preview on public site" target="_blank">
-                                        <svg aria-hidden="true"><use href="#i-external-link"/></svg>
+                                    <?php $previewUrl = !empty($jobSlug) ? base_url('jobs/' . esc($jobSlug)) . '?employer_preview=1' : base_url('employer/jobs/preview/' . esc($jobId)); ?>
+                                    <a href="<?= $previewUrl ?>" class="ic-btn ic-btn--preview" aria-label="Preview job listing on public site" title="Preview on public site" target="_blank" rel="noopener noreferrer">
+                                        <svg aria-hidden="true" style="width:16px;height:16px;color:#0284c7;stroke:#0284c7;stroke-width:2.2px;"><use href="#i-external-link"/></svg>
                                     </a>
 
                                     <!-- Repost Action -->
-                                    <button type="button" class="ic-btn" onclick="openRepostModal(<?= esc($jobId) ?>, '<?= esc($title, 'js') ?>')" aria-label="Repost job" title="Repost this job (new 30-day cycle)">
+                                    <a href="<?= base_url('employer/jobs/repost/' . esc($jobId)) ?>" class="ic-btn" aria-label="Repost job" title="Repost this job (new 30-day cycle)">
                                         <svg aria-hidden="true" style="color:var(--brand);"><use href="#i-refresh"/></svg>
-                                    </button>
+                                    </a>
 
                                     <!-- Close Job Action (Replaces Pause) -->
                                     <?php if ($isOpen): ?>
                                         <form action="<?= base_url('employer/jobs/close/' . esc($jobId)) ?>" method="post" class="d-inline" onsubmit="return confirm('Close this job? The listing will no longer accept new applications, but all existing applications will remain accessible.');">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="ic-btn ic-btn--close" aria-label="Close job" title="Close Job (stop accepting applications)">
-                                                <svg aria-hidden="true"><use href="#i-x"/></svg>
+                                                <svg aria-hidden="true" style="color:#ef4444;"><use href="#i-x"/></svg>
                                             </button>
                                         </form>
+                                    <?php else: ?>
+                                        <span class="ic-btn" style="opacity:0.3;cursor:not-allowed;" title="Job already closed">
+                                            <svg aria-hidden="true" style="color:var(--muted);"><use href="#i-x"/></svg>
+                                        </span>
                                     <?php endif; ?>
+
+                                    <!-- Delete Job Action -->
+                                    <form action="<?= base_url('employer/jobs/delete/' . esc($jobId)) ?>" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this job and all its applications? This action cannot be undone.');">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="ic-btn" aria-label="Delete job" title="Permanently Delete Job">
+                                            <svg aria-hidden="true" style="color:#ef4444;"><use href="#i-trash"/></svg>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

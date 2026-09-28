@@ -13,41 +13,32 @@
 
 <?= $this->section('content') ?>
 <?php
-$isEdit = isset($job) && !empty($job);
-$val = function($field, $default = '') use ($job, $isEdit) {
-    if (session()->has('errors') || old($field) !== null) {
-        return old($field);
+$isEdit = isset($job) && !empty($job) && !isset($isRepost);
+$isRepost = isset($isRepost) && $isRepost === true;
+$val = function($field, $default = '') use ($job, $isEdit, $isRepost) {
+    if ($_POST) {
+        return $_POST[$field] ?? $default;
     }
-    if ($isEdit) {
-        if (is_array($job)) {
-            return $job[$field] ?? $default;
-        } elseif (is_object($job)) {
-            return $job->$field ?? $default;
-        }
+    if ($isEdit || $isRepost) {
+        $j = (is_object($job) && method_exists($job, 'toArray')) ? $job->toArray() : (array) $job;
+        return $j[$field] ?? $default;
     }
     return $default;
 };
 
-$hasBenefit = function($value) use ($job, $isEdit) {
-    if (session()->has('errors') || old('job_benefits') !== null) {
-        $benefits = old('job_benefits') ?? [];
-        return in_array($value, $benefits);
+$hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
+    if ($_POST && isset($_POST['benefits'])) {
+        return in_array($value, (array)$_POST['benefits']);
     }
-    if ($isEdit) {
-        $benefits = [];
-        if (is_array($job)) {
-            $benefits = $job['job_benefits'] ?? [];
-        } elseif (is_object($job)) {
-            $benefits = $job->job_benefits ?? [];
-        }
+    if ($isEdit || $isRepost) {
+        $j = (is_object($job) && method_exists($job, 'toArray')) ? $job->toArray() : (array) $job;
+        $benefits = $j['benefits'] ?? '';
         if (is_string($benefits)) {
-            if (strpos($benefits, '[') === 0) {
-                $benefits = json_decode($benefits, true) ?? [];
-            } else {
-                $benefits = explode(',', $benefits);
-            }
+            $benefits = json_decode($benefits, true);
         }
-        $benefits = array_map('trim', (array)$benefits);
+        if (!is_array($benefits)) {
+            return false;
+        }
         return in_array($value, $benefits);
     }
     return false;
@@ -55,14 +46,20 @@ $hasBenefit = function($value) use ($job, $isEdit) {
 ?>
 
 <div class="page-head">
-  <div class="page-head-left">
-    <h1><svg aria-hidden="true"><use href="#i-plus"/></svg> <?= $isEdit ? 'Edit Job Listing' : 'Post a New Job' ?></h1>
-    <p>Reach 115k+ candidates. Detailed listings get significantly more quality applications.</p>
-  </div>
+    <div class="page-head-left">
+      <h1><svg aria-hidden="true" width="22" height="22"><use href="<?= $isRepost ? '#i-refresh' : ($isEdit ? '#i-edit' : '#i-briefcase') ?>"/></svg> <?= $isRepost ? 'Repost Job' : ($isEdit ? 'Edit Job' : 'Post a New Job') ?></h1>
+      <p><?= $isRepost ? 'Review and update your job details before reposting for a new 30-day cycle.' : ($isEdit ? 'Update your job posting details to keep it accurate and attract the best candidates.' : 'Fill out the form below to publish your job opportunity to thousands of candidates.') ?></p>
+    </div>
   <div class="page-actions">
-    <a href="<?= base_url('employer/jobs') ?>" class="emp-btn emp-btn-outline emp-btn-sm">
-      <svg aria-hidden="true"><use href="#i-arrow-l"/></svg> Back to My Jobs
-    </a>
+    <?php if ($isEdit || $isRepost): ?>
+      <a href="<?= site_url('employer/jobs/view/' . $job->id) ?>" class="emp-btn emp-btn-outline emp-btn-sm">
+        <svg aria-hidden="true" width="16" height="16"><use href="#i-arrow-l"/></svg> Back to Details
+      </a>
+    <?php else: ?>
+      <a href="<?= site_url('employer/jobs') ?>" class="emp-btn emp-btn-outline emp-btn-sm">
+        Cancel
+      </a>
+    <?php endif; ?>
   </div>
 </div>
 
@@ -91,7 +88,7 @@ $hasBenefit = function($value) use ($job, $isEdit) {
     <?php if ($credits <= 0): ?>
         <div class="notice notice--warn" role="status" style="align-items:center; margin-bottom:20px;">
           <svg aria-hidden="true"><use href="#i-zap"/></svg>
-          <span><b>No Job Credits Available!</b> You need credits to post jobs. <a href="<?= base_url('employer/pricing') ?>" style="font-weight:700;text-decoration:underline">Purchase a bundle</a> or subscribe to a plan.</span>
+          <span><b>Pay-As-You-Go Active:</b> You have no job credits available. Posting this job will cost <b>₦10,000</b> from your wallet. <a href="<?= base_url('employer/pricing') ?>" style="font-weight:700;text-decoration:underline">Purchase a bundle</a> to save more.</span>
         </div>
     <?php else: ?>
         <div class="notice notice--info" role="status" style="align-items:center; margin-bottom:20px;">
@@ -102,7 +99,16 @@ $hasBenefit = function($value) use ($job, $isEdit) {
 <?php endif; ?>
 
 <div class="post-wrap">
-  <form id="post-job-form" method="POST" action="<?= $isEdit ? base_url('employer/jobs/edit/' . (is_array($job) ? $job['id'] : $job->id)) : base_url('employer/post-job') ?>" novalidate>
+  <?php
+    $jobIdStr = (isset($job) && !empty($job)) ? (is_array($job) ? $job['id'] : $job->id) : '';
+    $formAction = base_url('employer/post-job');
+    if ($isEdit) {
+        $formAction = base_url('employer/jobs/edit/' . $jobIdStr);
+    } elseif ($isRepost) {
+        $formAction = base_url('employer/jobs/repost/' . $jobIdStr);
+    }
+  ?>
+  <form id="post-job-form" method="POST" action="<?= $formAction ?>" novalidate>
     <?= csrf_field() ?>
     
     <!-- ══ 1. JOB OVERVIEW ══ -->
@@ -655,7 +661,8 @@ $hasBenefit = function($value) use ($job, $isEdit) {
 
     <!-- ══ 8. LISTING BOOST ══ -->
     <?php
-      $hasPlanAccess = (is_site_free_mode() || !empty($hasUnlimitedAccess) || !empty($willBeFeatured) || (!empty($currentPlan) && !empty($currentPlan->id) && ($currentPlan->slug ?? '') !== 'free'));
+      // Eligibility for premium boosts (Urgent / Featured)
+      $hasPlanAccess = (is_site_free_mode() || !empty($hasUnlimitedAccess) || !empty($willBeFeatured));
       $hasPlanDataVal = $hasPlanAccess ? '1' : '0';
     ?>
     <details class="job-card" open style="margin-bottom:20px" aria-labelledby="h-boost">
@@ -797,7 +804,7 @@ $hasBenefit = function($value) use ($job, $isEdit) {
     </div>
     <div class="publish-bar-actions">
       <button type="button" class="emp-btn emp-btn-outline btn-outline" onclick="saveDraft()">Save as draft</button>
-      <button type="submit" class="emp-btn emp-btn-accent btn-accent" form="post-job-form" onclick="publishJob(event)">
+      <button type="button" class="emp-btn emp-btn-accent btn-accent" onclick="publishJob(event, this)">
         <svg aria-hidden="true" style="width:16px; height:16px; fill:currentColor"><use href="#i-send"/></svg> Publish job
       </button>
     </div>
@@ -807,7 +814,7 @@ $hasBenefit = function($value) use ($job, $isEdit) {
 
 <?= $this->section('mobile_cta') ?>
 <button type="button" class="emp-btn emp-btn-outline" onclick="saveDraft()">Save as draft</button>
-<button type="submit" class="emp-btn emp-btn-accent" form="post-job-form" onclick="publishJob(event)">
+<button type="button" class="emp-btn emp-btn-accent" onclick="publishJob(event, this)">
   <svg aria-hidden="true" style="width:16px; height:16px;"><use href="#i-send"/></svg> Publish job
 </button>
 <?= $this->endSection() ?>
@@ -1134,57 +1141,192 @@ function computeSalaryField() {
 }
 
 /* ── Form submit (AJAX — the controller always responds with JSON) ── */
-function publishJob(e) {
-  e.preventDefault();
+function showFeedback(msg, type) {
+  if (typeof toastr !== 'undefined' && toastr[type]) {
+    toastr[type](msg);
+  } else {
+    alert(msg);
+  }
+}
+
+function clearFormErrors() {
+  document.querySelectorAll('.is-invalid').forEach(function(el) {
+    el.classList.remove('is-invalid');
+  });
+  document.querySelectorAll('.form-field-error-msg').forEach(function(el) {
+    el.remove();
+  });
+}
+
+function highlightFormErrors(errors) {
+  clearFormErrors();
+  var firstEl = null;
+  Object.keys(errors).forEach(function(field) {
+    var msg = errors[field];
+    var el = document.querySelector('[name="' + field + '"]') || document.getElementById(field);
+    if (el) {
+      el.classList.add('is-invalid');
+      // Ensure details card is open
+      var parentDetails = el.closest('details');
+      if (parentDetails) parentDetails.open = true;
+
+      // Add inline error note if not present
+      var errEl = document.createElement('div');
+      errEl.className = 'form-field-error-msg';
+      errEl.style.color = '#dc3545';
+      errEl.style.fontSize = '0.78rem';
+      errEl.style.marginTop = '4px';
+      errEl.textContent = msg;
+      if (el.parentNode) el.parentNode.appendChild(errEl);
+
+      if (!firstEl) firstEl = el;
+    }
+    showFeedback(msg, 'error');
+  });
+
+  if (firstEl) {
+    firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof firstEl.focus === 'function') firstEl.focus();
+  }
+}
+
+function setSubmittingState(isSubmitting) {
+  var actionBtns = document.querySelectorAll('.publish-bar button, #mobile-cta button');
+  actionBtns.forEach(function(b) {
+    if (isSubmitting) {
+      if (!b.dataset.origHtml) b.dataset.origHtml = b.innerHTML;
+      b.disabled = true;
+      if (b.classList.contains('emp-btn-accent') || b.classList.contains('btn-accent')) {
+        b.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Posting...';
+      }
+    } else {
+      b.disabled = false;
+      if (b.dataset.origHtml) {
+        b.innerHTML = b.dataset.origHtml;
+        delete b.dataset.origHtml;
+      }
+    }
+  });
+}
+
+function publishJob(e, btn) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  clearFormErrors();
+
   var title = document.getElementById('job-title');
   if (!title || !title.value.trim()) {
-    title.focus();
-    alert('Please enter a job title.');
+    var titleDetails = title ? title.closest('details') : null;
+    if (titleDetails) titleDetails.open = true;
+    if (title) {
+      title.classList.add('is-invalid');
+      title.focus();
+    }
+    showFeedback('Please enter a job title.', 'error');
     return;
   }
+
+  var desc = document.getElementById('job-desc');
+  var descVal = desc ? desc.value.trim() : '';
+  if (!desc || descVal.length < 100) {
+    var descDetails = desc ? desc.closest('details') : null;
+    if (descDetails) descDetails.open = true;
+    if (desc) {
+      desc.classList.add('is-invalid');
+      desc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      desc.focus();
+    }
+    showFeedback('Job description must be at least 100 characters (currently ' + descVal.length + ').', 'error');
+    return;
+  }
+
   computeSalaryField();
-  submitJobForm(e.target.closest('button'));
+  submitJobForm('publish');
 }
 
 function saveDraft() {
+  clearFormErrors();
   computeSalaryField();
-  submitJobForm(null);
+  submitJobForm('draft');
 }
 
-function submitJobForm(btn) {
+function submitJobForm(submissionType) {
   var form = document.getElementById('post-job-form');
-  var orig = btn ? btn.innerHTML : null;
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Posting...'; }
+  if (!form) return;
 
-  $.ajax({
-    url: form.getAttribute('action'),
-    type: 'POST',
-    data: $(form).serialize(),
-    dataType: 'json',
-    success: function(response) {
-      if (response.success) {
-        if (typeof toastr !== 'undefined') toastr.success(response.message);
-        setTimeout(function() {
-          window.location.href = '<?= base_url('employer/jobs') ?>';
-        }, 1200);
-      } else {
-        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-        var msg = response.message || 'Failed to post job.';
-        if (typeof toastr !== 'undefined') toastr.error(msg); else alert(msg);
-        if (response.errors) {
-          Object.keys(response.errors).forEach(function(field) {
-            if (typeof toastr !== 'undefined') toastr.error(response.errors[field]);
-          });
-        }
-      }
-    },
-    error: function(xhr) {
-      if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-      var message = 'An error occurred while posting the job.';
-      if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message;
-      if (typeof toastr !== 'undefined') toastr.error(message); else alert(message);
+  setSubmittingState(true);
+
+  var formData = new FormData(form);
+  if (submissionType === 'draft') {
+    formData.append('submission_type', 'draft');
+  }
+
+  var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '<?= csrf_hash() ?>';
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', form.getAttribute('action'), true);
+  xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+  xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+  xhr.timeout = 30000;
+
+  xhr.onload = function() {
+    var data = null;
+    try {
+      data = JSON.parse(xhr.responseText);
+    } catch (e) {
+      // JSON parse error
     }
-  });
+
+    if (!data) {
+      setSubmittingState(false);
+      var msg = 'An error occurred while posting the job. Please try again.';
+      if (xhr.status === 419 || xhr.status === 403) {
+        msg = 'Your session may have expired. Please refresh the page and try again.';
+      }
+      showFeedback(msg, 'error');
+      return;
+    }
+
+    if (data.success) {
+      if (typeof window.clearAutosave === 'function') window.clearAutosave();
+      showFeedback(data.message || 'Job posted successfully!', 'success');
+      setTimeout(function() {
+        window.location.href = data.redirect || '<?= base_url('employer/jobs') ?>';
+      }, 1000);
+    } else {
+      setSubmittingState(false);
+      var msg = data.message || 'Failed to post job.';
+      showFeedback(msg, 'error');
+
+      if (data.redirect) {
+        setTimeout(function() {
+          window.location.href = data.redirect;
+        }, 1500);
+        return;
+      }
+
+      if (data.errors) {
+        highlightFormErrors(data.errors);
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    setSubmittingState(false);
+    showFeedback('A network error occurred while posting the job. Please check your connection and try again.', 'error');
+  };
+
+  xhr.ontimeout = function() {
+    setSubmittingState(false);
+    showFeedback('The server request timed out. Please verify your connection and try again.', 'error');
+  };
+
+  try {
+    xhr.send(formData);
+  } catch (e) {
+    setSubmittingState(false);
+    showFeedback('An unexpected error occurred: ' + e.message, 'error');
+  }
 }
 
 /* ── Hybrid days conditional field ── */
@@ -1279,6 +1421,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set initial hybrid days view
   var workStyle = document.getElementById('work-style');
   if (workStyle) toggleHybridDays(workStyle.value);
+
+  // Intercept form submit to route through publishJob AJAX flow
+  var postJobFormEl = document.getElementById('post-job-form');
+  if (postJobFormEl) {
+    postJobFormEl.addEventListener('submit', function(ev) {
+      ev.preventDefault();
+      publishJob(ev);
+    });
+  }
 });
 </script>
 <?= $this->endSection() ?>

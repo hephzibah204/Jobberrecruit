@@ -466,7 +466,7 @@ $isVoiceMode = ($contextPreset['interview_mode'] ?? '') === 'voice'
     || (isset($_GET['interview_mode']) && $_GET['interview_mode'] === 'voice')
     || (isset($_GET['imode']) && $_GET['imode'] === 'voice');
 ?>
-<div class="lobby" id="lobby"<?= $isVoiceMode ? ' style="display:none;"' : '' ?>>
+<div class="lobby" id="lobby">
 
   <div class="lobby-card">
     <span class="lobby-orb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 20a7.5 7.5 0 0 1 14 0"/></svg></span>
@@ -700,13 +700,10 @@ var CFG={
   focus:qp('focus','balanced'),
   salaryBand:qp('salary',''),
   company:qp('company','any'),
-  arrangement:qp('arrangement','onsite')
+  arrangement:qp('arrangement','onsite'),
+  candidateContext: '<?= isset($contextPreset["candidate_profile"]) ? esc($contextPreset["candidate_profile"], "js") : "" ?>'
 };
-if (interview_mode === 'voice') {
-  var lobbyInit = $('lobby');
-  if (lobbyInit) lobbyInit.remove();
-  document.body.classList.remove('in-lobby');
-}
+
 var esc=function(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML};
 
 /* ── DEBUG PANEL (?debug=1) ──────────────────────────────────────────
@@ -1240,7 +1237,8 @@ function fetchAIQuestions(onDone){
     focus:       CFG.focus,
     salaryBand:  CFG.salaryBand,
     company:     CFG.company,
-    arrangement: CFG.arrangement
+    arrangement: CFG.arrangement,
+    candidateContext: CFG.candidateContext
   };
 
   fetch('<?= site_url("api/interview/questions") ?>',{
@@ -1457,9 +1455,8 @@ var PROVIDERS={
       var settled=false;
       function done(){if(!settled){settled=true;res()}}
       var guard=setTimeout(function(){
-        if(settled)return;
-        if(DEBUG)dlog('TTS timeout',false);
-        done();
+        if(DEBUG)dlog('TTS timed out, falling back to browser voice',false);
+        if(!settled) PROVIDERS.browser(sentence).then(done);
       },10000);
       fetch('<?= site_url("api/interview/tts") ?>',{
         method:'POST',headers:{'Content-Type':'application/json'},
@@ -1476,15 +1473,15 @@ var PROVIDERS={
         var url=URL.createObjectURL(blob);
         var a=new Audio(url);
         a.onended=function(){URL.revokeObjectURL(url);done()};
-        a.onerror=function(){URL.revokeObjectURL(url);done()};
+        a.onerror=function(){URL.revokeObjectURL(url);PROVIDERS.browser(sentence).then(done)};
         a.play().catch(function(){
-          URL.revokeObjectURL(url);done();
+          URL.revokeObjectURL(url);PROVIDERS.browser(sentence).then(done);
         });
       })
       .catch(function(err){
         if(settled)return;clearTimeout(guard);
         if(DEBUG)dlog('TTS failed ('+err.message+')',false);
-        done();
+        PROVIDERS.browser(sentence).then(done);
       });
     });
   }
@@ -2055,8 +2052,9 @@ $('rec-orb').addEventListener('click',function(){
             cap.hidden=false;
             $('live-caption-txt').textContent = data.transcript;
           }
-          $('media-hint').textContent='Answer transcribed ('+fmt(recSec)+'). Submit it, or tap to re-record.';
+          $('media-hint').textContent='Answer transcribed ('+fmt(recSec)+'). Auto-submitting...';
           sub.disabled=false;
+          submitAnswer();
         } else {
           $('media-hint').textContent='Transcription failed. Please try again.';
         }
@@ -2685,6 +2683,13 @@ resolveQuestions(function(){
       primeAudio.play().catch(function(){});
     }catch(e){}
     VOICE.unlocked=true;
+    if (CFG.imode === 'voice' || CFG.imode === 'video') {
+        VOICE.on = true;
+        var vBtn = document.getElementById('voice-btn');
+        if (vBtn) vBtn.setAttribute('aria-pressed', 'true');
+        var vIc = document.getElementById('voice-btn-ic');
+        if (vIc) vIc.innerHTML = '<use href="#i-vol"/>';
+    }
     var lobby=$('lobby');
     lobby.classList.add('leaving');
     document.body.classList.remove('in-lobby');
@@ -2710,32 +2715,9 @@ resolveQuestions(function(){
     setTimeout(function(){introStep(0)},700);
   }
 
-  function autoStartVoiceSession(){
-    try{
-      if('speechSynthesis' in window) window.speechSynthesis.cancel();
-      var primeAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-      primeAudio.play().catch(function(){});
-    }catch(e){}
-    VOICE.unlocked=true;
-    VOICE.on=true;
-    var lobby=$('lobby');
-    if(lobby) lobby.remove();
-    document.body.classList.remove('in-lobby');
-
-    applyMode('voice');
-    setPill();
-    askNext(true);
-  }
-
-  if (interview_mode === 'voice') {
-    autoStartVoiceSession();
-  } else {
-    enterBtn.addEventListener('click',beginSession);
-  }
+  enterBtn.addEventListener('click',beginSession);
 });
-if (interview_mode !== 'voice') {
-  document.body.classList.add('in-lobby');
-}
+document.body.classList.add('in-lobby');
 })();
 </script>
 </body>

@@ -34,6 +34,7 @@ class JobSeekerModel extends Model
         'is_verified',
         'is_visible',
         'notify_job_alerts',
+        'notify_weekly_digest',
         'notify_application_updates',
         'notify_messages',
         'notify_marketing',
@@ -128,8 +129,6 @@ class JobSeekerModel extends Model
         if (!$isAdmin) {
             $builder->where('job_seekers.is_visible', 1);
             $builder->where('job_seekers.full_name IS NOT NULL AND job_seekers.full_name != ""', null, false);
-            // Candidate eligibility (PDF Requirement 4.4): filter out incomplete profiles
-            $builder->where('(job_seekers.profile_completion >= 50 OR (job_seekers.resume IS NOT NULL AND job_seekers.resume != "") OR (job_seekers.phone IS NOT NULL AND job_seekers.job_title IS NOT NULL))', null, false);
         } else {
             if (!empty($filters['visibility']) && $filters['visibility'] !== 'all') {
                 if ($filters['visibility'] === 'visible') {
@@ -300,7 +299,7 @@ class JobSeekerModel extends Model
                 // 1. Mostly/completely completed profile
                 // 2. Uploaded CV
                 // 3. Most recent login/activity
-                $builder->orderBy('COALESCE(job_seekers.profile_completion, 0)', 'DESC');
+                $builder->orderBy('COALESCE(job_seekers.profile_completion, 0)', 'DESC', false);
                 $builder->orderBy('(CASE WHEN job_seekers.resume IS NOT NULL AND job_seekers.resume != "" THEN 1 ELSE 0 END)', 'DESC', false);
                 $builder->orderBy('(CASE WHEN job_seekers.phone IS NOT NULL AND job_seekers.job_title IS NOT NULL AND job_seekers.skills IS NOT NULL THEN 1 ELSE 0 END)', 'DESC', false);
                 $builder->orderBy('job_seekers.updated_at', 'DESC');

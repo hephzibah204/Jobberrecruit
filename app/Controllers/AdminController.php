@@ -885,21 +885,11 @@ class AdminController extends BaseController
                         $user = $userModel->find($employer->user_id);
                         
                         if ($user) {
-                            $email = \Config\Services::email();
-                            $email->setTo($user->email);
-                            $email->setSubject('Your Employer Account Has Been Verified - JobberRecruit');
-                            
-                            $emailData = [
-                                'company_name' => $employer->company_name,
-                                'contact_name' => $employer->contact_person ?? $user->username,
-                                'verification_date' => date('Y-m-d H:i:s')
-                            ];
-                            
-                            $email->setMessage(view('emails/verification_approved', $emailData));
-                            $email->send();
+                            $emailService = new \App\Services\EmailNotificationService();
+                            $emailService->sendEmployerVerificationApprovedEmail($employer, $user, $notes ?? '');
                         }
                     }
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     log_message('error', 'Failed to send verification approval email: ' . $e->getMessage());
                 }
                 
@@ -931,22 +921,11 @@ class AdminController extends BaseController
                         $user = $userModel->find($employer->user_id);
                         
                         if ($user) {
-                            $email = \Config\Services::email();
-                            $email->setTo($user->email);
-                            $email->setSubject('Verification Update - JobberRecruit');
-                            
-                            $emailData = [
-                                'company_name' => $employer->company_name,
-                                'contact_name' => $employer->contact_person ?? $user->username,
-                                'review_date' => date('Y-m-d H:i:s'),
-                                'rejection_reason' => $reason ?? 'Documents did not meet our verification requirements.'
-                            ];
-                            
-                            $email->setMessage(view('emails/verification_rejected', $emailData));
-                            $email->send();
+                            $emailService = new \App\Services\EmailNotificationService();
+                            $emailService->sendEmployerVerificationRejectedEmail($employer, $user, $reason ?? 'Documents did not meet our verification requirements.');
                         }
                     }
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     log_message('error', 'Failed to send verification rejection email: ' . $e->getMessage());
                 }
                 
@@ -1009,6 +988,20 @@ class AdminController extends BaseController
                     'verified_at' => date('Y-m-d H:i:s'),
                     'verified_by' => $this->admin->id
                 ]);
+
+                try {
+                    $employer = $employerModel->find($document['employer_id']);
+                    if ($employer) {
+                        $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
+                        $user = $userModel->find($employer->user_id);
+                        if ($user) {
+                            $emailService = new \App\Services\EmailNotificationService();
+                            $emailService->sendEmployerVerificationApprovedEmail($employer, $user, 'All submitted verification documents approved.');
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    log_message('error', 'Failed sending document verification approved email: ' . $e->getMessage());
+                }
             }
 
             return $this->response->setJSON([
@@ -1057,6 +1050,20 @@ class AdminController extends BaseController
                 'rejection_reason' => $reason,
                 'is_verified' => 0
             ]);
+
+            try {
+                $employer = $employerModel->find($document['employer_id']);
+                if ($employer) {
+                    $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
+                    $user = $userModel->find($employer->user_id);
+                    if ($user) {
+                        $emailService = new \App\Services\EmailNotificationService();
+                        $emailService->sendEmployerVerificationRejectedEmail($employer, $user, $reason ?? 'Document rejected by administrator.');
+                    }
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Failed sending document rejection email: ' . $e->getMessage());
+            }
 
             return $this->response->setJSON([
                 'success' => true,
@@ -1997,6 +2004,15 @@ class AdminController extends BaseController
 
         $jobModel->update($id, $updateData);
 
+        // Dispatch immediate job alerts to matching candidates if status is open
+        if ($newStatus === 'open') {
+            try {
+                (new \App\Services\JobAlertService())->sendImmediateMatchAlerts((int) $id);
+            } catch (\Throwable $e) {
+                log_message('error', 'Immediate job alert dispatch failed for job #' . $id . ': ' . $e->getMessage());
+            }
+        }
+
         // Send notification to employer about status change
         $this->sendJobStatusNotification($job, $newStatus);
 
@@ -2016,57 +2032,21 @@ class AdminController extends BaseController
 
         if (!$employer) return;
 
-        // Create in-app notification
-        $notificationModel = model(JobNotificationModel::class);
+        $emailService = new \App\Services\EmailNotificationService();
 
-        $statusMessages = [
-            'open' => ['title' => 'Job Approved', 'message' => "Your job '{$job->title}' has been approved and is now live."],
-            'rejected' => ['title' => 'Job Rejected', 'message' => "Your job '{$job->title}' was not approved. Please check your email for details."],
-            'closed' => ['title' => 'Job Closed', 'message' => "Your job '{$job->title}' has been closed by admin."]
-        ];
-
-        if (isset($statusMessages[$newStatus])) {
+        if ($newStatus === 'open') {
+            $emailService->sendJobApprovedNotification($job, $employer);
+        } elseif ($newStatus === 'rejected') {
+            $emailService->sendJobRejectedNotification($job, $employer, 'Your job posting did not meet our quality guidelines.');
+        } elseif ($newStatus === 'closed') {
+            $notificationModel = model(JobNotificationModel::class);
             $notificationModel->createNotification(
-                $job->employer_id,
-                $newStatus === 'open' ? 'job_approved' : ($newStatus === 'rejected' ? 'job_rejected' : 'job_closed'),
-                $statusMessages[$newStatus]['title'],
-                $statusMessages[$newStatus]['message'],
-                $job->id
+                (int) $job->employer_id,
+                'job_closed',
+                'Job Closed',
+                "Your job '{$job->title}' has been closed by admin.",
+                (int) $job->id
             );
-        }
-
-        // Send email notifications
-        $userModel = model(UserModel::class);
-        $user = $userModel->find($employer->user_id);
-        $recipientEmail = $employer->contact_email ?? ($user->email ?? null);
-
-        if ($recipientEmail) {
-            $emailService = service('mailer');
-            if ($newStatus === 'open') {
-                $emailService->sendTemplate(
-                    $recipientEmail,
-                    'Job Approved - ' . $job->title,
-                    'emails/job_approved',
-                    [
-                        'employer_name' => $employer->company_name ?? 'Employer',
-                        'job_title'     => $job->title,
-                        'job_url'       => base_url('jobs/' . $job->id),
-                        'platform_name' => config('App')->appName ?? 'JobberRecruit'
-                    ]
-                );
-            } elseif ($newStatus === 'rejected') {
-                $emailService->sendTemplate(
-                    $recipientEmail,
-                    'Job Update - ' . $job->title,
-                    'emails/job_rejected',
-                    [
-                        'employer_name' => $employer->company_name ?? 'Employer',
-                        'job_title'     => $job->title,
-                        'reason'        => 'Your job posting did not meet our guidelines. Please contact support for more information.',
-                        'platform_name' => config('App')->appName ?? 'JobberRecruit'
-                    ]
-                );
-            }
         }
     }
 
@@ -2289,81 +2269,12 @@ class AdminController extends BaseController
             'status' => 'open'
         ]);
 
-        // Get employer info
-        $employerModel = model(EmployerModel::class);
-        $employer = $employerModel->find($job->employer_id);
-
-        // Get credit service and employer statistics
-        $creditService = new \App\Services\CreditService();
-        $creditBalance = $creditService->getAvailableCredits($employer->user_id);
-        $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($employer->user_id);
-        $currentPlan = $creditService->getCurrentPlan($employer->user_id);
-
-        // Get job statistics for this employer
-        $jobModel = model(JobModel::class);
-        $totalJobsPosted = $jobModel->where('employer_id', $employer->id)->countAllResults();
-        $pendingJobs = $jobModel->where('employer_id', $employer->id)
-            ->where('admin_status', 'pending')
-            ->countAllResults();
-        $approvedJobs = $jobModel->where('employer_id', $employer->id)
-            ->where('admin_status', 'approved')
-            ->countAllResults();
-
-        // Get active subscription info
-        $subscriptionModel = model(UserSubscriptionModel::class);
-        $activeSubscription = $subscriptionModel
-            ->where('user_id', $employer->user_id)
-            ->where('is_active', 1)
-            ->where('ends_at >', date('Y-m-d H:i:s'))
-            ->first();
-
-        $planName = null;
-        $subscriptionEndsAt = null;
-        if ($activeSubscription) {
-            $planModel = model(PlanModel::class);
-            $plan = $planModel->find($activeSubscription->plan_id);
-            $planName = $plan ? $plan->name : null;
-            $subscriptionEndsAt = $activeSubscription->ends_at;
-        }
-
-        // Create notification for employer
-        $notificationModel = model(JobNotificationModel::class);
-        $notificationModel->createNotification(
-            $job->employer_id,
-            'job_approved',
-            'Job Approved - ' . $job->title,
-            "Your job '{$job->title}' has been approved and is now live on our platform.",
-            $jobId
-        );
-
-        // Send email notification to employer
-        $emailService = service('mailer');
-
-        // Determine notification email address (preference or fallback)
-        $jobPreferences = is_string($job->notification_preferences)
-            ? json_decode($job->notification_preferences, true)
-            : ($job->notification_preferences ?? []);
-
-        $notificationEmail = $jobPreferences['notification_email_address'] ?? $employer->contact_email;
-
-        if ($notificationEmail) {
-            $emailService->sendTemplate(
-                $notificationEmail,
-                'Job Approved - ' . $job->title,
-                'emails/job_approved',
-                [
-                    'employer_name' => $employer->company_name,
-                    'job_title' => $job->title,
-                    'job_url' => base_url('jobs/' . ($job->slug ?? $job->id)),
-                    'credits_balance' => $creditBalance,
-                    'has_unlimited' => $hasUnlimitedAccess,
-                    'plan_name' => $planName,
-                    'total_posted' => $totalJobsPosted,
-                    'pending_jobs' => $pendingJobs,
-                    'approved_jobs' => $approvedJobs,
-                    'platform_name' => config('App')->appName ?? 'JobberRecruit'
-                ]
-            );
+        // Send approval email + in-app notification to employer
+        try {
+            $emailService = new \App\Services\EmailNotificationService();
+            $emailService->sendJobApprovedNotification($job);
+        } catch (\Throwable $e) {
+            log_message('error', 'Job approved email notification error: ' . $e->getMessage());
         }
 
         // Dispatch immediate job alerts to matching candidates
@@ -2395,7 +2306,7 @@ class AdminController extends BaseController
 
         $approvedCount = 0;
         $now = date('Y-m-d H:i:s');
-        $notificationModel = model(JobNotificationModel::class);
+        $emailService = new \App\Services\EmailNotificationService();
 
         foreach ($jobIds as $jobId) {
             $job = $this->jobModel->find((int)$jobId);
@@ -2407,13 +2318,12 @@ class AdminController extends BaseController
                 'status'            => 'open'
             ]);
 
-            $notificationModel->createNotification(
-                $job->employer_id,
-                'job_approved',
-                'Job Approved - ' . $job->title,
-                "Your job '{$job->title}' has been approved and is now live on our platform.",
-                $job->id
-            );
+            // Send approval email + in-app notification
+            try {
+                $emailService->sendJobApprovedNotification($job);
+            } catch (\Throwable $e) {
+                log_message('error', 'Bulk job approve notification error: ' . $e->getMessage());
+            }
 
             // Dispatch immediate job alerts to matching candidates
             try {
@@ -2449,7 +2359,7 @@ class AdminController extends BaseController
 
         $rejectedCount = 0;
         $now = date('Y-m-d H:i:s');
-        $notificationModel = model(JobNotificationModel::class);
+        $emailService = new \App\Services\EmailNotificationService();
 
         foreach ($jobIds as $jobId) {
             $job = $this->jobModel->find((int)$jobId);
@@ -2461,13 +2371,12 @@ class AdminController extends BaseController
                 'status'            => 'closed'
             ]);
 
-            $notificationModel->createNotification(
-                $job->employer_id,
-                'job_rejected',
-                'Job Rejection Notice - ' . $job->title,
-                "Your job '{$job->title}' was rejected. Reason: " . substr($reason, 0, 100),
-                $job->id
-            );
+            // Send rejection email + in-app notification
+            try {
+                $emailService->sendJobRejectedNotification($job, null, $reason);
+            } catch (\Throwable $e) {
+                log_message('error', 'Bulk job reject notification error: ' . $e->getMessage());
+            }
 
             $rejectedCount++;
         }

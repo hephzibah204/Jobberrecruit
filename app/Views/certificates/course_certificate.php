@@ -291,10 +291,10 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
     </span>
   </div>
   <div class="cert-toolbar-right">
-    <a href="<?= base_url('training/certificate/download/' . ($certificate['id'] ?? $certificate['certificate_code'] ?? '')) ?>" class="btn-cert-action btn-primary-cert">
+    <button onclick="downloadClientPDF()" type="button" class="btn-cert-action btn-primary-cert" id="btnDownloadPdf">
       <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      Download PDF
-    </a>
+      <span id="btnDownloadText">Download PDF</span>
+    </button>
     <button onclick="window.print()" type="button" class="btn-cert-action btn-outline-cert">
       <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Print
@@ -358,7 +358,7 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 
 <!-- ════ CERTIFICATE ════ -->
 <div class="cert-scroll-wrap">
-<div class="certificate" role="img" aria-label="Certificate of Completion issued by JobberRecruit" style="--brand: <?= $template['primary_color'] ?? '#0861A9' ?>; --navy: <?= $template['primary_color'] ?? '#0A2F57' ?>; --accent: <?= $template['secondary_color'] ?? '#ED9020' ?>; <?= !empty($template['background_image']) ? "background-image: url('" . base_url($template['background_image']) . "'); background-size: cover;" : '' ?>">
+<div id="certificateCanvas" class="certificate" role="img" aria-label="Certificate of Completion issued by JobberRecruit" style="--brand: <?= $template['primary_color'] ?? '#0861A9' ?>; --navy: <?= $template['primary_color'] ?? '#0A2F57' ?>; --accent: <?= $template['secondary_color'] ?? '#ED9020' ?>; <?= !empty($template['background_image']) ? "background-image: url('" . base_url($template['background_image']) . "'); background-size: cover;" : '' ?>">
   <div class="cert-texture-overlay" aria-hidden="true"></div>
   <div class="cert-paper-grain" aria-hidden="true"></div>
   <div class="cert-vignette" aria-hidden="true"></div>
@@ -514,8 +514,80 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
 </div>
 </div><!-- /cert-scroll-wrap -->
 
+<!-- Load html2canvas and jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-// no scaling needed — certificate scrolls horizontally on mobile
+async function downloadClientPDF() {
+    let btn = document.getElementById('btnDownloadPdf');
+    let btnText = document.getElementById('btnDownloadText');
+    let originalText = btnText ? btnText.innerText : 'Download PDF';
+    
+    try {
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.innerText = 'Generating...';
+        
+        const element = document.getElementById('certificateCanvas');
+        if (!element) {
+            throw new Error("Certificate canvas element not found");
+        }
+        
+        // Wait for all fonts and images to load
+        await document.fonts.ready;
+        
+        const canvas = await html2canvas(element, {
+            scale: 2, // high resolution
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#fdfbf4'
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        
+        // Create PDF (A4 Landscape)
+        const { jsPDF } = window.jspdf;
+        if (!jsPDF) {
+            throw new Error("jsPDF library not loaded");
+        }
+        
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'px',
+            format: [1056, 748] // Match canvas size directly
+        });
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, 1056, 748);
+        pdf.save('Certificate-<?= esc($certificate['certificate_code'] ?? 'Download') ?>.pdf');
+        
+    } catch (e) {
+        console.error('PDF Generation error:', e);
+        alert('Failed to generate PDF: ' + e.message);
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = originalText;
+    }
+}
+
+// Auto-trigger download if requested by controller redirect
+window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auto_download') === '1') {
+        
+        let btnText = document.getElementById('btnDownloadText');
+        if (btnText) btnText.innerText = 'Preparing your PDF...';
+        
+        // Wait just a moment for fonts/images to fully render
+        setTimeout(() => {
+            downloadClientPDF().then(() => {
+                // If it succeeds but the browser blocks the hidden download prompt,
+                // the user will at least be on the page where they can click the button manually.
+                setTimeout(() => {
+                    if (window.history.length === 1) window.close();
+                }, 3000);
+            });
+        }, 800);
+    }
+});
 </script>
 </body>
 </html>

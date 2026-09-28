@@ -320,10 +320,14 @@
 
 <?= $this->endSection() ?>
 
+<?= $this->section('styles') ?>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<?= $this->endSection() ?>
+
 <?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
 
 <script>
     toastr.options = {
@@ -335,8 +339,17 @@
     const desc = new Quill('#desc-editor', { theme: 'snow' });
     const req = new Quill('#req-editor', { theme: 'snow' });
 
-    desc.root.innerHTML = document.getElementById('desc-input').value;
-    req.root.innerHTML = document.getElementById('req-input').value;
+    function formatForQuill(text) {
+        if (!text) return '';
+        // If it doesn't already have HTML paragraphs or breaks, it's likely plain text. Convert newlines.
+        if (text.indexOf('<p>') === -1 && text.indexOf('<br>') === -1 && text.indexOf('<br/>') === -1) {
+            return text.replace(/\n/g, '<br>');
+        }
+        return text;
+    }
+
+    desc.root.innerHTML = formatForQuill(document.getElementById('desc-input').value);
+    req.root.innerHTML = formatForQuill(document.getElementById('req-input').value);
 
     desc.on('text-change', () => document.getElementById('desc-input').value = desc.root.innerHTML);
     req.on('text-change', () => document.getElementById('req-input').value = req.root.innerHTML);

@@ -213,6 +213,7 @@
     </script>
 
     <?= $this->include('partials/chatbot'); ?>
+    <script src="<?= base_url('assets/js/autosave.js') ?>"></script>
     <?= $this->renderSection('scripts') ?>
 
     <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>

@@ -52,8 +52,8 @@ class EmployerController extends BaseController
         $this->userModel = model(ModelsUserModel::class);
         $this->session = \Config\Services::session();
 
-        $this->paystackSecret = env('paystack_secret_key');
-        $this->paystackCallback = env('paystack_callback_url') ?: base_url('pricing/verify');
+        $this->paystackSecret = env('paystack_secret_key') ?: (env('PAYSTACK_SECRET_KEY') ?: env('paystack.secret_key'));
+        $this->paystackCallback = env('paystack_callback_url') ?: (env('PAYSTACK_CALLBACK_URL') ?: base_url('pricing/verify'));
     }
 
     /**
@@ -1908,10 +1908,10 @@ class EmployerController extends BaseController
                     j.title as job_title, j.id as job_id,
                     ta.status as attempt_status, ta.score_pct, ta.passed, ta.started_at, ta.submitted_at, ta.num_total as total_questions, ta.num_correct as correct_answers')
                 ->join('tests t', 't.id = ati.test_id', 'left')
-                ->join('job_seekers js', 'js.id = ati.candidate_id', 'left')
-                ->join('job_applications ja', 'ja.job_seeker_id = js.id AND ja.job_id = ati.job_id', 'left')
+                ->join('job_seekers js', 'js.id = ati.candidate_id OR js.user_id = ati.candidate_id', 'left')
+                ->join('job_applications ja', 'ja.id = ati.application_id OR (ja.job_seeker_id = js.id AND ja.job_id = ati.job_id)', 'left')
                 ->join('jobs j', 'j.id = ati.job_id', 'left')
-                ->join('test_attempts ta', 'ta.id = ati.attempt_id', 'left')
+                ->join('test_attempts ta', 'ta.id = ati.attempt_id OR (ati.attempt_id IS NULL AND ta.test_id = ati.test_id AND (ta.candidate_id = ati.candidate_id OR (js.user_id IS NOT NULL AND ta.candidate_id = js.user_id)))', 'left')
                 ->where('ati.employer_id', $employer->id);
 
             if ($filterJob > 0) {
@@ -1919,13 +1919,21 @@ class EmployerController extends BaseController
             }
             if ($filterStatus !== '') {
                 if ($filterStatus === 'completed') {
-                    $builder->where('ta.status', 'completed');
+                    $builder->groupStart()
+                        ->where('ta.status', 'submitted')
+                        ->orWhere('ta.status', 'completed')
+                        ->orWhere('ati.status', 'completed')
+                    ->groupEnd();
                 } elseif ($filterStatus === 'in_progress') {
                     $builder->where('ta.status', 'in_progress');
                 } elseif ($filterStatus === 'expired') {
                     $builder->where('ati.status', 'expired');
                 } elseif ($filterStatus === 'pending') {
-                    $builder->where('ati.status', 'pending')->groupStart()->where('ta.status IS NULL')->orWhere('ta.status', 'pending')->groupEnd();
+                    $builder->where('ati.status', 'pending')
+                        ->groupStart()
+                            ->where('ta.status IS NULL')
+                            ->orWhere('ta.status', 'pending')
+                        ->groupEnd();
                 }
             }
             if ($searchQuery !== '') {
@@ -1940,19 +1948,26 @@ class EmployerController extends BaseController
             $invitations = $builder->orderBy('ati.created_at', 'DESC')->get()->getResultArray();
         }
 
+        $isAttemptCompleted = static function($i) {
+            $attStatus = strtolower($i['attempt_status'] ?? '');
+            $invStatus = strtolower($i['status'] ?? '');
+            return ($attStatus === 'submitted' || $attStatus === 'completed' || $invStatus === 'completed');
+        };
+
         // KPI stats
         $kpiStats = [
             'total_invited' => count($invitations),
             'in_progress'   => count(array_filter($invitations, fn($i) => strtolower($i['attempt_status'] ?? '') === 'in_progress')),
-            'completed'     => count(array_filter($invitations, fn($i) => strtolower($i['attempt_status'] ?? '') === 'completed')),
+            'completed'     => count(array_filter($invitations, $isAttemptCompleted)),
             'passed'        => count(array_filter($invitations, fn($i) => !empty($i['passed']))),
             'pass_rate'     => 0,
             'avg_score'     => 0,
         ];
-        $completed = array_filter($invitations, fn($i) => strtolower($i['attempt_status'] ?? '') === 'completed');
+        $completed = array_filter($invitations, $isAttemptCompleted);
         if (count($completed) > 0) {
             $kpiStats['pass_rate'] = round(($kpiStats['passed'] / count($completed)) * 100);
-            $kpiStats['avg_score'] = round(array_sum(array_column($completed, 'score_pct')) / count($completed));
+            $scores = array_filter(array_column($completed, 'score_pct'), fn($s) => $s !== null && $s !== '');
+            $kpiStats['avg_score'] = count($scores) > 0 ? round(array_sum($scores) / count($scores)) : 0;
         }
 
         return view('employers/aptitude_tests', [
@@ -2460,8 +2475,8 @@ class EmployerController extends BaseController
             ->select('ati.*, t.title as test_title, j.title as job_title, ja.first_name, ja.last_name, ja.email as applicant_email, js.full_name as seeker_full_name')
             ->join('tests t', 't.id = ati.test_id', 'left')
             ->join('jobs j', 'j.id = ati.job_id', 'left')
-            ->join('job_seekers js', 'js.id = ati.candidate_id', 'left')
-            ->join('job_applications ja', 'ja.job_seeker_id = js.id AND ja.job_id = ati.job_id', 'left')
+            ->join('job_seekers js', 'js.id = ati.candidate_id OR js.user_id = ati.candidate_id', 'left')
+            ->join('job_applications ja', 'ja.id = ati.application_id OR (ja.job_seeker_id = js.id AND ja.job_id = ati.job_id)', 'left')
             ->where('ati.id', $invId)
             ->where('ati.employer_id', $employer->id)
             ->get()->getRowArray();
@@ -2471,19 +2486,20 @@ class EmployerController extends BaseController
         }
 
         $candName = trim(($inv['first_name'] ?? '') . ' ' . ($inv['last_name'] ?? '')) ?: ($inv['seeker_full_name'] ?? 'Candidate');
-        $candEmail = $inv['applicant_email'] ?? '';
+        $candEmail = $inv['applicant_email'] ?? ($inv['email'] ?? '');
         if (empty($candEmail) && !empty($inv['candidate_id'])) {
             $seeker = $db->table('job_seekers js')
                 ->select('u.email')
                 ->join('users u', 'u.id = js.user_id', 'left')
                 ->where('js.id', $inv['candidate_id'])
+                ->orWhere('js.user_id', $inv['candidate_id'])
                 ->get()->getRowArray();
             if ($seeker && !empty($seeker['email'])) {
                 $candEmail = $seeker['email'];
             }
         }
 
-        $token = $inv['invitation_code'] ?? '';
+        $token = ($inv['invitation_code'] ?? '') ?: ($inv['code'] ?? '');
         $invitationUrl = site_url('aptitude/invite/' . $token);
 
         $emailService = new \App\Services\EmailNotificationService();
@@ -2528,10 +2544,10 @@ class EmployerController extends BaseController
                      j.title as job_title,
                      ta.id as attempt_id, ta.status as attempt_status, ta.score_pct, ta.passed, ta.started_at, ta.submitted_at, ta.num_total, ta.num_correct, ta.question_ids')
             ->join('tests t', 't.id = ati.test_id', 'left')
-            ->join('job_seekers js', 'js.id = ati.candidate_id', 'left')
-            ->join('job_applications ja', 'ja.job_seeker_id = js.id AND ja.job_id = ati.job_id', 'left')
+            ->join('job_seekers js', 'js.id = ati.candidate_id OR js.user_id = ati.candidate_id', 'left')
+            ->join('job_applications ja', 'ja.id = ati.application_id OR (ja.job_seeker_id = js.id AND ja.job_id = ati.job_id)', 'left')
             ->join('jobs j', 'j.id = ati.job_id', 'left')
-            ->join('test_attempts ta', 'ta.id = ati.attempt_id', 'left')
+            ->join('test_attempts ta', 'ta.id = ati.attempt_id OR (ati.attempt_id IS NULL AND ta.test_id = ati.test_id AND (ta.candidate_id = ati.candidate_id OR (js.user_id IS NOT NULL AND ta.candidate_id = js.user_id)))', 'left')
             ->where('ati.id', (int) $invId)
             ->where('ati.employer_id', $employer->id)
             ->get()->getRowArray();
@@ -2662,6 +2678,19 @@ class EmployerController extends BaseController
         $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
         $noteText = "Recruiter updated stage to: {$stageLabel}" . (!empty($notes) ? " - Note: {$notes}" : "");
         $noteModel->addNote($appId, $employer->id, $noteText, $user->id, 'feedback');
+
+        try {
+            $emailService = new \App\Services\EmailNotificationService();
+            $emailService->sendApplicationStatusEmail(
+                $app,
+                $stage,
+                $job->title,
+                $employer->company_name,
+                $notes
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'Status update notification error from advanceCandidateStage: ' . $e->getMessage());
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -2868,7 +2897,7 @@ class EmployerController extends BaseController
             'experience_level' => 'required',
             'application_method' => 'required|in_list[form,whatsapp,email,external]',
             'application_access' => 'required|in_list[guest,authenticated,general]',
-            'accommodation' => 'required|in_list[available,not_available]',
+            'accommodation' => 'permit_empty',
             'contact_email' => 'required|valid_email',
         ];
 
@@ -4929,7 +4958,7 @@ class EmployerController extends BaseController
 
         $reference = 'REF-' . strtoupper(uniqid());
 
-        $paystackKey = env('paystack_public_key');
+        $paystackKey = env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key'));
         if (empty($paystackKey)) {
             return $this->response->setJSON([
                 'success' => false,
@@ -5502,7 +5531,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
-            'public_key'  => env('paystack_public_key'),
+            'public_key'  => env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key')),
             'email'       => $user->email,
             'amount'      => (int) ($bundle->price * 100),
             'reference'   => 'bundle_' . uniqid(),
@@ -5575,7 +5604,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
-            'public_key'  => env('paystack_public_key'),
+            'public_key'  => env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key')),
             'email'       => $user->email,
             'amount'      => (int) ($remaining * 100),
             'reference'   => 'bundle_hybrid_' . uniqid(),

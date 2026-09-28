@@ -103,16 +103,16 @@
         <section class="card" aria-label="Transaction Logs" style="padding: 24px;">
             <h3 style="font-family:'Sora',sans-serif; font-size:1.05rem; font-weight:800; color:var(--brand-deep); margin-bottom:18px;">Transaction History</h3>
             
-            <div class="table-responsive">
-                <table class="table" style="width:100%; border-collapse:collapse; font-size:0.84rem;">
+            <div class="tbl-wrap">
+                <table class="tbl">
                     <thead>
-                        <tr style="border-bottom: 2px solid var(--border); text-align: left; color: var(--muted); font-weight: 700;">
-                            <th style="padding:12px 8px;">Reference</th>
-                            <th style="padding:12px 8px;">Type</th>
-                            <th style="padding:12px 8px;">Amount</th>
-                            <th style="padding:12px 8px;">Description</th>
-                            <th style="padding:12px 8px;">Date</th>
-                            <th style="padding:12px 8px;">Status</th>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -122,20 +122,22 @@
                             </tr>
                         <?php endif; ?>
                         <?php foreach ($transactions as $tx): ?>
-                            <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding:14px 8px; font-weight:600; color:var(--brand-deep);"><?= esc($tx->reference) ?></td>
-                                <td style="padding:14px 8px;">
-                                    <span class="pill pill--<?= ($tx->type === 'credit') ? 'success' : 'closed' ?>" style="font-size:0.7rem; padding:2px 8px;">
+                            <tr>
+                                <td><b><?= esc($tx->reference) ?></b></td>
+                                <td>
+                                    <span class="pill pill--<?= ($tx->type === 'credit') ? 'success' : 'closed' ?>">
                                         <?= ucfirst($tx->type) ?>
                                     </span>
                                 </td>
-                                <td style="padding:14px 8px; font-weight:700; color:var(--brand-deep);">
-                                    <?= ($tx->type === 'credit') ? '+' : '-' ?>₦<?= number_format((float)$tx->amount, 2) ?>
+                                <td>
+                                    <b style="font-family:'Sora',sans-serif;color:<?= ($tx->type === 'credit') ? 'var(--success)' : 'var(--brand-deep)' ?>;">
+                                        <?= ($tx->type === 'credit') ? '+' : '-' ?>₦<?= number_format((float)$tx->amount, 2) ?>
+                                    </b>
                                 </td>
-                                <td style="padding:14px 8px; color:var(--muted);"><?= esc($tx->description) ?></td>
-                                <td style="padding:14px 8px; color:var(--muted); font-size:0.8rem;"><?= date('M d, Y h:i A', strtotime($tx->created_at)) ?></td>
-                                <td style="padding:14px 8px;">
-                                    <span class="pill pill--<?= ($tx->status ?? 'completed') === 'completed' ? 'success' : 'closed' ?>" style="font-size:0.7rem; padding:2px 8px;">
+                                <td><?= esc($tx->description) ?></td>
+                                <td style="color:var(--muted); font-size:0.8rem;"><?= date('M d, Y h:i A', strtotime($tx->created_at)) ?></td>
+                                <td>
+                                    <span class="pill pill--<?= ($tx->status ?? 'completed') === 'completed' ? 'success' : 'closed' ?>">
                                         <?= ucfirst($tx->status ?? 'completed') ?>
                                     </span>
                                 </td>

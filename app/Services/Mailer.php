@@ -67,6 +67,35 @@ class Mailer
         return $this;
     }
 
+    public function setCC($cc)
+    {
+        $this->email->setCC($cc);
+        return $this;
+    }
+
+    public function setBCC($bcc, $limit = '')
+    {
+        $this->email->setBCC($bcc, $limit);
+        return $this;
+    }
+
+    public function setHeader($header, $value)
+    {
+        $this->email->setHeader($header, $value);
+        return $this;
+    }
+
+    public function attach($file, $disposition = '', $newname = null, $mime = '')
+    {
+        $this->email->attach($file, $disposition, $newname, $mime);
+        return $this;
+    }
+
+    public function printDebugger(array $include = ['headers', 'subject', 'body'])
+    {
+        return $this->email->printDebugger($include);
+    }
+
     public function send()
     {
         return $this->email->send();

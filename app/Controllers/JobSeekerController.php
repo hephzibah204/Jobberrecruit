@@ -238,47 +238,51 @@ class JobSeekerController extends BaseController
                 ]);
             }
 
-            // Validation Rules
+            // Validation Rules: only full_name is strictly required to identify the candidate
             $rules = [
-                'full_name'         => 'required|min_length[3]',
-                'phone'             => 'required|min_length[6]',
-                'state_id'          => 'required|integer',
-                'job_title'         => 'required|min_length[2]',
+                'full_name'  => 'required|min_length[2]',
+                'phone'      => 'permit_empty|min_length[6]',
+                'state_id'   => 'permit_empty|is_natural_no_zero',
+                'job_title'  => 'permit_empty|min_length[2]',
             ];
 
             if (!$this->validate($rules)) {
                 return $this->response->setJSON([
-                    'status' => 'error',
-                    'errors' => $this->validator->getErrors()
+                    'status'     => 'error',
+                    'errors'     => $this->validator->getErrors(),
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
                 ]);
             }
 
-            $portfolio = trim($this->request->getPost('portfolio'));
-
+            $portfolio = trim((string) $this->request->getPost('portfolio'));
             if ($portfolio && !preg_match('#^https?://#i', $portfolio)) {
                 $portfolio = 'https://' . $portfolio;
             }
 
+            // Collect POST Data with safe nulls for empty optional fields
+            $stateIdRaw  = $this->request->getPost('state_id');
+            $expYearsRaw = $this->request->getPost('experience_years');
+            $salaryRaw   = $this->request->getPost('desired_salary');
 
-            // Collect POST Data
             $data = [
-                'full_name'         => trim($this->request->getPost('full_name')),
-                'dob'               => trim($this->request->getPost('dob')),
-                'gender'            => trim($this->request->getPost('gender')),
-                'phone'             => trim($this->request->getPost('phone')),
-                'location'          => trim($this->request->getPost('location')),
-                'state_id'          => trim($this->request->getPost('state_id')),
-                'availability'      => trim($this->request->getPost('availability')),
-                'job_title'         => trim($this->request->getPost('job_title')),
-                'employment_type'   => trim($this->request->getPost('employment_type')),
-                'skills'            => trim($this->request->getPost('skills')),
-                'experience_years'  => trim($this->request->getPost('experience_years')),
-                'education_level'   => trim($this->request->getPost('education_level')),
-                'languages'         => trim($this->request->getPost('languages')),
-                'desired_salary'    => trim($this->request->getPost('desired_salary')),
-                'salary_type'       => trim($this->request->getPost('salary_type')),
-                'portfolio'         => $portfolio ?? null,
-                'bio'               => trim($this->request->getPost('bio'))
+                'full_name'        => trim((string) $this->request->getPost('full_name')),
+                'dob'              => trim((string) $this->request->getPost('dob')) ?: null,
+                'gender'           => trim((string) $this->request->getPost('gender')) ?: null,
+                'phone'            => trim((string) $this->request->getPost('phone')) ?: null,
+                'location'         => trim((string) $this->request->getPost('location')) ?: null,
+                'state_id'         => !empty($stateIdRaw) ? (int) $stateIdRaw : null,
+                'availability'     => trim((string) $this->request->getPost('availability')) ?: null,
+                'job_title'        => trim((string) $this->request->getPost('job_title')) ?: null,
+                'employment_type'  => trim((string) $this->request->getPost('employment_type')) ?: null,
+                'skills'           => trim((string) $this->request->getPost('skills')) ?: null,
+                'experience_years' => ($expYearsRaw !== '' && $expYearsRaw !== null) ? (int) $expYearsRaw : null,
+                'education_level'  => trim((string) $this->request->getPost('education_level')) ?: null,
+                'languages'        => trim((string) $this->request->getPost('languages')) ?: null,
+                'desired_salary'   => ($salaryRaw !== '' && $salaryRaw !== null) ? (float) $salaryRaw : null,
+                'salary_type'      => trim((string) $this->request->getPost('salary_type')) ?: null,
+                'portfolio'        => $portfolio ?: null,
+                'bio'              => trim((string) $this->request->getPost('bio')) ?: null,
             ];
 
             if ($this->request->getPost('is_visible') !== null) {
@@ -487,8 +491,10 @@ class JobSeekerController extends BaseController
             }
 
             return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Profile updated successfully.'
+                'status'     => 'success',
+                'message'    => 'Profile updated successfully.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
             ])->setStatusCode(200);
         }
 
@@ -603,18 +609,34 @@ class JobSeekerController extends BaseController
      */
     public function toggleVisibility()
     {
-        if (! $this->request->isAJAX()) {
-            return $this->response->setStatusCode(403);
+        $user = $this->auth->user();
+        if (!$user) {
+            return $this->response->setJSON([
+                'success'    => false,
+                'message'    => 'Authentication required.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
+            ])->setStatusCode(401);
         }
 
         $candidateModel = model(JobSeekerModel::class);
-        $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
-        if (! $candidate) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Profile not found.']);
+        $candidate = $candidateModel->where('user_id', $user->id)->first();
+        if (!$candidate) {
+            return $this->response->setJSON([
+                'success'    => false,
+                'message'    => 'Profile not found.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
+            ])->setStatusCode(404);
         }
 
-        // Use the posted value when present, otherwise flip the current state.
+        // Use the posted value or JSON payload when present, otherwise flip the current state.
+        $json = $this->request->getJSON(true);
         $raw = $this->request->getPost('is_visible');
+        if ($raw === null && isset($json['is_visible'])) {
+            $raw = $json['is_visible'];
+        }
+
         if ($raw === null) {
             $newValue = $candidate->is_visible ? 0 : 1;
         } else {
@@ -625,10 +647,12 @@ class JobSeekerController extends BaseController
 
         return $this->response->setJSON([
             'success'    => true,
-            'is_visible' => (bool) $newValue,
+            'is_visible' => (int) $newValue,
             'message'    => $newValue
                 ? 'Your profile is now visible to employers.'
                 : 'Your profile is now hidden from employer search.',
+            'csrf_token' => csrf_token(),
+            'csrf_hash'  => csrf_hash(),
         ]);
     }
 
@@ -655,6 +679,7 @@ class JobSeekerController extends BaseController
 
         $candidateModel->update($candidate->id, [
             'notify_job_alerts'          => $flag('notify_job_alerts'),
+            'notify_weekly_digest'       => $flag('notify_weekly_digest'),
             'notify_application_updates' => $flag('notify_application_updates'),
             'notify_messages'            => $flag('notify_messages'),
             'notify_marketing'           => $flag('notify_marketing'),

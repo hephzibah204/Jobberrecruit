@@ -65,18 +65,27 @@ class JobAlertService
     }
 
     /**
-     * Instantly match and notify candidates when a new job is posted / published
+     * Instantly match and notify candidates when a new job is posted / published / approved
      */
     public function sendImmediateMatchAlerts(int $jobId): int
     {
-        $job = $this->jobModel->find($jobId);
+        $db = db_connect();
+        $job = $db->table('jobs j')
+            ->select('j.*, e.company_name, e.logo as company_logo, s.name as state_name, c.name as category_name')
+            ->join('employers e', 'e.id = j.employer_id', 'left')
+            ->join('states s', 's.id = j.state_id', 'left')
+            ->join('job_categories c', 'c.id = j.category_id', 'left')
+            ->where('j.id', $jobId)
+            ->get()->getFirstRow();
+
         if (!$job || $job->status !== 'open') {
             return 0;
         }
 
         $nowDateTime = date('Y-m-d H:i:s');
+        $isPremium = (!empty($job->is_featured) || !empty($job->is_urgent));
 
-        // Find active alerts where keyword matches or location matches
+        // Find active alerts
         $alerts = $this->alertModel
             ->where('is_active', 1)
             ->groupStart()
@@ -93,13 +102,23 @@ class JobAlertService
         $candidateModel = model(JobSeekerModel::class);
 
         foreach ($alerts as $alert) {
+            // Anti-spam rule for weekly digest option:
+            // If the job is a premium job, candidates who have selected weekly digest
+            // (frequency == 'weekly') should not receive redundant per-job individual emails
+            // for every premium job; they receive them collected in the weekly digest.
+            if ($isPremium && ($alert->frequency === 'weekly')) {
+                continue;
+            }
+
             $match = true;
 
             if (!empty($alert->keyword)) {
                 $kw = strtolower(trim($alert->keyword));
                 $titleMatch = (stripos($job->title ?? '', $kw) !== false);
                 $descMatch  = (stripos($job->description ?? '', $kw) !== false);
-                if (!$titleMatch && !$descMatch) {
+                $catMatch   = (stripos($job->category_name ?? '', $kw) !== false);
+                $skillMatch = (stripos($job->skills ?? '', $kw) !== false);
+                if (!$titleMatch && !$descMatch && !$catMatch && !$skillMatch) {
                     $match = false;
                 }
             }
@@ -145,7 +164,7 @@ class JobAlertService
 
         // Query premium & featured open jobs
         $jobs = $db->table('jobs j')
-            ->select('j.id, j.title, j.slug, j.salary, j.salary_min, j.salary_max, j.job_type, j.is_featured, j.is_urgent, j.created_at, e.company_name, e.logo as company_logo, s.name as state_name')
+            ->select('j.id, j.title, j.slug, j.salary, j.salary_details, j.job_type, j.is_featured, j.is_urgent, j.is_anonymous, j.created_at, e.company_name, e.logo as company_logo, s.name as state_name')
             ->join('employers e', 'e.id = j.employer_id', 'left')
             ->join('states s', 's.id = j.state_id', 'left')
             ->where('j.status', 'open')
@@ -155,6 +174,7 @@ class JobAlertService
                 ->orWhere('j.created_at >=', $monday)
             ->groupEnd()
             ->orderBy('j.is_featured', 'DESC')
+            ->orderBy('j.is_urgent', 'DESC')
             ->orderBy('j.created_at', 'DESC')
             ->limit(10)
             ->get()->getResult();
@@ -162,7 +182,7 @@ class JobAlertService
         if (empty($jobs)) {
             // Fallback: grab latest 6 open jobs so candidates always receive high value
             $jobs = $db->table('jobs j')
-                ->select('j.id, j.title, j.slug, j.salary, j.salary_min, j.salary_max, j.job_type, j.is_featured, j.is_urgent, j.created_at, e.company_name, e.logo as company_logo, s.name as state_name')
+                ->select('j.id, j.title, j.slug, j.salary, j.salary_details, j.job_type, j.is_featured, j.is_urgent, j.is_anonymous, j.created_at, e.company_name, e.logo as company_logo, s.name as state_name')
                 ->join('employers e', 'e.id = j.employer_id', 'left')
                 ->join('states s', 's.id = j.state_id', 'left')
                 ->where('j.status', 'open')
@@ -175,9 +195,13 @@ class JobAlertService
             return ['status' => 'skipped', 'message' => 'No active jobs available for digest.'];
         }
 
-        // Get candidates who have not opted out of job alerts
+        // Get candidates who have not opted out of job alerts or weekly digest
         $candidateModel = model(JobSeekerModel::class);
-        $candidates = $candidateModel->where('notify_job_alerts', 1)->findAll(100);
+        $builder = $candidateModel->where('notify_job_alerts', 1);
+        if ($candidateModel->db->fieldExists('notify_weekly_digest', 'job_seekers')) {
+            $builder->where('notify_weekly_digest', 1);
+        }
+        $candidates = $builder->findAll(250);
 
         $sent = 0;
         $failed = 0;
@@ -223,30 +247,69 @@ class JobAlertService
 
     protected function findMatchingJobs($alert): array
     {
-        $builder = $this->jobModel->where('status', 'open');
+        $db = db_connect();
+        $builder = $db->table('jobs j')
+            ->select('j.*, e.company_name, e.logo as company_logo, s.name as state_name, c.name as category_name')
+            ->join('employers e', 'e.id = j.employer_id', 'left')
+            ->join('states s', 's.id = j.state_id', 'left')
+            ->join('job_categories c', 'c.id = j.category_id', 'left')
+            ->where('j.status', 'open');
 
         if (!empty($alert->keyword)) {
             $builder->groupStart()
-                ->like('title', $alert->keyword)
-                ->orLike('description', $alert->keyword)
+                ->like('j.title', $alert->keyword)
+                ->orLike('j.description', $alert->keyword)
+                ->orLike('c.name', $alert->keyword)
+                ->orLike('j.skills', $alert->keyword)
                 ->groupEnd();
         }
 
         if (!empty($alert->location_id)) {
-            $builder->where('state_id', $alert->location_id);
+            $builder->where('j.state_id', $alert->location_id);
         }
 
         if (!empty($alert->last_sent_at)) {
-            $builder->where('created_at >', $alert->last_sent_at);
+            $builder->where('j.created_at >', $alert->last_sent_at);
         }
 
-        return $builder->findAll(8);
+        return $builder->orderBy('j.created_at', 'DESC')->limit(8)->get()->getResult();
     }
 
     protected function deliverAlert($alert, array $jobs)
     {
-        if (($alert->channel ?? 'email') === 'email') {
+        $channel = $alert->channel ?? 'email';
+        if ($channel === 'email' || $channel === 'both') {
             $this->sendEmailAlert($alert, $jobs);
+        }
+
+        if ($channel === 'inapp' || $channel === 'both') {
+            $this->sendInAppAlert($alert, $jobs);
+        }
+    }
+
+    protected function sendInAppAlert($alert, array $jobs)
+    {
+        try {
+            $notifModel = model(\App\Models\CandidateNotificationModel::class);
+            $jobCount = count($jobs);
+            $firstJob = $jobs[0] ?? null;
+            $title = $jobCount === 1
+                ? "New Job Match: " . ($firstJob->title ?? 'New Opportunity')
+                : "{$jobCount} New Jobs Matching Your Alert";
+            $message = $jobCount === 1
+                ? "A new job '{$firstJob->title}' matching your alert criteria has been posted."
+                : "{$jobCount} new jobs have been posted matching your alert criteria.";
+
+            $notifModel->insert([
+                'candidate_id'   => $alert->job_seeker_id,
+                'application_id' => null,
+                'type'           => 'job_alert',
+                'title'          => $title,
+                'message'        => $message,
+                'is_read'        => 0,
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'In-app alert notification failed: ' . $e->getMessage());
         }
     }
 
@@ -262,7 +325,8 @@ class JobAlertService
         $email = \Config\Services::email();
         $email->clear();
         $email->setTo($candidate->email);
-        $email->setSubject('New Job Matches for: ' . ($alert->keyword ?: 'Your Alert Preferences'));
+        $alertTerm = !empty($alert->keyword) ? "\"{$alert->keyword}\"" : 'Your Saved Criteria';
+        $email->setSubject("🔔 New Job Match: {$alertTerm} — JobberRecruit");
         $email->setMessage(view('emails/job_alert', [
             'candidate' => $candidate,
             'jobs'      => $jobs,

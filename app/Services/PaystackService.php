@@ -9,7 +9,7 @@ class PaystackService
 
     public function __construct()
     {
-        $this->secretKey = env('paystack_secret_key');
+        $this->secretKey = env('paystack_secret_key') ?: (env('PAYSTACK_SECRET_KEY') ?: env('paystack.secret_key'));
     }
 
     /**
@@ -79,6 +79,14 @@ class PaystackService
      * Alias for verify transaction
      */
     public function verifyTransaction($reference)
+    {
+        return $this->verify($reference);
+    }
+
+    /**
+     * Alias for verify payment
+     */
+    public function verifyPayment($reference)
     {
         return $this->verify($reference);
     }

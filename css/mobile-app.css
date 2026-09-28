@@ -77,31 +77,31 @@ p, li, a, button, span, h1, h2, h3, h4, h5, h6 {
   word-break: break-word;
 }
 
-/* Tables → card layout on mobile. The legacy codebase mostly uses
-   DataTables / .data-table; we coerce them into stacked cards here. */
+/* Responsive tables: ensure smooth horizontal scrolling with preserved headers & alignment */
+.table-responsive, .tbl-wrap, .data-table-wrap, .dataTables_wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+/* Card-stack transformation for tables explicitly opting in via .table-stack-mobile */
 @media (max-width: 767.98px) {
-  .data-table, table.table, .table-card, .responsive-table,
-  table.dataTable, .dataTable {
+  .table-stack-mobile {
     border: 0;
     background: transparent;
   }
-  .data-table thead, table.table thead, .table-card thead,
-  .responsive-table thead, table.dataTable thead,
-  .dataTable thead { display: none; }
-  .data-table tbody tr, table.table tbody tr, .table-card tbody tr,
-  .responsive-table tbody tr, table.dataTable tbody tr,
-  .dataTable tbody tr {
+  .table-stack-mobile thead { display: none; }
+  .table-stack-mobile tbody tr {
     display: block;
     background: var(--white, #fff);
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 12px;
     margin-bottom: 12px;
-    padding: 6px 14px;
+    padding: 8px 14px;
     box-shadow: 0 1px 4px rgba(10,47,87,.04);
   }
-  .data-table tbody td, table.table tbody td, .table-card tbody td,
-  .responsive-table tbody td, table.dataTable tbody td,
-  .dataTable tbody td {
+  .table-stack-mobile tbody td {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -112,14 +112,10 @@ p, li, a, button, span, h1, h2, h3, h4, h5, h6 {
     text-align: right;
     min-height: 40px;
   }
-  .data-table tbody td:last-child, table.table tbody td:last-child,
-  .table-card tbody td:last-child, .responsive-table tbody td:last-child,
-  table.dataTable tbody td:last-child, .dataTable tbody td:last-child {
+  .table-stack-mobile tbody td:last-child {
     border-bottom: 0;
   }
-  .data-table tbody td::before, table.table tbody td::before,
-  .table-card tbody td::before, .responsive-table tbody td::before,
-  table.dataTable tbody td::before, .dataTable tbody td::before {
+  .table-stack-mobile tbody td::before {
     content: attr(data-label);
     font-weight: 600;
     color: var(--muted, #64748b);
@@ -129,10 +125,11 @@ p, li, a, button, span, h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Forms: any 2-column layout collapses to 1 on small phones. */
+/* Forms: collapse 2-column custom grids to 1-column on small screens */
 @media (max-width: 767.98px) {
-  .form-row, .form-grid, .input-row,
-  .row.g-3 > [class*="col-"] { grid-template-columns: 1fr !important; }
+  .form-row, .form-grid, .input-row {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* Modals: cap to viewport. */

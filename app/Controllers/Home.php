@@ -938,8 +938,20 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
-        $jobIdNum = is_numeric($jobId) ? $jobId : $job->id;
-        $jobModel->set('views', 'views+1', false)->where('id', $jobIdNum)->update();
+        $jobIdNum = is_numeric($jobId) ? (int)$jobId : (int)$job->id;
+
+        // Only count 1 view per visitor per job per hour.
+        // Session key: viewed_job_{id}  →  unix-timestamp of first view this hour.
+        $session     = session();
+        $sessionKey  = 'viewed_job_' . $jobIdNum;
+        $lastViewed  = $session->get($sessionKey);
+        $now         = time();
+        $cooldownSec = 3600; // 1 hour
+
+        if (!$lastViewed || ($now - $lastViewed) >= $cooldownSec) {
+            $jobModel->set('views', 'views+1', false)->where('id', $jobIdNum)->update();
+            $session->set($sessionKey, $now);
+        }
 
         $job->formatted_created_at = date('d M, Y', strtotime($job->created_at));
         $job->formatted_expiry = $job->expiry_date ? date('d M, Y', strtotime($job->expiry_date)) : 'N/A';
@@ -1504,6 +1516,12 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
+        $jobStatus = strtolower((string) ($job->status ?? ''));
+        if (in_array($jobStatus, ['closed', 'paused', 'expired', 'rejected'])) {
+            return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))
+                ->with('error', 'This job is closed and is no longer accepting applications.');
+        }
+
         $method = $job->application_method ?? 'form';
         $redirectUrl = null;
 
@@ -1885,6 +1903,12 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
+        $jobStatus = strtolower((string) ($job->status ?? ''));
+        if (in_array($jobStatus, ['closed', 'paused', 'expired', 'rejected'])) {
+            return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))
+                ->with('error', 'This job is closed and is no longer accepting applications.');
+        }
+
         // If application method is not internal form (external, whatsapp, email), redirect to tracking handler
         if (($job->application_method ?? 'form') !== 'form') {
             return $this->startApplication($jobId);
@@ -1968,22 +1992,21 @@ class Home extends BaseController
                 ]);
             }
 
-            // Minimum Profile Completion gate for registered candidates (60%)
+            // Minimum Profile Completion gate for internal job applications (60% required per Requirement 12.1)
             if ($loggedIn && ($user->user_type ?? '') !== 'employer') {
                 $candidate = $candidateModel->where('user_id', $user->id)->first();
                 if ($candidate) {
-                    $fields = ['full_name', 'phone', 'location', 'job_title', 'skills', 'education_level', 'experience_years', 'resume'];
-                    $filled = 0;
-                    foreach ($fields as $f) {
-                        if (!empty($candidate->$f)) $filled++;
-                    }
-                    $pct = round(($filled / count($fields)) * 100);
+                    $pct = $candidate->getProfileCompletion();
                     if ($pct < 60) {
-                        return $this->response->setJSON([
-                            'status' => 'error',
-                            'message' => 'Your profile is ' . $pct . '% complete. A minimum of 60% profile completion is required to submit job applications. Please complete your profile before applying.',
-                            'redirect' => base_url('candidate/profile')
-                        ]);
+                        $msg = 'Your profile is currently ' . $pct . '% complete. A minimum of 60% profile completion is required to submit job applications. Please complete your profile (including education and work experience) before applying.';
+                        if ($this->request->isAJAX()) {
+                            return $this->response->setJSON([
+                                'status' => 'error',
+                                'message' => $msg,
+                                'redirect' => base_url('candidate/profile/edit')
+                            ]);
+                        }
+                        return redirect()->back()->withInput()->with('error', $msg);
                     }
                 }
             }
@@ -2035,20 +2058,32 @@ class Home extends BaseController
             }
 
             // Save Application
+            $first_name = trim((string) $this->request->getPost('first_name'));
+            $last_name  = trim((string) $this->request->getPost('last_name'));
+            $phone      = trim((string) $this->request->getPost('phone'));
+            $email      = $this->request->getPost('email');
+            $candidateId = null;
+
             if ($loggedIn) {
                 $candidate = $candidateModel->where('user_id', $user->id)->first();
-                $first_name = explode(' ', $candidate->full_name)[0];
-                $last_name = isset(explode(' ', $candidate->full_name)[1]) ? explode(' ', $candidate->full_name)[1] : '';
+                if ($candidate) {
+                    $candidateId = $candidate->id;
+                    $parts = preg_split('/\s+/', trim((string) $candidate->full_name));
+                    $first_name = $parts[0] ?? $first_name;
+                    $last_name  = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : $last_name;
+                    $phone      = $candidate->phone ?: $phone;
+                }
+                $email = $user->email;
             }
 
             $applicationId = $applicationModel->insert([
                 'job_id'              => $jobId,
-                'job_seeker_id'       => $loggedIn ? $candidate->id : null,
+                'job_seeker_id'       => $candidateId,
                 'is_guest'            => !$loggedIn ? 1 : 0,
-                'first_name'          => $loggedIn ? $first_name : $this->request->getPost('first_name'),
-                'last_name'           => $loggedIn ? $last_name : $this->request->getPost('last_name'),
-                'email'               => $loggedIn ? $user->email : $this->request->getPost('email'),
-                'phone'               => $loggedIn ? $candidate->phone : $this->request->getPost('phone'),
+                'first_name'          => $first_name,
+                'last_name'           => $last_name,
+                'email'               => $email,
+                'phone'               => $phone,
                 'cv_path'             => $cvPath,
                 'cover_letter'        => $coverLetter,
                 'availability'        => $this->request->getPost('availability'),
@@ -2110,10 +2145,8 @@ class Home extends BaseController
 
             // Send Confirmation Email to Candidate (Always sent)
             $emailService = service('mailer');
-            $candidateEmail = $loggedIn ? $user->email : $this->request->getPost('email');
-            $candidateName  = $loggedIn
-                ? $candidate->full_name
-                : $this->request->getPost('first_name') . ' ' . $this->request->getPost('last_name');
+            $candidateEmail = $email;
+            $candidateName  = trim($first_name . ' ' . $last_name) ?: 'Applicant';
 
             $emailService->sendTemplate(
                 $candidateEmail,
@@ -2137,8 +2170,6 @@ class Home extends BaseController
 
             // Send Email Notification if enabled
             if ($sendEmailNotification && $notificationEmail) {
-                sleep(2); // Small delay to avoid email conflicts
-
                 $emailService2 = service('mailer');
                 $emailService2->sendTemplate(
                     $notificationEmail,
@@ -2149,7 +2180,7 @@ class Home extends BaseController
                         'job_title'          => $job->title,
                         'candidate_name'     => $candidateName,
                         'candidate_email'    => $candidateEmail,
-                        'candidate_phone'    => $loggedIn ? ($candidate->phone ?? 'N/A') : $this->request->getPost('phone'),
+                        'candidate_phone'    => $phone ?: 'N/A',
                         'availability'       => $this->request->getPost('availability'),
                         'salary_expectation' => $this->request->getPost('salary_expectation'),
                         'applied_at'         => date('d M Y, H:i'),
@@ -2187,23 +2218,28 @@ class Home extends BaseController
         
         $candidate = null;
         $isSaved = false;
+        $candidateProfilePct = 100;
         if (auth()->loggedIn()) {
             $user = auth()->user();
             $candidateModel = model(\App\Models\JobSeekerModel::class);
             $candidate = $candidateModel->where('user_id', $user->id)->first();
+            if ($candidate) {
+                $candidateProfilePct = $candidate->getProfileCompletion();
+            }
             
             $savedJobModel = model(\App\Models\SavedJobModel::class);
             $isSaved = (bool) $savedJobModel->where('user_id', $user->id)->where('job_id', $jobId)->first();
         }
 
         return view('home/apply', [
-            'title'     => 'Apply: ' . $job->title,
-            'auth'      => auth(),
-            'user'      => auth()->user(),
-            'candidate' => $candidate,
-            'job'       => $job,
-            'questions' => $questions,
-            'isSaved'   => $isSaved
+            'title'               => 'Apply: ' . $job->title,
+            'auth'                => auth(),
+            'user'                => auth()->user(),
+            'candidate'           => $candidate,
+            'candidateProfilePct' => $candidateProfilePct,
+            'job'                 => $job,
+            'questions'           => $questions,
+            'isSaved'             => $isSaved
         ]);
 
     }
@@ -2384,8 +2420,10 @@ class Home extends BaseController
                 'message' => $message,
             ]);
 
+            $supportEmail = env('email.support_email') ?: (env('SUPPORT_EMAIL') ?: (config('Email')->fromEmail ?? 'support@jobberrecruit.com'));
+
             $mailer->clear();
-            $mailer->setTo('support@jobberrecruit.com');
+            $mailer->setTo($supportEmail);
             $mailer->setReplyTo($email, $name);
             $mailer->setSubject('[Contact] ' . $subject);
             $mailer->setMessage($adminMessage);
@@ -2407,12 +2445,9 @@ class Home extends BaseController
                 'name' => $name,
             ]);
 
-            // Add Delay
-            sleep(5);
-
             $mailer->clear();
             $mailer->setTo($email);
-            $mailer->setSubject('We received your message');
+            $mailer->setSubject('We received your message — ' . (env('site_name') ?: 'JobberRecruit'));
             $mailer->setMessage($userMessage);
             $mailer->setMailType('html');
             $mailer->send(); // silent fail is OK
@@ -2911,7 +2946,10 @@ class Home extends BaseController
 
         // Load industries
         $industryIDs = $industryMap->where('employer_id', $id)->findColumn('industry_id') ?? [];
-        $industries = $industryModel->whereIn('id', $industryIDs)->findAll();
+        $industries = [];
+        if (!empty($industryIDs)) {
+            $industries = $industryModel->whereIn('id', $industryIDs)->findAll();
+        }
 
         // Jobs by employer
         $openJobs = $jobsModel
@@ -2975,16 +3013,38 @@ class Home extends BaseController
 
     public function trackOpen($alertId)
     {
-        $alertModel = model(JobAlertModel::class);
-        $alertModel->where('id', $alertId)->increment('opens');
+        try {
+            $alertModel = model(JobAlertModel::class);
+            $alertModel->where('id', (int) $alertId)->increment('opens');
+        } catch (\Throwable $e) {
+            // silent
+        }
+
+        // Return a 1x1 transparent GIF image
+        return $this->response
+            ->setHeader('Content-Type', 'image/gif')
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->setBody(base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'));
     }
 
-    public function trackClick($alertId, $jobId)
+    public function trackClick($alertId, $jobId = null)
     {
-        $alertModel = model(JobAlertModel::class);
-        $alertModel->where('id', $alertId)->increment('clicks');
+        try {
+            $alertModel = model(JobAlertModel::class);
+            $alertModel->where('id', (int) $alertId)->increment('clicks');
+        } catch (\Throwable $e) {
+            // silent
+        }
 
-        return redirect()->to('jobs/view/' . $jobId);
+        if ($jobId) {
+            $job = model(\App\Models\JobModel::class)->find((int) $jobId);
+            if ($job && !empty($job->slug)) {
+                return redirect()->to(base_url('jobs/' . $job->slug));
+            }
+            return redirect()->to(base_url('jobs/' . (int) $jobId));
+        }
+
+        return redirect()->to(base_url('jobs'));
     }
 
     public function recruitment()
@@ -3002,7 +3062,7 @@ class Home extends BaseController
 
     public function submitRecruitmentInquiry()
     {
-        if ($this->request->getMethod() !== 'post') {
+        if ($this->request->getMethod() !== 'POST') {
             return redirect()->to(base_url('recruitment'));
         }
 

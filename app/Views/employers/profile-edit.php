@@ -577,9 +577,9 @@ function pulseBar() {
 }
 
 /* ── Main save handler ── */
-function saveSection(key, event) {
-  var e = event || window.event;
-  var btn = e ? e.target.closest('button') : null;
+  function saveSection(key, event, btn) {
+    var e = event || window.event;
+    btn = btn || (e ? (e.currentTarget || e.target.closest('button')) : null);
   if (!btn) return;
   var orig = btn.innerHTML;
   btn.disabled = true;
@@ -600,6 +600,21 @@ function saveSection(key, event) {
       },
       success: function(response) {
           btn.disabled = false;
+          // If the server returned status:'error' inside a 200 response, treat it as failure
+          if (response && response.status === 'error') {
+              btn.innerHTML = orig;
+              var errMsg = response.message || 'Validation failed. Please check all required fields.';
+              if (response.errors) {
+                  var errList = Object.values(response.errors).join('<br>');
+                  errMsg = errList;
+              }
+              if (typeof toastr !== 'undefined') {
+                  toastr.error(errMsg);
+              } else {
+                  alert(errMsg);
+              }
+              return;
+          }
           completedSections[key] = true;
           var card = btn.closest('.cv-card');
           if (card) card.classList.add('is-complete');
@@ -640,9 +655,9 @@ function saveSection(key, event) {
 }
 
 /* ── Save all ── */
-function saveAllSections(event) {
-  var e = event || window.event;
-  var btn = e ? e.target.closest('button') : null;
+  function saveAllSections(event, btn) {
+    var e = event || window.event;
+    btn = btn || (e ? (e.currentTarget || e.target.closest('button')) : null);
   if (!btn) return;
   var orig = btn.innerHTML;
   btn.disabled = true;
@@ -663,6 +678,19 @@ function saveAllSections(event) {
       success: function(response) {
           btn.disabled = false;
           btn.innerHTML = orig;
+          if (response && response.status === 'error') {
+              var errMsg = response.message || 'Validation failed. Please check all required fields.';
+              if (response.errors) {
+                  var errList = Object.values(response.errors).join('<br>');
+                  errMsg = errList;
+              }
+              if (typeof toastr !== 'undefined') {
+                  toastr.error(errMsg);
+              } else {
+                  alert(errMsg);
+              }
+              return;
+          }
           SECTION_ORDER.forEach(function(k) {
               completedSections[k] = true;
               var card = document.querySelector('[aria-labelledby="h-' + k + '"]');

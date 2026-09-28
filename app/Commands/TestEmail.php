@@ -21,9 +21,7 @@ class TestEmail extends BaseCommand
         }
 
         CLI::write("Initializing email service...", "cyan");
-        Services::$bypassQueue = true;
         $email = Services::email(false);
-        Services::$bypassQueue = false;
 
         $email->setTo($to);
         $email->setSubject("JobberRecruit SMTP Test");
@@ -35,7 +33,7 @@ class TestEmail extends BaseCommand
             CLI::write("Success! Email sent successfully.", "green");
         } else {
             CLI::error("Error! Failed to send email.");
-            CLI::write($email->printDebugger(['headers', 'subject', 'body', 'smtp']), "yellow");
+            CLI::write($email->printDebugger(), "yellow");
         }
     }
 }

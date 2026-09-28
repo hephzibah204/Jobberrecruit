@@ -150,7 +150,7 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                 </div>
                 <div class="cand-list-head">
                     <span class="result-count"><b><?= number_format($total ?? 0) ?></b> candidates found</span>
-                    <span style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px">
+                    <span style="font-size:.72rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;">
                         <span class="cc-dot" aria-hidden="true"></span> Open to work
                     </span>
                 </div>

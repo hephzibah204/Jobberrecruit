@@ -53,3 +53,57 @@ Events::on('pre_system', static function (): void {
         }
     }
 });
+
+/**
+ * Internal Opportunistic Automation Runner (Pseudo-Cron)
+ * Runs scheduled automations after the page is sent to the client,
+ * so the platform never totally depends on external cron services.
+ */
+Events::on('post_system', static function (): void {
+    if (is_cli()) {
+        return;
+    }
+
+    if (env('internal_cron_enabled', true) === false || env('internal_cron_enabled', true) === 'false') {
+        return;
+    }
+
+    $lockKey  = 'jobber_internal_cron_last_run';
+    $interval = (int) env('internal_cron_interval', 900); // Every 15 minutes by default
+
+    try {
+        $cache = service('cache');
+        $lastRun = $cache->get($lockKey);
+        $now = time();
+
+        if ($lastRun && ($now - (int)$lastRun) < $interval) {
+            return;
+        }
+
+        // Lock for interval
+        $cache->save($lockKey, $now, $interval);
+
+        // Disconnect browser client so user experiences zero delay
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+
+        @set_time_limit(120);
+        @ignore_user_abort(true);
+
+        $token = env('cron_token') ?: env('CRON_TOKEN', 'jobber_cron_secret_123');
+
+        $request = service('request');
+        $response = service('response');
+        $logger = service('logger');
+
+        $_GET['token'] = $token;
+
+        $cron = new \App\Controllers\CronController();
+        $cron->initController($request, $response, $logger);
+        $cron->runAllAutomations();
+    } catch (\Throwable $e) {
+        log_message('error', 'Internal Pseudo-Cron Error: ' . $e->getMessage());
+    }
+});
+

@@ -436,7 +436,7 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
 
           if ($isCompleted) {
               $statusFilter = 'completed';
-              $statusLabel = 'Completed';
+              $statusLabel = isset($inv->score_pct) ? 'Results Available' : 'Completed';
               $statusClass = 'pill--success';
               $cardClass = 'is-completed';
           } elseif ($isInProgress) {
@@ -449,6 +449,16 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
               $statusLabel = 'Expired';
               $statusClass = 'pill--muted';
               $cardClass = 'is-expired';
+          } elseif (!empty($inv->attempt_id) || $inv->status === 'accepted' || $inv->status === 'opened') {
+              $statusFilter = 'pending';
+              $statusLabel = 'Not Started';
+              $statusClass = 'pill--pending';
+              $cardClass = 'is-pending';
+          } else {
+              $statusFilter = 'pending';
+              $statusLabel = 'Invited';
+              $statusClass = 'pill--pending';
+              $cardClass = 'is-pending';
           }
         ?>
         <div class="inv-card <?= $cardClass ?>" data-inv-status="<?= $statusFilter ?>">
@@ -521,7 +531,7 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
                 <svg aria-hidden="true"><use href="#apt-play"/></svg> Continue Assessment
               </a>
             <?php elseif (!$isExpired): ?>
-              <a href="<?= base_url('aptitude/invite/' . $inv->invitation_code) ?>" class="btn btn-primary btn-sm">
+              <a href="<?= base_url('aptitude/invite/' . ($inv->invitation_code ?: $inv->code)) ?>" class="btn btn-primary btn-sm">
                 <svg aria-hidden="true"><use href="#apt-shield"/></svg> Start Assessment
               </a>
             <?php else: ?>

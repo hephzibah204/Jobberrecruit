@@ -3,10 +3,10 @@
 
 <?= $this->section('content') ?>
 <div class="page-head">
-  <div class="page-head-left">
-    <h1><svg aria-hidden="true" width="22" height="22"><use href="#i-edit"/></svg> Edit Job</h1>
-    <p>Update your job posting details to keep it accurate and attract the best candidates.</p>
-  </div>
+    <div class="page-head-left">
+      <h1><svg aria-hidden="true" width="22" height="22"><use href="<?= (isset($isRepost) && $isRepost) ? '#i-refresh' : '#i-edit' ?>"/></svg> <?= (isset($isRepost) && $isRepost) ? 'Repost Job' : 'Edit Job' ?></h1>
+      <p><?= (isset($isRepost) && $isRepost) ? 'Review and update your job details before reposting for a new 30-day cycle.' : 'Update your job posting details to keep it accurate and attract the best candidates.' ?></p>
+    </div>
   <div class="page-actions">
     <a href="<?= site_url('employer/jobs/view/' . $job->id) ?>" class="emp-btn emp-btn-outline emp-btn-sm">
       <svg aria-hidden="true" width="16" height="16"><use href="#i-arrow-l"/></svg> Back to Details
@@ -44,7 +44,7 @@
 <?php endif; ?>
 
 <div class="post-wrap">
-  <form id="edit-job-form" class="edit-job-form" method="POST" action="<?= site_url('employer/jobs/update') ?>" novalidate>
+<form id="edit-job-form" class="edit-job-form" method="POST" action="<?= (isset($isRepost) && $isRepost) ? site_url('employer/jobs/repost/' . $job->id) : site_url('employer/jobs/update') ?>" novalidate>
     <?= csrf_field() ?>
     <input type="hidden" name="job_id" value="<?= esc($job->id) ?>">
 
@@ -225,11 +225,13 @@
       <div class="job-card-body">
         <div class="form-grid">
           <div class="form-field">
-            <label for="accommodation">Accommodation <span class="required-star">*</span></label>
-            <select id="accommodation" name="accommodation" required>
-              <option value="">Select Accommodation</option>
-              <option value="available" <?= old('accommodation', $job->accommodation) === 'available' ? 'selected' : '' ?>>Available</option>
-              <option value="not_available" <?= old('accommodation', $job->accommodation) === 'not_available' ? 'selected' : '' ?>>Not Available</option>
+            <label for="accommodation">Accommodation</label>
+            <select id="accommodation" name="accommodation">
+              <option value="">-- Select accommodation option --</option>
+              <option value="Provided (fully covered by employer)" <?= old('accommodation', $job->accommodation) === 'Provided (fully covered by employer)' ? 'selected' : '' ?>>Provided (fully covered by employer)</option>
+              <option value="Provided (cost shared with employee)" <?= old('accommodation', $job->accommodation) === 'Provided (cost shared with employee)' ? 'selected' : '' ?>>Provided (cost shared with employee)</option>
+              <option value="Housing allowance provided instead" <?= old('accommodation', $job->accommodation) === 'Housing allowance provided instead' ? 'selected' : '' ?>>Housing allowance provided instead</option>
+              <option value="Not provided" <?= (old('accommodation', $job->accommodation) === 'Not provided' || old('accommodation', $job->accommodation) === 'not_available') ? 'selected' : '' ?>>Not provided</option>
             </select>
           </div>
         </div>
@@ -422,29 +424,30 @@
 
 <div class="publish-bar" role="complementary" aria-label="Publish actions">
   <div class="container publish-bar-inner">
-    <div class="publish-bar-info">
-      <strong>Ready to update?</strong>
-      <span>Your changes will go live immediately after saving</span>
-    </div>
-    <div class="publish-bar-actions">
-      <a href="<?= site_url('employer/jobs/view/' . $job->id) ?>" class="emp-btn emp-btn-outline">Cancel</a>
-      <button type="submit" class="emp-btn emp-btn-accent" form="edit-job-form" id="updateJobBtn">
-        <svg aria-hidden="true" width="16" height="16"><use href="#i-check"/></svg> Update Job
-      </button>
+      <div class="publish-bar-info">
+        <strong><?= (isset($isRepost) && $isRepost) ? 'Ready to repost?' : 'Ready to update?' ?></strong>
+        <span><?= (isset($isRepost) && $isRepost) ? 'This will consume 1 credit and start a new 30-day cycle.' : 'Your changes will go live immediately after saving' ?></span>
+      </div>
+      <div class="publish-bar-actions">
+        <a href="<?= site_url('employer/jobs/view/' . $job->id) ?>" class="emp-btn emp-btn-outline">Cancel</a>
+        <button type="submit" class="emp-btn emp-btn-accent" form="edit-job-form" id="updateJobBtn">
+          <svg aria-hidden="true" width="16" height="16"><use href="#i-check"/></svg> <?= (isset($isRepost) && $isRepost) ? 'Confirm & Repost' : 'Update Job' ?>
+        </button>
+      </div>
     </div>
   </div>
 </div>
-<?= $this->endSection() ?>
 
 <?= $this->section('mobile_cta') ?>
 <a href="<?= site_url('employer/jobs/view/' . $job->id) ?>" class="emp-btn emp-btn-outline">Cancel</a>
-<button type="submit" class="emp-btn emp-btn-accent" form="edit-job-form">Update Job</button>
+<button type="submit" class="emp-btn emp-btn-accent" form="edit-job-form" id="updateJobBtnMobile"><?= (isset($isRepost) && $isRepost) ? 'Confirm & Repost' : 'Update Job' ?></button>
 <?= $this->endSection() ?>
 
 
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.js">var isRepost = <?= isset($isRepost) && $isRepost ? 'true' : 'false' ?>;
+</script>
 <script>
   $(document).ready(function() {
     // Initialize Select2
@@ -605,12 +608,12 @@
               });
             }
             submitBtn.prop('disabled', false);
-            submitBtn.html('<svg aria-hidden="true" width="16" height="16"><use href="#i-check"/></svg> Update Job');
+            submitBtn.html('<svg aria-hidden="true" width="16" height="16"><use href="#i-check"/></svg> ' + ((typeof isRepost !== 'undefined' && isRepost) ? 'Confirm & Repost' : 'Update Job'));
           }
         },
         error: function(xhr) {
           submitBtn.prop('disabled', false);
-          submitBtn.html('<svg aria-hidden="true" width="16" height="16"><use href="#i-check"/></svg> Update Job');
+          submitBtn.html('<svg aria-hidden="true" width="16" height="16"><use href="#i-check"/></svg> ' + ((typeof isRepost !== 'undefined' && isRepost) ? 'Confirm & Repost' : 'Update Job'));
           let message = 'An error occurred while updating the job.';
           if (xhr.responseJSON && xhr.responseJSON.message) {
             message = xhr.responseJSON.message;

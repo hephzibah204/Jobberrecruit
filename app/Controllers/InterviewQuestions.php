@@ -76,6 +76,7 @@ class InterviewQuestions extends Controller
         $salaryBand  = (string)($in['salaryBand'] ?? '');
         $company     = (string)($in['company'] ?? 'any');
         $arrangement = (string)($in['arrangement'] ?? 'onsite');
+        $candidateCtx= (string)($in['candidateContext'] ?? '');
 
         $apiKey = env('GEMINI_API_KEY');
         if (empty($apiKey)) {
@@ -86,7 +87,7 @@ class InterviewQuestions extends Controller
         // ---- build the prompt ----------------------------------------------
         $prompt = $this->buildPrompt(
             $job, $field, $itype, $diff, $exp, $count,
-            $focus, $salaryBand, $company, $arrangement
+            $focus, $salaryBand, $company, $arrangement, $candidateCtx
         );
 
         // ---- call Gemini ----------------------------------------------------
@@ -199,7 +200,7 @@ class InterviewQuestions extends Controller
     private function buildPrompt(
         string $job, string $field, string $itype, string $diff, string $exp,
         int $count, string $focus, string $salaryBand, string $company,
-        string $arrangement
+        string $arrangement, string $candidateCtx
     ): string {
         $fieldLabel = self::FIELD_LABELS[$field] ?? 'General / Cross-functional';
 
@@ -286,12 +287,24 @@ NIGERIAN CONTEXT — HARD REQUIREMENT, NOT A PREFERENCE:
 - No preamble, no numbering, no commentary, no headings.
 - Do not repeat the same underlying question in different words.
 
-OUTPUT FORMAT — this is strict:
-Return ONLY a JSON array of exactly {$count} strings. Nothing else. No markdown fences, no explanation.
-
-Example of the required shape:
-["First question here?", "Second question here?"]
+OUTPUT FORMAT:
+Return ONLY a valid JSON object containing exactly one key: "questions".
+The value must be a JSON array of {$count} string elements.
+Do NOT include markdown formatting, backticks, or any other text before or after the JSON.
+Example:
+{
+  "questions": [
+    "Question 1 text...",
+    "Question 2 text..."
+  ]
+}
 PROMPT;
+
+        if ($candidateCtx !== '') {
+            $prompt .= "\n\nCANDIDATE CONTEXT (Use this to personalize questions if relevant. Do NOT reference it explicitly like 'I see on your resume'):\n{$candidateCtx}";
+        }
+
+        return $prompt;
     }
 
     private function fail(string $reason, int $code): ResponseInterface

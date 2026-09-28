@@ -307,6 +307,7 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success) {
+                    if (typeof window.clearAutosave === 'function') window.clearAutosave();
                     toastr.success(res.message);
                     setTimeout(() => window.location.href = "<?= base_url('admin/blogs') ?>", 700);
                 } else {
@@ -398,98 +399,6 @@
         };
         reader.readAsDataURL(file);
     });
-
-    // Autosave functionality
-    const blogId = document.getElementById('blog_id').value || 'new';
-    const autosaveKey = `jr_blog_draft_${blogId}`;
-
-    function saveDraft() {
-        const title = document.getElementById('blog_title').value;
-        const slug = document.getElementById('blog_slug').value;
-        const excerpt = document.getElementById('blog_excerpt').value;
-        const metaTitle = document.getElementById('blog_meta_title').value;
-        const metaDescription = document.getElementById('blog_meta_description').value;
-        const tags = document.getElementById('blog_tags').value;
-        let content = '';
-
-        if (window.CKEDITOR && CKEDITOR.instances.blog_content) {
-            content = CKEDITOR.instances.blog_content.getData();
-        } else {
-            content = document.getElementById('blog_content').value;
-        }
-
-        if (!title && !content && !excerpt) return; // don't save empty draft
-
-        const draft = {
-            title,
-            slug,
-            excerpt,
-            metaTitle,
-            metaDescription,
-            tags,
-            content,
-            timestamp: new Date().getTime()
-        };
-
-        localStorage.setItem(autosaveKey, JSON.stringify(draft));
-        showAutosaveStatus();
-    }
-
-    function showAutosaveStatus() {
-        let statusEl = document.getElementById('autosave-status');
-        if (!statusEl) {
-            const breadcrumb = document.querySelector('.breadcrumb');
-            if (breadcrumb) {
-                breadcrumb.insertAdjacentHTML('afterend', '<span id="autosave-status" class="badge bg-success-transparent mt-2 fs-11 fw-normal" style="width: fit-content; display: inline-flex; align-items: center; gap: 4px;"></span>');
-                statusEl = document.getElementById('autosave-status');
-            }
-        }
-        if (statusEl) {
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            statusEl.innerHTML = `<i class="ti ti-device-floppy me-1"></i> Draft saved at ${time}`;
-        }
-    }
-
-    function checkRestoreDraft() {
-        const saved = localStorage.getItem(autosaveKey);
-        if (!saved) return;
-
-        const draft = JSON.parse(saved);
-        if (confirm('We found an unsaved local draft for this post. Would you like to restore it?')) {
-            document.getElementById('blog_title').value = draft.title || '';
-            document.getElementById('blog_slug').value = draft.slug || '';
-            document.getElementById('blog_excerpt').value = draft.excerpt || '';
-            document.getElementById('blog_meta_title').value = draft.metaTitle || '';
-            document.getElementById('blog_meta_description').value = draft.metaDescription || '';
-            document.getElementById('blog_tags').value = draft.tags || '';
-            
-            if (window.CKEDITOR && CKEDITOR.instances.blog_content) {
-                CKEDITOR.instances.blog_content.setData(draft.content || '');
-            } else {
-                document.getElementById('blog_content').value = draft.content || '';
-            }
-            toastr.success('Draft restored successfully');
-        }
-    }
-
-    // Clear draft on successful submission
-    document.getElementById('blogForm').addEventListener('submit', function() {
-        localStorage.removeItem(autosaveKey);
-    });
-
-    // Start auto-saving every 5 seconds
-    setInterval(saveDraft, 5000);
-
-    // Check for draft restore on editor load
-    if (window.CKEDITOR) {
-        CKEDITOR.on('instanceReady', function(evt) {
-            if (evt.editor.name === 'blog_content') {
-                checkRestoreDraft();
-            }
-        });
-    } else {
-        window.addEventListener('load', checkRestoreDraft);
-    }
 
     // AI Writer submission handler
     document.getElementById('aiWriterForm').addEventListener('submit', function(e) {

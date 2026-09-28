@@ -5,50 +5,186 @@
 <link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
 <style>
 /* ── Resume Grid & Cards ── */
-.rz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,1.6vw,18px);margin-top:4px}
-@media (max-width:1100px){.rz-grid{grid-template-columns:1fr 1fr}}
-@media (max-width:640px){.rz-grid{grid-template-columns:1fr}}
+.rz-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(12px, 1.6vw, 18px);
+  margin-top: 4px;
+}
+@media (max-width: 1100px) { .rz-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .rz-grid { grid-template-columns: 1fr; } }
 
-.rz-card{display:flex;flex-direction:column;padding:18px;transition:var(--transition,0.18s ease);cursor:pointer;border:1px solid var(--border,#e2e8f2);border-radius:14px;background:#fff;text-decoration:none}
-.rz-card:hover{box-shadow:0 2px 14px rgba(10,47,87,.08);transform:translateY(-2px);text-decoration:none}
+.rz-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  transition: var(--transition, 0.18s ease);
+  border: 1px solid var(--border, #e2e8f2);
+  border-radius: 14px;
+  background: #fff;
+  text-decoration: none;
+}
+.rz-card:hover {
+  box-shadow: 0 4px 18px rgba(10, 47, 87, 0.09);
+  transform: translateY(-2px);
+}
 
-.rz-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px}
-.rz-ic{width:42px;height:42px;border-radius:11px;background:var(--brand-light,#E6F0F8);color:var(--brand,#0861A9);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.rz-ic svg{width:18px;height:18px}
-.rz-name{font-family:'Sora',sans-serif;font-weight:700;font-size:.92rem;color:var(--brand-deep,#0A2F57);line-height:1.35}
-.rz-meta{font-size:.7rem;color:var(--muted,#5b6577);margin-top:2px}
-.rz-score{margin-left:auto;flex-shrink:0;font-family:'Sora',sans-serif;font-weight:800;font-size:.78rem;padding:5px 11px;border-radius:20px}
-.rz-score.hi{background:var(--success-light,#e8f7ee);color:var(--success,#16a34a)}
-.rz-score.mid{background:var(--accent-light,#FDF1E0);color:var(--accent-dark,#C8770E)}
-.rz-acts{display:flex;gap:7px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border,#e2e8f2)}
+.rz-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 12px;
+}
+.rz-ic {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--brand-light, #E6F0F8);
+  color: var(--brand, #0861A9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.rz-ic svg { width: 18px; height: 18px; }
+
+.rz-name-link {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--brand-deep, #0A2F57);
+  line-height: 1.35;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rz-name-link:hover, .rz-name-link:focus-visible {
+  color: var(--brand, #0861A9);
+  text-decoration: underline;
+}
+
+.rz-meta {
+  font-size: .74rem;
+  color: var(--muted, #5b6577);
+  margin-top: 3px;
+}
+
+.rz-score {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: .78rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rz-score.hi { background: var(--success-light, #e8f7ee); color: var(--success, #16a34a); }
+.rz-score.mid { background: var(--accent-light, #FDF1E0); color: var(--accent-dark, #C8770E); }
+.rz-score.low { background: #fee2e2; color: #dc2626; }
+.rz-score.none { background: #f1f5f9; color: var(--muted, #5b6577); font-weight: 600; font-size: .72rem; }
+
+.rz-acts {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border, #e2e8f2);
+}
 
 /* New (dashed) card */
-.rz-new{border-style:dashed;border-width:1.5px;border-color:var(--border,#e2e8f2);align-items:center;justify-content:center;text-align:center;gap:10px;min-height:170px}
-.rz-new:hover{border-color:var(--brand,#0861A9);background:var(--brand-light,#E6F0F8)}
-.rz-new .rz-ic{width:52px;height:52px}
+.rz-new {
+  border-style: dashed;
+  border-width: 1.5px;
+  border-color: var(--border, #e2e8f2);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  min-height: 170px;
+}
+.rz-new:hover {
+  border-color: var(--brand, #0861A9);
+  background: var(--brand-light, #E6F0F8);
+  text-decoration: none;
+}
+.rz-new .rz-ic { width: 52px; height: 52px; }
 
 /* Mini document thumbnail */
-.rz-mini{width:46px;height:60px;border-radius:5px;background:#fff;border:1px solid var(--border,#e2e8f2);box-shadow:0 2px 14px rgba(10,47,87,.08);padding:6px 5px;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
-.rz-mini i{display:block;height:3px;border-radius:2px;background:var(--border,#e2e8f2)}
-.rz-mini .a{width:70%;height:5px;background:var(--mini-acc,#0861A9)}
-.rz-mini .b{width:45%;background:var(--mini-acc,#0861A9);opacity:.85}
-.rz-mini .w80{width:80%}
+.rz-mini {
+  width: 46px;
+  height: 60px;
+  border-radius: 5px;
+  background: #fff;
+  border: 1px solid var(--border, #e2e8f2);
+  box-shadow: 0 2px 10px rgba(10, 47, 87, .06);
+  padding: 6px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.rz-mini i {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border, #e2e8f2);
+}
+.rz-mini .a { width: 70%; height: 5px; background: var(--mini-acc, #0861A9); }
+.rz-mini .b { width: 45%; background: var(--mini-acc, #0861A9); opacity: .85; }
+.rz-mini .w80 { width: 80%; }
 
 /* Notice */
-.notice{display:flex;gap:9px;align-items:flex-start;font-size:.78rem;border-radius:10px;padding:12px 14px;border:1px solid}
-.notice svg{width:15px;height:15px;flex-shrink:0;margin-top:2px}
-.notice--info{background:var(--brand-light,#E6F0F8);border-color:#cfe2f2;color:var(--brand-dark,#064A85)}
+.notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: .82rem;
+  border-radius: 10px;
+  padding: 12px 16px;
+  border: 1px solid;
+}
+.notice svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+.notice--info {
+  background: var(--brand-light, #E6F0F8);
+  border-color: #cfe2f2;
+  color: var(--brand-dark, #064A85);
+}
 
-/* ATS tag */
-.ats-tag{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;vertical-align:middle}
-.ats-tag.hi{background:var(--success-light,#e8f7ee);color:var(--success,#16a34a)}
-.ats-tag.mid{background:var(--accent-light,#FDF1E0);color:var(--accent-dark,#C8770E)}
-
-/* icon button */
-.ic-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--border,#e2e8f2);background:#fff;color:var(--muted,#5b6577);cursor:pointer;transition:0.18s ease;flex-shrink:0;text-decoration:none}
-.ic-btn:hover{border-color:var(--brand,#0861A9);color:var(--brand,#0861A9);text-decoration:none}
-.ic-btn svg{width:15px;height:15px}
-.ic-btn--danger:hover{border-color:var(--danger,#dc2626)!important;color:var(--danger,#dc2626)!important}
+/* Icon button */
+.ic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border, #e2e8f2);
+  background: #fff;
+  color: var(--muted, #5b6577);
+  cursor: pointer;
+  transition: 0.18s ease;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.ic-btn:hover, .ic-btn:focus-visible {
+  border-color: var(--brand, #0861A9);
+  color: var(--brand, #0861A9);
+  background: var(--brand-light, #E6F0F8);
+  text-decoration: none;
+}
+.ic-btn svg { width: 15px; height: 15px; }
+.ic-btn--danger:hover, .ic-btn--danger:focus-visible {
+  border-color: var(--danger, #dc2626) !important;
+  color: var(--danger, #dc2626) !important;
+  background: #fee2e2 !important;
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -96,42 +232,51 @@
       <?php foreach ($resumes as $resume): ?>
         <?php
           $templateNames = [
-            't-exec'    => 'Executive',
-            't-pro'     => 'Professional',
-            't-modern'  => 'Modern',
-            't-serif'   => 'Elegant Serif',
-            't-tech'    => 'Tech',
-            't-classic' => 'Classic',
-            't-minimal' => 'Minimal',
-            'classic'   => 'Classic',
-            'modern'    => 'Modern',
-            'executive' => 'Executive',
-            'creative'  => 'Creative',
+            't-exec'      => 'Executive',
+            't-pro'       => 'Professional',
+            't-modern'    => 'Modern',
+            't-serif'     => 'Elegant Serif',
+            't-tech'      => 'Tech',
+            't-classic'   => 'Classic',
+            't-minimal'   => 'Minimal',
+            't-creative'  => 'Creative',
+            'classic'     => 'Classic',
+            'modern'      => 'Modern',
+            'executive'   => 'Executive',
+            'creative'    => 'Creative',
+            'tech'        => 'Tech',
+            'serif'       => 'Serif',
+            'minimalist'  => 'Minimalist',
+            'pro'         => 'Professional',
           ];
           $tplId    = $resume->template_id ?? 't-modern';
           $tplLabel = $templateNames[$tplId] ?? 'Modern';
 
-          // ATS score — use stored value or compute from resume data
-          $score = isset($resume->ats_score) ? (int) $resume->ats_score : rand(76, 94);
-          $scoreCls = $score >= 75 ? 'hi' : 'mid';
+          // ATS score — use real calculated score if present, otherwise indicate unrated
+          $score = (isset($resume->ats_score) && $resume->ats_score !== null && $resume->ats_score !== '') ? (int) $resume->ats_score : null;
+          if ($score !== null) {
+            $scoreCls = $score >= 75 ? 'hi' : ($score >= 50 ? 'mid' : 'low');
+            $scoreLabel = $score . '%';
+            $scoreTitle = 'ATS Readiness Score: ' . $score . '%';
+          } else {
+            $scoreCls = 'none';
+            $scoreLabel = 'ATS —';
+            $scoreTitle = 'Open in Builder to calculate ATS Score';
+          }
 
           // Mini-thumbnail accent colour matching template
           $miniAcc = '#0861A9';
-          if (in_array($tplId, ['t-exec', 't-pro'])) $miniAcc = '#0A2F57';
-          if ($tplId === 't-tech') $miniAcc = '#0861A9';
-          if ($tplId === 't-serif') $miniAcc = '#0A2F57';
-          if ($tplId === 't-classic') $miniAcc = '#7a1f3d';
+          if (in_array($tplId, ['t-exec', 't-pro', 'executive', 'pro'])) $miniAcc = '#0A2F57';
+          if (in_array($tplId, ['t-tech', 'tech'])) $miniAcc = '#0861A9';
+          if (in_array($tplId, ['t-serif', 'serif'])) $miniAcc = '#4b5563';
+          if (in_array($tplId, ['t-classic', 'classic'])) $miniAcc = '#7a1f3d';
+          if (in_array($tplId, ['t-creative', 'creative'])) $miniAcc = '#8b5cf6';
 
           $editedAt = !empty($resume->updated_at)
             ? 'Edited ' . date('M d, Y', strtotime($resume->updated_at))
             : 'Just now';
         ?>
-        <section class="card rz-card"
-                 tabindex="0"
-                 role="button"
-                 aria-label="Open <?= esc($resume->title) ?>"
-                 onclick="window.location.href='<?= site_url('candidate/resumes/build/' . $resume->id) ?>'">
-
+        <article class="card rz-card" data-resume-id="<?= $resume->id ?>">
           <div class="rz-top">
             <!-- Mini document thumbnail -->
             <div class="rz-mini" aria-hidden="true" style="--mini-acc:<?= esc($miniAcc) ?>">
@@ -145,15 +290,19 @@
             </div>
 
             <div style="min-width:0;flex:1">
-              <div class="rz-name"><?= esc($resume->title) ?></div>
+              <a href="<?= site_url('candidate/resumes/build/' . $resume->id) ?>" class="rz-name-link" title="Open <?= esc($resume->title) ?>">
+                <?= esc($resume->title) ?>
+              </a>
               <div class="rz-meta"><?= esc($editedAt) ?> · <?= esc($tplLabel) ?></div>
             </div>
 
-            <span class="rz-score <?= $scoreCls ?>" title="ATS readiness score"><?= $score ?></span>
+            <span class="rz-score <?= $scoreCls ?>" title="<?= esc($scoreTitle) ?>" aria-label="<?= esc($scoreTitle) ?>">
+              <?= esc($scoreLabel) ?>
+            </span>
           </div>
 
           <!-- Actions -->
-          <div class="rz-acts" onclick="event.stopPropagation();">
+          <div class="rz-acts">
             <a href="<?= site_url('candidate/resumes/build/' . $resume->id) ?>" class="btn btn-outline btn-sm">
               <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-edit"/></svg>
               Edit
@@ -161,7 +310,7 @@
             <a href="<?= site_url('candidate/resumes/download/' . $resume->id) ?>"
                class="ic-btn"
                title="Download PDF"
-               aria-label="Download PDF">
+               aria-label="Download PDF for <?= esc($resume->title) ?>">
               <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-doc"/></svg>
             </a>
             <a href="<?= site_url('candidate/resumes/clone/' . $resume->id) ?>"
@@ -173,12 +322,13 @@
             <button type="button"
                     class="ic-btn ic-btn--danger delete-resume"
                     data-id="<?= $resume->id ?>"
+                    data-title="<?= esc($resume->title) ?>"
                     title="Delete"
                     aria-label="Delete <?= esc($resume->title) ?>">
               <svg aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-trash"/></svg>
             </button>
           </div>
-        </section>
+        </article>
       <?php endforeach; ?>
     <?php endif; ?>
 
@@ -207,6 +357,32 @@
   </div>
 
 </div><!-- /content -->
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteResumeModal" tabindex="-1" aria-labelledby="deleteResumeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title font-weight-bold" id="deleteResumeModalLabel" style="font-family:'Sora',sans-serif;color:var(--brand-deep,#0A2F57);">
+          Delete Resume
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-3">
+        <p class="mb-1">Are you sure you want to delete <strong id="deleteResumeTitle">this resume</strong>?</p>
+        <p class="text-muted small mb-0">This action cannot be undone. Any tailored content in this resume will be permanently removed.</p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteResumeBtn">
+          <span class="spinner-border spinner-border-sm me-1 d-none" id="deleteSpinner" role="status" aria-hidden="true"></span>
+          Delete Resume
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -214,50 +390,87 @@
 (function () {
   'use strict';
 
-  // ── Delete resume via AJAX ──────────────────────────────────────────
+  var pendingDeleteId = null;
+  var pendingDeleteCard = null;
+  var deleteModalEl = document.getElementById('deleteResumeModal');
+  var deleteModal = null;
+
+  if (deleteModalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+    deleteModal = new bootstrap.Modal(deleteModalEl);
+  }
+
+  // ── Trigger Delete Modal ──────────────────────────────────────────
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.delete-resume');
     if (!btn) return;
-    e.stopPropagation();
-    var id   = btn.dataset.id;
-    var card = btn.closest('.rz-card');
-    if (!confirm('Delete this resume? This cannot be undone.')) return;
+    
+    pendingDeleteId = btn.dataset.id;
+    pendingDeleteCard = btn.closest('.rz-card');
+    var resumeTitle = btn.dataset.title || 'this resume';
 
-    fetch('<?= base_url('candidate/resumes/delete') ?>/' + id, {
+    var titleEl = document.getElementById('deleteResumeTitle');
+    if (titleEl) titleEl.textContent = '"' + resumeTitle + '"';
+
+    if (deleteModal) {
+      deleteModal.show();
+    } else if (confirm('Are you sure you want to delete "' + resumeTitle + '"? This cannot be undone.')) {
+      executeDelete();
+    }
+  });
+
+  // ── Confirm Delete Handler ─────────────────────────────────────────
+  var confirmBtn = document.getElementById('confirmDeleteResumeBtn');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', function() {
+      executeDelete();
+    });
+  }
+
+  function executeDelete() {
+    if (!pendingDeleteId) return;
+
+    var spinner = document.getElementById('deleteSpinner');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      if (spinner) spinner.classList.remove('d-none');
+    }
+
+    fetch('<?= base_url('candidate/resumes/delete') ?>/' + pendingDeleteId, {
       method: 'POST',
       headers: {
-        'X-CSRF-TOKEN':     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+        'X-CSRF-TOKEN':     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '<?= csrf_hash() ?>',
         'X-Requested-With': 'XMLHttpRequest',
         'Content-Type':     'application/json'
       }
     })
     .then(function (r) { return r.json(); })
     .then(function (res) {
-      if (res.status === 'success') {
-        if (typeof toastr !== 'undefined') toastr.success(res.message ?? 'Resume deleted.');
-        card.style.transition = 'opacity .3s';
-        card.style.opacity    = '0';
-        setTimeout(function () { card.remove(); }, 300);
+      if (deleteModal) deleteModal.hide();
+
+      if (res.status === 'success' || res.success) {
+        if (typeof toastr !== 'undefined') toastr.success(res.message ?? 'Resume deleted successfully.');
+        if (pendingDeleteCard) {
+          pendingDeleteCard.style.transition = 'opacity .3s, transform .3s';
+          pendingDeleteCard.style.opacity = '0';
+          pendingDeleteCard.style.transform = 'scale(0.95)';
+          setTimeout(function () { pendingDeleteCard.remove(); }, 300);
+        }
       } else {
         if (typeof toastr !== 'undefined') toastr.error(res.message ?? 'Could not delete resume.');
       }
     })
     .catch(function () {
       if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
-    });
-  });
-
-  // ── Keyboard-accessible card navigation ────────────────────────────
-  document.querySelectorAll('.rz-card[role="button"]').forEach(function (card) {
-    card.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        var link = card.querySelector('a.btn');
-        if (link) link.click();
+    })
+    .finally(function() {
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        if (spinner) spinner.classList.add('d-none');
       }
+      pendingDeleteId = null;
+      pendingDeleteCard = null;
     });
-  });
-
+  }
 })();
 </script>
 <?= $this->endSection() ?>

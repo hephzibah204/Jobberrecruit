@@ -544,6 +544,8 @@ class EmailNotificationService
             'emails/employer_verification_submitted',
             $data
         );
+    }
+
     /**
      * Send email to employer when a candidate completes a tracked assessment link.
      */
@@ -566,6 +568,8 @@ class EmailNotificationService
             $data
         );
     }
+
+    /**
      * Resolve Admin Email address dynamically
      */
     public function getAdminEmail(): string

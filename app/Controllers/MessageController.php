@@ -235,6 +235,29 @@ class MessageController extends BaseController
             return $this->fail('Employer profile not found');
         }
 
+        $seeker = model(\App\Models\JobSeekerModel::class)->find($seekerId);
+        if (!$seeker) {
+            return $this->fail('Candidate not found');
+        }
+
+        // If candidate profile visibility is OFF, verify authorization (applied or unlocked)
+        if (empty($seeker->is_visible)) {
+            $db = db_connect();
+            $isUnlocked = $db->table('candidate_unlocks')
+                ->where('employer_id', $employer->id)
+                ->where('job_seeker_id', $seekerId)
+                ->countAllResults() > 0;
+            $hasApplied = $db->table('job_applications')
+                ->join('jobs', 'jobs.id = job_applications.job_id')
+                ->where('jobs.employer_id', $employer->id)
+                ->where('job_applications.job_seeker_id', $seekerId)
+                ->countAllResults() > 0;
+
+            if (!$isUnlocked && !$hasApplied) {
+                return $this->fail('This candidate profile is private and cannot be contacted directly.');
+            }
+        }
+
         $conversation = $this->conversationModel
             ->where('employer_id', $employer->id)
             ->where('job_seeker_id', $seekerId)

@@ -86,6 +86,17 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .jr-auto-link{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:var(--brand);margin-top:10px}
 .bottom-actions{display:flex;justify-content:flex-end;gap:12px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.badge-pct{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--brand-light,#E6F0F8);color:var(--brand,#0861A9);margin-left:6px;display:inline-flex;align-items:center}
+.badge-priority{font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;margin-left:6px;display:inline-flex;align-items:center;gap:3px}
+.cv-card--prominent{border:2px solid #0861A9!important;box-shadow:0 4px 16px rgba(8,97,169,.12)!important}
+.cv-card--prominent .cv-card-header{background:linear-gradient(90deg,#f0f7ff,#ffffff)}
+.completion-breakdown{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:14px}
+.breakdown-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:10px}
+.breakdown-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:.76rem;text-decoration:none!important;color:var(--brand-deep);transition:var(--transition);cursor:pointer}
+.breakdown-chip:hover{border-color:var(--brand);transform:translateY(-1px)}
+.breakdown-chip.is-done{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.breakdown-chip.is-prominent{background:#f0f7ff;border-color:#93c5fd;color:#0369a1;font-weight:700}
+.breakdown-chip.is-prominent.is-done{background:#f0fdf4;border-color:#86efac;color:#15803d}
 </style>
 <?= $this->endSection() ?>
 
@@ -96,16 +107,20 @@ $walletModel = new \App\Models\WalletModel();
 $wallet = $walletModel->where('user_id', $user->id)->first();
 $walletBalance = $wallet ? $wallet->balance : 0;
 
-// Dynamic Profile completion calculation
+// Dynamic Profile completion calculation and checklist
 $completion = $candidate->getProfileCompletion();
+$checklist  = $candidate->getProfileChecklist();
 
 // Section completion status
 $basicComplete  = !empty($candidate->full_name) && !empty($candidate->phone) && !empty($candidate->state_id);
-$careerComplete = !empty($candidate->job_title) && !empty($candidateIndustryIds);
+$careerComplete = !empty($candidate->job_title) && (!empty($candidateIndustryIds) || !empty($candidate->industry));
 $docsComplete   = !empty($candidate->resume);
 $summaryDone    = !empty($candidate->bio);
 $langsDone      = !empty($candidate->languages);
 $portfolioDone  = !empty($candidate->portfolio);
+$expDone        = !empty($experiences) || !empty($candidate->experience_years);
+$eduDone        = !empty($education) || !empty($candidate->education_level);
+$certDone       = !empty($certifications) || !empty($myCerts);
 ?>
 
 <div class="content">
@@ -133,8 +148,8 @@ $portfolioDone  = !empty($candidate->portfolio);
                 <span class="progress-tip">
                     <svg aria-hidden="true"><use href="#i-zap"/></svg>
                     <span>
-                        <?php if ($completion < 80): ?>Complete <?= 80 - $completion ?>% more to unlock your ₦500 wallet reward
-                        <?php else: ?>🎉 ₦500 profile completion incentive unlocked!
+                        <?php if ($completion < 80): ?>Reach at least 80% (<?= 80 - $completion ?>% more) to unlock your ₦500 wallet reward
+                        <?php else: ?>🎉 ₦500 profile completion incentive unlocked! (Credited to your wallet)
                         <?php endif; ?>
                     </span>
                 </span>
@@ -149,6 +164,35 @@ $portfolioDone  = !empty($candidate->portfolio);
         </div>
     </div>
 
+    <!-- PROFILE COMPLETION STRUCTURE BREAKDOWN -->
+    <div class="completion-breakdown">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:.84rem;font-weight:700;color:var(--brand-deep);display:flex;align-items:center;gap:6px;">
+                <svg aria-hidden="true" width="16" height="16" style="color:var(--brand)"><use href="#i-check-c"/></svg>
+                Profile Completion Breakdown (100% Total)
+            </div>
+            <div style="font-size:.76rem;color:var(--muted);">
+                Incentive Threshold: <strong style="color:var(--brand-deep)">80%</strong> to earn <strong style="color:var(--success)">₦500 Wallet Reward</strong>
+            </div>
+        </div>
+        <div class="breakdown-grid">
+            <?php foreach ($checklist as $item): ?>
+                <a href="#<?= esc($item['target_id'] ?? '') ?>" class="breakdown-chip <?= $item['done'] ? 'is-done' : '' ?> <?= !empty($item['is_prominent']) ? 'is-prominent' : '' ?>" onclick="var el=document.getElementById('<?= esc($item['target_id'] ?? '') ?>');if(el){el.open=true;el.scrollIntoView({behavior:'smooth',block:'start'});return false;}">
+                    <span style="display:flex;align-items:center;gap:6px;min-width:0;">
+                        <svg aria-hidden="true" width="13" height="13" style="flex-shrink:0;color:<?= $item['done'] ? 'var(--success)' : (!empty($item['is_prominent']) ? 'var(--brand)' : 'var(--muted)') ?>"><use href="<?= $item['done'] ? '#i-check-c' : '#i-circle' ?>"/></svg>
+                        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= esc($item['title']) ?></span>
+                        <?php if (!empty($item['is_prominent'])): ?>
+                            <span style="font-size:.62rem;background:#e0f2fe;color:#0369a1;padding:1px 5px;border-radius:10px;font-weight:700;">★ Priority</span>
+                        <?php elseif (!empty($item['optional'])): ?>
+                            <span style="font-size:.62rem;color:var(--muted);">(Opt)</span>
+                        <?php endif; ?>
+                    </span>
+                    <strong style="font-size:.74rem;flex-shrink:0;"><?= $item['max_points'] ?>%</strong>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
     <!-- Main form — all sections post to same endpoint -->
     <form action="<?= base_url('candidate/profile/edit') ?>"
           method="POST"
@@ -160,23 +204,23 @@ $portfolioDone  = !empty($candidate->portfolio);
         <div class="edit-wrap">
 
             <!-- ══ PROFILE VISIBILITY TOGGLE ══ -->
-            <div class="visibility-banner" style="display:flex;align-items:center;gap:14px;padding:14px 20px;background:<?= !empty($candidate->is_visible) ? '#f0fdf4' : '#fef2f2' ?>;border:1px solid <?= !empty($candidate->is_visible) ? '#bbf7d0' : '#fecaca' ?>;border-radius:var(--radius-lg);margin-bottom:12px;">
-                <svg aria-hidden="true" width="20" height="20" style="flex-shrink:0;color:<?= !empty($candidate->is_visible) ? '#16a34a' : '#dc2626' ?>"><use href="#i-eye"/></svg>
+            <div class="visibility-banner" id="visibility-banner" style="display:flex;align-items:center;gap:14px;padding:14px 20px;background:<?= !empty($candidate->is_visible) ? '#f0fdf4' : '#fef2f2' ?>;border:1px solid <?= !empty($candidate->is_visible) ? '#bbf7d0' : '#fecaca' ?>;border-radius:var(--radius-lg);margin-bottom:12px;transition:background .2s ease,border-color .2s ease;">
+                <svg aria-hidden="true" width="20" height="20" id="visibility-banner-icon" style="flex-shrink:0;color:<?= !empty($candidate->is_visible) ? '#16a34a' : '#dc2626' ?>"><use href="#i-eye"/></svg>
                 <div style="flex:1">
-                    <div style="font-weight:600;font-size:.88rem">Profile Visibility</div>
+                    <div style="font-weight:600;font-size:.88rem" id="visibility-banner-status">Profile Visibility: <?= !empty($candidate->is_visible) ? 'Visible to employers' : 'Hidden from search' ?></div>
                     <div style="font-size:.76rem;color:var(--muted)">When OFF, employers cannot find your profile through Candidate Search. You can still apply to jobs.</div>
                 </div>
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-size:.82rem;font-weight:600">
-                    <input type="hidden" name="is_visible" value="0">
-                    <input type="checkbox" name="is_visible" value="1" <?= !empty($candidate->is_visible) ? 'checked' : '' ?> style="width:18px;height:18px;accent-color:#16a34a">
-                    <?= !empty($candidate->is_visible) ? 'Visible' : 'Hidden' ?>
+                    <input type="hidden" name="is_visible" id="visibility-hidden-input" value="<?= !empty($candidate->is_visible) ? '1' : '0' ?>">
+                    <input type="checkbox" id="visibility-toggle-edit" value="1" <?= !empty($candidate->is_visible) ? 'checked' : '' ?> style="width:18px;height:18px;accent-color:#16a34a">
+                    <span id="visibility-toggle-label"><?= !empty($candidate->is_visible) ? 'Visible' : 'Hidden' ?></span>
                 </label>
             </div>
 
-            <!-- ══ 1. PERSONAL INFORMATION ══ -->
-            <details class="cv-card <?= $basicComplete ? 'is-complete' : '' ?>" open>
+            <!-- ══ 1. PERSONAL INFORMATION (15%) ══ -->
+            <details class="cv-card <?= $basicComplete ? 'is-complete' : '' ?>" id="sec-personal" open>
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-users"/></svg> Personal Information</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-users"/></svg> Personal Information <span class="badge-pct">15%</span></span>
                     <span class="cv-card-done <?= $basicComplete ? 'complete' : 'incomplete' ?>"><?= $basicComplete ? 'Complete' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -186,12 +230,33 @@ $portfolioDone  = !empty($candidate->portfolio);
                     <!-- Profile photo upload (Headshot) -->
                     <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px;">
                         <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:#f5f7fb;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);flex-shrink:0;">
-                            <?php if (!empty($candidate->profile_picture) && file_exists(FCPATH . $candidate->profile_picture)): ?>
-                                <img src="<?= base_url($candidate->profile_picture) ?>" id="currentProfilePic" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
+                            <?php
+                                $candPic = $candidate->profile_picture ?? '';
+                                $hasCandImg = false;
+                                $candImgSrc = '';
+                                if (!empty($candPic)) {
+                                    if (filter_var($candPic, FILTER_VALIDATE_URL) || str_starts_with($candPic, 'http://') || str_starts_with($candPic, 'https://')) {
+                                        $hasCandImg = true;
+                                        $candImgSrc = $candPic;
+                                    } else {
+                                        $cleanCandPic = ltrim($candPic, '/\\');
+                                        if (file_exists(FCPATH . $cleanCandPic)) {
+                                            $hasCandImg = true;
+                                            $candImgSrc = base_url($cleanCandPic);
+                                        } elseif (file_exists(FCPATH . 'uploads/' . $cleanCandPic)) {
+                                            $hasCandImg = true;
+                                            $candImgSrc = base_url('uploads/' . $cleanCandPic);
+                                        }
+                                    }
+                                }
+                            ?>
+                            <?php if ($hasCandImg): ?>
+                                <img src="<?= esc($candImgSrc) ?>" id="currentProfilePic" alt="Profile" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; document.getElementById('defaultProfileSvg').style.display='block';">
+                                <svg id="defaultProfileSvg" aria-hidden="true" style="display:none;width:36px;height:36px;color:var(--muted);"><use href="#i-users"/></svg>
                             <?php else: ?>
-                                <svg aria-hidden="true"><use href="#i-users"/></svg>
+                                <svg id="defaultProfileSvg" aria-hidden="true" style="width:36px;height:36px;color:var(--muted);"><use href="#i-users"/></svg>
                             <?php endif; ?>
-                            <img id="profilePreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;" alt="">
+                            <img id="profilePreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;" alt="Preview">
                         </div>
                         <div>
                             <label class="btn btn-outline btn-sm" for="profileInput" style="cursor:pointer;margin-bottom:6px;">Upload Profile Photo (Headshot)</label>
@@ -211,8 +276,8 @@ $portfolioDone  = !empty($candidate->portfolio);
                             <input type="text" name="full_name" class="input" value="<?= old('full_name', $candidate->full_name) ?>" required placeholder="e.g. Adaeze Okonkwo">
                         </div>
                         <div class="form-field">
-                            <label>Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" class="input" value="<?= old('phone', $candidate->phone) ?>" required placeholder="e.g. 08012345678">
+                            <label>Phone Number</label>
+                            <input type="tel" name="phone" class="input" value="<?= old('phone', $candidate->phone) ?>" placeholder="e.g. 08012345678">
                         </div>
                         <div class="form-field">
                             <label>Date of Birth</label>
@@ -229,8 +294,8 @@ $portfolioDone  = !empty($candidate->portfolio);
                             </select>
                         </div>
                         <div class="form-field">
-                            <label>State of Residence <span class="text-danger">*</span></label>
-                            <select name="state_id" class="select" required>
+                            <label>State of Residence</label>
+                            <select name="state_id" class="select">
                                 <option value="">Select State</option>
                                 <?php foreach ($states as $state): ?>
                                     <option value="<?= $state->id ?>" <?= ($candidate->state_id ?? '') == $state->id ? 'selected' : '' ?>><?= esc($state->name) ?></option>
@@ -266,10 +331,10 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ 2. JOB PREFERENCES ══ -->
-            <details class="cv-card <?= $careerComplete ? 'is-complete' : '' ?>">
+            <!-- ══ 2. JOB PREFERENCE (15%) ══ -->
+            <details class="cv-card <?= $careerComplete ? 'is-complete' : '' ?>" id="sec-preferences">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-star"/></svg> Job Preferences &amp; Career</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-star"/></svg> Job Preference <span class="badge-pct">15%</span></span>
                     <span class="cv-card-done <?= $careerComplete ? 'complete' : 'incomplete' ?>"><?= $careerComplete ? 'Complete' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -277,8 +342,8 @@ $portfolioDone  = !empty($candidate->portfolio);
                     <div class="cv-card-hint">Tell us what you are looking for. This powers our job-matching engine — the more you fill in, the better your matches.</div>
                     <div class="form-grid">
                         <div class="form-field">
-                            <label>Target Job Title <span class="text-danger">*</span></label>
-                            <input type="text" name="job_title" class="input" value="<?= old('job_title', $candidate->job_title) ?>" placeholder="e.g. Senior Software Engineer" required>
+                            <label>Target Job Title</label>
+                            <input type="text" name="job_title" class="input" value="<?= old('job_title', $candidate->job_title) ?>" placeholder="e.g. Senior Software Engineer">
                         </div>
                         <div class="form-field">
                             <label>Preferred Employment Type</label>
@@ -318,8 +383,8 @@ $portfolioDone  = !empty($candidate->portfolio);
                             </select>
                         </div>
                         <div class="form-field full">
-                            <label>Target Industries (Hold Ctrl/Cmd to select multiple) <span class="text-danger">*</span></label>
-                            <select class="select select2" name="industry_ids[]" multiple required style="min-height:120px;">
+                            <label>Target Industries (Hold Ctrl/Cmd to select multiple)</label>
+                            <select class="select select2" name="industry_ids[]" multiple style="min-height:120px;">
                                 <?php foreach ($industries as $industry): ?>
                                     <optgroup label="<?= esc($industry->name) ?>">
                                         <?php foreach ($industry->children as $child): ?>
@@ -334,9 +399,9 @@ $portfolioDone  = !empty($candidate->portfolio);
             </details>
 
             <!-- ══ 3. RESUME / CV DOCUMENT (12%) ══ -->
-            <details class="cv-card <?= $docsComplete ? 'is-complete' : '' ?>" open>
+            <details class="cv-card cv-card--prominent <?= $docsComplete ? 'is-complete' : '' ?>" id="sec-resume" open>
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Resume (CV Document)</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Resume (CV Document) <span class="badge-pct">12%</span> <span class="badge-priority">★ Prominent · Priority</span></span>
                     <span class="cv-card-done <?= $docsComplete ? 'complete' : 'incomplete' ?>"><?= $docsComplete ? 'Complete' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -369,10 +434,10 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ 4. PROFESSIONAL SUMMARY ══ -->
-            <details class="cv-card <?= $summaryDone ? 'is-complete' : '' ?>">
+            <!-- ══ 4. PROFESSIONAL SUMMARY (10%) ══ -->
+            <details class="cv-card <?= $summaryDone ? 'is-complete' : '' ?>" id="sec-summary">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-note"/></svg> Professional Summary</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-note"/></svg> Professional Summary <span class="badge-pct">10%</span></span>
                     <span class="cv-card-done <?= $summaryDone ? 'complete' : 'incomplete' ?>"><?= $summaryDone ? 'Complete' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -392,10 +457,10 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ 4. WORK EXPERIENCE (20%) ══ -->
-            <details class="cv-card <?= !empty($experiences) ? 'is-complete' : '' ?>">
+            <!-- ══ 5. WORK EXPERIENCE (20%) ══ -->
+            <details class="cv-card <?= !empty($experiences) ? 'is-complete' : '' ?>" id="sec-experience">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience <span class="badge-pct">20%</span></span>
                     <span class="cv-card-done <?= !empty($experiences) ? 'complete' : 'incomplete' ?>"><?= !empty($experiences) ? count($experiences) . ' added' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -422,10 +487,10 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ 5. EDUCATION (12%) ══ -->
-            <details class="cv-card <?= !empty($education) ? 'is-complete' : '' ?>">
+            <!-- ══ 6. EDUCATION (12%) ══ -->
+            <details class="cv-card <?= !empty($education) ? 'is-complete' : '' ?>" id="sec-education">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education History <span class="badge-pct">12%</span></span>
                     <span class="cv-card-done <?= !empty($education) ? 'complete' : 'incomplete' ?>"><?= !empty($education) ? count($education) . ' added' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -468,10 +533,10 @@ $portfolioDone  = !empty($candidate->portfolio);
                 </div>
             </details>
 
-            <!-- ══ 6. SKILLS (10%) ══ -->
-            <details class="cv-card <?= !empty($candidate->skills) ? 'is-complete' : '' ?>">
+            <!-- ══ 7. SKILLS (10%) ══ -->
+            <details class="cv-card <?= !empty($candidate->skills) ? 'is-complete' : '' ?>" id="sec-skills">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Skills</span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Skills <span class="badge-pct">10%</span></span>
                     <span class="cv-card-done <?= !empty($candidate->skills) ? 'complete' : 'incomplete' ?>"><?= !empty($candidate->skills) ? 'Complete' : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -486,9 +551,9 @@ $portfolioDone  = !empty($candidate->portfolio);
             </details>
 
             <!-- ══ 8. LICENCES & CERTIFICATIONS (2%) ══ -->
-            <details class="cv-card <?= (!empty($certifications) || !empty($myCerts)) ? 'is-complete' : '' ?>">
+            <details class="cv-card <?= (!empty($certifications) || !empty($myCerts)) ? 'is-complete' : '' ?>" id="sec-certifications">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Licences &amp; Certifications <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Licences &amp; Certifications <span class="badge-pct">2%</span> <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(Optional)</span></span>
                     <span class="cv-card-done optional">Optional</span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -522,8 +587,11 @@ $portfolioDone  = !empty($candidate->portfolio);
                     <div class="cv-card-hint" style="margin-top:10px;">Add external licences and certifications (e.g. PMP, ICAN, COREN, AWS, ACCA). JobberRecruit-earned certificates appear above automatically.</div>
 
                     <!-- External certifications list -->
+                    <?php
+                    $renderedCerts = !empty($certifications) ? $certifications : [];
+                    ?>
                     <div id="cert-list" class="rep-list">
-                        <?php foreach (($certifications ?? []) as $certItem): ?>
+                        <?php foreach ($renderedCerts as $certItem): ?>
                         <div class="rep-row">
                             <div class="rep-grid">
                                 <div class="form-field full"><label>Certification Name</label><input type="text" name="cert_name[]" class="input" value="<?= esc($certItem->name, 'attr') ?>" placeholder="e.g. Project Management Professional (PMP)"></div>
@@ -568,9 +636,9 @@ $portfolioDone  = !empty($candidate->portfolio);
             </details>
 
             <!-- ══ 9. PORTFOLIO & WORK SAMPLES (3%) ══ -->
-            <details class="cv-card <?= $portfolioDone ? 'is-complete' : '' ?>">
+            <details class="cv-card <?= $portfolioDone ? 'is-complete' : '' ?>" id="sec-portfolio">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-globe"/></svg> Portfolio &amp; Work Samples <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-globe"/></svg> Portfolio &amp; Work Samples <span class="badge-pct">3%</span> <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(Optional)</span></span>
                     <span class="cv-card-done optional">Optional</span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -586,9 +654,9 @@ $portfolioDone  = !empty($candidate->portfolio);
             </details>
 
             <!-- ══ 10. LANGUAGES (1%) ══ -->
-            <details class="cv-card <?= $langsDone ? 'is-complete' : '' ?>">
+            <details class="cv-card <?= $langsDone ? 'is-complete' : '' ?>" id="sec-languages">
                 <summary class="cv-card-header">
-                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-chat"/></svg> Languages <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(optional)</span></span>
+                    <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-chat"/></svg> Languages <span class="badge-pct">1%</span> <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(Optional)</span></span>
                     <span class="cv-card-done optional">Optional</span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
@@ -620,7 +688,7 @@ $portfolioDone  = !empty($candidate->portfolio);
             <template id="edu-template">
                 <div class="rep-row">
                     <div class="rep-grid">
-                        <div class="form-field"><label>Qualification / Degree</label><input type="text" name="edu_degree[]" class="input" placeholder="e.g. B.Sc."></div>
+                        <div class="form-field"><label>Qualification / Degree</label><input type="text" name="edu_degree[]" list="ng-degree-list" class="input" placeholder="e.g. B.Sc."></div>
                         <div class="form-field"><label>Field of study</label><input type="text" name="edu_field[]" class="input" placeholder="e.g. Accounting"></div>
                         <div class="form-field"><label>School</label><input type="text" name="edu_school[]" class="input" placeholder="e.g. University of Lagos"></div>
                         <div class="form-field"><label>Start year</label><input type="text" name="edu_start_year[]" class="input" maxlength="4" placeholder="2014"></div>
@@ -760,6 +828,56 @@ $(document).ready(function () {
         });
     });
 
+    // ── Instant Profile Visibility Toggle ──
+    $('#visibility-toggle-edit').on('change', function () {
+        var input = $(this);
+        var makeVisible = input.is(':checked') ? 1 : 0;
+        input.prop('disabled', true);
+
+        var csrfName = '<?= csrf_token() ?>';
+        var csrfVal  = $('input[name="' + csrfName + '"]').val() || '<?= csrf_hash() ?>';
+
+        var postData = { is_visible: makeVisible };
+        postData[csrfName] = csrfVal;
+
+        $.ajax({
+            url: '<?= base_url('candidate/profile/visibility') ?>',
+            type: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            data: postData,
+            success: function (res) {
+                if (res && res.success) {
+                    if (typeof toastr !== 'undefined') toastr.success(res.message);
+                    $('#visibility-hidden-input').val(res.is_visible ? '1' : '0');
+                    if (res.is_visible) {
+                        $('#visibility-banner').css({'background':'#f0fdf4', 'border-color':'#bbf7d0'});
+                        $('#visibility-banner-icon').css('color', '#16a34a');
+                        $('#visibility-banner-status').text('Profile Visibility: Visible to employers');
+                        $('#visibility-toggle-label').text('Visible');
+                    } else {
+                        $('#visibility-banner').css({'background':'#fef2f2', 'border-color':'#fecaca'});
+                        $('#visibility-banner-icon').css('color', '#dc2626');
+                        $('#visibility-banner-status').text('Profile Visibility: Hidden from search');
+                        $('#visibility-toggle-label').text('Hidden');
+                    }
+                    if (res.csrf_token && res.csrf_hash) {
+                        $('input[name="' + res.csrf_token + '"]').val(res.csrf_hash);
+                    }
+                } else {
+                    input.prop('checked', !makeVisible);
+                    if (typeof toastr !== 'undefined') toastr.error((res && res.message) || 'Could not update visibility.');
+                }
+            },
+            error: function () {
+                input.prop('checked', !makeVisible);
+                if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.');
+            },
+            complete: function () {
+                input.prop('disabled', false);
+            }
+        });
+    });
+
     // ── AJAX Form Submit ──
     $('#editCandidateForm').on('submit', function (e) {
         e.preventDefault();
@@ -791,6 +909,10 @@ $(document).ready(function () {
                 btn.prop('disabled', false);
                 text.removeClass('d-none');
                 spin.addClass('d-none');
+
+                if (res.csrf_token && res.csrf_hash) {
+                    $('input[name="' + res.csrf_token + '"]').val(res.csrf_hash);
+                }
 
                 if (res.status === 'error') {
                     if (res.errors) {

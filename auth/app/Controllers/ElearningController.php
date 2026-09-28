@@ -7,7 +7,6 @@ use App\Models\CourseEnrollmentModel;
 use App\Models\CourseCertificateModel;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Exceptions\PageNotFoundException;
-use Spatie\Browsershot\Browsershot;
 use App\Models\CvReviewModel;
 
 class ElearningController extends BaseController
@@ -815,74 +814,10 @@ class ElearningController extends BaseController
         $pdfPath = $tempPath . 'certificate-' . $certificate['certificate_code'] . '-' . time() . '.pdf';
 
         try {
-            // Browsershot needs Node + Chrome on the host
-            $browsershot = Browsershot::html($html)
-                ->format('A4')
-                ->landscape()
-                ->margins(0, 0, 0, 0)
-                ->showBackground()
-                ->noSandbox();
-
-            // Automatically detect Node and npm on Linux/cPanel (or custom .env override)
-            $envNode = env('node_binary_path') ?: env('NODE_BINARY_PATH');
-            $envNpm  = env('npm_binary_path')  ?: env('NPM_BINARY_PATH');
-
-            $linuxNodePaths = [
-                '/usr/bin/node',
-                '/usr/local/bin/node',
-                '/opt/cpanel/ea-nodejs18/bin/node',
-                '/opt/cpanel/ea-nodejs20/bin/node',
-                '/opt/alt/alt-nodejs18/root/usr/bin/node',
-                '/opt/alt/alt-nodejs20/root/usr/bin/node',
-                '/opt/alt/alt-nodejs22/root/usr/bin/node',
-                '/home/jobbcfsf/bin/node',
-                '/home/jobbcfsf/.nvm/versions/node/current/bin/node',
-            ];
-            $linuxNpmPaths = [
-                '/usr/bin/npm',
-                '/usr/local/bin/npm',
-                '/opt/cpanel/ea-nodejs18/bin/npm',
-                '/opt/cpanel/ea-nodejs20/bin/npm',
-                '/opt/alt/alt-nodejs18/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs20/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs22/root/usr/bin/npm',
-                '/home/jobbcfsf/bin/npm',
-                '/home/jobbcfsf/.nvm/versions/node/current/bin/npm',
-            ];
-
-            if ($envNode && file_exists($envNode)) {
-                $browsershot->setNodeBinary($envNode);
-            } elseif (DIRECTORY_SEPARATOR === '\\' && file_exists('C:\\Program Files\\nodejs\\node.exe')) {
-                $browsershot->setNodeBinary('C:\\Program Files\\nodejs\\node.exe');
-            } else {
-                foreach ($linuxNodePaths as $p) {
-                    if (file_exists($p)) { $browsershot->setNodeBinary($p); break; }
-                }
-            }
-
-            if ($envNpm && file_exists($envNpm)) {
-                $browsershot->setNpmBinary($envNpm);
-            } elseif (DIRECTORY_SEPARATOR === '\\' && file_exists('C:\\Program Files\\nodejs\\npm.cmd')) {
-                $browsershot->setNpmBinary('C:\\Program Files\\nodejs\\npm.cmd');
-            } else {
-                foreach ($linuxNpmPaths as $p) {
-                    if (file_exists($p)) { $browsershot->setNpmBinary($p); break; }
-                }
-            }
-
-            $browsershot->save($pdfPath);
+            \App\Services\PdfService::generateFromHtml($html, $pdfPath, 'landscape');
         } catch (\Throwable $e) {
-            log_message('warning', 'Browsershot PDF generation failed, falling back to Dompdf: ' . $e->getMessage());
-
-            // Dompdf fallback for shared hosting or environments without Node.js/Puppeteer
-            $dompdf = new \Dompdf\Dompdf([
-                'isRemoteEnabled' => true,
-                'isHtml5ParserEnabled' => true,
-            ]);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'landscape');
-            $dompdf->render();
-            file_put_contents($pdfPath, $dompdf->output());
+            log_message('error', 'PDF generation failed: ' . $e->getMessage());
+            return redirect()->to('training/certificates')->with('error', 'Failed to generate PDF.');
         }
 
         return $this->response->download($pdfPath, null)

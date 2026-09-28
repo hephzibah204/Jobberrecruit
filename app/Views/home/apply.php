@@ -10,14 +10,10 @@ if ($user && ($user->user_type ?? '') !== 'employer') {
     $cModel = model(\App\Models\JobSeekerModel::class);
     $candRec = $candidate ?? $cModel->where('user_id', $user->id)->first();
     if ($candRec) {
-        $fields = ['full_name', 'phone', 'location', 'job_title', 'skills', 'education_level', 'experience_years', 'resume'];
-        $filled = 0;
-        foreach ($fields as $f) {
-            if (!empty($candRec->$f)) $filled++;
-        }
-        $candidateProfilePct = (int) round(($filled / count($fields)) * 100);
+        $candidateProfilePct = $candRec->getProfileCompletion();
     }
 }
+$isProfileBlocked = ($user && ($user->user_type ?? '') !== 'employer') && ($candidateProfilePct < 60);
 ?>
 
   <!-- HERO STRIP -->
@@ -118,16 +114,27 @@ if ($user && ($user->user_type ?? '') !== 'employer') {
               <svg aria-hidden="true"><use href="#i-flag"/></svg>
               <span>You're applying as a guest. <a href="<?= base_url('login') ?>">Log in</a> or <a href="<?= base_url('register') ?>">create an account</a> to save your CV and track applications.</span>
             </div>
-          <?php elseif (($user->user_type ?? '') !== 'employer' && $candidateProfilePct < 60): ?>
+          <?php elseif ($isProfileBlocked): ?>
             <!-- 60% PROFILE COMPLETION GATE (PDF Requirement 12.1) -->
-            <div class="alert alert-warning mb-3" role="alert" style="background:#fff8e6; border:1.5px solid #fed7aa; border-radius:10px; padding:14px 16px; color:#9a3412;">
-              <div style="display:flex; align-items:flex-start; gap:10px;">
-                <svg aria-hidden="true" width="20" height="20" style="flex-shrink:0; margin-top:2px; color:#ea580c;"><use href="#i-alert-triangle"/></svg>
-                <div>
-                  <strong style="font-size:0.92rem;">Profile Incomplete (<?= $candidateProfilePct ?>% / 60% Required)</strong>
-                  <p style="margin:4px 0 10px; font-size:0.83rem; line-height:1.45; color:#7c2d12;">Internal applications require at least <strong>60% profile completion</strong> so employers have enough information to evaluate your application.</p>
-                  <a href="<?= base_url('candidate/profile') ?>" class="emp-btn emp-btn-primary emp-btn-sm" style="font-size:0.8rem; padding:6px 14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                    Complete Profile Now &rarr;
+            <div class="alert alert-warning mb-4" role="alert" style="background:#fff8e6; border:1.5px solid #fed7aa; border-radius:12px; padding:18px 20px; color:#9a3412; box-shadow:0 4px 14px rgba(234,88,12,0.08);">
+              <div style="display:flex; align-items:flex-start; gap:14px;">
+                <div style="width:38px; height:38px; border-radius:50%; background:#ffedd5; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <svg aria-hidden="true" width="22" height="22" style="color:#ea580c;"><use href="#i-alert-triangle"/></svg>
+                </div>
+                <div style="flex:1;">
+                  <strong style="font-size:1rem; display:block; margin-bottom:4px; color:#9a3412;">
+                    Profile Incomplete &mdash; <?= $candidateProfilePct ?>% / 60% Required
+                  </strong>
+                  <p style="margin:0 0 10px; font-size:0.86rem; line-height:1.5; color:#7c2d12;">
+                    Candidates applying for internal jobs must maintain at least <strong>60% profile completion</strong> before submitting an application. Please complete your profile with your education, work experience, and CV so employers can evaluate your application.
+                  </p>
+                  
+                  <div style="background:#fed7aa; border-radius:9999px; height:9px; width:100%; overflow:hidden; margin-bottom:14px;">
+                    <div style="background:#ea580c; height:100%; width:<?= min(100, $candidateProfilePct) ?>%; border-radius:9999px; transition:width 0.4s ease;"></div>
+                  </div>
+
+                  <a href="<?= base_url('candidate/profile/edit') ?>" class="emp-btn emp-btn-primary" style="font-size:0.85rem; font-weight:700; padding:9px 20px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; background:#ea580c; border-color:#ea580c; color:#fff; border-radius:6px; box-shadow:0 2px 6px rgba(234,88,12,0.25);">
+                    <span>Complete Your Profile Now (<?= $candidateProfilePct ?>% Complete)</span> &rarr;
                   </a>
                 </div>
               </div>
@@ -352,10 +359,21 @@ if ($user && ($user->user_type ?? '') !== 'employer') {
             <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
           <?php endif; ?>
 
-          <button type="submit" id="submitBtn" class="btn btn-primary apply-submit" disabled>
-            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-            Submit Application <svg aria-hidden="true" style="width:16px;height:16px;margin-left:4px;"><use href="#i-send"/></svg>
-          </button>
+          <?php if ($isProfileBlocked): ?>
+            <button type="button" class="btn btn-secondary apply-submit" disabled style="opacity:0.75; cursor:not-allowed; background:#94a3b8; border-color:#94a3b8;" title="Profile must be at least 60% complete to apply">
+              Profile Below 60% &mdash; Complete Profile to Apply
+            </button>
+            <div style="text-align:center; margin-top:10px;">
+              <a href="<?= base_url('candidate/profile/edit') ?>" style="font-size:0.84rem; font-weight:700; color:#ea580c; text-decoration:underline;">
+                Click here to complete your profile (Currently <?= $candidateProfilePct ?>% / 60%) &rarr;
+              </a>
+            </div>
+          <?php else: ?>
+            <button type="submit" id="submitBtn" class="btn btn-primary apply-submit" disabled>
+              <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+              Submit Application <svg aria-hidden="true" style="width:16px;height:16px;margin-left:4px;"><use href="#i-send"/></svg>
+            </button>
+          <?php endif; ?>
 
         <?= form_close() ?>
       </aside>
@@ -718,7 +736,8 @@ if ($user && ($user->user_type ?? '') !== 'employer') {
 
     // Enable submit only when consent is checked
     const consent = document.getElementById('consent');
-    if (consent) {
+    const isProfileBlocked = <?= $isProfileBlocked ? 'true' : 'false' ?>;
+    if (consent && submitBtn && !isProfileBlocked) {
         consent.addEventListener('change', () => {
             submitBtn.disabled = !consent.checked;
         });
@@ -730,6 +749,18 @@ if ($user && ($user->user_type ?? '') !== 'employer') {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             e.stopPropagation();
+
+            if (isProfileBlocked) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('A minimum of 60% profile completion is required to submit job applications. Please complete your profile first.');
+                } else {
+                    alert('A minimum of 60% profile completion is required to submit job applications. Please complete your profile first.');
+                }
+                setTimeout(() => {
+                    window.location.href = '<?= base_url('candidate/profile/edit') ?>';
+                }, 1500);
+                return;
+            }
 
             // Bootstrap validation
             if (!form.checkValidity()) {

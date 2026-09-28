@@ -620,14 +620,24 @@ class ElearningController extends BaseController
         if ($response['status'] && $response['data']['status'] === 'success') {
             $userId = auth()->id();
             
-            // Finalize Enrollment
-            $this->enrollmentModel->insert([
-                'course_id' => $courseId,
-                'user_id' => $userId,
-                'status' => 'enrolled',
-                'payment_reference' => $reference,
-                'amount' => $response['data']['amount'] / 100
-            ]);
+            // Finalize Enrollment with idempotency
+            $existing = $this->enrollmentModel->where('course_id', $courseId)->where('user_id', $userId)->first();
+            if ($existing) {
+                $enrollId = is_object($existing) ? $existing->id : $existing['id'];
+                $this->enrollmentModel->update($enrollId, [
+                    'status' => 'enrolled',
+                    'payment_reference' => $reference,
+                    'amount' => $response['data']['amount'] / 100
+                ]);
+            } else {
+                $this->enrollmentModel->insert([
+                    'course_id' => $courseId,
+                    'user_id' => $userId,
+                    'status' => 'enrolled',
+                    'payment_reference' => $reference,
+                    'amount' => $response['data']['amount'] / 100
+                ]);
+            }
 
             $course = $this->courseModel->find($courseId);
             try {
@@ -900,8 +910,8 @@ class ElearningController extends BaseController
                 ? $seeker->getProfileCompletion() 
                 : (!empty($seeker->profile_completion) ? (int)$seeker->profile_completion : 70);
         }
-        if ($profileCompletion <= 0) {
-            $profileCompletion = 72;
+        if ($profileCompletion <= 0 && !$seeker) {
+            $profileCompletion = 50;
         }
 
         // 1. Resume Score (evaluated against CV upload, review & profile)
@@ -1241,123 +1251,14 @@ class ElearningController extends BaseController
             }
         }
 
-        $course = $this->courseModel->find($certificate['course_id']);
-        $userModel = model(\App\Models\UserModel::class) ?: model(\CodeIgniter\Shield\Models\UserModel::class);
-        $targetUser = $userModel ? $userModel->find($certificate['user_id']) : null;
-
-        if (!$targetUser) {
-            $targetUser = (object)['full_name' => 'Verified Candidate', 'username' => 'Candidate', 'id' => $certificate['user_id']];
+        $url = '';
+        if ($certificateId === 'course' && $extraParam !== null) {
+            $url = base_url('training/certificate/view/course/' . $extraParam);
+        } else {
+            $url = base_url('training/certificate/view/' . $certificateId);
         }
-        if (empty($targetUser->full_name)) {
-            $seekerModel = model(\App\Models\JobSeekerModel::class);
-            $seeker = $seekerModel->where('user_id', $targetUser->id ?? $certificate['user_id'])->first();
-            if ($seeker && !empty($seeker->full_name)) {
-                $targetUser->full_name = $seeker->full_name;
-            } elseif (!empty($targetUser->username)) {
-                $targetUser->full_name = $targetUser->username;
-            }
-        }
-
-        $templateModel = model(\App\Models\CertificateTemplateModel::class);
-        $template = $templateModel->getTemplateForCourse($certificate['course_id'] ?? null);
-
-        $html = view('certificates/course_certificate', [
-            'certificate' => $certificate,
-            'course'      => $course,
-            'user'        => $targetUser,
-            'template'    => $template,
-            'isPdfExport' => true,
-        ]);
-
-        $tempPath = WRITEPATH . 'temp/';
-        if (!is_dir($tempPath)) {
-            mkdir($tempPath, 0777, true);
-        }
-        $pdfPath = $tempPath . 'certificate-' . $certificate['certificate_code'] . '-' . time() . '.pdf';
-
-        try {
-            // Browsershot needs Node + Chrome on the host
-            $browsershot = Browsershot::html($html)
-                ->format('A4')
-                ->landscape()
-                ->margins(0, 0, 0, 0)
-                ->windowSize(1056, 748)
-                ->deviceScaleFactor(2)
-                ->emulateMedia('screen')
-                ->showBackground()
-                ->noSandbox();
-
-            // Automatically detect Node and npm on Linux/cPanel (or custom .env override)
-            $envNode = env('node_binary_path') ?: env('NODE_BINARY_PATH');
-            $envNpm  = env('npm_binary_path')  ?: env('NPM_BINARY_PATH');
-
-            $linuxNodePaths = [
-                '/usr/bin/node',
-                '/usr/local/bin/node',
-                '/opt/cpanel/ea-nodejs18/bin/node',
-                '/opt/cpanel/ea-nodejs20/bin/node',
-                '/opt/alt/alt-nodejs18/root/usr/bin/node',
-                '/opt/alt/alt-nodejs20/root/usr/bin/node',
-                '/opt/alt/alt-nodejs22/root/usr/bin/node',
-                '/home/jobbcfsf/bin/node',
-                '/home/jobbcfsf/.nvm/versions/node/current/bin/node',
-            ];
-            $linuxNpmPaths = [
-                '/usr/bin/npm',
-                '/usr/local/bin/npm',
-                '/opt/cpanel/ea-nodejs18/bin/npm',
-                '/opt/cpanel/ea-nodejs20/bin/npm',
-                '/opt/alt/alt-nodejs18/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs20/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs22/root/usr/bin/npm',
-                '/home/jobbcfsf/bin/npm',
-                '/home/jobbcfsf/.nvm/versions/node/current/bin/npm',
-            ];
-
-            if ($envNode && file_exists($envNode)) {
-                $browsershot->setNodeBinary($envNode);
-            } elseif (DIRECTORY_SEPARATOR === '\\' && file_exists('C:\\Program Files\\nodejs\\node.exe')) {
-                $browsershot->setNodeBinary('C:\\Program Files\\nodejs\\node.exe');
-            } else {
-                foreach ($linuxNodePaths as $p) {
-                    if (file_exists($p)) { $browsershot->setNodeBinary($p); break; }
-                }
-            }
-
-            if ($envNpm && file_exists($envNpm)) {
-                $browsershot->setNpmBinary($envNpm);
-            } elseif (DIRECTORY_SEPARATOR === '\\' && file_exists('C:\\Program Files\\nodejs\\npm.cmd')) {
-                $browsershot->setNpmBinary('C:\\Program Files\\nodejs\\npm.cmd');
-            } else {
-                foreach ($linuxNpmPaths as $p) {
-                    if (file_exists($p)) { $browsershot->setNpmBinary($p); break; }
-                }
-            }
-
-            $browsershot->save($pdfPath);
-        } catch (\Throwable $e) {
-            log_message('warning', 'Browsershot PDF generation failed, falling back to Dompdf: ' . $e->getMessage());
-
-            // Render dedicated Dompdf-compatible single-page A4 landscape certificate
-            $pdfHtml = view('certificates/course_certificate_pdf', [
-                'certificate' => $certificate,
-                'course'      => $course,
-                'user'        => $targetUser,
-                'template'    => $template,
-            ]);
-
-            $dompdf = new \Dompdf\Dompdf([
-                'isRemoteEnabled'      => true,
-                'isHtml5ParserEnabled' => true,
-            ]);
-            $dompdf->loadHtml($pdfHtml);
-            $dompdf->setPaper('A4', 'landscape');
-            $dompdf->render();
-            file_put_contents($pdfPath, $dompdf->output());
-        }
-
-        return $this->response->download($pdfPath, null)
-            ->setFileName('certificate-' . $certificate['certificate_code'] . '.pdf');
+        
+        return redirect()->to($url . '?auto_download=1');
     }
 
     /**
