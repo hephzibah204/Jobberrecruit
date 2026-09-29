@@ -5,9 +5,11 @@ namespace App\Controllers;
 use App\Models\ReferralModel;
 use App\Models\UserModel;
 use App\Services\ReferralService;
+use CodeIgniter\API\ResponseTrait;
 
 class ReferralController extends BaseController
 {
+    use ResponseTrait;
     protected $referralModel;
     protected $userModel;
     protected $referralService;
@@ -25,6 +27,39 @@ class ReferralController extends BaseController
     public function index()
     {
         $user = auth()->user();
+        if (!$user) {
+            return redirect()->to('login');
+        }
+
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS affiliate_terms_acceptances (
+            user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+            accepted_at DATETIME NOT NULL,
+            ip_address VARCHAR(45) NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $termsAccepted = $db->table('affiliate_terms_acceptances')->where('user_id', $user->id)->countAllResults() > 0;
+        if (!$termsAccepted) {
+            $sessionKey = 'referral_terms_accepted_' . $user->id;
+            $termsAccepted = (bool) session()->get($sessionKey);
+        }
+
+        if (!$termsAccepted) {
+            // If user has not accepted terms yet, display the terms acceptance view
+            $userType = $user->user_type ?? 'candidate';
+            $data = [
+                'title'    => 'Referral Program Terms & Conditions',
+                'user'     => $user,
+                'userType' => $userType,
+            ];
+
+            if ($userType === 'employer') {
+                $employer = model(\App\Models\EmployerModel::class)->where('user_id', $user->id)->first();
+                $data['employer'] = $employer;
+            }
+
+            return view('common/referral_terms', $data);
+        }
         
         // Generate code if missing
         $referralCode = $this->referralService->generateCode($user->id);
@@ -42,12 +77,65 @@ class ReferralController extends BaseController
             'total_earned' => $this->referralModel->where('referrer_id', $user->id)->selectSum('reward_amount')->get()->getRow()->reward_amount ?? 0
         ];
 
-        return view('common/referral_dashboard', [
+        $data = [
             'title' => 'Referral & Affiliate Program',
             'referralCode' => $referralCode,
             'referrals' => $referrals,
-            'stats' => $stats
+            'stats' => $stats,
+            'user' => $user,
+        ];
+
+        // When an employer views this page it renders inside the employer
+        // layout, which shows the company name/logo and a pending-apps badge.
+        if ($user->user_type === 'employer') {
+            $employer = model(\App\Models\EmployerModel::class)
+                ->where('user_id', $user->id)->first();
+            $data['employer'] = $employer;
+            if ($employer) {
+                $data['pendingApps'] = model(\App\Models\JobApplicationModel::class)
+                    ->where('status', 'pending')
+                    ->whereIn('job_id', function ($builder) use ($employer) {
+                        return $builder->select('id')->from('jobs')->where('employer_id', $employer->id);
+                    })
+                    ->countAllResults();
+            }
+        }
+
+        return view('common/referral_dashboard', $data);
+    }
+
+    /**
+     * Accept Referral Terms
+     */
+    public function acceptTerms()
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->to('login');
+        }
+
+        $sessionKey = 'referral_terms_accepted_' . $user->id;
+        session()->set($sessionKey, true);
+
+        // Record in database permanently
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS affiliate_terms_acceptances (
+            user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+            accepted_at DATETIME NOT NULL,
+            ip_address VARCHAR(45) NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->table('affiliate_terms_acceptances')->ignore(true)->insert([
+            'user_id'     => $user->id,
+            'accepted_at' => date('Y-m-d H:i:s'),
+            'ip_address'  => $this->request->getIPAddress(),
         ]);
+
+        // Generate code immediately upon accepting terms
+        $this->referralService->generateCode($user->id);
+
+        $prefix = ($user->user_type === 'employer') ? 'employer' : 'candidate';
+        return redirect()->to($prefix . '/referrals')->with('success', 'Thank you for accepting the Referral Program Terms. Welcome to the referral dashboard!');
     }
 
     /**
@@ -56,7 +144,7 @@ class ReferralController extends BaseController
     public function adminSettings()
     {
         // Admin only check
-        if (!auth()->user()->inGroup('admin')) {
+        if (auth()->user()->user_type !== 'admin') {
             return redirect()->to('/')->with('error', 'Unauthorized access');
         }
 
@@ -74,7 +162,7 @@ class ReferralController extends BaseController
      */
     public function updateSettings()
     {
-        if (!auth()->user()->inGroup('admin')) {
+        if (auth()->user()->user_type !== 'admin') {
             return $this->fail('Unauthorized');
         }
 

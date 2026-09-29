@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace CodeIgniter\Shield\Models;
 
 use CodeIgniter\Database\Exceptions\DataException;
+use CodeIgniter\Database\RawSql;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Shield\Authentication\Authenticators\Session;
 use CodeIgniter\Shield\Entities\User;
@@ -75,8 +76,6 @@ class UserModel extends BaseModel
 
     /**
      * Mark the next find* query to include identities
-     *
-     * @return $this
      */
     public function withIdentities(): self
     {
@@ -87,8 +86,6 @@ class UserModel extends BaseModel
 
     /**
      * Mark the next find* query to include groups
-     *
-     * @return $this
      */
     public function withGroups(): self
     {
@@ -99,8 +96,6 @@ class UserModel extends BaseModel
 
     /**
      * Mark the next find* query to include permissions
-     *
-     * @return $this
      */
     public function withPermissions(): self
     {
@@ -130,7 +125,6 @@ class UserModel extends BaseModel
             return $data;
         }
 
-        /** @var UserIdentityModel $identityModel */
         $identityModel = model(UserIdentityModel::class);
 
         // Get our identities for all users
@@ -141,6 +135,10 @@ class UserModel extends BaseModel
         }
 
         $mappedUsers = $this->assignIdentities($data, $identities);
+
+        if ($data['singleton'] && ! isset($data['id'])) {
+            $data['id'] = $data['data']->id;
+        }
 
         $data['data'] = $data['singleton'] ? $mappedUsers[$data['id']] : $mappedUsers;
 
@@ -204,17 +202,16 @@ class UserModel extends BaseModel
             return $data;
         }
 
-        /** @var GroupModel $groupModel */
         $groupModel = model(GroupModel::class);
 
         // Get our groups for all users
         $groups = $groupModel->getGroupsByUserIds($userIds);
 
-        if ($groups === []) {
-            return $data;
-        }
-
         $mappedUsers = $this->assignProperties($data, $groups, 'groups');
+
+        if ($data['singleton'] && ! isset($data['id'])) {
+            $data['id'] = $data['data']->id;
+        }
 
         $data['data'] = $data['singleton'] ? $mappedUsers[$data['id']] : $mappedUsers;
 
@@ -242,16 +239,15 @@ class UserModel extends BaseModel
             return $data;
         }
 
-        /** @var PermissionModel $permissionModel */
         $permissionModel = model(PermissionModel::class);
 
         $permissions = $permissionModel->getPermissionsByUserIds($userIds);
 
-        if ($permissions === []) {
-            return $data;
-        }
-
         $mappedUsers = $this->assignProperties($data, $permissions, 'permissions');
+
+        if ($data['singleton'] && ! isset($data['id'])) {
+            $data['id'] = $data['data']->id;
+        }
 
         $data['data'] = $data['singleton'] ? $mappedUsers[$data['id']] : $mappedUsers;
 
@@ -281,9 +277,10 @@ class UserModel extends BaseModel
         // Build method name
         $method = 'set' . ucfirst($type) . 'Cache';
 
-        // Now assign the properties to the user
-        foreach ($properties as $userId => $propertyArray) {
-            $mappedUsers[$userId]->{$method}($propertyArray);
+        // Assign properties to all users (empty array if no properties found)
+        foreach ($mappedUsers as $userId => $user) {
+            $propertyArray = $properties[$userId] ?? [];
+            $user->{$method}($propertyArray);
         }
         unset($properties);
 
@@ -298,7 +295,6 @@ class UserModel extends BaseModel
     {
         $defaultGroup = setting('AuthGroups.defaultGroup');
 
-        /** @var GroupModel $groupModel */
         $groupModel = model(GroupModel::class);
 
         if (empty($defaultGroup) || ! $groupModel->isValidGroup($defaultGroup)) {
@@ -423,8 +419,8 @@ class UserModel extends BaseModel
      * Override the BaseModel's `update()` method.
      * If you pass User object, also updates Email Identity.
      *
-     * @param array|int|string|null $id
-     * @param array|User            $row
+     * @param int|list<int|string>|RawSql|string|null $id
+     * @param array|User                              $row
      *
      * @return true if the update is successful
      *

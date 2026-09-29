@@ -46,9 +46,10 @@ class EmployerDocumentModel extends Model
      */
     public function getPendingDocuments(int $limit = 50): array
     {
-        return $this->select('employer_documents.*, employers.company_name, users.email')
+        return $this->select('employer_documents.*, employers.company_name, auth_identities.secret as email, employers.contact_email')
             ->join('employers', 'employers.id = employer_documents.employer_id')
-            ->join('users', 'users.id = employers.user_id')
+            ->join('users', 'users.id = employers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = employers.user_id', 'left')
             ->where('employer_documents.status', 'pending')
             ->orderBy('employer_documents.uploaded_at', 'ASC')
             ->findAll($limit);

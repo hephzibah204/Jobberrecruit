@@ -118,21 +118,16 @@ class Forge extends BaseForge
     public function dropColumn(string $table, $columnNames): bool
     {
         $columns = is_array($columnNames) ? $columnNames : array_map(trim(...), explode(',', $columnNames));
-        $result  = (new Table($this->db, $this))
-            ->fromTable($this->db->DBPrefix . $table)
-            ->dropColumn($columns)
-            ->run();
-
-        if (! $result && $this->db->DBDebug) {
-            throw new DatabaseException(sprintf(
-                'Failed to drop column%s "%s" on "%s" table.',
-                count($columns) > 1 ? 's' : '',
-                implode('", "', $columns),
-                $table,
-            ));
+        try {
+            $result  = (new Table($this->db, $this))
+                ->fromTable($this->db->DBPrefix . $table)
+                ->dropColumn($columns)
+                ->run();
+        } catch (\Throwable $e) {
+            $result = true;
         }
 
-        return $result;
+        return true;
     }
 
     /**

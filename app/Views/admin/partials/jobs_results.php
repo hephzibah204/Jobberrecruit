@@ -2,6 +2,7 @@
     <table class="table text-nowrap mb-0">
         <thead>
             <tr>
+                <th style="width: 40px;"><input type="checkbox" id="select-all-jobs" style="width:16px;height:16px;cursor:pointer;"></th>
                 <th>ID</th>
                 <th>Title / Company</th>
                 <th>Location</th>
@@ -15,17 +16,21 @@
         <tbody>
             <?php if (empty($jobs)): ?>
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="9" class="text-center text-muted py-4">
                         No jobs found
                     </td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($jobs as $job): ?>
                     <tr>
+                        <td><input type="checkbox" class="job-checkbox" value="<?= $job->id ?>" data-status="<?= $job->admin_status ?>" style="width:16px;height:16px;cursor:pointer;"></td>
                         <td>#<?= $job->id ?></td>
                         <td>
                             <div class="fw-semibold">
-                                <?= esc($job->title) ?>
+                                <a href="<?= base_url('jobs/' . (!empty($job->slug) ? $job->slug : $job->id)) ?>" target="_blank" class="text-dark text-decoration-none hover-primary" title="View Job Post (Candidate View)">
+                                    <?= esc($job->title) ?>
+                                    <i class="ti ti-external-link text-primary fs-12 ms-1"></i>
+                                </a>
                                 <?php if (isset($job->is_verified) && $job->is_verified): ?>
                                     <span class="text-primary ms-1" title="Verified Job"><i class="ti ti-discount-check-filled"></i></span>
                                 <?php endif; ?>
@@ -68,9 +73,29 @@
                         </td>
                         <td class="text-center">
                             <div class="btn-group">
+                                <a href="<?= base_url('jobs/' . (!empty($job->slug) ? $job->slug : $job->id)) ?>" target="_blank"
+                                    class="btn btn-sm btn-primary" title="View Job Post (Candidate Page)">
+                                    <i class="ti ti-external-link me-1"></i>View Job
+                                </a>
+
+                                <?php if ($job->admin_status === 'pending'): ?>
+                                    <button type="button" class="btn btn-sm btn-success quick-approve-job" data-id="<?= $job->id ?>" data-title="<?= esc($job->title) ?>" title="1-Click Approve Job">
+                                        <i class="ti ti-check me-1"></i>Approve
+                                    </button>
+                                <?php elseif ($job->admin_status === 'approved'): ?>
+                                    <button type="button" class="btn btn-sm btn-warning quick-unapprove-job" data-id="<?= $job->id ?>" data-title="<?= esc($job->title) ?>" title="Unapprove Job (Move back to Pending)">
+                                        <i class="ti ti-rotate-clockwise me-1"></i>Unapprove
+                                    </button>
+                                    <?php if ($job->status === 'open'): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary close-job-btn" data-id="<?= $job->id ?>" data-title="<?= esc($job->title) ?>" title="Close Job (Stop applications and remove from active)">
+                                            <i class="ti ti-circle-x me-1"></i>Close
+                                        </button>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+
                                 <a href="<?= base_url('admin/jobs/view/' . $job->id) ?>"
-                                    class="btn btn-sm btn-light" title="View Details">
-                                    <i class="ti ti-eye"></i>
+                                    class="btn btn-sm btn-light" title="Admin Analytics & Applications">
+                                    <i class="ti ti-chart-bar"></i>
                                 </a>
                                 <a href="<?= base_url('admin/jobs/edit/' . $job->id) ?>"
                                     class="btn btn-sm btn-light" title="Edit Job">

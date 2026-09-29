@@ -9,10 +9,29 @@
     <meta name="template-color" content="#0E0E0E">
     <link rel="manifest" href="<?= base_url('manifest.json') ?>" crossorigin>
     <meta name="msapplication-config" content="<?= base_url('browserconfig.xml') ?>">
-    <meta name="description" content="<?= esc($meta_description ?? 'Jobber Recruit - Job Portal Platform') ?>">
+    
+    <!-- Google Analytics (gtag.js) -->
+    <?php $gaId = env('GA_MEASUREMENT_ID', env('GOOGLE_ANALYTICS_ID', 'G-D84YSE03K9')); ?>
+    <?php if (!empty($gaId)): ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc($gaId) ?>"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '<?= esc($gaId) ?>');
+    </script>
+    <?php endif; ?>
+
+    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.') ?>">
     <meta name="author" content="JobberRecruit">
     <meta name="robots" content="<?= (isset($noindex) && $noindex) ? 'noindex, nofollow' : 'index, follow' ?>">
+    
+    <!-- Canonical & Hreflang Tags -->
     <link rel="canonical" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="en-NG" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="en" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= current_url(); ?>">
+    
     <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('images/favicon.png'); ?>">
     <link href="<?= base_url('assets/css/jobberrecruit.css'); ?>" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('css/global-core.css'); ?>">

@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend('admin/layouts/app') ?>
 
 <?= $this->section('section') ?>
 <div class="content">
@@ -130,20 +130,46 @@
 
             <!-- Right Panel: Paywall Settings & Action -->
             <div class="col-xl-4 col-lg-5 mb-4">
-                <!-- AI monetization Settings -->
+                <!-- Site Access & AI Monetization Settings -->
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                     <div class="card-header bg-white py-3 px-4 border-bottom">
                         <h5 class="fw-bold text-dark mb-0 d-flex align-items-center">
-                            <i class="ti ti-premium-badge text-warning me-2"></i> AI Monetization
+                            <i class="ti ti-premium-badge text-warning me-2"></i> Access & Monetization
                         </h5>
                     </div>
                     <div class="card-body p-4">
+                        <!-- Site Free Access Mode Toggle -->
+                        <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                                    <span>Site Free Access Mode</span>
+                                    <span class="badge <?= $site_free_mode ? 'bg-danger' : 'bg-success' ?> fs-11">
+                                        <?= $site_free_mode ? 'Free Mode Active' : 'Normal (Paid/Plans)' ?>
+                                    </span>
+                                </h6>
+                                <p class="text-muted fs-12 mb-0">
+                                    When enabled, all paid gates across the entire platform are bypassed (all features, employer job postings, and tools become free for everyone).
+                                </p>
+                            </div>
+                            <div class="form-check form-switch fs-20 flex-shrink-0 ms-2">
+                                <input class="form-check-input" type="checkbox" name="site_free_mode" value="1" <?= $site_free_mode ? 'checked' : '' ?>>
+                            </div>
+                        </div>
+
+                        <!-- AI Tools Paid Mode Toggle -->
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <h6 class="fw-bold text-dark mb-1">AI Paid Plan Gate (Premium Mode)</h6>
-                                <p class="text-muted fs-12 mb-0">Restrict AI Resume Builder and Career Tools to users with active premium subscriptions.</p>
+                                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                                    <span>AI Tools Mode</span>
+                                    <span class="badge <?= $ai_tools_paid_mode ? 'bg-primary' : 'bg-info' ?> fs-11">
+                                        <?= $ai_tools_paid_mode ? 'Paid Subscription Required' : 'Free for Candidates' ?>
+                                    </span>
+                                </h6>
+                                <p class="text-muted fs-12 mb-0">
+                                    Configure whether AI tools (AI Chatbot, Resume Builder, Career Tools Suite, Mock Interviews) require a Paid Candidate Subscription or are Free to all registered candidates.
+                                </p>
                             </div>
-                            <div class="form-check form-switch fs-20">
+                            <div class="form-check form-switch fs-20 flex-shrink-0 ms-2">
                                 <input class="form-check-input" type="checkbox" name="ai_tools_paid_mode" value="1" <?= $ai_tools_paid_mode ? 'checked' : '' ?>>
                             </div>
                         </div>
@@ -152,8 +178,8 @@
                             <div class="alert alert-warning border-0 rounded-3 mb-0 p-3 fs-12 d-flex align-items-start" style="background: rgba(255, 193, 7, 0.08);">
                                 <i class="ti ti-alert-triangle text-warning fs-18 me-2 mt-0.5"></i>
                                 <div>
-                                    <strong>Site Free Mode is Active!</strong>
-                                    <span class="text-muted d-block mt-1">Free Mode overrides plan checks globally. To enforce the AI premium gate, first disable Free Mode in Plan configuration settings.</span>
+                                    <strong>Site Free Mode is currently ON:</strong>
+                                    <span class="text-muted d-block mt-1">Free Access takes precedence site-wide. Turning Site Free Mode OFF allows standard candidate plan gates and the AI Tools paid/free setting to take effect.</span>
                                 </div>
                             </div>
                         <?php endif; ?>

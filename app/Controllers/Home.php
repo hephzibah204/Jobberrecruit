@@ -67,6 +67,8 @@ class Home extends BaseController
                     'MAX(employers.logo) as company_logo'
                 ])
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->groupBy('jobs.title')
                 ->orderBy('job_count', 'DESC')
                 ->findAll(12);
@@ -88,16 +90,9 @@ class Home extends BaseController
         $categories = $cache->get($categoriesCacheKey);
 
         if (!$categories) {
-            // $categories = $categoryModel
-            //     ->select('job_categories.*, COUNT(jobs.id) as job_count')
-            //     ->join('jobs', 'jobs.category_id = job_categories.id', 'left')
-            //     ->where('job_categories.parent_id', null)
-            //     ->groupBy('job_categories.id')
-            //     ->orderBy('job_count', 'DESC')
-            //     ->findAll(12);
             $categories = $industryModel
                 ->select('industries.*, COUNT(jobs.id) as job_count')
-                ->join('jobs', 'jobs.industry_id = industries.id', 'left')
+                ->join('jobs', 'jobs.industry_id = industries.id AND jobs.status = "open" AND jobs.admin_status = "approved"', 'left')
                 ->where('industries.parent_id', null)
                 ->groupBy('industries.id')
                 ->orderBy('job_count', 'DESC')
@@ -148,7 +143,8 @@ class Home extends BaseController
         if (!$jobs) {
             $jobs = $jobModel
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified')
-                ->where('status', 'open')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -214,7 +210,8 @@ class Home extends BaseController
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
-                ->where('status', 'open')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->where('jobs.is_featured', 1)
                 ->orderBy('jobs.created_at', 'DESC')
                 ->findAll(18);
@@ -230,6 +227,8 @@ class Home extends BaseController
                 ->select('employers.id, employers.company_name, employers.user_id as employer_user_id, employers.logo, employers.state_id, COUNT(jobs.id) as job_count, states.name as location, employers.is_verified')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 ->join('states', 'states.id = employers.state_id', 'left')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->where('is_anonymous', '0')
                 ->groupBy('employers.id')
                 ->orderBy('job_count', 'DESC')
@@ -319,7 +318,7 @@ class Home extends BaseController
         $jobAppModel = new \App\Models\JobApplicationModel();
         $courseModel = new \App\Models\CourseModel();
 
-        $activeJobsCount = $jobModel->where('status', 'open')->countAllResults();
+        $activeJobsCount = $jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults();
 
         $verifiedEmployersCount = $employerModel->groupStart()
             ->where('verification_status', 'verified')
@@ -343,7 +342,7 @@ class Home extends BaseController
 
         $data = [
             'title' => 'Find Jobs in Nigeria | JobberRecruit — Hire Top Talent',
-            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt and more. Employers can post jobs and hire top Nigerian talent today.',
+            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.',
             'og_title' => 'JobberRecruit — Nigeria\'s Leading Job Portal',
             'og_description' => 'Find verified jobs and hire top talent across Nigeria. Browse thousands of opportunities in Lagos, Abuja, and more.',
             'og_image' => base_url('images/default-og-image.jpg'),
@@ -408,6 +407,7 @@ class Home extends BaseController
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->where('jobs.state_id', $state->id)
             ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
             ->orderBy('jobs.created_at', 'DESC')
             ->limit(12)
             ->get()
@@ -416,6 +416,7 @@ class Home extends BaseController
         $totalJobs = $db->table('jobs')
             ->where('state_id', $state->id)
             ->where('status', 'open')
+            ->where('admin_status', 'approved')
             ->countAllResults();
 
         // --- 3. Fetch all active states for the sidebar/related links ---
@@ -424,10 +425,10 @@ class Home extends BaseController
         // --- 4. Build SEO fields ---
             $seoH1   = !empty($state->seo_h1)
             ? $state->seo_h1
-            : 'Jobs in ' . $state->name . ', Nigeria — Find Verified Vacancies';
+            : 'Jobs in ' . $state->name . ', Nigeria | Find Vacancies — JobberRecruit';
         $seoMeta = !empty($state->meta_description)
             ? $state->meta_description
-            : 'Browse verified jobs in ' . $state->name . '. Apply to the latest vacancies from top employers in Nigeria.';
+            : 'Browse verified jobs in ' . $state->name . ', Nigeria. Apply to top vacancies from verified employers across ' . $state->name . ' state.';
 
         return view('home/location_hub', [
             'title'            => $seoH1,
@@ -515,6 +516,7 @@ class Home extends BaseController
         }
 
         $jobs = $builder->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
             ->orderBy('jobs.is_featured', 'DESC')
             ->orderBy('jobs.created_at',  'DESC')
             ->limit(12)
@@ -524,6 +526,7 @@ class Home extends BaseController
         $totalJobs = $db->table('jobs')
             ->where($isCategory ? 'category_id' : 'industry_id', $industry->id)
             ->where('status', 'open')
+            ->where('admin_status', 'approved')
             ->countAllResults();
 
         // Fetch sibling industries for the "Browse other categories" section
@@ -536,10 +539,10 @@ class Home extends BaseController
         // Build SEO fields
         $seoH1   = !empty($industry->seo_h1)
             ? $industry->seo_h1
-            : $industry->name . ' Jobs in Nigeria';
+            : $industry->name . ' Jobs in Nigeria | JobberRecruit';
         $seoMeta = !empty($industry->meta_description)
             ? $industry->meta_description
-            : 'Browse verified ' . $industry->name . ' jobs in Nigeria. Apply to the latest vacancies from top employers today.';
+            : 'Browse verified ' . $industry->name . ' jobs in Nigeria. Apply to the latest vacancies from top employers today on JobberRecruit.';
 
         return view('home/industry_hub', [
             'title'            => $seoH1,
@@ -600,7 +603,8 @@ class Home extends BaseController
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
-            ->where('status', 'open');
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved');
 
         $selectedIndustryName = null;
         $selectedStateName = null;
@@ -640,7 +644,7 @@ class Home extends BaseController
         if ($position) {
             $query->where('jobs.position', $position);
         }
-        if ($workArrangement) {
+        if ($workArrangement && $this->db->fieldExists('work_arrangement', 'jobs')) {
             $query->where('jobs.work_arrangement', $workArrangement);
         }
         if ($jobType) {
@@ -882,6 +886,15 @@ class Home extends BaseController
     {
         $jobModel = model(JobModel::class);
 
+        // Auto-detect and 301 redirect if an external URL was passed into the jobs/ route
+        if (preg_match('#^https?://#i', $jobId) || strpos($jobId, 'http:') === 0 || strpos($jobId, 'https:') === 0) {
+            $targetUrl = urldecode($jobId);
+            if (!preg_match('#^https?://#i', $targetUrl)) {
+                $targetUrl = 'https://' . ltrim($targetUrl, ':/');
+            }
+            return redirect()->to($targetUrl, 301);
+        }
+
         // SEO: Handle 301 Redirects from old ID-based URLs to new slugs
         if (is_numeric($jobId)) {
             $basicJob = $jobModel->find($jobId);
@@ -925,8 +938,20 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
-        $jobIdNum = is_numeric($jobId) ? $jobId : $job->id;
-        $jobModel->set('views', 'views+1', false)->where('id', $jobIdNum)->update();
+        $jobIdNum = is_numeric($jobId) ? (int)$jobId : (int)$job->id;
+
+        // Only count 1 view per visitor per job per hour.
+        // Session key: viewed_job_{id}  →  unix-timestamp of first view this hour.
+        $session     = session();
+        $sessionKey  = 'viewed_job_' . $jobIdNum;
+        $lastViewed  = $session->get($sessionKey);
+        $now         = time();
+        $cooldownSec = 3600; // 1 hour
+
+        if (!$lastViewed || ($now - $lastViewed) >= $cooldownSec) {
+            $jobModel->set('views', 'views+1', false)->where('id', $jobIdNum)->update();
+            $session->set($sessionKey, $now);
+        }
 
         $job->formatted_created_at = date('d M, Y', strtotime($job->created_at));
         $job->formatted_expiry = $job->expiry_date ? date('d M, Y', strtotime($job->expiry_date)) : 'N/A';
@@ -1046,7 +1071,7 @@ class Home extends BaseController
 
         // Clean description for meta tags
         $cleanDescription = strip_tags($job->description);
-        $metaDescription = mb_substr($cleanDescription, 0, 160) . '...';
+        $metaDescription = (mb_strlen($cleanDescription) > 148) ? mb_substr($cleanDescription, 0, 145) . '...' : $cleanDescription;
 
         $data = [
             'title' => esc($job->title) . ' in ' . esc($job->location ?? 'Nigeria') . ' — JobberRecruit',
@@ -1091,7 +1116,8 @@ class Home extends BaseController
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->where('jobs.is_featured', 1)
-            ->where('jobs.status', 'open');
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved');
 
         if ($jobType) $query->where('jobs.job_type', $jobType);
         if ($stateId) $query->where('jobs.state_id', $stateId);
@@ -1141,7 +1167,7 @@ class Home extends BaseController
 
         $data = [
             'title' => 'Home',
-            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt.',
+            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.',
             'og_title' => 'JobberRecruit — Nigeria\'s Leading Job Portal',
             'og_description' => 'Find verified jobs and hire top talent across Nigeria.',
             'og_image' => base_url('images/default-og-image.jpg'),
@@ -1170,6 +1196,7 @@ class Home extends BaseController
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->where('jobs.category_id', $categoryId)
             ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
             ->orderBy('jobs.is_featured', 'DESC')
             ->orderBy('jobs.featured_until', 'DESC')
             ->findAll($limit, $offset);
@@ -1489,24 +1516,45 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
+        $jobStatus = strtolower((string) ($job->status ?? ''));
+        if (in_array($jobStatus, ['closed', 'paused', 'expired', 'rejected'])) {
+            return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))
+                ->with('error', 'This job is closed and is no longer accepting applications.');
+        }
+
         $method = $job->application_method ?? 'form';
-        $redirectUrl = base_url('job/application/' . $jobId);
+        $redirectUrl = null;
 
         switch ($method) {
             case 'whatsapp':
-                $redirectUrl = $job->whatsapp_link;
-                break;
-            case 'email':
-                $email = $job->application_email ?? $job->contact_email;
-                $subject = rawurlencode("Application: {$job->title}");
-                $redirectUrl = "mailto:{$email}?subject={$subject}";
-                break;
-            case 'external':
-                $url = $job->external_url;
-                if ($url && preg_match('#^https?://#i', $url)) {
-                    $redirectUrl = $url;
+                $link = trim((string)($job->whatsapp_link ?? ''));
+                if ($link !== '') {
+                    $redirectUrl = preg_match('#^https?://#i', $link) ? $link : 'https://' . $link;
                 }
                 break;
+            case 'email':
+                $email = trim((string)($job->application_email ?? $job->contact_email ?? ''));
+                if ($email !== '') {
+                    $subject = rawurlencode("Application: {$job->title}");
+                    $redirectUrl = "mailto:{$email}?subject={$subject}";
+                }
+                break;
+            case 'external':
+                $url = trim((string)($job->external_url ?? $job->external_link ?? ''));
+                if ($url !== '') {
+                    $redirectUrl = preg_match('#^https?://#i', $url) ? $url : 'https://' . $url;
+                }
+                break;
+            case 'form':
+            default:
+                $redirectUrl = base_url('job/application/' . $jobId);
+                break;
+        }
+
+        if (!$redirectUrl) {
+            $jobSlug = !empty($job->slug) ? $job->slug : $jobId;
+            return redirect()->to(base_url('jobs/' . $jobSlug))
+                ->with('error', 'The external application link for this position is currently unavailable.');
         }
 
         $clickModel = new JobClickModel();
@@ -1855,6 +1903,17 @@ class Home extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
+        $jobStatus = strtolower((string) ($job->status ?? ''));
+        if (in_array($jobStatus, ['closed', 'paused', 'expired', 'rejected'])) {
+            return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))
+                ->with('error', 'This job is closed and is no longer accepting applications.');
+        }
+
+        // If application method is not internal form (external, whatsapp, email), redirect to tracking handler
+        if (($job->application_method ?? 'form') !== 'form') {
+            return $this->startApplication($jobId);
+        }
+
         if ($job->application_access === 'authenticated' && !auth()->user()) {
             return redirect()->to('/login')->with('error', 'You must log in to apply for this job.');
         }
@@ -1933,14 +1992,35 @@ class Home extends BaseController
                 ]);
             }
 
+            // Minimum Profile Completion gate for internal job applications (60% required per Requirement 12.1)
+            if ($loggedIn && ($user->user_type ?? '') !== 'employer') {
+                $candidate = $candidateModel->where('user_id', $user->id)->first();
+                if ($candidate) {
+                    $pct = $candidate->getProfileCompletion();
+                    if ($pct < 60) {
+                        $msg = 'Your profile is currently ' . $pct . '% complete. A minimum of 60% profile completion is required to submit job applications. Please complete your profile (including education and work experience) before applying.';
+                        if ($this->request->isAJAX()) {
+                            return $this->response->setJSON([
+                                'status' => 'error',
+                                'message' => $msg,
+                                'redirect' => base_url('candidate/profile/edit')
+                            ]);
+                        }
+                        return redirect()->back()->withInput()->with('error', $msg);
+                    }
+                }
+            }
+
             $cvPath = null;
 
             // Handle CV Upload Logic
-            $cvFile = $this->request->getFile('cv_file');
+            // The Quick Apply modal (view_job.php #inlineApplyForm) sends "resume",
+            // while the full-page apply.php form sends "cv_file". Accept both.
+            $cvFile = $this->request->getFile('resume') ?? $this->request->getFile('cv_file');
 
             if ($cvFile && $cvFile->isValid()) {
                 $allowedMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
-                if (!in_array($cvFile->getMime(), $allowedMimes)) {
+                if (!in_array($cvFile->getMimeType(), $allowedMimes)) {
                     return $this->response->setJSON([
                         'status' => 'error',
                         'message' => 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.'
@@ -1978,20 +2058,32 @@ class Home extends BaseController
             }
 
             // Save Application
+            $first_name = trim((string) $this->request->getPost('first_name'));
+            $last_name  = trim((string) $this->request->getPost('last_name'));
+            $phone      = trim((string) $this->request->getPost('phone'));
+            $email      = $this->request->getPost('email');
+            $candidateId = null;
+
             if ($loggedIn) {
                 $candidate = $candidateModel->where('user_id', $user->id)->first();
-                $first_name = explode(' ', $candidate->full_name)[0];
-                $last_name = isset(explode(' ', $candidate->full_name)[1]) ? explode(' ', $candidate->full_name)[1] : '';
+                if ($candidate) {
+                    $candidateId = $candidate->id;
+                    $parts = preg_split('/\s+/', trim((string) $candidate->full_name));
+                    $first_name = $parts[0] ?? $first_name;
+                    $last_name  = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : $last_name;
+                    $phone      = $candidate->phone ?: $phone;
+                }
+                $email = $user->email;
             }
 
             $applicationId = $applicationModel->insert([
                 'job_id'              => $jobId,
-                'job_seeker_id'       => $loggedIn ? $candidate->id : null,
+                'job_seeker_id'       => $candidateId,
                 'is_guest'            => !$loggedIn ? 1 : 0,
-                'first_name'          => $loggedIn ? $first_name : $this->request->getPost('first_name'),
-                'last_name'           => $loggedIn ? $last_name : $this->request->getPost('last_name'),
-                'email'               => $loggedIn ? $user->email : $this->request->getPost('email'),
-                'phone'               => $loggedIn ? $candidate->phone : $this->request->getPost('phone'),
+                'first_name'          => $first_name,
+                'last_name'           => $last_name,
+                'email'               => $email,
+                'phone'               => $phone,
                 'cv_path'             => $cvPath,
                 'cover_letter'        => $coverLetter,
                 'availability'        => $this->request->getPost('availability'),
@@ -2053,10 +2145,8 @@ class Home extends BaseController
 
             // Send Confirmation Email to Candidate (Always sent)
             $emailService = service('mailer');
-            $candidateEmail = $loggedIn ? $user->email : $this->request->getPost('email');
-            $candidateName  = $loggedIn
-                ? $candidate->full_name
-                : $this->request->getPost('first_name') . ' ' . $this->request->getPost('last_name');
+            $candidateEmail = $email;
+            $candidateName  = trim($first_name . ' ' . $last_name) ?: 'Applicant';
 
             $emailService->sendTemplate(
                 $candidateEmail,
@@ -2080,8 +2170,6 @@ class Home extends BaseController
 
             // Send Email Notification if enabled
             if ($sendEmailNotification && $notificationEmail) {
-                sleep(2); // Small delay to avoid email conflicts
-
                 $emailService2 = service('mailer');
                 $emailService2->sendTemplate(
                     $notificationEmail,
@@ -2092,7 +2180,7 @@ class Home extends BaseController
                         'job_title'          => $job->title,
                         'candidate_name'     => $candidateName,
                         'candidate_email'    => $candidateEmail,
-                        'candidate_phone'    => $loggedIn ? ($candidate->phone ?? 'N/A') : $this->request->getPost('phone'),
+                        'candidate_phone'    => $phone ?: 'N/A',
                         'availability'       => $this->request->getPost('availability'),
                         'salary_expectation' => $this->request->getPost('salary_expectation'),
                         'applied_at'         => date('d M Y, H:i'),
@@ -2124,8 +2212,35 @@ class Home extends BaseController
             ]);
         }
 
-        // GET: Redirect to main job details page (form is now embedded)
-        return redirect()->to(base_url('jobs/view/' . ($job->slug ?? $jobId)));
+        // Fetch questions
+        $questionModel = model(\App\Models\JobQuestionModel::class);
+        $questions = $questionModel->where('job_id', $jobId)->findAll();
+        
+        $candidate = null;
+        $isSaved = false;
+        $candidateProfilePct = 100;
+        if (auth()->loggedIn()) {
+            $user = auth()->user();
+            $candidateModel = model(\App\Models\JobSeekerModel::class);
+            $candidate = $candidateModel->where('user_id', $user->id)->first();
+            if ($candidate) {
+                $candidateProfilePct = $candidate->getProfileCompletion();
+            }
+            
+            $savedJobModel = model(\App\Models\SavedJobModel::class);
+            $isSaved = (bool) $savedJobModel->where('user_id', $user->id)->where('job_id', $jobId)->first();
+        }
+
+        return view('home/apply', [
+            'title'               => 'Apply: ' . $job->title,
+            'auth'                => auth(),
+            'user'                => auth()->user(),
+            'candidate'           => $candidate,
+            'candidateProfilePct' => $candidateProfilePct,
+            'job'                 => $job,
+            'questions'           => $questions,
+            'isSaved'             => $isSaved
+        ]);
 
     }
 
@@ -2305,8 +2420,10 @@ class Home extends BaseController
                 'message' => $message,
             ]);
 
+            $supportEmail = env('email.support_email') ?: (env('SUPPORT_EMAIL') ?: (config('Email')->fromEmail ?? 'support@jobberrecruit.com'));
+
             $mailer->clear();
-            $mailer->setTo('support@jobberrecruit.com');
+            $mailer->setTo($supportEmail);
             $mailer->setReplyTo($email, $name);
             $mailer->setSubject('[Contact] ' . $subject);
             $mailer->setMessage($adminMessage);
@@ -2328,12 +2445,9 @@ class Home extends BaseController
                 'name' => $name,
             ]);
 
-            // Add Delay
-            sleep(5);
-
             $mailer->clear();
             $mailer->setTo($email);
-            $mailer->setSubject('We received your message');
+            $mailer->setSubject('We received your message — ' . (env('site_name') ?: 'JobberRecruit'));
             $mailer->setMessage($userMessage);
             $mailer->setMailType('html');
             $mailer->send(); // silent fail is OK
@@ -2765,22 +2879,53 @@ class Home extends BaseController
         return view('terms-of-service', $data);
     }
 
-    public function viewCompany($id)
+    public function viewCompany($identifier)
     {
         $employerModel = new EmployerModel();
         $jobsModel = new JobModel();
         $industryMap = new EmployerIndustryModel();
         $industryModel = new IndustryModel();
 
-        $company = $employerModel
-            ->select('employers.*, states.name as location')
-            ->where('employers.id', $id)
-            ->join('states', 'states.id = employers.state_id', 'left')
-            ->first();
+        if (is_numeric($identifier)) {
+            $company = $employerModel
+                ->select('employers.*, states.name as location')
+                ->where('employers.id', (int)$identifier)
+                ->join('states', 'states.id = employers.state_id', 'left')
+                ->first();
+
+            if ($company && !empty($company->company_name)) {
+                $slug = url_title($company->company_name, '-', true);
+                return redirect()->to(base_url("employer/{$slug}"), 301);
+            }
+        } else {
+            $slugTarget = strtolower(trim((string)$identifier));
+            $slugClean = str_replace('-', ' ', $slugTarget);
+            $company = $employerModel
+                ->select('employers.*, states.name as location')
+                ->where('LOWER(employers.company_name)', $slugClean)
+                ->orWhere('LOWER(REPLACE(employers.company_name, " ", "-"))', $slugTarget)
+                ->join('states', 'states.id = employers.state_id', 'left')
+                ->first();
+
+            if (!$company) {
+                $allEmployers = $employerModel
+                    ->select('employers.*, states.name as location')
+                    ->join('states', 'states.id = employers.state_id', 'left')
+                    ->findAll();
+                foreach ($allEmployers as $emp) {
+                    if (!empty($emp->company_name) && url_title($emp->company_name, '-', true) === $slugTarget) {
+                        $company = $emp;
+                        break;
+                    }
+                }
+            }
+        }
 
         if (!$company) {
             return redirect()->to('/')->with('error', 'Company not found.');
         }
+
+        $id = $company->id;
 
         $subscriptionModel = model(UserSubscriptionModel::class);
 
@@ -2801,17 +2946,21 @@ class Home extends BaseController
 
         // Load industries
         $industryIDs = $industryMap->where('employer_id', $id)->findColumn('industry_id') ?? [];
-        $industries = $industryModel->whereIn('id', $industryIDs)->findAll();
+        $industries = [];
+        if (!empty($industryIDs)) {
+            $industries = $industryModel->whereIn('id', $industryIDs)->findAll();
+        }
 
         // Jobs by employer
         $openJobs = $jobsModel
             ->select('jobs.*, states.name as location, employers.user_id as employer_user_id, employers.company_name, employers.logo, employers.is_verified')
-            ->where('employer_id', $id)
-            ->where('status', 'open')
-            ->where('is_anonymous', '0')
+            ->where('jobs.employer_id', $id)
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
+            ->where('jobs.is_anonymous', '0')
             ->join('employers', 'employers.id = jobs.employer_id')
             ->join('states', 'states.id = jobs.state_id', 'left')
-            ->orderBy('created_at', 'DESC')
+            ->orderBy('jobs.created_at', 'DESC')
             ->findAll();
 
         foreach ($openJobs as &$job) {
@@ -2836,34 +2985,66 @@ class Home extends BaseController
         ]);
     }
 
-    public function talents()
+    /**
+     * Public Candidate Hub Page — /candidates
+     */
+    public function candidateHub()
     {
-        $data = [
-            'title'            => 'Become a Candidate - Find Remote & Local Jobs | JobberRecruit',
-            'meta_description' => 'Join 10,000+ professionals finding high-paying remote and local jobs at verified companies. Create your free candidate profile and get matched with premium opportunities in tech, design, marketing, and more.',
-            'og_title'         => 'Become a Candidate | Find Premium Remote & Local Jobs',
-            'og_description'   => 'Join top talents connecting with verified companies worldwide. Get matched with high-quality remote and local opportunities.',
-            'og_image'         => base_url('assets/og-candidate-cover.jpg'),
-            'keywords'         => 'remote jobs, job seekers, candidates, talent platform, hire developers, global opportunities, tech jobs, remote work, career opportunities, verified employers',
-            'auth' => $this->auth,
-        ];
-        return view('talents', $data);
+        $jobModel      = model(\App\Models\JobModel::class);
+        $blogModel     = model(\App\Models\BlogModel::class);
+        $employerModel = model(\App\Models\EmployerModel::class);
+
+        $liveJobsCount = $jobModel->where('status', 'approved')->countAllResults();
+        $employerCount = $employerModel->where('is_verified', 1)->countAllResults();
+        $recentBlogs   = $blogModel->where('status', 'published')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(3);
+
+        return view('home/candidate_hub', [
+            'title'          => 'Candidate Hub — Find Jobs & Grow Your Career | JobberRecruit',
+            'liveJobsCount'  => $liveJobsCount,
+            'employerCount'  => $employerCount,
+            'recentBlogs'    => $recentBlogs,
+            'auth'           => $this->auth,
+        ]);
     }
 
 
 
     public function trackOpen($alertId)
     {
-        $alertModel = model(JobAlertModel::class);
-        $alertModel->where('id', $alertId)->increment('opens');
+        try {
+            $alertModel = model(JobAlertModel::class);
+            $alertModel->where('id', (int) $alertId)->increment('opens');
+        } catch (\Throwable $e) {
+            // silent
+        }
+
+        // Return a 1x1 transparent GIF image
+        return $this->response
+            ->setHeader('Content-Type', 'image/gif')
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->setBody(base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'));
     }
 
-    public function trackClick($alertId, $jobId)
+    public function trackClick($alertId, $jobId = null)
     {
-        $alertModel = model(JobAlertModel::class);
-        $alertModel->where('id', $alertId)->increment('clicks');
+        try {
+            $alertModel = model(JobAlertModel::class);
+            $alertModel->where('id', (int) $alertId)->increment('clicks');
+        } catch (\Throwable $e) {
+            // silent
+        }
 
-        return redirect()->to('jobs/view/' . $jobId);
+        if ($jobId) {
+            $job = model(\App\Models\JobModel::class)->find((int) $jobId);
+            if ($job && !empty($job->slug)) {
+                return redirect()->to(base_url('jobs/' . $job->slug));
+            }
+            return redirect()->to(base_url('jobs/' . (int) $jobId));
+        }
+
+        return redirect()->to(base_url('jobs'));
     }
 
     public function recruitment()
@@ -2877,6 +3058,120 @@ class Home extends BaseController
             'auth' => $this->auth,
         ];
         return view('recruitment', $data);
+    }
+
+    public function submitRecruitmentInquiry()
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return redirect()->to(base_url('recruitment'));
+        }
+
+        // ── Rate limiting ──────────────────────────────────────────────
+        $throttler = service('throttler');
+        if ($throttler->check('recruitment_inquiry', 3, 300) === false) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Too many submissions. Please wait a few minutes and try again.',
+                ]);
+            }
+            return redirect()->back()->with('error', 'Too many submissions. Please wait a few minutes and try again.');
+        }
+
+        // ── Validation ─────────────────────────────────────────────────
+        $rules = [
+            'fullName'    => 'required|min_length[2]|max_length[100]',
+            'companyName' => 'required|min_length[2]|max_length[150]',
+            'email'       => 'required|valid_email',
+            'phone'       => 'required|min_length[7]|max_length[20]',
+            'role'        => 'required|min_length[2]|max_length[150]',
+            'message'     => 'required|min_length[5]',
+        ];
+
+        if (! $this->validate($rules)) {
+            $errors = implode(' ', $this->validator->getErrors());
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $errors,
+                ]);
+            }
+            return redirect()->back()->withInput()->with('error', $errors);
+        }
+
+        $fullName    = $this->request->getPost('fullName');
+        $companyName = $this->request->getPost('companyName');
+        $email       = $this->request->getPost('email');
+        $phone       = $this->request->getPost('phone');
+        $role        = $this->request->getPost('role');
+        $experience  = $this->request->getPost('experience') ?? 'Not specified';
+        $budget      = $this->request->getPost('budget')     ?? 'Not specified';
+        $schedule    = $this->request->getPost('schedule')   ?? 'Not specified';
+        $location    = $this->request->getPost('location')   ?? 'Not specified';
+        $message     = $this->request->getPost('message');
+
+        // ── Send admin notification ─────────────────────────────────────
+        $mailer = service('mailer');
+
+        $adminBody = "
+            <h2 style='font-family:sans-serif;color:#062E52'>New Recruitment Inquiry</h2>
+            <table style='font-family:sans-serif;font-size:14px;border-collapse:collapse;width:100%'>
+                <tr><td style='padding:6px 0;color:#666;width:160px'><b>Name</b></td><td>" . esc($fullName) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Company</b></td><td>" . esc($companyName) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Email</b></td><td><a href='mailto:" . esc($email) . "'>" . esc($email) . "</a></td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Phone</b></td><td>" . esc($phone) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Role to Hire</b></td><td>" . esc($role) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Experience Level</b></td><td>" . esc($experience) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Budget / Salary</b></td><td>" . esc($budget) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Schedule</b></td><td>" . esc($schedule) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666'><b>Location</b></td><td>" . esc($location) . "</td></tr>
+                <tr><td style='padding:6px 0;color:#666;vertical-align:top'><b>Message</b></td><td>" . nl2br(esc($message)) . "</td></tr>
+            </table>
+        ";
+
+        $mailer->clear();
+        $mailer->setTo('support@jobberrecruit.com');
+        $mailer->setReplyTo($email, $fullName);
+        $mailer->setSubject('[Recruitment Inquiry] ' . $role . ' — ' . $companyName);
+        $mailer->setMessage($adminBody);
+        $mailer->setMailType('html');
+
+        if (! $mailer->send()) {
+            log_message('error', 'Recruitment inquiry email failed: ' . print_r($mailer->printDebugger(), true));
+
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Unable to submit your inquiry. Please try again later.',
+                ]);
+            }
+            return redirect()->back()->withInput()->with('error', 'Unable to submit your inquiry. Please try again later.');
+        }
+
+        // ── Auto-reply to the client ────────────────────────────────────
+        $autoReply = "
+            <p style='font-family:sans-serif;font-size:15px'>Hi " . esc($fullName) . ",</p>
+            <p style='font-family:sans-serif;font-size:15px'>Thank you for reaching out to <strong>JobberRecruit</strong>. We have received your inquiry for the <strong>" . esc($role) . "</strong> role and our recruitment team will get back to you within <strong>one business day</strong>.</p>
+            <p style='font-family:sans-serif;font-size:15px'>In the meantime, feel free to browse available candidates on our platform.</p>
+            <p style='font-family:sans-serif;font-size:15px'>Warm regards,<br><strong>The JobberRecruit Team</strong></p>
+        ";
+
+        $mailer->clear();
+        $mailer->setTo($email);
+        $mailer->setSubject('We received your recruitment inquiry — JobberRecruit');
+        $mailer->setMessage($autoReply);
+        $mailer->setMailType('html');
+        $mailer->send(); // silent fail — auto-reply is best-effort
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Thank you! Your inquiry has been submitted. We will contact you within one business day.',
+            ]);
+        }
+
+        return redirect()->to(base_url('recruitment') . '#inquiry')
+            ->with('success', 'Thank you! Your inquiry has been submitted. We will contact you within one business day.');
     }
 
     public function adPage()
@@ -2900,7 +3195,8 @@ class Home extends BaseController
         if (!$jobs) {
             $jobs = $jobModel
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.company_name as employer_name')
-                ->where('status', 'open')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -2972,4 +3268,155 @@ class Home extends BaseController
             
         return view('home/partials/categories_ajax', ['categories' => $categories]);
     }
+
+    /**
+     * E-learning Courses & Career Training page
+     */
+    public function training()
+    {
+        $courseModel = new \App\Models\CourseModel();
+        
+        $q = trim((string) ($this->request->getVar('q') ?? ''));
+        $level = trim((string) ($this->request->getVar('level') ?? ''));
+        $type = trim((string) ($this->request->getVar('type') ?? ''));
+        $price = trim((string) ($this->request->getVar('price') ?? ''));
+
+        // Total Counts (non-filtered stats for hero section)
+        $totalCourses = $courseModel->where('is_active', 1)->findAll();
+        $freeCount = count(array_filter(
+            $totalCourses,
+            static fn ($course) => (float) ($course->price ?? 0) <= 0
+        ));
+
+        // Filtered Query Builder
+        $dbBuilder = $courseModel->where('is_active', 1);
+
+        if ($q !== '') {
+            $dbBuilder->groupStart()
+                      ->like('title', $q)
+                      ->orLike('description', $q)
+                      ->orLike('instructor', $q)
+                      ->groupEnd();
+        }
+        if ($level !== '') {
+            $dbBuilder->where('level', $level);
+        }
+        if ($type !== '') {
+            $dbBuilder->where('item_type', $type);
+        }
+        if ($price !== '') {
+            if ($price === 'free') {
+                $dbBuilder->where('price <=', 0);
+            } elseif ($price === 'paid') {
+                $dbBuilder->where('price >', 0);
+            }
+        }
+
+        $courses = $dbBuilder
+            ->orderBy('is_featured', 'DESC')
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $featuredCourses = array_values(array_filter(
+            $totalCourses,
+            static fn ($course) => (int) ($course->is_featured ?? 0) === 1
+        ));
+
+        return view('home/elearning', [
+            'title'             => 'Professional E-Learning & Career Training | JobberRecruit',
+            'meta_description'  => 'Upgrade your skills with JobberRecruit E-Learning and Training Marketplace. Explore free & premium certification courses in Tech, Business Management, sales, and more.',
+            'keywords'          => 'elearning Nigeria, professional courses Lagos, online training, job skills, career development, IT certification, interview preparation, JobberRecruit',
+            'og_title'          => 'Professional E-Learning & Career Training | JobberRecruit',
+            'og_description'    => 'Upgrade your skills with JobberRecruit E-Learning and Training Marketplace. Explore free & premium certification courses.',
+            'courses'           => $courses,
+            'featuredCourses'   => array_slice($featuredCourses, 0, 3),
+            'freeCount'         => $freeCount,
+            'paidCount'         => count($totalCourses) - $freeCount,
+            'totalActive'       => count($totalCourses),
+            'q'                 => $q,
+            'level'             => $level,
+            'type'              => $type,
+            'price'             => $price,
+            'auth'              => $this->auth,
+        ]);
+    }
+
+    /**
+     * CV Review Service landing page
+     */
+    public function cvReview()
+    {
+        $paidPlan = $this->request->getGet('plan');
+        $reviewId = $this->request->getGet('review_id');
+
+        return view('cv_review', [
+            'title'           => 'Professional CV Review Service | JobberRecruit',
+            'meta_description'=> 'Get your resume professionally reviewed by HR experts in Nigeria. ATS optimization, CV formatting, and expert feedback to land top jobs.',
+            'isLoggedIn'      => $this->auth->loggedIn(),
+            'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
+            'reviewId'        => $reviewId ? (int) $reviewId : null,
+            'planPrices'      => [
+                'basic'        => 0,
+                'professional' => (int) env('cv_review_pro_price', 15000),
+                'premium'      => (int) env('cv_review_prem_price', 30000),
+            ],
+            'auth'            => $this->auth,
+        ]);
+    }
+
+    /**
+     * Public Employers Directory
+     */
+    public function employers()
+    {
+        $keyword = trim((string) $this->request->getGet('keyword'));
+        $stateId = $this->request->getGet('state_id');
+
+        $jobModel = model(JobModel::class);
+        $builder = $jobModel->builder('employers')
+            ->select('employers.id, employers.company_name, employers.user_id, employers.logo, employers.company_address, employers.website, employers.is_verified, states.name as location, COUNT(jobs.id) as job_count')
+            ->join('jobs', 'jobs.employer_id = employers.id AND jobs.status = "open"', 'left')
+            ->join('states', 'states.id = employers.state_id', 'left')
+            ->groupBy('employers.id');
+
+        if (!empty($keyword)) {
+            $builder->like('employers.company_name', $keyword);
+        }
+
+        if (!empty($stateId)) {
+            $builder->where('employers.state_id', (int) $stateId);
+        }
+
+        $employers = $builder->orderBy('job_count', 'DESC')->get()->getResult();
+
+        $stateModel = model(\App\Models\StateModel::class);
+        $states = $stateModel->orderBy('name', 'ASC')->findAll();
+
+        return view('home/employers', [
+            'title'        => 'Top Employers & Companies in Nigeria | JobberRecruit',
+            'employers'    => $employers,
+            'states'       => $states,
+            'keyword'      => $keyword,
+            'selectedState'=> $stateId,
+            'auth'         => $this->auth,
+        ]);
+    }
+
+    /**
+     * Public Career Advice & Resources Page
+     */
+    public function careerAdvice()
+    {
+        $blogModel = model(\App\Models\BlogModel::class);
+        $recentBlogs = $blogModel->where('status', 'published')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(6);
+
+        return view('home/career_advice', [
+            'title'       => 'Career Advice, Resume Tips & Salary Guides | JobberRecruit',
+            'recentBlogs' => $recentBlogs,
+            'auth'        => $this->auth,
+        ]);
+    }
 }
+

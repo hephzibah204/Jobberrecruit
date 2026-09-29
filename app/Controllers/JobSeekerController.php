@@ -87,53 +87,61 @@ class JobSeekerController extends BaseController
             ->where('user_id', $this->auth->user()->id)
             ->countAllResults();
 
-        // Recommended Jobs (simple example: by industry_id)
-        $recommendedJobs = $jobModel
-            ->where('industry_id', $candidate->industry_id ?? null)
-            ->orderBy('created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
+        // Candidate industries (pivot) drive recommendations + the match score.
+        $industryIds = array_column(
+            model(JobSeekerIndustryModel::class)->where('job_seeker_id', $candidate->id)->findAll(),
+            'industry_id'
+        );
+        if (! empty($industryIds)) {
+            // Primary industry, used by MatchService for the industry-alignment signal.
+            $candidate->industry_id = $industryIds[0];
+        }
+
+        // Recommended Jobs — prefer the candidate's industries, fall back to latest openings.
+        $jobQuery = $jobModel->orderBy('created_at', 'DESC');
+        if (! empty($industryIds)) {
+            $jobQuery->whereIn('industry_id', $industryIds);
+        }
+        $recommendedJobs = $jobQuery->limit(6)->findAll();
+        if (empty($recommendedJobs)) {
+            $recommendedJobs = $jobModel->orderBy('created_at', 'DESC')->limit(6)->findAll();
+        }
+
+        // Attach a real, computed match score to each recommendation.
+        $recommendedJobs = (new \App\Services\MatchService())->scoreJobs($candidate, $recommendedJobs);
 
         // Recent Applications (limit 5)
         $recentApplications = $applicationModel
-            ->where('job_seeker_id', $candidate->id)
-            ->orderBy('created_at', 'DESC')
-            ->limit(5)
-            ->findAll();
-
-        // Latest Jobs (for the "Latest Jobs" section in the view)
-        $latestJobs = $jobModel
-            ->orderBy('created_at', 'DESC')
+            ->select('job_applications.*, jobs.title as job_title, employers.company_name')
+            ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->where('job_applications.job_seeker_id', $candidate->id)
+            ->orderBy('job_applications.created_at', 'DESC')
             ->limit(5)
             ->findAll();
 
         // (Optional) recent applications count for the welcome banner
         $recentApplicationsCount = count($recentApplications);
 
+        // Pending count across ALL applications (not just the 5 most recent) for the AI-hero banner
+        $pendingApplicationsCount = $applicationModel
+            ->where('job_seeker_id', $candidate->id)
+            ->where('status', 'pending')
+            ->countAllResults();
+
+        // ====== Weekly Chart Data (job clicks per day, Mon → Sun) ======
+        $weeklyChartData = $this->getWeeklyJobClicks($this->auth->user()->id);
+
+        // ====== Skill Categories (from candidate profile skills string) ======
+        $skillCategories = $this->buildSkillCategories($candidate, $recommendedJobs);
+
         // Profile Completion
-        $fields = [
-            'full_name',
-            'dob',
-            'gender',
-            'phone',
-            'location',
-            'job_title',
-            'employment_type',
-            'skills',
-            'education_level',
-            'languages',
-            'resume',
-            'availability'
-        ];
+        $profileCompletion = $candidate->getProfileCompletion();
+        $this->checkAndRewardProfileCompletion((int) $this->auth->user()->id, $profileCompletion);
 
-        $completed = 0;
-        foreach ($fields as $f) {
-            if (!empty($candidate->$f)) {
-                $completed++;
-            }
-        }
-
-        $profileCompletion = round(($completed / count($fields)) * 100);
+        // Aptitude Test Invitations (for Assessment Centre banner / widget)
+        $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
+        $aptitudeInvitations = $invitationModel->getForCandidate((int) $this->auth->user()->id);
 
         return view('candidate/dashboard', [
             'title'                  => 'Dashboard',
@@ -145,8 +153,12 @@ class JobSeekerController extends BaseController
             'recommendedJobs'        => $recommendedJobs,
             'recentApplications'     => $recentApplications,
             'recentApplicationsCount' => $recentApplicationsCount,
-            'latestJobs'             => $latestJobs,
+            'pendingApplicationsCount' => $pendingApplicationsCount,
             'profileCompletion'      => $profileCompletion,
+            'profileChecklist'       => $candidate ? $candidate->getProfileChecklist() : [],
+            'weeklyChartData'        => $weeklyChartData,
+            'skillCategories'        => $skillCategories,
+            'aptitudeInvitations'    => $aptitudeInvitations,
         ]);
     }
 
@@ -168,11 +180,26 @@ class JobSeekerController extends BaseController
                 ->with('error', 'Please create your profile first.');
         }
 
+        // Earned JobberRecruit certificates (auto-attach to profile, like the mockup)
+        $certificates = model(\App\Models\CourseCertificateModel::class)
+            ->getUserCertificates($this->auth->user()->id);
+
+        // Structured work experience, education history & external certifications
+        $experiences            = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education              = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+        $externalCertifications = model(\App\Models\JobSeekerCertificationModel::class)->forSeeker($candidate->id);
+
         $data = [
-            'title'     => 'Profile',
-            'user'      => $this->auth->user(),
-            'candidate' => $candidate
+            'title'                  => 'Profile',
+            'user'                   => $this->auth->user(),
+            'candidate'              => $candidate,
+            'certificates'           => $certificates,
+            'externalCertifications' => $externalCertifications,
+            'experiences'            => $experiences,
+            'education'              => $education,
         ];
+
+        $this->checkAndRewardProfileCompletion((int) $this->auth->user()->id, $candidate->getProfileCompletion());
 
         return view('candidate/profile', $data);
     }
@@ -187,7 +214,11 @@ class JobSeekerController extends BaseController
         $candidate = $candidateModel->where('user_id', $user->id)->first();
 
         if (!$candidate) {
-            return redirect()->to('candidate/profile/edit')->with('error', 'Please create your profile first.');
+            $candidateModel->insert([
+                'user_id'   => $user->id,
+                'full_name' => $user->username ?? 'Candidate',
+            ]);
+            $candidate = $candidateModel->where('user_id', $user->id)->first();
         }
 
         // If POST, handle update immediately
@@ -207,49 +238,56 @@ class JobSeekerController extends BaseController
                 ]);
             }
 
-            // Validation Rules
+            // Validation Rules: only full_name is strictly required to identify the candidate
             $rules = [
-                'full_name'         => 'required|min_length[3]',
-                'phone'             => 'required|min_length[6]',
-                'state_id'          => 'required|integer',
-                'job_title'         => 'required|min_length[2]',
-                'industry_ids'      => 'required',
+                'full_name'  => 'required|min_length[2]',
+                'phone'      => 'permit_empty|min_length[6]',
+                'state_id'   => 'permit_empty|is_natural_no_zero',
+                'job_title'  => 'permit_empty|min_length[2]',
             ];
 
             if (!$this->validate($rules)) {
                 return $this->response->setJSON([
-                    'status' => 'error',
-                    'errors' => $this->validator->getErrors()
+                    'status'     => 'error',
+                    'errors'     => $this->validator->getErrors(),
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
                 ]);
             }
 
-            $portfolio = trim($this->request->getPost('portfolio'));
-
+            $portfolio = trim((string) $this->request->getPost('portfolio'));
             if ($portfolio && !preg_match('#^https?://#i', $portfolio)) {
                 $portfolio = 'https://' . $portfolio;
             }
 
+            // Collect POST Data with safe nulls for empty optional fields
+            $stateIdRaw  = $this->request->getPost('state_id');
+            $expYearsRaw = $this->request->getPost('experience_years');
+            $salaryRaw   = $this->request->getPost('desired_salary');
 
-            // Collect POST Data
             $data = [
-                'full_name'         => trim($this->request->getPost('full_name')),
-                'dob'               => trim($this->request->getPost('dob')),
-                'gender'            => trim($this->request->getPost('gender')),
-                'phone'             => trim($this->request->getPost('phone')),
-                'location'          => trim($this->request->getPost('location')),
-                'state_id'          => trim($this->request->getPost('state_id')),
-                'availability'      => trim($this->request->getPost('availability')),
-                'job_title'         => trim($this->request->getPost('job_title')),
-                'employment_type'   => trim($this->request->getPost('employment_type')),
-                'skills'            => trim($this->request->getPost('skills')),
-                'experience_years'  => trim($this->request->getPost('experience_years')),
-                'education_level'   => trim($this->request->getPost('education_level')),
-                'languages'         => trim($this->request->getPost('languages')),
-                'desired_salary'    => trim($this->request->getPost('desired_salary')),
-                'salary_type'       => trim($this->request->getPost('salary_type')),
-                'portfolio'         => $portfolio ?? null,
-                'description'       => trim($this->request->getPost('description'))
+                'full_name'        => trim((string) $this->request->getPost('full_name')),
+                'dob'              => trim((string) $this->request->getPost('dob')) ?: null,
+                'gender'           => trim((string) $this->request->getPost('gender')) ?: null,
+                'phone'            => trim((string) $this->request->getPost('phone')) ?: null,
+                'location'         => trim((string) $this->request->getPost('location')) ?: null,
+                'state_id'         => !empty($stateIdRaw) ? (int) $stateIdRaw : null,
+                'availability'     => trim((string) $this->request->getPost('availability')) ?: null,
+                'job_title'        => trim((string) $this->request->getPost('job_title')) ?: null,
+                'employment_type'  => trim((string) $this->request->getPost('employment_type')) ?: null,
+                'skills'           => trim((string) $this->request->getPost('skills')) ?: null,
+                'experience_years' => ($expYearsRaw !== '' && $expYearsRaw !== null) ? (int) $expYearsRaw : null,
+                'education_level'  => trim((string) $this->request->getPost('education_level')) ?: null,
+                'languages'        => trim((string) $this->request->getPost('languages')) ?: null,
+                'desired_salary'   => ($salaryRaw !== '' && $salaryRaw !== null) ? (float) $salaryRaw : null,
+                'salary_type'      => trim((string) $this->request->getPost('salary_type')) ?: null,
+                'portfolio'        => $portfolio ?: null,
+                'bio'              => trim((string) $this->request->getPost('bio')) ?: null,
             ];
+
+            if ($this->request->getPost('is_visible') !== null) {
+                $data['is_visible'] = in_array($this->request->getPost('is_visible'), ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+            }
 
             helper(['filesystem', 'form']);
 
@@ -263,7 +301,13 @@ class JobSeekerController extends BaseController
              * PROFILE PICTURE UPLOAD
              */
             $profileFile = $this->request->getFile('profile_picture');
-            if ($profileFile && $profileFile->isValid()) {
+            $profileCheck = $this->validateUploadedFile($profileFile, [
+                'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'], 'webp' => ['image/webp'],
+            ], 2048);
+            if ($profileFile && $profileFile->isValid() && !$profileCheck['valid']) {
+                return redirect()->back()->withInput()->with('error', $profileCheck['error']);
+            }
+            if ($profileCheck['valid']) {
 
                 if ($candidate->profile_picture && file_exists($candidate->profile_picture)) {
                     unlink($candidate->profile_picture);
@@ -286,7 +330,15 @@ class JobSeekerController extends BaseController
              * RESUME UPLOAD
              */
             $resumeFile = $this->request->getFile('resume');
-            if ($resumeFile && $resumeFile->isValid()) {
+            $resumeCheck = $this->validateUploadedFile($resumeFile, [
+                'pdf' => ['application/pdf'],
+                'doc' => ['application/msword'],
+                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+            ], 5120);
+            if ($resumeFile && $resumeFile->isValid() && !$resumeCheck['valid']) {
+                return redirect()->back()->withInput()->with('error', $resumeCheck['error']);
+            }
+            if ($resumeCheck['valid']) {
 
                 if ($candidate->resume && file_exists($candidate->resume)) {
                     unlink($candidate->resume);
@@ -307,6 +359,9 @@ class JobSeekerController extends BaseController
             /**
              * UPDATE CANDIDATE
              */
+            $db = \Config\Database::connect();
+            $db->transStart();
+
             $candidateModel->update($candidate->id, $data);
 
             /**
@@ -322,9 +377,124 @@ class JobSeekerController extends BaseController
                 ]);
             }
 
+            /**
+             * SYNC WORK EXPERIENCE (delete + reinsert posted rows)
+             */
+            $normMonth = static fn ($v) => $v ? (preg_match('/^\d{4}-\d{2}$/', $v) ? $v . '-01' : $v) : null;
+            $expModel  = model(\App\Models\JobSeekerExperienceModel::class);
+            $expModel->where('job_seeker_id', $candidate->id)->delete();
+            $expTitles  = (array) ($this->request->getPost('exp_job_title') ?? []);
+            $expCompany = (array) ($this->request->getPost('exp_company') ?? []);
+            $expLoc     = (array) ($this->request->getPost('exp_location') ?? []);
+            $expStart   = (array) ($this->request->getPost('exp_start') ?? []);
+            $expEnd     = (array) ($this->request->getPost('exp_end') ?? []);
+            $expCurrent = (array) ($this->request->getPost('exp_is_current') ?? []);
+            $expDesc    = (array) ($this->request->getPost('exp_description') ?? []);
+            foreach ($expTitles as $i => $t) {
+                $t = trim((string) $t);
+                if ($t === '') continue;
+                $isCurrent = in_array($expCurrent[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+                $expModel->insert([
+                    'job_seeker_id' => $candidate->id,
+                    'job_title'     => $t,
+                    'company'       => trim((string) ($expCompany[$i] ?? '')) ?: null,
+                    'location'      => trim((string) ($expLoc[$i] ?? '')) ?: null,
+                    'start_date'    => $normMonth(trim((string) ($expStart[$i] ?? ''))),
+                    'end_date'      => $isCurrent ? null : $normMonth(trim((string) ($expEnd[$i] ?? ''))),
+                    'is_current'    => $isCurrent,
+                    'description'   => trim((string) ($expDesc[$i] ?? '')) ?: null,
+                    'sort_order'    => $i,
+                ]);
+            }
+
+            /**
+             * SYNC EDUCATION (delete + reinsert posted rows)
+             */
+             $eduModel = model(\App\Models\JobSeekerEducationModel::class);
+             $eduModel->where('job_seeker_id', $candidate->id)->delete();
+             $eduDegree = (array) ($this->request->getPost('edu_degree') ?? []);
+             $eduField  = (array) ($this->request->getPost('edu_field') ?? []);
+             $eduSchool = (array) ($this->request->getPost('edu_school') ?? []);
+             $eduStart  = (array) ($this->request->getPost('edu_start_year') ?? []);
+             $eduEnd    = (array) ($this->request->getPost('edu_end_year') ?? []);
+             $eduGrade  = (array) ($this->request->getPost('edu_grade') ?? []);
+             foreach ($eduDegree as $i => $d) {
+                 $d = trim((string) $d);
+                 if ($d === '') continue;
+                 $eduModel->insert([
+                     'job_seeker_id'  => $candidate->id,
+                     'degree'         => $d,
+                     'field_of_study' => trim((string) ($eduField[$i] ?? '')) ?: null,
+                     'school'         => trim((string) ($eduSchool[$i] ?? '')) ?: null,
+                     'start_year'     => trim((string) ($eduStart[$i] ?? '')) ?: null,
+                     'end_year'       => trim((string) ($eduEnd[$i] ?? '')) ?: null,
+                     'grade'          => trim((string) ($eduGrade[$i] ?? '')) ?: null,
+                     'sort_order'     => $i,
+                 ]);
+             }
+
+            /**
+             * SYNC CERTIFICATIONS (delete + reinsert posted rows)
+             */
+            $certModel = model(\App\Models\JobSeekerCertificationModel::class);
+            try {
+                $certModel->where('job_seeker_id', $candidate->id)->delete();
+                $certNames    = (array) ($this->request->getPost('cert_name') ?? []);
+                $certOrgs     = (array) ($this->request->getPost('cert_org') ?? []);
+                $certIds      = (array) ($this->request->getPost('cert_id') ?? []);
+                $certUrls     = (array) ($this->request->getPost('cert_url') ?? []);
+                $certIsMonths = (array) ($this->request->getPost('cert_issue_month') ?? []);
+                $certIsYears  = (array) ($this->request->getPost('cert_issue_year') ?? []);
+                $certNoExps   = (array) ($this->request->getPost('cert_no_expire') ?? []);
+                $certExMonths = (array) ($this->request->getPost('cert_exp_month') ?? []);
+                $certExYears  = (array) ($this->request->getPost('cert_exp_year') ?? []);
+
+                foreach ($certNames as $i => $cn) {
+                    $cn = trim((string) $cn);
+                    if ($cn === '') continue;
+                    $noExp = in_array($certNoExps[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
+                    $certModel->insert([
+                        'job_seeker_id'        => $candidate->id,
+                        'name'                 => $cn,
+                        'issuing_organization' => trim((string) ($certOrgs[$i] ?? '')) ?: null,
+                        'credential_id'        => trim((string) ($certIds[$i] ?? '')) ?: null,
+                        'credential_url'       => trim((string) ($certUrls[$i] ?? '')) ?: null,
+                        'issue_month'          => trim((string) ($certIsMonths[$i] ?? '')) ?: null,
+                        'issue_year'           => trim((string) ($certIsYears[$i] ?? '')) ?: null,
+                        'does_not_expire'      => $noExp,
+                        'expiry_month'         => $noExp ? null : (trim((string) ($certExMonths[$i] ?? '')) ?: null),
+                        'expiry_year'          => $noExp ? null : (trim((string) ($certExYears[$i] ?? '')) ?: null),
+                        'sort_order'           => $i,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Error syncing certifications: ' . $e->getMessage());
+            }
+
+            // Sync profile_completion column in DB
+            $updatedCandidate = $candidateModel->find($candidate->id);
+            if ($updatedCandidate) {
+                $newCompletion = $updatedCandidate->getProfileCompletion();
+                $candidateModel->update($candidate->id, [
+                    'profile_completion' => $newCompletion
+                ]);
+                $this->checkAndRewardProfileCompletion((int) $this->auth->user()->id, $newCompletion);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to update profile. Database transaction error.'
+                ]);
+            }
+
             return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Profile updated successfully.'
+                'status'     => 'success',
+                'message'    => 'Profile updated successfully.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
             ])->setStatusCode(200);
         }
 
@@ -346,13 +516,21 @@ class JobSeekerController extends BaseController
             ->where('job_seeker_id', $candidate->id)
             ->findColumn('industry_id') ?? [];
 
+        // Existing structured history for repeatable form sections
+        $experiences    = model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id);
+        $education      = model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id);
+        $certifications = model(\App\Models\JobSeekerCertificationModel::class)->forSeeker($candidate->id);
+
         return view('candidate/edit_profile', [
-            'title' => 'Edit Profile',
-            'user' => $user,
-            'candidate' => $candidate,
-            'industries' => $parentIndustries,
-            'states' => $states,
-            'candidateIndustryIds' => $candidateIndustryIds
+            'title'                => 'Edit Profile',
+            'user'                 => $user,
+            'candidate'            => $candidate,
+            'industries'           => $parentIndustries,
+            'states'               => $states,
+            'candidateIndustryIds' => $candidateIndustryIds,
+            'experiences'          => $experiences,
+            'education'            => $education,
+            'certifications'       => $certifications,
         ]);
     }
 
@@ -367,8 +545,8 @@ class JobSeekerController extends BaseController
             ->where('user_id', $this->auth->user()->id)
             ->first();
 
-        return view('candidate/security/index', [
-            'title' => 'Security Settings',
+        return view('candidate/settings', [
+            'title' => 'General Settings',
             'user'  => $this->auth->user(),
             'candidate' => $candidate,
         ]);
@@ -426,149 +604,182 @@ class JobSeekerController extends BaseController
     }
 
     /**
-     * AJAX Profile Update Handler
+     * Toggle the "visible to employers" flag (AJAX). Backs the profile visibility switch.
+     * When hidden, the candidate no longer appears in employer candidate search.
      */
-    public function update_profile()
+    public function toggleVisibility()
     {
-        if (!$this->request->isAJAX()) {
+        $user = $this->auth->user();
+        if (!$user) {
             return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Invalid request.'
-            ]);
+                'success'    => false,
+                'message'    => 'Authentication required.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
+            ])->setStatusCode(401);
+        }
+
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $user->id)->first();
+        if (!$candidate) {
+            return $this->response->setJSON([
+                'success'    => false,
+                'message'    => 'Profile not found.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
+            ])->setStatusCode(404);
+        }
+
+        // Use the posted value or JSON payload when present, otherwise flip the current state.
+        $json = $this->request->getJSON(true);
+        $raw = $this->request->getPost('is_visible');
+        if ($raw === null && isset($json['is_visible'])) {
+            $raw = $json['is_visible'];
+        }
+
+        if ($raw === null) {
+            $newValue = $candidate->is_visible ? 0 : 1;
+        } else {
+            $newValue = in_array($raw, ['1', 1, 'true', true, 'on'], true) ? 1 : 0;
+        }
+
+        $candidateModel->update($candidate->id, ['is_visible' => $newValue]);
+
+        return $this->response->setJSON([
+            'success'    => true,
+            'is_visible' => (int) $newValue,
+            'message'    => $newValue
+                ? 'Your profile is now visible to employers.'
+                : 'Your profile is now hidden from employer search.',
+            'csrf_token' => csrf_token(),
+            'csrf_hash'  => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * Save per-channel notification preferences (AJAX).
+     */
+    public function saveNotificationPreferences()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $candidateModel = model(JobSeekerModel::class);
+        $candidate = $candidateModel->where('user_id', $this->auth->user()->id)->first();
+        if (! $candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Profile not found.']);
+        }
+
+        $flag = fn (string $name) => in_array(
+            $this->request->getPost($name),
+            ['1', 1, 'true', true, 'on'],
+            true
+        ) ? 1 : 0;
+
+        $candidateModel->update($candidate->id, [
+            'notify_job_alerts'          => $flag('notify_job_alerts'),
+            'notify_weekly_digest'       => $flag('notify_weekly_digest'),
+            'notify_application_updates' => $flag('notify_application_updates'),
+            'notify_messages'            => $flag('notify_messages'),
+            'notify_marketing'           => $flag('notify_marketing'),
+        ]);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Notification preferences saved.']);
+    }
+
+    /**
+     * Permanently delete the candidate's account and all associated data (GDPR erasure).
+     * Requires password confirmation. This is irreversible.
+     */
+    public function deleteAccount()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
         }
 
         $user = $this->auth->user();
 
-        $candidateModel = new JobSeekerModel();
-        $candidateIndustryModel = new JobSeekerIndustryModel();
-
-        // Fetch candidate
-        $candidate = $candidateModel->where('user_id', $user->id)->first();
-
-        if (!$candidate) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Candidate profile not found.'
-            ]);
+        // Confirm the password before destroying anything.
+        $authenticator = auth()->getAuthenticator();
+        if (! $authenticator->check([
+            'email'    => $user->email,
+            'password' => (string) $this->request->getPost('password'),
+        ])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Password is incorrect.']);
         }
 
-        // Validation Rules
-        $rules = [
-            'full_name'         => 'required|min_length[3]',
-            'phone'             => 'required|min_length[6]',
-            'state_id'          => 'required|integer',
-            'job_title'         => 'required|min_length[2]',
-            'industry_ids'      => 'required',
-        ];
+        $db = \Config\Database::connect();
+        $candidate = model(JobSeekerModel::class)->where('user_id', $user->id)->first();
 
-        if (!$this->validate($rules)) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'errors' => $this->validator->getErrors()
-            ]);
-        }
-
-        // Collect POST Data
-        $data = [
-            'full_name'         => $this->request->getPost('full_name'),
-            'dob'               => $this->request->getPost('dob'),
-            'gender'            => $this->request->getPost('gender'),
-            'phone'             => $this->request->getPost('phone'),
-            'location'          => $this->request->getPost('location'),
-            'state_id'          => $this->request->getPost('state_id'),
-            'availability'      => $this->request->getPost('availability'),
-            'job_title'         => $this->request->getPost('job_title'),
-            'employment_type'   => $this->request->getPost('employment_type'),
-            'skills'            => $this->request->getPost('skills'),
-            'experience_years'  => $this->request->getPost('experience_years'),
-            'education_level'   => $this->request->getPost('education_level'),
-            'languages'         => $this->request->getPost('languages'),
-            'desired_salary'    => $this->request->getPost('desired_salary'),
-            'salary_type'       => $this->request->getPost('salary_type'),
-            'portfolio'         => $this->request->getPost('portfolio'),
-            'description'       => $this->request->getPost('description')
-        ];
-
-        helper(['filesystem', 'form']);
-
-        // File Upload Directory
-        $uploadPath = 'uploads/candidates/' . $candidate->id . '/';
-        if (!is_dir($uploadPath)) {
-            mkdir($uploadPath, 0775, true);
-        }
-
-        /**
-         * PROFILE PICTURE UPLOAD
-         */
-        $profileFile = $this->request->getFile('profile_picture');
-        if ($profileFile && $profileFile->isValid()) {
-
-            if ($candidate->profile_picture && file_exists($candidate->profile_picture)) {
-                unlink($candidate->profile_picture);
+        // Best-effort deletion of owned rows. Each is guarded so an unexpected
+        // schema difference can never block the authoritative user deletion below.
+        $safeDelete = static function (string $table, string $column, $value) use ($db): void {
+            try {
+                if ($db->tableExists($table)) {
+                    $db->table($table)->where($column, $value)->delete();
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'deleteAccount cleanup failed on ' . $table . ': ' . $e->getMessage());
             }
+        };
 
-            $newName = $profileFile->getRandomName();
-            $profileFile->move($uploadPath, $newName);
-
-            $data['profile_picture'] = $uploadPath . $newName;
-
-        } elseif ($this->request->getPost('remove_profile_picture')) {
-
-            if ($candidate->profile_picture && file_exists($candidate->profile_picture)) {
-                unlink($candidate->profile_picture);
+        if ($candidate) {
+            $cid = $candidate->id;
+            foreach ([
+                'job_applications'        => 'job_seeker_id',
+                'job_alerts'              => 'job_seeker_id',
+                'candidate_notifications' => 'candidate_id',
+                'job_seeker_experiences'  => 'job_seeker_id',
+                'job_seeker_education'    => 'job_seeker_id',
+                'job_seeker_industries'   => 'job_seeker_id',
+            ] as $table => $column) {
+                $safeDelete($table, $column, $cid);
             }
-            $data['profile_picture'] = null;
         }
 
-
-        /**
-         * RESUME UPLOAD
-         */
-        $resumeFile = $this->request->getFile('resume');
-        if ($resumeFile && $resumeFile->isValid()) {
-
-            if ($candidate->resume && file_exists($candidate->resume)) {
-                unlink($candidate->resume);
+        // Resume builder children are keyed by resume_id — clear them first.
+        try {
+            if ($db->tableExists('resumes')) {
+                $resumeIds = array_column($db->table('resumes')->select('id')->where('user_id', $user->id)->get()->getResultArray(), 'id');
+                if ($resumeIds) {
+                    foreach (['resume_autosaves', 'resume_education', 'resume_experiences', 'resume_skills'] as $child) {
+                        if ($db->tableExists($child)) {
+                            $db->table($child)->whereIn('resume_id', $resumeIds)->delete();
+                        }
+                    }
+                }
             }
-
-            $resumeName = $resumeFile->getRandomName();
-            $resumeFile->move($uploadPath, $resumeName);
-
-            $data['resume'] = $uploadPath . $resumeName;
-
-        } elseif ($this->request->getPost('remove_resume')) {
-
-            if ($candidate->resume && file_exists($candidate->resume)) {
-                unlink($candidate->resume);
-            }
-            $data['resume'] = null;
+        } catch (\Throwable $e) {
+            log_message('error', 'deleteAccount resume cleanup failed: ' . $e->getMessage());
         }
 
-        log_message('info', json_encode($data));
-
-        /**
-         * UPDATE CANDIDATE
-         */
-        $candidateModel->update($candidate->id, $data);
-
-        /**
-         * UPDATE INDUSTRIES
-         */
-        $industryIds = $this->request->getVar('industry_ids') ?? [];
-        $candidateIndustryModel->where('job_seeker_id', $candidate->id)->delete();
-
-        foreach ($industryIds as $industryId) {
-            $candidateIndustryModel->insert([
-                'job_seeker_id' => $candidate->id,
-                'industry_id'   => $industryId
-            ]);
+        foreach ([
+            'saved_jobs'          => 'user_id',
+            'job_clicks'          => 'user_id',
+            'wallets'             => 'user_id',
+            'resumes'             => 'user_id',
+            'course_certificates' => 'user_id',
+            'course_enrollments'  => 'user_id',
+            'job_seekers'         => 'user_id',
+        ] as $table => $column) {
+            $safeDelete($table, $column, $user->id);
         }
+
+        // Authoritative removal of the identity (purges auth_identities, tokens, etc.).
+        model(\CodeIgniter\Shield\Models\UserModel::class)->delete($user->id, true);
+
+        // End the session.
+        auth()->logout();
+        session()->destroy();
 
         return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Profile updated successfully.'
-        ])->setStatusCode(200);
+            'success'  => true,
+            'message'  => 'Your account and all associated data have been permanently deleted.',
+            'redirect' => site_url('/'),
+        ]);
     }
+
 
     public function applications()
     {
@@ -727,6 +938,10 @@ class JobSeekerController extends BaseController
             return redirect()->to('candidate/profile/edit')->with('error', 'Complete your profile first.');
         }
 
+        // Fetch in-app notifications for this candidate
+        $candidateNotifModel = model(\App\Models\CandidateNotificationModel::class);
+        $inAppNotifications = $candidateNotifModel->getNotifications((int)$candidate->id);
+
         // Fetch job alerts for this candidate
         $alerts = $alertModel
             ->where('job_seeker_id', $candidate->id)
@@ -744,15 +959,16 @@ class JobSeekerController extends BaseController
         $presetLocationId = $this->request->getGet('state');
 
         return view('candidate/notifications', [
-            'title'           => 'Job Alerts',
-            'user'            => $user,
-            'candidate'       => $candidate,
-            'alerts'          => $alerts,
-            'industries'      => $industries,
-            'categories'      => $categories,
-            'states'          => $states,
-            'presetKeyword'   => $presetKeyword,
-            'presetLocationId' => $presetLocationId
+            'title'              => 'Notifications & Job Alerts',
+            'user'               => $user,
+            'candidate'          => $candidate,
+            'inAppNotifications' => $inAppNotifications,
+            'alerts'             => $alerts,
+            'industries'         => $industries,
+            'categories'         => $categories,
+            'states'             => $states,
+            'presetKeyword'      => $presetKeyword,
+            'presetLocationId'   => $presetLocationId
         ]);
     }
 
@@ -772,8 +988,8 @@ class JobSeekerController extends BaseController
             'job_seeker_id' => $candidate->id,
             'keyword'       => $this->request->getPost('keyword'),
             'location_id'   => $this->request->getPost('location_id'),
-            'frequency'     => $this->request->getPost('frequency'),
-            'delivery_time' => $this->request->getPost('delivery_time'),
+            'frequency'     => $this->request->getPost('frequency') ?: 'daily',
+            'delivery_time' => $this->request->getPost('delivery_time') ?: '08:00',
             'channel'       => $this->request->getPost('channel') ?? 'email',
         ];
 
@@ -787,6 +1003,13 @@ class JobSeekerController extends BaseController
     public function deleteAlert($id)
     {
         $alertModel = model(JobAlertModel::class);
+        $user = $this->auth->user();
+
+        $alert = $alertModel->find($id);
+
+        if (! $alert || $alert->job_seeker_id != $this->getCandidateId($user->id)) {
+            return $this->response->setJSON(['success' => false]);
+        }
 
         if ($alertModel->delete($id)) {
             return $this->response->setJSON(['success' => true]);
@@ -875,6 +1098,99 @@ class JobSeekerController extends BaseController
     }
 
     /**
+     * Build an array of 7 integers: job-click counts per day (Mon → Sun) for the current week.
+     */
+    private function getWeeklyJobClicks(int $userId): array
+    {
+        $db = \Config\Database::connect();
+
+        // Monday of this week 00:00:00
+        $weekStart = date('Y-m-d 00:00:00', strtotime('monday this week'));
+        $weekEnd   = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+
+        $rows = $db->table('job_clicks')
+            ->select('DAYOFWEEK(created_at) as dow, COUNT(*) as cnt')
+            ->where('user_id', $userId)
+            ->where('created_at >=', $weekStart)
+            ->where('created_at <=', $weekEnd)
+            ->groupBy('DAYOFWEEK(created_at)')
+            ->get()
+            ->getResultArray();
+
+        // DAYOFWEEK returns: 1=Sun, 2=Mon, 3=Tue, … 7=Sat
+        // We want Mon→Sun (indices 0–6).
+        $map = [];
+        foreach ($rows as $r) {
+            // Convert DAYOFWEEK to 0-based Mon index
+            $dow = (int) $r['dow'];           // 1=Sun..7=Sat
+            $monIdx = ($dow + 5) % 7;          // Mon=0 … Sun=6
+            $map[$monIdx] = (int) $r['cnt'];
+        }
+
+        $result = [];
+        for ($i = 0; $i < 7; $i++) {
+            $result[] = $map[$i] ?? 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Parse the candidate's comma-separated skills string and compute a
+     * match percentage for each skill based on how often it appears in
+     * recommended job listings.
+     *
+     * Returns an array of objects with →name and →match properties.
+     */
+    private function buildSkillCategories(object $candidate, array $recommendedJobs): array
+    {
+        $rawSkills = trim((string) ($candidate->skills ?? ''));
+        if ($rawSkills === '') {
+            return [];
+        }
+
+        // Split on commas, semicolons, or newlines; trim each; deduplicate
+        $candidateSkills = array_values(array_unique(
+            array_map('trim', preg_split('/[,;\n]+/', $rawSkills))
+        ));
+
+        if (empty($candidateSkills)) {
+            return [];
+        }
+
+        // Build a combined text blob from recommended job titles + descriptions
+        $jobText = strtolower(implode(' ', array_map(
+            fn($j) => ($j->title ?? '') . ' ' . ($j->description ?? ''),
+            $recommendedJobs
+        )));
+
+        $jobCount = max(1, count($recommendedJobs));
+
+        $categories = [];
+        foreach ($candidateSkills as $skill) {
+            $lower = strtolower($skill);
+            // Count how many recommended jobs mention this skill
+            $matches = 0;
+            foreach ($recommendedJobs as $job) {
+                $haystack = strtolower(($job->title ?? '') . ' ' . ($job->description ?? '') . ' ' . ($job->skills ?? ''));
+                if (str_contains($haystack, $lower)) {
+                    $matches++;
+                }
+            }
+            $pct = (int) round(($matches / $jobCount) * 100);
+
+            $obj = new \stdClass();
+            $obj->name  = $skill;
+            $obj->match = $pct;
+            $categories[] = $obj;
+        }
+
+        // Sort by match descending, keep top 6
+        usort($categories, fn($a, $b) => $b->match <=> $a->match);
+        return array_slice($categories, 0, 6);
+    }
+
+    /**
      * GDPR: Export all user data
      */
     public function exportData()
@@ -893,14 +1209,37 @@ class JobSeekerController extends BaseController
             'profile' => $candidate ? [
                 'full_name' => $candidate->full_name ?? '',
                 'phone' => $candidate->phone ?? '',
+                'dob' => $candidate->dob ?? '',
+                'gender' => $candidate->gender ?? '',
                 'bio' => $candidate->bio ?? '',
                 'skills' => $candidate->skills ?? '',
+                'languages' => $candidate->languages ?? '',
                 'experience_years' => $candidate->experience_years ?? '',
                 'education_level' => $candidate->education_level ?? '',
                 'job_title' => $candidate->job_title ?? '',
+                'employment_type' => $candidate->employment_type ?? '',
                 'location' => $candidate->location ?? '',
+                'desired_salary' => $candidate->desired_salary ?? '',
+                'salary_type' => $candidate->salary_type ?? '',
+                'availability' => $candidate->availability ?? '',
+                'portfolio' => $candidate->portfolio ?? '',
                 'resume' => $candidate->resume ?? '',
+                'is_visible' => $candidate->is_visible ?? '',
+                'notification_preferences' => [
+                    'job_alerts' => $candidate->notify_job_alerts ?? '',
+                    'application_updates' => $candidate->notify_application_updates ?? '',
+                    'messages' => $candidate->notify_messages ?? '',
+                    'marketing' => $candidate->notify_marketing ?? '',
+                ],
             ] : [],
+            'work_experience' => $candidate
+                ? model(\App\Models\JobSeekerExperienceModel::class)->forSeeker($candidate->id)
+                : [],
+            'education' => $candidate
+                ? model(\App\Models\JobSeekerEducationModel::class)->forSeeker($candidate->id)
+                : [],
+            'certificates' => model(\App\Models\CourseCertificateModel::class)
+                ->getUserCertificates($this->auth->user()->id),
             'applications' => model(\App\Models\JobApplicationModel::class)
                 ->where('job_seeker_id', $candidate?->id)
                 ->findAll(),
@@ -932,10 +1271,9 @@ class JobSeekerController extends BaseController
         }
 
         $transactions = [];
-
         $db = \Config\Database::connect();
 
-        // Get course enrollments with payments
+        // 1. Get course enrollments with payments
         if ($db->tableExists('course_enrollments') && $db->tableExists('courses')) {
             $enrollments = model(\App\Models\CourseEnrollmentModel::class)
                 ->select('course_enrollments.*, courses.title as course_name')
@@ -945,19 +1283,22 @@ class JobSeekerController extends BaseController
                 ->findAll();
 
             foreach ($enrollments as $enr) {
+                $enrObj = (object)$enr;
                 $transactions[] = [
-                    'type' => 'course',
-                    'description' => 'Course: ' . ($enr->course_name ?? 'Unknown'),
-                    'reference' => $enr->payment_reference ?? 'FREE-' . $enr->id,
-                    'amount' => (float) ($enr->amount ?? 0),
-                    'status' => $enr->payment_reference ? 'paid' : ($enr->amount > 0 ? 'pending' : 'free'),
-                    'date' => $enr->created_at ?? '',
-                    'icon' => 'ti ti-book',
+                    'type'        => 'course',
+                    'description' => 'Course: ' . ($enrObj->course_name ?? 'Unknown'),
+                    'reference'   => $enrObj->payment_reference ?? 'FREE-' . ($enrObj->id ?? ''),
+                    'amount'      => (float) ($enrObj->amount ?? 0),
+                    'status'      => $enrObj->payment_reference ? 'success' : ($enrObj->amount > 0 ? 'pending' : 'success'),
+                    'date'        => $enrObj->created_at ?? '',
+                    'created_at'  => $enrObj->created_at ?? '',
+                    'icon'        => 'ti ti-book',
+                    'receipt_url' => '',
                 ];
             }
         }
 
-        // Get subscription payments
+        // 2. Get subscription payments
         if ($db->tableExists('payments')) {
             $payments = model(\App\Models\PaymentModel::class)
                 ->where('user_id', $user->id)
@@ -965,38 +1306,109 @@ class JobSeekerController extends BaseController
                 ->findAll();
 
             foreach ($payments as $pay) {
-                $metadata = is_string($pay['metadata']) ? json_decode($pay['metadata'], true) : ($pay['metadata'] ?? []);
+                $payObj = (object)$pay;
+                $metadata = is_string($payObj->metadata) ? json_decode($payObj->metadata, true) : (array)($payObj->metadata ?? []);
                 $desc = 'Subscription Payment';
                 if (!empty($metadata['plan_id']) && $db->tableExists('plans')) {
                     $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
                     $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
                 }
                 $transactions[] = [
-                    'type' => 'subscription',
+                    'type'        => 'subscription',
                     'description' => $desc,
-                    'reference' => $pay['reference'] ?? '',
-                    'amount' => (float) ($pay['amount'] ?? 0),
-                    'status' => $pay['status'] ?? 'pending',
-                    'date' => $pay['paid_at'] ?? $pay['created_at'] ?? '',
-                    'icon' => 'ti ti-credit-card',
+                    'reference'   => $payObj->reference ?? '',
+                    'amount'      => (float) ($payObj->amount ?? 0),
+                    'status'      => $payObj->status ?? 'pending',
+                    'date'        => $payObj->paid_at ?? $payObj->created_at ?? '',
+                    'created_at'  => $payObj->paid_at ?? $payObj->created_at ?? '',
+                    'icon'        => 'ti ti-credit-card',
+                    'receipt_url' => '',
                 ];
+            }
+        }
+
+        // 3. Get wallet transactions (funding, rewards, etc.)
+        if ($db->tableExists('wallets') && $db->tableExists('wallet_transactions')) {
+            $walletModel = model(\App\Models\WalletModel::class);
+            $wallet = $walletModel->where('user_id', $user->id)->first();
+            if ($wallet) {
+                $walletObj = (object)$wallet;
+                $walletTxns = model(\App\Models\WalletTransactionModel::class)
+                    ->where('wallet_id', $walletObj->id)
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+                foreach ($walletTxns as $wt) {
+                    $wtObj = (object)$wt;
+                    $transactions[] = [
+                        'type'        => $wtObj->type ?? 'wallet',
+                        'description' => $wtObj->description ?? 'Wallet Transaction',
+                        'reference'   => $wtObj->reference ?? 'WTX-' . ($wtObj->id ?? ''),
+                        'amount'      => (float) ($wtObj->amount ?? 0),
+                        'status'      => 'success',
+                        'date'        => $wtObj->created_at ?? '',
+                        'created_at'  => $wtObj->created_at ?? '',
+                        'icon'        => 'ti ti-wallet',
+                        'receipt_url' => '',
+                    ];
+                }
             }
         }
 
         // Sort by date desc
         usort($transactions, function ($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
-        $totalSpent = array_sum(array_column(
-            array_filter($transactions, fn($t) => in_array($t['status'], ['paid', 'completed'])),
-            'amount'
-        ));
+        // Compute totals safely from completed/success status
+        $totalSpent = 0;
+        $successCount = 0;
+        foreach ($transactions as $t) {
+            $statusLow = strtolower($t['status'] ?? '');
+            $typeLow   = strtolower($t['type'] ?? '');
+            $isSuccess = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']);
+            
+            if ($isSuccess) {
+                $successCount++;
+                // If it is a debit (spent), increment totalSpent. 
+                // Wallet credits (e.g. credit/reward) are not "spent".
+                if ($typeLow !== 'credit' && !str_contains(strtolower($t['description']), 'reward')) {
+                    $totalSpent += $t['amount'];
+                }
+            }
+        }
 
         return view('candidate/transactions', [
-            'title' => 'Transaction History',
+            'title'        => 'Transaction History',
             'transactions' => $transactions,
-            'totalSpent' => $totalSpent,
+            'totalSpent'   => $totalSpent,
         ]);
+    }
+
+    /**
+     * Check profile completion percentage and credit wallet rewards (₦500 at 80% completion threshold).
+     */
+    protected function checkAndRewardProfileCompletion(int $userId, int $completionPct): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        try {
+            $walletService = new \App\Services\WalletService();
+
+            if ($completionPct >= 80) {
+                $ref80 = 'profile_reward_80_user_' . $userId;
+                $walletService->credit(
+                    $userId,
+                    500.00,
+                    'profile_reward',
+                    $ref80,
+                    null,
+                    '₦500 Profile Completion Incentive (80%+ Completion)'
+                );
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Profile reward error for user ' . $userId . ': ' . $e->getMessage());
+        }
     }
 }

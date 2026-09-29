@@ -19,33 +19,37 @@
                 <div class="box-border-single">
                     <div class="row mt-10">
                         <div class="col-lg-8 col-md-12">
-                            <h3><?= esc($job->title) ?> - <?= esc($job->job_type) ?></h3>
+                            <h1 class="h3 text-dark fw-bold mb-2"><?= esc($job->title) ?> - <?= esc($job->job_type) ?></h1>
                             <div class="mt-0 mb-15">
                                 <span class="card-briefcase"><?= esc(ucfirst($job->job_type)) ?></span>
                                 <span class="card-time"><?= humanize_time($job->created_at) ?></span>
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-12 text-lg-end">
-                            <div class="btn btn-apply-icon btn-apply btn-apply-big hover-up" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                            <?php if (($job->application_method ?? 'form') === 'form'): ?>
+                                <a class="btn btn-apply-icon btn-apply btn-apply-big hover-up" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
+                            <?php else: ?>
+                                <a class="btn btn-apply-icon btn-apply btn-apply-big hover-up" href="<?= site_url('job/start-application/' . $job->id) ?>" target="_blank">Apply now</a>
+                            <?php endif; ?>
                             <!-- <a class="btn btn-border ms-2" href="<?= site_url('jobs/save/' . $job->id) ?>">Save job</a> -->
                         </div>
                     </div>
                     <div class="border-bottom pt-10 pb-10"></div>
                     <div class="banner-hero banner-image-single mt-10 mb-20">
-                        <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>" alt="JobberRecruit">
+                        <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>" alt="<?= esc($job->employer_name ?? 'Company') ?> logo">
                     </div>
                     <div class="job-overview">
                         <h5 class="border-bottom pb-15 mb-30">Overview</h5>
                         <div class="row">
                             <div class="col-md-6 d-flex">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/industry.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/industry.svg'); ?>" alt="Industry icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description industry-icon mb-10">Industry</span>
                                     <strong class="small-heading"><?= esc($job->industry_name) ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-level.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-level.svg'); ?>" alt="Job level icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description joblevel-icon mb-10">Job level</span>
                                     <strong class="small-heading"><?= esc(ucfirst($job->experience_level)) ?> Level</strong>
@@ -54,14 +58,14 @@
                         </div>
                         <div class="row mt-25">
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/salary.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/salary.svg'); ?>" alt="Salary icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description salary-icon mb-10">Salary</span>
                                     <strong class="small-heading"><?= esc($job->salary) ?: 'Negotiable' ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/experience.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/experience.svg'); ?>" alt="Experience icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description experience-icon mb-10">Experience</span>
                                     <strong class="small-heading"><?= esc($job->experience) ?? '3+' ?> years</strong>
@@ -70,14 +74,14 @@
                         </div>
                         <div class="row mt-25">
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-type.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/job-type.svg'); ?>" alt="Job type icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description jobtype-icon mb-10">Job type</span>
                                     <strong class="small-heading"><?= esc(ucfirst($job->job_type)) ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/deadline.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/deadline.svg'); ?>" alt="Deadline icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description mb-10">Deadline</span>
                                     <strong class="small-heading"><?= date('d/m/Y', strtotime($job->deadline ?? 'now')) ?></strong>
@@ -86,14 +90,14 @@
                         </div>
                         <div class="row mt-25">
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/updated.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/updated.svg'); ?>" alt="Updated icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description jobtype-icon mb-10">Updated</span>
                                     <strong class="small-heading"><?= date('d/m/Y', strtotime($job->updated_at ?? 'now')) ?></strong>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex mt-sm-15">
-                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/location.svg'); ?>" alt="JobberRecruit"></div>
+                                <div class="sidebar-icon-item"><img src="<?= base_url('assets/imgs/page/job-single/location.svg'); ?>" alt="Location icon"></div>
                                 <div class="sidebar-text-info ml-10">
                                     <span class="text-description mb-10">Location</span>
                                     <strong class="small-heading"><?= esc($job->location) ?> <?= $job->work_arrangement ? ' (' . ucfirst($job->work_arrangement) . ')' : '' ?></strong>
@@ -126,7 +130,7 @@
                     <div class="single-apply-jobs" data-inflow-cta>
                         <div class="row align-items-center">
                             <div class="col-md-5">
-                                <a class="btn btn-default mr-15" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+                                <a class="btn btn-default mr-15" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
                                 <a class="btn btn-border" href="<?= site_url('jobs/save/' . $job->id) ?>">Save job</a>
                             </div>
                             <div class="col-md-7 text-lg-end social-share">
@@ -231,7 +235,7 @@
                                             <div class="row">
                                                 <div class="col-lg-7 col-7"><span class="card-text-price">$<?= number_format($featured->salary, 2) ?></span><span class="text-muted">/<?= $featured->salary_period ?? 'Hour' ?></span></div>
                                                 <div class="col-lg-5 col-5 text-end">
-                                                    <div class="btn btn-apply-now" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</div>
+                                                    <a class="btn btn-apply-now" href="<?= base_url('job/application/' . $featured->id) ?>">Apply now</a>
                                                 </div>
                                             </div>
                                         </div>
@@ -259,7 +263,11 @@
         <a class="jr-save" href="<?= site_url('jobs/save/' . $job->id) ?>" aria-label="Save job">
             <i class="fi-rr-heart"></i>
         </a>
-        <a class="btn btn-default" href="#" data-bs-toggle="modal" data-bs-target="#ModalApplyJobForm">Apply now</a>
+        <?php if (($job->application_method ?? 'form') === 'form'): ?>
+            <a class="btn btn-default" href="<?= base_url('job/application/' . $job->id) ?>">Apply now</a>
+        <?php else: ?>
+            <a class="btn btn-default" href="<?= site_url('job/start-application/' . $job->id) ?>" target="_blank">Apply now</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -302,6 +310,61 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php
+// Prepare JobPosting Schema Markup
+$isoDatePosted = date('c', strtotime($job->created_at ?? 'now'));
+$isoValidThrough = !empty($job->closing_date) ? date('c', strtotime($job->closing_date)) : date('c', strtotime('+30 days', strtotime($job->created_at ?? 'now')));
+
+$employmentTypeMap = [
+    'full-time' => 'FULL_TIME',
+    'part-time' => 'PART_TIME',
+    'contract'  => 'CONTRACTOR',
+    'internship'=> 'INTERN',
+    'temporary' => 'TEMPORARY',
+    'volunteer' => 'VOLUNTEER',
+];
+$schemaJobType = $employmentTypeMap[strtolower($job->job_type ?? '')] ?? 'FULL_TIME';
+
+$schemaData = [
+    "@context" => "https://schema.org/",
+    "@type" => "JobPosting",
+    "title" => $job->title ?? '',
+    "description" => isset($job->description) ? strip_tags($job->description) : '',
+    "datePosted" => $isoDatePosted,
+    "validThrough" => $isoValidThrough,
+    "employmentType" => $schemaJobType,
+    "hiringOrganization" => [
+        "@type" => "Organization",
+        "name" => $job->employer_name ?? 'Confidential',
+        "sameAs" => isset($job->employer_id) ? base_url("employer/{$job->employer_id}") : base_url(),
+        "logo" => resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company')
+    ],
+    "jobLocation" => [
+        "@type" => "Place",
+        "address" => [
+            "@type" => "PostalAddress",
+            "addressLocality" => $job->lga ?? '',
+            "addressRegion" => $job->state ?? '',
+            "addressCountry" => "NG"
+        ]
+    ]
+];
+
+if (!empty($job->salary)) {
+    $schemaData["baseSalary"] = [
+        "@type" => "MonetaryAmount",
+        "currency" => "NGN",
+        "value" => [
+            "@type" => "QuantitativeValue",
+            "value" => $job->salary,
+            "unitText" => "MONTH"
+        ]
+    ];
+}
+?>
+<script type="application/ld+json">
+<?= json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?>
+</script>
 <script>
     $(document).ready(function() {
         $('#applyJobForm').on('submit', function(e) {

@@ -1,0 +1,239 @@
+{
+  "id": "019f3c7d-a031-76d7-b6c4-d6d7a22a9552",
+  "name": "Candidate Status Visibility",
+  "description": "Application status tracking — let candidates see \"viewed / shortlisted / rejected\" states; you already have the models for it.\nSitemap + structured data for Google Jobs — JobPosting schema markup on job detail pages gets you into Google's job search widget, which is free high-intent traffic.",
+  "status": "paused",
+  "worktree": {
+    "path": "/mnt/c/Users/hephz/Documents/CODEBASE/Jobberrecruit",
+    "branch": "main",
+    "commit": "97c6c9b2e0ff4e658505305405353d73ef15d557"
+  },
+  "scoping": {
+    "goal": {
+      "answer": "Let job seekers see real-time, auditable status changes on every application they submit, delivered both in-app and via email, by adding a status-history backbone to the existing `job_applications.status` column and wiring it to the employer-side controllers that already mutate status.",
+      "confirmedAt": "2026-07-07T12:25:31.897Z"
+    },
+    "criteria": {
+      "answer": "New migration creates a `job_application_status_history` table (id, application_id FK, old_status, new_status, changed_by_user_id FK nullable, message text nullable, created_at) and is applied locally without error (`php spark migrate` exits 0).\nNew migration creates a `candidate_notifications` table mirroring the employer-side schema (id, candidate_id FK, application_id FK, type, title, message, is_read, read_at, created_at, updated_at) and applies cleanly alongside the status-history migration.\nWhen an employer opens a candidate's application detail page for the first time, `job_applications.status` flips from `pending` to `viewed` and exactly one history row is written; subsequent opens do not duplicate the row. Verified by an integration test that calls `viewApplication($id)` twice and asserts one row in `job_application_status_history`.\nEmployers can transition status to `reviewed`, `shortlisted`, `rejected`, or `hired` from the existing employer-side UI; each transition writes one history row and updates the application row inside a single DB transaction. Verified by a unit test against `JobApplicationModel::recordStatusChange()`.\nCandidate `candidate/applications` list page renders a colored status badge per row showing one of: Pending, Viewed, Reviewed, Shortlisted, Rejected, Hired. Verified by HTML snapshot containing the badge markup for a seeded application.\nCandidate `candidate/applications/view/:id` detail page renders a vertical status-change timeline (most-recent-first) with timestamp, status label, employer name when known, and the optional employer message. Verified by snapshot against a seeded application with three history rows.\nOn every status transition, one row is inserted into `candidate_notifications` for the recipient AND a transactional email is sent via CI4's email service using the existing `emails/application_status.php` template (already candidate-facing). Verified by a feature test asserting one notification row + one `send()` call per transition; the email subject contains the new status label.\n`JobApplicationModel` exposes three new public methods — `recordStatusChange(int $applicationId, string $newStatus, ?int $changedByUserId, ?string $message): bool`, `getStatusHistory(int $applicationId): array`, and `markViewedOnFirstOpen(int $applicationId, int $employerUserId): void` — each with PHPUnit unit-test coverage.\nManual end-to-end smoke run: candidate applies → employer opens application → candidate sees 'Viewed' badge in list, the timeline gains a row, the bell increments, and an email arrives → employer marks 'Shortlisted' → all four signals update again. Results captured under `scratch/application_status_tracking_smoke.md`.",
+      "confirmedAt": "2026-07-07T12:25:31.897Z"
+    },
+    "constraints": {
+      "answer": "No new composer dependencies. Use only the libraries already declared in `composer.json` (CodeIgniter 4, Shield, dompdf, spatie/browsershot)., Reuse existing `job_applications.status` column. Its current VARCHAR(20) already accommodates the new 'viewed' and 'rejected' values; no schema change on the parent table., Reuse the existing candidate-facing email template `app/Views/emails/application_status.php` without rewriting it; only add or rename variables if absolutely necessary., Do not modify `JobNotificationModel` or `job_notifications` table — those are employer-keyed. Candidate in-app notifications live in a new parallel `candidate_notifications` table., Existing employer-side AJAX endpoint `EmployerController::updateApplicationStatus` (line 2491) must remain backward-compatible: same request/response shape, same auth filter., Existing `candidate/applications` and `candidate/applications/view/(:num)` routes must continue to render; new data is additive, not a rewrite of the controller signature., All DB writes that span multiple tables (status row + history row + notification row) must run inside a single `CodeIgniter\\Database\\BaseConnection::transStart()` / `transComplete()` block.",
+      "confirmedAt": "2026-07-07T12:25:31.897Z"
+    },
+    "phases": {
+      "answer": "Build the candidate-facing status surface",
+      "confirmedAt": "2026-07-07T12:25:31.897Z"
+    },
+    "assumptions": {
+      "answer": "The existing `application_status.php` email template is already candidate-facing and ships with all the variables we need (`$name`, `$statusLabel`, `$statusColor`, `$message`, `$isGuest`, `$companyName`); no rewrite required. The employer-side code already has a stub `sendStatusUpdateEmail` helper commented out at `EmployerController.php:2536` that previously handled this exact job — we re-enable it as a thin wrapper over the new `ApplicationStatusService` rather than introducing a parallel sender. The existing `JobSeekerController::notifications()` route currently renders no usable content for candidates (the underlying `JobNotificationModel` is keyed on `employer_id`); swapping its backing model to the new `CandidateNotificationModel` is treated as an additive fix within scope. The new `job_application_status_history` and `candidate_notifications` tables mirror the conventions of `application_notes` and `job_notifications` respectively (FKs with ON DELETE CASCADE for application-owned rows; DATETIME timestamps; identical index strategy). 'viewed' and 'rejected' are added as new in-use values for the existing `job_applications.status` VARCHAR(20) column; the application's existing places that already write 'reviewed', 'shortlisted', and 'hired' need no logic changes. Manual smoke testing is performed by the operator against the local dev DB because no staging environment is configured in `.env`.",
+      "confirmedAt": "2026-07-07T12:25:31.897Z"
+    }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "index": 1,
+      "name": "Build the candidate-facing status surface",
+      "goal": "Add the persistence backbone (status-history + candidate-notifications tables), wire all status-change entry points through a single transactional service, and surface the result to the candidate on the existing list and detail pages plus email + bell.",
+      "description": "One phase, ordered steps. Each step's output feeds the next; later steps read from artifacts created earlier in the same phase.",
+      "parallel": false,
+      "status": "active",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Create migration `YYYY-MM-DD-HHIISS_CreateApplicationStatusHistory.php` for `job_application_status_history` (id PK, application_id FK→job_applications.id ON DELETE CASCADE, old_status VARCHAR(20), new_status VARCHAR(20), changed_by_user_id INT UNSIGNED NULL, message TEXT NULL, created_at DATETIME). Add index on (application_id, created_at).",
+          "status": "verified",
+          "verification": {
+            "command": "php spark migrate --all exits 0; SHOW CREATE TABLE job_application_status_history contains the FK and index.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-07-07T12:27:55.931Z",
+          "completedAt": "2026-07-07T13:05:49.123Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-07-07T13:05:49.123Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Create migration `YYYY-MM-DD-HHIISS_CreateCandidateNotifications.php` for `candidate_notifications` (id PK, candidate_id FK→job_seekers.id ON DELETE CASCADE, application_id FK→job_applications.id ON DELETE CASCADE, type VARCHAR(40), title VARCHAR(255), message TEXT, is_read TINYINT(1) DEFAULT 0, read_at DATETIME NULL, created_at, updated_at). Add index on (candidate_id, is_read, created_at).",
+          "status": "verified",
+          "verification": {
+            "command": "php spark migrate --all exits 0; SHOW CREATE TABLE candidate_notifications contains both FKs and the composite index.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-07-07T13:07:48.887Z",
+          "completedAt": "2026-07-07T13:13:23.796Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-07-07T13:13:23.796Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Create `app/Models/JobApplicationStatusHistoryModel.php` (table = `job_application_status_history`, returnType = array, allowedFields = all six). Add `getForApplication(int $applicationId): array` ordered by created_at DESC.",
+          "status": "verified",
+          "verification": {
+            "command": "PHPUnit test `tests/unit/JobApplicationStatusHistoryModelTest.php` covers insert + retrieval ordering; passes.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-07-07T13:15:27.224Z",
+          "completedAt": "2026-07-07T13:26:21.824Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-07-07T13:26:21.824Z"
+          }
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Create `app/Models/CandidateNotificationModel.php` mirroring `JobNotificationModel`'s public surface but keyed on `candidate_id`: add TYPE constants `TYPE_APPLICATION_VIEWED`, `TYPE_APPLICATION_STATUS_CHANGED`, methods `createNotification(int $candidateId, string $type, string $title, string $message, ?int $applicationId)`, `getUnreadCount(int $candidateId)`, `getNotifications(int $candidateId, int $limit = 20, int $offset = 0)`, `markAsRead(int $notificationId, int $candidateId)`, `markAllAsRead(int $candidateId)`, and static `getTypeInfo(string $type)`.",
+          "status": "verified",
+          "verification": {
+            "command": "PHPUnit test `tests/unit/CandidateNotificationModelTest.php` covers insert + unread count + mark-read; passes.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-07-07T13:30:27.035Z",
+          "completedAt": "2026-07-07T13:44:02.688Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-07-07T13:44:02.688Z"
+          }
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Extend `app/Models/JobApplicationModel.php` with three public methods: `recordStatusChange(int $applicationId, string $newStatus, ?int $changedByUserId, ?string $message): bool` (updates `job_applications.status` and inserts a history row inside a `transStart()/transComplete()` block, returns false on transaction failure), `getStatusHistory(int $applicationId): array` (joins to `users` to surface changed_by_user's full name), and `markViewedOnFirstOpen(int $applicationId, int $employerUserId): void` (no-op when current status is not `pending`; otherwise delegates to `recordStatusChange` with newStatus='viewed').",
+          "status": "verified",
+          "verification": {
+            "command": "PHPUnit test `tests/unit/JobApplicationModelStatusTest.php` covers: idempotent viewed-mark (second call writes no row), history ordered DESC, transaction rolls back on history-row insert failure.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-07-07T13:46:40.429Z",
+          "completedAt": "2026-07-07T13:58:34.214Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-07-07T13:58:34.214Z"
+          }
+        },
+        {
+          "id": "step-6",
+          "index": 6,
+          "description": "Create `app/Services/ApplicationStatusService.php` exposing `transition(int $applicationId, string $newStatus, int $changedByUserId, ?string $message): array` returning `['success' => bool, 'error' => ?string]`. Inside one CI4 transaction: call `JobApplicationModel::recordStatusChange()`, then on success resolve the candidate user from `job_seekers` joined to `users`, then call `CandidateNotificationModel::createNotification(...)` with type `TYPE_APPLICATION_STATUS_CHANGED`, then call CI4 `email` service with the existing `app/Views/emails/application_status.php` template and the variables it expects (`name`, `statusLabel`, `statusColor`, `message`, `isGuest`, `companyName`). Status-label/color lookup is a private static array covering the six values. Any thrown exception in the email step is logged via `log_message('error', ...)` but does NOT roll back the DB transaction (email failure is non-fatal — verified by test).",
+          "status": "pending",
+          "verification": {
+            "command": "PHPUnit feature test `tests/feature/ApplicationStatusServiceTest.php` stubs the email service, asserts: one history row per transition, one notification row per transition, email.send called once with status label in subject, and that a forced email exception leaves DB state intact.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-7",
+          "index": 7,
+          "description": "Modify `app/Controllers/EmployerController.php` in two places. (a) Inside `viewApplication($id)` (around line 2640), immediately after ownership verification, call `model(JobApplicationModel::class)->markViewedOnFirstOpen($id, $user->id)` — fire-and-forget, no redirect changes. (b) Inside the existing AJAX `updateApplicationStatus` (line 2491), replace the direct `$applicationModel->set(['status' => $status])->update()` with a call to `ApplicationStatusService::transition($id, $status, $user->id, $message)`. Preserve the existing JSON response shape.",
+          "status": "pending",
+          "verification": {
+            "command": "Integration test `tests/integration/EmployerViewApplicationViewedTest.php` calls the route twice for a pending application and asserts exactly one history row with new_status='viewed'; existing AJAX endpoint test (manual curl in `scratch/`) shows identical response shape and the new history row.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-8",
+          "index": 8,
+          "description": "Modify `app/Controllers/JobSeekerController.php` in two places. (a) In `applications()` (line 573), extend the SELECT with `job_applications.status` (already selected) and pass a precomputed `statusBadges` array (id → label + color) to the view using the same lookup table the service uses. (b) In `viewApplication($id)` (line 634), call `JobApplicationModel::getStatusHistory($id)` and pass it as `statusHistory` to the view. (c) In `notifications()` (line ~651), swap the backing model from `JobNotificationModel` to `CandidateNotificationModel` and update the view path from any employer bell partial to the candidate bell partial.",
+          "status": "pending",
+          "verification": {
+            "command": "Feature test `tests/integration/CandidateApplicationsListTest.php` asserts that for an application with status='shortlisted' the rendered HTML contains the label 'Shortlisted'; feature test for the detail view asserts that a 3-row history renders 3 timeline items in DESC order.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-9",
+          "index": 9,
+          "description": "Update `app/Views/candidate/applications.php` to render a `<span class=\"badge bg-{color}\">{label}</span>` per row using `$statusBadges[$app->id]`. Update `app/Views/candidate/view_application.php` to render a `<ul class=\"timeline\">` of `$statusHistory` items showing timestamp, label, employer name when present, and the optional message. Both changes are additive — existing markup stays.",
+          "status": "pending",
+          "verification": {
+            "command": "HTML snapshot tests capture both views and assert badge/timeline markup; manual screenshot saved to `scratch/candidate_applications_status.png` and `scratch/candidate_application_detail_timeline.png`.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-10",
+          "index": 10,
+          "description": "Run the full verification checklist: `php spark migrate`, `vendor/bin/phpunit` (all tests green), and execute the manual end-to-end smoke run, writing results to `scratch/application_status_tracking_smoke.md`. All eight success criteria must be ticked.",
+          "status": "pending",
+          "verification": {
+            "command": "Exit codes: php spark migrate = 0; vendor/bin/phpunit = 0; manual checklist file exists and every item is marked PASS.",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        }
+      ],
+      "startedAt": "2026-07-07T12:26:13.526Z"
+    }
+  ],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-07-07T12:11:33.809Z",
+  "updatedAt": "2026-07-09T20:34:28.407Z",
+  "goal": "Let job seekers see real-time, auditable status changes on every application they submit, delivered both in-app and via email, by adding a status-history backbone to the existing `job_applications.status` column and wiring it to the employer-side controllers that already mutate status.",
+  "successCriteria": [
+    "New migration creates a `job_application_status_history` table (id, application_id FK, old_status, new_status, changed_by_user_id FK nullable, message text nullable, created_at) and is applied locally without error (`php spark migrate` exits 0).",
+    "New migration creates a `candidate_notifications` table mirroring the employer-side schema (id, candidate_id FK, application_id FK, type, title, message, is_read, read_at, created_at, updated_at) and applies cleanly alongside the status-history migration.",
+    "When an employer opens a candidate's application detail page for the first time, `job_applications.status` flips from `pending` to `viewed` and exactly one history row is written; subsequent opens do not duplicate the row. Verified by an integration test that calls `viewApplication($id)` twice and asserts one row in `job_application_status_history`.",
+    "Employers can transition status to `reviewed`, `shortlisted`, `rejected`, or `hired` from the existing employer-side UI; each transition writes one history row and updates the application row inside a single DB transaction. Verified by a unit test against `JobApplicationModel::recordStatusChange()`.",
+    "Candidate `candidate/applications` list page renders a colored status badge per row showing one of: Pending, Viewed, Reviewed, Shortlisted, Rejected, Hired. Verified by HTML snapshot containing the badge markup for a seeded application.",
+    "Candidate `candidate/applications/view/:id` detail page renders a vertical status-change timeline (most-recent-first) with timestamp, status label, employer name when known, and the optional employer message. Verified by snapshot against a seeded application with three history rows.",
+    "On every status transition, one row is inserted into `candidate_notifications` for the recipient AND a transactional email is sent via CI4's email service using the existing `emails/application_status.php` template (already candidate-facing). Verified by a feature test asserting one notification row + one `send()` call per transition; the email subject contains the new status label.",
+    "`JobApplicationModel` exposes three new public methods — `recordStatusChange(int $applicationId, string $newStatus, ?int $changedByUserId, ?string $message): bool`, `getStatusHistory(int $applicationId): array`, and `markViewedOnFirstOpen(int $applicationId, int $employerUserId): void` — each with PHPUnit unit-test coverage.",
+    "Manual end-to-end smoke run: candidate applies → employer opens application → candidate sees 'Viewed' badge in list, the timeline gains a row, the bell increments, and an email arrives → employer marks 'Shortlisted' → all four signals update again. Results captured under `scratch/application_status_tracking_smoke.md`."
+  ],
+  "constraints": [
+    "No new composer dependencies. Use only the libraries already declared in `composer.json` (CodeIgniter 4, Shield, dompdf, spatie/browsershot).",
+    "Reuse existing `job_applications.status` column. Its current VARCHAR(20) already accommodates the new 'viewed' and 'rejected' values; no schema change on the parent table.",
+    "Reuse the existing candidate-facing email template `app/Views/emails/application_status.php` without rewriting it; only add or rename variables if absolutely necessary.",
+    "Do not modify `JobNotificationModel` or `job_notifications` table — those are employer-keyed. Candidate in-app notifications live in a new parallel `candidate_notifications` table.",
+    "Existing employer-side AJAX endpoint `EmployerController::updateApplicationStatus` (line 2491) must remain backward-compatible: same request/response shape, same auth filter.",
+    "Existing `candidate/applications` and `candidate/applications/view/(:num)` routes must continue to render; new data is additive, not a rewrite of the controller signature.",
+    "All DB writes that span multiple tables (status row + history row + notification row) must run inside a single `CodeIgniter\\Database\\BaseConnection::transStart()` / `transComplete()` block."
+  ],
+  "lastActiveAt": "2026-07-07T12:26:13.526Z",
+  "activePhaseId": "phase-1"
+}

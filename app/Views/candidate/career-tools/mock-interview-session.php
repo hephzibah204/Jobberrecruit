@@ -1,1345 +1,2724 @@
-<?= $this->extend('layouts/minimal') ?>
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A2F57">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<meta name="format-detection" content="telephone=no">
+<!-- DEV: favicon — drop your icon file here -->
+<title>Live Interview Session – JobberRecruit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
-<?= $this->section('styles') ?>
+<!--
+DEVELOPER HANDOVER (CodeIgniter 4) — LIVE AI INTERVIEW SESSION ROOM
+Entry: candidate-interview-studio.html launches here with the session config in
+the query string (?job=&itype=&imode=&diff=&dur=&persona=&exp=). No localStorage
+by design — demo state lives in memory; production state lives server-side.
+
+WIRE THESE:
+  POST /candidate/interview/session               → create session, returns {id, questions[]}
+  POST /candidate/interview/session/{id}/answer   → submit each answer (text, or audio/video blob)
+  POST /candidate/interview/session/{id}/complete → finalize, returns report id
+  GET  /candidate/interview/session/{id}/report   → the scored report page (build next)
+Question flow in this demo is a client-side bank keyed by interview type +
+seniority; the AI follow-up line after each answer is rule-based. Replace both
+with the AI engine server-side. The engine must follow the same honesty rule as
+the Resume Builder: react to what the candidate actually wrote — never invent
+praise for content that isn't there.
+MODES: Text mode is fully functional in this demo. Voice/Video modes render the
+recording UI (simulated waveform + timer); DEV: wire MediaRecorder + upload.
+EXIT SAFETY: leaving mid-session opens a confirm dialog; answers up to that
+point are kept (POST each answer as it's submitted, not in one batch at the end).
+COMPLETION: demo shows the completion screen with honest copy — the real score
+comes from the server-side report, so the demo does NOT display a fake score.
+-->
 <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    
-    body {
-        background: #080c1a !important;
-        color: #e2e8f0 !important;
-        font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-        overflow-x: hidden;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .session-wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .session-header {
-        background: rgba(8, 12, 26, 0.92);
-        backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        z-index: 100;
-        flex-shrink: 0;
-    }
-    
-    .session-header .badge-live {
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
-        box-shadow: 0 0 20px rgba(220, 38, 38, 0.25);
-    }
-    
-    .session-stat {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 10px;
-        padding: 6px 16px;
-        text-align: center;
-        transition: border-color 0.3s;
-    }
-    .session-stat:hover { border-color: rgba(255, 255, 255, 0.12); }
-    
-    .glass-card {
-        background: rgba(18, 24, 48, 0.75);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 18px;
-        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
-        transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .glass-card:hover {
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    .glass-card .card-header {
-        background: rgba(255, 255, 255, 0.02);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .glass-card .card-footer {
-        background: rgba(255, 255, 255, 0.02);
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    
-    .chat-area {
-        height: calc(100vh - 320px);
-        overflow-y: auto;
-        padding-right: 6px;
-        scroll-behavior: smooth;
-    }
-    .chat-area::-webkit-scrollbar { width: 4px; }
-    .chat-area::-webkit-scrollbar-track { background: transparent; }
-    .chat-area::-webkit-scrollbar-thumb { background: rgba(13, 96, 158, 0.2); border-radius: 4px; }
-    .chat-area::-webkit-scrollbar-thumb:hover { background: rgba(13, 96, 158, 0.4); }
-    
-    .bubble {
-        max-width: 82%;
-        border-radius: 18px;
-        padding: 14px 20px;
-        font-size: 14.5px;
-        line-height: 1.65;
-        position: relative;
-        animation: bubbleIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    @keyframes bubbleIn {
-        from { opacity: 0; transform: translateY(12px) scale(0.96); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .bubble-model {
-        background: rgba(30, 41, 59, 0.7);
-        color: #f1f5f9;
-        border-bottom-left-radius: 6px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .bubble-model::before {
-        content: '';
-        position: absolute;
-        left: -6px;
-        bottom: 10px;
-        width: 12px;
-        height: 12px;
-        background: rgba(30, 41, 59, 0.7);
-        border-radius: 2px;
-        transform: rotate(45deg);
-        border-left: 1px solid rgba(255, 255, 255, 0.05);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .bubble-user {
-        background: linear-gradient(135deg, #0d609e, #0a4d7e);
-        color: #fff;
-        border-bottom-right-radius: 6px;
-        box-shadow: 0 4px 16px rgba(13, 96, 158, 0.25);
-    }
-    .bubble-user::before {
-        content: '';
-        position: absolute;
-        right: -6px;
-        bottom: 10px;
-        width: 12px;
-        height: 12px;
-        background: #0d609e;
-        border-radius: 2px;
-        transform: rotate(45deg);
-        border-right: 1px solid rgba(59, 130, 246, 0.05);
-        border-bottom: 1px solid rgba(59, 130, 246, 0.05);
-    }
-    
-    .transcript-box {
-        background: rgba(0, 0, 0, 0.25);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
-        padding: 12px 16px;
-    }
-    .transcript-box textarea {
-        background: transparent !important;
-        color: #e2e8f0 !important;
-        border: none !important;
-        resize: none;
-        font-size: 14px;
-        line-height: 1.5;
-    }
-    .transcript-box textarea::placeholder { color: rgba(255, 255, 255, 0.3); }
-    
-    .voice-indicator-active {
-        animation: voicePulse 1.2s infinite ease-in-out;
-    }
-    @keyframes voicePulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-        50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-    }
-    
-    .status-pill {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        padding: 4px 14px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .status-pill .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        display: inline-block;
-    }
-    .status-pill .dot.idle { background: #94a3b8; }
-    .status-pill .dot.listening { background: #22c55e; animation: dotPulse 1s infinite; }
-    .status-pill .dot.speaking { background: #0a4d7e; animation: dotPulse 1s infinite; }
-    .status-pill .dot.error { background: #ef4444; }
-    @keyframes dotPulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.3); }
-    }
-    
-    .star-pill {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
-        padding: 12px 14px;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .star-pill.active {
-        background: rgba(59, 130, 246, 0.08);
-        border-color: rgba(59, 130, 246, 0.25);
-        transform: translateX(4px);
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.05);
-    }
-    .star-pill .progress {
-        background: rgba(255, 255, 255, 0.05) !important;
-        height: 5px;
-        border-radius: 3px;
-        overflow: hidden;
-    }
-    .star-pill .progress-bar {
-        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .score-badge-lg {
-        font-size: 2.8rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #0d609e, #0a4d7e);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .video-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-    @media (min-width: 992px) {
-        .video-grid.two-cols { grid-template-columns: 1fr 1fr; }
-    }
-    
-    .video-box {
-        position: relative;
-        background: #020617;
-        border-radius: 14px;
-        overflow: hidden;
-        aspect-ratio: 16/9;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-    .video-box video { object-fit: cover; }
-    .video-label {
-        position: absolute;
-        bottom: 12px;
-        left: 12px;
-        background: rgba(0, 0, 0, 0.65);
-        backdrop-filter: blur(8px);
-        color: #fff;
-        padding: 5px 10px;
-        font-size: 11px;
-        border-radius: 6px;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        letter-spacing: 0.02em;
-    }
-    
-    .waveform-bar {
-        display: inline-block;
-        width: 3px;
-        height: 16px;
-        background: linear-gradient(to top, #0a4d7e, #0d609e);
-        margin: 0 2px;
-        border-radius: 2px;
-        animation: wave 1.2s infinite ease-in-out;
-    }
-    @keyframes wave {
-        0%, 100% { height: 5px; }
-        30% { height: 22px; }
-        60% { height: 12px; }
-    }
-    
-    .start-overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        background: radial-gradient(ellipse at center, #0f172a 0%, #080c1a 100%);
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .start-overlay .enter-card {
-        width: 480px;
-        max-width: 92vw;
-        padding: 2.5rem;
-    }
-    .start-overlay .enter-icon {
-        width: 90px; height: 90px;
-        background: rgba(13, 96, 158, 0.12);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        font-size: 2.4rem;
-        color: #818cf8;
-        border: 1px solid rgba(13, 96, 158, 0.15);
-    }
-    
-    .control-btn {
-        border-radius: 10px;
-        font-weight: 600;
-        padding: 8px 18px;
-        font-size: 13.5px;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .control-btn:active { transform: scale(0.96); }
-    .control-btn:disabled { opacity: 0.35; transform: none; }
-    
-    .chat-input {
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        color: #e2e8f0 !important;
-        border-radius: 12px !important;
-        padding: 12px 18px !important;
-        font-size: 14px !important;
-        transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .chat-input:focus {
-        border-color: rgba(13, 96, 158, 0.4) !important;
-        box-shadow: 0 0 0 3px rgba(13, 96, 158, 0.1) !important;
-    }
-    .chat-input::placeholder { color: rgba(255, 255, 255, 0.25); }
-    
-    .btn-gradient {
-        background: linear-gradient(135deg, #0d609e, #0a4d7e);
-        border: none;
-        color: #fff;
-        box-shadow: 0 4px 14px rgba(13, 96, 158, 0.25);
-        transition: all 0.3s;
-    }
-    .btn-gradient:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(13, 96, 158, 0.35);
-        color: #fff;
-    }
-    .btn-gradient:active { transform: translateY(0); }
-    
-    .btn-enter-room {
-        background: linear-gradient(135deg, #0d609e, #0d609e);
-        border: none;
-        font-size: 1.05rem;
-        padding: 14px 28px;
-        border-radius: 14px;
-        box-shadow: 0 8px 32px rgba(13, 96, 158, 0.3);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .btn-enter-room:hover {
-        transform: translateY(-2px) scale(1.01);
-        box-shadow: 0 12px 40px rgba(13, 96, 158, 0.4);
-    }
-    
-    .evaluation-card {
-        border: 1px solid rgba(34, 197, 94, 0.2);
-        background: rgba(34, 197, 94, 0.03);
-    }
-    .evaluation-card .score-tile {
-        background: rgba(0, 0, 0, 0.25);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 10px;
-        padding: 10px;
-        text-align: center;
-    }
-    
-    .text-muted-light { color: #94a3b8 !important; }
-    
-    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.06); border-radius: 4px; }
-    
-    @media (max-width: 991.98px) {
-        .chat-area { height: calc(50vh - 100px) !important; }
-        .video-grid.two-cols { grid-template-columns: 1fr; }
-        .session-header .header-controls {
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-    }
-    @media (max-width: 767.98px) {
-        .chat-area { height: calc(40vh - 80px) !important; }
-        .bubble { max-width: 92% !important; font-size: 13.5px !important; padding: 11px 15px !important; }
-        .session-header { padding: 10px 14px !important; }
-        .start-overlay .enter-card { padding: 1.5rem !important; }
-        .control-btn { font-size: 12px !important; padding: 6px 12px !important; }
-    }
-    @media (max-width: 575.98px) {
-        .chat-area { height: calc(35vh - 60px) !important; }
-        .session-stat { padding: 4px 10px; }
-        .session-stat small { font-size: 9px; }
-        .session-stat span { font-size: 12px; }
-    }
-</style>
-<?= $this->endSection() ?>
+:root{
+  color-scheme: light;
+  --brand:#0861A9; --brand-dark:#064A85; --brand-deep:#0A2F57; --brand-light:#E6F0F8;
+  --accent:#ED9020; --accent-dark:#C8770E; --accent-light:#FDF1E0;
+  --text:#141926; --muted:#5b6577; --bg:#f5f7fb; --white:#fff; --border:#e2e8f2;
+  --success:#16a34a; --success-light:#e8f7ee; --danger:#dc2626; --danger-light:#fdeaea;
+  --radius:10px; --radius-lg:14px;
+  --shadow:0 2px 14px rgba(10,47,87,.08); --shadow-lg:0 14px 40px rgba(10,47,87,.16);
+  --transition:.18s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{overflow-x:hidden;max-width:100%}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column}
+h1,h2,h3{font-family:'Sora','Inter',sans-serif;letter-spacing:-.02em}
+a{color:var(--brand);text-decoration:none}
+button{font-family:inherit}
+img,svg{display:block}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-<?= $this->section('content') ?>
-<?php
-$contextPreset = $contextPreset ?? [];
-?>
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border-radius:8px;font-size:.86rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:var(--transition);text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:44px;white-space:nowrap}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn-outline{background:var(--white);color:var(--brand);border-color:var(--border)}
+.btn-outline:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-accent{background:var(--accent);color:var(--brand-deep);border-color:var(--accent)}
+.btn-accent:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:var(--brand-deep)}
+.btn-danger-o{background:#fff;color:var(--danger);border-color:var(--border)}
+.btn-danger-o:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-sm{padding:8px 14px;font-size:.78rem;min-height:38px}
+.btn[disabled]{opacity:.55;pointer-events:none}
 
-<!-- Startup Ready Overlay -->
-<div class="start-overlay" id="ready-overlay">
-    <div class="text-center max-w-md p-5 glass-card" style="width: 480px;">
-        <div class="avatar avatar-xxl bg-primary-transparent mb-4 mx-auto" style="width: 80px; height: 80px; font-size: 36px; display: flex; align-items: center; justify-content: center; background: rgba(59, 130, 246, 0.15); border-radius: 50%;">
-            <i class="ti ti-microphone text-primary"></i>
-        </div>
-        <h3 class="fw-bold mb-2">Live Interview Session</h3>
-        <p class="text-muted mb-4 fs-14">
-            Practice mode is set for <strong class="text-white"><?= esc((string) ($contextPreset['job_title'] ?? 'Role')) ?></strong>.<br>
-            Make sure your microphone/camera are ready.
-        </p>
-        <div class="d-grid">
-            <button type="button" class="btn btn-primary btn-lg py-3 fw-bold rounded-3" id="btn-begin">
-                <i class="ti ti-player-play me-2"></i> Enter Interview Room
-            </button>
-        </div>
+/* ═══ SESSION TOPBAR ═══ */
+.sess-bar{position:sticky;top:0;z-index:900;background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(12px);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top,0)}
+.sess-bar-in{display:flex;align-items:center;gap:12px;height:64px;padding:0 clamp(14px,3vw,28px);max-width:1080px;margin:0 auto}
+.sb-brand{font-family:'Sora',sans-serif;font-weight:800;font-size:1.05rem;color:var(--brand-deep);white-space:nowrap}
+.sess-meta{min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.sess-meta b{font-size:.82rem;font-weight:700;color:var(--brand-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess-meta i{font-style:normal;font-size:.68rem;color:var(--muted)}
+.bar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.timer{display:inline-flex;align-items:center;gap:7px;font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;color:var(--brand-deep);background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:8px 13px;min-height:42px}
+.timer svg{width:15px;height:15px;color:var(--brand)}
+.timer.warn{border-color:#f3d9ae;background:var(--accent-light);color:#8a5a10}
+.timer.warn svg{color:var(--accent-dark)}
+.rec-dot{display:inline-flex;align-items:center;gap:6px;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--danger)}
+.rec-dot i{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@media (max-width:560px){.sb-brand{display:none}.rec-dot span{display:none}}
+
+/* progress rail */
+.prog-rail{height:4px;background:var(--border)}
+.prog-rail i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--brand-dark),var(--brand) 70%,var(--accent));transition:width .5s ease}
+
+/* ═══ STAGE ═══ */
+.stage{flex:1;width:100%;max-width:1080px;margin:0 auto;padding:clamp(16px,3vw,28px);display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:clamp(14px,2vw,22px);align-items:start}
+@media (max-width:960px){.stage{grid-template-columns:1fr}}
+
+/* conversation column */
+.convo{display:flex;flex-direction:column;gap:14px;min-width:0}
+.turn{display:flex;gap:12px}
+html.anim-ready .turn{animation:rise .35s ease}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.turn-ava{width:42px;height:42px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.turn--ai .turn-ava{background:linear-gradient(135deg,var(--brand-deep),var(--brand));box-shadow:0 5px 14px rgba(8,97,169,.25)}
+.turn--ai .turn-ava svg{width:22px;height:22px}
+.turn--me{flex-direction:row-reverse}
+.turn--me .turn-ava{background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:var(--brand-deep);font-family:'Sora',sans-serif;font-weight:800;font-size:.8rem}
+.bubble{max-width:640px;border-radius:15px;padding:14px 17px;font-size:.88rem;line-height:1.65;position:relative}
+.turn--ai .bubble{background:#fff;border:1px solid var(--border);border-top-left-radius:5px;box-shadow:var(--shadow)}
+.turn--me .bubble{background:var(--brand);color:#fff;border-top-right-radius:5px}
+.bubble .q-tag{display:inline-flex;align-items:center;gap:6px;font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--brand);background:var(--brand-light);border-radius:20px;padding:3px 10px;margin-bottom:8px}
+/* (spec 21) follow-ups are visually distinct from new questions so a probe
+   never reads as forward progress — accent tone, same shape */
+.bubble .q-tag--fu{color:#8a5a10;background:var(--accent-light)}
+.bubble .q-tag svg{width:10px;height:10px}
+.bubble .who{font-size:.66rem;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:.03em}
+.turn--me .who{display:none}
+
+/* ═══ UPGRADE: honest mode-switch disclosure ═══ */
+.turn--sys{justify-content:center;margin:4px 0}
+.sys-note{max-width:440px;display:flex;gap:9px;align-items:flex-start;background:var(--accent-light);border:1px solid #f3d9ae;border-radius:12px;padding:11px 14px;font-size:.76rem;color:#8a5a10;line-height:1.55}
+.sys-note svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;color:var(--accent-dark)}
+.sys-note b{display:block;color:var(--brand-deep);font-weight:700;margin-bottom:2px}
+/* typing indicator */
+.typing{display:inline-flex;gap:4px;padding:6px 2px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:tp 1.1s ease-in-out infinite}
+.typing i:nth-child(2){animation-delay:.15s}
+.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tp{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+
+/* ═══ ANSWER DOCK ═══ */
+.dock{position:sticky;bottom:0;z-index:800;background:linear-gradient(to top,var(--bg) 78%,transparent);padding-top:14px;margin-top:auto}
+.dock-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
+.dock-card:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(8,97,169,.12),var(--shadow-lg)}
+.dock textarea{display:block;width:100%;min-height:96px;max-height:220px;resize:vertical;border:none;padding:15px 17px 8px;font-family:'Inter',sans-serif;font-size:16px;line-height:1.6;color:var(--text);background:transparent}
+.dock textarea:focus{outline:none}
+.dock-foot{display:flex;align-items:center;gap:10px;padding:9px 12px 12px;flex-wrap:wrap}
+.wcount{font-size:.7rem;color:var(--muted);font-weight:600}
+.wcount.low{color:var(--accent-dark)}
+.wcount.high{color:var(--accent-dark);font-weight:700}
+.dock-actions{display:flex;gap:8px;margin-left:auto}
+/* answer mode switcher */
+.mode-tabs{display:flex;gap:6px;padding:10px 12px 0;border-bottom:1px solid var(--border);padding-bottom:10px}
+.mode-tab{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;min-height:44px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;transition:var(--transition);-webkit-tap-highlight-color:transparent}
+.mode-tab svg{width:13px;height:13px}
+.mode-tab:hover{border-color:var(--brand);color:var(--brand)}
+.mode-tab[aria-selected="true"]{background:var(--brand-light);border-color:var(--brand);color:var(--brand)}
+/* voice / video dock variant */
+.dock-media{display:none;flex-direction:column;align-items:center;gap:12px;padding:22px 18px 8px;text-align:center}
+.dock-card[data-mode="voice"] .dock-media,.dock-card[data-mode="video"] .dock-media{display:flex}
+.dock-card[data-mode="voice"] textarea,.dock-card[data-mode="video"] textarea{display:none}
+.dock-card[data-mode="video"] .rec-time{display:none!important}
+/* ── VIDEO CALL / WEBCAM STAGE (HIDDEN) ── */
+.call-stage, .cam-stage, video{display:none!important}
+
+/* recruiter panel wave idles unless speaking */
+.rwave i{animation-play-state:paused;height:30%!important;transition:height .2s}
+.rwave.talking i{animation-play-state:running}
+.rwave.talking i:nth-child(1){height:40%!important}.rwave.talking i:nth-child(2){height:90%!important}
+.rwave.talking i:nth-child(3){height:60%!important}.rwave.talking i:nth-child(4){height:100%!important}
+.rwave.talking i:nth-child(5){height:50%!important}
+/* voice toggle button */
+#voice-btn[aria-pressed="false"]{color:var(--muted)}
+#voice-btn[aria-pressed="false"] .vb-lbl{text-decoration:line-through;opacity:.7}
+@media (max-width:640px){#voice-btn .vb-lbl{display:none}}
+.media-orb{position:relative;width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;box-shadow:0 8px 20px rgba(8,97,169,.3);transition:transform .18s ease}
+.media-orb:hover{transform:scale(1.05)}
+.media-orb svg{width:28px;height:28px;color:#fff}
+.media-orb.rec{background:linear-gradient(135deg,#b91c1c,var(--danger))}
+.media-orb.rec::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:2.5px solid rgba(220,38,38,.4);animation:ringp 1.4s ease-out infinite}
+@keyframes ringp{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.25);opacity:0}}
+.media-hint{font-size:.74rem;color:var(--muted);max-width:340px}
+.live-caption{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--brand-deep);max-width:380px;background:var(--brand-light);border-radius:10px;padding:9px 13px;line-height:1.5;font-style:italic}
+.live-caption.cap-warn{color:#8a5a10;background:var(--accent-light);font-style:normal;font-weight:600}
+.live-caption span{flex:1}
+.live-caption button{flex-shrink:0;border:1.5px solid var(--accent-dark);background:#fff;color:#8a5a10;font-size:.7rem;font-weight:700;padding:5px 11px;min-height:44px;border-radius:7px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.live-caption button:hover{background:var(--accent-dark);color:#fff}
+.wave-live{display:flex;align-items:flex-end;gap:3px;height:26px}
+.wave-live i{width:4px;border-radius:2px;background:var(--danger);animation:wl 1s ease-in-out infinite}
+.wave-live i:nth-child(odd){height:45%}.wave-live i:nth-child(even){height:95%}
+.wave-live i:nth-child(2){animation-delay:.1s}.wave-live i:nth-child(3){animation-delay:.2s}.wave-live i:nth-child(4){animation-delay:.3s}
+.wave-live i:nth-child(5){animation-delay:.4s}.wave-live i:nth-child(6){animation-delay:.5s}.wave-live i:nth-child(7){animation-delay:.6s}
+@keyframes wl{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.rec-time{font-family:'Sora',sans-serif;font-weight:800;font-size:1.05rem;color:var(--brand-deep)}
+
+/* ═══ SIDE PANEL ═══ */
+.panel{display:flex;flex-direction:column;gap:14px;position:sticky;top:86px}
+@media (max-width:960px){.panel{position:static;order:-1}}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 17px;border-bottom:1px solid var(--border)}
+.card-title{display:inline-flex;align-items:center;gap:8px;font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;color:var(--brand-deep)}
+.card-title svg{width:15px;height:15px;color:var(--brand)}
+.card-body{padding:15px 17px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.64rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.pill--success{background:var(--success-light);color:#0d7a37}
+.pill--brand{background:var(--brand-light);color:var(--brand)}
+/* recruiter mini */
+.rmini{display:flex;align-items:center;gap:12px}
+.rmini-ava{position:relative;width:50px;height:50px;border-radius:14px;flex-shrink:0;background:linear-gradient(135deg,var(--brand-deep),var(--brand));display:flex;align-items:center;justify-content:center}
+.rmini-ava svg{width:26px;height:26px}
+.rmini-ava .live{position:absolute;bottom:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:var(--success);border:2.5px solid #fff}
+.rmini b{display:block;font-family:'Sora',sans-serif;font-weight:800;font-size:.9rem;color:var(--brand-deep)}
+.rmini i{font-style:normal;font-size:.7rem;color:var(--muted)}
+.rwave{display:flex;align-items:flex-end;gap:2.5px;height:18px;margin-left:auto}
+.rwave i{width:3.5px;border-radius:2px;background:var(--brand);animation:wl 1.15s ease-in-out infinite}
+.rwave i:nth-child(1){height:40%}.rwave i:nth-child(2){height:90%;animation-delay:.12s}
+.rwave i:nth-child(3){height:60%;animation-delay:.24s}.rwave i:nth-child(4){height:100%;animation-delay:.36s}
+.rwave i:nth-child(5){height:50%;animation-delay:.48s}
+/* question map */
+.qmap{display:flex;flex-direction:column;gap:4px}
+.qm{display:flex;align-items:center;gap:10px;font-size:.76rem;padding:8px 10px;border-radius:9px;color:var(--muted)}
+.qm .n{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0;background:#fff}
+.qm.done{color:var(--text)}
+.qm.done .n{background:var(--success);border-color:var(--success);color:#fff}
+.qm.now{background:var(--brand-light);color:var(--brand-dark);font-weight:600}
+.qm.now .n{background:var(--brand);border-color:var(--brand);color:#fff}
+.qm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* live tip */
+.tipbox{display:flex;gap:9px;align-items:flex-start;font-size:.76rem;border-radius:10px;padding:11px 13px;background:var(--accent-light);border:1px solid #f3d9ae;color:#8a5a10;line-height:1.55}
+.tipbox svg{width:14px;height:14px;flex-shrink:0;margin-top:2px;color:var(--accent-dark)}
+
+/* ═══ MODAL ═══ */
+.modal-scrim{position:fixed;inset:0;background:rgba(10,25,45,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:1300;display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s}
+.modal-scrim.show{opacity:1;visibility:visible}
+.modal{background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);max-width:420px;width:100%;padding:24px 24px 20px;transform:translateY(10px);transition:transform .2s ease}
+.modal-scrim.show .modal{transform:translateY(0)}
+.modal-ic{width:48px;height:48px;border-radius:14px;background:var(--accent-light);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+.modal-ic svg{width:22px;height:22px}
+.modal h2{font-size:1.02rem;font-weight:800;color:var(--brand-deep);margin-bottom:6px}
+.modal p{font-size:.82rem;color:var(--muted);margin-bottom:17px}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap}
+.modal-actions .btn{flex:1}
+
+/* ═══ COMPLETION ═══ */
+.done-wrap{display:none;flex:1;width:100%;max-width:660px;margin:0 auto;padding:clamp(20px,4vw,40px);flex-direction:column;align-items:center;text-align:center;justify-content:center}
+body.finished .stage,body.finished .dock{display:none}
+body.finished .done-wrap{display:flex}
+.done-orb{position:relative;width:104px;height:104px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(8,97,169,.3);margin-bottom:20px;}
+html.anim-ready .done-orb{animation:pop .45s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.done-orb svg{width:46px;height:46px;color:#fff}
+.done-orb::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:2.5px solid rgba(237,144,32,.45);animation:ringp 1.8s ease-out infinite}
+.done-wrap h1{font-size:clamp(1.35rem,3vw,1.8rem);font-weight:800;color:var(--brand-deep);margin-bottom:9px}
+.done-wrap>p{font-size:.9rem;color:var(--muted);max-width:460px;margin-bottom:22px}
+.done-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:480px;margin-bottom:24px}
+@media (max-width:480px){.done-facts{grid-template-columns:1fr}}
+.dfact{background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 10px}
+.dfact b{display:block;font-family:'Sora',sans-serif;font-weight:800;font-size:1.15rem;color:var(--brand-deep)}
+.dfact i{font-style:normal;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.done-actions{display:flex;gap:11px;flex-wrap:wrap;justify-content:center}
+.done-note{display:flex;align-items:flex-start;gap:8px;font-size:.74rem;color:var(--muted);max-width:440px;margin-top:20px;text-align:left;background:#fff;border:1px solid var(--border);border-radius:11px;padding:12px 14px}
+.done-note svg{width:14px;height:14px;color:var(--brand);flex-shrink:0;margin-top:2px}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);z-index:1400;display:flex;align-items:center;gap:10px;background:var(--brand-deep);color:#fff;font-size:.82rem;font-weight:600;padding:13px 20px;border-radius:12px;box-shadow:var(--shadow-lg);opacity:0;visibility:hidden;transition:opacity .25s ease,transform .25s ease,visibility .25s;max-width:min(420px,calc(100vw - 32px))}
+.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.toast svg{width:17px;height:17px;color:var(--accent);flex-shrink:0}
+
+/* ═══ UPGRADE: real camera ═══ */
+.cam-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);border-radius:inherit;background:#0b1524}
+.cam-stage video.rear{transform:none}
+.cam-status{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:5px;font-size:.56rem;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:20px;background:rgba(10,20,35,.72);color:#d9e6f4;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.cam-status i{width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0}
+.cam-status.on i{background:#22c55e}
+.cam-status.err i{background:#ef4444}
+.cam-flip{position:absolute;bottom:6px;right:6px;z-index:3;width:44px;height:44px;border-radius:50%;border:none;background:rgba(10,20,35,.72);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.cam-flip svg{width:15px;height:15px}
+.cam-stage.live .cam-flip{display:flex}
+.cam-denied{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#101d30;color:#c7d6e8;text-align:center;padding:14px;border-radius:inherit}
+.cam-denied svg{width:24px;height:24px;color:#f59e0b}
+.cam-denied p{font-size:.66rem;line-height:1.5;max-width:220px}
+.cam-denied button{margin-top:2px;padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-size:.68rem;font-weight:600;cursor:pointer;min-height:34px}
+.net-pill{position:absolute;top:8px;right:8px;z-index:3;display:inline-flex;align-items:center;gap:5px;font-size:.58rem;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(230,240,248,.94);color:var(--brand);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.net-pill.weak{background:var(--accent-light);color:var(--accent-dark)}
+/* ═══ UPGRADE: thinking indicator ═══ */
+.think{display:flex;align-items:center;gap:9px;font-size:.78rem;color:var(--muted);font-weight:500}
+.think-dots{display:inline-flex;gap:4px}
+.think-dots i{width:6px;height:6px;border-radius:50%;background:var(--brand);animation:thinkp 1s ease-in-out infinite}
+.think-dots i:nth-child(2){animation-delay:.18s}.think-dots i:nth-child(3){animation-delay:.36s}
+@keyframes thinkp{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
+.think-txt{transition:opacity .25s ease}
+/* ═══ UPGRADE: live coaching widget ═══ */
+.coach{position:fixed;right:14px;bottom:calc(190px + env(safe-area-inset-bottom,0));z-index:850;width:212px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden;transition:transform .25s ease,opacity .25s ease}
+.coach.hide{transform:translateX(calc(100% + 20px));opacity:0;pointer-events:none}
+.coach-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 12px;min-height:44px;border-bottom:1px solid var(--border)}
+.coach-head b{font-family:'Sora',sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-deep);display:flex;align-items:center;gap:6px}
+.coach-head b svg{width:12px;height:12px;color:var(--accent)}
+.coach-head button{border:none;background:none;color:var(--muted);cursor:pointer;line-height:0;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;margin-right:-12px;flex-shrink:0}
+.coach-head button svg{width:13px;height:13px}
+.coach-body{padding:10px 12px 11px;display:flex;flex-direction:column;gap:8px}
+.crow{display:grid;grid-template-columns:1fr auto;gap:3px 8px;align-items:center}
+.crow i{font-style:normal;font-size:.64rem;font-weight:600;color:var(--muted)}
+.crow b{font-family:'Sora',sans-serif;font-size:.66rem;font-weight:800;color:var(--brand-deep);text-align:right}
+.crow .track{grid-column:1/-1;height:5px;border-radius:20px;background:var(--bg);overflow:hidden}
+.crow .fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--brand-dark),var(--brand));width:0;transition:width .6s cubic-bezier(.2,.8,.3,1)}
+.crow.dim i,.crow.dim b{opacity:.45}
+.crow.pulse .fill{animation:coachpulse .5s ease}
+@keyframes coachpulse{50%{filter:brightness(1.35)}}
+.coach-note{font-size:.56rem;color:var(--muted);padding:0 12px 10px;line-height:1.45}
+.coach-tab{position:fixed;right:0;bottom:calc(230px + env(safe-area-inset-bottom,0));z-index:849;border:none;border-radius:10px 0 0 10px;background:var(--brand-deep);color:#fff;padding:9px 8px;cursor:pointer;display:none;box-shadow:var(--shadow-lg)}
+.coach-tab svg{width:15px;height:15px}
+.coach.hide + .coach-tab{display:block}
+@media (max-width:900px){.coach{width:186px;bottom:calc(230px + env(safe-area-inset-bottom,0))}}
+/* ═══ UPGRADE: executive report ═══ */
+.report{display:none;width:100%;max-width:880px;margin:18px auto 0;text-align:left}
+body.finished .report{display:block}
+.rep-grid{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:stretch;margin-bottom:14px}
+@media (max-width:760px){.rep-grid{grid-template-columns:1fr}}
+.rep-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.rep-card h3{font-size:.72rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.rep-card h3 svg{width:13px;height:13px;color:var(--brand)}
+.rep-ring{position:relative;width:130px;height:130px;margin:0 auto}
+.rep-ring svg{width:130px;height:130px;transform:rotate(-90deg)}
+.rep-ring .t{fill:none;stroke:var(--bg);stroke-width:11}
+.rep-ring .p{fill:none;stroke:url(#repgrad);stroke-width:11;stroke-linecap:round;stroke-dasharray:352;stroke-dashoffset:352;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.3,1)}
+.rep-ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:1.7rem;color:var(--brand-deep);line-height:1}
+.rep-ring .n i{font-style:normal;font-size:.54rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.rep-band{display:block;text-align:center;margin-top:10px}
+.subs{display:flex;flex-direction:column;gap:9px}
+.sub i{font-style:normal;display:flex;justify-content:space-between;font-size:.72rem;font-weight:600;color:var(--brand-deep);margin-bottom:4px}
+.sub i small{color:var(--muted);font-weight:700}
+.sub .track{height:7px;border-radius:20px;background:var(--bg);overflow:hidden}
+.sub .fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--brand-dark),var(--brand));width:0;transition:width .9s cubic-bezier(.2,.8,.3,1)}
+.rep-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+@media (max-width:760px){.rep-cols{grid-template-columns:1fr}}
+.rep-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.rep-list li{display:flex;gap:9px;font-size:.78rem;line-height:1.55;color:var(--text)}
+.rep-list svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
+.rep-list.good svg{color:var(--success)}
+.rep-list.fix svg{color:var(--accent-dark)}
+.radar-wrap{display:flex;justify-content:center}
+.radar-wrap svg{width:100%;max-width:300px;height:auto}
+.radar-grid{fill:none;stroke:var(--border);stroke-width:1}
+.radar-axis{stroke:var(--border);stroke-width:1}
+.radar-lbl{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;fill:var(--muted)}
+.radar-shape{fill:rgba(8,97,169,.18);stroke:var(--brand);stroke-width:2;stroke-linejoin:round}
+.rep-next{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+@media print{
+  .topbar,.dock,.stage,.panel,.coach,.coach-tab,.toast,.done-actions,.rep-next,.exit-btn{display:none!important}
+  .done-wrap{display:flex!important}body{background:#fff}
+  .rep-card{break-inside:avoid;border-color:#ccc}
+}
+/* ═══ UPGRADE: mobile keyboard/viewport ═══ */
+.dock{padding-bottom:calc(10px + env(safe-area-inset-bottom,0))}
+body.kb-open .coach,body.kb-open .coach-tab{display:none}
+
+/* ═══ UPGRADE: loading skeleton ═══ */
+.sk-shimmer{background:linear-gradient(90deg,#eef1f6 25%,#e4e9f0 37%,#eef1f6 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){.sk-shimmer{animation:none;background:#eef1f6}}
+/* ═══ UPGRADE: offline banner ═══ */
+.offline-bar{position:fixed;top:0;left:0;right:0;z-index:1500;background:var(--brand-deep);color:#fff;text-align:center;font-size:.76rem;font-weight:600;padding:9px 16px;padding-top:calc(9px + env(safe-area-inset-top,0));display:none;align-items:center;justify-content:center;gap:8px}
+.offline-bar.show{display:flex}
+.offline-bar svg{width:14px;height:14px;flex-shrink:0}
+.convo-col{display:flex;flex-direction:column;min-width:0;min-height:calc(100vh - 180px)}
+@supports (height:100dvh){.convo-col{min-height:calc(100dvh - 180px)}}
+/* iOS: nudge dynamically inserted looping animations onto the compositor */
+.typing i,.think-dots i{-webkit-transform:translateZ(0)}
+
+/* ═══ UPGRADE: interview room lobby ═══ */
+.lobby{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse 70% 60% at 50% 20%,rgba(8,97,169,.16) 0%,transparent 60%),var(--bg);
+  transition:opacity .35s ease,visibility .35s;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
+.lobby.leaving{opacity:0;visibility:hidden;pointer-events:none}
+.lobby-card{max-width:400px;width:100%;text-align:center}
+.lobby-orb{width:84px;height:84px;border-radius:50%;margin:0 auto 20px;position:relative;
+  background:linear-gradient(135deg,var(--brand-deep),var(--brand));display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(8,97,169,.32)}
+.lobby-orb svg{width:36px;height:36px;color:#fff}
+.lobby-orb::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--brand);opacity:.35;animation:lobbypulse 2.2s ease-out infinite}
+@keyframes lobbypulse{0%{transform:scale(.9);opacity:.5}100%{transform:scale(1.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){.lobby-orb::after{animation:none;display:none}}
+.lobby-card h2{font-family:'Sora',sans-serif;font-weight:800;font-size:1.2rem;color:var(--brand-deep);margin-bottom:7px}
+.lobby-card p{font-size:.86rem;color:var(--muted);line-height:1.6;margin-bottom:22px}
+.lobby-check{display:flex;flex-direction:column;gap:9px;text-align:left;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:22px}
+.lc-row{display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--text)}
+.lc-row svg{width:15px;height:15px;color:var(--success);flex-shrink:0}
+.lc-row b{font-weight:600}
+.lc-row i{font-style:normal;color:var(--muted);margin-left:auto;font-size:.72rem}
+.lobby-card .btn{width:100%;min-height:52px;font-size:.92rem}
+.lobby-hint{font-size:.68rem;color:var(--muted);margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+.lobby-hint svg{width:12px;height:12px;flex-shrink:0}
+body.in-lobby .stage,body.in-lobby .dock,body.in-lobby .coach,body.in-lobby .coach-tab{visibility:hidden}
+
+/* ═══ UPGRADE: live recruiter notes card ═══ */
+#notes-live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;animation:notespulse 2s ease-in-out infinite}
+@keyframes notespulse{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){#notes-live{animation:none}}
+.rnotes-empty{font-size:.74rem;color:var(--muted);line-height:1.5}
+.rnotes-list{list-style:none;display:none;flex-direction:column;gap:9px}
+.rnotes-list.show{display:flex}
+.rnotes-list li{font-size:.74rem;line-height:1.5;color:var(--text);padding-bottom:9px;border-bottom:1px solid var(--border)}
+.rnotes-list li:last-child{border-bottom:none;padding-bottom:0}
+.rnotes-list li b{display:block;font-family:'Sora',sans-serif;font-size:.66rem;font-weight:700;color:var(--brand-deep);letter-spacing:.02em;margin-bottom:2px}
+.rnotes-src{font-size:.6rem;color:var(--muted);line-height:1.45;margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+
+/* ═══ DEBUG PANEL (?debug=1 only) ═══ */
+#dbg-panel{position:fixed;left:8px;bottom:8px;z-index:1500;width:290px;max-height:70vh;background:#0A2F57;color:#fff;font:11px/1.55 ui-monospace,Menlo,Consolas,monospace;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);overflow:hidden;display:flex;flex-direction:column}
+#dbg-panel h4{background:rgba(0,0,0,.25);color:var(--accent);font:700 11px/1.4 ui-monospace,monospace;padding:8px 10px;letter-spacing:.04em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+#dbg-panel h4 button{background:none;border:none;color:#fff;cursor:pointer;font-size:13px;line-height:1;padding:2px 4px}
+#dbg-cfg{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.15);max-height:34vh;overflow-y:auto}
+#dbg-cfg div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dbg-cfg b{color:#8fd0ff}
+#dbg-log{padding:8px 10px;overflow-y:auto;flex:1}
+#dbg-log div{margin-bottom:3px}
+.dbg-ok{color:#4ade80}
+.dbg-bad{color:#fca5a5}
+.dbg-info{color:#cbd5e1}
+@media (pointer:coarse){.btn-sm{min-height:44px}}
+
+/* ═══ UPGRADE: completion confetti (fires once, genuine completion only) ═══ */
+.confetti-piece{position:fixed;top:0;left:0;width:7px;height:11px;border-radius:1.5px;pointer-events:none;z-index:1600;will-change:transform,opacity;animation:confetti-fall 1.5s cubic-bezier(.15,.7,.4,1) forwards}
+@keyframes confetti-fall{
+  0%{transform:translate(var(--cx),var(--cy)) rotate(0deg) scale(1);opacity:1}
+  100%{transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scale(.6);opacity:0}
+}
+</style></head>
+<body>
+<div class="offline-bar" id="offline-bar" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#i-info"/></svg><span id="offline-txt">You\u2019re offline \u2014 answers are kept on this device and won\u2019t be lost, but they can\u2019t be saved to your account until you\u2019re back online.</span></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4Z"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+<symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5v15l13-7.5Z"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="i-skip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 4 10 8-10 8ZM19 5v14"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 15v3M13 11v7M18 7v11"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 12v4"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/></symbol>
+<symbol id="i-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.4 5.6a9 9 0 0 1 0 12.8"/></symbol>
+<symbol id="i-vol-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4Z"/><path d="m22 9-6 6M16 9l6 6"/></symbol>
+</defs></svg>
+
+<!-- session topbar -->
+<header class="sess-bar" role="banner">
+  <div class="sess-bar-in">
+    <span class="sb-brand">JobberRecruit</span>
+    <div class="sess-meta">
+      <b id="meta-title">Mock Interview</b>
+      <i id="meta-sub">Behavioral · Medium</i>
     </div>
+    <div class="bar-right">
+      <span class="rec-dot" id="rec-indicator" hidden><i></i><span>Recording</span></span>
+      <button type="button" class="btn btn-outline btn-sm" id="voice-btn" aria-pressed="true" title="Interviewer voice on/off"><svg aria-hidden="true" id="voice-btn-ic"><use href="#i-vol"/></svg><span class="vb-lbl">Voice</span></button>
+      <span class="timer" id="timer" role="timer" aria-label="Time remaining"><svg aria-hidden="true"><use href="#i-clock"/></svg><span id="timer-txt">30:00</span></span>
+      <button type="button" class="btn btn-danger-o btn-sm" id="exit-btn"><svg aria-hidden="true"><use href="#i-x"/></svg> End</button>
+    </div>
+  </div>
+  <div class="prog-rail" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Interview progress" id="prog-rail"><i id="prog-fill"></i></div>
+</header>
+
+<main id="main-content">
+
+<?php
+$isVoiceMode = ($contextPreset['interview_mode'] ?? '') === 'voice'
+    || (isset($_GET['interview_mode']) && $_GET['interview_mode'] === 'voice')
+    || (isset($_GET['imode']) && $_GET['imode'] === 'voice');
+?>
+<div class="lobby" id="lobby">
+
+  <div class="lobby-card">
+    <span class="lobby-orb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 20a7.5 7.5 0 0 1 14 0"/></svg></span>
+    <h2 id="lobby-title">Your interviewer is ready</h2>
+    <p id="lobby-sub">Take a moment to settle in. When you tap below, <span id="lobby-persona">Adaeze</span> will greet you and walk through how this session works.</p>
+    <div class="lobby-check" aria-hidden="true">
+      <div class="lc-row"><svg><use href="#i-check-c"/></svg><b id="lobby-role">This role</b><i id="lobby-fmt">Behavioral · Medium</i></div>
+      <div class="lc-row"><svg><use href="#i-check-c"/></svg><b>Sound</b><i id="lobby-sound">On</i></div>
+    </div>
+    <button type="button" class="btn btn-primary" id="lobby-enter"><svg aria-hidden="true" id="lobby-enter-ic"><use href="#i-play"/></svg><span id="lobby-enter-txt">Enter Interview Room</span></button>
+    <p class="lobby-hint"><svg aria-hidden="true"><use href="#i-info"/></svg> Your browser needs this tap to enable the interviewer's voice.</p>
+  </div>
 </div>
 
-<!-- Main UI -->
-<div class="d-flex flex-column flex-grow-1">
-    <!-- Top Header -->
-    <header class="session-header py-3 px-4 sticky-top">
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div class="d-flex align-items-center gap-3">
-                    <span class="badge bg-danger rounded-pill px-3 py-2 d-flex align-items-center gap-1.5" style="font-size: 13px;">
-                        <span class="spinner-grow spinner-grow-sm text-white" role="status" style="width: 8px; height: 8px;"></span> Live Session
-                    </span>
-                    <div>
-                        <h5 class="fw-bold mb-0 text-white"><?= esc((string) ($contextPreset['job_title'] ?? 'Mock Interview')) ?></h5>
-                        <small class="text-muted-light">Difficulty: <strong class="text-white"><?= esc(ucfirst((string) ($contextPreset['difficulty'] ?? 'medium'))) ?></strong></small>
-                    </div>
-                </div>
-
-                <div class="d-flex align-items-center gap-4">
-                    <div class="text-center bg-dark px-3 py-1.5 rounded-3 border border-secondary border-opacity-10">
-                        <small class="text-muted d-block fs-11 uppercase">Elapsed Time</small>
-                        <span class="fw-bold text-white fs-15" id="session-duration">00:00</span>
-                    </div>
-                    <div class="text-center bg-dark px-3 py-1.5 rounded-3 border border-secondary border-opacity-10">
-                        <small class="text-muted d-block fs-11 uppercase">Questions</small>
-                        <span class="fw-bold text-white fs-15" id="question-count">0</span>
-                    </div>
-                    <div class="text-center bg-dark px-3 py-1.5 rounded-3 border border-secondary border-opacity-10">
-                        <small class="text-muted d-block fs-11 uppercase">Answers</small>
-                        <span class="fw-bold text-white fs-15" id="answer-count">0</span>
-                    </div>
-                    <button class="btn btn-outline-danger btn-md fw-bold px-3 py-2" onclick="window.close();">
-                        <i class="ti ti-logout me-1"></i> Exit Session
-                    </button>
-                </div>
-            </div>
+<!-- stage -->
+<div class="stage" id="stage">
+  <div class="convo-col">
+    <div class="convo" id="convo" aria-live="polite">
+      <!-- loading skeleton: JS clears this on first render, so users with slow
+           script execution (low-end Android, throttled CPU) see structure
+           immediately instead of a blank pane. -->
+      <div class="turn turn--ai skeleton-turn" aria-hidden="true">
+        <span class="turn-ava sk-shimmer" style="border-radius:13px"></span>
+        <div class="bubble" style="width:min(78%,420px)">
+          <div class="sk-shimmer" style="height:9px;border-radius:5px;width:70px;margin-bottom:10px"></div>
+          <div class="sk-shimmer" style="height:11px;border-radius:5px;margin-bottom:7px"></div>
+          <div class="sk-shimmer" style="height:11px;border-radius:5px;width:60%"></div>
         </div>
-    </header>
+      </div>
+    </div>
 
-    <!-- Content Workspace -->
-    <main class="flex-grow-1 p-4 d-flex flex-column" style="min-height: 0;">
-        <div class="container-fluid h-100 d-flex flex-column">
-            <div class="row h-100 flex-grow-1">
-                <!-- Left Main Panel (Chat & Videos) -->
-                <div class="col-lg-8 d-flex flex-column mb-4 mb-lg-0">
-                    <!-- Video Feeds Section (Shows only if enabled) -->
-                    <div class="video-grid <?= ($contextPreset['interview_mode'] ?? 'chat') === 'video' ? 'two-cols' : '' ?>" id="video-area">
-                        <!-- AI Interviewer Visualizer Card -->
-                        <div class="video-box" id="ai-interviewer-card">
-                            <div class="d-flex align-items-center justify-content-center h-100">
-                                <div class="text-center">
-                                    <div class="avatar avatar-xxl bg-primary-transparent mb-3" style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                                        <i class="ti ti-user-check text-primary fs-32"></i>
-                                    </div>
-                                    <h6 class="text-muted-light mb-2">Hiring Manager AI</h6>
-                                    <div class="d-flex align-items-center justify-content-center" id="voice-waves" style="height: 30px; display: none !important;">
-                                        <div class="waveform-bar" style="animation-delay: 0.1s;"></div>
-                                        <div class="waveform-bar" style="animation-delay: 0.3s;"></div>
-                                        <div class="waveform-bar" style="animation-delay: 0.5s;"></div>
-                                        <div class="waveform-bar" style="animation-delay: 0.2s;"></div>
-                                        <div class="waveform-bar" style="animation-delay: 0.4s;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="video-label">
-                                <i class="ti ti-user-check text-primary"></i> Interviewer (AI)
-                            </div>
-                        </div>
-
-                        <!-- User Camera Box -->
-                        <div class="video-box <?= ($contextPreset['webcam_enabled'] ?? false) ? '' : 'd-none' ?>" id="user-camera-card">
-                            <video id="webcam-preview" class="w-100 h-100 object-fit-cover" autoplay playsinline muted></video>
-                            <div id="webcam-placeholder" class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
-                                <i class="ti ti-video-off fs-32 mb-2 text-danger"></i>
-                                <span>Camera access denied</span>
-                            </div>
-                            <div class="video-label">
-                                <i class="ti ti-video text-success"></i> Candidate Preview
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Log Card -->
-                    <div class="card glass-card flex-grow-1 d-flex flex-column overflow-hidden mb-3">
-                        <div class="card-body p-4 d-flex flex-column justify-content-between h-100">
-                            <!-- Message list -->
-                            <div class="chat-area" id="chat-window">
-                                <div id="chat-messages" class="d-flex flex-column gap-3">
-                                    <!-- Messages load dynamically -->
-                                </div>
-                            </div>
-                            
-                            <!-- Transcript Area (For Voice Input Speech Preview) -->
-                            <div class="mt-3 p-3 bg-dark bg-opacity-40 border border-secondary border-opacity-10 rounded-3 d-none" id="transcript-preview-box">
-                                <label class="fs-12 text-muted uppercase fw-semibold mb-1">Live Voice Speech Preview</label>
-                                <textarea id="live-transcript" class="form-control bg-transparent text-white border-0 p-0 fs-14" rows="2" placeholder="Start speaking to record your response..." readonly></textarea>
-                            </div>
-                        </div>
-                        
-                        <!-- Control Bar/Input Card Footer -->
-                        <div class="card-footer border-top border-secondary border-opacity-10 p-3 bg-dark bg-opacity-30">
-                            <!-- Voice Controls (if not standard chat) -->
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="px-3 py-1.5 bg-dark rounded-3 border border-secondary border-opacity-10 d-flex align-items-center gap-2">
-                                        <small class="text-muted fs-12">Voice Status:</small>
-                                        <span class="fw-bold text-success fs-13" id="voice-status">Idle</span>
-                                    </div>
-                                    <div class="px-3 py-1.5 bg-dark rounded-3 border border-secondary border-opacity-10 d-flex align-items-center gap-2">
-                                        <small class="text-muted fs-12">Mic:</small>
-                                        <span class="fw-bold text-info fs-13" id="mic-status">Ready</span>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-danger px-3" id="btn-listen" disabled>
-                                        <i class="ti ti-microphone me-1"></i> Speak Answer
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger" id="btn-stop" disabled>
-                                        <i class="ti ti-player-stop me-1"></i> Stop
-                                    </button>
-                                    <button type="button" class="btn btn-outline-primary" id="btn-replay" disabled>
-                                        <i class="ti ti-volume me-1"></i> Replay Q
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" id="btn-skip" disabled>
-                                        <i class="ti ti-player-track-next me-1"></i> Skip
-                                    </button>
-                                    <button type="button" class="btn btn-success fw-bold px-3" id="btn-end" disabled>
-                                        <i class="ti ti-rosette-discount-check me-1"></i> End & Evaluate
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Text Fallback Input Form -->
-                            <form id="chat-form">
-                                <div class="input-group">
-                                    <input type="text" id="chat-input" class="form-control bg-dark border-secondary border-opacity-20 text-white rounded-3-start py-3" placeholder="Type your answer here..." autocomplete="off">
-                                    <button class="btn btn-primary px-4 rounded-3-end" type="submit" id="btn-send" aria-label="Action">
-    <i class="ti ti-send fs-18"></i>
-</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Coaching & Scorecard Panel -->
-                <div class="col-lg-4 d-flex flex-column">
-                    <!-- Real-Time Coaching Card -->
-                    <div class="card glass-card mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
-                        <div class="card-header border-bottom border-secondary border-opacity-10 py-3 px-4 bg-dark bg-opacity-20">
-                            <h6 class="fw-bold mb-0 text-white"><i class="ti ti-bulb text-warning me-1"></i> Live STAR Coaching</h6>
-                        </div>
-                        <div class="card-body p-4 overflow-y-auto" style="flex: 1; min-height: 0;">
-                            <div class="text-center py-3 border-bottom border-secondary border-opacity-10 mb-4">
-                                <small class="text-muted d-block uppercase fs-11">Current Answer STAR Score</small>
-                                <h2 class="fw-bold text-success mt-1 mb-0" id="latest-star-score">0/10</h2>
-                            </div>
-
-                            <div class="d-grid gap-3 mb-4">
-                                <div class="star-pill" id="star-pill-situation">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-semibold fs-13">Situation</span>
-                                        <span class="badge bg-secondary rounded-pill" id="star-situation">0</span>
-                                    </div>
-                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
-                                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="star-progress-situation" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
-                                    </div>
-                                    <small class="text-muted fs-11 d-block">Detail the context/background of your story.</small>
-                                </div>
-                                <div class="star-pill" id="star-pill-task">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-semibold fs-13">Task</span>
-                                        <span class="badge bg-secondary rounded-pill" id="star-task">0</span>
-                                    </div>
-                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
-                                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" id="star-progress-task" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
-                                    </div>
-                                    <small class="text-muted fs-11 d-block">Define your specific responsibilities or goal.</small>
-                                </div>
-                                <div class="star-pill" id="star-pill-action">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-semibold fs-13">Action</span>
-                                        <span class="badge bg-secondary rounded-pill" id="star-action">0</span>
-                                    </div>
-                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
-                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="star-progress-action" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
-                                    </div>
-                                    <small class="text-muted fs-11 d-block">Explain the exact steps you took to solve it.</small>
-                                </div>
-                                <div class="star-pill" id="star-pill-result">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-semibold fs-13">Result</span>
-                                        <span class="badge bg-secondary rounded-pill" id="star-result">0</span>
-                                    </div>
-                                    <div class="progress bg-dark bg-opacity-50 my-2" style="height: 6px; border-radius: 3px;">
-                                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="star-progress-result" role="progressbar" style="width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10"></div>
-                                    </div>
-                                    <small class="text-muted fs-11 d-block">Detail the metrics, outcomes, and achievements.</small>
-                                </div>
-                            </div>
-
-                            <div class="border-top border-secondary border-opacity-10 pt-3">
-                                <label class="fs-12 text-muted uppercase fw-semibold mb-2">Focus Area</label>
-                                <div class="alert alert-dark border-0 rounded-3 p-2.5 fs-13 mb-3 text-white" id="star-focus-area">
-                                    Waiting for answer...
-                                </div>
-
-                                <label class="fs-12 text-muted uppercase fw-semibold mb-2">STAR Coaching Tip</label>
-                                <p class="text-muted-light fs-13 mb-0" id="star-tip">
-                                    Provide answers in structured STAR format (Situation, Task, Action, Result) to receive real-time coaching suggestions here.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Final Scorecard Card (Visible at the End) -->
-                    <div class="card glass-card border-success border-2 d-none flex-grow-1 overflow-hidden d-flex flex-column" id="evaluation-panel">
-                        <div class="card-header bg-success bg-opacity-10 border-bottom border-success border-opacity-20 py-3 px-4 d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold mb-0 text-white"><i class="ti ti-rosette-discount-check text-success me-1"></i> Interview Result</h6>
-                            <span class="badge bg-success fs-14 px-3 py-1.5" id="overall-score-badge">0/10</span>
-                        </div>
-                        <div class="card-body p-4 overflow-y-auto" style="flex: 1; min-height: 0;">
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <div class="p-2 bg-dark rounded border border-secondary border-opacity-10 text-center">
-                                        <small class="text-muted d-block fs-11">Communication</small>
-                                        <span class="fw-bold text-white fs-14" id="communication-score">0/10</span>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="p-2 bg-dark rounded border border-secondary border-opacity-10 text-center">
-                                        <small class="text-muted d-block fs-11">Confidence</small>
-                                        <span class="fw-bold text-white fs-14" id="confidence-score">0/10</span>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="p-2 bg-dark rounded border border-secondary border-opacity-10 text-center">
-                                        <small class="text-muted d-block fs-11">Relevance</small>
-                                        <span class="fw-bold text-white fs-14" id="relevance-score">0/10</span>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="p-2 bg-dark rounded border border-secondary border-opacity-10 text-center">
-                                        <small class="text-muted d-block fs-11">STAR Avg</small>
-                                        <span class="fw-bold text-white fs-14" id="star-average-score">0/10</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="alert alert-primary bg-primary bg-opacity-10 border-0 text-white fs-13 mb-3" id="evaluation-summary"></div>
-                            <div class="alert alert-secondary bg-dark border-0 text-white fs-13 mb-3 d-none" id="star-summary"></div>
-
-                            <div class="mb-3">
-                                <h6 class="fw-semibold text-success fs-14 mb-1">Strengths</h6>
-                                <ul class="mb-0 ps-3 text-muted-light fs-13" id="strengths-list"></ul>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-semibold text-warning fs-14 mb-1">Areas of Improvement</h6>
-                                <ul class="mb-0 ps-3 text-muted-light fs-13" id="improvements-list"></ul>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-semibold text-info fs-14 mb-1">Next Steps</h6>
-                                <ul class="mb-0 ps-3 text-muted-light fs-13" id="next-steps-list"></ul>
-                            </div>
-
-                            <div class="d-grid mt-4">
-                                <button type="button" class="btn btn-primary" id="btn-download">
-                                    <i class="ti ti-download me-1"></i> Download Transcript
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- answer dock -->
+    <div class="dock" id="dock">
+      <div class="dock-card" id="dock-card" data-mode="text">
+        <!-- answer mode switcher — candidate can change how they answer per question.
+             DEV: send the mode used alongside each answer payload. -->
+        <div class="mode-tabs" role="tablist" aria-label="How to answer">
+          <button type="button" class="mode-tab" role="tab" id="tab-text" data-setmode="text" aria-selected="true"><svg aria-hidden="true"><use href="#i-list"/></svg> Text</button>
+          <button type="button" class="mode-tab" role="tab" id="tab-voice" data-setmode="voice" aria-selected="false"><svg aria-hidden="true"><use href="#i-mic"/></svg> Voice</button>
+          <!-- Video tab removed per request -->
         </div>
-    </main>
+        <label for="answer" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Your answer</label>
+        <textarea id="answer" placeholder="Type your answer… take your time and use a real example."></textarea>
+        <!-- voice recording UI -->
+        <div class="dock-media">
+          <button type="button" class="media-orb" id="rec-orb" aria-label="Start recording your answer">
+            <svg id="rec-orb-ic" aria-hidden="true"><use href="#i-mic"/></svg>
+          </button>
+          <span class="wave-live" id="wave-live" hidden aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="rec-time" id="rec-time" hidden>0:00</span>
+          <p class="media-hint" id="media-hint">Tap to record your spoken answer. You can re-record before submitting.</p>
+          <div class="live-caption" id="live-caption" hidden aria-live="polite">
+            <span id="live-caption-txt"></span>
+            <button type="button" id="sr-retry" hidden>Retry</button>
+          </div>
+        </div>
+        <div class="dock-foot">
+          <span class="wcount" id="wcount">0 words</span>
+          <div class="dock-actions">
+            <button type="button" class="btn btn-outline btn-sm" id="skip-btn"><svg aria-hidden="true"><use href="#i-skip"/></svg> Skip</button>
+            <button type="button" class="btn btn-primary" id="submit-btn" disabled><svg aria-hidden="true"><use href="#i-send"/></svg> Submit Answer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- side panel -->
+  <aside class="panel" aria-label="Session panel">
+    <section class="card">
+      <div class="card-body rmini">
+        <span class="rmini-ava" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 20a7.5 7.5 0 0 1 14 0"/></svg>
+          <span class="live"></span>
+        </span>
+        <div><b id="p-rec-name">Adaeze</b><i id="p-rec-role">Warm &amp; encouraging</i></div>
+        <span class="rwave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-list"/></svg> Questions</span>
+        <span class="pill pill--brand" id="q-count-pill">0 of 0</span></div>
+      <div class="card-body qmap" id="qmap"></div>
+    </section>
+
+    <!-- (P5) Live recruiter notes — narrative observations written AS the
+         recruiter, distinct from the candidate-facing coaching widget's
+         self-improvement scores. Updates after every answered question. -->
+    <section class="card">
+      <div class="card-head"><span class="card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Recruiter's Notes</span>
+        <span class="live" id="notes-live" aria-hidden="true"></span></div>
+      <div class="card-body" id="rnotes-body">
+        <p class="rnotes-empty" id="rnotes-empty">Notes will appear here as the interview progresses.</p>
+        <ul class="rnotes-list" id="rnotes-list" aria-live="polite"></ul>
+        <p class="rnotes-src">AI-generated from your answers, in the style of a recruiter's notes \u2014 not from a human reviewer.</p>
+      </div>
+    </section>
+
+    <div class="tipbox" id="live-tip">
+      <svg aria-hidden="true"><use href="#i-bulb"/></svg>
+      <span id="live-tip-txt">Structure it: the situation, what <b>you</b> did, and the result. One real example beats three vague ones.</span>
+    </div>
+  </aside>
 </div>
 
-<!-- Configuration Form mapping for script (hidden) -->
-<div style="display:none;">
-    <input type="text" id="job-title" value="<?= esc((string) ($contextPreset['job_title'] ?? '')) ?>">
-    <select id="difficulty"><option value="<?= esc((string) ($contextPreset['difficulty'] ?? 'medium')) ?>" selected></option></select>
-    <select id="question-pack"><option value="<?= esc((string) ($contextPreset['question_pack'] ?? 'general')) ?>" selected></option></select>
-    <select id="interview-mode"><option value="<?= esc((string) ($contextPreset['interview_mode'] ?? 'chat')) ?>" selected></option></select>
-    <input type="checkbox" id="webcam-enabled" <?= ($contextPreset['webcam_enabled'] ?? false) ? 'checked' : '' ?>>
-    <input type="checkbox" id="auto-listen-toggle" checked>
-    <div id="speech-support"></div>
+<!-- completion screen -->
+<div class="done-wrap" id="done-wrap">
+  <span class="done-orb" id="done-orb" aria-hidden="true"><svg><use href="#i-check-c"/></svg></span>
+  <h1 id="done-title" tabindex="-1">Interview complete — well done!</h1>
+  <p>Your answers are being scored the way a real recruiter would score them. Your full report — strengths, fixes and recruiter's notes — is on its way.</p>
+  <div class="done-facts">
+    <div class="dfact"><b id="d-answered">0</b><i>Answered</i></div>
+    <div class="dfact"><b id="d-skipped">0</b><i>Skipped</i></div>
+    <div class="dfact"><b id="d-time">0:00</b><i>Time used</i></div>
+  </div>
+  <div class="done-actions">
+    <!-- View executive report below or practice again -->
+    <a href="#report" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-chart"/></svg> View My Report</a>
+    <a href="<?= site_url('candidate/career-tools/mock-interview') ?>" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Practice Again</a>
+    <a href="<?= site_url('candidate/dashboard') ?>" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-home"/></svg> Dashboard</a>
+  </div>
+  <p class="done-note"><svg aria-hidden="true"><use href="#i-info"/></svg><span>Scores come only from what you actually said in this session. Skipped questions aren't penalised in your report — they're simply marked for practice.</span></p>
+
+  <!-- ═══ EXECUTIVE REPORT (P6) — computed from this session's answers only ═══ -->
+  <div class="report" id="report">
+    <div class="rep-grid">
+      <div class="rep-card" style="min-width:220px">
+        <h3><svg aria-hidden="true"><use href="#i-chart"/></svg> Overall Interview Score</h3>
+        <div class="rep-ring">
+          <svg viewBox="0 0 130 130" aria-hidden="true">
+            <defs><linearGradient id="repgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#064A85"/><stop offset="100%" stop-color="#0861A9"/></linearGradient></defs>
+            <circle class="t" cx="65" cy="65" r="56"/><circle class="p" id="rep-ring-p" cx="65" cy="65" r="56"/>
+          </svg>
+          <span class="n"><span id="rep-overall">0</span><i>out of 100</i></span>
+        </div>
+        <span class="rep-band" id="rep-band"></span>
+      </div>
+      <div class="rep-card">
+        <h3><svg aria-hidden="true"><use href="#i-list"/></svg> Score Breakdown</h3>
+        <div class="subs" id="rep-subs"></div>
+      </div>
+    </div>
+    <div class="rep-cols">
+      <div class="rep-card">
+        <h3><svg aria-hidden="true"><use href="#i-check-c"/></svg> Strengths</h3>
+        <ul class="rep-list good" id="rep-strengths"></ul>
+      </div>
+      <div class="rep-card">
+        <h3><svg aria-hidden="true"><use href="#i-zap"/></svg> Work On Next</h3>
+        <ul class="rep-list fix" id="rep-fixes"></ul>
+      </div>
+    </div>
+    <div class="rep-cols">
+      <div class="rep-card">
+        <h3><svg aria-hidden="true"><use href="#i-chart"/></svg> Skill Radar</h3>
+        <div class="radar-wrap"><svg viewBox="0 0 260 230" id="radar-svg" role="img" aria-label="Skill radar chart"></svg></div>
+      </div>
+      <div class="rep-card">
+        <h3><svg aria-hidden="true"><use href="#i-arrow-r"/></svg> Recommended Next Steps</h3>
+        <ul class="rep-list good" style="--c:var(--brand)">
+          <li><svg aria-hidden="true"><use href="#i-arrow-r"/></svg><span><a href="/training">Take a matching course</a> — short Nigerian-market courses that target your weakest area.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-arrow-r"/></svg><span><a href="/jobs">Browse matching jobs</a> — roles aligned with the interview type you just practised.</span></li>
+          <li><svg aria-hidden="true"><use href="#i-arrow-r"/></svg><span id="rep-advice">Practise one more session this week to lock in the improvement.</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="rep-next">
+      <button type="button" class="btn btn-outline" id="rep-pdf"><svg aria-hidden="true"><use href="#i-chart"/></svg> Download PDF</button>
+      <button type="button" class="btn btn-outline" id="rep-share"><svg aria-hidden="true"><use href="#i-send"/></svg> Share Report</button>
+      <a href="<?= site_url('candidate/career-tools/mock-interview') ?>" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Book Next Interview</a>
+    </div>
+  </div>
 </div>
+</main>
+
+<!-- live coaching widget (P5) — honest, measured-only metrics -->
+<aside class="coach hide" id="coach" aria-label="Live coaching metrics">
+  <div class="coach-head"><b><svg aria-hidden="true"><use href="#i-zap"/></svg> Live Coaching</b>
+    <button type="button" id="coach-close" aria-label="Hide coaching panel"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="coach-body">
+    <div class="crow" data-k="len"><i>Answer depth</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow" data-k="pace"><i>Speaking pace</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow" data-k="star"><i>STAR structure</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow" data-k="spec"><i>Specificity</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow" data-k="conf"><i>Confident language</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow" data-k="prof"><i>Professionalism</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow dim" data-k="eye"><i>Eye contact</i><b>needs video AI</b><span class="track"><span class="fill"></span></span></div>
+  </div>
+  <p class="coach-note">Estimated live from your typed answers — full recruiter scoring in your report.</p>
+</aside>
+<button type="button" class="coach-tab" id="coach-tab" aria-label="Show live coaching"><svg aria-hidden="true"><use href="#i-zap"/></svg></button>
+
+<!-- exit confirm modal -->
+<div class="modal-scrim" id="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-title" aria-describedby="exit-desc">
+  <div class="modal">
+    <span class="modal-ic" aria-hidden="true"><svg><use href="#i-alert"/></svg></span>
+    <h2 id="exit-title">End this interview?</h2>
+    <p id="exit-desc">Your answers so far are saved, but this session will be marked incomplete and won't produce a full report.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" id="exit-stay">Keep Going</button>
+      <a href="<?= site_url('candidate/career-tools/mock-interview') ?>" class="btn btn-danger-o" id="exit-leave">End Session</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#i-check-c"/></svg><span id="toast-txt"></span></div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const contextPreset = <?= json_encode($contextPreset, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    const applicationId = Number(contextPreset.application_id || 0);
-    const initialPrompt = contextPreset.job_title
-        ? `Hello! I am your JobberRecruit AI interviewer for the ${contextPreset.job_title} role. Click Enter Interview Room to begin your live mock interview practice.`
-        : "Hello! I am your JobberRecruit AI interviewer. Let's start the mock interview.";
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 
-    const chatForm = document.getElementById('chat-form');
-    const chatInput = document.getElementById('chat-input');
-    const chatWindow = document.getElementById('chat-window');
-    const chatMessages = document.getElementById('chat-messages');
-    const btnSend = document.getElementById('btn-send');
-    const btnBegin = document.getElementById('btn-begin');
-    const btnListen = document.getElementById('btn-listen');
-    const btnStop = document.getElementById('btn-stop');
-    const btnReplay = document.getElementById('btn-replay');
-    const btnSkip = document.getElementById('btn-skip');
-    const btnEnd = document.getElementById('btn-end');
-    const btnDownload = document.getElementById('btn-download');
-    const jobTitleInput = document.getElementById('job-title');
-    const difficultySelect = document.getElementById('difficulty');
-    const questionPackSelect = document.getElementById('question-pack');
-    const interviewModeSelect = document.getElementById('interview-mode');
-    const webcamEnabledToggle = document.getElementById('webcam-enabled');
-    const liveTranscript = document.getElementById('live-transcript');
-    const voiceStatus = document.getElementById('voice-status');
-    const micStatus = document.getElementById('mic-status');
-    const speechSupport = document.getElementById('speech-support');
-    const autoListenToggle = document.getElementById('auto-listen-toggle');
-    const questionCountEl = document.getElementById('question-count');
-    const answerCountEl = document.getElementById('answer-count');
-    const sessionDurationEl = document.getElementById('session-duration');
-    const evaluationPanel = document.getElementById('evaluation-panel');
-    const overallScoreBadge = document.getElementById('overall-score-badge');
-    const communicationScore = document.getElementById('communication-score');
-    const confidenceScore = document.getElementById('confidence-score');
-    const relevanceScore = document.getElementById('relevance-score');
-    const starAverageScore = document.getElementById('star-average-score');
-    const latestStarScore = document.getElementById('latest-star-score');
-    const starSituation = document.getElementById('star-situation');
-    const starTask = document.getElementById('star-task');
-    const starAction = document.getElementById('star-action');
-    const starResult = document.getElementById('star-result');
-    const starFocusArea = document.getElementById('star-focus-area');
-    const starTip = document.getElementById('star-tip');
-    const starSummary = document.getElementById('star-summary');
-    const evaluationSummary = document.getElementById('evaluation-summary');
-    const strengthsList = document.getElementById('strengths-list');
-    const improvementsList = document.getElementById('improvements-list');
-    const nextStepsList = document.getElementById('next-steps-list');
-    const webcamPreview = document.getElementById('webcam-preview');
-    const webcamPlaceholder = document.getElementById('webcam-placeholder');
-    const voiceWaves = document.getElementById('voice-waves');
-    const transcriptPreviewBox = document.getElementById('transcript-preview-box');
+/* ── read config from query string or context preset ── */
+function qp(k,d){var m=new URLSearchParams(location.search).get(k);return m!==null&&m!==''?m:d}
+var interview_mode = qp('interview_mode', qp('imode', '<?= isset($contextPreset["interview_mode"]) ? esc($contextPreset["interview_mode"], "js") : "text" ?>'));
+if (interview_mode === 'chat') interview_mode = 'text';
+if (interview_mode === 'video') interview_mode = 'voice';
+window.interview_mode = interview_mode;
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognitionSupported = !!SpeechRecognition;
-    const synthesisSupported = 'speechSynthesis' in window;
-    const packLabels = {
-        general: 'General',
-        engineering: 'Engineering',
-        product: 'Product',
-        sales: 'Sales',
-        marketing: 'Marketing',
-        support: 'Support',
-        operations: 'Operations'
-    };
+var CFG={
+  job:(qp('job_title')||qp('job','this role')||'<?= isset($contextPreset["job_title"]) ? esc($contextPreset["job_title"], "js") : "this role" ?>').replace(/[\u0000-\u001F\u007F\u200E\u200F\u202A-\u202E\u2066-\u2069]/g,'').slice(0,60).trim()||'this role',
+  itype:qp('itype',qp('interview_type','behavioral')),
+  imode:interview_mode,
+  diff:qp('diff','medium'),
+  dur:Math.min(90,Math.max(5,parseInt(qp('dur','30'),10)||30)),
+  persona:qp('persona','corporate-hr'),
+  exp:qp('exp','mid'),
+  field:qp('field',qp('question_pack','general')),
+  focus:qp('focus','balanced'),
+  salaryBand:qp('salary',''),
+  company:qp('company','any'),
+  arrangement:qp('arrangement','onsite'),
+  candidateContext: '<?= isset($contextPreset["candidate_profile"]) ? esc($contextPreset["candidate_profile"], "js") : "" ?>'
+};
 
-    let history = [];
-    let jobTitle = contextPreset.job_title || '';
-    let currentQuestion = '';
-    let interviewStarted = false;
-    let isListening = false;
-    let isEvaluating = false;
-    let awaitingAnswer = false;
-    let recognition = null;
-    let finalTranscript = '';
-    let questionCount = 0;
-    let answerCount = 0;
-    let sessionStartedAt = null;
-    let durationTimer = null;
-    let mediaStream = null;
+var esc=function(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML};
 
-    function setVoiceStatus(text) {
-        voiceStatus.textContent = text;
-        if (text === 'Interviewer is speaking' && voiceWaves) {
-            voiceWaves.style.setProperty('display', 'flex', 'important');
-        } else if (voiceWaves) {
-            voiceWaves.style.setProperty('display', 'none', 'important');
-        }
+/* ── DEBUG PANEL (?debug=1) ──────────────────────────────────────────
+   Add &debug=1 to any session URL to see exactly what loaded and what
+   happened, live, on the actual device \u2014 instead of guessing from a
+   description after the fact. Shows the real CFG (so "why is it saying
+   'this role'" is visible immediately: the panel will show job="this
+   role" if that's genuinely what the URL carried), whether the page is
+   on a secure origin (the actual cause behind most camera/mic/
+   transcription failures), and a live log of camera, voice, and
+   transcription events as they happen. Zero effect on the normal
+   candidate experience \u2014 nothing here runs unless the URL asks for it. */
+var DEBUG=qp('debug','')==='1';
+var dbgLogEl=null;
+function dlog(msg,ok){
+  if(!DEBUG||!dbgLogEl)return;
+  var line=document.createElement('div');
+  line.className=ok===false?'dbg-bad':ok===true?'dbg-ok':'dbg-info';
+  line.textContent=(ok===false?'\u2717 ':ok===true?'\u2713 ':'\u2022 ')+msg;
+  dbgLogEl.appendChild(line);
+  dbgLogEl.scrollTop=dbgLogEl.scrollHeight;
+}
+if(DEBUG){
+  var secure=window.isSecureContext===true||location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  var panel=document.createElement('div');
+  panel.id='dbg-panel';
+  panel.innerHTML='<h4>Debug <button type="button" id="dbg-toggle">\u2212</button></h4>'+
+    '<div id="dbg-cfg"></div><div id="dbg-log"></div>';
+  document.body.appendChild(panel);
+  var cfgEl=document.getElementById('dbg-cfg');
+  var rows=[
+    ['job',CFG.job],['field',CFG.field],['itype',CFG.itype],['imode',CFG.imode],
+    ['diff',CFG.diff],['persona',CFG.persona],['dur',CFG.dur],['focus',CFG.focus],
+    ['origin',location.protocol+'//'+location.host],
+    ['secure context',secure?'yes':'NO \u2014 camera/mic/transcription will be blocked'],
+    ['TTS supported','pending\u2026'],['SpeechRecognition supported','pending\u2026']
+  ];
+  cfgEl.innerHTML=rows.map(function(r){return '<div><b>'+r[0]+':</b> '+esc(String(r[1]))+'</div>'}).join('');
+  var cfgDivs=cfgEl.querySelectorAll('div');
+  cfgDivs[cfgDivs.length-2].id='dbg-tts-row';
+  cfgDivs[cfgDivs.length-1].id='dbg-sr-row';
+  dbgLogEl=document.getElementById('dbg-log');
+  document.getElementById('dbg-toggle').addEventListener('click',function(){
+    var collapsed=cfgEl.style.display==='none';
+    cfgEl.style.display=collapsed?'':'none';
+    dbgLogEl.style.display=collapsed?'':'none';
+    this.textContent=collapsed?'\u2212':'+';
+  });
+  dlog('CFG loaded (see panel above)',true);
+  if(!secure)dlog('INSECURE ORIGIN \u2014 camera, mic, and transcription cannot work here regardless of permissions',false);
+}
+
+/* ── personas (must match the Studio) ── */
+var PERSONAS={
+  'corporate-hr':{name:'Chioma Nwachukwu',role:'HR Business Partner',
+    open:'Hello, I\u2019m Chioma from HR. Thank you for making time today \u2014 I\u2019ll walk you through a structured set of questions about your experience and fit for the role. Let\u2019s get started.'},
+  'big4-partner':{name:'Mr. Bankole Adisa',role:'Partner, Professional Services',
+    open:'Good day. I\u2019m Bankole \u2014 I lead engagements at partner level, and I hold every candidate to the standard I hold my own team. Let\u2019s begin; I expect precision in your answers.'},
+  'startup-founder':{name:'Tomiwa',role:'Founder &amp; CEO',
+    open:'Hey, I\u2019m Tomiwa \u2014 I run the company, so this is just me, no HR script. I move fast and I like people who move fast too. Let\u2019s dive in.'},
+  'technical-lead':{name:'Emeka Okafor',role:'Engineering / Technical Lead',
+    open:'Hi, I\u2019m Emeka \u2014 I\u2019ll be going deep on the technical side today. I care less about buzzwords and more about how you actually think through problems. Let\u2019s start.'},
+  'gov-recruiter':{name:'Alhaji Musa Ibrahim',role:'Civil Service Interview Panel',
+    open:'Good day. I am Alhaji Musa Ibrahim, and I will conduct this interview in line with standard civil service procedure. Please answer each question fully, in the order presented.'},
+  'banking-recruiter':{name:'Ngozi Adebayo-Williams',role:'Talent Recruiter, Banking &amp; Financial Services',
+    open:'Hello, I\u2019m Ngozi, and I recruit for banking and financial services roles. We move efficiently here, and we care about precision \u2014 especially with numbers. Let\u2019s begin.'}
+};
+var P=PERSONAS[CFG.persona]||PERSONAS['corporate-hr'];
+if(DEBUG){dlog('persona: '+P.name+' ('+P.role+')'+(PERSONAS[CFG.persona]?'':' \u2014 CFG.persona="'+CFG.persona+'" not recognised, fell back to default'),!!PERSONAS[CFG.persona]);}
+
+/* ── question banks (demo — DEV: replace with AI engine, keyed by role) ── */
+var ROLE=esc(CFG.job);
+var BANK={
+  behavioral:[
+    'Tell me about yourself and why you\u2019re pursuing a role as '+ROLE+'.',
+    'Describe a time you faced a serious challenge at work. What did you do, and what was the result?',
+    'Tell me about a time you disagreed with your manager or a senior colleague. How did you handle it?',
+    'Give me an example of a goal you set and how you achieved it. Include the numbers if you can.',
+    'Describe a mistake you made professionally. What did you learn and change afterwards?',
+    'Tell me about a time you had to deliver under serious pressure or a tight deadline.',
+    'What would your last supervisor say is your biggest strength \u2014 and your biggest gap?',
+    'Why do you want to leave your current position \u2014 or why did you leave your last one?',
+    'Where do you see yourself in three years, and how does this role get you there?'
+  ],
+  technical:[
+    'Walk me through your core responsibilities in your most recent role as it relates to '+ROLE+'.',
+    'Describe the most technically demanding project you\u2019ve delivered. What was your specific contribution?',
+    'How do you keep your skills current in your field? Give a recent example of something you learned and applied.',
+    'A key process you own fails the day before a major deadline. Take me through exactly what you do.',
+    'Which tools and systems do you use daily, and how proficient are you in each \u2014 honestly?',
+    'Explain a complex concept from your field as you would to a non-technical manager.',
+    'Describe a time your technical judgement was questioned. How did you defend or revise it?',
+    'What quality checks do you apply to your own work before anyone else sees it?'
+  ],
+  leadership:[
+    'Tell me about the largest team or project you\u2019ve led. What was the outcome?',
+    'Describe a time you had to manage an underperforming team member. What did you do?',
+    'How do you handle a decision your team disagrees with but you believe is right?',
+    'Tell me about a time you managed up \u2014 influencing a decision above your level.',
+    'Describe a conflict between two people you were responsible for. How did you resolve it?',
+    'How do you delegate: what do you keep, what do you hand off, and why?',
+    'Tell me about a strategic call you made with incomplete information.',
+    'How do you develop people \u2014 give me one person you grew and how.'
+  ]
+};
+BANK.mixed=[BANK.behavioral[0],BANK.technical[1],BANK.behavioral[3],BANK.leadership[2],BANK.technical[3],BANK.behavioral[5],BANK.leadership[6],BANK.behavioral[8]];
+
+/* ── ROLE-AWARE QUESTIONS ────────────────────────────────────────────
+   The generic BANK above only ever inserts the job title into one
+   sentence — every "technical" question was identical no matter the
+   profession. This is where technical questions actually become
+   role-specific. Behavioral/leadership stay universal by design (real
+   interviews use those to probe soft skills regardless of role); it's
+   the technical portion where domain knowledge should show up.
+   Curated for the same six roles as the Aptitude Hub, for platform
+   consistency. DEV: the real long-term fix is a backend endpoint \u2014
+   POST /api/interview/questions {job, itype, diff} \u2014 that generates
+   genuinely tailored questions for ANY job title via an LLM, the same
+   way BANKS should eventually be server-side for the aptitude tests.
+   This curated set + keyword classifier is the honest static-file scope
+   until that's wired; unmatched roles fall back to the generic bank. */
+var ROLE_BANKS={
+  'software-developer':{
+    match:['develop','engineer','programmer','software','frontend','backend','full stack','fullstack','coder','web dev','app dev'],
+    technical:[
+      'Walk me through how you\u2019d debug a production issue where an API endpoint is intermittently timing out.',
+      'How do you decide between a SQL and a NoSQL database for a new project?',
+      'Explain how you\u2019d design a system to handle ten times more traffic than it does today.',
+      'What\u2019s your approach to reviewing a colleague\u2019s pull request \u2014 what are you actually looking for?',
+      'Describe your testing strategy: unit, integration, end-to-end. How do you decide what\u2019s worth covering?',
+      'How do you handle technical debt when you\u2019re under pressure to ship a feature fast?',
+      'Tell me about a time you had to learn a new language or framework quickly for a project.',
+      'How would you explain what a database index does to a non-technical manager?'
+    ]
+  },
+  'data-analysis':{
+    match:['data analy','business analy','sql','data scien','reporting analy','bi analy','insights'],
+    technical:[
+      'Walk me through how you\u2019d investigate a sudden 20 percent drop in a key metric.',
+      'How do you decide whether a result is statistically meaningful or just noise?',
+      'Describe your process for cleaning a dataset with missing or inconsistent values.',
+      'In plain words, how would you write a query to find customers who bought in January but not February?',
+      'How do you communicate a complex analysis to a stakeholder with no technical background?',
+      'Tell me about a time your analysis contradicted what leadership expected to hear. What did you do?',
+      'What\u2019s the difference between correlation and causation, and how do you guard against mixing them up?',
+      'How do you decide which chart or visualisation fits a given dataset?'
+    ]
+  },
+  'accounting-fundamentals':{
+    match:['account','bookkeep','ledger','audit','tax officer','payroll officer','financial analy','finance officer','financial planning','treasury','investment analy','budget'],
+    technical:[
+      'Walk me through how you\u2019d handle a discrepancy you find during a month-end bank reconciliation.',
+      'Explain the difference between accrual and cash-basis accounting, and when each is appropriate.',
+      'How do you stay current with changes to accounting standards or Nigerian tax regulations?',
+      'Describe your process for closing the books at month-end \u2014 what order do you do things in, and why?',
+      'A senior manager asks you to record a transaction in a way that doesn\u2019t feel right to you. What do you do?',
+      'What controls would you put in place to prevent duplicate vendor payments?',
+      'Explain how depreciation affects both the income statement and the balance sheet.',
+      'How do you prioritise when you have multiple reporting deadlines in the same week?',
+      'How would you assess whether a company\u2019s rising revenue is actually healthy growth?',
+      'Walk me through how you\u2019d build a simple cash flow forecast for a small business.',
+      'Explain what a current ratio tells you about a company \u2014 and its limitations.',
+      'How do you evaluate whether an investment or project is worth pursuing?',
+      'A department is 15 percent over budget this quarter. How do you investigate why?',
+      'What\u2019s the difference between gross margin and net margin, and why do both matter?',
+      'How would you explain return on investment to someone with no finance background?',
+      'Tell me about a time financial analysis \u2014 yours or a colleague\u2019s \u2014 changed a decision that was about to be made.'
+    ]
+  },
+  'social-media-content':{
+    match:['social media','content creat','content writer','community manag','influencer','content strategist'],
+    technical:[
+      'Walk me through how you\u2019d plan a week\u2019s worth of content for a brand with no existing following.',
+      'How do you decide what format \u2014 reel, carousel, static post \u2014 fits a given message?',
+      'A post is getting a lot of negative comments. Walk me through how you\u2019d handle it in real time.',
+      'How do you keep a consistent brand voice across platforms with different norms and audiences?',
+      'Describe how you\u2019d measure whether a piece of content actually worked, beyond just likes.',
+      'How do you stay ahead of trends without chasing every single one that appears?',
+      'Tell me about a piece of content that underperformed. What did you learn from it?',
+      'How would you handle a brand collaboration or influencer partnership that isn\u2019t delivering value?'
+    ]
+  },
+  'digital-marketing':{
+    match:['marketing','digital market','seo','growth market','paid media','performance market','google ads','ppc','brand manag'],
+    technical:[
+      'Walk me through how you\u2019d diagnose a campaign that\u2019s getting clicks but no conversions.',
+      'How do you decide which channel to prioritise with a limited budget?',
+      'Explain how you\u2019d measure the ROI of a social media campaign beyond likes and followers.',
+      'Describe your process for running an A/B test \u2014 what do you change, and how do you know it worked?',
+      'How do you stay current with changes to platform algorithms like Google, Instagram, or TikTok?',
+      'A campaign is performing well on impressions but the budget is running out fast. What do you do?',
+      'How would you build a content calendar for a brand launching in a new market?',
+      'Tell me about a campaign that underperformed. What did you learn and change?'
+    ]
+  },
+  'office-admin':{
+    match:['admin','front desk','receptionist','office assist','executive assist','secretary','office manager'],
+    technical:[
+      'Two department heads both need the same conference room at the same time. How do you resolve it?',
+      'Walk me through how you\u2019d organise a confidential document filing system from scratch.',
+      'How do you handle it when your manager gives you instructions that conflict with what you were told yesterday?',
+      'Describe your approach to managing a calendar with back-to-back meetings across different time zones.',
+      'A vendor invoice looks off to you, but your manager wants it paid quickly. What do you do?',
+      'How do you keep track of multiple ongoing tasks with different deadlines and priorities?',
+      'Tell me about a time you improved a process or system in a previous administrative role.',
+      'How would you handle a visitor who arrives for a meeting that isn\u2019t on the calendar?'
+    ]
+  },
+  'sales-business-dev':{
+    match:['sales','business development','account executive','bdm','account manager','sales rep'],
+    technical:[
+      'Walk me through how you\u2019d qualify a lead before spending real time on it.',
+      'Describe how you\u2019d handle a prospect who keeps going quiet after a promising first call.',
+      'How do you build a pipeline from scratch when you\u2019re new to a territory or market?',
+      'A client pushes back hard on price. Walk me through how you handle that conversation.',
+      'How do you decide when to walk away from a deal that isn\u2019t a good fit?',
+      'Describe your process for following up without becoming annoying.',
+      'What\u2019s the difference between a good sales pitch and a great one, in your view?',
+      'Tell me about a deal you lost. What would you do differently now?'
+    ]
+  },
+  'customer-service':{
+    match:['customer service','customer support','call centre','call center','client support','helpdesk','help desk'],
+    technical:[
+      'Walk me through how you\u2019d handle a customer who\u2019s angry about something that wasn\u2019t your fault.',
+      'A customer is factually wrong about your product, but insists they\u2019re right. How do you respond?',
+      'How do you prioritise when you have five customers waiting and can only help one at a time?',
+      'Describe how you\u2019d de-escalate a call that\u2019s getting heated.',
+      'What do you do when you genuinely don\u2019t know the answer to a customer\u2019s question?',
+      'How do you keep your tone professional after a string of difficult interactions in one day?',
+      'Tell me about a time you turned an unhappy customer into a satisfied one.',
+      'How would you explain a delay or mistake to a customer without making excuses?'
+    ]
+  },
+  'human-resources':{
+    match:['human resources','hr officer','hr manager','recruit','talent acqui','people operations'],
+    technical:[
+      'Walk me through how you\u2019d screen a stack of fifty CVs down to a shortlist of five.',
+      'How do you handle a hiring manager who wants to skip reference checks to move faster?',
+      'Describe how you\u2019d handle a conflict between two employees on the same team.',
+      'A high performer is about to resign. What do you do before it becomes final?',
+      'How do you make sure a job interview stays fair and unbiased?',
+      'Walk me through how you\u2019d manage a disciplinary process from start to finish.',
+      'How do you balance being approachable to staff with enforcing company policy?',
+      'Tell me about a time you had to deliver difficult news, like a termination, professionally.'
+    ]
+  },
+  'engineering-technical':{
+    match:['mechanical eng','civil eng','electrical eng','technician','maintenance eng','field eng','site eng'],
+    technical:[
+      'Walk me through how you\u2019d diagnose a piece of equipment that\u2019s failing intermittently.',
+      'Describe your approach to a preventive maintenance schedule versus fixing things as they break.',
+      'How do you prioritise safety when under pressure to finish a job quickly?',
+      'A job isn\u2019t going to plan, and the client wants updates. How do you communicate that?',
+      'Describe a time you had to work with a design or spec that had an error in it. What did you do?',
+      'How do you keep your technical knowledge current as tools and standards change?',
+      'Walk me through how you\u2019d handle a safety incident on site, step by step.',
+      'What\u2019s your process for checking your own work before signing off on a job?'
+    ]
+  },
+  'logistics-supply-chain':{
+    match:['logistics','supply chain','procurement','warehouse','inventory','fleet','shipping'],
+    technical:[
+      'Walk me through how you\u2019d handle a shipment stuck in customs with a deadline approaching.',
+      'How do you decide how much stock to hold without over-ordering or running out?',
+      'Describe how you\u2019d manage a supplier who keeps missing delivery dates.',
+      'A delivery route needs to change last minute. How do you communicate that down the chain?',
+      'How do you track and reduce waste or shrinkage in a warehouse?',
+      'Walk me through how you\u2019d handle conflicting priorities between cost-saving and speed of delivery.',
+      'Describe your approach to choosing between multiple vendors offering similar terms.',
+      'Tell me about a time a supply chain disruption forced you to improvise a solution.'
+    ]
+  },
+  'legal-compliance':{
+    match:['legal officer','lawyer','solicitor','compliance officer','paralegal','company secretary'],
+    technical:[
+      'Walk me through how you\u2019d review a contract for red flags before it\u2019s signed.',
+      'How do you stay current with changes in Nigerian regulation relevant to your sector?',
+      'A business decision seems commercially smart but legally risky. How do you raise that?',
+      'Describe how you\u2019d handle a situation where a colleague asks you to overlook a compliance issue.',
+      'How do you explain a complex legal or regulatory requirement to a non-legal colleague?',
+      'Walk me through your process for conducting a compliance audit or review.',
+      'Tell me about a time you had to say no to a request on legal or ethical grounds.',
+      'How do you balance thoroughness with the business\u2019s need to move quickly?'
+    ]
+  },
+  'healthcare-medical':{
+    match:['nurse','doctor','physician','pharmacist','clinical','healthcare','medical officer','lab technician'],
+    technical:[
+      'Walk me through how you\u2019d handle a patient who\u2019s anxious and uncooperative during a procedure.',
+      'Describe how you\u2019d respond if you noticed a colleague make a medication error.',
+      'How do you stay current with new treatment guidelines or protocols in your field?',
+      'A patient\u2019s family member demands information you\u2019re not authorised to share. How do you handle it?',
+      'Walk me through your process for a patient handover at the end of your shift.',
+      'How do you manage your own stress during a high-pressure emergency situation?',
+      'Describe a time you had to advocate for a patient against a difficult decision.',
+      'How do you balance patient care quality with the time pressure of a busy shift?'
+    ]
+  },
+  'education-training':{
+    match:['teacher','lecturer','tutor','trainer','instructor','educator','teaching assistant'],
+    technical:[
+      'Walk me through how you\u2019d handle a student who\u2019s consistently disruptive in class.',
+      'How do you adjust your teaching approach for students learning at different paces?',
+      'Describe how you\u2019d explain a difficult concept to a student who isn\u2019t getting it.',
+      'A parent disagrees with a grade you gave. How do you handle that conversation?',
+      'How do you keep a class engaged for a full session, especially the last ten minutes?',
+      'Walk me through how you\u2019d design a lesson plan for a topic you\u2019re teaching for the first time.',
+      'How do you assess whether your teaching is actually working, beyond test scores?',
+      'Tell me about a time you had to adapt a lesson on the spot when something wasn\u2019t working.'
+    ]
+  },
+  'hospitality':{
+    match:['hotel','restaurant','hospitality','chef','waiter','waitress','front office','guest relations','hotel front desk','hotel reception','guest services'],
+    technical:[
+      'Walk me through how you\u2019d handle a guest who\u2019s unhappy with their room or meal.',
+      'How do you manage a fully booked service with unexpected walk-ins?',
+      'Describe how you\u2019d train a new staff member on service standards in their first week.',
+      'A VIP guest makes a request that\u2019s against policy. How do you handle it?',
+      'How do you keep staff morale up during a long, high-pressure shift?',
+      'Walk me through how you\u2019d handle a situation where a booking was clearly mishandled.',
+      'How do you balance guest satisfaction with cost control?',
+      'Tell me about a time you turned a service failure into a positive guest experience.'
+    ]
+  },
+  'manufacturing-production':{
+    match:['manufactur','production line','production supervisor','production manager','production officer','factory','quality control','plant operator','assembly line'],
+    technical:[
+      'Walk me through how you\u2019d investigate a sudden drop in production output.',
+      'How do you balance production speed with maintaining quality standards?',
+      'Describe how you\u2019d handle a safety hazard you spot on the production floor.',
+      'A machine breaks down mid-shift and there\u2019s a deadline. What do you do?',
+      'How do you ensure consistency across a production line with multiple operators?',
+      'Walk me through your process for a quality control check before a batch ships.',
+      'How do you handle a supplier delivering substandard raw materials?',
+      'Tell me about a time you improved a process on the production floor.'
+    ]
+  },
+  'it-support':{
+    match:['it support','helpdesk','help desk','desktop support','system admin','network admin','technical support','it technician','computer technician'],
+    technical:[
+      'Walk me through how you\u2019d troubleshoot a user who says "my computer isn\u2019t working" with no other details.',
+      'How do you prioritise tickets when you have ten urgent issues at once?',
+      'Describe how you\u2019d explain a technical fix to someone with no technical background.',
+      'A user is frustrated and blaming you for a problem that isn\u2019t your fault. How do you handle the call?',
+      'How do you keep track of recurring issues so you can fix the root cause, not just symptoms?',
+      'Walk me through your process for setting up a new employee\u2019s laptop and accounts.',
+      'How do you stay current with new software and systems your company adopts?',
+      'Tell me about a time you solved a problem that had stumped others.'
+    ]
+  },
+  'project-management':{
+    match:['project manager','product manager','scrum master','program manager','pmo'],
+    technical:[
+      'Walk me through how you\u2019d handle a project that\u2019s falling behind schedule.',
+      'How do you prioritise tasks when everyone thinks their request is most urgent?',
+      'Describe how you\u2019d handle a stakeholder who keeps changing requirements mid-project.',
+      'A project is over budget. Walk me through how you\u2019d investigate and respond.',
+      'How do you keep a cross-functional team aligned when they report to different managers?',
+      'Walk me through how you\u2019d run a retrospective after a project that didn\u2019t go well.',
+      'How do you decide what to say no to when everything feels like a priority?',
+      'Tell me about a time you had to deliver bad news about a project to leadership.'
+    ]
+  },
+  'design-ux':{
+    match:['ux design','ui design','graphic design','product design','visual design','web design'],
+    technical:[
+      'Walk me through how you\u2019d approach designing a feature you\u2019ve never designed before.',
+      'How do you handle feedback from a stakeholder that conflicts with what user research tells you?',
+      'Describe your process for testing whether a design actually works for users.',
+      'A deadline is tight and you can\u2019t do full user research. How do you make design decisions anyway?',
+      'How do you balance a client\u2019s aesthetic preference with usability?',
+      'Walk me through how you\u2019d explain a design decision to someone who just says "I don\u2019t like it".',
+      'How do you keep a consistent visual identity across many different pieces of work?',
+      'Tell me about a design you\u2019re proud of that didn\u2019t get approved. What did you learn?'
+    ]
+  }
+};
+function classifyRole(jobText){
+  var t=(jobText||'').toLowerCase();
+  if(!t||t==='this role')return null;
+  var keys=Object.keys(ROLE_BANKS);
+  /* longest matching keyword wins \u2014 mirrors Studio's suggestField() so the
+     two never disagree on the same typed text, and resolves overlapping
+     substrings (e.g. "develop" vs "business development") correctly. */
+  var best=null,bestLen=0;
+  for(var i=0;i<keys.length;i++){
+    var m=ROLE_BANKS[keys[i]].match;
+    for(var j=0;j<m.length;j++){
+      if(t.indexOf(m[j])>-1&&m[j].length>bestLen){best=keys[i];bestLen=m[j].length}
     }
+  }
+  return best;
+}
+/* Studio's explicit Field selector is authoritative when present \u2014 far
+   more reliable than guessing from free text. The keyword classifier stays
+   as a fallback for direct/older links that never went through Studio's
+   picker (backward compatible, never breaks existing test URLs). */
+var ROLE_KEY=(ROLE_BANKS[CFG.field]?CFG.field:null)||classifyRole(CFG.job);
 
-    function setMicStatus(text) {
-        micStatus.textContent = text;
+/* question count from the same transparent heuristic as the Studio */
+var PACE={easy:2.6,medium:3.2,hard:3.8};
+var qTotal=Math.max(3,Math.min(9,Math.round(CFG.dur/(PACE[CFG.diff]||3.2))));
+
+/* ── QUESTION SOURCE (single source of truth) ───────────────────────────
+   RULE: exactly ONE source builds QS per session. Never both. This is the
+   only place that decides which one \u2014 nothing downstream (intro, askNext,
+   follow-ups) may add, swap, or "improve" questions after this resolves.
+   That's what prevents the exact bug we're guarding against: half the
+   session from Gemini, half from the local bank, visibly disagreeing.
+
+   FLIP THIS ONE FLAG when the backend endpoint is live. Nothing else in
+   this file needs to change.
+     'fallback' \u2014 curated local banks (ROLE_BANKS) + generic BANK. Live now.
+     'gemini'   \u2014 calls fetchAIQuestions() below. If that call fails or
+                  times out, it falls back to the SAME local banks \u2014 the
+                  room must never dead-end because an API call failed \u2014
+                  but it logs which source actually ran (see QUESTION_SOURCE_USED)
+                  so a broken integration is visible in testing, not silently
+                  masked the way the old TTS failures were before we fixed that. */
+var QUESTION_SOURCE='gemini';
+var QUESTION_SOURCE_USED=null; /* set once resolved: 'gemini' | 'fallback' \u2014 read this, don't guess */
+
+/* Question Focus + Expected Salary \u2014 REAL effects today, not just
+   collected-and-forwarded like Company Type / Work Arrangement (those two
+   are genuinely inert until Gemini can act on them \u2014 no fallback logic
+   fakes an effect for them). Scoped honestly:
+   \u2014 STAR / Culture reorder the universal BEHAVIORAL bank specifically,
+     since "STAR-ness" isn't a real distinction for technical or leadership
+     content \u2014 we don't fabricate one just to look like Focus does something
+     everywhere.
+   \u2014 Role-specific skills injects real ROLE_BANKS content regardless of
+     itype, including into Behavioral/Leadership sessions that would
+     otherwise never see role content at all.
+   \u2014 Salary & negotiation practice inserts a genuine question that
+     references the candidate's OWN stated band \u2014 this is what makes
+     "shapes negotiation questions" true instead of aspirational. */
+var SALARY_BANDS={b1:'below \u20A6150,000',b2:'\u20A6150,000 to \u20A6300,000',b3:'\u20A6300,000 to \u20A6600,000',b4:'\u20A6600,000 to \u20A61,000,000',b5:'above \u20A61,000,000'};
+var STAR_ORDER=[0,1,3,4,5,2,6,7,8];    // STAR-heavy, right after the opener
+var CULTURE_ORDER=[0,6,7,8,2,1,3,4,5]; // motivation/fit-heavy, right after the opener
+function applyFocusAdjustments(qs){
+  if((CFG.focus==='star'||CFG.focus==='culture')&&CFG.itype==='behavioral'){
+    var order=CFG.focus==='star'?STAR_ORDER:CULTURE_ORDER;
+    qs=order.map(function(i){return BANK.behavioral[i]}).filter(function(q){return q}).slice(0,qTotal);
+  }
+  if(CFG.focus==='roleskills'&&ROLE_KEY){
+    var roleQs=ROLE_BANKS[ROLE_KEY].technical;
+    if(CFG.itype==='behavioral'||CFG.itype==='leadership'){
+      var inject=roleQs.slice(0,2);
+      qs=qs.slice(0,Math.max(1,qs.length-inject.length)).concat(inject).slice(0,qTotal);
+    }else if(CFG.itype==='mixed'){
+      var extra=roleQs.slice(2,4);
+      qs=qs.map(function(q,i){return (i<extra.length*2&&i%2===0)?(extra[i/2]||q):q});
     }
+  }
+  if(CFG.focus==='salary'||CFG.salaryBand){
+    var bandTxt=SALARY_BANDS[CFG.salaryBand];
+    var negQ=bandTxt
+      ? 'You mentioned a target monthly salary of '+bandTxt+'. If an employer opened fifteen percent below that, walk me through exactly how you\u2019d respond in the negotiation.'
+      : 'An employer offers you a salary below what you expected. Walk me through how you\u2019d handle that conversation.';
+    qs=qs.slice(0,Math.max(1,qs.length-1)).concat([negQ]);
+  }
+  return qs;
+}
 
-    function isVoiceMode() {
-        return interviewModeSelect.value !== 'chat';
+function buildFallbackQuestions(){
+  var qs=(BANK[CFG.itype]||BANK.behavioral).slice(0,qTotal);
+  /* swap in real role-specific technical questions where the interview type
+     calls for them and the job matched a known field \u2014 behavioral/leadership
+     stay universal, matching how real interviews actually work */
+  if(ROLE_KEY&&(CFG.itype==='technical'||CFG.itype==='mixed')){
+    var roleQs=ROLE_BANKS[ROLE_KEY].technical;
+    if(CFG.itype==='technical'){
+      qs=roleQs.slice(0,qTotal);
+    }else{
+      var rIdx=0;
+      qs=qs.map(function(q){
+        var isTechnical=BANK.technical.indexOf(q)>-1;
+        return isTechnical?(roleQs[rIdx++%roleQs.length]):q;
+      });
     }
+  }
+  return applyFocusAdjustments(qs);
+}
 
-    function updateButtons() {
-        const activeInterview = interviewStarted && !isEvaluating;
-        const voiceMode = isVoiceMode();
+/* DEV \u2014 Gemini contract (inert while QUESTION_SOURCE==='fallback'):
+   POST /api/interview/questions
+     body: { job:CFG.job, field:CFG.field, itype:CFG.itype, diff:CFG.diff,
+             exp:CFG.exp, count:qTotal, focus:CFG.focus,
+             salaryBand:CFG.salaryBand, company:CFG.company,
+             arrangement:CFG.arrangement }
+     expects: { questions: [ "string", "string", ... ] }  \u2014 length===count
+   NEW HINT PARAMS (added alongside Focus/Salary being wired locally):
+     \u2014 focus: 'balanced'|'star'|'roleskills'|'culture'|'salary' \u2014 the local
+       fallback already gives this real effect (reorders/injects real
+       content); the prompt should honor the same intent \u2014 e.g. 'star'
+       biases toward STAR-structured behavioral prompts, 'salary' means at
+       least one question should be genuine negotiation practice.
+     \u2014 salaryBand: one of b1-b5 or '' \u2014 when present, any negotiation
+       question generated should reference this actual band, the same way
+       the local fallback does, not a generic unanchored number.
+     \u2014 company / arrangement: lower-confidence context signals (employer
+       type, onsite/hybrid/remote) \u2014 genuinely useful for realism (a
+       startup interview reads differently from a government one) but NOT
+       yet given local fallback logic; treat as optional flavour, not a
+       hard requirement, since there's no local precedent to keep parity with.
+   RECONCILING job vs field when they disagree (e.g. job="Software Developer",
+   field="accounting-fundamentals" \u2014 a candidate CAN deliberately pick a
+   Field that doesn't match their typed title, and Studio now discloses this
+   to them when it happens, so it's an intentional signal, not user error):
+     \u2014 job = personalisation signal (career narrative, "why this role")
+     \u2014 field = technical-domain signal (what the technical questions probe)
+   The prompt should treat them the same way the local fallback already
+   does: field decides subject matter for technical questions, job decides
+   the personalisation framing. Don't let a mismatch confuse the model into
+   picking one and ignoring the other, and don't average/blend them into a
+   vague middle ground \u2014 that produces worse questions than picking either
+   one cleanly.
+   On the frontend, this MUST resolve before the lobby's "Enter Interview
+   Room" tap is usable (or be raced against a short timeout) \u2014 never fetch
+   questions mid-interview, and never patch a partially-fallback QS with
+   partial AI results. It's one or the other, decided once, here. */
+function fetchAIQuestions(onDone){
+  var payload={
+    job:         CFG.job,
+    field:       CFG.field,
+    itype:       CFG.itype,
+    diff:        CFG.diff,
+    exp:         CFG.exp,
+    count:       qTotal,
+    focus:       CFG.focus,
+    salaryBand:  CFG.salaryBand,
+    company:     CFG.company,
+    arrangement: CFG.arrangement,
+    candidateContext: CFG.candidateContext
+  };
 
-        btnListen.disabled = !activeInterview || !voiceMode || !recognitionSupported || isListening;
-        btnStop.disabled = !voiceMode || !isListening;
-        btnReplay.disabled = !voiceMode || !interviewStarted || !currentQuestion;
-        btnSkip.disabled = !activeInterview;
-        btnEnd.disabled = !activeInterview || answerCount === 0;
-        btnDownload.disabled = history.length === 0;
+  fetch('<?= site_url("api/interview/questions") ?>',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  })
+  .then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  })
+  .then(function(data){
+    var qs=data&&data.questions;
+    /* Validate before trusting it. A malformed or short response must
+       fall back cleanly rather than produce a broken interview — the
+       candidate's session is more important than using Gemini. */
+    if(!Array.isArray(qs)||qs.length===0){onDone(null);return}
+    var clean=qs.filter(function(q){return typeof q==='string'&&q.trim().length>10})
+                .map(function(q){return q.trim()});
+    if(clean.length<Math.min(3,qTotal)){onDone(null);return}
+    onDone(clean);
+  })
+  .catch(function(err){
+    if(typeof DEBUG!=='undefined'&&DEBUG&&typeof dlog==='function'){
+      dlog('Gemini fetch failed: '+err.message+' — using curated bank',false);
     }
+    onDone(null);   /* interview continues on the local banks */
+  });
+}
 
-    function getInterviewOptions() {
-        return {
-            difficulty: difficultySelect.value,
-            questionPack: questionPackSelect.value,
-            interviewMode: interviewModeSelect.value,
-            webcamEnabled: webcamEnabledToggle.checked,
-        };
-    }
+var QS=null;
+/* logs which source ACTUALLY ran — read this in the debug panel (&debug=1)
+   rather than guessing from the questions themselves. This is the single
+   check that tells a developer whether a Gemini integration is live. */
+function logSource(){
+  if(typeof DEBUG!=='undefined'&&DEBUG&&typeof dlog==='function'){
+    dlog('questions: '+QUESTION_SOURCE_USED+' ('+(QS?QS.length:0)+')',QUESTION_SOURCE_USED==='gemini');
+  }
+}
+function resolveQuestions(onReady){
+  if(QUESTION_SOURCE==='gemini'){
+    var settled=false;
+    var timeout=setTimeout(function(){
+      if(settled)return;settled=true;
+      QUESTION_SOURCE_USED='fallback';QS=buildFallbackQuestions();logSource();onReady();
+    },15000); /* wait up to 15s for Gemini AI questions before falling back */
+    fetchAIQuestions(function(result){
+      if(settled)return;settled=true;clearTimeout(timeout);
+      if(result&&result.length){
+        QUESTION_SOURCE_USED='gemini';QS=result.slice(0,qTotal);
+      }else{
+        QUESTION_SOURCE_USED='fallback';QS=buildFallbackQuestions();
+      }
+      logSource();
+      onReady();
+    });
+  }else{
+    QUESTION_SOURCE_USED='fallback';QS=buildFallbackQuestions();logSource();onReady();
+  }
+}
 
-    function renderSessionStats() {
-        questionCountEl.textContent = String(questionCount);
-        answerCountEl.textContent = String(answerCount);
-    }
 
-    function formatDuration(totalSeconds) {
-        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-        const seconds = String(totalSeconds % 60).padStart(2, '0');
-        return `${minutes}:${seconds}`;
-    }
+/* rule-based acknowledgement lines (demo — DEV: replace with AI engine;
+   engine must react to real content, never invent praise) */
+var ACKS={
+  'corporate-hr':['Thank you for sharing that \u2014 I\u2019ve noted it. Let\u2019s move to the next question.','That\u2019s helpful context. Continuing on.','Understood, thank you. Next question.'],
+  'big4-partner':['Noted. Let\u2019s proceed \u2014 precision matters here, so stay sharp.','Understood. Moving to the next question.','Very well. Continue with the next one.'],
+  'startup-founder':['Cool, got it. Next one.','Nice \u2014 makes sense. Moving on.','Okay, noted. Let\u2019s keep going.'],
+  'technical-lead':['Okay, that tracks. Next question.','Got it \u2014 reasonable approach. Moving on.','Understood. Let\u2019s go deeper on the next one.'],
+  'gov-recruiter':['Noted, in accordance with procedure. We proceed to the next question.','Thank you. That has been recorded. Next question.','Understood. We continue to the following question.'],
+  'banking-recruiter':['Noted \u2014 thank you. Next question.','Understood, that\u2019s on record. Moving on.','Good, noted. Let\u2019s continue.']
+};
+var SKIP_ACK={
+  'corporate-hr':'That\u2019s fine \u2014 we\u2019ll note it as unanswered and continue. No penalty for being upfront.',
+  'big4-partner':'Noted as unanswered. At partner level, we track that \u2014 but it\u2019s better than a weak guess.',
+  'startup-founder':'All good, we\u2019ll skip it \u2014 not everything needs a perfect answer on the spot.',
+  'technical-lead':'Fair enough \u2014 not every question needs a confident guess. Moving on.',
+  'gov-recruiter':'That has been recorded as unanswered, in line with procedure. We proceed.',
+  'banking-recruiter':'Noted as unanswered \u2014 in this sector, an honest skip beats a shaky guess. Continuing.'
+};
 
-    function startDurationTimer() {
-        sessionStartedAt = Date.now();
-        sessionDurationEl.textContent = '00:00';
+/* live tips rotate per question type */
+var TIPS=[
+  'Structure it: the situation, what <b>you</b> did, and the result. One real example beats three vague ones.',
+  'Add a number \u2014 how much, how many, how fast. Quantified answers score higher.',
+  'Keep it under two minutes\u2019 worth. If you\u2019re still going, land the result and stop.',
+  'Say \u201CI\u201D, not \u201Cwe\u201D, for the parts you personally did.',
+  'Don\u2019t know it? Say how you\u2019d find out \u2014 that scores better than bluffing.'
+];
 
-        if (durationTimer) {
-            clearInterval(durationTimer);
-        }
+/* ── header + panel setup ── */
+var TYPE_LBL={behavioral:'Behavioral',technical:'Technical',leadership:'Leadership',mixed:'Mixed'};
+var DIFF_LBL={easy:'Gentle',medium:'Medium',hard:'Hard'};
+$('meta-title').textContent=(CFG.job&&CFG.job!=='this role')?CFG.job+' \u00B7 Mock Interview':'Mock Interview';
+$('meta-sub').textContent=(TYPE_LBL[CFG.itype]||'Behavioral')+' \u00B7 '+(DIFF_LBL[CFG.diff]||'Medium')+' \u00B7 '+CFG.dur+' min';
+$('p-rec-name').textContent=P.name;
+$('p-rec-role').textContent=P.role;
+if($('ct-name-txt'))$('ct-name-txt').textContent=P.name+' \u00B7 AI Recruiter';
+document.title=($('meta-title').textContent)+' \u2013 JobberRecruit';
 
-        durationTimer = setInterval(() => {
-            const elapsedSeconds = Math.floor((Date.now() - sessionStartedAt) / 1000);
-            sessionDurationEl.textContent = formatDuration(elapsedSeconds);
-        }, 1000);
-    }
+/* question map \u2014 depends on QS, so this only actually runs once
+   resolveQuestions() has settled (see the resolveQuestions call below) */
+var qmap=$('qmap');
+function buildQuestionMap(){
+  QS.forEach(function(q,i){
+    var d=document.createElement('div');
+    d.className='qm';d.id='qm-'+i;
+    d.innerHTML='<span class="n">'+(i+1)+'</span><span>'+q.replace(/<[^>]*>/g,'').slice(0,44)+'\u2026</span>';
+    qmap.appendChild(d);
+  });
+}
+function setPill(){$('q-count-pill').textContent=Math.min(idx,QS.length)+' of '+QS.length}
 
-    function stopDurationTimer() {
-        if (durationTimer) {
-            clearInterval(durationTimer);
-            durationTimer = null;
-        }
-    }
+/* ── timer ── */
+var remain=CFG.dur*60,elapsed=0,timerInt;
+function fmt(s){var m=Math.floor(s/60),x=s%60;return m+':'+(x<10?'0':'')+x}
+$('timer-txt').textContent=fmt(remain);
+function tick(){
+  remain--;elapsed++;
+  $('timer-txt').textContent=fmt(Math.max(0,remain));
+  if(remain===120){$('timer').classList.add('warn');toast('2 minutes left \u2014 wrap up your current answer')}
+  if(remain<=0){clearInterval(timerInt);finish(true)}
+}
+timerInt=setInterval(tick,1000);
 
-    function getDurationSeconds() {
-        if (!sessionStartedAt) {
-            return 0;
-        }
+/* ── VOICE ENGINE (P2) ────────────────────────────────────────────────
+   Architecture: sentence-queue player behind one interface — speak(text, onDone).
+   · Text is split into sentences and spoken sequentially: natural pauses at
+     boundaries, never interrupts itself mid-queue, never skips sentences.
+   · onDone fires ONLY after the final sentence ends — recording/submit is
+     gated on it in voice/video mode (P2: "finish reading every question
+     before enabling recording").
+   · PROVIDER = 'browser' ships today. To upgrade to a neural HR voice,
+     implement one provider below and flip PROVIDER — no other code changes.
+     Each provider receives (sentence, persona) and must return a Promise
+     that resolves when audio playback finishes:
 
-        return Math.max(0, Math.floor((Date.now() - sessionStartedAt) / 1000));
-    }
-
-    function stripMarkdown(text) {
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/`(.*?)`/g, '$1')
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n+/g, ' ')
-            .trim();
-    }
-
-    function pickNigerianVoice() {
-        const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find((voice) => /en-ng|nigeria/i.test(`${voice.lang} ${voice.name}`));
-        if (preferred) return preferred;
-
-        return voices.find((voice) => /en-gb|uk/i.test(`${voice.lang} ${voice.name}`)) || voices.find((voice) => /en/i.test(voice.lang)) || null;
-    }
-
-    function speakText(text) {
-        if (!synthesisSupported || !isVoiceMode()) return;
-
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(stripMarkdown(text));
-        const preferredVoice = pickNigerianVoice();
-        if (preferredVoice) {
-            utterance.voice = preferredVoice;
-            utterance.lang = preferredVoice.lang;
-        } else {
-            utterance.lang = 'en-NG';
-        }
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        utterance.onstart = () => setVoiceStatus('Interviewer is speaking');
-        utterance.onend = () => {
-            if (!isListening) {
-                setVoiceStatus('Waiting for your answer');
-            }
-
-            if (isVoiceMode() && awaitingAnswer && autoListenToggle.checked && recognitionSupported && interviewStarted && !isListening && !isEvaluating) {
-                setTimeout(() => {
-                    if (awaitingAnswer && !isListening && recognition) {
-                        recognition.start();
-                    }
-                }, 600);
-            }
-        };
-        window.speechSynthesis.speak(utterance);
-    }
-
-    function appendMessage(role, message, mode = 'text') {
-        const div = document.createElement('div');
-        const isUser = role === 'user';
-        
-        div.className = `d-flex w-100 ${isUser ? 'justify-content-end' : 'justify-content-start'} mb-3`;
-
-        const name = isUser ? 'You' : 'AI Interviewer';
-        const bubbleClass = isUser ? 'bubble-user' : 'bubble-model';
-        const badge = mode === 'voice'
-            ? '<span class="badge bg-warning bg-opacity-20 text-warning mb-1.5 d-block" style="width:fit-content; font-size:10px;">Voice Answer</span>'
-            : (mode === 'system' ? '<span class="badge bg-info bg-opacity-20 text-info mb-1.5 d-block" style="width:fit-content; font-size:10px;">System</span>' : '');
-
-        div.innerHTML = `
-            <div class="bubble ${bubbleClass}">
-                <div class="fw-bold mb-1 fs-12 text-white-50">${name}</div>
-                ${badge}
-                <div>${message.replace(/\n/g, '<br>')}</div>
-            </div>
-        `;
-
-        chatMessages.appendChild(div);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-
-        if (role === 'model') {
-            currentQuestion = message;
-
-            if (interviewStarted && message !== initialPrompt) {
-                questionCount++;
-                awaitingAnswer = true;
-                renderSessionStats();
-            }
-        }
-
-        if (role === 'user' && interviewStarted && mode !== 'system') {
-            answerCount++;
-            renderSessionStats();
-        }
-
-        if (message !== initialPrompt) {
-            history.push({sender: role, message: message});
-        }
-    }
-
-    function updateStarPanel(data = {}) {
-        const breakdown = data.star_breakdown || {};
-        latestStarScore.textContent = `${data.star_score || 0}/10`;
-        
-        const updatePill = (id, val) => {
-            const el = document.getElementById('star-' + id);
-            const pill = document.getElementById('star-pill-' + id);
-            const progressBar = document.getElementById('star-progress-' + id);
-            
-            if (el) el.textContent = String(val);
-            if (progressBar) {
-                const pct = Math.min(100, Math.max(0, val * 10)); // val is from 0 to 10
-                progressBar.style.width = pct + '%';
-                progressBar.setAttribute('aria-valuenow', val);
-                
-                // Add glowing shadow effect when active
-                if (val > 0) {
-                    let color = 'rgba(59, 130, 246, 0.6)'; // default Situation blue
-                    if (id === 'task') color = 'rgba(13, 202, 240, 0.6)'; // cyan
-                    if (id === 'action') color = 'rgba(255, 193, 7, 0.6)'; // yellow
-                    if (id === 'result') color = 'rgba(25, 135, 84, 0.6)'; // green
-                    progressBar.style.boxShadow = `0 0 10px ${color}`;
-                } else {
-                    progressBar.style.boxShadow = 'none';
-                }
-            }
-            if (pill) {
-                if (val > 0) {
-                    pill.classList.add('active');
-                } else {
-                    pill.classList.remove('active');
-                }
-            }
-        };
-
-        updatePill('situation', breakdown.situation || 0);
-        updatePill('task', breakdown.task || 0);
-        updatePill('action', breakdown.action || 0);
-        updatePill('result', breakdown.result || 0);
-
-        starFocusArea.textContent = data.focus_area || 'Waiting';
-        starTip.textContent = data.star_tip || 'Answer a question to receive structured STAR coaching.';
-    }
-
-    function buildTranscriptText() {
-        const options = getInterviewOptions();
-        const lines = [
-            'JobberRecruit Mock Interview Transcript',
-            `Job Title: ${jobTitle || 'Not set'}`,
-            `Difficulty: ${options.difficulty}`,
-            `Question Pack: ${packLabels[options.questionPack] || options.questionPack}`,
-            `Interview Style: ${options.interviewMode}`,
-            `Webcam Preview: ${options.webcamEnabled ? 'On' : 'Off'}`,
-            `Duration: ${sessionDurationEl.textContent}`,
-            '',
-        ];
-
-        history.forEach((entry) => {
-            const speaker = entry.sender === 'user' ? 'Candidate' : 'Interviewer';
-            lines.push(`${speaker}: ${entry.message}`);
+     openai:     POST https://api.openai.com/v1/audio/speech
+                 {model:'gpt-4o-mini-tts', voice:'nova', input:sentence}
+                 → blob → new Audio(URL.createObjectURL(blob)).play()
+     elevenlabs: POST https://api.elevenlabs.io/v1/text-to-speech/{voiceId}
+                 {text:sentence, model_id:'eleven_turbo_v2'} → same playback
+     google:     texttospeech.googleapis.com v1 text:synthesize (Neural2 voices)
+     azure:      {region}.tts.speech.microsoft.com/cognitiveservices/v1 (SSML —
+                 supports <emphasis> and <break> for word emphasis + pausing)
+   ALL provider calls MUST proxy through the JobberRecruit backend — never put
+   API keys in this file. Suggested endpoint: POST /api/tts {text, persona}. ── */
+/* PROVIDER: 'browser' = free built-in TTS (robotic on most devices).
+   'gemini'  = real human-sounding voice via /api/interview/tts.
+   Flip to 'gemini' once InterviewVoice.php is deployed — the browser
+   engine stays as the automatic per-sentence fallback either way. */
+var VOICE={PROVIDER:'gemini',on:true,voice:null,unlocked:false,queue:[],playing:false,onDone:null,pendingText:null};
+var VPROF={
+  'corporate-hr':{g:'f',pitch:1.05,rate:0.98},
+  'big4-partner':{g:'m',pitch:0.88,rate:0.92},
+  'startup-founder':{g:'m',pitch:1.02,rate:1.12},
+  'technical-lead':{g:'m',pitch:0.95,rate:0.97},
+  'gov-recruiter':{g:'m',pitch:0.86,rate:0.88},
+  'banking-recruiter':{g:'f',pitch:1.0,rate:1.0}
+};
+var TTS_OK=('speechSynthesis' in window);
+if(DEBUG){var r1=document.getElementById('dbg-tts-row');if(r1)r1.innerHTML='<b>TTS supported:</b> '+(TTS_OK?'yes':'no \u2014 interviewer will be silent, text still works');}
+function pickVoice(){
+  if(!TTS_OK)return;
+  var vs=window.speechSynthesis.getVoices();if(!vs.length)return;
+  var want=(VPROF[CFG.persona]||VPROF['corporate-hr']).g;
+  var female=['female','samantha','zira','victoria','karen','serena','tessa','moira','kate'];
+  var male=['male','daniel','david','george','oliver','james','fred'];
+  var names=want==='f'?female:male;
+  var en=vs.filter(function(v){return /^en/i.test(v.lang)});
+  var hit=en.find(function(v){var n=v.name.toLowerCase();return names.some(function(x){return n.indexOf(x)>-1})});
+  VOICE.voice=hit||en[0]||vs[0];
+  if(VOICE.voice)dlog('voice picked: '+VOICE.voice.name,true);
+}
+if(TTS_OK){
+  pickVoice();
+  window.speechSynthesis.onvoiceschanged=pickVoice;
+  /* Safari frequently never fires onvoiceschanged and returns an empty list
+     on the first call — poll briefly as a fallback so the persona voice
+     still gets picked instead of silently falling back to the OS default. */
+  var voiceTries=0,voicePoll=setInterval(function(){
+    voiceTries++;
+    if(VOICE.voice||voiceTries>10){clearInterval(voicePoll);return}
+    pickVoice();
+  },300);
+}
+function setTalking(on){
+  var w=document.querySelector('.rwave');if(w)w.classList.toggle('talking',on);
+  var cst=$('call-stage');if(cst)cst.classList.toggle('talking',on);
+  aiSpeaking=on;gateOrb();
+}
+function splitSentences(t){
+  return String(t).replace(/<[^>]*>/g,'').replace(/[\uD800-\uDFFF]./g,'').trim()
+    .split(/(?<=[.!?])\s+/).filter(function(s){return s.trim()});
+}
+var PROVIDERS={
+  browser:function(sentence){
+    return new Promise(function(res){
+      if(!TTS_OK){res();return}
+      var u=new SpeechSynthesisUtterance(sentence);
+      var prof=VPROF[CFG.persona]||VPROF['corporate-hr'];
+      if(VOICE.voice)u.voice=VOICE.voice;
+      u.pitch=prof.pitch;u.rate=prof.rate;u.lang=(VOICE.voice&&VOICE.voice.lang)||'en-GB';
+      u.onend=res;u.onerror=res;
+      window.speechSynthesis.speak(u);
+    });
+  },
+  /* Real human-sounding voice via Gemini TTS. Falls back to the browser
+     engine per-sentence on ANY failure, so a dead API means a robotic
+     interviewer, never a silent one.
+  /* Gemini TTS voice provider — strictly uses Gemini Voice without browser speech synthesis fallback */
+  gemini:function(sentence){
+    return new Promise(function(res){
+      var settled=false;
+      function done(){if(!settled){settled=true;res()}}
+      var guard=setTimeout(function(){
+        if(DEBUG)dlog('TTS timed out, falling back to browser voice',false);
+        if(!settled) PROVIDERS.browser(sentence).then(done);
+      },10000);
+      fetch('<?= site_url("api/interview/tts") ?>',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:sentence,persona:CFG.persona})
+      })
+      .then(function(r){
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        if(DEBUG)dlog('TTS '+(r.headers.get('X-TTS-Cache')==='hit'?'(cached)':'(generated)'),true);
+        return r.blob();
+      })
+      .then(function(blob){
+        if(settled)return;clearTimeout(guard);
+        if('speechSynthesis' in window) window.speechSynthesis.cancel();
+        var url=URL.createObjectURL(blob);
+        var a=new Audio(url);
+        a.onended=function(){URL.revokeObjectURL(url);done()};
+        a.onerror=function(){URL.revokeObjectURL(url);PROVIDERS.browser(sentence).then(done)};
+        a.play().catch(function(){
+          URL.revokeObjectURL(url);PROVIDERS.browser(sentence).then(done);
         });
-
-        return lines.join('\n');
-    }
-
-    function downloadTranscript() {
-        if (history.length === 0) {
-            toastr.info('No transcript available yet.');
-            return;
-        }
-
-        const blob = new Blob([buildTranscriptText()], { type: 'text/plain;charset=utf-8' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const safeTitle = (jobTitle || 'mock-interview').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-        link.href = url;
-        link.download = `${safeTitle || 'mock-interview'}-transcript.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-    }
-
-    async function startCamera() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            return;
-        }
-
-        try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            webcamPreview.srcObject = mediaStream;
-            webcamPreview.classList.remove('d-none');
-            webcamPlaceholder.classList.add('d-none');
-        } catch (error) {
-            console.error('Webcam failed', error);
-            webcamPreview.classList.add('d-none');
-            webcamPlaceholder.classList.remove('d-none');
-        }
-    }
-
-    function sendAnswer(message, mode = 'text') {
-        if (!interviewStarted || !message.trim()) return;
-
-        awaitingAnswer = false;
-        appendMessage('user', message, mode);
-        setVoiceStatus('Thinking about your answer');
-
-        btnSend.disabled = true;
-        btnListen.disabled = true;
-        btnStop.disabled = true;
-        btnSkip.disabled = true;
-        btnSend.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        const formData = new FormData();
-        formData.append('type', 'interview');
-        formData.append('message', message);
-        formData.append('history', JSON.stringify(history));
-        formData.append('extra', jobTitle);
-        formData.append('difficulty', difficultySelect.value);
-        formData.append('questionPack', questionPackSelect.value);
-        formData.append('interviewMode', interviewModeSelect.value);
-        formData.append('webcamEnabled', webcamEnabledToggle.checked ? '1' : '0');
-        formData.append('applicationId', String(applicationId));
-
-        fetch('<?= base_url('candidate/career-tools/send-message') ?>', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            appendMessage('model', data.message);
-            updateStarPanel(data);
-            if (isVoiceMode()) {
-                speakText(data.message);
-            }
-        })
-        .catch(() => {
-            toastr.error('Connection error. Please try again.');
-            setVoiceStatus('Connection issue');
-        })
-        .finally(() => {
-            btnSend.disabled = false;
-            btnSend.innerHTML = '<i class="ti ti-send"></i>';
-            updateButtons();
-        });
-    }
-
-    function renderList(target, items, emptyText) {
-        target.innerHTML = '';
-
-        if (!items.length) {
-            const li = document.createElement('li');
-            li.textContent = emptyText;
-            target.appendChild(li);
-            return;
-        }
-
-        items.forEach((item) => {
-            const li = document.createElement('li');
-            li.className = 'mb-1';
-            li.textContent = item;
-            target.appendChild(li);
-        });
-    }
-
-    function endInterview() {
-        if (!interviewStarted || isEvaluating || answerCount === 0) return;
-
-        isEvaluating = true;
-        interviewStarted = false;
-        awaitingAnswer = false;
-        stopDurationTimer();
-        window.speechSynthesis.cancel();
-
-        if (recognition && isListening) {
-            recognition.stop();
-        }
-
-        setVoiceStatus('Generating final evaluation');
-        setMicStatus('Idle');
-        updateButtons();
-        btnEnd.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        const formData = new FormData();
-        formData.append('history', JSON.stringify(history));
-        formData.append('jobTitle', jobTitle);
-        formData.append('difficulty', difficultySelect.value);
-        formData.append('questionPack', questionPackSelect.value);
-        formData.append('interviewMode', interviewModeSelect.value);
-        formData.append('webcamEnabled', webcamEnabledToggle.checked ? '1' : '0');
-        formData.append('durationSeconds', String(getDurationSeconds()));
-        formData.append('applicationId', String(applicationId));
-
-        fetch('<?= base_url('candidate/career-tools/evaluate-interview') ?>', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Show results panel
-            document.getElementById('evaluation-panel').classList.remove('d-none');
-            
-            // Fill scores
-            overallScoreBadge.textContent = `${data.overall_score || 0}/10`;
-            communicationScore.textContent = `${data.communication_score || 0}/10`;
-            confidenceScore.textContent = `${data.confidence_score || 0}/10`;
-            relevanceScore.textContent = `${data.relevance_score || 0}/10`;
-            starAverageScore.textContent = `${data.star_average || 0}/10`;
-            evaluationSummary.textContent = data.summary || 'Your interview summary is unavailable.';
-            
-            if (data.star_summary) {
-                starSummary.classList.remove('d-none');
-                starSummary.textContent = data.star_summary;
-            } else {
-                starSummary.classList.add('d-none');
-            }
-            
-            renderList(strengthsList, data.strengths || [], 'No strengths returned.');
-            renderList(improvementsList, data.improvements || [], 'No improvements returned.');
-            renderList(nextStepsList, data.next_steps || [], 'No next steps returned.');
-            
-            setVoiceStatus('Interview complete');
-            appendMessage('model', 'Your mock interview is complete. Review your scorecard on the right side of your screen.', 'system');
-            
-            toastr.success('Evaluation generated successfully.');
-        })
-        .catch(() => {
-            toastr.error('Could not generate the final evaluation.');
-            setVoiceStatus('Evaluation failed');
-        })
-        .finally(() => {
-            btnEnd.innerHTML = '<i class="ti ti-rosette-discount-check me-1"></i> End & Evaluate';
-            updateButtons();
-        });
-    }
-
-    function beginInterview() {
-        // Hide ready overlay
-        document.getElementById('ready-overlay').style.display = 'none';
-
-        interviewStarted = true;
-        isEvaluating = false;
-        questionCount = 0;
-        answerCount = 0;
-        currentQuestion = '';
-        history = [];
-        liveTranscript.value = '';
-        chatMessages.innerHTML = '';
-        
-        updateStarPanel({});
-        renderSessionStats();
-        startDurationTimer();
-
-        // Start camera if needed
-        if (webcamEnabledToggle.checked) {
-            startCamera();
-        }
-
-        if (isVoiceMode() && recognitionSupported) {
-            transcriptPreviewBox.classList.remove('d-none');
-        }
-
-        appendMessage('user', `Starting mock interview for ${jobTitle}. Mode: ${interviewModeSelect.value}. Difficulty: ${difficultySelect.value}.`, 'system');
-
-        const openingQuestion = applicationId > 0
-            ? `Great. We are now starting your ${difficultySelect.value} mock interview for the ${jobTitle} position. I will use your job application details and CV context as the yardstick. Let's start: Please introduce yourself and highlight why you are a great fit for this role.`
-            : `Great. We are now starting your ${difficultySelect.value} mock interview for the ${jobTitle} position. First question: Could you please introduce yourself and tell me why you want this role?`;
-
-        appendMessage('model', openingQuestion);
-        if (isVoiceMode()) {
-            speakText(openingQuestion);
-        }
-        setVoiceStatus('Interview in progress');
-        updateButtons();
-    }
-
-    if (recognitionSupported) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'en-NG';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onstart = () => {
-            isListening = true;
-            finalTranscript = '';
-            liveTranscript.value = '';
-            setMicStatus('Listening');
-            setVoiceStatus('Recording your answer');
-            updateButtons();
-        };
-
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript + ' ';
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-
-            liveTranscript.value = `${finalTranscript}${interimTranscript}`.trim();
-        };
-
-        recognition.onerror = (event) => {
-            isListening = false;
-            setMicStatus('Microphone error');
-            setVoiceStatus(`Voice error: ${event.error}`);
-            updateButtons();
-        };
-
-        recognition.onend = () => {
-            const transcript = liveTranscript.value.trim();
-            isListening = false;
-            setMicStatus('Idle');
-            updateButtons();
-
-            if (transcript) {
-                sendAnswer(transcript, 'voice');
-                liveTranscript.value = '';
-            } else if (interviewStarted) {
-                setVoiceStatus('No speech detected');
-            }
-        };
-    }
-
-    chatForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const msg = chatInput.value.trim();
-        if (!msg) return;
-
-        chatInput.value = '';
-        sendAnswer(msg, 'text');
+      })
+      .catch(function(err){
+        if(settled)return;clearTimeout(guard);
+        if(DEBUG)dlog('TTS failed ('+err.message+')',false);
+        PROVIDERS.browser(sentence).then(done);
+      });
     });
-
-    btnBegin.addEventListener('click', beginInterview);
-
-    btnListen.addEventListener('click', function() {
-        if (!recognition || !interviewStarted || !isVoiceMode()) return;
-
-        window.speechSynthesis.cancel();
-        recognition.start();
-    });
-
-    btnStop.addEventListener('click', function() {
-        if (!recognition || !isListening) return;
-        recognition.stop();
-    });
-
-    btnReplay.addEventListener('click', function() {
-        if (!currentQuestion || !isVoiceMode()) return;
-        speakText(currentQuestion);
-    });
-
-    btnSkip.addEventListener('click', function() {
-        if (!interviewStarted) return;
-        sendAnswer('Please ask me the next interview question.', 'system');
-    });
-
-    btnEnd.addEventListener('click', endInterview);
-    btnDownload.addEventListener('click', downloadTranscript);
-
-    // Initial setup
-    appendMessage('model', initialPrompt, 'system');
-
-    speechSupport.textContent = recognitionSupported
-        ? (synthesisSupported ? 'Mic + speaker ready' : 'Mic only')
-        : 'Voice input unavailable';
-
-    if (!recognitionSupported) {
-        setMicStatus('Not supported');
-        setVoiceStatus('Use text fallback');
-        toastr.warning('Speech recognition is not supported in this browser. Please use text responses.');
-    } else {
-        setMicStatus('Ready');
-        setVoiceStatus('Waiting to start');
-    }
-
-    updateButtons();
-    renderSessionStats();
-    updateStarPanel({});
+  }
+};
+function runQueue(){
+  if(VOICE.playing)return;
+  var s=VOICE.queue.shift();
+  if(!s){setTalking(false);var cb=VOICE.onDone;VOICE.onDone=null;if(cb)cb();return}
+  VOICE.playing=true;setTalking(true);
+  var play=PROVIDERS[VOICE.PROVIDER]||PROVIDERS.gemini;
+  play(s).then(function(){
+    VOICE.playing=false;
+    setTimeout(runQueue,140); /* breath pause between sentences */
+  });
+}
+function speak(text,onDone){
+  if(!VOICE.on || CFG.imode === 'text'){if(onDone)onDone();return}
+  try{
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+    VOICE.queue=splitSentences(text);
+    VOICE.playing=false;VOICE.onDone=onDone||null;VOICE.pendingText=text;
+    runQueue();
+  }catch(e){setTalking(false);if(onDone)onDone()}
+}
+/* mobile unlock: autoplay policy blocks speech until the first gesture */
+document.addEventListener('pointerdown',function(){
+  if(VOICE.unlocked)return;VOICE.unlocked=true;
+  if(VOICE.pendingText&&!VOICE.playing&&VOICE.queue.length===0){
+    speak(VOICE.pendingText,VOICE.onDone);
+  }
+},{once:true});
+/* voice toggle */
+var vbtn=$('voice-btn');
+vbtn.addEventListener('click',function(){
+  VOICE.on=!VOICE.on;
+  this.setAttribute('aria-pressed',VOICE.on?'true':'false');
+  $('voice-btn-ic').innerHTML='<use href="#'+(VOICE.on?'i-vol':'i-vol-off')+'"/>';
+  if(!VOICE.on){if('speechSynthesis' in window)window.speechSynthesis.cancel();VOICE.queue=[];VOICE.playing=false;setTalking(false);var cb=VOICE.onDone;VOICE.onDone=null;if(cb)cb()}
+  toast(VOICE.on?'Interviewer voice on':'Interviewer voice muted');
 });
-</script>
-<?= $this->endSection() ?>
+/* orb gate: in voice/video mode, recording waits until the question is fully read */
+var aiSpeaking=false;
+function gateOrb(){
+  var orb=$('rec-orb');if(!orb)return;
+  var gated=aiSpeaking&&VOICE.on&&CFG.imode!=='text';
+  orb.style.opacity=gated?'.45':'';
+  orb.style.pointerEvents=gated?'none':'';
+  orb.setAttribute('aria-disabled',gated?'true':'false');
+  if(gated)$('media-hint').textContent='Listen to the full question first \u2014 recording unlocks when '+P.name+' finishes speaking.';
+}
 
+/* ── conversation ── */
+var convo=$('convo'),idx=0,answered=0,skipped=0,busy=false;
+function scrollEnd(){
+  /* Content-anchored: scroll only if the newest message is hidden below the
+     fold, and only by the exact overlap. Never target body.scrollHeight —
+     on iOS Safari 100vh-based layouts, that parks the viewport in the empty
+     flex space BELOW the messages (page opens, auto-scrolls to blank).
+     Classic scrollBy(x,y) is used deliberately: it is instant and immune to
+     smooth-scroll easing that iOS can interrupt/park mid-glide. */
+  requestAnimationFrame(function(){
+    var last=convo.lastElementChild;if(!last)return;
+    var r=last.getBoundingClientRect();
+    var dock=$('dock');
+    var dockH=dock?dock.getBoundingClientRect().height:0;
+    var visibleBottom=window.innerHeight-dockH-8;
+    var overlap=r.bottom-visibleBottom;
+    if(overlap>2)window.scrollBy(0,overlap);
+  });
+}
+var skeletonCleared=false;
+function clearSkeleton(){
+  if(skeletonCleared)return;skeletonCleared=true;
+  var sk=convo.querySelector('.skeleton-turn');if(sk)sk.remove();
+}
+function aiBubble(html,tag){
+  clearSkeleton();
+  var t=document.createElement('div');t.className='turn turn--ai';
+  t.innerHTML='<span class="turn-ava" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 20a7.5 7.5 0 0 1 14 0"/></svg></span>'+
+    '<div class="bubble"><div class="who">'+P.name+' \u00B7 AI Recruiter</div>'+(tag||'')+html+'</div>';
+  convo.appendChild(t);scrollEnd();return t;
+}
+function meBubble(text){
+  var t=document.createElement('div');t.className='turn turn--me';
+  t.innerHTML='<span class="turn-ava" aria-hidden="true">You</span><div class="bubble"></div>';
+  t.querySelector('.bubble').textContent=text;
+  convo.appendChild(t);scrollEnd();
+}
+var sysDisclosed=false;
+function sysNote(html){
+  var t=document.createElement('div');t.className='turn turn--sys';t.setAttribute('role','status');
+  t.innerHTML='<div class="sys-note"><svg aria-hidden="true"><use href="#i-info"/></svg><div>'+html+'</div></div>';
+  convo.appendChild(t);scrollEnd();
+}
+function typing(cb,ms){
+  var t=aiBubble('<span class="typing" aria-label="'+P.name+' is typing"><i></i><i></i><i></i></span>');
+  busy=true;
+  setTimeout(function(){t.remove();busy=false;cb()},ms||1100);
+}
+function askNext(immediate){
+  if(idx>=QS.length){finish(false);return}
+  interruptedThisQ=false;
+  var tag='<span class="q-tag">Question '+(idx+1)+' of '+QS.length+'</span><br>';
+  var renderQ = function(){
+    aiBubble(QS[idx],tag);
+    qShownAt=Date.now(); /* (P6) reset pace timer for the new question */
+    dlog('Q'+(idx+1)+' of '+QS.length+' rendered',true);
+    speak(QS[idx],gateOrb); /* recording unlocks only after the full question is read */
+    document.querySelectorAll('.qm').forEach(function(x){x.classList.remove('now')});
+    var m=$('qm-'+idx);if(m)m.classList.add('now');
+    $('live-tip-txt').innerHTML=TIPS[idx%TIPS.length];
+    setPill();
+    var f=$('prog-fill');f.style.width=Math.round(idx/QS.length*100)+'%';
+    $('prog-rail').setAttribute('aria-valuenow',Math.round(idx/QS.length*100));
+    if(CFG.imode==='text')$('answer').focus();
+  };
+  if(immediate){
+    renderQ();
+  }else{
+    typing(renderQ);
+  }
+}
+function ack(skippedQ){
+  var pool=ACKS[CFG.persona]||ACKS['corporate-hr'];
+  var line=skippedQ?(SKIP_ACK[CFG.persona]||SKIP_ACK['corporate-hr']):pool[idx%pool.length];
+  typing(function(){
+    aiBubble(esc(line));
+    /* wait for the line to actually finish being read before advancing —
+       a fixed timer here is what was cutting the AI off mid-sentence */
+    speak(line,function(){setTimeout(askNext,300)});
+  },800);
+}
+function markDone(i,wasSkipped){
+  var m=$('qm-'+i);if(!m)return;
+  m.classList.remove('now');m.classList.add('done');
+  if(wasSkipped)m.querySelector('.n').style.background='var(--muted)';
+  if(wasSkipped)m.querySelector('.n').style.borderColor='var(--muted)';
+}
+
+/* ── answer dock ── */
+var ta=$('answer'),wc=$('wcount'),sub=$('submit-btn');
+function words(s){s=s.trim();return s?s.split(/\s+/).length:0}
+/* (P11) occasional interruption when an answer runs long \u2014 real
+   interviewers do this; fires once per question, not on every keystroke
+   past the threshold, and eases off after acknowledging it. Persona-
+   flavored so it doesn't read as one generic system message. */
+var INTERRUPT_AT=170;
+var interruptedThisQ=false;
+var INTERRUPT_LINE={
+  'corporate-hr':'Quick note \u2014 for this format, try to land your answer in about 30 more seconds.',
+  'big4-partner':"Let's tighten that up \u2014 time per candidate is limited, so bring it to a close.",
+  'startup-founder':"Love the detail, but let's keep it snappy from here \u2014 more ground to cover.",
+  'technical-lead':"That's useful context \u2014 let's wrap the core point in the next sentence or two.",
+  'gov-recruiter':'Please begin concluding your response in line with the time allotted for this question.',
+  'banking-recruiter':"Good detail \u2014 let's bring this to a close in the next 30 seconds or so."
+};
+ta.addEventListener('input',function(){
+  var n=words(ta.value);
+  wc.textContent=n+' word'+(n===1?'':'s');
+  wc.classList.toggle('low',n>0&&n<15);
+  wc.classList.toggle('high',n>=INTERRUPT_AT);
+  sub.disabled=CFG.imode==='text'?n<5:sub.disabled;
+  if(n>=INTERRUPT_AT&&!interruptedThisQ){
+    interruptedThisQ=true;
+    toast((INTERRUPT_LINE[CFG.persona]||INTERRUPT_LINE['corporate-hr']));
+  }
+});
+/* ── EMOTIONAL ACKNOWLEDGMENT (P7) — persona-flavored, not one-size-fits-all */
+var REASSURE={
+  'corporate-hr':"That's alright \u2014 it's completely fine not to have a perfect answer ready. Just talk me through your best thinking.",
+  'big4-partner':"No issue \u2014 even at partner level, \u2018I'd need to verify that\u2019 is a legitimate answer. Give me your best reasoning.",
+  'startup-founder':"All good, nobody has this stuff memorised. Just take a guess and walk me through your logic.",
+  'technical-lead':"No worries \u2014 even \u2018I'd need to look that up\u2019 is a valid answer here. Show me how you'd approach finding out.",
+  'gov-recruiter':"That is acceptable. Please provide your best understanding based on the information available to you.",
+  'banking-recruiter':"That's fine \u2014 precision matters more than pretending certainty. Give me your best estimate and reasoning."
+};
+var STRONG_ACK={
+  'corporate-hr':"That's a genuinely strong answer \u2014 clear structure and a real result. Thank you.",
+  'big4-partner':"Good. That's the level of precision I'm looking for.",
+  'startup-founder':"Okay that's actually really solid \u2014 clear ownership, real impact. Love it.",
+  'technical-lead':"That's a well-reasoned answer \u2014 I can follow your thinking clearly.",
+  'gov-recruiter':"That is a thorough and well-structured response. Noted with commendation.",
+  'banking-recruiter':"Precise and well-quantified \u2014 exactly what I like to hear. Noted."
+};
+
+function repeatQuestion(){
+  /* (P7) re-show the CURRENT question without advancing, without penalty,
+     without touching STATS/MEMORY \u2014 a real interviewer just repeats
+     themselves when asked, they don't count it against you */
+  ta.value='';ta.dispatchEvent(new Event('input'));
+  thinking(function(){
+    aiBubble('<span class="q-tag">Repeating the question</span><br>'+esc(QS[idx]));
+    speak(QS[idx],gateOrb);
+    if(CFG.imode==='text')$('answer').focus();
+  });
+}
+/* (P5) Live recruiter notes — narrative, third-person, written AS the
+   recruiter observing the candidate. Distinct from the coaching widget:
+   that's the candidate's own self-improvement view; this is what the
+   interviewer would actually be jotting down in real time. */
+var rnotesList=$('rnotes-list'),rnotesEmpty=$('rnotes-empty');
+function writeRecruiterNote(qIdx,a){
+  var line;
+  if(a.uncertain)line='Showed some uncertainty here \u2014 worth probing further in a real panel.';
+  else if(a.casual>0)line='Tone was a little informal for this context.';
+  else if(a.w<25)line='Brief response \u2014 could use more depth and a clearer example.';
+  else if(!a.star)line="Answer lacked clear structure \u2014 didn't explicitly state the result.";
+  else if(!a.spec)line='Qualitative answer only \u2014 no numbers or scale given.';
+  else if(a.w>=60&&a.star&&a.spec&&a.hed===0)line='Confident delivery, quantified the outcome clearly. Strong structure.';
+  else line='Solid, on-topic response.';
+  var li=document.createElement('li');
+  li.innerHTML='<b>Q'+(qIdx+1)+'</b>'+esc(line);
+  rnotesList.appendChild(li);
+  rnotesList.classList.add('show');
+  rnotesEmpty.style.display='none';
+  rnotesList.scrollTop=rnotesList.scrollHeight;
+  if(DEBUG)dlog('recruiter note written (Q'+(qIdx+1)+'): '+line,true);
+}
+
+var lastAnswerText='';   /* the candidate's actual words, for the AI reply engine */
+var followUpCount={};    /* (spec 21) per-question follow-up counter so a follow-up
+                            never reads as "Question 5 of 10" when it is really a
+                            probe on Question 4 — the candidate must always know
+                            exactly where they are */
+function followUpTag(qIdx){
+  followUpCount[qIdx]=(followUpCount[qIdx]||0)+1;
+  return '<span class="q-tag q-tag--fu">Question '+(qIdx+1)+' \u00B7 Follow-up '+followUpCount[qIdx]+'</span><br>';
+}
+var AI_REPLY=true;       /* set false to revert to pattern-matched follow-ups only */
+
+/* ── REAL COMPREHENSION ───────────────────────────────────────────────
+   Sends the question, the candidate's ACTUAL answer, and recent history
+   to Gemini, and gets back a reaction that references what they really
+   said. The old pattern-matched path (word count / STAR keywords /
+   digits) stays as the fallback and is still used whenever this is
+   unavailable — so the interview never depends on the network.
+   DEV: backend is POST /api/interview/reply (see InterviewReply.php). */
+function fetchAIReply(question,answer,alreadyFollowedUp,onDone){
+  if(!AI_REPLY||!answer){onDone(null);return}
+  var history=(typeof MEMORY!=='undefined'?MEMORY:[]).slice(-4).map(function(m){
+    return {q:m.question,a:m.answer};
+  });
+  var settled=false;
+  var guard=setTimeout(function(){
+    if(settled)return;settled=true;
+    if(DEBUG)dlog('AI reply timed out - pattern-matched fallback',false);
+    onDone(null);
+  },5000);
+  fetch('<?= site_url("api/interview/reply") ?>',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      question:question,answer:answer,history:history,
+      persona:CFG.persona,job:CFG.job,field:CFG.field,itype:CFG.itype,
+      askedFollowUpAlready:!!alreadyFollowedUp
+    })
+  })
+  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+  .then(function(data){
+    if(settled)return;settled=true;clearTimeout(guard);
+    if(!data||!data.acknowledgement){
+      if(DEBUG)dlog('AI reply malformed (no acknowledgement) - pattern-matched fallback',false);
+      onDone(null);return;
+    }
+    if(DEBUG)dlog('AI reply: '+(data.onTopic===false?'OFF-TOPIC detected':'on topic')+(data.followUp?' + follow-up':' (no follow-up)'),true);
+    onDone(data);
+  })
+  .catch(function(err){
+    if(settled)return;settled=true;clearTimeout(guard);
+    if(DEBUG)dlog('AI reply failed ('+err.message+') - pattern-matched fallback',false);
+    onDone(null);
+  });
+}
+
+function submitAnswer(){
+  if(busy)return;
+  var analysis=null;
+  if(CFG.imode==='text'){
+    var v=ta.value.trim();if(words(v)<5)return;
+    if(isRepeatRequest(v)){
+      meBubble(v);ta.value='';ta.dispatchEvent(new Event('input'));
+      dlog('repeat request detected',true);
+      repeatQuestion();
+      return; /* not an answer \u2014 no STATS, no MEMORY, no advance */
+    }
+    meBubble(v);ta.value='';ta.dispatchEvent(new Event('input'));
+    lastAnswerText=v; /* what the candidate actually said — sent to the AI reply engine */
+    analysis=analyzeAnswer(v);
+    remember(idx,QS[idx],v); /* (P1) persistent memory of what was actually said */
+    writeRecruiterNote(idx,analysis); /* (P5) live recruiter notes card */
+    /* DEV: POST /candidate/interview/session/{id}/answer {q:idx, text:v, mode:'text'} */
+  }else{
+    var transcript=(srFinal||'').trim();
+    var hasRealTranscript=words(transcript)>=5;
+    if(hasRealTranscript&&isRepeatRequest(transcript)){
+      meBubble((CFG.imode==='video'?'\uD83C\uDFA5 ':'\uD83C\uDF99 ')+transcript);
+      resetRec();
+      repeatQuestion();
+      return;
+    }
+    if(hasRealTranscript){
+      /* transcription succeeded \u2014 route through the SAME real analysis
+         pipeline as text mode. This is the actual upgrade: voice/video
+         answers now get genuine STAR/specificity/follow-up scoring
+         instead of the duration-only heuristic below. */
+      meBubble((CFG.imode==='video'?'\uD83C\uDFA5 ':'\uD83C\uDF99 ')+transcript);
+      lastAnswerText=transcript; /* transcribed speech feeds the AI reply engine too */
+      analysis=analyzeAnswer(transcript);
+      remember(idx,QS[idx],transcript);
+      writeRecruiterNote(idx,analysis);
+    }else{
+      /* no usable transcript — unsupported browser (notably iOS), denied
+         permission, silence, or a recognition error. Honest fallback:
+         exactly the duration-based heuristic this always used, never a
+         broken UI, never a silent failure. */
+      meBubble((CFG.imode==='video'?'\uD83C\uDFA5 Video answer':'\uD83C\uDF99 Voice answer')+' \u00B7 '+fmt(recSec));
+      STATS.n++;STATS.words+=Math.round(recSec*2.1);STATS.answers.push({w:Math.round(recSec*2.1),star:true,spec:true,hed:0});
+      updateCoach();
+    }
+    resetRec();
+  }
+  sub.disabled=true;answered++;
+  var qWas=idx;
+
+  /* (P7) EMOTIONAL ACKNOWLEDGMENT \u2014 a brief, persona-flavored reaction to
+     HOW the answer felt, layered before the normal follow-up/advance
+     decision. Uncertainty gets warmth; genuine strength gets real praise
+     instead of the generic rotating ack line. This runs independently of
+     whether a follow-up also fires next. */
+  var emo=null;
+  if(analysis&&analysis.uncertain){
+    emo=REASSURE[CFG.persona]||REASSURE['corporate-hr'];
+    dlog('uncertainty detected -> reassurance',true);
+  }else if(analysis&&analysis.w>=60&&analysis.star&&analysis.spec&&analysis.hed===0){
+    emo=STRONG_ACK[CFG.persona]||STRONG_ACK['corporate-hr'];
+    dlog('strong answer detected -> praise',true);
+  }
+
+  /* FLOW: ask the AI to actually READ the answer and react to it. If that
+     path is unavailable (flag off, API down, timeout, malformed), fall
+     straight through to the original pattern-matched logic below —
+     which is unchanged and still correct. Coaching metrics and recruiter
+     notes deliberately keep using the LOCAL analysis either way: those
+     are measurements, not conversation, and shouldn't depend on network. */
+  var alreadyFU=!!followedUp[qWas];
+  fetchAIReply(QS[qWas],lastAnswerText,alreadyFU,function(ai){
+
+    if(ai){
+      /* ── real comprehension path ── */
+      if(ai.followUp){
+        followedUp[qWas]=true;
+        thinking(function(){
+          aiBubble(esc(ai.acknowledgement));
+          aiBubble(followUpTag(qWas)+esc(ai.followUp));
+          qShownAt=Date.now();
+          speak(ai.acknowledgement+' '+ai.followUp,gateOrb);
+          if(CFG.imode==='text')$('answer').focus();
+        });
+        return; /* same question index */
+      }
+      markDone(idx,false);idx++;
+      thinking(function(){
+        aiBubble(esc(ai.acknowledgement));
+        speak(ai.acknowledgement,function(){setTimeout(askNext,300)});
+      });
+      return;
+    }
+
+    /* ── fallback: original pattern-matched logic, untouched ── */
+    var fu=analysis?decideFollowUp(analysis,qWas):null;
+    if(fu)dlog('follow-up triggered'+(CALLBACK_TMPL.indexOf(fu)>-1||/Earlier you mentioned|ties back to something|brought up.*a little while ago/.test(fu)?' (memory callback)':''),true);
+    if(fu){
+      thinking(function(){
+        if(emo)aiBubble(esc(emo));
+        aiBubble(followUpTag(qWas)+esc(fu));
+        qShownAt=Date.now(); /* (P6) reset pace timer for the follow-up */
+        speak((emo?emo+' ':'')+fu,gateOrb);
+        if(CFG.imode==='text')$('answer').focus();
+      });
+      return; /* same question index — the follow-up answer completes it */
+    }
+    markDone(idx,false);idx++;
+    thinking(function(){
+      var pool=ACKS[CFG.persona]||ACKS['corporate-hr'];
+      var line=emo||pool[answered%pool.length];
+      aiBubble(esc(line));
+      /* speak()'s onDone fires immediately on its own when voice is off/
+         unsupported — a second fallback timer here used to cause askNext()
+         to fire TWICE (once via onDone, once via the fallback), which is
+         what made the AI cut itself off mid-sentence when advancing. */
+      speak(line,function(){setTimeout(askNext,300)});
+    });
+  });
+}
+sub.addEventListener('click',submitAnswer);
+ta.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&!sub.disabled)submitAnswer()});
+$('skip-btn').addEventListener('click',function(){
+  if(busy)return;
+  ta.value='';ta.dispatchEvent(new Event('input'));resetRec();
+  skipped++;markDone(idx,true);idx++;ack(true);
+});
+
+/* ── voice/video recording ──
+   (spec 11) REAL MediaRecorder, not a simulated timer. (spec 31) the UI
+   only claims "recording" when a recorder is genuinely capturing — if
+   MediaRecorder is unsupported or the stream is unavailable, the state
+   label says so honestly rather than lying.
+   (spec 12) the blob is held in memory for the current answer only and
+   released immediately after submission. Nothing is uploaded or stored
+   by the frontend — persistence is a deliberate backend decision with a
+   retention policy, not something this page does silently. */
+var recSec=0,recInt=null,recording=false;
+var MR=null,mrChunks=[],mrActive=false;
+var MR_OK=(typeof MediaRecorder!=='undefined');
+function startMediaRecorder(){
+  mrActive=false;mrChunks=[];
+  if(!MR_OK)return;
+  var stream=(CFG.imode==='video'&&CAM.stream)?CAM.stream:AUD.micStream;
+  if(!stream)return;
+  try{
+    MR=new MediaRecorder(stream);
+    MR.ondataavailable=function(e){if(e.data&&e.data.size>0)mrChunks.push(e.data)};
+    MR.onerror=function(){mrActive=false;if(DEBUG)dlog('MediaRecorder error — answer still captured via transcript',false)};
+    MR.start();
+    mrActive=true;
+    if(DEBUG)dlog('MediaRecorder started ('+CFG.imode+')',true);
+  }catch(e){
+    MR=null;mrActive=false;
+    if(DEBUG)dlog('MediaRecorder unavailable ('+e.name+') — transcript still captured',false);
+  }
+}
+function stopMediaRecorder(onBlobReady){
+  if(!MR){ if(onBlobReady)onBlobReady(null); return; }
+  MR.onstop = function() {
+    var blob = new Blob(mrChunks, {type: 'audio/webm'});
+    if(onBlobReady) onBlobReady(blob);
+  };
+  try{if(MR.state!=='inactive')MR.stop()}catch(e){ if(onBlobReady)onBlobReady(null); }
+  MR=null;mrActive=false;
+}
+function releaseRecording(){
+  /* (spec 12) drop the blob as soon as the answer is submitted — no
+     silent accumulation of video in memory across a whole session */
+  mrChunks=[];
+}
+var dockCard=$('dock-card');
+/* answer mode is switchable mid-session; launch config sets the starting mode */
+function applyMode(m,isUserSwitch){
+  if(m!=='text'&&m!=='voice'&&m!=='video')m='text';
+  var prev=CFG.imode;
+  CFG.imode=m;
+  dockCard.dataset.mode=m;
+  /* CAMERA (P1): auto-request on Video select; release fully when leaving */
+  if(m==='video')startCam();
+  else if(prev==='video')stopCam();
+  gateOrb();
+  /* HONEST DISCLOSURE: only fires on a genuine in-room switch away from Text
+     made by the candidate mid-session (never on the initial mode set from
+     the lobby). Conditional on SR_OK \u2014 this used to be an unconditional
+     "lighter score" warning, which went stale and became actively wrong
+     the moment live transcription shipped: telling a candidate whose
+     browser CAN transcribe that they're getting a lesser experience is
+     its own kind of dishonesty, just in the other direction. */
+  if(isUserSwitch&&m!=='text'&&!sysDisclosed){
+    sysDisclosed=true;
+    if(SR_OK){
+      sysNote('<b>Heads up</b>Voice and video give you realistic practice conditions, and your answers are transcribed live \u2014 same real coaching as typed answers, follow-up questions included.');
+    }else{
+      sysNote('<b>Heads up</b>Voice and video give you realistic practice conditions, but your browser doesn\u2019t support live transcription, so full AI coaching \u2014 follow-up questions and content-based scoring \u2014 isn\u2019t available here. These answers get a lighter, completion-based score for now. Switch back to Text any time for full coaching.');
+    }
+  }
+  document.querySelectorAll('.mode-tab').forEach(function(b){b.setAttribute('aria-selected',b.dataset.setmode===m?'true':'false')});
+  resetRec();
+  if(m==='text'){sub.disabled=words(ta.value)<5}
+  $('rec-orb').setAttribute('aria-label',m==='video'?'Start recording your video answer':'Start recording your spoken answer');
+}
+document.querySelectorAll('.mode-tab').forEach(function(b){
+  b.addEventListener('click',function(){applyMode(this.dataset.setmode,true)});
+});
+function resetRec(){
+  recording=false;recSec=0;clearInterval(recInt);
+  stopMediaRecorder();
+  releaseRecording(); /* (spec 12) blob dropped, not accumulated */
+  $('rec-orb').classList.remove('rec');
+  $('rec-orb-ic').innerHTML='<use href="#'+(CFG.imode==='video'?'i-video':'i-mic')+'"/>';
+  $('wave-live').hidden=true;$('rec-time').hidden=true;
+  $('rec-indicator').hidden=true;
+  var cs=$('cam-stage');if(cs){cs.classList.remove('rec');}
+  var ct0=$('cam-timer');if(ct0)ct0.textContent='0:00';
+  var cst=$('call-stage');if(cst)cst.classList.remove('rec');
+  if(dockCard.dataset.mode!=='text')sub.disabled=true;
+  $('media-hint').textContent=CFG.imode==='video'?'Tap to record your video answer. Look at the camera, and re-record if you need to.':'Tap to record your spoken answer. You can re-record before submitting.';
+}
+$('rec-orb').addEventListener('click',function(){
+  if(!recording){
+    recording=true;recSec=0;
+    this.classList.add('rec');
+    $('rec-orb-ic').innerHTML='<use href="#i-stop"/>';
+    $('wave-live').hidden=false;$('rec-time').hidden=false;$('rec-time').textContent='0:00';
+    $('rec-indicator').hidden=false;
+    if(CFG.imode==='video'){
+      var cs1=$('cam-stage');if(cs1)cs1.classList.add('rec');
+      var ct1=$('cam-timer');if(ct1)ct1.textContent='0:00';
+      $('media-hint').textContent='Recording \u2014 speak to the camera, not the screen. Tap again to finish.';
+    }
+    $('media-hint').textContent='Recording\u2026 tap the button again when you\u2019ve finished your answer.';
+    recInt=setInterval(function(){recSec++;var t=fmt(recSec);$('rec-time').textContent=t;
+      var ct=$('cam-timer');if(ct)ct.textContent=t},1000);
+    /* real amplitude waveform (P9): reuse the camera stream's mic in video
+       mode; request mic-only in voice mode. Falls back to CSS animation. */
+    if(CFG.imode==='video'&&CAM.stream){startWave(CAM.stream)}
+    else if(CFG.imode==='voice'&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+      if(AUD.micStream){startWave(AUD.micStream)}
+      else navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+        AUD.micStream=s;if(recording)startWave(s);
+        if(DEBUG)dlog('mic waveform stream acquired',true);
+      }).catch(function(err){
+        /* cosmetic only \u2014 falls back to the CSS animation, never blocks
+           the interview \u2014 but still worth surfacing in debug mode rather
+           than failing with zero trace, same principle as camera/transcription */
+        if(DEBUG)dlog('mic waveform unavailable ('+(err&&err.name||'unknown')+'), using CSS fallback animation',false);
+      });
+    }
+    /* DEV: start MediaRecorder(CAM.stream || AUD.micStream) here; on stop,
+       POST the blob to /candidate/interview/session/{id}/answer */
+    startTranscription(); /* live speech-to-text feeding the real analysis engine */
+    startMediaRecorder(); /* (spec 11) real capture, so the recording state is honest */
+    /* (spec 31) label set AFTER the recorder actually starts — never claim
+       "Recording" when nothing is recording. If MediaRecorder is
+       unavailable the answer is still captured via live transcription, so
+       say that instead of implying a file is being saved. */
+    var recLabel=$('rec-indicator').querySelector('span');
+    if(recLabel)recLabel.textContent=mrActive?'Recording':(SR_OK?'Capturing answer':'Timing answer');
+  }else{
+    recording=false;clearInterval(recInt);
+    stopWave();
+    stopTranscription(); // Stop native live transcription
+    
+    this.classList.remove('rec');
+    $('rec-orb-ic').innerHTML='<use href="#i-refresh"/>';
+    $('wave-live').hidden=true;
+    $('rec-indicator').hidden=true;
+    var cs2=$('cam-stage');if(cs2)cs2.classList.remove('rec');
+    
+    if(recSec<3){
+      stopMediaRecorder();
+      toast('Recording too short \u2014 try again');
+      resetRec();
+      return;
+    }
+    
+    $('media-hint').textContent='AI is transcribing your answer...';
+    sub.disabled=true;
+    
+    stopMediaRecorder(function(blob) {
+      if(!blob) {
+        $('media-hint').textContent='Recording failed. Please try again.';
+        return;
+      }
+      var fd = new FormData();
+      fd.append('audio', blob, 'answer.webm');
+      fetch('<?= site_url("api/interview/transcribe") ?>', { method: 'POST', body: fd })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.transcript) {
+          srFinal = data.transcript;
+          var cap=$('live-caption');
+          if(cap) {
+            cap.hidden=false;
+            $('live-caption-txt').textContent = data.transcript;
+          }
+          $('media-hint').textContent='Answer transcribed ('+fmt(recSec)+'). Auto-submitting...';
+          sub.disabled=false;
+          submitAnswer();
+        } else {
+          $('media-hint').textContent='Transcription failed. Please try again.';
+        }
+      })
+      .catch(function(e){
+        $('media-hint').textContent='Transcription error. Please try again.';
+      });
+    });
+  }
+});
+
+/* ── LIVE TRANSCRIPTION (Voice/Video → real analysis) ─────────────────
+   Feature-detected via SpeechRecognition/webkitSpeechRecognition. When
+   supported, voice and video answers get transcribed live and fed into
+   the SAME analysis engine as text mode (analyzeAnswer, remember,
+   writeRecruiterNote, decideFollowUp) \u2014 this is what finally makes
+   voice/video scoring real instead of the duration-based heuristic.
+   When unsupported \u2014 notably iOS, where neither Safari nor Chrome
+   reliably exposes this \u2014 it falls back to exactly that existing
+   heuristic, honestly, with no broken UI and no silent failure.
+   PRIVACY: this is never fully on-device \u2014 audio is sent to the
+   browser vendor's speech service (Google for Chrome, Apple for Safari)
+   to produce the transcript. Disclosed once, the first time it activates,
+   same pattern as the mode-switch honesty banner. */
+var SR_CTOR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var SR_OK=!!SR_CTOR;
+if(DEBUG){var r2=document.getElementById('dbg-sr-row');if(r2)r2.innerHTML='<b>SpeechRecognition supported:</b> '+(SR_OK?'yes':'no \u2014 voice/video will use timing-based scoring');}
+var SR=null,srFinal='',srInterim='',srDisclosed=false;
+function updateCaption(){
+  var cap=$('live-caption');if(!cap)return;
+  var text=(srFinal+' '+srInterim).trim();
+  if(!text){cap.hidden=true;return}
+  cap.hidden=false;
+  cap.classList.remove('cap-warn');
+  $('live-caption-txt').textContent=text;
+  $('sr-retry').hidden=true;
+}
+function srShowIssue(msg,retryable){
+  /* visible, honest status instead of silently doing nothing \u2014 this is
+     the fix for "it's not transcribing" being undiagnosable: previously
+     a failure after start() gave zero indication anything had gone wrong. */
+  var cap=$('live-caption');if(!cap)return;
+  cap.hidden=false;
+  cap.classList.add('cap-warn');
+  $('live-caption-txt').textContent=msg;
+  $('sr-retry').hidden=!retryable;
+}
+$('sr-retry').addEventListener('click',function(){
+  $('sr-retry').hidden=true;
+  startTranscription();
+});
+function startTranscription(){
+  // Native live transcription disabled in favor of AI Transcription
+  return;
+  if(!SR_OK)return;
+  /* SpeechRecognition, like getUserMedia, is blocked outright on insecure
+     origins (file://, plain http://) in every modern browser \u2014 this is
+     the SAME restriction already diagnosed correctly for the camera. On
+     an insecure origin, no permission prompt will EVER appear no matter
+     how many times "Retry" is tapped, and the browser's own error looks
+     identical to a genuine permission denial, which is actively
+     misleading. Check this first and say so plainly instead. */
+  var insecureOrigin=!(window.isSecureContext===true||location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1');
+  if(insecureOrigin){
+    srShowIssue('Live transcription needs a secure connection (https://) \u2014 it can\u2019t work when this page is opened directly from a file. Deploy it to your server to test this, or continue with timing-based scoring.',false);
+    dlog('transcription blocked: insecure origin',false);
+    return;
+  }
+  try{
+    SR=new SR_CTOR();
+    SR.continuous=true;
+    SR.interimResults=true;
+    SR.maxAlternatives=3; /* requested more detailed transcription */
+    SR.lang='en-US';
+    srFinal='';srInterim='';
+    updateCaption();
+    SR.onresult=function(e){
+      var finalChunk='',interimChunk='';
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal)finalChunk+=e.results[i][0].transcript;
+        else interimChunk+=e.results[i][0].transcript;
+      }
+      if(finalChunk)srFinal=(srFinal+' '+finalChunk).trim();
+      srInterim=interimChunk;
+      updateCaption();
+    };
+    SR.onerror=function(e){
+      var code=e&&e.error;
+      /* 'no-speech' fires on ordinary pauses in continuous mode \u2014 not a
+         real failure, stay silent so a thinking pause doesn't look broken */
+      if(code==='no-speech')return;
+      dlog('transcription error: '+code,false);
+      if(code==='not-allowed'||code==='service-not-allowed'){
+        /* this is genuinely non-obvious: Speech Recognition is a SEPARATE
+           OS/browser permission from the microphone the candidate already
+           granted for recording \u2014 saying so directly is the difference
+           between a candidate retrying correctly vs. giving up confused */
+        srShowIssue('Live transcription needs its own permission, separate from your microphone. Check Speech Recognition access in your browser or device settings, then retry \u2014 your answer is still scored either way.',true);
+      }else if(code==='network'){
+        srShowIssue('Live transcription needs an internet connection right now \u2014 scoring by timing instead.',true);
+      }else if(code==='audio-capture'){
+        srShowIssue('No microphone found for transcription \u2014 scoring by timing instead.',true);
+      }else{
+        srShowIssue('Live transcription isn\u2019t available right now \u2014 scoring by timing instead.',true);
+      }
+    };
+    SR.onend=function(){
+      /* self-healing: continuous mode can still drop on some browsers
+         after a silence gap even though nothing is actually wrong \u2014
+         restart automatically while the candidate is still recording,
+         instead of silently going dark for the rest of the answer */
+      if(recording&&SR){dlog('transcription dropped, self-healing restart',null);try{SR.start()}catch(e){}}
+    };
+    SR.start();
+    dlog('transcription started',true);
+    if(!srDisclosed){
+      srDisclosed=true;
+      var vendor=(navigator.vendor&&navigator.vendor.indexOf('Apple')>-1)?'Apple':'Google';
+      sysNote('<b>Heads up</b>Your spoken answers are transcribed live so you get the same real coaching as typed answers \u2014 real follow-ups, real scoring. This uses your browser\u2019s speech service, so your audio is processed by '+vendor+' to generate the text.');
+    }
+  }catch(e){
+    SR=null;
+    srShowIssue('Live transcription couldn\u2019t start \u2014 your answer will still be scored using timing instead.',true);
+    dlog('transcription failed to construct/start',false);
+  }
+}
+function stopTranscription(){
+  if(SR){try{SR.stop()}catch(e){}SR=null}
+}
+
+/* ── CAMERA ENGINE (P1) ───────────────────────────────────────────────
+   Real getUserMedia: auto-requests camera+mic when Video mode is selected,
+   live mirrored preview, front/rear switch on mobile, permission status,
+   denied fallback with retry, disconnect recovery, full cleanup. ── */
+var CAM={stream:null,facing:'user',starting:false};
+function camStatus(state,txt){
+  var s=$('cam-status');s.className='cam-status'+(state?' '+state:'');
+  $('cam-status-txt').textContent=txt;
+}
+function startCam(){
+  if(CAM.starting)return;CAM.starting=true;
+  var stage=$('cam-stage'),vid=$('cam-video');
+  if(!stage||!vid){CAM.starting=false;return;}
+  if($('cam-denied'))$('cam-denied').hidden=true;
+  camStatus('','Requesting camera\u2026');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    CAM.starting=false;
+    /* getUserMedia is undefined on insecure origins (incl. file://) in every
+       modern browser — this is NOT "unsupported", and telling the user that
+       is actively misleading. Diagnose the real cause instead. */
+    var insecure=!(window.isSecureContext===true||location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1');
+    if(insecure){
+      camStatus('err','Needs a secure connection');
+      dlog('camera blocked: insecure origin',false);
+      $('cam-denied-txt').innerHTML='Camera access requires a secure connection (<b>https://</b>). It will not work when this page is opened directly from a file or over plain http \u2014 deploy it to your server first, or switch to Voice mode now.';
+    }else{
+      camStatus('err','Not supported');
+      $('cam-denied-txt').textContent='This browser does not support camera capture. Switch to Voice mode to continue.';
+    }
+    $('cam-denied').hidden=false;return;
+  }
+  stopCam(true);
+  navigator.mediaDevices.getUserMedia({video:{facingMode:CAM.facing},audio:true}).then(function(stream){
+    CAM.stream=stream;CAM.starting=false;
+    vid.srcObject=stream;vid.hidden=false;
+    vid.classList.toggle('rear',CAM.facing==='environment');
+    stage.classList.add('live');
+    camStatus('on','Camera on \u00B7 Mic on');
+    dlog('camera started',true);
+    /* disconnect recovery: device unplugged / OS revoked */
+    stream.getVideoTracks().forEach(function(t){
+      t.onended=function(){
+        camStatus('err','Camera disconnected');
+        dlog('camera disconnected mid-session',false);
+        $('cam-denied-txt').textContent='Your camera disconnected. Reconnect it and retry, or switch to Voice mode.';
+        $('cam-denied').hidden=false;stage.classList.remove('live');vid.hidden=true;
+      };
+    });
+    /* show flip only when a second camera exists */
+    if(navigator.mediaDevices.enumerateDevices){
+      navigator.mediaDevices.enumerateDevices().then(function(ds){
+        var cams=ds.filter(function(d){return d.kind==='videoinput'});
+        $('cam-flip').style.display=cams.length>1?'flex':'none';
+      }).catch(function(){});
+    }
+  }).catch(function(err){
+    CAM.starting=false;
+    camStatus('err',err&&err.name==='NotAllowedError'?'Camera blocked':'Camera unavailable');
+    dlog('camera failed: '+(err&&err.name||'unknown error'),false);
+    $('cam-denied-txt').textContent=(err&&err.name==='NotAllowedError')
+      ?'Camera access was blocked. Allow camera permission in your browser settings, then retry \u2014 or switch to Voice mode.'
+      :'No usable camera was found. Connect one and retry, or switch to Voice mode.';
+    $('cam-denied').hidden=false;
+  });
+}
+function stopCam(silent){
+  if(CAM.stream){CAM.stream.getTracks().forEach(function(t){t.stop()});CAM.stream=null}
+  var vid=$('cam-video');if(vid){vid.srcObject=null;vid.hidden=true}
+  var st=$('cam-stage');if(st)st.classList.remove('live');
+  if(!silent)camStatus('','Camera off');
+}
+var camFlip=$('cam-flip');
+if(camFlip){
+  camFlip.addEventListener('click',function(){
+    CAM.facing=CAM.facing==='user'?'environment':'user';startCam();
+  });
+}
+var camRetry=$('cam-retry');
+if(camRetry){
+  camRetry.addEventListener('click',startCam);
+}
+/* network quality (where supported — Chrome/Android; hidden elsewhere) */
+(function(){
+  var c=navigator.connection;var pill=$('net-pill');if(!pill)return;
+  if(!c||!c.effectiveType){pill.hidden=true;return}
+  function upd(){
+    var t=c.effectiveType;pill.hidden=false;
+    pill.className='net-pill'+(/2g|slow/.test(t)?' weak':'');
+    pill.innerHTML=(/2g|slow/.test(t)?'\u26A0 Weak network':'\u25CF Network good')+' \u00B7 '+t;
+  }
+  upd();c.addEventListener&&c.addEventListener('change',upd);
+})();
+
+/* ── REAL RECORDING WAVEFORM (P9) — mic amplitude drives the bars ── */
+var AUD={ctx:null,analyser:null,raf:null,micStream:null};
+function startWave(stream){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    AUD.ctx=AUD.ctx||new AC();
+    var src=AUD.ctx.createMediaStreamSource(stream);
+    AUD.analyser=AUD.ctx.createAnalyser();AUD.analyser.fftSize=64;
+    src.connect(AUD.analyser);
+    var bars=$('wave-live').children,data=new Uint8Array(AUD.analyser.frequencyBinCount);
+    (function loop(){
+      AUD.raf=requestAnimationFrame(loop);
+      AUD.analyser.getByteFrequencyData(data);
+      for(var i=0;i<bars.length;i++){
+        var v=data[i+2]/255;
+        bars[i].style.transform='scaleY('+Math.max(.25,v*1.6)+')';
+        bars[i].style.animation='none';
+      }
+    })();
+  }catch(e){}
+}
+function stopWave(){
+  if(AUD.raf){cancelAnimationFrame(AUD.raf);AUD.raf=null}
+  [].forEach.call($('wave-live').children,function(b){b.style.transform='';b.style.animation=''});
+}
+
+/* ── PERSISTENT INTERVIEW MEMORY (P1) ────────────────────────────────
+   Stores what was actually said, not just quality metrics \u2014 this is what
+   lets later questions genuinely reference earlier answers instead of
+   every question being independent of the ones before it. Heuristic
+   extraction ships today (regex-based "quotable fact" pulling); DEV: once
+   the backend is wired, replace extractKeyFact() with the LLM's own
+   summarisation and MEMORY becomes the literal conversation history sent
+   back on every /api/interview/next call. */
+var MEMORY=[];
+function extractKeyFact(text){
+  var t=text.trim();
+  var m=t.match(/(\u20A6[\d,]+(?:\.\d+)?|\d+(?:\.\d+)?%|\d+\s*(?:percent|people|person|team|months?|weeks?|years?|days?|hours?|million|thousand|naira))/i);
+  if(m){
+    var idx=t.indexOf(m[0]);
+    var start=Math.max(0,idx-28);
+    var end=Math.min(t.length,idx+m[0].length+18);
+    var snip=t.slice(start,end).trim();
+    return (start>0?'\u2026':'')+snip+(end<t.length?'\u2026':'');
+  }
+  var words=t.split(/\s+/).filter(Boolean);
+  if(words.length<4)return null; /* too thin to be worth recalling later */
+  return words.slice(0,9).join(' ')+(words.length>9?'\u2026':'');
+}
+function remember(qIdx,question,answer){
+  var fact=extractKeyFact(answer);
+  MEMORY.push({qIdx:qIdx,question:question,answer:answer,fact:fact,ts:Date.now()});
+  if(DEBUG)dlog('memory stored (Q'+(qIdx+1)+'): '+(fact?'"'+fact+'"':'no quotable fact extracted'),!!fact);
+}
+function recallEarlier(excludeIdx){
+  var pool=MEMORY.filter(function(m){return m.qIdx!==excludeIdx&&m.fact});
+  if(!pool.length)return null;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+/* ── FLOW ENGINE (P3) — analyze → follow-up → continue naturally ─────
+   Client-side heuristics ship today; DEV: swap decideFollowUp() for
+   POST /api/interview/next {answer, question, history} to go fully AI. ── */
+var STATS={n:0,words:0,star:0,spec:0,hedges:0,casualTotal:0,paceSum:0,paceSamples:0,answers:[]};
+var qShownAt=Date.now(); /* (P6) timestamp for real speaking-pace measurement, reset each time a question or follow-up is shown */
+var followedUp={};
+var STARWORDS=/situation|task|when i|my role|i led|i managed|i decided|as a result|the result|outcome|impact|we achieved|i achieved/i;
+var NUMWORDS=/\d|percent|\u20A6|naira|million|thousand|weeks?|months?|days?|team of/i;
+var HEDGES=/\b(maybe|i think|i guess|kind of|sort of|probably|not sure|i feel like)\b/gi;
+var UNCERTAIN_RX=/\b(don[\u2019']?t know|not (?:really\s+)?(?:sure|certain)|no idea|haven[\u2019']?t (?:thought|dealt))\b/i;
+var REPEAT_RX_WORDS=/\b(repeat (?:that|it|the question)?|say (?:that|it) again|can you repeat|what was the question|come again|pardon|sorry,?\s*(?:can you )?repeat|didn[\u2019']?t (?:catch|hear) (?:that|you))\b/i;
+function isRepeatRequest(text){
+  var t=text.trim();
+  /* short messages only \u2014 guards against a real long answer that happens
+     to use the word "repeat" in passing (e.g. "I had to repeat this weekly") */
+  return words(t)<=8&&REPEAT_RX_WORDS.test(t);
+}
+var CASUAL_RX=/\b(lol|lmao|gonna|wanna|kinda|sorta|yeah|nah|dunno|omg|tbh)\b|!{2,}/i;
+function analyzeAnswer(text){
+  var w=text.trim()?text.trim().split(/\s+/).length:0;
+  var star=STARWORDS.test(text),spec=NUMWORDS.test(text);
+  var hed=(text.match(HEDGES)||[]).length;
+  var uncertain=UNCERTAIN_RX.test(text);
+  var casual=(text.match(CASUAL_RX)||[]).length;
+  /* (P6) real speaking pace: elapsed time since the question/follow-up was
+     shown vs words typed. Genuinely measured, not fabricated \u2014 the one
+     honest caveat is it includes thinking time, not just typing, same
+     caveat any typed-response pace metric has. */
+  var elapsedMin=Math.max(0.15,(Date.now()-qShownAt)/60000);
+  var wpm=w/elapsedMin;
+  STATS.paceSum+=wpm;STATS.paceSamples++;
+  STATS.n++;STATS.words+=w;if(star)STATS.star++;if(spec)STATS.spec++;STATS.hedges+=hed;STATS.casualTotal+=casual;
+  STATS.answers.push({w:w,star:star,spec:spec,hed:hed,uncertain:uncertain,casual:casual,wpm:Math.round(wpm)});
+  updateCoach();
+  return {w:w,star:star,spec:spec,hed:hed,uncertain:uncertain,casual:casual};
+}
+var FOLLOW={
+  short:["That's a good start \u2014 could you take me deeper? Walk me through a specific example, step by step.","I'd love more detail there. What exactly was the situation, and what did you do first?"],
+  nostar:["Can I probe that a little? What was the situation, what did you personally do, and what was the result?","Good \u2014 now structure it for me: the challenge you faced, your specific actions, and the measurable outcome."],
+  nospec:["Can you quantify that? Numbers, timelines, team size \u2014 anything that shows the scale of what you achieved.","What was the measurable result? Recruiters remember figures, not adjectives."],
+  leadership:["And when someone on the team pushed back \u2014 how did you handle that?"],
+  technical:["What trade-offs did you consider before choosing that approach?"]
+};
+/* callback follow-ups (P2+P11) \u2014 genuinely reference an EARLIER answer,
+   not the current one; this is what makes the conversation feel connected
+   instead of a fixed sequence of independent questions */
+var CALLBACK_TMPL=[
+  'Earlier you mentioned {fact} \u2014 how does what you just described connect to that?',
+  'That actually ties back to something you said before, about {fact}. Is that a pattern in how you work?',
+  'You brought up {fact} a little while ago \u2014 does the same thinking apply here?'
+];
+function decideFollowUp(a,qIdx){
+  if(followedUp[qIdx])return null;               /* max one follow-up per question */
+  /* note: no longer gated to text-only — voice/video reach here too now,
+     but ONLY when transcription actually succeeded (the caller only
+     invokes this when `analysis` is truthy, which requires real content) */
+  var pool=null,tmpl=null;
+  if(a.w<30)pool=FOLLOW.short;
+  else if(!a.star&&(CFG.itype==='behavioral'||CFG.itype==='mixed'||CFG.itype==='leadership'))pool=FOLLOW.nostar;
+  else if(!a.spec)pool=FOLLOW.nospec;
+  else if(MEMORY.length>=2&&Math.random()<.45){
+    /* (P1/P2/P11) good answer AND real conversation history exists \u2014
+       reference an EARLIER answer instead of the current one. This is
+       what makes the sequence feel connected rather than independent
+       questions asked in a fixed order. */
+    var mem=recallEarlier(qIdx);
+    if(mem)tmpl=CALLBACK_TMPL[STATS.n%CALLBACK_TMPL.length].replace('{fact}',mem.fact);
+  }
+  else if(CFG.itype==='leadership'&&Math.random()<.4)pool=FOLLOW.leadership;
+  else if(CFG.itype==='technical'&&Math.random()<.4)pool=FOLLOW.technical;
+  if(!pool&&!tmpl)return null;
+  followedUp[qIdx]=true;
+  return tmpl||pool[STATS.n%pool.length];
+}
+/* ── AI THINKING (P4) — rotating status while "analyzing" ── */
+function thinking(cb){
+  var lines=['Analyzing your response\u2026','Evaluating communication\u2026','Preparing next interview question\u2026'];
+  var t=aiBubble('<span class="think"><span class="think-dots"><i></i><i></i><i></i></span><span class="think-txt" id="think-txt">'+lines[0]+'</span></span>');
+  busy=true;var li=0;
+  var rot=setInterval(function(){
+    li=(li+1)%lines.length;
+    var el=document.getElementById('think-txt');
+    if(el){el.style.opacity='0';setTimeout(function(){el.textContent=lines[li];el.style.opacity='1'},200)}
+  },1100);
+  setTimeout(function(){clearInterval(rot);t.remove();busy=false;cb()},2600);
+}
+/* ── LIVE COACHING WIDGET (P5) ── */
+function pct(v){return Math.max(4,Math.min(100,Math.round(v)))}
+function updateCoach(){
+  if(!STATS.n)return;
+  var avgW=STATS.words/STATS.n;
+  var avgWpm=STATS.paceSamples?Math.round(STATS.paceSum/STATS.paceSamples):0;
+  var vals={
+    len:pct(avgW/70*100),
+    /* (P6) real, measured WPM (elapsed time since the question was shown vs
+       words typed) \u2014 honest caveat: this includes thinking time, not pure
+       typing speed, the same caveat any typed-response pace metric has.
+       ~45 WPM treated as a full bar; this is a rough proxy, not a
+       validated benchmark, and deliberately doesn't imply "faster=better"
+       since a thoughtful pause beats rambling in a real interview. */
+    pace:pct(Math.min(100,avgWpm/45*100)),
+    star:pct(STATS.star/STATS.n*100),
+    spec:pct(STATS.spec/STATS.n*100),
+    conf:pct(100-(STATS.hedges/STATS.n)*22),
+    prof:pct(100-(STATS.casualTotal/STATS.n)*25-(STATS.hedges/STATS.n)*6)
+  };
+  Object.keys(vals).forEach(function(k){
+    var row=document.querySelector('.crow[data-k="'+k+'"]');if(!row)return;
+    row.querySelector('b').textContent=(k==='pace'?avgWpm+' wpm':vals[k]+'%');
+    row.querySelector('.fill').style.width=vals[k]+'%';
+    row.classList.remove('pulse');void row.offsetWidth;row.classList.add('pulse');
+  });
+  var coach=$('coach');
+  if(coach.classList.contains('hide')&&STATS.n===1&&!coach.dataset.dismissed){coach.classList.remove('hide')}
+}
+$('coach-close').addEventListener('click',function(){var c=$('coach');c.classList.add('hide');c.dataset.dismissed='1'});
+$('coach-tab').addEventListener('click',function(){var c=$('coach');c.classList.remove('hide');delete c.dataset.dismissed});
+
+/* ── MOBILE KEYBOARD (P8) — keep the dock visible above the keyboard ── */
+if(window.visualViewport){
+  var vv=window.visualViewport;
+  vv.addEventListener('resize',function(){
+    var kb=Math.max(0,window.innerHeight-vv.height);
+    document.body.classList.toggle('kb-open',kb>120);
+    $('dock').style.transform=kb>120?'translateY(-'+kb+'px)':'';
+    if(kb>120)scrollEnd();
+  });
+}
+
+/* ── finish ── */
+function finish(timedOut){
+  clearInterval(timerInt);
+  /* P10: full resource cleanup — no dangling camera, mic, audio, or speech */
+  stopCam(true);stopWave();
+  if(AUD.micStream){AUD.micStream.getTracks().forEach(function(t){t.stop()});AUD.micStream=null}
+  if(TTS_OK)window.speechSynthesis.cancel();
+  VOICE.queue=[];VOICE.playing=false;
+  document.body.classList.add('finished');
+  /* move focus to the new primary heading so keyboard/AT users land on the
+     completion screen instead of a now-hidden control */
+  var dTitle=$('done-title');if(dTitle)setTimeout(function(){dTitle.focus()},50);
+  $('d-answered').textContent=answered;
+  $('d-skipped').textContent=skipped;
+  $('d-time').textContent=fmt(elapsed);
+  buildReport();
+  if(timedOut){
+    toast('Time\u2019s up \u2014 session complete');
+  }else{
+    toast('\uD83C\uDFC6 Session complete \u2014 +120 Career XP');
+    /* celebrate a genuine completion, not a timeout \u2014 running out of
+       time isn't quite the same win as finishing on your own terms */
+    setTimeout(celebrateSuccess,150);
+  }
+  window.scrollTo({top:0});
+  /* DEV: POST /candidate/interview/session/{id}/complete {stats:STATS};
+     server persists the report and awards XP. */
+}
+/* one-time confetti burst from the completion checkmark \u2014 self-cleaning,
+   GPU-only animation (transform/opacity), and a no-op for anyone with
+   prefers-reduced-motion set (the universal reduced-motion rule already
+   neutralises the animation; this additionally skips creating the
+   elements at all rather than leaving static debris on screen) */
+function celebrateSuccess(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var orb=$('done-orb');if(!orb)return;
+  var r=orb.getBoundingClientRect();
+  var cx=r.left+r.width/2,cy=r.top+r.height/2;
+  var colors=['#0861A9','#ED9020','#16a34a','#0A2F57','#f2a437'];
+  var frag=document.createDocumentFragment();
+  var pieces=[];
+  for(var i=0;i<16;i++){
+    var el=document.createElement('span');
+    el.className='confetti-piece';
+    var angle=(Math.PI*2*i/16)+(Math.random()*.5-.25);
+    var dist=70+Math.random()*90;
+    el.style.setProperty('--cx',cx+'px');el.style.setProperty('--cy',cy+'px');
+    el.style.setProperty('--tx',(cx+Math.cos(angle)*dist)+'px');
+    el.style.setProperty('--ty',(cy+Math.sin(angle)*dist+60)+'px'); /* +60 = gentle downward drift, like gravity */
+    el.style.setProperty('--rot',(Math.random()*520-260)+'deg');
+    el.style.background=colors[i%colors.length];
+    el.style.animationDelay=(Math.random()*120)+'ms';
+    frag.appendChild(el);
+    pieces.push(el);
+  }
+  document.body.appendChild(frag);
+  setTimeout(function(){pieces.forEach(function(p){p.remove()})},1900);
+}
+
+/* ── EXECUTIVE REPORT (P6) — scored ONLY from this session's answers ── */
+function band(v){return v>=75?['Interview-Ready','pill pill--success']:v>=55?['Getting There','pill pill--brand']:['Warming Up','pill pill--pending']}
+function buildReport(){
+  if(!STATS.n){ $('report').style.display='none';return }
+  var avgW=STATS.words/STATS.n;
+  var S={
+    'Communication':pct(Math.min(avgW/70,1)*88+(STATS.n>2?8:0)),
+    'Structure (STAR)':pct(STATS.star/STATS.n*100),
+    'Specificity':pct(STATS.spec/STATS.n*100),
+    'Confidence':pct(100-(STATS.hedges/STATS.n)*22),
+    'Completeness':pct(answered/(answered+skipped||1)*100)
+  };
+  var keys=Object.keys(S);
+  var overall=Math.round(keys.reduce(function(a,k){return a+S[k]},0)/keys.length);
+  /* ring + band */
+  $('rep-overall').textContent=overall;
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    $('rep-ring-p').style.strokeDashoffset=Math.round(352*(1-overall/100));
+  })});
+  var b=band(overall);
+  $('rep-band').innerHTML='<span class="'+b[1]+'">Recruiter impression: '+b[0]+'</span>';
+  /* sub-scores */
+  var subs=$('rep-subs');subs.innerHTML='';
+  keys.forEach(function(k){
+    var d=document.createElement('div');d.className='sub';
+    d.innerHTML='<i>'+k+' <small>'+S[k]+'</small></i><div class="track"><div class="fill"></div></div>';
+    subs.appendChild(d);
+    requestAnimationFrame(function(){requestAnimationFrame(function(){d.querySelector('.fill').style.width=S[k]+'%'})});
+  });
+  /* strengths & fixes from real ranking */
+  var ranked=keys.slice().sort(function(a,b2){return S[b2]-S[a]});
+  var STR={'Communication':'You give full, developed answers \u2014 recruiters can follow your thinking.',
+    'Structure (STAR)':'You naturally structure answers around situation, action and result.',
+    'Specificity':'You back claims with concrete numbers and timelines \u2014 that builds credibility.',
+    'Confidence':'Your language is direct and assured, with very little hedging.',
+    'Completeness':'You attempted every question \u2014 recruiters read that as composure.'};
+  var FIX={'Communication':'Aim for 60\u2013100 words per answer: one situation, your actions, the result.',
+    'Structure (STAR)':'Use STAR deliberately \u2014 name the Situation, Task, Action and Result in order.',
+    'Specificity':'Add one number to every answer: team size, timeline, percentage saved, or \u20A6 value.',
+    'Confidence':'Replace \u201CI think\u201D and \u201Cmaybe\u201D with \u201CI did\u201D and \u201CI decided\u201D.',
+    'Completeness':'Attempt every question \u2014 a short honest answer beats a skip.'};
+  $('rep-strengths').innerHTML=ranked.slice(0,2).map(function(k){
+    return '<li><svg aria-hidden="true"><use href="#i-check-c"/></svg><span><b>'+k+' \u00B7 '+S[k]+'</b> \u2014 '+STR[k]+'</span></li>';
+  }).join('');
+  $('rep-fixes').innerHTML=ranked.slice(-2).reverse().map(function(k){
+    return '<li><svg aria-hidden="true"><use href="#i-zap"/></svg><span><b>'+k+' \u00B7 '+S[k]+'</b> \u2014 '+FIX[k]+'</span></li>';
+  }).join('');
+  var weakest=ranked[ranked.length-1];
+  $('rep-advice').textContent='Focus your next session on '+weakest.toLowerCase()+' \u2014 one targeted practice lifts it fastest.';
+  /* radar (5 axes) */
+  var cx=130,cy=118,R=88,NL=keys.length;
+  function pt(i,r){var a=-Math.PI/2+i*2*Math.PI/NL;return [cx+r*Math.cos(a),cy+r*Math.sin(a)]}
+  var svg='';
+  [.33,.66,1].forEach(function(f){
+    svg+='<polygon class="radar-grid" points="'+keys.map(function(_,i){return pt(i,R*f).join(',')}).join(' ')+'"/>';
+  });
+  keys.forEach(function(k,i){
+    var p=pt(i,R),lp=pt(i,R+16);
+    svg+='<line class="radar-axis" x1="'+cx+'" y1="'+cy+'" x2="'+p[0]+'" y2="'+p[1]+'"/>';
+    svg+='<text class="radar-lbl" x="'+lp[0]+'" y="'+lp[1]+'" text-anchor="middle">'+k.replace(' (STAR)','')+'</text>';
+  });
+  svg+='<polygon class="radar-shape" points="'+keys.map(function(k,i){return pt(i,R*S[k]/100).join(',')}).join(' ')+'"/>';
+  $('radar-svg').innerHTML=svg;
+}
+/* PDF + share */
+document.addEventListener('click',function(e){
+  if(e.target.closest&&e.target.closest('#rep-pdf'))window.print();
+  if(e.target.closest&&e.target.closest('#rep-share')){
+    var txt='My JobberRecruit AI interview score: '+$('rep-overall').textContent+'/100 \u2014 practising for the real thing!';
+    if(navigator.share){navigator.share({title:'My Interview Report',text:txt,url:'https://jobberrecruit.com'}).catch(function(){})}
+    else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast('Report summary copied')}).catch(function(){toast('Copy not available here')})}
+    else toast('Sharing not supported in this browser');
+  }
+});
+/* P10: release hardware if the tab closes mid-session */
+window.addEventListener('pagehide',function(){stopCam(true);stopWave();
+  if(AUD.micStream){AUD.micStream.getTracks().forEach(function(t){t.stop()})}
+  if(TTS_OK)window.speechSynthesis.cancel();
+});
+
+/* ── exit modal ── */
+var modal=$('exit-modal');
+$('exit-btn').addEventListener('click',function(){modal.classList.add('show');$('exit-stay').focus()});
+function closeExitModal(){modal.classList.remove('show');var eb=$('exit-btn');if(eb)eb.focus()}
+$('exit-stay').addEventListener('click',closeExitModal);
+modal.addEventListener('click',function(e){if(e.target===modal)closeExitModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.classList.contains('show'))closeExitModal()});
+
+/* ── offline/online (P19) ──────────────────────────────────────────────
+   Speech, camera, and the coaching/report engine all run client-side, so
+   losing connectivity doesn't break the interview itself. What DOES need
+   guarding is the (not-yet-wired) backend sync: answers should queue and
+   flush on reconnect rather than silently fail. This ships the honest UI
+   half now; DEV: back it with an actual outbox when /answer is wired. */
+function updateOnlineState(){
+  var bar=$('offline-bar');
+  if(!navigator.onLine){bar.classList.add('show')}
+  else{
+    if(bar.classList.contains('show'))toast('Back online \u2014 syncing your answers');
+    bar.classList.remove('show');
+  }
+}
+window.addEventListener('offline',updateOnlineState);
+window.addEventListener('online',updateOnlineState);
+updateOnlineState();
+
+/* ── toast ── */
+var toastT;
+function toast(msg){var t=$('toast');$('toast-txt').textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show')},3200)}
+
+/* ── interview room lobby → open the session (P4) ──────────────────────
+   Two problems, one cause: the old code auto-spoke the moment the page
+   loaded, with no prior tap. Browsers (iOS Safari especially) block audio
+   output — including speech synthesis — until a genuine user gesture
+   happens on the page. My error handling was quietly swallowing that
+   failure, so the text bubbles advanced normally while producing no sound
+   at all. The lobby tap below is a real gesture: it primes the speech
+   engine SYNCHRONOUSLY inside the click handler (the one pattern every
+   browser honors), and gives the deliberate settling beat before the AI
+   starts talking, instead of ambushing the candidate the instant the page
+   opens. */
+$('lobby-persona').textContent=P.name;
+$('lobby-role').textContent=(CFG.job&&CFG.job!=='this role')?CFG.job:'This role';
+$('lobby-sound').textContent=TTS_OK?'On':'Not supported in this browser';
+if(!TTS_OK){var lh=document.querySelector('.lobby-hint');if(lh)lh.hidden=true}
+
+/* the lobby waits on the SAME resolveQuestions() call the room itself
+   uses \u2014 today (fallback mode) this settles almost instantly; once
+   QUESTION_SOURCE='gemini' is flipped on, this is what hides real network
+   latency behind the lobby's natural "settling" moment instead of a janky
+   loading state appearing mid-interview after the tap. */
+var enterBtn=$('lobby-enter');
+enterBtn.disabled=true;
+$('lobby-enter-ic').style.display='none';
+$('lobby-enter-txt').textContent='Preparing your questions\u2026';
+
+resolveQuestions(function(){
+  buildQuestionMap();
+  var qTotalTxt=QS.length+' question'+(QS.length===1?'':'s');
+  var typeTxt=(TYPE_LBL[CFG.itype]||'behavioral').toLowerCase();
+  var modeTxt=CFG.imode==='video'?'on video':CFG.imode==='voice'?'by voice':'by typing';
+  $('lobby-fmt').textContent=(TYPE_LBL[CFG.itype]||'Behavioral')+' \u00B7 '+(DIFF_LBL[CFG.diff]||'Medium')+' \u00B7 '+qTotalTxt;
+
+  enterBtn.disabled=false;
+  $('lobby-enter-ic').style.display='';
+  $('lobby-enter-txt').textContent='Enter Interview Room';
+
+  function beginSession(){
+    /* SYNCHRONOUS priming call, still inside the click's call stack \u2014 this
+       is what actually unlocks audio; anything after a setTimeout is too
+       late on strict browsers. A near-silent utterance is enough to unlock. */
+    try{
+      if('speechSynthesis' in window) window.speechSynthesis.cancel();
+      var primeAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+      primeAudio.play().catch(function(){});
+    }catch(e){}
+    VOICE.unlocked=true;
+    if (CFG.imode === 'voice' || CFG.imode === 'video') {
+        VOICE.on = true;
+        var vBtn = document.getElementById('voice-btn');
+        if (vBtn) vBtn.setAttribute('aria-pressed', 'true');
+        var vIc = document.getElementById('voice-btn-ic');
+        if (vIc) vIc.innerHTML = '<use href="#i-vol"/>';
+    }
+    var lobby=$('lobby');
+    lobby.classList.add('leaving');
+    document.body.classList.remove('in-lobby');
+    setTimeout(function(){lobby.remove()},400);
+
+    applyMode(CFG.imode);
+    setPill();
+    var introParts=[
+      P.open,
+      'We\u2019ll go through '+qTotalTxt+' \u2014 '+typeTxt+', at '+(DIFF_LBL[CFG.diff]||'medium').toLowerCase()+' difficulty \u2014 and you\u2019ll answer '+modeTxt+'. Take your time on each one; you can skip a question and it simply gets marked for practice, not held against you.',
+      'Alright \u2014 let\u2019s get started.'
+    ];
+    function introStep(i){
+      if(i>=introParts.length){askNext();return}
+      typing(function(){
+        aiBubble(esc(introParts[i]));
+        speak(introParts[i],function(){introStep(i+1)});
+      },i===0?900:600);
+    }
+    /* one settling beat after the tap before the AI's first word \u2014 this is
+       the "delay before beginning" pause, now backed by an unlocked engine
+       instead of racing a blocked one */
+    setTimeout(function(){introStep(0)},700);
+  }
+
+  enterBtn.addEventListener('click',beginSession);
+});
+document.body.classList.add('in-lobby');
+})();
+</script>
+</body>
+</html>

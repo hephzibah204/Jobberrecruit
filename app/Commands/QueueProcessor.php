@@ -47,10 +47,18 @@ class QueueProcessor extends BaseCommand
         try {
             switch ($type) {
                 case 'newsletter_email':
-                    $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
+                    $result = $this->sendEmail($data['email'], $data['subject'], $data['content']);
+                    $success = $result['success'];
+                    if (!$success) {
+                        $error = $result['error'] ?? 'Failed to send newsletter email';
+                    }
                     break;
                 case 'transactional_email':
-                    $success = $this->sendTransactionalEmail($data);
+                    $result = $this->sendTransactionalEmail($data);
+                    $success = $result['success'];
+                    if (!$success) {
+                        $error = $result['error'] ?? 'Failed to send transactional email';
+                    }
                     break;
                 // Add more cases here as needed
                 default:
@@ -78,7 +86,7 @@ class QueueProcessor extends BaseCommand
         }
     }
 
-    protected function sendEmail($to, $subject, $content)
+    protected function sendEmail($to, $subject, $content): array
     {
         \Config\Services::$bypassQueue = true;
         $email = \Config\Services::email(false);
@@ -92,19 +100,24 @@ class QueueProcessor extends BaseCommand
         $email->setMailType('html');
 
         if ($email->send()) {
-            return true;
+            return ['success' => true];
         } else {
-            // Log full error for debugging
-            log_message('error', 'Queue Email Error: ' . $email->printDebugger(['headers']));
-            return false;
+            $error = strip_tags($email->printDebugger(['headers']));
+            log_message('error', 'Queue Email Error: ' . $error);
+            return ['success' => false, 'error' => $error];
         }
     }
 
-    protected function sendTransactionalEmail($data)
+    protected function sendTransactionalEmail($data): array
     {
         \Config\Services::$bypassQueue = true;
         $email = \Config\Services::email(false);
         \Config\Services::$bypassQueue = false;
+
+        $config = config('Email');
+        $fromEmail = !empty($data['from_email']) ? $data['from_email'] : $config->fromEmail;
+        $fromName  = !empty($data['from_name']) ? $data['from_name'] : $config->fromName;
+        $email->setFrom($fromEmail, $fromName);
 
         $email->setTo($data['to']);
         $email->setSubject($data['subject']);
@@ -126,10 +139,11 @@ class QueueProcessor extends BaseCommand
         }
 
         if ($email->send()) {
-            return true;
+            return ['success' => true];
         } else {
-            log_message('error', 'Queue Transactional Email Error: ' . $email->printDebugger(['headers']));
-            return false;
+            $error = strip_tags($email->printDebugger(['headers']));
+            log_message('error', 'Queue Transactional Email Error: ' . $error);
+            return ['success' => false, 'error' => $error];
         }
     }
 }

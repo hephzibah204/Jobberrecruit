@@ -93,7 +93,6 @@ class User extends Entity
     private function populateIdentities(): void
     {
         if ($this->identities === null) {
-            /** @var UserIdentityModel $identityModel */
             $identityModel = model(UserIdentityModel::class);
 
             $this->identities = $identityModel->getIdentities($this);
@@ -140,7 +139,6 @@ class User extends Entity
      */
     public function createEmailIdentity(array $credentials): void
     {
-        /** @var UserIdentityModel $identityModel */
         $identityModel = model(UserIdentityModel::class);
 
         $identityModel->createEmailIdentity($this, $credentials);
@@ -164,7 +162,7 @@ class User extends Entity
      */
     public function saveEmailIdentity(): bool
     {
-        if (empty($this->email) && empty($this->password) && empty($this->password_hash)) {
+        if (($this->email === null || $this->email === '') && ($this->password === null || $this->password === '') && ($this->password_hash === null || $this->password_hash === '')) {
             return true;
         }
 
@@ -181,19 +179,18 @@ class User extends Entity
             $identity = $this->getEmailIdentity();
         }
 
-        if (! empty($this->email)) {
+        if ($this->email !== null && $this->email !== '') {
             $identity->secret = $this->email;
         }
 
-        if (! empty($this->password)) {
+        if ($this->password !== null && $this->password !== '') {
             $identity->secret2 = service('passwords')->hash($this->password);
         }
 
-        if (! empty($this->password_hash) && empty($this->password)) {
+        if ($this->password_hash !== null && $this->password_hash !== '' && ($this->password === null || $this->password === '')) {
             $identity->secret2 = $this->password_hash;
         }
 
-        /** @var UserIdentityModel $identityModel */
         $identityModel = model(UserIdentityModel::class);
 
         try {
@@ -220,7 +217,6 @@ class User extends Entity
      */
     public function touchIdentity(UserIdentity $identity): void
     {
-        /** @var UserIdentityModel $identityModel */
         $identityModel = model(UserIdentityModel::class);
 
         $identityModel->touchIdentity($identity);
@@ -283,7 +279,6 @@ class User extends Entity
      */
     public function previousLogin(): ?Login
     {
-        /** @var LoginModel $logins */
         $logins = model(LoginModel::class);
 
         return $logins->previousLogin($this);
@@ -294,7 +289,6 @@ class User extends Entity
      */
     public function lastLogin(): ?Login
     {
-        /** @var LoginModel $logins */
         $logins = model(LoginModel::class);
 
         return $logins->lastLogin($this);

@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A2F57">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<meta name="format-detection" content="telephone=no">
+<!-- DEV: favicon — drop your icon file here, e.g.
+     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"> -->
+<title>Edit My Profile – JobberRecruit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+<!--
+Candidate profile editor transplanted from the approved standalone page into the candidate dashboard shell. All form logic preserved (photo preview, char counters, entry add/remove, skill dots, autosave notes). Wire section saves to CI4 endpoints.
+-->
+<style>
+:root{
+  color-scheme: light;
+  --brand:#0861A9; --brand-dark:#064A85; --brand-deep:#0A2F57; --brand-light:#E6F0F8;
+  --accent:#ED9020; --accent-dark:#C8770E; --accent-light:#FDF1E0;
+  --text:#141926; --muted:#5b6577; --bg:#f5f7fb; --white:#fff; --border:#e2e8f2;
+  --success:#16a34a; --success-light:#e8f7ee; --danger:#dc2626; --danger-light:#fdeaea;
+  --radius:10px; --radius-lg:14px;
+  --shadow:0 2px 14px rgba(10,47,87,.08); --shadow-lg:0 14px 40px rgba(10,47,87,.16);
+  --transition:.18s ease; --sidebar-w:262px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;max-width:100%}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overflow-x:hidden}
+h1,h2,h3,.display{font-family:'Sora','Inter',sans-serif;letter-spacing:-.02em}
+a{color:var(--brand);text-decoration:none}
+button{font-family:inherit}
+img,svg{display:block}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.skip-link{position:absolute;top:-50px;left:16px;background:var(--brand);color:#fff;padding:8px 16px;border-radius:0 0 6px 6px;font-weight:600;z-index:9999;transition:top .2s}
+.skip-link:focus{top:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:var(--transition);text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:44px;white-space:nowrap}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn-outline{background:var(--white);color:var(--brand);border-color:var(--border)}
+.btn-outline:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-accent{background:var(--accent);color:var(--brand-deep);border-color:var(--accent)}
+.btn-accent:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:var(--brand-deep)}
+.btn-ghost-w{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.28)}
+.btn-ghost-w:hover{background:rgba(255,255,255,.2)}
+.btn-danger-o{background:#fff;color:var(--danger);border-color:var(--border)}
+.btn-danger-o:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-sm{padding:8px 14px;font-size:.78rem;min-height:38px}
+.btn-block{width:100%}
+
+/* icon button */
+.ic-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition);flex-shrink:0}
+.ic-btn:hover{border-color:var(--brand);color:var(--brand)}
+.ic-btn svg{width:15px;height:15px}
+.ic-btn--danger:hover{border-color:var(--danger);color:var(--danger)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.02em;white-space:nowrap}
+.pill svg{width:11px;height:11px}
+.pill--pending{background:var(--accent-light);color:var(--accent-dark)}
+.pill--reviewed{background:var(--brand-light);color:var(--brand)}
+.pill--rejected{background:var(--danger-light);color:var(--danger)}
+.pill--hired,.pill--open,.pill--success{background:var(--success-light);color:var(--success)}
+.pill--closed{background:var(--bg);color:var(--muted)}
+.pill--immediate{background:var(--brand-light);color:var(--brand)}
+
+/* layout shell */
+.shell{display:flex;min-height:100vh;overflow-x:hidden;width:100%;max-width:100%}
+.main{flex:1;min-width:0;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+@media (max-width:1024px){.main{margin-left:0}}
+
+/* sidebar */
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);z-index:1200;display:flex;flex-direction:column;color:#fff;
+  background:radial-gradient(ellipse 90% 40% at 100% 0%,rgba(237,144,32,.14) 0%,transparent 55%),linear-gradient(175deg,#0A2F57 0%,#083a6b 60%,#064A85 100%);
+  padding-top:env(safe-area-inset-top,0)}
+.sidebar::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.45;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:42px 42px;-webkit-mask-image:radial-gradient(ellipse 100% 55% at 50% 0%,#000 25%,transparent 85%);mask-image:radial-gradient(ellipse 100% 55% at 50% 0%,#000 25%,transparent 85%)}
+.sb-head{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;position:relative}
+.sb-logo{font-family:'Sora',sans-serif;font-weight:800;font-size:1.28rem;color:#fff;display:inline-flex;align-items:baseline;letter-spacing:-.02em}
+.sb-logo .o{position:relative;display:inline-block;width:.62em;height:.62em;border:.13em solid var(--accent);border-radius:50%;margin:0 .04em;transform:translateY(.02em)}
+.sb-logo .o::after{content:'';position:absolute;width:.16em;height:.34em;background:var(--accent);border-radius:2px;left:73%;top:78%;transform:rotate(-45deg);transform-origin:top left}
+.sb-close{display:none;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:10px;line-height:0;-webkit-tap-highlight-color:transparent}
+.sb-close svg{width:20px;height:20px}
+.sb-scroll{flex:1;overflow-y:auto;padding:4px 14px 14px;position:relative;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.sb-group{margin-top:16px}
+.sb-label{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:0 12px 7px}
+.sb-link{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;font-size:.86rem;font-weight:500;color:rgba(255,255,255,.82);transition:var(--transition);min-height:44px;position:relative}
+.sb-link svg{width:17px;height:17px;flex-shrink:0;opacity:.85}
+.sb-link:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+.sb-link[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+.sb-link[aria-current="page"]::before{content:'';position:absolute;left:-14px;top:8px;bottom:8px;width:3.5px;border-radius:0 4px 4px 0;background:var(--accent)}
+.sb-count{margin-left:auto;background:var(--accent);color:var(--brand-deep);font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:20px;line-height:1.5}
+.sb-wallet{margin:20px 2px 6px;padding:15px 15px 14px;border-radius:var(--radius-lg);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden}
+.sb-wallet::after{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(237,144,32,.28),transparent 70%)}
+.sb-wallet-label{font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.sb-wallet-amt{font-family:'Sora',sans-serif;font-weight:800;font-size:1.32rem;margin:2px 0 10px;color:#fff}
+.sb-wallet .btn{width:100%;position:relative;z-index:1}
+.sb-foot{padding:12px 20px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0));font-size:.7rem;color:rgba(255,255,255,.4);position:relative;border-top:1px solid rgba(255,255,255,.1)}
+.scrim{position:fixed;inset:0;background:rgba(10,25,45,.55);backdrop-filter:blur(2px);z-index:1100;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
+@media (max-width:1024px){
+  .sidebar{transform:translateX(-100%);transition:transform .26s ease;box-shadow:var(--shadow-lg)}
+  .sidebar.open{transform:translateX(0)}
+  .scrim.show{opacity:1;visibility:visible}
+  .sb-close{display:block}
+}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:900;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top,0)}
+.topbar-inner{display:flex;align-items:center;gap:12px;height:66px;padding:0 clamp(16px,3vw,32px)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:10px;color:var(--text);line-height:0;-webkit-tap-highlight-color:transparent;margin-left:-8px}
+.hamburger svg{width:22px;height:22px}
+@media (max-width:1024px){.hamburger{display:block}}
+.tb-crumb{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;min-width:0}
+.tb-crumb a{color:var(--muted);font-weight:500}
+.tb-crumb a:hover{color:var(--brand)}
+.tb-crumb svg{width:12px;height:12px;flex-shrink:0}
+.tb-crumb b{color:var(--brand-deep);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.tb-wallet{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px solid var(--border);border-radius:9px;background:#fff;font-size:.8rem;font-weight:600;color:var(--brand-deep);min-height:44px;transition:var(--transition)}
+.tb-wallet:hover{border-color:var(--brand);text-decoration:none}
+.tb-wallet svg{width:16px;height:16px;color:var(--brand)}
+.tb-wallet b{font-family:'Sora',sans-serif;font-weight:700}
+.tb-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition)}
+.tb-icon:hover{border-color:var(--brand);color:var(--brand)}
+.tb-icon svg{width:18px;height:18px}
+.tb-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid #fff}
+.tb-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0}
+@media (max-width:640px){.tb-wallet span.lbl{display:none}}
+
+/* content + page head */
+.content{flex:1;padding:clamp(18px,3vw,32px);padding-bottom:96px;display:flex;flex-direction:column;gap:clamp(16px,2.2vw,24px)}
+@media (min-width:1025px){.content{padding-bottom:clamp(18px,3vw,32px)}}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-head h1{font-size:clamp(1.25rem,2.3vw,1.6rem);font-weight:800;color:var(--brand-deep);display:flex;align-items:center;gap:10px}
+.page-head h1 svg{width:22px;height:22px;color:var(--brand)}
+.page-head p{color:var(--muted);font-size:.85rem;margin-top:2px}
+.page-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* card */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{display:inline-flex;align-items:center;gap:8px;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep)}
+.card-title svg{width:16px;height:16px;color:var(--brand)}
+.card-body{padding:18px 20px}
+.card-link{font-size:.76rem;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;padding:8px 10px;margin:-8px -10px;border-radius:8px}
+.card-link:hover{background:var(--brand-light);text-decoration:none}
+.card-link svg{width:13px;height:13px}
+
+/* stat chips (reusable) */
+.stats{display:grid;gap:clamp(10px,1.4vw,16px)}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 16px 13px;position:relative;overflow:hidden;transition:var(--transition)}
+.stat:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.stat::before{content:'';position:absolute;left:0;top:13px;bottom:13px;width:3.5px;border-radius:0 4px 4px 0;background:var(--st-bar,var(--brand))}
+.stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.stat-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--st-icbg,var(--brand-light));color:var(--st-ic,var(--brand))}
+.stat-ic svg{width:17px;height:17px}
+.stat-num{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(1.35rem,2.4vw,1.75rem);color:var(--brand-deep);line-height:1.1}
+.stat-lbl{font-size:.74rem;color:var(--muted);font-weight:500;margin-top:1px}
+
+/* form controls */
+.input,.select,textarea.input{width:100%;min-height:44px;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;background:#fff;color:var(--text);transition:var(--transition)}
+.input:focus,.select:focus,textarea.input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(8,97,169,.12)}
+.select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b6577' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.search-wrap .input{padding-left:38px}
+label.lbl{display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+
+/* toolbar (search + filters) */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar .select{width:auto;min-width:150px}
+
+/* table + mobile card fallback */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;min-width:640px}
+.tbl th{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 14px;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:13px 14px;border-bottom:1px solid var(--border);font-size:.84rem;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafbfe}
+.row-actions{display:flex;gap:8px}
+
+/* pagination */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
+.pager-nav{display:flex;gap:6px;align-items:center}
+.pager-btn{min-width:38px;height:38px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-size:.8rem;font-weight:600;color:var(--text);cursor:pointer;transition:var(--transition);text-decoration:none}
+.pager-btn:hover{border-color:var(--brand);color:var(--brand);text-decoration:none}
+.pager-btn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.pager-btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
+
+/* avatar chip */
+.ava{width:42px;height:42px;border-radius:10px;background:var(--brand-light);border:1px solid var(--border);color:var(--brand);font-family:'Sora',sans-serif;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ava--round{border-radius:50%}
+
+/* skill chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:.66rem;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+
+/* empty state */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 18px}
+.empty-ic{width:56px;height:56px;border-radius:16px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center}
+.empty-ic svg{width:26px;height:26px}
+.empty h3{font-size:.94rem;font-weight:700;color:var(--brand-deep)}
+.empty p{font-size:.8rem;color:var(--muted);max-width:360px}
+
+/* notice */
+.notice{display:flex;gap:8px;align-items:flex-start;font-size:.78rem;border-radius:10px;padding:12px 14px;border:1px solid}
+.notice svg{width:15px;height:15px;flex-shrink:0;margin-top:2px}
+.notice--warn{background:var(--accent-light);border-color:#f3d9ae;color:#8a5a10}
+.notice--info{background:var(--brand-light);border-color:#cfe2f2;color:var(--brand-dark)}
+
+/* footer */
+.dash-foot{border-top:1px solid var(--border);background:#fff;padding:16px clamp(16px,3vw,32px);padding-bottom:max(16px,env(safe-area-inset-bottom,0));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
+.dash-foot nav{display:flex;gap:16px;flex-wrap:wrap}
+.dash-foot a{color:var(--muted);font-weight:500}
+.dash-foot a:hover{color:var(--brand);text-decoration:none}
+
+/* mobile sticky bar */
+.mobile-cta{position:fixed;left:0;right:0;bottom:0;z-index:950;display:none;gap:10px;padding:10px clamp(14px,4vw,18px);padding-bottom:max(10px,env(safe-area-inset-bottom,0));background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(12px);border-top:1px solid var(--border);transition:transform .28s ease}
+.mobile-cta.hidden{transform:translateY(110%)}
+.mobile-cta .btn{flex:1}
+@media (max-width:1024px){.mobile-cta{display:flex}}
+
+/* ══ TOPBAR DROPDOWNS ══ */
+.tb-drop{position:relative}
+.tb-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:230px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:8px;z-index:1000;opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.tb-drop.open .tb-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.tb-menu a,.tb-menu .tb-menu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:.84rem;font-weight:500;color:var(--text);transition:var(--transition);min-height:42px}
+.tb-menu a:hover{background:var(--brand-light);color:var(--brand);text-decoration:none}
+.tb-menu a svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
+.tb-menu a:hover svg{color:var(--brand)}
+.tb-menu hr{border:none;border-top:1px solid var(--border);margin:7px 4px}
+.tb-menu .tm-head{padding:8px 12px 10px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.tb-menu .tm-name{font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;color:var(--brand-deep)}
+.tb-menu .tm-mail{font-size:.72rem;color:var(--muted);overflow-wrap:anywhere}
+.tb-menu a.tm-out{color:var(--danger)}
+.tb-menu a.tm-out svg{color:var(--danger)}
+.tb-menu a.tm-out:hover{background:var(--danger-light);color:var(--danger)}
+.tb-menu--notif{min-width:300px}
+.tn-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;transition:var(--transition)}
+.tn-item:hover{background:var(--bg);text-decoration:none}
+.tn-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand-light);color:var(--brand)}
+.tn-ic--accent{background:var(--accent-light);color:var(--accent-dark)}
+.tn-ic svg{width:14px;height:14px}
+.tn-item b{font-size:.78rem;color:var(--brand-deep);display:block;line-height:1.4;font-weight:600}
+.tn-item i{font-style:normal;font-size:.68rem;color:var(--muted)}
+@media (max-width:480px){.tb-menu{right:-52px}.tb-menu--notif{min-width:min(300px,calc(100vw - 24px))}}
+/* ══ ENTRY MOTION ══ */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.content>*{animation:rise .34s ease both}
+.content>*:nth-child(2){animation-delay:.05s}
+.content>*:nth-child(3){animation-delay:.1s}
+.content>*:nth-child(4){animation-delay:.15s}
+.content>*:nth-child(5){animation-delay:.2s}
+.content>*:nth-child(n+6){animation-delay:.24s}
+
+
+.sb-logo-text{font-family:'Sora',sans-serif;font-weight:800;font-size:1.24rem;color:#fff;letter-spacing:-.02em;line-height:1}
+.sb-logo-img{height:26px;width:auto;display:block}
+
+h1,h2,h3,.nav-logo { font-family: 'Sora','Inter',sans-serif; letter-spacing: -.02em; }
+
+a:hover { text-decoration: underline; }
+
+svg { flex-shrink: 0; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+
+
+.progress-bar { position: sticky; top: 70px; z-index: 900; background: var(--white); border-bottom: 1px solid var(--border); padding: 12px 0; box-shadow: 0 2px 8px rgba(10,47,87,.06); }
+
+.progress-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+.progress-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+
+
+
+.progress-track { flex: 1; max-width: 360px; height: 8px; background: var(--border); border-radius: 20px; position: relative; }
+
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--brand), #1a7fd4); border-radius: 20px; transition: width .6s ease; }
+
+.progress-text { font-size: .82rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+
+.progress-tip { font-size: .78rem; color: var(--accent-dark); font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+
+.progress-tip svg { width: 13px; height: 13px; }
+
+.progress-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+
+
+.milestone-marker {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border-radius: 50%; z-index: 2;
+  background: var(--white); border: 2px solid #c8dff2;
+  transition: background .35s ease, border-color .35s ease, box-shadow .35s ease;
+}
+
+.milestone-marker.achieved {
+  background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(237,144,32,.22);
+}
+
+.milestone-marker.next { border-color: var(--accent); animation: marker-pulse 1.6s ease infinite; }
+
+@keyframes marker-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(237,144,32,.4); } 50% { box-shadow: 0 0 0 5px rgba(237,144,32,0); } }
+
+.milestone-label {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  font-size: .6rem; font-weight: 700; white-space: nowrap;
+  letter-spacing: .03em; color: #b0bec5; transition: color .35s ease;
+}
+
+.milestone-marker.achieved .milestone-label,
+.milestone-marker.next    .milestone-label { color: var(--accent-dark); }
+
+
+
+.wallet-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--brand-deep); color: var(--white);
+  padding: 5px 13px; border-radius: 20px;
+  font-size: .78rem; font-weight: 700; flex-shrink: 0;
+  cursor: default; user-select: none;
+  transition: background .3s ease;
+}
+
+.wallet-chip svg { width: 13px; height: 13px; }
+
+.wallet-chip.has-balance { background: linear-gradient(120deg, var(--accent-dark), var(--accent)); color: var(--brand-deep); }
+
+
+
+.milestone-toast {
+  position: fixed; top: 90px; left: 50%;
+  transform: translateX(-50%) translateY(-160px);
+  z-index: 1200;
+  background: var(--white); border-radius: 16px;
+  padding: 18px 20px 18px 18px;
+  box-shadow: 0 20px 60px rgba(10,47,87,.22), 0 4px 16px rgba(10,47,87,.1);
+  border-left: 5px solid var(--accent);
+  display: flex; align-items: center; gap: 14px;
+  min-width: 320px; max-width: 480px;
+  transition: transform .45s cubic-bezier(.34,1.56,.64,1), opacity .3s ease;
+  opacity: 0; pointer-events: none;
+}
+
+.milestone-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+
+.toast-emoji { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+
+.toast-body { flex: 1; }
+
+.toast-body strong { display: block; font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+
+.toast-body p { font-size: .8rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+.toast-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  font-size: 1.3rem; line-height: 1; padding: 4px; border-radius: 6px;
+  flex-shrink: 0; align-self: flex-start; transition: var(--transition);
+}
+
+.toast-close:hover { background: var(--bg); color: var(--text); }
+
+
+
+.milestone-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: .8rem; flex-wrap: wrap;
+}
+
+.milestone-item { display: inline-flex; align-items: center; gap: 6px; }
+
+.milestone-item .m-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 700;
+}
+
+.milestone-item .m-badge.locked   { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+.milestone-item .m-badge.next     { background: #fff3e0; color: var(--accent-dark); border: 1px solid #fde3bf; }
+
+.milestone-item .m-badge.achieved { background: var(--brand-light); color: var(--brand); border: 1px solid #c8dff2; }
+
+.milestone-divider { color: var(--border); font-size: 1rem; }
+
+
+@media (max-width: 640px) {
+  .milestone-toast { min-width: calc(100vw - 32px); max-width: calc(100vw - 32px); }
+
+  .wallet-chip span.wallet-label { display: none; }
+
+}
+
+
+
+.profile-page { padding: 36px 0 72px; }
+
+.profile-wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+
+
+.cv-card { background: var(--white); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 12px; overflow: hidden; }
+
+.cv-card-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px; gap: 12px; }
+
+.cv-card-title svg { width: 18px; height: 18px; color: var(--accent); }
+
+.cv-card-done { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 9px; border-radius: 20px; }
+
+.cv-card-done.complete  { background: var(--brand-light); color: var(--brand); border: 1px solid #c8dff2; }
+
+.cv-card-done.incomplete { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+.cv-card-done.optional  { background: var(--brand-light); color: var(--brand); }
+
+
+.cv-card.is-complete { border-left-color: var(--brand); }
+
+.cv-card-body { padding: 0 24px 24px; }
+
+.cv-card-hint { font-size: .84rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 18px; line-height: 1.6; }
+
+
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.form-grid.cols-1 { grid-template-columns: 1fr; }
+
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+
+.form-field.full { grid-column: 1/-1; }
+
+label { font-size: .82rem; font-weight: 600; color: var(--text); }
+
+label .opt { font-weight: 400; color: var(--muted); font-size: .78rem; }
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="url"], input[type="date"], select, textarea {
+  width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; font-family: 'Inter',sans-serif; font-size: .9rem; color: var(--text);
+  background: var(--bg); outline: none; transition: border-color var(--transition), background var(--transition);
+  appearance: none; -webkit-appearance: none; min-height: 42px;
+}
+
+input:focus, select:focus, textarea:focus { border-color: var(--brand); background: var(--white); }
+
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235b6577' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+textarea { resize: vertical; min-height: 110px; line-height: 1.65; }
+
+.char-count { font-size: .74rem; color: var(--muted); text-align: right; margin-top: 3px; }
+
+.form-check { display: flex; align-items: center; gap: 9px; font-size: .85rem; color: var(--text); cursor: pointer; }
+
+.form-check input[type="checkbox"] { width: 16px; height: 16px; min-height: 16px; accent-color: var(--brand); cursor: pointer; }
+
+
+
+.entry-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+
+.entry-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; background: var(--bg); position: relative; }
+
+.entry-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+
+.entry-item-title { font-weight: 700; font-size: .9rem; }
+
+.entry-item-sub { font-size: .8rem; color: var(--muted); }
+
+.entry-remove { background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 6px; line-height: 0; transition: var(--transition); }
+
+.entry-remove:hover { color: var(--danger); background: #fef2f2; }
+
+.entry-remove svg { width: 15px; height: 15px; }
+
+
+
+.skill-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+
+.skill-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); }
+
+.skill-dots { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.skill-dot { width: 26px; height: 10px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--white); cursor: pointer; transition: var(--transition); }
+
+.skill-dot.active { background: var(--brand); border-color: var(--brand); }
+
+.skill-dot:hover { border-color: var(--brand); }
+
+.skill-level-label { font-size: .7rem; color: var(--muted); margin-left: 4px; white-space: nowrap; }
+
+.skill-row-inner { display: flex; align-items: center; gap: 14px; }
+
+
+
+.photo-upload { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+
+.photo-preview { width: 88px; height: 88px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+
+.photo-preview svg { width: 42px; height: 42px; color: var(--muted); }
+
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+.photo-upload-body { display: flex; flex-direction: column; gap: 6px; }
+
+.photo-upload-body p { font-size: .8rem; color: var(--muted); }
+
+
+
+.ai-action { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+
+.ai-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; font-size: .82rem; font-weight: 700; background: linear-gradient(135deg, var(--brand-deep), var(--brand)); color: var(--white); border: none; cursor: pointer; transition: var(--transition); }
+
+.ai-btn:hover { opacity: .9; }
+
+.ai-btn svg { width: 15px; height: 15px; }
+
+
+
+.form-actions { display: flex; align-items: center; gap: 10px; padding-top: 18px; border-top: 1px solid var(--border); margin-top: 20px; flex-wrap: wrap; }
+
+.form-actions .autosave-note { font-size: .76rem; color: var(--muted); margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
+
+.form-actions .autosave-note svg { width: 13px; height: 13px; color: var(--success); }
+
+
+
+.social-row { display: grid; grid-template-columns: 160px 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+
+.social-row button.remove-social { background: none; border: none; cursor: pointer; color: var(--muted); padding: 8px; border-radius: 6px; line-height: 0; }
+
+.social-row button.remove-social:hover { color: var(--danger); }
+
+.social-row button.remove-social svg { width: 16px; height: 16px; }
+
+
+
+.visibility-banner { background: var(--brand-light); border: 1px solid #c8dff2; border-radius: 12px; padding: 18px 22px; display: flex; align-items: center; gap: 16px; }
+
+.visibility-banner svg { width: 22px; height: 22px; color: var(--brand); flex-shrink: 0; }
+
+.visibility-banner-text { flex: 1; }
+
+.visibility-banner-text strong { font-size: .9rem; font-weight: 700; color: var(--brand-deep); display: block; margin-bottom: 2px; }
+
+.visibility-banner-text p { font-size: .82rem; color: var(--muted); margin: 0; }
+
+
+
+
+@keyframes bar-pulse { 0%,100% { opacity:1; } 50% { opacity:.65; } }
+
+.progress-fill.pulse { animation: bar-pulse .5s ease 2; }
+
+
+
+.cv-gain-tip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--accent-dark); background: #fff3e0;
+  border: 1px solid #fde3bf; padding: 3px 9px; border-radius: 20px;
+  flex-shrink: 0; white-space: nowrap;
+}
+
+.cv-gain-tip svg { width: 11px; height: 11px; }
+
+
+
+@keyframes next-glow { 0% { box-shadow: 0 0 0 0 rgba(8,97,169,.35); } 60% { box-shadow: 0 0 0 6px rgba(8,97,169,0); } 100% { box-shadow: none; } }
+
+.cv-card.next-up { animation: next-glow .7s ease forwards; border-color: var(--brand) !important; }
+
+   Each .cv-card is a <details> element; the .cv-card-header is its <summary>.
+   Open by default. Chevron rotates 180° when closed. */
+.cv-card { cursor: default; }
+
+.cv-card-header {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 16px; flex-wrap: wrap;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+
+.cv-card-header::-webkit-details-marker { display: none; }
+
+.cv-card-header::marker { display: none; }
+
+.cv-card-header:hover { background: #fafbfd; }
+
+
+.cv-card-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; font-family: 'Sora',sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--text); }
+
+.cv-card-title svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
+
+
+.cv-card-done { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
+
+.cv-chev {
+  width: 18px; height: 18px; flex-shrink: 0; color: var(--muted);
+  transition: transform .22s ease;
+}
+
+.cv-card:not([open]) .cv-chev { transform: rotate(-90deg); }
+
+
+.cv-card .cv-card-body { animation: cv-open .18s ease; }
+
+@keyframes cv-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) { .cv-card .cv-card-body { animation: none; }
+ .cv-chev { transition: none; }
+ }
+
+.bottom-actions { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 24px; border-top: 1px solid var(--border); background: var(--white); border-radius: 12px; }
+
+
+
+@media (max-width: 860px) {
+  .form-grid { grid-template-columns: 1fr; }
+
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+
+  .social-row { grid-template-columns: 1fr 1fr auto; }
+
+}
+
+@media (max-width: 640px) {
+  
+  .progress-bar { padding: 9px 0; transition: transform .3s ease; }
+
+  .progress-bar.bar-hidden { transform: translateY(-100%); }
+
+  .progress-inner { flex-direction: row; flex-wrap: nowrap; gap: 8px; align-items: center; }
+
+  .progress-left  { gap: 8px; }
+
+  .progress-track { max-width: none; }
+
+  .progress-tip   { display: none; }
+
+  .milestone-label { display: none; }
+       
+  .bar-desktop-only { display: none !important; }
+ 
+
+  
+  .mobile-profile-sub { background: var(--white); border-bottom: 1px solid var(--border); padding: 12px 0; }
+
+  .mobile-cv-actions  { display: flex; gap: 8px; margin-bottom: 12px; }
+
+  .milestone-bar-mobile { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+
+  .milestone-bar-title  { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: block; margin-bottom: 8px; }
+
+  .milestone-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+
+  
+  .milestone-toast { min-width: calc(100vw - 32px); max-width: calc(100vw - 32px); }
+
+  .wallet-chip span.wallet-label { display: none; }
+
+  .social-row { grid-template-columns: 1fr; }
+
+  .photo-upload { flex-direction: column; align-items: flex-start; }
+
+  .form-grid.cols-3 { grid-template-columns: 1fr; }
+
+  .skill-row { grid-template-columns: 1fr; }
+
+  .bottom-actions { flex-direction: column; }
+
+}
+
+@media (min-width: 641px) { .mobile-profile-sub { display: none; }
+ }
+
+.cv-card, .entry-item, .skill-row, .bottom-actions { background: #ffffff; }
+
+.entry-item, .skill-row { background: #f5f7fb; }
+
+.cv-card-title, h2, h3 { color: #141926; }
+
+
+
+.pref-pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.pref-pill { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 20px; font-size: .84rem; font-weight: 500; cursor: pointer; transition: var(--transition); user-select: none; background: var(--white); }
+
+.pref-pill input { width: 14px; height: 14px; min-height: 14px; accent-color: var(--brand); cursor: pointer; }
+
+.pref-pill:has(input:checked) { background: var(--brand-light); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+
+.salary-range { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+
+.salary-range span { text-align: center; color: var(--muted); font-size: .85rem; }
+
+
+
+.lang-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+
+.lang-row .remove-lang { background: none; border: none; cursor: pointer; color: var(--muted); padding: 8px; border-radius: 6px; line-height: 0; transition: var(--transition); }
+
+.lang-row .remove-lang:hover { color: var(--danger); }
+
+.lang-row .remove-lang svg { width: 16px; height: 16px; }
+
+
+
+.jr-auto-certs { margin-bottom: 22px; border: 1px solid var(--brand-light); border-radius: var(--radius); overflow: hidden; }
+
+.jr-auto-header { display: flex; align-items: center; gap: 8px; padding: 11px 16px; background: var(--brand-light); font-size: .8rem; font-weight: 700; color: var(--brand); }
+
+.jr-auto-header svg { width: 14px; height: 14px; }
+
+.jr-auto-empty { padding: 14px 16px; font-size: .83rem; color: var(--muted); border-top: 1px solid var(--brand-light); }
+
+.jr-cert-item { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-top: 1px solid var(--border); }
+
+.jr-cert-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--brand); color: var(--white); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.jr-cert-icon svg { width: 18px; height: 18px; }
+
+.jr-cert-body { flex: 1; }
+
+.jr-cert-body strong { display: block; font-size: .87rem; font-weight: 700; color: var(--text); }
+
+.jr-cert-body span { font-size: .75rem; color: var(--muted); }
+
+.jr-verified-tag { display: inline-flex; align-items: center; gap: 4px; font-size: .64rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; background: var(--brand); color: var(--white); flex-shrink: 0; }
+
+.jr-verified-tag svg { width: 10px; height: 10px; }
+
+.jr-auto-link { font-size: .78rem; color: var(--brand); font-weight: 600; padding: 10px 16px; display: block; border-top: 1px solid var(--brand-light); text-align: center; }
+
+.jr-auto-link:hover { background: var(--brand-light); text-decoration: none; }
+
+
+
+.ref-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 18px; }
+
+.ref-toggle-row label { font-size: .88rem; font-weight: 600; color: var(--text); cursor: pointer; }
+
+.ref-entry { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; background: var(--bg); margin-bottom: 14px; position: relative; }
+
+.ref-entry-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+
+.ref-entry-num { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+
+@media (max-width: 640px) {
+  .lang-row { grid-template-columns: 1fr 1fr auto; }
+
+  .salary-range { grid-template-columns: 1fr; }
+
+  .salary-range span { display: none; }
+
+}
+
+
+
+@media (max-width: 900px) {
+  .save-btn, .btn-report { min-height: 44px; }
+
+}
+
+
+.profile-page{padding:0}
+.publish-bar,.sticky-progress{left:var(--sidebar-w)}
+@media (max-width:1024px){.publish-bar,.sticky-progress{left:0}}
+
+@media (pointer:coarse){.ic-btn{width:44px;height:44px}.ic-btn svg{width:17px;height:17px}}
+
+/* ══════════════════════════════════════════════════════════
+   PREMIUM POLISH LAYER — shared across all candidate pages
+   Additive only: shadow/border convergence, press feedback,
+   skeleton loaders, confetti-on-success, typing micro-affordance.
+   Respects prefers-reduced-motion (already handled globally, but
+   every new animation here is re-guarded defensively).
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 1. SHADOW + BORDER CONVERGENCE ──
+   Was: 31 distinct box-shadow declarations across pages. Converge
+   every card/panel/modal to these three tokens for visual rhythm. */
+:root{
+  --shadow-xs:0 1px 3px rgba(10,47,87,.06);
+  --shadow-sm:0 2px 10px rgba(10,47,87,.07);
+  --shadow-md:0 6px 24px rgba(10,47,87,.10);
+  --shadow-lg-p:0 16px 44px rgba(10,47,87,.16);
+  --border-c:#e2e8f2;
+}
+.card,.dash-card,.set-card,.plan,.info-card,.job-card,.les-detail,.cur-card,
+.at-card,.faq-item,.modal,.q-block{
+  box-shadow:var(--shadow-xs);
+  border-color:var(--border-c);
+}
+.card:hover,.dash-card:hover,.job-card:hover,.cs-tool:hover,.res-item:hover{
+  box-shadow:var(--shadow-sm);
+}
+.modal{box-shadow:var(--shadow-lg-p)}
+
+/* ── 2. BUTTON PRESS FEEDBACK — every interactive element ── */
+.btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.tpl-swatch,
+.les,.res-item,.faq-item,.plan .btn,.icon-btn{
+  transition:transform .12s cubic-bezier(.2,.8,.2,1),
+             box-shadow .18s ease,
+             background-color .18s ease,
+             border-color .18s ease,
+             opacity .18s ease;
+}
+.btn:active,.at-pal:active,.at-opt:active,.q-opt:active,.cs-tool:active,
+.les:active,.res-item:active{
+  transform:scale(.97);
+}
+.btn:not(:disabled):hover{transform:translateY(-1px)}
+.btn:not(:disabled):active{transform:translateY(0) scale(.97)}
+@media(prefers-reduced-motion:reduce){
+  .btn,.sb-link,.at-pal,.at-opt,.q-opt,.cs-tool,.job-card,.ach,.les,.res-item{
+    transition:background-color .12s ease,border-color .12s ease!important;
+  }
+  .btn:active,.btn:hover{transform:none!important}
+}
+
+/* ── 3. SKELETON LOADERS — initial-load state for async content ──
+   DEV: attach class "is-loading" to a container before data arrives;
+   remove it once real content is painted. Skeleton blocks live inside
+   as .sk-line / .sk-block and are hidden automatically once is-loading
+   is removed (CSS only shows them while the parent has the class). */
+.sk-line,.sk-block,.sk-circle{display:none}
+.is-loading .sk-line,.is-loading .sk-block,.is-loading .sk-circle{
+  display:block;background:linear-gradient(90deg,#eef1f6 25%,#e4e9f1 37%,#eef1f6 63%);
+  background-size:400% 100%;animation:sk-shimmer 1.4s ease infinite;border-radius:6px;
+}
+.is-loading > *:not(.sk-line):not(.sk-block):not(.sk-circle){display:none}
+.sk-line{height:13px;margin-bottom:9px;width:100%}
+.sk-line.w-60{width:60%} .sk-line.w-40{width:40%} .sk-line.w-80{width:80%}
+.sk-block{height:80px;width:100%;border-radius:12px}
+.sk-circle{width:40px;height:40px;border-radius:50%}
+@keyframes sk-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){
+  .is-loading .sk-line,.is-loading .sk-block,.is-loading .sk-circle{animation:none;background:#eef1f6}
+}
+
+/* ── 4. SUCCESS / COMPLETION — confetti burst (canvas-free, CSS only) ──
+   DEV: trigger by adding class "burst" to #confetti-root for ~1.6s on a
+   genuine completion event (course done, certificate earned, subscribe
+   success) — not on routine actions. Never fires automatically. */
+#confetti-root{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;display:none}
+#confetti-root.burst{display:block}
+.confetti-piece{position:absolute;top:-12px;width:8px;height:14px;opacity:0;border-radius:2px;
+  animation:confetti-fall 1.6s ease-in forwards}
+@keyframes confetti-fall{
+  0%{opacity:1;transform:translateY(0) rotate(0deg)}
+  100%{opacity:0;transform:translateY(100vh) rotate(540deg)}
+}
+@media(prefers-reduced-motion:reduce){
+  #confetti-root.burst{display:none}
+}
+
+/* ── 5. MODAL TRANSITION POLISH ── */
+.modal-overlay{transition:opacity .2s ease}
+.modal-overlay:not(.show){opacity:0;pointer-events:none}
+.modal-overlay.show{opacity:1}
+.modal{transform:translateY(10px) scale(.98);opacity:0;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .22s ease}
+.modal-overlay.show .modal{transform:translateY(0) scale(1);opacity:1}
+@media(prefers-reduced-motion:reduce){.modal{transition:opacity .15s ease;transform:none!important}}
+
+/* ── 6. PROGRESS BAR — smoother easing, subtle sheen while active ── */
+.cur-fill,.ci-fill,.ah-fill,.set-strength-fill,.cls-hero .ring::before{
+  transition:width .6s cubic-bezier(.4,0,.2,1)!important;
+}
+.cur-bar,.ci-track,.ah-bar{position:relative;overflow:hidden}
+
+/* ── 7. FOCUS RING — slightly refined (kept, not replaced) to ensure
+   consistent radius across pill/rect controls ── */
+.btn:focus-visible,.sb-link:focus-visible,.at-opt:focus-visible,.q-opt:focus-visible{
+  outline:3px solid var(--accent);outline-offset:2px;
+}
+input:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:2px solid var(--brand);outline-offset:1px;
+}
+
+/* ── 8. TOUCH TARGET SAFETY NET — .btn-sm (38px) is fine for mouse/desktop,
+   but must meet the 44px minimum on touch devices where precision is lower ── */
+@media(hover:none) and (pointer:coarse){
+  .btn,.sb-link,.at-pal,.icon-btn,.les-tab,.switch,.btn-sm{min-height:44px;min-width:44px}
+  .at-pal{width:44px;height:44px}
+}
+
+/* ── 9. LAYOUT-SHIFT GUARD — reserve space for async avatar/logo slots ── */
+.jc-logo,.hi-av,.rev-av,[data-async-img]{min-width:1em;min-height:1em}
+img{max-width:100%;height:auto}
+
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-search-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20a7 7 0 0 1 11-5.5"/><circle cx="17.5" cy="16.5" r="3.5"/><path d="m20 19 2.5 2.5"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M10 21v-3h4v3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2.5-1.5L9 22l2.5-1.5L14 22l2.5-1.5L19 22V2l-2.5 1.5L14 2l-2.5 1.5L9 2 6.5 3.5Z"/><path d="M8 8h7M8 12h7"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5.5 5.5 0 0 0-4-5.3"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 13-3.5"/><path d="m15 18 2.5 2.5L22 16"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></symbol>
+    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9Z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8Z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1Z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-1 8 11-13h-8Z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+    <symbol id="i-grad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 9-10-5L2 9l10 5 10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5M22 9v6"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.25-1.5A9.9 9.9 0 1 0 12.04 2Zm5.8 14.06c-.24.68-1.4 1.3-1.93 1.35-.52.05-1 .24-3.4-.7-2.87-1.13-4.7-4.06-4.84-4.25-.14-.19-1.16-1.55-1.16-2.95 0-1.4.74-2.1 1-2.38.26-.29.57-.36.76-.36l.55.01c.17 0 .41-.06.64.5.24.57.8 1.97.88 2.11.07.14.12.31.02.5-.1.19-.14.3-.29.47l-.43.51c-.14.14-.29.3-.13.58.17.29.74 1.22 1.58 1.97 1.09.97 2 1.27 2.29 1.41.28.14.45.12.62-.07.16-.19.71-.83.9-1.11.19-.29.38-.24.64-.14.26.09 1.66.78 1.94.92.29.14.48.22.55.34.07.12.07.68-.17 1.35Z"/></symbol>
+    <symbol id="i-x-social" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.3 22h-6.3l-4.9-6.4L6.5 22H3.4l7.3-8.3L1 2h6.4l4.4 5.9L18.9 2Zm-1.1 18h1.7L7.3 3.7H5.5L17.8 20Z"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24" fill="currentColor"><path d="M20.4 3H3.6A.6.6 0 0 0 3 3.6v16.8c0 .33.27.6.6.6h16.8a.6.6 0 0 0 .6-.6V3.6a.6.6 0 0 0-.6-.6ZM8.3 18.4H5.7v-8.6h2.7v8.6ZM7 8.6a1.55 1.55 0 1 1 0-3.1 1.55 1.55 0 0 1 0 3.1Zm11.4 9.8h-2.7v-4.2c0-1 0-2.3-1.4-2.3s-1.6 1.1-1.6 2.2v4.3H10v-8.6h2.6v1.2h0c.36-.68 1.24-1.4 2.55-1.4 2.7 0 3.2 1.8 3.2 4.1v4.7Z"/></symbol>
+  </defs>
+</svg>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-award" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M8.2 13.9 7 22l5-3 5 3-1.2-8.1"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4Z"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></symbol>
+<symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></symbol>
+<symbol id="i-naira" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V3l12 18V3M3.5 9.5h17M3.5 14.5h17"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 15v3M13 11v7M18 7v11"/></symbol>
+<symbol id="i-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 4.5 3L12 4l5.5 7L22 8l-2 12H4L2 8Z"/></symbol>
+</defs></svg>
+<div class="scrim" id="scrim" hidden></div>
+<div class="shell">
+<aside class="sidebar" id="sidebar" aria-label="Dashboard navigation">
+<div class="sb-head"><a href="/" class="sb-logo" aria-label="JobberRecruit home"><!-- DEV: insert logo here — recommended <img src="/assets/logo-white.svg" alt="JobberRecruit" class="sb-logo-img"> (white/mono version, ~150×26). Placeholder text shown until then. --><span class="sb-logo-text">JobberRecruit</span></a>
+<button class="sb-close" id="sb-close" aria-label="Close menu"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+<nav class="sb-scroll" aria-label="Candidate menu">
+<div class="sb-group"><div class="sb-label">Core Career</div>
+<a class="sb-link" href="candidate-dashboard.html"><svg aria-hidden="true"><use href="#i-grid"/></svg> Dashboard </a>
+<a class="sb-link" href="/jobs"><svg aria-hidden="true"><use href="#i-search"/></svg> Browse Jobs </a>
+<a class="sb-link" href="candidate-applications.html"><svg aria-hidden="true"><use href="#i-doc"/></svg> My Applications </a>
+<a class="sb-link" href="/candidate/saved-jobs"><svg aria-hidden="true"><use href="#i-bookmark"/></svg> Saved Jobs <span class="sb-count">1</span></a>
+<a class="sb-link" href="candidate-profile.html" aria-current="page"><svg aria-hidden="true"><use href="#i-users"/></svg> My Profile </a>
+<a class="sb-link" href="candidate-messages.html"><svg aria-hidden="true"><use href="#i-chat"/></svg> Messages </a>
+</div>
+<div class="sb-group"><div class="sb-label">AI Cognitive Tools</div>
+<a class="sb-link" href="candidate-resume-builder.html"><svg aria-hidden="true"><use href="#i-doc"/></svg> AI Resume Builder </a>
+<a class="sb-link" href="candidate-career-tools.html"><svg aria-hidden="true"><use href="#i-zap"/></svg> AI Career Tools </a>
+</div>
+<div class="sb-group"><div class="sb-label">Learning &amp; Training</div>
+<a class="sb-link" href="/training"><svg aria-hidden="true"><use href="#i-book"/></svg> Training Catalog </a>
+<a class="sb-link" href="candidate-courses.html"><svg aria-hidden="true"><use href="#i-bookmark"/></svg> My Courses </a>
+          <a class="sb-link" href="candidate-aptitude-test.html"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Aptitude Tests </a>
+<a class="sb-link" href="candidate-certificates.html"><svg aria-hidden="true"><use href="#i-award"/></svg> Certificates </a>
+<a class="sb-link" href="/training/webinars"><svg aria-hidden="true"><use href="#i-video"/></svg> Career Webinars </a>
+</div>
+<div class="sb-group"><div class="sb-label">Billing &amp; Network</div>
+<a class="sb-link" href="/candidate/premium"><svg aria-hidden="true"><use href="#i-crown"/></svg> Premium Plans </a>
+<a class="sb-link" href="candidate-referrals.html"><svg aria-hidden="true"><use href="#i-share"/></svg> Referral Program </a>
+<a class="sb-link" href="candidate-transactions.html"><svg aria-hidden="true"><use href="#i-receipt"/></svg> Transactions </a>
+<a class="sb-link" href="candidate-job-alerts.html"><svg aria-hidden="true"><use href="#i-bell"/></svg> Job Alerts </a>
+</div>
+<div class="sb-group"><div class="sb-label">Settings</div>
+<a class="sb-link" href="/candidate/settings"><svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings </a>
+<a class="sb-link" href="/logout"><svg aria-hidden="true"><use href="#i-logout"/></svg> Sign Out </a>
+</div>
+<div class="sb-wallet"><div class="sb-wallet-label">Wallet balance</div><div class="sb-wallet-amt">&#8358;200.00</div>
+<a href="/candidate/wallet/fund" class="btn btn-ghost-w btn-sm"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</a></div>
+</nav><div class="sb-foot">© 2026 JobberRecruit</div></aside>
+<div class="main">
+<header class="topbar" role="banner"><div class="topbar-inner">
+<button class="hamburger" id="hamburger" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg aria-hidden="true"><use href="#i-menu"/></svg></button>
+<nav class="tb-crumb" aria-label="Breadcrumb"><a href="candidate-dashboard.html">Dashboard</a><svg aria-hidden="true"><use href="#i-arrow-r"/></svg><b>My Profile · Edit</b></nav>
+<div class="tb-right">
+<a href="/candidate/wallet/fund" class="tb-wallet" aria-label="Wallet balance &#8358;200.00 — fund wallet"><svg aria-hidden="true"><use href="#i-wallet"/></svg><span class="lbl">Wallet</span> <b>&#8358;200.00</b></a>
+<div class="tb-drop" id="notif-drop">
+<button class="tb-icon" aria-label="Notifications — 2 unread" aria-haspopup="true" aria-expanded="false"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="tb-dot" aria-hidden="true"></span></button>
+<div class="tb-menu tb-menu--notif" role="menu" aria-label="Notifications">
+<a href="candidate-job-alerts.html" class="tn-item" role="menuitem"><span class="tn-ic tn-ic--accent" aria-hidden="true"><svg><use href="#i-bell"/></svg></span><span><b>3 new jobs match your alert</b><i>&#8220;Executive Assistant&#8221; · today</i></span></a>
+<a href="candidate-certificates.html" class="tn-item" role="menuitem"><span class="tn-ic" aria-hidden="true"><svg><use href="#i-award"/></svg></span><span><b>Certificate issued: Agile &amp; Scrum</b><i>Training · Jun 13</i></span></a>
+<hr><a href="#" role="menuitem" style="justify-content:center;font-weight:600;color:var(--brand)">View all notifications</a>
+</div></div>
+<div class="tb-drop" id="account-drop">
+<button class="tb-avatar" aria-label="Account menu — Franklin Ezirim" aria-haspopup="true" aria-expanded="false">FE</button>
+<div class="tb-menu" role="menu" aria-label="Account">
+<div class="tm-head"><div class="tm-name">Franklin Ezirim</div><div class="tm-mail">franklin@example.com</div></div>
+<a href="/candidate/profile" role="menuitem"><svg aria-hidden="true"><use href="#i-users"/></svg> My Profile</a>
+<a href="/candidate/premium" role="menuitem"><svg aria-hidden="true"><use href="#i-crown"/></svg> Premium Plans</a>
+<a href="/candidate/settings" role="menuitem"><svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings</a>
+<hr><a href="/logout" class="tm-out" role="menuitem"><svg aria-hidden="true"><use href="#i-logout"/></svg> Sign Out</a>
+</div></div>
+</div></div></header>
+<main class="content" id="main-content">
+
+<div class="page-head">
+  <div><h1><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit My Profile</h1><p>A complete profile appears higher in employer searches and gets unlocked more often.</p></div>
+  <div class="page-actions"><a href="candidate-profile.html" class="btn btn-outline btn-sm"><svg aria-hidden="true"><use href="#i-arrow-l"/></svg> Back to Profile</a></div>
+</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 4 2 9l10 5 10-5Z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></symbol>
+  
+  <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></symbol>
+  
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z"/></symbol>
+  
+  
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></symbol>
+  
+  
+  
+  
+  <symbol id="i-chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  
+</defs></svg>
+
+<!-- NON-STICKY MOBILE PANEL: milestone bar + CV actions shown below sticky bar -->
+<!-- Hidden on desktop (bar-desktop-only above handles desktop layout) -->
+<div class="mobile-profile-sub" id="mobile-profile-sub">
+  <div class="container">
+    <!-- CV action buttons -->
+    <div class="mobile-cv-actions">
+      <a href="/profile/preview" class="btn btn-outline btn-sm" style="flex:1;justify-content:center">
+        <svg aria-hidden="true" width="15" height="15"><use href="#i-eye"/></svg> Preview CV
+      </a>
+      <a href="/profile/download" class="btn btn-primary btn-sm" style="flex:1;justify-content:center">
+        <svg aria-hidden="true" width="15" height="15"><use href="#i-download"/></svg> Download CV
+      </a>
+    </div>
+    <!-- Milestone summary — inline, non-sticky -->
+    <div class="milestone-bar-mobile" id="milestone-bar-mobile">
+      <span class="milestone-bar-title">Earn tokens:</span>
+      <div class="milestone-row">
+        <span class="m-badge next" id="badge-60-m">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>
+          60% → ₦200
+        </span>
+        <span style="font-size:.78rem;color:var(--muted)" id="label-60-m">Complete 5 more sections</span>
+      </div>
+      <div class="milestone-row">
+        <span class="m-badge locked" id="badge-80-m">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          80% → ₦500
+        </span>
+        <span style="font-size:.78rem;color:var(--muted)" id="label-80-m">Locked until 60% reached</span>
+      </div>
+      <a href="/how-tokens-work" style="font-size:.76rem;color:var(--muted);text-decoration:underline;display:block;margin-top:4px">How tokens work →</a>
+    </div>
+  </div>
+</div>
+<div class="profile-page">
+<h1 class="sr-only">My Profile – JobberRecruit</h1>
+<div class="container">
+<div class="profile-wrap">
+
+<!-- ══ 1. PERSONAL INFORMATION ══ -->
+<details class="cv-card" aria-labelledby="h-personal">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-personal"><svg aria-hidden="true"><use href="#i-user"/></svg> Personal Information</h2>
+    <span class="cv-card-done incomplete"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Incomplete</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+
+    <div class="photo-upload">
+      <div class="photo-preview" id="photo-preview">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 22a8.5 8.5 0 0 1 17 0"/></svg>
+      </div>
+      <div class="photo-upload-body">
+        <label class="btn btn-outline btn-sm" for="photo-input" style="cursor:pointer">Upload photo</label>
+        <input type="file" id="photo-input" accept="image/*" class="sr-only" onchange="previewPhoto(this)">
+        <p>JPEG or PNG · Max 2MB · Square crop recommended</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="first-name">First name</label>
+        <input type="text" id="first-name" name="first_name" placeholder="e.g. Adaeze" autocomplete="given-name">
+      </div>
+      <div class="form-field">
+        <label for="last-name">Last name</label>
+        <input type="text" id="last-name" name="last_name" placeholder="e.g. Okonkwo" autocomplete="family-name">
+      </div>
+      <div class="form-field">
+        <label for="headline">Professional headline <span class="opt">(what employers see first)</span></label>
+        <input type="text" id="headline" name="headline" placeholder="e.g. Senior Software Engineer · Lagos">
+      </div>
+      <div class="form-field">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" name="phone" placeholder="e.g. 08012345678" autocomplete="tel">
+      </div>
+      <div class="form-field">
+        <label for="whatsapp">WhatsApp number <span class="opt">(recruiters use this to reach you)</span></label>
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="e.g. 08012345678">
+        <label class="form-check" style="margin-top:6px">
+          <input type="checkbox" id="whatsapp-same" onchange="syncWhatsApp(this)"> Same as phone number
+        </label>
+      </div>
+      <div class="form-field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" value="frankolet@gmail.com" readonly
+               style="background:var(--bg);color:var(--muted);cursor:not-allowed"
+               title="Email cannot be edited here">
+        <a href="/account/change-email" style="font-size:.76rem;margin-top:4px;display:inline-block">Change email address →</a>
+      </div>
+      <div class="form-field">
+        <label for="dob">Date of birth</label>
+        <input type="date" id="dob" name="dob" autocomplete="bday">
+        <span style="font-size:.74rem;color:var(--muted);margin-top:4px;display:block">
+          🔒 Used for age calculation only — never shown to employers on your CV
+        </span>
+      </div>
+      <div class="form-field">
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender">
+          <option value="">Select gender</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Prefer not to say</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="state-origin">State of origin <span class="opt">(optional — used for NYSC &amp; federal jobs)</span></label>
+        <select id="state-origin" name="state_of_origin">
+          <option value="">Select state</option>
+          <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="state-residence">State of residence</label>
+        <select id="state-residence" name="state_of_residence">
+          <option value="">Select state</option>
+          <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="lga">LGA of residence</label>
+        <input type="text" id="lga" name="lga" placeholder="e.g. Ikeja">
+      </div>
+      <div class="form-field">
+        <label for="nysc-status">NYSC status</label>
+        <select id="nysc-status" name="nysc_status">
+          <option value="">Select status</option>
+          <option>Completed</option>
+          <option>In Progress</option>
+          <option>Exempted</option>
+          <option>Not Applicable</option>
+        </select>
+      </div>
+      <div class="form-field" id="nysc-year-wrap">
+        <label for="nysc-year">NYSC completion year <span class="opt">(if completed)</span></label>
+        <select id="nysc-year" name="nysc_year">
+          <option value="">Year</option>
+          <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option><option>2014</option><option>2013</option><option>2012</option><option>2010</option><option>2008</option><option>2005</option><option>2000</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('personal')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save personal info</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+
+  </div>
+</details>
+
+<!-- ══ JOB PREFERENCES ══ -->
+<details class="cv-card" aria-labelledby="h-prefs">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-prefs"><svg aria-hidden="true"><use href="#i-star"/></svg> Job Preferences</h2>
+    <span class="cv-card-done incomplete">Incomplete</span>
+        <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Tell us what you are looking for. This powers our job-matching engine — the more you fill in, the better your matches.</div>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="desired-title">Desired job title</label>
+        <input type="text" id="desired-title" name="desired_title" placeholder="e.g. Senior Product Manager">
+      </div>
+      <div class="form-field">
+        <label for="experience-years">Years of experience</label>
+        <select id="experience-years" name="years_of_experience">
+          <option value="">Select range</option>
+          <option>Fresh graduate (0 years)</option>
+          <option>1–3 years</option>
+          <option>3–5 years</option>
+          <option>5–10 years</option>
+          <option>10+ years</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="availability">Availability / Notice period</label>
+        <select id="availability" name="availability">
+          <option value="">Select availability</option>
+          <option>Immediately available</option>
+          <option>Within 2 weeks</option>
+          <option>Within 1 month</option>
+          <option>Within 3 months</option>
+          <option>Not currently looking</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="pref-location">Preferred location</label>
+        <select id="pref-location" name="preferred_location">
+          <option value="">Select location</option>
+          <option>Lagos</option><option>Abuja (FCT)</option><option>Port Harcourt</option>
+          <option>Kano</option><option>Ibadan</option><option>Enugu</option>
+          <option>Remote</option><option>Open to relocation</option>
+        </select>
+      </div>
+
+      <div class="form-field full">
+        <label>Preferred work style</label>
+        <div class="pref-pill-group">
+          <label class="pref-pill"><input type="radio" name="work_style" value="remote"> Remote</label>
+          <label class="pref-pill"><input type="radio" name="work_style" value="hybrid"> Hybrid</label>
+          <label class="pref-pill"><input type="radio" name="work_style" value="onsite"> On-site</label>
+          <label class="pref-pill"><input type="radio" name="work_style" value="flexible"> Flexible</label>
+        </div>
+      </div>
+
+      <div class="form-field full">
+        <label>Job type</label>
+        <div class="pref-pill-group">
+          <label class="pref-pill"><input type="checkbox" name="job_type[]" value="fulltime"> Full-time</label>
+          <label class="pref-pill"><input type="checkbox" name="job_type[]" value="parttime"> Part-time</label>
+          <label class="pref-pill"><input type="checkbox" name="job_type[]" value="contract"> Contract</label>
+          <label class="pref-pill"><input type="checkbox" name="job_type[]" value="internship"> Internship</label>
+          <label class="pref-pill"><input type="checkbox" name="job_type[]" value="volunteer"> Volunteer</label>
+        </div>
+      </div>
+
+      <div class="form-field full">
+        <label>Expected salary range (NGN per month)</label>
+        <div class="salary-range">
+          <select name="salary_min">
+            <option value="">Minimum</option>
+            <option>Below ₦100,000</option><option>₦100,000</option><option>₦150,000</option>
+            <option>₦200,000</option><option>₦250,000</option><option>₦300,000</option>
+            <option>₦400,000</option><option>₦500,000</option><option>₦700,000</option>
+            <option>₦1,000,000</option><option>₦1,500,000</option><option>₦2,000,000+</option>
+          </select>
+          <span>to</span>
+          <select name="salary_max">
+            <option value="">Maximum</option>
+            <option>₦150,000</option><option>₦200,000</option><option>₦250,000</option>
+            <option>₦300,000</option><option>₦400,000</option><option>₦500,000</option>
+            <option>₦700,000</option><option>₦1,000,000</option><option>₦1,500,000</option>
+            <option>₦2,000,000</option><option>₦3,000,000+</option><option>Open to negotiation</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('prefs')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save preferences</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 2. PROFESSIONAL SUMMARY ══ -->
+<details class="cv-card" aria-labelledby="h-summary">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-summary"><svg aria-hidden="true"><use href="#i-bolt"/></svg> Professional Summary</h2>
+    <span class="cv-card-done incomplete">Incomplete</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="ai-action">
+      <p class="cv-card-hint" style="margin:0;flex:1">Briefly describe your years of experience, key skills, and your most notable career achievement. Employers read this first — make it count.</p>
+      <button type="button" class="ai-btn" title="Let AI draft a summary based on your profile">
+        <svg aria-hidden="true"><use href="#i-bolt"/></svg> AI generate
+      </button>
+    </div>
+    <div class="form-field" style="margin-top:14px">
+      <textarea id="summary" name="summary" rows="5" maxlength="600" placeholder="e.g. Results-driven Marketing Manager with 5+ years of experience driving brand growth in the Nigerian FMCG sector. Skilled in digital strategy, team leadership, and data-driven campaign optimisation. Consistently delivered 30%+ revenue growth across managed accounts." oninput="updateCount('summary','summary-count',600)"></textarea>
+      <div class="char-count"><span id="summary-count">0</span> / 600</div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('summary')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save summary</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 3. WORK EXPERIENCE ══ -->
+<details class="cv-card" aria-labelledby="h-work">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-work"><svg aria-hidden="true"><use href="#i-bag"/></svg> Work Experience</h2>
+    <span class="cv-card-done incomplete">Incomplete</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+
+    <!-- Empty state (hidden once entries exist) -->
+    <div class="cv-card-hint" id="work-empty">
+      Add your work history starting from your most recent role. Tip: quantify achievements — "increased sales by 40%" is stronger than "improved sales."
+    </div>
+
+    <!-- Example entry (static for handoff; dev loops from DB) -->
+    <div class="entry-list" id="work-list"></div>
+
+    <!-- Add new experience form -->
+    <div id="work-form">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="job-title">Job title</label>
+          <input type="text" id="job-title" name="job_title" placeholder="e.g. Product Manager">
+        </div>
+        <div class="form-field">
+          <label for="company">Company name</label>
+          <input type="text" id="company" name="company" placeholder="e.g. Dangote Group">
+        </div>
+        <div class="form-field">
+          <label for="work-start-month">Start date</label>
+          <select id="work-start-month" name="start_month">
+            <option value="">Month</option>
+            <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="work-start-year">&nbsp;</label>
+          <select id="work-start-year" name="start_year">
+            <option value="">Year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option><option>2014</option><option>2013</option><option>2012</option><option>2010</option><option>2008</option><option>2005</option><option>2000</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label class="form-check"><input type="checkbox" id="current-role" onchange="toggleEndDate(this)"> I am currently in this role</label>
+        </div>
+        <div class="form-field" id="work-end-wrap">
+          <label for="work-end-month">End date</label>
+          <select id="work-end-month" name="end_month">
+            <option value="">Month</option>
+            <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="form-field" id="work-end-year-wrap">
+          <label for="work-end-year">&nbsp;</label>
+          <select id="work-end-year" name="end_year">
+            <option value="">Year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <div class="ai-action" style="margin-bottom:6px"><label for="job-desc">Description <span class="opt">— quantify your achievements in numbers</span></label><button type="button" class="ai-btn" title="AI rewrites your description with stronger, quantified language"><svg aria-hidden="true"><use href="#i-bolt"/></svg> AI improve</button></div>
+          <textarea id="job-desc" name="description" rows="4" maxlength="800" placeholder="e.g. Led a team of 8 engineers to deliver a payments platform used by 200,000+ customers. Reduced deployment time by 60% through CI/CD implementation." oninput="updateCount('job-desc','job-desc-count',800)"></textarea>
+          <div class="char-count"><span id="job-desc-count">0</span> / 800</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('work')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save experience</button>
+      <button type="button" class="btn btn-outline" onclick="clearWorkForm()"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another role</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 4. EDUCATION ══ -->
+<details class="cv-card" aria-labelledby="h-edu">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-edu"><svg aria-hidden="true"><use href="#i-cap"/></svg> Education</h2>
+    <span class="cv-card-done incomplete">Incomplete</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Add your educational background starting from your highest qualification. Both secondary and tertiary education are supported.</div>
+
+    <div id="edu-list" class="entry-list"></div>
+
+    <div id="edu-form">
+      <div class="form-grid">
+        <div class="form-field full">
+          <label for="school-name">School / Institution name</label>
+          <input type="text" id="school-name" name="school_name" placeholder="e.g. University of Lagos">
+        </div>
+        <div class="form-field">
+          <label for="qualification">Qualification</label>
+          <select id="qualification" name="qualification">
+            <option value="">Select qualification</option>
+            <option>WAEC / SSCE</option>
+            <option>OND</option>
+            <option>HND</option>
+            <option>B.Sc / B.A / B.Eng</option>
+            <option>MBBS / B.Pharm</option>
+            <option>PGD</option>
+            <option>M.Sc / MBA / M.A</option>
+            <option>Ph.D</option>
+            <option>Professional Certification</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="field-study">Field of study</label>
+          <input type="text" id="field-study" name="field_of_study" placeholder="e.g. Computer Science">
+        </div>
+        <div class="form-field">
+          <label for="grade">Grade / Class of degree <span class="opt">(optional)</span></label>
+          <select id="grade" name="grade">
+            <option value="">Select grade</option>
+            <option>First Class</option>
+            <option>Second Class Upper</option>
+            <option>Second Class Lower</option>
+            <option>Third Class</option>
+            <option>Pass</option>
+            <option>Distinction</option>
+            <option>Merit</option>
+            <option>Credit</option>
+            <option>Not applicable</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="edu-start">Start year</label>
+          <select id="edu-start" name="start_year">
+            <option value="">Year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option><option>2014</option><option>2013</option><option>2012</option><option>2011</option><option>2010</option><option>2009</option><option>2008</option><option>2007</option><option>2006</option><option>2005</option><option>2000</option><option>1998</option><option>1995</option><option>1990</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="edu-end">End year</label>
+          <select id="edu-end" name="end_year">
+            <option value="">Year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option><option>2014</option><option>2013</option><option>2012</option><option>2011</option><option>2010</option><option>2009</option><option>2008</option><option>2007</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('edu')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save education</button>
+      <button type="button" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another institution</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 5. SKILLS ══ -->
+<details class="cv-card" aria-labelledby="h-skills">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-skills"><svg aria-hidden="true"><use href="#i-chip"/></svg> Skills</h2>
+    <span class="cv-card-done incomplete">Incomplete</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Add your key skills. Rate your level from 1 (Beginner) to 5 (Expert) using the dots — employers find this useful for quick screening.</div>
+
+    <div class="skill-list" id="skill-list">
+      <!-- Demo skill row — dev loops from DB, same markup per skill -->
+      <div class="skill-row">
+        <input type="text" name="skill[]" placeholder="e.g. Project Management" value="">
+        <div class="skill-row-inner">
+          <div class="skill-dots" role="group" aria-label="Skill level 1–5">
+            <button type="button" class="skill-dot" data-level="1" onclick="setSkillLevel(this,1)" title="Beginner"></button>
+            <button type="button" class="skill-dot" data-level="2" onclick="setSkillLevel(this,2)" title="Elementary"></button>
+            <button type="button" class="skill-dot" data-level="3" onclick="setSkillLevel(this,3)" title="Intermediate"></button>
+            <button type="button" class="skill-dot" data-level="4" onclick="setSkillLevel(this,4)" title="Advanced"></button>
+            <button type="button" class="skill-dot" data-level="5" onclick="setSkillLevel(this,5)" title="Expert"></button>
+          </div>
+          <span class="skill-level-label" aria-live="polite">Select level</span>
+          <button type="button" class="entry-remove" aria-label="Remove skill" onclick="this.closest('.skill-row').remove()"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-outline btn-sm" onclick="addSkillRow()" style="margin-bottom:16px"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add skill</button>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('skills')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save skills</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ LANGUAGES ══ -->
+<details class="cv-card" aria-labelledby="h-langs">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-langs"><svg aria-hidden="true"><use href="#i-globe"/></svg> Languages</h2>
+    <span class="cv-card-done incomplete">Incomplete</span>
+        <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Add languages you speak. For Nigerian employers, listing Yoruba, Igbo, or Hausa alongside English is often a real advantage — especially for field, sales, and community roles.</div>
+
+    <div id="lang-list">
+      <div class="lang-row">
+        <select name="language[]">
+          <option value="">Language</option>
+          <option>English</option><option>Yoruba</option><option>Igbo</option>
+          <option>Hausa</option><option>Pidgin English</option><option>French</option>
+          <option>Arabic</option><option>Fulfulde</option><option>Efik</option>
+          <option>Ijaw</option><option>Kanuri</option><option>Other</option>
+        </select>
+        <select name="proficiency[]">
+          <option value="">Proficiency</option>
+          <option>Basic</option>
+          <option>Conversational</option>
+          <option>Fluent</option>
+          <option>Native / Bilingual</option>
+        </select>
+        <button type="button" class="remove-lang" aria-label="Remove language" onclick="this.closest('.lang-row').remove()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-outline btn-sm" onclick="addLangRow()" style="margin-bottom:16px"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add language</button>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('langs')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save languages</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 6. LICENCES & CERTIFICATIONS ══ -->
+<details class="cv-card" aria-labelledby="h-certs">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-certs"><svg aria-hidden="true"><use href="#i-shield"/></svg> Licences &amp; Certifications <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span></h2>
+    <span class="cv-card-done optional">Optional</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <!-- JobberRecruit auto-synced certificates — populated from courses DB.
+         Dev: query completed paid courses for this user and render below. -->
+    <div class="jr-auto-certs">
+      <div class="jr-auto-header">
+        <svg aria-hidden="true"><use href="#i-shield"/></svg>
+        JobberRecruit Verified Certificates
+        <span class="jr-verified-tag" style="margin-left:6px"><svg aria-hidden="true"><use href="#i-check"/></svg> Auto-synced</span>
+      </div>
+      <!-- LOOP: render one .jr-cert-item per completed paid course -->
+      <div class="jr-cert-item">
+        <div class="jr-cert-icon"><svg aria-hidden="true"><use href="#i-cap"/></svg></div>
+        <div class="jr-cert-body">
+          <strong>Digital Marketing Fundamentals</strong>
+          <span>Completed 14 Jun 2026 · JobberRecruit</span>
+        </div>
+        <span class="jr-verified-tag"><svg aria-hidden="true"><use href="#i-shield"/></svg> JR Verified</span>
+      </div>
+      <a href="/training" class="jr-auto-link">Complete more courses to earn certificates →</a>
+    </div>
+    <div class="cv-card-hint">Add external licences and certifications below. JobberRecruit-earned certificates appear above automatically.</div>
+
+    <div class="entry-list" id="cert-list"></div>
+
+    <div id="cert-form">
+      <div class="form-grid">
+        <div class="form-field full">
+          <label for="cert-name">Certification name</label>
+          <input type="text" id="cert-name" placeholder="e.g. Project Management Professional (PMP)">
+        </div>
+        <div class="form-field">
+          <label for="cert-org">Issuing organisation</label>
+          <input type="text" id="cert-org" placeholder="e.g. PMI / JobberRecruit">
+        </div>
+        <div class="form-field">
+          <label for="cert-id">Credential ID <span class="opt">(optional)</span></label>
+          <input type="text" id="cert-id" placeholder="e.g. ABC-12345">
+        </div>
+        <div class="form-field">
+          <label for="cert-issue-month">Issue date</label>
+          <select id="cert-issue-month">
+            <option value="">Month</option>
+            <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="cert-issue-year">&nbsp;</label>
+          <select id="cert-issue-year">
+            <option value="">Year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label class="form-check"><input type="checkbox" id="no-expire" onchange="toggleCertExpiry(this)"> This credential does not expire</label>
+        </div>
+        <div class="form-field" id="cert-expiry-wrap">
+          <label for="cert-exp-month">Expiry date</label>
+          <select id="cert-exp-month">
+            <option value="">Month</option>
+            <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="form-field" id="cert-exp-year-wrap">
+          <label for="cert-exp-year">&nbsp;</label>
+          <select id="cert-exp-year">
+            <option value="">Year</option>
+            <option>2030</option><option>2029</option><option>2028</option><option>2027</option><option>2026</option><option>2025</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('certs')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save certification</button>
+      <button type="button" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another</button>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 7. HONOURS & AWARDS ══ -->
+<details class="cv-card" aria-labelledby="h-awards">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-awards"><svg aria-hidden="true"><use href="#i-award"/></svg> Honours &amp; Awards <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span></h2>
+    <span class="cv-card-done optional">Optional</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Include notable awards, scholarships, or recognition. These help you stand out, especially for graduate-level roles.</div>
+    <div class="entry-list" id="award-list"></div>
+    <div id="award-form">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="award-name">Award name</label>
+          <input type="text" id="award-name" placeholder="e.g. Best Graduating Student">
+        </div>
+        <div class="form-field">
+          <label for="award-issuer">Issued by</label>
+          <input type="text" id="award-issuer" placeholder="e.g. University of Ibadan">
+        </div>
+        <div class="form-field">
+          <label for="award-year">Year</label>
+          <select id="award-year">
+            <option value="">Year</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option><option>2010</option><option>2005</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label for="award-desc">Description <span class="opt">(optional)</span></label>
+          <textarea id="award-desc" rows="3" maxlength="400" placeholder="Briefly describe the award and why it was given." oninput="updateCount('award-desc','award-desc-count',400)"></textarea>
+          <div class="char-count"><span id="award-desc-count">0</span> / 400</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('awards')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save award</button>
+      <button type="button" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another</button>
+    </div>
+  </div>
+</details>
+
+
+
+<!-- ══ 9. PORTFOLIO LINKS ══ -->
+<details class="cv-card" aria-labelledby="h-portfolio">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-portfolio"><svg aria-hidden="true"><use href="#i-link"/></svg> Portfolio &amp; Work Samples <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span></h2>
+    <span class="cv-card-done optional">Optional</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Add links to work you're proud of — a GitHub repo, a Behance page, a published article, or a live project. You can add multiple.</div>
+    <div id="portfolio-list">
+      <div class="form-grid cols-1" style="margin-bottom:10px">
+        <div class="form-field">
+          <label for="portfolio-url-1">Link URL</label>
+          <input type="url" id="portfolio-url-1" placeholder="https://github.com/yourhandle">
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="addPortfolioRow()" style="margin-bottom:16px"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another link</button>
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('portfolio')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save links</button>
+    </div>
+  </div>
+</details>
+
+<!-- ══ 10. SOCIAL PROFILES ══
+     Changed from MyJobMag's free-text area to structured per-platform rows.
+     Platform + URL is cleaner for data use and CV rendering.
+-->
+<details class="cv-card" aria-labelledby="h-social">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-social"><svg aria-hidden="true"><use href="#i-globe"/></svg> Social Profiles <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span></h2>
+    <span class="cv-card-done optional">Optional</span>
+      <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Add your professional social profiles. LinkedIn is especially valued by employers hiring for mid-to-senior roles.</div>
+    <div id="social-list">
+      <div class="social-row">
+        <select name="social_platform[]"><option value="">Platform</option><option>LinkedIn</option><option>GitHub</option><option>Twitter / X</option><option>Instagram</option><option>Facebook</option><option>YouTube</option><option>Other</option></select>
+        <input type="url" name="social_url[]" placeholder="https://linkedin.com/in/your-profile">
+        <button type="button" class="remove-social" onclick="this.closest('.social-row').remove()" aria-label="Remove this social link"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="addSocialRow()" style="margin-bottom:16px"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another</button>
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('social')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save profiles</button>
+    </div>
+  </div>
+</details>
+
+<!-- ══ REFERENCES ══ -->
+<details class="cv-card" aria-labelledby="h-refs">
+  <summary class="cv-card-header">
+    <h2 class="cv-card-title" id="h-refs"><svg aria-hidden="true"><use href="#i-user"/></svg> References <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span></h2>
+    <span class="cv-card-done optional">Optional</span>
+        <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="cv-card-body">
+    <div class="cv-card-hint">Two professional references are standard on a Nigerian CV. Add people who can speak to your work — a former manager or senior colleague, not a friend or family member.</div>
+
+    <div class="ref-toggle-row">
+      <label for="refs-on-request">References available on request only</label>
+      <label class="form-check">
+        <input type="checkbox" id="refs-on-request" name="refs_on_request" onchange="toggleRefForm(this)">
+        <span style="font-size:.84rem;color:var(--muted)">Hide names &amp; contact details</span>
+      </label>
+    </div>
+
+    <div id="ref-form-wrap">
+      <!-- Reference 1 -->
+      <div class="ref-entry">
+        <div class="ref-entry-header">
+          <span class="ref-entry-num">Reference 1</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="ref1-name">Full name</label>
+            <input type="text" id="ref1-name" name="ref1_name" placeholder="e.g. Dr. Chukwuemeka Obi">
+          </div>
+          <div class="form-field">
+            <label for="ref1-title">Job title</label>
+            <input type="text" id="ref1-title" name="ref1_title" placeholder="e.g. Head of Engineering">
+          </div>
+          <div class="form-field">
+            <label for="ref1-company">Company</label>
+            <input type="text" id="ref1-company" name="ref1_company" placeholder="e.g. GTBank Plc">
+          </div>
+          <div class="form-field">
+            <label for="ref1-rel">Your relationship</label>
+            <select id="ref1-rel" name="ref1_relationship">
+              <option value="">Select</option>
+              <option>Former manager</option><option>Former colleague</option>
+              <option>Client</option><option>Mentor</option><option>Lecturer</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="ref1-phone">Phone number</label>
+            <input type="tel" id="ref1-phone" name="ref1_phone" placeholder="08012345678">
+          </div>
+          <div class="form-field">
+            <label for="ref1-email">Email address</label>
+            <input type="email" id="ref1-email" name="ref1_email" placeholder="ref@company.com">
+          </div>
+        </div>
+      </div>
+
+      <!-- Reference 2 -->
+      <div class="ref-entry">
+        <div class="ref-entry-header">
+          <span class="ref-entry-num">Reference 2</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="ref2-name">Full name</label>
+            <input type="text" id="ref2-name" name="ref2_name" placeholder="e.g. Mrs. Folake Adeleke">
+          </div>
+          <div class="form-field">
+            <label for="ref2-title">Job title</label>
+            <input type="text" id="ref2-title" name="ref2_title" placeholder="e.g. Marketing Director">
+          </div>
+          <div class="form-field">
+            <label for="ref2-company">Company</label>
+            <input type="text" id="ref2-company" name="ref2_company" placeholder="e.g. Unilever Nigeria">
+          </div>
+          <div class="form-field">
+            <label for="ref2-rel">Your relationship</label>
+            <select id="ref2-rel" name="ref2_relationship">
+              <option value="">Select</option>
+              <option>Former manager</option><option>Former colleague</option>
+              <option>Client</option><option>Mentor</option><option>Lecturer</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="ref2-phone">Phone number</label>
+            <input type="tel" id="ref2-phone" name="ref2_phone" placeholder="08012345678">
+          </div>
+          <div class="form-field">
+            <label for="ref2-email">Email address</label>
+            <input type="email" id="ref2-email" name="ref2_email" placeholder="ref@company.com">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="saveSection('refs')"><svg aria-hidden="true"><use href="#i-check"/></svg> Save references</button>
+      <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save automatically</span>
+    </div>
+  </div>
+</details>
+
+<!-- ══ CV VISIBILITY + BOTTOM ACTIONS ══ -->
+<div class="visibility-banner" role="region" aria-label="CV visibility setting">
+  <svg aria-hidden="true"><use href="#i-eye"/></svg>
+  <div class="visibility-banner-text">
+    <strong>CV visibility to employers</strong>
+    <p>Control whether employers can find your profile when searching the JobberRecruit talent database.</p>
+  </div>
+  <label class="form-check" style="flex-shrink:0">
+    <input type="checkbox" id="cv-visible" name="cv_visible" checked> Make my CV visible
+  </label>
+</div>
+
+<div class="bottom-actions">
+  <a href="/profile/preview" class="btn btn-outline btn-lg"><svg aria-hidden="true"><use href="#i-eye"/></svg> Preview CV</a>
+  <a href="/profile/download" class="btn btn-primary btn-lg"><svg aria-hidden="true"><use href="#i-download"/></svg> Download CV</a>
+</div>
+
+</div><!-- /profile-wrap -->
+</div><!-- /container -->
+</div><!-- /profile-page -->
+
+</main>
+<footer class="dash-foot">
+<span>© 2026 JobberRecruit · Jobber Recruit Ltd</span>
+<nav aria-label="Footer links"><a href="/help">Help Centre</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-service">Terms</a><a href="/contact">Contact</a></nav>
+</footer>
+</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var sidebar=document.getElementById('sidebar'),scrim=document.getElementById('scrim'),
+      burger=document.getElementById('hamburger'),closeBtn=document.getElementById('sb-close');
+  function openMenu(){sidebar.classList.add('open');scrim.hidden=false;requestAnimationFrame(function(){scrim.classList.add('show')});burger.setAttribute('aria-expanded','true');document.body.style.overflow='hidden'}
+  function closeMenu(){sidebar.classList.remove('open');scrim.classList.remove('show');burger.setAttribute('aria-expanded','false');document.body.style.overflow='';setTimeout(function(){if(!scrim.classList.contains('show'))scrim.hidden=true},240)}
+  burger.addEventListener('click',openMenu);closeBtn.addEventListener('click',closeMenu);scrim.addEventListener('click',closeMenu);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&sidebar.classList.contains('open'))closeMenu()});
+  var bar=document.getElementById('mobile-cta');
+  if(bar){var lastY=window.scrollY,ticking=false;
+    window.addEventListener('scroll',function(){if(ticking)return;ticking=true;
+      requestAnimationFrame(function(){var y=window.scrollY,nearBottom=(window.innerHeight+y)>=(document.documentElement.scrollHeight-120);
+        if(nearBottom||y<lastY||y<60){bar.classList.remove('hidden')}else if(y>lastY+8){bar.classList.add('hidden')}
+        lastY=y;ticking=false;});
+    },{passive:true});}
+})();
+
+/* topbar dropdowns */
+(function(){
+var drops=document.querySelectorAll('.tb-drop');
+drops.forEach(function(d){var btn=d.querySelector('button');
+  btn.addEventListener('click',function(e){e.stopPropagation();
+    var was=d.classList.contains('open');
+    drops.forEach(function(x){x.classList.remove('open');x.querySelector('button').setAttribute('aria-expanded','false')});
+    if(!was){d.classList.add('open');btn.setAttribute('aria-expanded','true')}
+  });
+});
+document.addEventListener('click',function(){drops.forEach(function(d){d.classList.remove('open');d.querySelector('button').setAttribute('aria-expanded','false')})});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')drops.forEach(function(d){d.classList.remove('open');d.querySelector('button').setAttribute('aria-expanded','false')})});
+})();
+/* ── Photo preview ── */
+function previewPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('photo-preview');
+    preview.innerHTML = '<img src="' + e.target.result + '" alt="Profile photo preview">';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+/* ── Character counter ── */
+function updateCount(fieldId, countId, max) {
+  var field = document.getElementById(fieldId);
+  var counter = document.getElementById(countId);
+  if (field && counter) counter.textContent = field.value.length;
+}
+
+/* ── Toggle end date row when "currently in this role" is checked ── */
+function toggleEndDate(checkbox) {
+  var endWrap = document.getElementById('work-end-wrap');
+  var endYearWrap = document.getElementById('work-end-year-wrap');
+  if (endWrap) endWrap.style.display = checkbox.checked ? 'none' : '';
+  if (endYearWrap) endYearWrap.style.display = checkbox.checked ? 'none' : '';
+}
+
+/* ── Toggle cert expiry fields ── */
+function toggleCertExpiry(checkbox) {
+  var wrap = document.getElementById('cert-expiry-wrap');
+  var yearWrap = document.getElementById('cert-exp-year-wrap');
+  if (wrap) wrap.style.display = checkbox.checked ? 'none' : '';
+  if (yearWrap) yearWrap.style.display = checkbox.checked ? 'none' : '';
+}
+
+/* ── Skill level dots ── */
+function setSkillLevel(dot, level) {
+  var row = dot.closest('.skill-dots');
+  var dots = row.querySelectorAll('.skill-dot');
+  var labels = ['Beginner','Elementary','Intermediate','Advanced','Expert'];
+  dots.forEach(function(d, i) { d.classList.toggle('active', i < level); });
+  var labelEl = row.parentElement.querySelector('.skill-level-label');
+  if (labelEl) labelEl.textContent = labels[level - 1];
+}
+
+/* ── WhatsApp same-as-phone sync ── */
+function syncWhatsApp(checkbox) {
+  var wa = document.getElementById('whatsapp');
+  var ph = document.getElementById('phone');
+  if (!wa || !ph) return;
+  if (checkbox.checked) {
+    wa.value = ph.value;
+    wa.readOnly = true;
+    wa.style.background = 'var(--bg)';
+    wa.style.color = 'var(--muted)';
+    ph.addEventListener('input', syncFromPhone);
+  } else {
+    wa.readOnly = false;
+    wa.style.background = '';
+    wa.style.color = '';
+    ph.removeEventListener('input', syncFromPhone);
+  }
+}
+function syncFromPhone() {
+  var wa = document.getElementById('whatsapp');
+  if (wa && wa.readOnly) wa.value = this.value;
+}
+
+/* ── Add language row ── */
+function addLangRow() {
+  var list = document.getElementById('lang-list');
+  var row = document.createElement('div');
+  row.className = 'lang-row';
+  row.innerHTML =
+    '<select name="language[]"><option value="">Language</option><option>English</option><option>Yoruba</option><option>Igbo</option><option>Hausa</option><option>Pidgin English</option><option>French</option><option>Arabic</option><option>Other</option></select>' +
+    '<select name="proficiency[]"><option value="">Proficiency</option><option>Basic</option><option>Conversational</option><option>Fluent</option><option>Native / Bilingual</option></select>' +
+    '<button type="button" class="remove-lang" aria-label="Remove" onclick="this.closest(\'.lang-row\').remove()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>';
+  list.appendChild(row);
+}
+
+/* ── Toggle references form (on-request mode hides the detail fields) ── */
+function toggleRefForm(checkbox) {
+  var wrap = document.getElementById('ref-form-wrap');
+  if (wrap) wrap.style.display = checkbox.checked ? 'none' : '';
+}
+
+/* ── Toggle NYSC year field ── */
+document.addEventListener('DOMContentLoaded', function() {
+  var nysc = document.getElementById('nysc-status');
+  if (nysc) nysc.addEventListener('change', function() {
+    var yw = document.getElementById('nysc-year-wrap');
+    if (yw) yw.style.display = (this.value === 'Completed') ? '' : 'none';
+    if (yw && this.value !== 'Completed') yw.style.display = 'none';
+  });
+  /* Hide NYSC year on load unless already set to Completed */
+  var yw = document.getElementById('nysc-year-wrap');
+  if (yw) yw.style.display = 'none';
+});
+function addSkillRow() {
+  var list = document.getElementById('skill-list');
+  var row = document.createElement('div');
+  row.className = 'skill-row';
+  row.innerHTML = '<input type="text" name="skill[]" placeholder="e.g. Data Analysis">' +
+    '<div class="skill-row-inner">' +
+      '<div class="skill-dots" role="group" aria-label="Skill level 1–5">' +
+        [1,2,3,4,5].map(function(n){return '<button type="button" class="skill-dot" data-level="'+n+'" onclick="setSkillLevel(this,'+n+')" title="Level '+n+'"></button>';}).join('') +
+      '</div>' +
+      '<span class="skill-level-label" aria-live="polite">Select level</span>' +
+      '<button type="button" class="entry-remove" aria-label="Remove skill" onclick="this.closest(\'.skill-row\').remove()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>' +
+    '</div>';
+  list.appendChild(row);
+}
+
+/* ── Add portfolio URL row ── */
+function addPortfolioRow() {
+  var list = document.getElementById('portfolio-list');
+  var n = list.querySelectorAll('input[type="url"]').length + 1;
+  var wrap = document.createElement('div');
+  wrap.style.marginBottom = '10px';
+  wrap.innerHTML = '<div class="form-field"><input type="url" name="portfolio_url[]" placeholder="https://"></div>';
+  list.appendChild(wrap);
+}
+
+/* ── Add social row ── */
+function addSocialRow() {
+  var list = document.getElementById('social-list');
+  var row = document.createElement('div');
+  row.className = 'social-row';
+  row.innerHTML = '<select name="social_platform[]"><option value="">Platform</option><option>LinkedIn</option><option>GitHub</option><option>Twitter / X</option><option>Instagram</option><option>Facebook</option><option>YouTube</option><option>Other</option></select>' +
+    '<input type="url" name="social_url[]" placeholder="https://">' +
+    '<button type="button" class="remove-social" onclick="this.closest(\'.social-row\').remove()" aria-label="Remove"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>';
+  list.appendChild(row);
+}
+
+/* ── Clear work form for adding another role ── */
+function clearWorkForm() {
+  ['job-title','company','job-desc'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['work-start-month','work-start-year','work-end-month','work-end-year'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.selectedIndex = 0;
+  });
+  var cb = document.getElementById('current-role');
+  if (cb) { cb.checked = false; toggleEndDate(cb); }
+  var countEl = document.getElementById('job-desc-count');
+  if (countEl) countEl.textContent = '0';
+}
+
+/* ── Save section (UI feedback — backend POST is the developer's task) ──
+   Updates the section's completion badge and nudges the progress bar.
+   Replace the fetch() stub with your CI endpoint.
+*/
+/* ══════════════════════════════════════════════════════════════
+   SECTION ORDERING, WEIGHTS & TIPS
+   - SECTION_ORDER drives auto-advance (which section opens next)
+   - sectionWeights drives the progress bar fill
+   - SECTION_TIPS is the dynamic "+N%" nudge shown in the header
+     and in the sticky progress bar tip
+══════════════════════════════════════════════════════════════ */
+var SECTION_ORDER = [
+  'personal','prefs','summary','work','edu','skills',
+  'langs','certs','awards','portfolio','social','refs'
+];
+
+var sectionWeights = {
+  personal:15, prefs:15, summary:10, work:20,
+  edu:12, skills:10, langs:5, certs:3,
+  awards:2, portfolio:2, social:2, refs:2, other:2
+};
+
+var SECTION_TIPS = {
+  personal: 'Complete personal info for +15%',
+  prefs:    'Add job preferences for +15% — powers your job matches',
+  summary:  'Write a summary for +10% — employers read this first',
+  work:     'Add work experience for +20% — biggest profile boost',
+  edu:      'Add education for +12%',
+  skills:   'Add skills for +10% — appear in more employer searches',
+  langs:    'Add languages for +5%',
+  certs:    'Add certifications for +3%',
+  awards:   'Add awards for +2%',
+  portfolio:'Add portfolio links for +2%',
+  social:   'Add social profiles for +2%',
+  refs:     'Add references for +2%'
+};
+
+var completedSections = {};
+
+/* ── Inject the gain-tip badge into every section header on load ── */
+function injectGainTips() {
+  SECTION_ORDER.forEach(function(key) {
+    var card = document.querySelector('[aria-labelledby="h-' + key + '"]');
+    if (!card) return;
+    var summary = card.querySelector('.cv-card-header');
+    if (!summary) return;
+    var gain = sectionWeights[key] || 0;
+    var tip = document.createElement('span');
+    tip.className = 'cv-gain-tip';
+    tip.id = 'gain-tip-' + key;
+    tip.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> +' + gain + '%';
+    tip.title = SECTION_TIPS[key];
+    /* Insert before the chevron (last child of summary) */
+    var chev = summary.querySelector('.cv-chev');
+    summary.insertBefore(tip, chev);
+  });
+}
+
+/* ── Update sticky bar tip to show the next uncompleted section's nudge ── */
+function updateBarTip() {
+  var tipEl = document.getElementById('progress-tip-text');
+  if (!tipEl) return;
+  for (var i = 0; i < SECTION_ORDER.length; i++) {
+    var key = SECTION_ORDER[i];
+    if (!completedSections[key]) {
+      tipEl.textContent = SECTION_TIPS[key] || '';
+      return;
+    }
+  }
+  tipEl.textContent = 'Profile complete — great work!';
+}
+
+/* ── Auto-advance: open + scroll to next incomplete section ── */
+function advanceToNext(currentKey) {
+  var idx = SECTION_ORDER.indexOf(currentKey);
+  for (var i = idx + 1; i < SECTION_ORDER.length; i++) {
+    var nextKey = SECTION_ORDER[i];
+    if (completedSections[nextKey]) continue; /* already done, skip */
+    var nextCard = document.querySelector('[aria-labelledby="h-' + nextKey + '"]');
+    if (!nextCard) continue;
+    /* Open the section */
+    nextCard.setAttribute('open', '');
+    /* Highlight ring */
+    nextCard.classList.add('next-up');
+    setTimeout(function(c) { return function() { c.classList.remove('next-up'); }; }(nextCard), 900);
+    /* Smooth scroll with offset for sticky bars */
+    setTimeout(function(c) {
+      return function() {
+        var top = c.getBoundingClientRect().top + window.scrollY - 140;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      };
+    }(nextCard), 120);
+    return;
+  }
+  /* All sections complete — scroll to bottom actions */
+  var bottom = document.querySelector('.bottom-actions');
+  if (bottom) {
+    setTimeout(function() {
+      bottom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+  }
+}
+
+/* ── Progress bar pulse ── */
+function pulseBar() {
+  var fill = document.getElementById('progress-fill');
+  if (!fill) return;
+  fill.classList.remove('pulse');
+  void fill.offsetWidth; /* force reflow to restart animation */
+  fill.classList.add('pulse');
+  setTimeout(function() { fill.classList.remove('pulse'); }, 1100);
+}
+
+/* ── Hide gain tip on a completed section ── */
+function hideGainTip(key) {
+  var tip = document.getElementById('gain-tip-' + key);
+  if (tip) tip.style.display = 'none';
+}
+
+/* ── Main save handler ── */
+function saveSection(key) {
+  var btn = event.target;
+  var card = btn.closest('.cv-card');
+
+  completedSections[key] = true;
+
+  /* 1. Border: orange → brand blue */
+  if (card) card.classList.add('is-complete');
+
+  /* 2. Badge: → ✓ Done */
+  if (card) {
+    var badge = card.querySelector('.cv-card-done');
+    if (badge) {
+      badge.className = 'cv-card-done complete';
+      badge.innerHTML = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Done';
+    }
+  }
+
+  /* 3. Hide the gain tip on this section */
+  hideGainTip(key);
+
+  /* 4. Progress bar fill + pulse */
+  updateProgress();
+  pulseBar();
+
+  /* 5. Update sticky bar tip to next section */
+  updateBarTip();
+
+  /* 6. Save button flash */
+  var orig = btn.innerHTML;
+  btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Saved';
+  btn.style.background = 'var(--brand-dark)';
+  btn.style.borderColor = 'var(--brand-dark)';
+  setTimeout(function() {
+    btn.innerHTML = orig;
+    btn.style.background = '';
+    btn.style.borderColor = '';
+  }, 2200);
+
+  /* 7. Auto-advance to next incomplete section */
+  advanceToNext(key);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   WALLET & MILESTONE SYSTEM
+   ─────────────────────────────────────────────────────────────
+   Two milestones: 60% → ₦200 credit, 80% → ₦500 credit
+   Rewards are non-withdrawable platform credits.
+   One claim per milestone — state tracked in claimedMilestones.
+   Backend: POST /profile/claim-reward/{60|80} on milestone cross.
+══════════════════════════════════════════════════════════════ */
+var MILESTONES = [
+  { pct: 60, reward: 200, emoji: '🎉', title: '₦200 added to your wallet!',  msg: 'Profile starter bonus — use it for profile boosts and course discounts.' },
+  { pct: 80, reward: 500, emoji: '🏆', title: '₦500 added to your wallet!',  msg: 'Complete profile reward — your wallet now has ₦700 in platform credits.' }
+];
+var walletBalance     = 0;
+var claimedMilestones = {}; /* { 60: true, 80: true } once claimed */
+var toastTimer        = null;
+
+function updateProgress() {
+  var total = 0;
+  Object.keys(completedSections).forEach(function(k) { total += (sectionWeights[k] || 0); });
+  total = Math.min(total, 100);
+
+  /* Fill bar */
+  var fill = document.getElementById('progress-fill');
+  var pct  = document.getElementById('progress-pct');
+  if (fill) fill.style.width = total + '%';
+  if (pct)  pct.textContent = total + '% Completed';
+
+  /* Update milestone markers */
+  updateMilestoneMarkers(total);
+
+  /* Check milestones — fire in order so 60% always fires before 80% */
+  MILESTONES.forEach(function(m) {
+    if (total >= m.pct && !claimedMilestones[m.pct]) {
+      claimedMilestones[m.pct] = true;
+      walletBalance += m.reward;
+      updateWalletChip();
+      updateMilestoneBadges(total);
+      setTimeout(function() { showMilestoneToast(m); }, 700); /* slight delay after bar fills */
+      /* Stub: POST /profile/claim-reward/60 or /80 */
+    }
+  });
+
+  updateMilestoneBadges(total);
+}
+
+function updateMilestoneMarkers(total) {
+  MILESTONES.forEach(function(m) {
+    var marker = document.getElementById('marker-' + m.pct);
+    if (!marker) return;
+    if (total >= m.pct) {
+      marker.className = 'milestone-marker achieved';
+    } else if (!claimedMilestones[m.pct]) {
+      /* Only pulse the NEXT unclaimed milestone */
+      var prevClaimed = m.pct === 60 || claimedMilestones[60];
+      marker.className = 'milestone-marker' + (prevClaimed || m.pct === 60 ? ' next' : '');
+    }
+  });
+  /* After 60% achieved, start pulsing 80% marker */
+  var m80 = document.getElementById('marker-80');
+  if (m80 && claimedMilestones[60] && !claimedMilestones[80]) {
+    m80.className = 'milestone-marker next';
+  }
+}
+
+function updateMilestoneBadges(total) {
+  /* 60% badge */
+  var b60 = document.getElementById('badge-60');
+  var l60 = document.getElementById('label-60');
+  if (b60 && l60) {
+    if (claimedMilestones[60]) {
+      b60.className = 'm-badge achieved';
+      b60.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> ₦200 earned';
+      l60.textContent = 'Credited to your wallet';
+    } else {
+      var gap60 = Math.max(0, 60 - total);
+      b60.className = 'm-badge next';
+      l60.textContent = gap60 <= 0 ? 'Almost there!' : gap60 + '% more to unlock';
+    }
+  }
+
+  /* 80% badge */
+  var b80 = document.getElementById('badge-80');
+  var l80 = document.getElementById('label-80');
+  if (b80 && l80) {
+    if (claimedMilestones[80]) {
+      b80.className = 'm-badge achieved';
+      b80.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> ₦500 earned';
+      l80.textContent = 'Credited to your wallet';
+    } else if (claimedMilestones[60]) {
+      var gap80 = Math.max(0, 80 - total);
+      b80.className = 'm-badge next';
+      b80.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg> 80% → ₦500';
+      l80.textContent = gap80 + '% more to unlock';
+    } else {
+      b80.className = 'm-badge locked';
+      b80.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 80% → ₦500';
+      l80.textContent = 'Locked until 60% reached';
+    }
+  }
+  /* Keep mobile sub-panel in sync */
+  if (typeof syncMobileBadges === 'function') syncMobileBadges();
+}
+
+function updateWalletChip() {
+  var chip    = document.getElementById('wallet-chip');
+  var balance = document.getElementById('wallet-balance');
+  if (balance) balance.textContent = '₦' + walletBalance.toLocaleString();
+  if (chip && walletBalance > 0) chip.classList.add('has-balance');
+}
+
+function updateBarTip() {
+  var tipEl = document.getElementById('progress-tip-text');
+  if (!tipEl) return;
+
+  /* If both milestones claimed, celebrate */
+  if (claimedMilestones[60] && claimedMilestones[80]) {
+    tipEl.textContent = '₦700 earned — profile complete! Employers can now find you';
+    return;
+  }
+  /* Next milestone context */
+  var nextM = claimedMilestones[60] ? MILESTONES[1] : MILESTONES[0];
+  /* Next section context from existing SECTION_TIPS */
+  for (var i = 0; i < SECTION_ORDER.length; i++) {
+    var k = SECTION_ORDER[i];
+    if (!completedSections[k]) {
+      var w = sectionWeights[k] || 0;
+      tipEl.textContent = SECTION_TIPS[k] + ' → closer to ₦' + nextM.reward;
+      return;
+    }
+  }
+  tipEl.textContent = 'Profile complete — great work!';
+}
+
+/* ── Toast notification ── */
+function showMilestoneToast(milestone) {
+  var toast = document.getElementById('milestone-toast');
+  if (!toast) return;
+  document.getElementById('toast-emoji').textContent  = milestone.emoji;
+  document.getElementById('toast-title').textContent  = milestone.title;
+  document.getElementById('toast-msg').textContent    = milestone.msg;
+  toast.classList.add('show');
+  /* Auto-dismiss after 6 seconds */
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(dismissToast, 6000);
+}
+function dismissToast() {
+  var toast = document.getElementById('milestone-toast');
+  if (toast) toast.classList.remove('show');
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+}
+
+/* ── Mobile: auto-hide sticky bar on scroll down, show on scroll up ── */
+(function() {
+  var bar = document.getElementById('progress-bar');
+  var lastY = 0; var threshold = 40;
+  var isMobile = function() { return window.innerWidth <= 640; };
+  window.addEventListener('scroll', function() {
+    if (!bar || !isMobile()) { bar && bar.classList.remove('bar-hidden'); return; }
+    var y = window.scrollY;
+    var nearBottom = (document.documentElement.scrollHeight - window.innerHeight - y) < 120;
+    if (nearBottom)                { bar.classList.remove('bar-hidden'); }
+    else if (y > lastY + threshold){ bar.classList.add('bar-hidden');    }
+    else if (y < lastY - threshold){ bar.classList.remove('bar-hidden'); }
+    lastY = y;
+  }, { passive: true });
+})();
+
+/* ── Mirror desktop milestone badges to the mobile sub-panel ── */
+function syncMobileBadges() {
+  ['60','80'].forEach(function(n) {
+    var db = document.getElementById('badge-' + n);
+    var mb = document.getElementById('badge-' + n + '-m');
+    var dl = document.getElementById('label-' + n);
+    var ml = document.getElementById('label-' + n + '-m');
+    if (db && mb) { mb.className = db.className; mb.innerHTML = db.innerHTML; }
+    if (dl && ml) ml.textContent = dl.textContent;
+  });
+}
+
+/* ── Init on load ── */
+document.addEventListener('DOMContentLoaded', function() {
+  injectGainTips();
+  updateBarTip();
+  syncMobileBadges();
+});
+
+// ══ PREMIUM POLISH — shared JS helpers (additive, no existing behavior changed) ══
+
+// Confetti burst — call ONLY on genuine completion events (certificate earned,
+// course finished, premium subscribed). Never auto-fires.
+function celebrateSuccess(){
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var root = document.getElementById('confetti-root');
+  if (!root){ root = document.createElement('div'); root.id = 'confetti-root'; document.body.appendChild(root); }
+  root.innerHTML = '';
+  var colors = ['#0861A9','#ED9020','#16a34a','#0A2F57'];
+  for (var i = 0; i < 32; i++){
+    var p = document.createElement('span');
+    p.className = 'confetti-piece';
+    p.style.left = (Math.random()*100) + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = (Math.random()*0.3) + 's';
+    p.style.animationDuration = (1.2 + Math.random()*0.6) + 's';
+    root.appendChild(p);
+  }
+  root.classList.add('burst');
+  setTimeout(function(){ root.classList.remove('burst'); root.innerHTML=''; }, 1900);
+}
+
+// Skeleton-loading helper — wraps a real async fetch/render so the skeleton
+// only shows for genuine loading time, never a fixed fake delay.
+// Usage: withSkeleton(containerEl, async () => { ...populate real content... })
+function withSkeleton(container, work){
+  if (!container) return work();
+  container.classList.add('is-loading');
+  var done = function(){ container.classList.remove('is-loading'); };
+  try {
+    var result = work();
+    if (result && typeof result.then === 'function') return result.finally(done);
+    done(); return result;
+  } catch (e){ done(); throw e; }
+}
+
+// Button-press haptic-style feedback class toggle for elements that need JS
+// (CSS :active already covers most; this is for programmatic triggers e.g.
+// Enter-key submits) — additive, opt-in via data-press-fx.
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var el = document.activeElement;
+  if (el && el.matches('[data-press-fx]')){
+    el.style.transform = 'scale(.97)';
+    setTimeout(function(){ el.style.transform=''; }, 120);
+  }
+});
+
+</script>
+<div id="confetti-root" aria-hidden="true"></div>
+</body>
+</html>

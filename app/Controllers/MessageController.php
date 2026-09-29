@@ -7,9 +7,11 @@ use App\Models\MessageModel;
 use App\Models\EmployerModel;
 use App\Models\JobSeekerModel;
 use App\Services\CreditService;
+use CodeIgniter\API\ResponseTrait;
 
 class MessageController extends BaseController
 {
+    use ResponseTrait;
     protected $conversationModel;
     protected $messageModel;
 
@@ -22,6 +24,30 @@ class MessageController extends BaseController
     public function inbox()
     {
         $user = auth()->user();
+
+        // Deep link: /employer/messages?candidate={job_seeker_id} → find_or_create conversation, then jump straight to it
+        if ($user->user_type === 'employer') {
+            $candidateId = (int) ($this->request->getGet('candidate') ?? 0);
+            if ($candidateId > 0) {
+                $employerModel = model(EmployerModel::class);
+                $employer = $employerModel->where('user_id', $user->id)->first();
+                if ($employer) {
+                    $conversation = $this->conversationModel
+                        ->where('employer_id', $employer->id)
+                        ->where('job_seeker_id', $candidateId)
+                        ->first();
+
+                    $conversationId = $conversation['id'] ?? $this->conversationModel->insert([
+                        'employer_id' => $employer->id,
+                        'job_seeker_id' => $candidateId,
+                        'is_active' => 1,
+                    ]);
+
+                    return redirect()->to(base_url('employer/messages/conversation/' . $conversationId));
+                }
+            }
+        }
+
         $unreadCount = $this->messageModel->getUnreadCount($user->id, $user->user_type);
 
         if ($user->user_type === 'employer') {
@@ -29,7 +55,8 @@ class MessageController extends BaseController
             $employer = $employerModel->where('user_id', $user->id)->first();
             $conversations = $employer ? $this->conversationModel->getConversationsForEmployer($employer->id) : [];
         } else {
-            $conversations = $this->conversationModel->getConversationsForSeeker($user->id);
+            $seekerId = $this->getSeekerId($user->id);
+            $conversations = $seekerId ? $this->conversationModel->getConversationsForSeeker($seekerId) : [];
         }
 
         return view('messages/inbox', [
@@ -104,8 +131,14 @@ class MessageController extends BaseController
                 ->get()
                 ->getRow();
 
-            if (!$hasUnlocked) {
-                return $this->fail('You must unlock this candidate\'s contact details first');
+            $hasApplied = $db->table('job_applications')
+                ->join('jobs', 'jobs.id = job_applications.job_id')
+                ->where('jobs.employer_id', $employer->id)
+                ->where('job_applications.job_seeker_id', $recipientId)
+                ->countAllResults() > 0;
+
+            if (!$hasUnlocked && !$hasApplied) {
+                return $this->fail('You can only message candidates who applied to your jobs or whose profile you unlocked', 403);
             }
 
             $seekerId = $recipientId;
@@ -121,10 +154,14 @@ class MessageController extends BaseController
             $employerId = $recipientId;
         }
 
-        $conversation = $this->conversationModel
-            ->where('employer_id', $employerId)
-            ->where('job_seeker_id', $seekerId)
-            ->first();
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            $conversation = $this->conversationModel
+                ->where('employer_id', $employerId)
+                ->where('job_seeker_id', $seekerId)
+                ->first();
 
         if (!$conversation) {
             $conversationId = $this->conversationModel->insert([
@@ -143,14 +180,32 @@ class MessageController extends BaseController
             ]);
         }
 
-        $senderType = $user->user_type === 'employer' ? 'employer' : 'job_seeker';
-        $messageId = $this->messageModel->insert([
-            'conversation_id' => $conversationId,
-            'sender_id' => $user->id,
-            'sender_type' => $senderType,
-            'message' => $message,
-            'is_read' => 0,
-        ]);
+            if (!$conversationId) {
+                throw new \RuntimeException('Unable to create the conversation');
+            }
+
+            $senderType = $user->user_type === 'employer' ? 'employer' : 'job_seeker';
+            $messageId = $this->messageModel->insert([
+                'conversation_id' => $conversationId,
+                'sender_id' => $user->id,
+                'sender_type' => $senderType,
+                'message' => $message,
+                'is_read' => 0,
+            ]);
+
+            if (!$messageId) {
+                throw new \RuntimeException('Unable to save the message');
+            }
+
+            $db->transComplete();
+            if (!$db->transStatus()) {
+                throw new \RuntimeException('The message transaction failed');
+            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Message send failed: ' . $e->getMessage());
+            return $this->fail('Your message could not be sent. Your text has been kept; please try again.', 500);
+        }
 
         return $this->respond([
             'success' => true,
@@ -178,6 +233,29 @@ class MessageController extends BaseController
         $employer = $employerModel->where('user_id', $user->id)->first();
         if (!$employer) {
             return $this->fail('Employer profile not found');
+        }
+
+        $seeker = model(\App\Models\JobSeekerModel::class)->find($seekerId);
+        if (!$seeker) {
+            return $this->fail('Candidate not found');
+        }
+
+        // If candidate profile visibility is OFF, verify authorization (applied or unlocked)
+        if (empty($seeker->is_visible)) {
+            $db = db_connect();
+            $isUnlocked = $db->table('candidate_unlocks')
+                ->where('employer_id', $employer->id)
+                ->where('job_seeker_id', $seekerId)
+                ->countAllResults() > 0;
+            $hasApplied = $db->table('job_applications')
+                ->join('jobs', 'jobs.id = job_applications.job_id')
+                ->where('jobs.employer_id', $employer->id)
+                ->where('job_applications.job_seeker_id', $seekerId)
+                ->countAllResults() > 0;
+
+            if (!$isUnlocked && !$hasApplied) {
+                return $this->fail('This candidate profile is private and cannot be contacted directly.');
+            }
         }
 
         $conversation = $this->conversationModel

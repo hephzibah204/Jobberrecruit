@@ -54,6 +54,14 @@ public $views = [
 ];
 ```
 
+### Bot Detection
+
+The `ActionController::verify()` method includes built-in protection against web crawlers and bots. When a bot (such as Googlebot, Bingbot, etc.) attempts to access verification links, the system will return a 404 error instead of processing the request.
+
+This security feature prevents bots from accidentally or intentionally consuming verification tokens or codes by following links in emails during their crawling activities.
+
+CodeIgniter automatically handles bot detection through its User Agent library. It checks the User-Agent string against the `UserAgents::robots` config defined in **app/Config/UserAgents.php** to identify known web crawlers.
+
 ## Defining New Actions
 
 While the provided email-based activation and 2FA will work for many sites, others will have different
@@ -79,3 +87,103 @@ database and either sends them back to the previous form to try again or redirec
 page that a `login` task would have redirected them to anyway.
 
 All methods should return either a `Response` or a view string (e.g. using the `view()` function).
+
+## Conditional Actions
+
+Some applications only need an action for certain users. For example, you may
+want email-based 2FA for administrators, but not for every user.
+
+To make an action conditional, implement `ConditionalActionInterface`:
+
+```php
+<?php
+
+namespace App\Authentication\Actions;
+
+use CodeIgniter\Shield\Authentication\Actions\ConditionalActionInterface;
+use CodeIgniter\Shield\Authentication\Actions\Email2FA;
+use CodeIgniter\Shield\Entities\User;
+
+final class AdminEmail2FA extends Email2FA implements ConditionalActionInterface
+{
+    public function appliesTo(User $user): bool
+    {
+        return $user->inGroup('admin', 'superadmin');
+    }
+}
+```
+
+Then register your conditional action in **app/Config/Auth.php**:
+
+```php
+public array $actions = [
+    'register' => null,
+    'login'    => \App\Authentication\Actions\AdminEmail2FA::class,
+];
+```
+
+When `appliesTo()` returns `true`, Shield starts the action as usual and
+discovers any stored identity for that action. When it returns `false`, Shield
+does not start the action and ignores stored identities for that action while
+the condition remains false. The exception is activation: if a user is already
+inactive and has a stored activation identity, Shield continues to require that
+activation before login can complete.
+
+The `appliesTo()` method may be called more than once while Shield checks for
+actions, so keep it deterministic, free of side effects, and fail closed when
+the condition cannot be determined. It is not a replacement for authorization.
+
+Once an action is already pending in the session, Shield continues that pending
+action instead of rechecking the condition.
+
+## Gateway Actions
+
+Shield allows one configured action for each authentication event, such as
+`login` or `register`. If your application needs to choose between multiple
+ways to complete that action, register one custom action as a gateway.
+Use this when users may have different verification methods enabled, but Shield
+should still treat them as one login action.
+
+A gateway action is a normal custom action. It can also be conditional, so it
+only runs for users who have at least one supported method available. For
+example, a login action can check whether the user has any two-factor methods
+enabled:
+
+```php
+public function appliesTo(User $user): bool
+{
+    return $user->getIdentity('mfa_email') !== null
+        || $user->getIdentity('mfa_sms') !== null;
+}
+```
+
+Then register the gateway action as the login action:
+
+```php
+public array $actions = [
+    'register' => null,
+    'login'    => \App\Authentication\Actions\TwoFactorGateway::class,
+];
+```
+
+The gateway action owns the choice between methods:
+
+1. `show()` displays the available methods for the pending user.
+2. `handle()` validates the selected method, sends the challenge, and remembers
+   the selected method.
+3. `verify()` verifies the challenge and completes the action.
+
+Use one action identity type for the gateway, returned by `getType()`. For
+example, the gateway might return `mfa_gateway`. Do not create separate action
+identities for each method, such as `email_2fa` and `sms_2fa`, because Shield
+discovers the pending action through the configured action's type.
+
+Keep the action identity's `extra` value as the pending action message. If the
+gateway needs to remember internal state, such as the selected method, store it
+somewhere else, like `secret2` or an application-owned table. If the stored
+value is sensitive, prefer application-owned protected storage.
+
+This pattern is useful for application-owned flows, especially when the choices
+are code-delivery methods such as email or SMS. It does not make Shield provide
+built-in MFA. Your application is still responsible for enrollment, delivery,
+recovery, and method-specific security rules.

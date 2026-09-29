@@ -15,8 +15,8 @@ class QueuedEmail extends Email
             return parent::send($autoClear);
         }
 
-        // If queueing is enabled, serialize the mail and push it to the queue
-        $useQueue = env('email_use_queue', env('email.use_queue', 'true'));
+        // Default to immediate sending so automatic emails are delivered via Mailtrap in real time without depending on external cron.
+        $useQueue = env('email_use_queue', env('email.use_queue', false));
         if ($useQueue === 'true' || $useQueue === true) {
             $queueModel = new \App\Models\JobQueueModel();
 
@@ -25,6 +25,9 @@ class QueuedEmail extends Email
 
             $payload = [
                 'to'          => $to,
+                'from_email'  => $this->fromEmail ?? null,
+                'from_name'   => $this->fromName ?? null,
+                'reply_to'    => $this->replyTo ?? null,
                 'subject'     => $this->subject,
                 'message'     => $this->body,
                 'alt_message' => $this->altMessage,
@@ -42,7 +45,35 @@ class QueuedEmail extends Email
             return true;
         }
 
-        // Fall back to synchronous sending
-        return parent::send($autoClear);
+        // Direct real-time sending via SMTP with automatic Mailtrap API failover
+        $sent = parent::send($autoClear);
+
+        if (!$sent) {
+            // SMTP failed or was blocked by host firewall; immediately failover to Mailtrap REST API (HTTPS port 443)
+            log_message('warning', 'QueuedEmail: Standard SMTP delivery failed, failing over to Mailtrap REST API.');
+            try {
+                $mailtrap = new \App\Services\MailtrapService();
+                $sent = $mailtrap->send(
+                    $this->recipients,
+                    $this->subject,
+                    $this->body,
+                    $this->altMessage,
+                    [
+                        'from_email' => $this->fromEmail,
+                        'from_name'  => $this->fromName,
+                        'reply_to'   => $this->replyTo,
+                        'headers'    => $this->headers,
+                    ]
+                );
+
+                if ($sent && $autoClear) {
+                    $this->clear();
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'QueuedEmail Mailtrap API failover exception: ' . $e->getMessage());
+            }
+        }
+
+        return $sent;
     }
 }

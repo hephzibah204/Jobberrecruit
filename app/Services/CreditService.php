@@ -46,6 +46,10 @@ class CreditService
      */
     public function hasUnlimitedAccess(int $userId): bool
     {
+        if (is_site_free_mode()) {
+            return true;
+        }
+
         $employer = $this->employerModel->where('user_id', $userId)->first();
 
         if (!$employer) {
@@ -54,9 +58,16 @@ class CreditService
 
         // Check if employer has unlimited access and it hasn't expired
         if ($employer->unlimited_access == 1) {
-            if (empty($employer->unlimited_until) || strtotime($employer->unlimited_until) > time()) {
+            if (empty($employer->unlimited_until) || strpos($employer->unlimited_until, '0000') !== false || strtotime($employer->unlimited_until) > time()) {
                 return true;
             }
+        }
+
+        // A paid unlimited subscription is an entitlement in its own right.
+        // Do not require the separate admin-only employer flag to be synchronized.
+        $activePlan = $this->getCurrentPlan($userId);
+        if ($activePlan && $this->planProvidesUnlimitedPosting($activePlan)) {
+            return true;
         }
 
         // Check if parent employer has unlimited access
@@ -67,14 +78,52 @@ class CreditService
                     return true;
                 }
             }
+
+            if ($parentEmployer && !empty($parentEmployer->user_id)) {
+                $parentPlan = $this->getCurrentPlan((int) $parentEmployer->user_id);
+                if ($parentPlan && $this->planProvidesUnlimitedPosting($parentPlan)) {
+                    return true;
+                }
+            }
         }
 
         return false;
     }
 
     /**
-     * Get current subscription plan for user
+     * Determine whether a plan grants unlimited employer job postings.
+     * Supports the explicit feature key going forward and legacy plan naming.
      */
+    public function planProvidesUnlimitedPosting($plan): bool
+    {
+        $value = static function (string $field) use ($plan) {
+            return is_array($plan) ? ($plan[$field] ?? null) : ($plan->{$field} ?? null);
+        };
+
+        $planType = strtolower(trim((string) $value('plan_type')));
+        if ($planType === 'candidate') {
+            return false;
+        }
+
+        $features = $value('features') ?? [];
+        if (is_string($features)) {
+            $features = json_decode($features, true) ?: [];
+        } elseif (is_object($features)) {
+            $features = (array) $features;
+        }
+
+        foreach (['unlimited_job_postings', 'unlimited_posting', 'unlimited_jobs', 'unlimited'] as $feature) {
+            if (!empty($features[$feature])) {
+                return true;
+            }
+        }
+
+        // Backward compatibility for plans already sold as "Unlimited" before
+        // the explicit feature was introduced.
+        $identity = strtolower(trim((string) $value('code') . ' ' . (string) $value('name')));
+        return str_contains($identity, 'unlimited');
+    }
+
     public function getCurrentPlan(int $userId): ?object
     {
         $subscription = $this->subscriptionModel
@@ -87,7 +136,13 @@ class CreditService
             return null;
         }
 
-        return $this->planModel->find($subscription->plan_id);
+        $planId = is_array($subscription) ? ($subscription['plan_id'] ?? null) : ($subscription->plan_id ?? null);
+        if (!$planId) {
+            return null;
+        }
+
+        $plan = $this->planModel->find($planId);
+        return $plan ? (object)$plan : null;
     }
 
     /**
@@ -95,11 +150,13 @@ class CreditService
      */
     public function getCurrentSubscription(int $userId): ?object
     {
-        return $this->subscriptionModel
+        $subscription = $this->subscriptionModel
             ->where('user_id', $userId)
             ->where('is_active', 1)
             ->where('ends_at >', date('Y-m-d H:i:s'))
             ->first();
+
+        return $subscription ? (object)$subscription : null;
     }
 
     /**
@@ -191,29 +248,35 @@ class CreditService
                 ];
             }
 
-            // Case 3: Has active subscription but NO credits left
+            // Case 3: Has active subscription but NO credits left (fallback to wallet)
             if ($subscription && $creditBalance < 1) {
                 return [
-                    'can'       => false,
-                    'reason'    => "You have an active {$plan->name} subscription but no monthly credits remaining. Your next allocation will be on " . date('M d, Y', strtotime($subscription->ends_at)) . ". Purchase a bundle for immediate credits.",
+                    'can'       => true,
+                    'reason'    => '',
                     'unlimited' => false,
                     'credits'   => $creditBalance,
-                    'source'    => 'subscription_no_credits'
+                    'source'    => 'wallet'
                 ];
             }
 
-            // Case 4: No subscription and no credits
+            // Case 4: No subscription and no credits (fallback to wallet)
             return [
-                'can'       => false,
-                'reason'    => 'You need either an active subscription or job credits to post a job. Subscribe now or purchase a bundle.',
+                'can'       => true,
+                'reason'    => '',
                 'unlimited' => false,
                 'credits'   => 0,
-                'source'    => 'none'
+                'source'    => 'wallet'
             ];
         }
 
         // For other actions that don't consume credits, just check feature availability
         $featureAvailable = $planFeatures[$action] ?? false;
+
+        // Custom bypass: If the action is unlock_candidate, they are paying ₦5,000 via their wallet.
+        // We should allow this action regardless of subscription plan features, as long as they pay.
+        if ($action === 'unlock_candidate') {
+            $featureAvailable = true;
+        }
 
         if ($featureAvailable) {
             return [
@@ -267,7 +330,7 @@ class CreditService
 
         try {
             // Get wallets with FOR UPDATE lock to prevent race conditions
-            $sql = "SELECT * FROM job_credit_wallet
+            $sql = "SELECT * FROM job_credit_wallets
                     WHERE user_id = ? AND credits > 0
                     AND (expires_at IS NULL OR expires_at > NOW())
                     ORDER BY expires_at ASC, created_at ASC

@@ -1,0 +1,17 @@
+{
+  "id": "019f48b4-7ca7-7117-aff9-11ee85dc12c0",
+  "name": "removed all orphane codes",
+  "description": "removed all orphane codes",
+  "status": "draft",
+  "worktree": {
+    "path": "/mnt/c/Users/hephz/Documents/CODEBASE/Jobberrecruit",
+    "branch": "main",
+    "commit": "97c6c9b2e0ff4e658505305405353d73ef15d557"
+  },
+  "scoping": {},
+  "phases": [],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-07-09T21:06:55.783Z",
+  "updatedAt": "2026-07-09T21:06:55.783Z"
+}

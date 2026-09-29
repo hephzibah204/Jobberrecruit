@@ -1,0 +1,3217 @@
+<?php $page_title = 'AI Resume Builder'; ?>
+<?= $this->extend('layouts/app') ?>
+
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
+<?= $this->include('candidate/resume/ai_replies_css') ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('content') ?>
+
+<!-- ═══════ MOCKUP LAYOUT: rb-bar + design-bar + rb-tabs + rb-split ═══════ -->
+<div class="rb-bar" role="toolbar" aria-label="Resume tools">
+  <a href="<?= site_url('candidate/resumes') ?>" class="ic-btn" id="back-list" title="Back to my resumes" style="text-decoration:none;" aria-label="Back to my resumes">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  </a>
+  <input type="text" class="rb-name-in" value="<?= esc($resume->title ?? 'Untitled Resume') ?>" id="resume-name-input" name="title" aria-label="Resume name">
+  <span class="autosave" id="autosave"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span id="autosave-t">Saved</span></span>
+  <span class="pagepill" id="pagepill" aria-live="polite"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> <b id="pagepill-n">1 page</b></span>
+  <div class="rb-bar-right">
+    <select id="template-select-top" class="select" aria-label="Template" onchange="selectTemplate(this.value)">
+      <option value="t-exec" <?= ($resume->template_id ?? '') === 't-exec' ? 'selected' : '' ?>>Executive</option>
+      <option value="t-pro" <?= ($resume->template_id ?? '') === 't-pro' ? 'selected' : '' ?>>Professional</option>
+      <option value="t-modern" <?= ($resume->template_id ?? '') === 't-modern' || empty($resume->template_id) ? 'selected' : '' ?>>Modern</option>
+      <option value="t-serif" <?= ($resume->template_id ?? '') === 't-serif' ? 'selected' : '' ?>>Elegant Serif</option>
+      <option value="t-tech" <?= ($resume->template_id ?? '') === 't-tech' ? 'selected' : '' ?>>Tech / Startup</option>
+      <option value="t-classic" <?= ($resume->template_id ?? '') === 't-classic' ? 'selected' : '' ?>>Classic</option>
+      <option value="t-minimal" <?= ($resume->template_id ?? '') === 't-minimal' ? 'selected' : '' ?>>Minimal</option>
+    </select>
+    <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>?format=docx" class="btn btn-outline btn-sm download-docx-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Word</a>
+    <button type="button" class="btn btn-outline btn-sm" id="btn-cover-top"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg> Cover Letter</button>
+    <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>" class="btn btn-accent btn-sm download-pdf-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF</a>
+  </div>
+</div>
+
+<div class="design-bar" aria-label="Design controls">
+  <span class="lbl">Accent</span>
+  <div class="swatches" role="group" aria-label="Accent colour">
+    <button class="sw active" data-acc="#0861A9" data-acc2="#ED9020" style="background:linear-gradient(135deg,#0861A9 50%,#ED9020 50%)" onclick="setAccentColor('#0861A9','#ED9020',this)" aria-label="JobberRecruit brand"></button>
+    <button class="sw" data-acc="#0861A9" style="background:#0861A9" onclick="setAccentColor('#0861A9','#0861A9',this)" aria-label="Brand blue"></button>
+    <button class="sw" data-acc="#0A2F57" style="background:#0A2F57" onclick="setAccentColor('#0A2F57','#0A2F57',this)" aria-label="Navy"></button>
+    <button class="sw" data-acc="#0e7a5f" style="background:#0e7a5f" onclick="setAccentColor('#0e7a5f','#0e7a5f',this)" aria-label="Teal"></button>
+    <button class="sw" data-acc="#7a1f3d" style="background:#7a1f3d" onclick="setAccentColor('#7a1f3d','#7a1f3d',this)" aria-label="Burgundy"></button>
+    <button class="sw" data-acc="#3c4657" style="background:#3c4657" onclick="setAccentColor('#3c4657','#3c4657',this)" aria-label="Graphite"></button>
+  </div>
+  <span class="lbl">Font</span>
+  <select id="font-select" class="select" aria-label="Font pairing" onchange="setFontFamily(this.value)">
+    <option value="" selected>Sora + Inter</option>
+    <option value="f-serif">Georgia serif</option>
+    <option value="f-clean">System clean</option>
+  </select>
+  <span class="lbl" title="Space between lines and sections">Spacing</span>
+  <div class="dens" role="group" aria-label="Line and section spacing">
+    <button type="button" id="spacing-roomy-btn" class="on" data-dense="0" title="More breathing room" onclick="setSpacingMode('roomy', this)">Roomy</button>
+    <button type="button" id="spacing-tight-btn" data-dense="1" title="Tighter lines and sections" onclick="setSpacingMode('tight', this)">Tight</button>
+  </div>
+  <span class="wm-note" title="Every resume carries the JobberRecruit mark as proof it was professionally built on the platform"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Verified by JobberRecruit</span>
+</div>
+
+<div class="rb-tabs" role="tablist">
+  <button type="button" class="rb-tab on" data-tab="edit" onclick="switchMobileTab('edit',this)" role="tab" aria-selected="true">Edit</button>
+  <button type="button" class="rb-tab" data-tab="view" onclick="switchMobileTab('preview',this)" role="tab" aria-selected="false">Preview</button>
+</div>
+
+<div class="rb-split">
+  <div class="rb-editor-col" id="rb-editor-col">
+<?php if (!$resume): ?>
+<!-- =================== RESUME ONBOARDING GATEWAY MODAL =================== -->
+<style>
+    .onboarding-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        animation: fadeInOverlay 0.4s ease forwards;
+        overflow-y: auto;
+        padding: 4rem 1rem 2rem 1rem;
+    }
+    @keyframes fadeInOverlay {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    .onboarding-card-wrap {
+        width: 100%;
+        max-width: 800px;
+        background: linear-gradient(135deg, #0f0c29 0%, #1a1040 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    .onboarding-header {
+        text-align: center;
+        margin-bottom: 1.25rem;
+    }
+    .onboarding-header .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(13, 96, 158, 0.15);
+        border: 1px solid rgba(13, 96, 158, 0.4);
+        color: #a5b4fc;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+    }
+    .onboarding-header h2 {
+        font-size: clamp(1.4rem, 3.5vw, 1.85rem);
+        font-weight: 800;
+        color: #f8fafc;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+    }
+    .onboarding-header h2 span {
+        background: linear-gradient(90deg, #818cf8, #c084fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .onboarding-header p {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    .ob-options-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    .ob-option-card {
+        background: rgba(255,255,255,0.04);
+        border: 1.5px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 1.25rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+        text-decoration: none;
+        display: block;
+        backdrop-filter: blur(10px);
+    }
+    .ob-option-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--ob-glow);
+        opacity: 0;
+        transition: opacity 0.3s;
+        border-radius: 12px;
+    }
+    .ob-option-card:hover::before { opacity: 1; }
+    .ob-option-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        border-color: var(--ob-border);
+        box-shadow: 0 15px 40px var(--ob-shadow);
+    }
+    .ob-option-card.ob-scratch {
+        --ob-glow: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.06) 100%);
+        --ob-border: rgba(99,102,241,0.5);
+        --ob-shadow: rgba(99,102,241,0.25);
+    }
+    .ob-option-card.ob-profile {
+        --ob-glow: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(6,182,212,0.06) 100%);
+        --ob-border: rgba(16,185,129,0.5);
+        --ob-shadow: rgba(16,185,129,0.25);
+    }
+    .ob-option-card.ob-clone {
+        --ob-glow: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(239,68,68,0.06) 100%);
+        --ob-border: rgba(245,158,11,0.5);
+        --ob-shadow: rgba(245,158,11,0.25);
+    }
+    .ob-icon-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.75rem;
+        font-size: 1.4rem;
+    }
+    .ob-scratch .ob-icon-wrap { background: linear-gradient(135deg, #0d609e, #8b5cf6); }
+    .ob-profile .ob-icon-wrap { background: linear-gradient(135deg, #10b981, #06b6d4); }
+    .ob-clone   .ob-icon-wrap { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+    .ob-icon-wrap i { color: white; }
+    .ob-option-card h4 {
+        color: #f1f5f9;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+    .ob-option-card p {
+        color: #94a3b8;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+    .ob-badge {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        border-radius: 50px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+    .ob-scratch .ob-badge { background: rgba(99,102,241,0.2); color: #818cf8; }
+    .ob-profile .ob-badge { background: rgba(16,185,129,0.2); color: #34d399; }
+    .ob-clone   .ob-badge { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .ob-arrow {
+        margin-top: 0.75rem;
+        display: flex;
+        align-items: center;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 600;
+        transition: color 0.2s, gap 0.2s;
+        gap: 6px;
+    }
+    .ob-option-card:hover .ob-arrow { color: #a5b4fc; gap: 10px; }
+    .ob-clone .ob-option-card:hover .ob-arrow { color: #fbbf24; }
+    /* Clone picker panel */
+    #ob-clone-panel {
+        display: none;
+        margin-top: 2rem;
+        background: rgba(255,255,255,0.04);
+        border: 1.5px solid rgba(245,158,11,0.25);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(8px);
+        animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+        from { opacity:0; transform:translateY(-10px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+    #ob-clone-panel h6 {
+        color: #fbbf24;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .clone-resume-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+        margin-bottom: 0.75rem;
+        transition: all 0.2s;
+    }
+    .clone-resume-item:hover {
+        background: rgba(245,158,11,0.08);
+        border-color: rgba(245,158,11,0.3);
+    }
+    .clone-resume-item .resume-name {
+        color: #f1f5f9;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .clone-resume-item .resume-date {
+        color: #64748b;
+        font-size: 0.78rem;
+        margin-top: 2px;
+    }
+    .clone-resume-item .btn-clone-pick {
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        color: white;
+        border: none;
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .clone-resume-item .btn-clone-pick:hover {
+        opacity: 0.85;
+        transform: scale(1.04);
+        color: white;
+    }
+    .ob-no-resumes {
+        text-align: center;
+        color: #64748b;
+        padding: 1.5rem;
+        font-size: 0.9rem;
+    }
+    /* Profile CV card — disabled state when no file uploaded */
+    .ob-option-card.ob-profile-disabled {
+        opacity: 0.65;
+        cursor: default;
+    }
+    .ob-option-card.ob-profile-disabled:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    .ob-profile-no-cv {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: #ef4444;
+        font-weight: 600;
+        background: rgba(239,68,68,0.1);
+        padding: 5px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(239,68,68,0.25);
+    }
+    .ob-profile-has-cv {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: #34d399;
+        font-weight: 600;
+        background: rgba(52,211,153,0.08);
+        padding: 5px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(52,211,153,0.2);
+    }
+    .ob-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #475569;
+        font-size: 0.85rem;
+        text-decoration: none;
+        margin-top: 1.25rem;
+        transition: color 0.2s;
+    }
+    .ob-back-link:hover { color: #94a3b8; }
+</style>
+
+<div class="onboarding-overlay" id="resumeOnboardingOverlay">
+    <div class="onboarding-card-wrap">
+        <!-- Header -->
+        <div class="onboarding-header">
+            <div class="badge-pill">
+                <i class="ti ti-sparkles"></i>
+                AI Resume Builder
+            </div>
+            <h2>How would you like to <span>get started?</span></h2>
+            <p>Choose the best starting point for your new professional resume.</p>
+        </div>
+
+        <!-- Option Cards -->
+        <div class="ob-options-grid">
+
+            <!-- Card 1: Start from Scratch -->
+            <div class="ob-option-card ob-scratch" id="ob-scratch-card" onclick="startFromScratch()">
+                <span class="ob-badge">Quick Start</span>
+                <div class="ob-icon-wrap">
+                    <i class="ti ti-file-plus"></i>
+                </div>
+                <h4>Start from Scratch</h4>
+                <p>Build a completely new resume with a clean slate. Ideal if you want full creative control from the ground up.</p>
+                <div class="ob-arrow">
+                    Get started <i class="ti ti-arrow-right"></i>
+                </div>
+            </div>
+
+            <!-- Card 2: Import from Profile / Uploaded CV -->
+            <?php $hasUploadedCv = !empty($candidate?->resume); ?>
+            <div class="ob-option-card ob-profile <?= !$hasUploadedCv ? 'ob-profile-disabled' : '' ?>"
+                 id="ob-profile-card"
+                 <?php if ($hasUploadedCv): ?>onclick="importFromProfile()"<?php endif; ?>>
+                <span class="ob-badge">Recommended</span>
+                <div class="ob-icon-wrap">
+                    <i class="ti ti-cloud-upload"></i>
+                </div>
+                <h4>Use Uploaded CV</h4>
+                <p>Pre-fill your resume automatically using your profile information — skills, job title, education, and bio.</p>
+                <?php if ($hasUploadedCv): ?>
+                    <div class="ob-profile-has-cv">
+                        <i class="ti ti-circle-check"></i> CV on file — ready to import
+                    </div>
+                <?php else: ?>
+                    <div class="ob-profile-no-cv">
+                        <i class="ti ti-alert-circle"></i> No CV uploaded yet —
+                        <a href="<?= site_url('candidate/profile/edit') ?>" style="color:#f87171; font-weight:700;">Upload in Profile</a>
+                    </div>
+                <?php endif; ?>
+                <div class="ob-arrow">
+                    <?= $hasUploadedCv ? 'Import & Continue' : 'Upload first' ?> <i class="ti ti-arrow-right"></i>
+                </div>
+            </div>
+
+            <!-- Card 3: Clone Existing Resume -->
+            <div class="ob-option-card ob-clone" id="ob-clone-card" onclick="toggleClonePanel()">
+                <span class="ob-badge">Fast Copy</span>
+                <div class="ob-icon-wrap">
+                    <i class="ti ti-copy"></i>
+                </div>
+                <h4>Clone Existing Resume</h4>
+                <p>Duplicate one of your saved resumes and tailor it for a new opportunity without starting over.</p>
+                <div class="ob-arrow">
+                    Choose a resume <i class="ti ti-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clone Picker Panel (hidden by default) -->
+        <div id="ob-clone-panel">
+            <h6><i class="ti ti-copy"></i> Select a resume to clone</h6>
+            <?php if (!empty($allResumes)): ?>
+                <?php foreach ($allResumes as $r): ?>
+                    <div class="clone-resume-item">
+                        <div>
+                            <div class="resume-name"><?= esc($r->title) ?></div>
+                            <div class="resume-date">Last updated: <?= date('M d, Y', strtotime($r->updated_at)) ?></div>
+                        </div>
+                        <a href="<?= site_url('candidate/resumes/clone/' . $r->id) ?>" class="btn-clone-pick">
+                            <i class="ti ti-copy me-1"></i>Clone This
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="ob-no-resumes">
+                    <i class="ti ti-file-off" style="font-size:2rem; display:block; margin-bottom:0.5rem; color:#475569;"></i>
+                    You don't have any saved resumes to clone yet.
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Back link -->
+        <div class="text-center">
+            <a href="<?= site_url('candidate/resumes') ?>" class="ob-back-link">
+                <i class="ti ti-arrow-left"></i> Back to My Resumes
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for importing from profile (POST) -->
+<form id="import-profile-form" method="POST" action="<?= site_url('candidate/resumes/import-profile') ?>" style="display:none;">
+    <?= csrf_field() ?>
+</form>
+
+<script>
+    function startFromScratch() {
+        // Close the overlay and let the builder load normally
+        document.getElementById('resumeOnboardingOverlay').style.animation = 'fadeOutOverlay 0.3s ease forwards';
+        setTimeout(() => {
+            document.getElementById('resumeOnboardingOverlay').remove();
+        }, 300);
+    }
+
+    function importFromProfile() {
+        const card = document.getElementById('ob-profile-card');
+        card.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner" role="status"></div><p style="color:#94a3b8;margin-top:1rem;font-size:0.9rem;">Creating your resume from profile...</p></div>';
+        document.getElementById('import-profile-form').submit();
+    }
+
+    function toggleClonePanel() {
+        const panel = document.getElementById('ob-clone-panel');
+        const isVisible = panel.style.display === 'block';
+        panel.style.display = isVisible ? 'none' : 'block';
+        document.getElementById('ob-clone-card').style.borderColor = isVisible ? '' : 'rgba(245,158,11,0.5)';
+    }
+
+    // Add fade-out keyframe dynamically
+    const style = document.createElement('style');
+    style.textContent = '@keyframes fadeOutOverlay { from { opacity:1; } to { opacity:0; } }';
+    document.head.appendChild(style);
+</script>
+<!-- =================== END ONBOARDING MODAL =================== -->
+
+<?php endif; ?>
+
+<div class="content">
+        <div class="page-header">
+        <div class="page-title">
+            <h4 class="fw-bold">AI Resume Builder</h4>
+            <h6>Design your professional resume with AI assistance</h6>
+        </div>
+        <div class="page-btn">
+            <!-- Save button moved to bottom of builder for better flow -->
+            <button type="button" id="undo-ai-apply" class="btn btn-outline-secondary me-2" title="Undo last AI apply">
+                <i class="ti ti-rotate-ccw"></i> Undo AI
+            </button>
+        </div>
+    </div>
+
+            <!-- ATS Score panel -->
+            <div class="score-card shadow-sm mb-3" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
+                <div class="score-top d-flex align-items-center gap-3">
+                    <div class="gauge position-relative" id="gauge-wrap" aria-label="ATS score 0 out of 100" style="width: 74px; height: 74px;">
+                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
+                            <circle class="p" id="gauge-p" cx="37" cy="37" r="33" style="fill: none; stroke: rgb(220, 38, 38); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;"></circle>
+                        </svg>
+                        <b id="ats-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0</b>
+                    </div>
+                    <div class="score-info">
+                        <b style="font-family: 'Sora', sans-serif; font-size: 1.05rem; color: #0a192f; display: block;">Resume Intelligence</b>
+                        <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">ATS readiness plus recruiter-grade writing checks — all recalculated as you type.</p>
+                    </div>
+                </div>
+                
+                <!-- 6 Metric Gauges Grid -->
+                <div class="met-grid" id="met-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px; margin-top: 18px; border-top: 1px solid #edf2f7; padding-top: 15px;">
+                    <!-- Dynamically populated from JS -->
+                </div>
+                
+                <!-- Writing review issues header -->
+                <div class="mt-4 pt-3 border-top">
+                    <b style="font-family: 'Sora', sans-serif; font-size: 0.9rem; color: #0a192f; display: block; margin-bottom: 8px;">Detailed Audit & Checklist</b>
+                    <ul class="score-list" id="ats-list" style="list-style: none; padding-left: 0; margin-bottom: 0;">
+                        <!-- Dynamic Checklist items go here -->
+                    </ul>
+                </div>
+            </div>
+
+            <form id="resume-form" onsubmit="return false;" class="pb-3 mb-3">
+                <input type="hidden" name="id" value="<?= $resume->id ?? '' ?>">
+                <?= csrf_field() ?>
+                
+                <!-- import existing CV -->
+                <div class="ed-sec open" id="sec-import">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><i class="ti ti-download text-primary"></i> Import Existing CV <span class="badge bg-primary text-white rounded-pill ms-2" style="font-size:0.6rem;">New</span></span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                        <div class="card custom-card">
+                            <div class="card-body">
+                                <p class="text-muted mb-3" style="font-size:0.85rem;">Already have a CV? Import it — we keep your original safe so you can always come back to it, and use it to fill this resume's sections.</p>
+                                <label class="border rounded p-4 text-center d-block cursor-pointer mb-3" for="cv-file" style="border-style: dashed !important; background: #f8f9fa;">
+                                    <i class="ti ti-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <h6 class="mb-1">Tap to upload your CV</h6>
+                                    <p class="text-muted small mb-0">.pdf, .doc, .docx or .txt — your original stays untouched</p>
+                                    <input type="file" id="cv-file" class="d-none" accept=".txt,.pdf,.doc,.docx" aria-label="Upload existing CV">
+                                </label>
+                                <div id="import-note" class="d-none"></div>
+                                <div id="import-orig" class="d-none mt-3">
+                                    <label class="form-label fw-semibold text-dark">Your original CV — preserved, never modified</label>
+                                    <textarea class="form-control mb-3" id="orig-txt" rows="6" readonly></textarea>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-primary" id="orig-fill"><i class="ti ti-bolt"></i> Fill sections from this CV</button>
+                                        <button type="button" class="btn btn-sm btn-light border" id="orig-copy"><i class="ti ti-copy"></i> Copy Original</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step: Basic Information -->
+                <div class="ed-sec" id="sec-info" data-step="info">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Personal Information <span class="ed-tag">Required</span></span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Basic Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold text-dark">Resume Title <span class="text-danger">*</span></label>
+                                    <input type="text" name="title" class="form-control" value="<?= esc($resume->title ?? 'My Professional Resume') ?>" placeholder="e.g. Senior Software Engineer Resume">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold text-dark">Full Name</label>
+                                    <input type="text" name="full_name" class="form-control" value="<?= esc($resume->full_name ?? $candidate->full_name ?? auth()->user()->username ?? '') ?>" placeholder="Your Full Name">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold text-dark">Email Address</label>
+                                    <input type="email" name="email" class="form-control" value="<?= esc($resume->email ?? auth()->user()->email ?? '') ?>" placeholder="Your Email Address">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold text-dark">Phone Number</label>
+                                    <input type="text" name="phone" class="form-control" value="<?= esc($resume->phone ?? $candidate->phone ?? '') ?>" placeholder="e.g. +1 234 567 890">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold text-dark">Location</label>
+                                    <input type="text" name="location" class="form-control" value="<?= esc($resume->location ?? $candidate->location ?? '') ?>" placeholder="e.g. New York, USA">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-semibold text-dark">LinkedIn Profile URL</label>
+                                    <input type="text" name="linkedin" class="form-control" value="<?= esc($linkedin ?? '') ?>" placeholder="e.g. https://linkedin.com/in/yourprofile">
+                                </div>
+                            </div>
+                            <div class="mt-4 d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary next-step" data-step-target="experience">Next: Experience <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec info -->
+
+                <!-- NOTE: Professional Summary is intentionally shown after Experience/Education/Skills in the input flow
+                     so AI generation can use the entered data. The summary will still appear at the top in exported resumes. -->
+
+                <!-- Step: Experience -->
+                <div class="ed-sec" id="sec-experience" data-step="experience">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Work Experience</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                    <div class="card custom-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Work Experience</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary add-experience">
+                                <i class="ti ti-plus"></i> Add Experience
+                            </button>
+                        </div>
+                        <div class="card-body" id="experience-container">
+                            <!-- Loop through and render existing experiences -->
+                            <?php if (empty($experiences)): ?>
+                                <div class="text-center py-4 text-muted no-items">
+                                    <p>No experience added yet. Click "Add Experience" to start.</p>
+                                </div>
+                            <?php else: ?>
+                                <?php foreach ($experiences as $index => $exp): ?>
+                                    <div class="experience-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd;">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Company Name</label>
+                                                <input type="text" name="exp_company[]" class="form-control form-control-sm" placeholder="Company Name" value="<?= esc($exp->company ?? '') ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Job Position</label>
+                                                <input type="text" name="exp_position[]" class="form-control form-control-sm" placeholder="Job Position" value="<?= esc($exp->position ?? '') ?>">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Start Date</label>
+                                                <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="<?= esc($exp->start_date ?? '') ?>">
+                                            </div>
+                                            <div class="col-md-4 mb-3 exp-end-date-col" style="<?= !empty($exp->is_current) ? 'display: none;' : '' ?>">
+                                                <label class="form-label small fw-semibold text-muted">End Date</label>
+                                                <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="<?= esc($exp->end_date ?? '') ?>">
+                                            </div>
+                                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="<?= $index ?>" <?= !empty($exp->is_current) ? 'checked' : '' ?>>
+                                                    <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-2">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <label class="small fw-semibold text-muted">Description & Achievements</label>
+                                                    <div>
+                                                        <button type="button" class="ai-assist-btn improve-desc-ai">
+                                                            <i class="ti ti-wand"></i> Improve with AI
+                                                        </button>
+                                                        <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
+                                                            <i class="ti ti-list"></i> Generate Bullets
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements..."><?= esc($exp->description ?? '') ?></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="info"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="education">Next: Education <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec experience -->
+
+                <!-- Step: Education -->
+                <div class="ed-sec" id="sec-education" data-step="education">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Education</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                    <div class="card custom-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Education</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary add-education">
+                                <i class="ti ti-plus"></i> Add Education
+                            </button>
+                        </div>
+                        <div class="card-body" id="education-container">
+                            <!-- Loop through and render existing education -->
+                            <?php if (empty($education)): ?>
+                                <div class="text-center py-4 text-muted no-items">
+                                    <p>No education added yet. Click "Add Education" to start.</p>
+                                </div>
+                            <?php else: ?>
+                                <?php foreach ($education as $edu): ?>
+                                    <div class="education-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd;">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">School / University</label>
+                                                <input type="text" name="edu_school[]" class="form-control form-control-sm" placeholder="School / University" value="<?= esc($edu->institution ?? '') ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Degree</label>
+                                                <select name="edu_degree[]" class="form-select form-select-sm">
+                                                    <option value="">Select Degree</option>
+                                                    <option value="High School" <?= ($edu->degree ?? '') === 'High School' ? 'selected' : '' ?>>High School</option>
+                                                    <option value="Associate" <?= ($edu->degree ?? '') === 'Associate' ? 'selected' : '' ?>>Associate Degree</option>
+                                                    <option value="Bachelor" <?= ($edu->degree ?? '') === 'Bachelor' ? 'selected' : '' ?>>Bachelor's Degree</option>
+                                                    <option value="Master" <?= ($edu->degree ?? '') === 'Master' ? 'selected' : '' ?>>Master's Degree</option>
+                                                    <option value="PhD" <?= ($edu->degree ?? '') === 'PhD' ? 'selected' : '' ?>>PhD / Doctorate</option>
+                                                    <option value="Certificate" <?= ($edu->degree ?? '') === 'Certificate' ? 'selected' : '' ?>>Certificate</option>
+                                                    <option value="Other" <?= ($edu->degree ?? '') === 'Other' ? 'selected' : '' ?>>Other</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Field of Study</label>
+                                                <input type="text" name="edu_field[]" class="form-control form-control-sm" placeholder="Field of Study" value="<?= esc($edu->field_of_study ?? '') ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Graduation Year</label>
+                                                <?php 
+                                                    $gradYear = !empty($edu->graduation_date) ? date('Y', strtotime($edu->graduation_date)) : '';
+                                                ?>
+                                                <input type="number" name="edu_year[]" class="form-control form-control-sm" placeholder="Graduation Year" min="1950" max="2030" value="<?= esc($gradYear) ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="experience"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="skills">Next: Skills <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec education -->
+
+                <!-- Step: Skills -->
+                <div class="ed-sec" id="sec-skills" data-step="skills">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 11-13h-8Z"/></svg> Skills</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Skills</h5>
+                    </div>
+                    <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark">Add Skills (Comma separated)</label>
+                                <?php 
+                                    $skillsList = [];
+                                    if (!empty($skills)) {
+                                        foreach ($skills as $skill) {
+                                            $skillsList[] = $skill->skill_name;
+                                        }
+                                    }
+                                    $skillsVal = implode(', ', $skillsList);
+                                ?>
+                                <input type="text" name="skills" class="form-control tags-input" value="<?= esc($skillsVal) ?>" placeholder="e.g. PHP, JavaScript, Project Management">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark">Certifications (One per line)</label>
+                                <textarea name="certs" class="form-control" rows="3" placeholder="e.g. Project Management Professional (PMP)&#10;ICAN Chartered Accountant"><?= esc($certs ?? '') ?></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark">Languages (Comma separated)</label>
+                                <input type="text" name="languages" class="form-control" value="<?= esc($languages ?? '') ?>" placeholder="e.g. English, French, Spanish">
+                            </div>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="education"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="summary">Next: Summary <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec skills -->
+
+                <!-- Step: Summary (moved after Skills so AI can use experience/education/skills) -->
+                <div class="ed-sec" id="sec-summary" data-step="summary">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg> Professional Summary</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                    <div class="card custom-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Professional Summary</h5>
+                            <button type="button" class="ai-assist-btn" id="generate-summary-ai">
+                                <i class="ti ti-sparkles"></i> Generate with AI
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <textarea name="summary" id="resume-summary" class="form-control" rows="6" placeholder="A brief overview of your professional background and key achievements..."><?= esc($resume->summary ?? '') ?></textarea>
+                            <div class="mt-4 d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary prev-step" data-step-target="skills"><i class="ti ti-arrow-left me-1"></i> Previous</button>
+                                <button type="button" class="btn btn-primary next-step" data-step-target="templates">Next: Templates <i class="ti ti-arrow-right ms-1"></i></button>
+                            </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec summary -->
+
+                <!-- Step: Tailor to a Job -->
+                <div class="ed-sec" id="sec-jd-match" data-step="jd-match">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg> Tailor to Job</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                    <div class="card custom-card">
+                        <div class="card-header d-flex align-items-center gap-2">
+                            <i class="ti ti-target text-primary"></i>
+                            <h5 class="card-title mb-0">Tailor to a Job</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3" style="font-size: 0.85rem;">Paste a job description and we'll score your resume's keyword match, then surface missing skills you can add with one click.</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark" for="job-pick">Pick a JobberRecruit listing</label>
+                                <select class="form-select" id="job-pick" aria-label="Tailor to a listed job">
+                                    <option value="">— Choose a live job on JobberRecruit —</option>
+                                    <?php foreach ($tailorJobs ?? [] as $tj): ?>
+                                        <option value="<?= $tj->id ?>" data-desc="<?= esc($tj->description ?? '') ?>"><?= esc($tj->title) ?><?= !empty($tj->company_name) ? ' — ' . esc($tj->company_name) : '' ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark" for="jd">Or paste any job description</label>
+                                <textarea class="form-control" id="jd" rows="5" placeholder="Paste the job advert here and we'll score the match and surface missing keywords…" style="font-size: 0.85rem; resize: vertical;"></textarea>
+                            </div>
+                            
+                            <div id="match-wrap" class="d-none">
+                                <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-3" style="background: #f8fafd; border: 1px solid #e2e8f0;">
+                                    <div class="gauge position-relative flex-shrink-0" style="width: 64px; height: 64px;">
+                                        <svg viewBox="0 0 74 74" style="transform: rotate(-90deg); width: 100%; height: 100%;" aria-hidden="true">
+                                            <circle class="t" cx="37" cy="37" r="33" style="fill: none; stroke: #edf2f7; stroke-width: 8;"></circle>
+                                            <circle class="p" id="match-p" cx="37" cy="37" r="33" style="fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 207; stroke-dashoffset: 207; transition: stroke-dashoffset .4s ease;"></circle>
+                                        </svg>
+                                        <b id="match-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-weight: 700; color: #0a192f; font-family: 'Sora', sans-serif;">0%</b>
+                                    </div>
+                                    <div>
+                                        <b style="font-family: 'Sora', sans-serif; font-size: 0.95rem; color: #0a192f; display: block;">Job Match Score</b>
+                                        <p class="mb-0 text-muted" style="font-size: 0.78rem;">Keyword overlap between your resume and the job description.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2" style="font-size: .68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em;">
+                                    Missing Keywords — click to add to Skills
+                                </div>
+                                <div id="kw-chips" class="d-flex flex-wrap gap-2 mb-3"></div>
+                            </div>
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                    </div><!-- /ed-body -->
+                </div><!-- /ed-sec jd-match -->
+
+                <!-- writing review (auto) -->
+                <div class="ed-sec open" id="sec-review">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><i class="ti ti-eye text-primary"></i> Writing Review</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body"><div id="issues"></div></div>
+                </div>
+
+                <!-- recruiter view -->
+                <div class="ed-sec" id="sec-recruiter">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><i class="ti ti-users text-primary"></i> Recruiter View</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body" id="recruiter-body"></div>
+                </div>
+
+                <!-- more AI outputs -->
+                <div class="ed-sec" id="sec-outputs">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><i class="ti ti-wand text-primary"></i> More AI Outputs</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-out="headline">Professional Headline</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-out="pitch">Elevator Pitch</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-out="about">LinkedIn About</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-out="bio">Executive Bio</button>
+                        </div>
+                        <div id="out-wrap" class="d-none">
+                            <textarea class="form-control mb-2" id="out-txt" rows="6" aria-label="Generated output"></textarea>
+                            <button type="button" class="btn btn-sm btn-light border" id="out-copy"><i class="ti ti-copy"></i> Copy</button>
+                        </div>
+                        <p class="text-muted mt-2 mb-0" style="font-size:.75rem;">Generated from this resume's facts only — nothing is invented.</p>
+                    </div>
+                </div>
+
+                <!-- career tools -->
+                <div class="ed-sec" id="sec-career">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><i class="ti ti-award text-primary"></i> Career Tools</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                        <label class="form-label fw-semibold text-dark" for="industry-pick">Tailor tone to industry</label>
+                        <select class="form-select mb-3" id="industry-pick" aria-label="Target industry">
+                            <option value="">— Select Industry —</option>
+                            <option value="tech">Technology & Software</option>
+                            <option value="finance">Finance & Banking</option>
+                            <option value="health">Healthcare</option>
+                            <option value="engineering">Engineering</option>
+                        </select>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-career="interview">Interview Questions</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-career="salary">Salary Negotiation</button>
+                        </div>
+                        <div id="career-out" class="d-none"></div>
+                    </div>
+                </div>
+
+                <!-- version history -->
+                <div class="ed-sec" id="sec-history">
+                    <div class="ed-head" onclick="toggleEdSec(this)">
+                        <span class="ed-grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/></svg></span>
+                        <span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><i class="ti ti-clock text-primary"></i> Version History</span>
+                        <span class="ed-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </div>
+                    <div class="ed-body">
+                        <div id="hist-list">
+                            <p class="text-muted mb-0" style="font-size:.75rem;">Snapshots are captured automatically as you edit.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expert Review Upsell & Save Actions -->
+                <div class="mt-4 pt-3 border-top text-center">
+                    <div class="d-flex justify-content-center gap-2 align-items-center mb-3">
+                        <button type="button" id="save-resume-btn" class="btn btn-primary px-4 py-2 fw-semibold">
+                            <i class="ti ti-device-floppy me-1"></i> Save Resume
+                        </button>
+                        <button type="button" id="open-revisions-btn" class="btn btn-outline-secondary px-3 py-2" title="Revision History">
+                            <i class="ti ti-history me-1"></i> Revisions
+                        </button>
+                    </div>
+                </div>
+            </form><!-- /resume-form -->
+        </div><!-- /content -->
+    </div><!-- /rb-editor-col -->
+
+    <!-- Right Side: Live Document Preview Column -->
+    <div class="rb-preview-col" id="rb-preview-col">
+        <!-- Hidden tpl select sync for topbar select -->
+        <select id="tpl-select" style="display:none;">
+            <option value="t-exec">Executive</option>
+            <option value="t-pro">Professional</option>
+            <option value="t-modern">Modern</option>
+            <option value="t-serif">Elegant Serif</option>
+            <option value="t-tech">Tech / Startup</option>
+            <option value="t-classic">Classic</option>
+            <option value="t-minimal">Minimal</option>
+        </select>
+
+        <!-- Live Rendering Shell -->
+        <div class="pv-shell shadow-sm mb-3">
+            <article id="doc" class="doc t-modern guides wm-tile" aria-label="Resume preview">
+                <!-- Live Document Compiled Here -->
+            </article>
+        </div>
+        <div class="pv-hint" id="pv-hint">A4 Page-break guidance shown above. Adjust spacing to fit <b>1 Page</b>.</div>
+        <div class="fit-row mt-2" id="fit-row">
+            <span class="fit-dot ok" id="fit-dot"></span>
+            <span id="fit-txt" class="small text-muted fw-semibold">Fits cleanly on 1 page</span>
+        </div>
+    </div><!-- /rb-preview-col -->
+</div><!-- /rb-split -->
+
+<!-- Human Expert Review Banner -->
+<div class="review-up mt-4">
+  <span class="rz-ic" aria-hidden="true" style="width:42px;height:42px;border-radius:11px;background:var(--accent-light);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  </span>
+  <div class="grow" style="flex:1;min-width:180px;">
+    <b style="font-family:'Sora',sans-serif;font-size:.88rem;color:var(--brand-deep);">Want human eyes on it?</b>
+    <p style="font-size:.76rem;color:var(--muted);margin:2px 0 0;">Get a professional review from the JobberRecruit team before sending out applications.</p>
+  </div>
+  <button type="button" class="btn btn-outline-primary btn-sm" onclick="alert('Expert Review service is coming soon!');">Get Expert Review</button>
+</div>
+
+<!-- AI Modal Loader -->
+<div class="modal fade" id="aiLoaderModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-5 border-0 bg-transparent">
+            <div class="spinner mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <h4 class="text-white fw-bold">AI is generating content...</h4>
+            <p class="text-white-50">Preparing your personalized professional text.</p>
+        </div>
+    </div>
+</div>
+
+<!-- AI Preview Modal -->
+<div class="modal fade ai-preview-modal" id="aiPreviewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">AI Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body ai-preview-render" id="aiPreviewRender">
+        <!-- Rendered AI HTML will appear here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-outline-primary" id="aiCopyPlainBtn">Copy as Plain Text</button>
+        <button type="button" class="btn btn-outline-info" id="aiApplyActiveBtn">Apply to Active Field</button>
+        <button type="button" class="btn btn-primary" id="aiApplyBtn">Apply to Summary</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Resume Coach FAB Trigger -->
+<button type="button" class="ai-coach-fab" data-bs-toggle="offcanvas" data-bs-target="#aiResumeCoachDrawer" aria-controls="aiResumeCoachDrawer" id="open-ai-coach-btn">
+    <div class="pulse-ring"></div>
+    <i class="ti ti-sparkles"></i>
+</button>
+
+<!-- AI Resume Coach Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-end custom-coach-offcanvas" tabindex="-1" id="aiResumeCoachDrawer" aria-labelledby="aiResumeCoachDrawerLabel" data-bs-scroll="true" data-bs-backdrop="false">
+    <div class="offcanvas-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <div class="avatar avatar-md bg-primary-transparent me-2" style="width: 35px; height: 35px; background: rgba(13, 96, 158, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i class="ti ti-sparkles text-primary fs-18"></i>
+            </div>
+            <div>
+                <h5 class="offcanvas-title mb-0" id="aiResumeCoachDrawerLabel">ResumeAI Coach</h5>
+                <span class="badge bg-success bg-opacity-20 text-success fs-10 fw-bold">Active Coaching</span>
+            </div>
+        </div>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div class="coach-chat-container">
+        <!-- Messages Log -->
+        <div class="coach-messages-area" id="coach-chat-window">
+            <div id="coach-chat-messages" class="d-flex flex-column gap-3">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+        
+        <!-- Input Form Area -->
+        <div class="coach-input-area">
+            <form id="coach-chat-form" onsubmit="return false;">
+                <div class="coach-input-group">
+                    <input type="text" id="coach-chat-input" class="coach-input-field" placeholder="Type your message to ResumeAI..." autocomplete="off">
+                    <button class="coach-send-btn" type="submit" id="btn-coach-send" aria-label="Action">
+    <i class="ti ti-send"></i>
+</button>
+                </div>
+            </form>
+        </div><!-- /rb-preview-col -->
+    </div><!-- /rb-split -->
+</div><!-- /rb-layout -->
+
+<?= $this->include('candidate/resume/partials/revisions_modal') ?>
+
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+    // ═══ MOCKUP: Accordion toggle ═══
+    function toggleEdSec(head) {
+        var sec = head.closest('.ed-sec');
+        if (sec) {
+            sec.classList.toggle('open');
+        }
+    }
+
+    // ═══ MOCKUP: Mobile tab switcher ═══
+    function switchMobileTab(mode, el) {
+        document.querySelectorAll('.rb-tab').forEach(function(b) {
+            b.classList.remove('on', 'active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        if (el) {
+            el.classList.add('on', 'active');
+            el.setAttribute('aria-selected', 'true');
+        }
+        var split = document.getElementById('rb-split') || document.querySelector('.rb-split');
+        if (split) {
+            split.className = 'rb-split tab-' + (mode === 'edit' ? 'edit' : 'view');
+        }
+    }
+
+    // ═══ MOCKUP: Design-bar accent color ═══
+    function setAccentColor(acc, acc2, el) {
+        if (typeof acc2 === 'object' || acc2 instanceof HTMLElement) {
+            el = acc2;
+            acc2 = acc;
+        }
+        document.querySelectorAll('.swatches .sw').forEach(function(s) { s.classList.remove('active', 'on'); });
+        if (el) el.classList.add('active', 'on');
+        var doc = document.querySelector('#doc');
+        if (doc) {
+            doc.style.setProperty('--acc', acc);
+            doc.style.setProperty('--acc2', acc2 || acc);
+        }
+    }
+
+    // ═══ MOCKUP: Design-bar font family ═══
+    function setFontFamily(fontClass) {
+        var doc = document.querySelector('#doc');
+        if (doc) {
+            doc.classList.remove('f-serif', 'f-clean');
+            if (fontClass) doc.classList.add(fontClass);
+        }
+    }
+
+    // ═══ MOCKUP: Select template from topbar ═══
+    window.selectTemplate = function(val) {
+        $('#tpl-select').val(val).trigger('change');
+    };
+
+    // ═══ MOCKUP: Design-bar spacing toggle ═══
+    function setSpacing(mode, el) {
+        document.querySelectorAll('.dens button').forEach(function(b) { b.classList.remove('active', 'on'); });
+        if (el) el.classList.add('active', 'on');
+        var doc = document.querySelector('#doc');
+        if (doc) {
+            doc.classList.remove('spacing-roomy', 'spacing-tight');
+            doc.classList.add('spacing-' + (mode === 'tight' || mode === true ? 'tight' : 'roomy'));
+        }
+    }
+
+    // ═══ MOCKUP: Accordion open on next/prev click ═══
+    function openEdSec(step) {
+        var sec = document.querySelector('.ed-sec[data-step="' + step + '"]');
+        if (sec && !sec.classList.contains('open')) {
+            sec.classList.add('open');
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    $(document).ready(function() {
+        // Utility: escape HTML for safe insertion into preview
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, function (s) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]);
+            });
+        }
+
+        // Matches PHP's date('M Y', strtotime($date)) used by the download templates
+        function formatMonthYear(dateStr) {
+            if (!dateStr) return '';
+            var d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return dateStr;
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getFullYear();
+        }
+
+        // --- NEW AI AJAX HANDLERS ---
+        const gatherResumeData = () => {
+            let data = new FormData(document.getElementById('resume-form'));
+            let exp = [];
+            $('.ed-item[data-type="experience"]').each(function() {
+                exp.push({
+                    position: $(this).find('input[name="exp_position[]"]').val(),
+                    company: $(this).find('input[name="exp_company[]"]').val(),
+                    description: $(this).find('textarea[name="exp_desc[]"]').val()
+                });
+            });
+            let skills = [];
+            $('#skills-container input').each(function() {
+                if($(this).val()) skills.push($(this).val());
+            });
+            
+            return {
+                title: $('input[name="title"]').val(),
+                summary: $('#resume-summary').val(),
+                experience: exp,
+                skills: skills
+            };
+        };
+
+        // More AI Outputs
+        $('[data-out]').on('click', function(e) {
+            e.preventDefault();
+            let btn = $(this);
+            let type = btn.data('out');
+            let data = gatherResumeData();
+            data.type = type;
+            
+            let originalText = btn.html();
+            btn.html('<i class="ti ti-loader fa-spin"></i> Generating...').prop('disabled', true);
+            
+            $.post('/candidate/resumes/ai/generate-output', data, function(res) {
+                $('#out-wrap').removeClass('d-none');
+                $('#out-txt').val(res.output);
+                btn.html(originalText).prop('disabled', false);
+            }).fail(function(err) {
+                alert(err.responseJSON?.message || 'Failed to generate output.');
+                btn.html(originalText).prop('disabled', false);
+            });
+        });
+
+        // Career Tools
+        $('[data-career]').on('click', function(e) {
+            e.preventDefault();
+            let btn = $(this);
+            let toolType = btn.data('career');
+            let data = gatherResumeData();
+            data.tool_type = toolType;
+            data.industry = $('#industry-pick').val() || 'general';
+            
+            let originalText = btn.html();
+            btn.html('<i class="ti ti-loader fa-spin"></i> Loading...').prop('disabled', true);
+            
+            $.post('/candidate/resumes/ai/career-tools', data, function(res) {
+                $('#career-out').removeClass('d-none').html(res.output);
+                btn.html(originalText).prop('disabled', false);
+            }).fail(function(err) {
+                alert(err.responseJSON?.message || 'Failed to load career tools.');
+                btn.html(originalText).prop('disabled', false);
+            });
+        });
+
+        // Writing Review trigger (could be on section open)
+        $('#sec-review .ed-head').on('click', function() {
+            let sec = $(this).closest('.ed-sec');
+            if (sec.hasClass('open') && $('#issues').is(':empty')) {
+                $('#issues').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Analyzing writing style...</p>');
+                $.post('/candidate/resumes/ai/writing-review', gatherResumeData(), function(res) {
+                    $('#issues').html(res.review);
+                }).fail(function() {
+                    $('#issues').html('<p class="text-danger">Failed to analyze.</p>');
+                });
+            }
+        });
+
+        // Recruiter View trigger
+        $('#sec-recruiter .ed-head').on('click', function() {
+            let sec = $(this).closest('.ed-sec');
+            if (sec.hasClass('open') && $('#recruiter-body').is(':empty')) {
+                $('#recruiter-body').html('<p class="text-muted"><i class="ti ti-loader fa-spin"></i> Evaluating ATS score...</p>');
+                $.post('/candidate/resumes/ai/recruiter-view', gatherResumeData(), function(res) {
+                    $('#recruiter-body').html(res.recruiter_view);
+                }).fail(function() {
+                    $('#recruiter-body').html('<p class="text-danger">Failed to evaluate.</p>');
+                });
+            }
+        });
+
+        // Import CV basic handler
+        $('#cv-file').on('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+            $('#import-note').removeClass('d-none').html('<p class="text-primary"><i class="ti ti-loader fa-spin"></i> Uploading and extracting CV...</p>');
+            
+            let fd = new FormData();
+            fd.append('cv', file);
+            // This endpoint would normally parse the PDF/Doc. For now, we mock success.
+            setTimeout(() => {
+                $('#import-note').addClass('d-none');
+                $('#import-orig').removeClass('d-none');
+                $('#dz-name').text(file.name);
+                $('#orig-txt').val('Imported text from ' + file.name + '...\n\n(Waiting for backend parsing integration)');
+            }, 1500);
+            }, 1500);
+        });
+
+        // Version History (Local Snapshots)
+        function takeSnapshot() {
+            let data = gatherResumeData();
+            let snapshots = JSON.parse(localStorage.getItem('resume_snapshots_' + $('input[name="id"]').val()) || '[]');
+            let time = new Date().toLocaleTimeString();
+            snapshots.push({ time: time, data: data });
+            if (snapshots.length > 10) snapshots.shift(); // Keep last 10
+            localStorage.setItem('resume_snapshots_' + $('input[name="id"]').val(), JSON.stringify(snapshots));
+            renderSnapshots(snapshots);
+        }
+
+        function renderSnapshots(snapshots) {
+            let html = '<p class="text-muted mb-3" style="font-size:.75rem;">Snapshots are captured automatically as you edit.</p>';
+            if (snapshots.length === 0) {
+                html += '<p class="text-muted fst-italic">No snapshots yet.</p>';
+            } else {
+                html += '<div class="list-group list-group-flush">';
+                snapshots.reverse().forEach((s, i) => {
+                    html += `<button type="button" class="list-group-item list-group-item-action py-2 px-1" style="font-size:0.85rem;">
+                                <i class="ti ti-clock me-2 text-primary"></i> Snapshot at ${s.time}
+                             </button>`;
+                });
+                html += '</div>';
+            }
+            $('#hist-list').html(html);
+        }
+
+        // Trigger snapshot periodically if changes were made, or just when the section opens
+        $('#sec-history .ed-head').on('click', function() {
+            let sec = $(this).closest('.ed-sec');
+            if (sec.hasClass('open')) {
+                takeSnapshot();
+            }
+        });
+
+        // ── LIVE PREVIEW GENERATION ──
+        function renderLivePreview() {
+            var name = $('input[name="full_name"]').val() || '';
+            var title = $('input[name="title"]').val() || '';
+            var email = $('input[name="email"]').val() || '';
+            var phone = $('input[name="phone"]').val() || '';
+            var locationStr = $('input[name="location"]').val() || '';
+            var summary = $('#resume-summary').val() || '';
+            
+            // Selected layout & density
+            var tpl = $('#tpl-select').val() || 't-classic';
+            var spacing = $('#spacing-roomy-btn').hasClass('on') ? 'spacing-roomy' : 'spacing-tight';
+            
+            // Container update
+            var $doc = $('#doc');
+            $doc.removeClass().addClass('doc ' + tpl + ' ' + spacing + ' wm-tile guides');
+            
+            var linkedin = $('input[name="linkedin"]').val() || '';
+            var contactHtml = '';
+            if (email) contactHtml += '<span>' + escapeHtml(email) + '</span>';
+            if (phone) contactHtml += '<span>' + escapeHtml(phone) + '</span>';
+            if (locationStr) contactHtml += '<span>' + escapeHtml(locationStr) + '</span>';
+            if (linkedin) contactHtml += '<span>' + escapeHtml(linkedin.replace(/^https?:\/\/(www\.)?/, '')) + '</span>';
+            
+            var html = '<header class="d-head"><h1>' + escapeHtml(name) + '</h1>';
+            if (title) html += '<div class="d-title">' + escapeHtml(title) + '</div>';
+            if (contactHtml) html += '<div class="d-contact">' + contactHtml + '</div>';
+            html += '</header>';
+            
+            // Professional Summary
+            if (summary.trim()) {
+                html += '<div class="d-sec"><h2>Professional Summary</h2><p>' + escapeHtml(summary).replace(/\n/g, '<br>') + '</p></div>';
+            }
+            
+            // Experience List
+            var experienceHtml = '';
+            $('.experience-item').each(function() {
+                var role = $(this).find('input[name="exp_position[]"]').val() || '';
+                var company = $(this).find('input[name="exp_company[]"]').val() || '';
+                var start = $(this).find('input[name="exp_start_date[]"]').val() || '';
+                var end = $(this).find('input[name="exp_end_date[]"]').val() || '';
+                var current = $(this).find('.exp-current-check').is(':checked');
+                var desc = $(this).find('textarea[name="exp_description[]"]').val() || '';
+                
+                var dates = formatMonthYear(start) + ' – ' + (current ? 'Present' : (end ? formatMonthYear(end) : ''));
+                if (role || company || desc) {
+                    var bulletPoints = desc.split('\n').map(s => s.trim()).filter(Boolean);
+                    var bulletsUl = '';
+                    if (bulletPoints.length) {
+                        bulletsUl = '<ul>' + bulletPoints.map(b => '<li>' + escapeHtml(b) + '</li>').join('') + '</ul>';
+                    }
+                    experienceHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml(role) + '</b><i>' + escapeHtml(dates) + '</i></div>' +
+                        (company ? '<p class="co">' + escapeHtml(company) + '</p>' : '') + bulletsUl + '</div>';
+                }
+            });
+            if (experienceHtml) {
+                html += '<div class="d-sec"><h2>Work Experience</h2>' + experienceHtml + '</div>';
+            }
+            
+            // Education List
+            var educationHtml = '';
+            $('.education-item').each(function() {
+                var school = $(this).find('input[name="edu_school[]"]').val() || '';
+                var degree = $(this).find('select[name="edu_degree[]"]').val() || '';
+                var field = $(this).find('input[name="edu_field[]"]').val() || '';
+                var year = $(this).find('input[name="edu_year[]"]').val() || '';
+                
+                if (school || degree || field) {
+                    educationHtml += '<div class="d-xp"><div class="d-xp-h"><b>' + escapeHtml((degree ? degree + ' in ' : '') + field) + '</b><i>' + escapeHtml(year) + '</i></div>' +
+                        '<p class="co">' + escapeHtml(school) + '</p></div>';
+                }
+            });
+            if (educationHtml) {
+                html += '<div class="d-sec"><h2>Education</h2>' + educationHtml + '</div>';
+            }
+            
+            // Skills List
+            var skillsStr = $('input[name="skills"]').val() || '';
+            var skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+            if (skills.length) {
+                var skillsLi = skills.map(s => '<li>' + escapeHtml(s) + '</li>').join('');
+                html += '<div class="d-sec"><h2>Skills</h2><ul class="d-skills">' + skillsLi + '</ul></div>';
+            }
+
+            // Certifications List
+            var certsStr = $('textarea[name="certs"]').val() || '';
+            var certs = certsStr.split('\n').map(s => s.trim()).filter(Boolean);
+            if (certs.length) {
+                var certsLi = certs.map(c => '<li>' + escapeHtml(c) + '</li>').join('');
+                html += '<div class="d-sec"><h2>Certifications</h2><ul class="d-skills">' + certsLi + '</ul></div>';
+            }
+
+            // Languages List
+            var languagesStr = $('input[name="languages"]').val() || '';
+            var languages = languagesStr.split(',').map(s => s.trim()).filter(Boolean);
+            if (languages.length) {
+                var languagesLi = languages.map(l => '<li>' + escapeHtml(l) + '</li>').join('');
+                html += '<div class="d-sec"><h2>Languages</h2><ul class="d-skills">' + languagesLi + '</ul></div>';
+            }
+            
+            // Watermark anti-crop element
+            html += '<div class="wm" aria-hidden="true">' +
+                '<svg class="wm-ic" viewBox="0 0 925.5 1269.15"><use href="#jr-mark"/></svg>' +
+                '<span class="wm-tx">www.JobberRecruit.com</span>' +
+                '</div>';
+                
+            $doc.html(html);
+            
+            // Adjust layout for Executive template
+            if (tpl === 't-exec') {
+                var head = $doc.find('.d-head')[0];
+                var wm = $doc.find('.wm')[0];
+                var secs = $doc.find('.d-sec').toArray();
+                var sideKeys = ["Certifications", "Skills", "Languages"];
+                
+                var side = document.createElement("div"); side.className = "exec-side";
+                var main = document.createElement("div"); main.className = "exec-main";
+                
+                secs.forEach(function(sec) {
+                    var titleText = $(sec).find('h2').text() || '';
+                    if (sideKeys.indexOf(titleText.trim()) > -1) {
+                        side.appendChild(sec);
+                    } else {
+                        main.appendChild(sec);
+                    }
+                });
+                
+                $doc.html('');
+                if (head) $doc.append(head);
+                $doc.append(side); $doc.append(main);
+                if (wm) $doc.append(wm);
+            }
+            
+            // Check fit pages
+            var scrollHeight = $doc[0].scrollHeight;
+            var maxOnePageHeight = 1074;
+            var fitDot = $('.fit-dot');
+            if (scrollHeight > maxOnePageHeight) {
+                fitDot.removeClass('ok').addClass('over');
+                $('.pv-hint').html('Currently spanning multiple pages. Switch Spacing to <b>Tight</b> or shorten text.');
+            } else {
+                fitDot.removeClass('over').addClass('ok');
+                $('.pv-hint').html('Perfect! Fits cleanly on <b>1 Page</b>.');
+            }
+        }
+        
+        var STOP = "the and for with our you your this that will have has are was were from into able out not can may all any per who what when they them their its it's more than been being to of in on at as by an or a is be we do if so".split(" ");
+        var GENERIC = ("finance financial expense expenses reporting compliance vendor vendors monthly "
+          + "leadership statutory filings operations operation duties duty support seeking seek strong "
+          + "willingness encouraged provided discipline graduate graduates trainee programme role roles "
+          + "team teams company companies business businesses department departments process processes "
+          + "environment environments candidate candidates requirement requirements responsibility "
+          + "responsibilities experience experienced years year work working ability abilities knowledge "
+          + "understanding including related general overall various multiple wide range level high "
+          + "excellent good great proven demonstrated across throughout applicants applicant apply "
+          + "position positions salary benefits location office hours schedule").split(" ");
+
+        function explicitSkillList(txt) {
+            var m = String(txt).match(/(?:skills|requirements|competencies)\s*[:\-]\s*([^.]+)\./i);
+            if (!m) return [];
+            return m[1].split(/,|;|\u2022|\u00b7/).map(function(s){ return s.trim().toLowerCase(); })
+                .filter(function(s){ return s.length > 2 && s.length < 40; });
+        }
+
+        function skillBigrams(txt) {
+            var words = String(txt).toLowerCase().replace(/[^a-z\s-]/g," ").split(/\s+/).filter(Boolean);
+            var out = {};
+            for (var i = 0; i < words.length - 1; i++){
+                var a = words[i], b = words[i+1];
+                if (a.length > 3 && b.length > 3 && STOP.indexOf(a) === -1 && STOP.indexOf(b) === -1
+                    && GENERIC.indexOf(a) === -1 && GENERIC.indexOf(b) === -1){
+                    var phrase = a + " " + b;
+                    out[phrase] = (out[phrase]||0) + 1;
+                }
+            }
+            return Object.keys(out).sort(function(x,y){return out[y]-out[x]});
+        }
+
+        function keywords(txt) {
+            var explicit = explicitSkillList(txt);
+            if (explicit.length) return explicit.slice(0, 14);
+
+            var bigrams = skillBigrams(txt).slice(0, 8);
+
+            var f = {};
+            String(txt).toLowerCase().replace(/[^a-z\s-]/g," ").split(/\s+/).forEach(function(w){
+                if (w.length > 3 && STOP.indexOf(w) === -1 && GENERIC.indexOf(w) === -1) f[w] = (f[w]||0)+1;
+            });
+            var singles = Object.keys(f).sort(function(a,b){return f[b]-f[a]});
+
+            var combined = bigrams.concat(singles).slice(0, 14);
+            return combined;
+        }
+
+        // ── ATS SCAN CHECKLIST & INTELLIGENCE ENGINE ──
+        var SYN = {
+            reconciliation:["reconcile","reconciled","reconciling","bank reconciliation"],
+            accounting:["accounts","accountant","bookkeeping","ledger"],
+            reporting:["reports","management accounts","financial reporting"],
+            payroll:["paye","salaries","wages"], tax:["vat","paye","firs","taxation","filings"],
+            excel:["spreadsheet","spreadsheets","microsoft excel"],
+            audit:["auditing","audits","auditor"], budgeting:["budget","budgets","forecasting"],
+            compliance:["regulatory","statutory","filings","firs","lirs"], invoicing:["invoices","billing","receivables"],
+            nysc:["national youth service","corps member","youth service"],
+            ican:["chartered accountant","aca","icaen"], acca:["chartered certified accountant"],
+            qualification:["b.sc","bsc","hnd","ond","degree","certified"],
+            payables:["payable","vendors","suppliers"], leadership:["led","managed","supervised","mentored"],
+            communication:["stakeholder","presented","liaised"], analysis:["analysed","analyzed","analytical","insights"]
+        };
+        var CLICHES = ["results-driven","results driven","highly motivated","dynamic professional","proven track record","passionate professional","detail-oriented","detail oriented","team player","self-starter","self starter","go-getter","go getter","hardworking individual","think outside the box","synergy"];
+        var STRONG_VERBS = ["led","built","cut","grew","launched","delivered","reduced","improved","designed","owned","negotiated","recovered","streamlined","automated","prepared","produced","rebuilt","cleared","processed","reconciled","managed","implemented","run","ran","handle","handled","maintain","maintained","supported","created","trained"];
+        var IMPACT_WORDS = ["cut","reduced","grew","saved","improved","increased","delivered","cleared","recovered","shortened","eliminated","doubled"];
+        
+        function pct(n, d) { return d ? Math.round(n / d * 100) : 0; }
+        
+        function semHit(kw, txt) {
+            if (txt.indexOf(kw) > -1) return true;
+            if (SYN[kw]) {
+                for (var i = 0; i < SYN[kw].length; i++) {
+                    if (txt.indexOf(SYN[kw][i]) > -1) return true;
+                }
+            }
+            for (var base in SYN) {
+                if (SYN[base].indexOf(kw) > -1 && (txt.indexOf(base) > -1 || SYN[base].some(s => txt.indexOf(s) > -1))) return true;
+            }
+            return false;
+        }
+
+        function metBar(label, val) {
+            var cls = val === null ? "" : (val >= 70 ? "" : (val >= 45 ? " warn" : " bad"));
+            return '<div class="met' + cls + '"><div class="met-h"><span>' + label + '</span><b>' + (val === null ? "—" : val + "%") + '</b></div>'
+                + '<div class="met-t"><div class="met-f" style="width:' + (val || 0) + '%"></div></div></div>';
+        }
+
+        function refreshAts() {
+            var name = $('input[name="full_name"]').val() || '';
+            var email = $('input[name="email"]').val() || '';
+            var phone = $('input[name="phone"]').val() || '';
+            var locationStr = $('input[name="location"]').val() || '';
+            var linkedin = $('input[name="linkedin"]').val() || '';
+            var summary = $('#resume-summary').val() || '';
+            var certsStr = $('textarea[name="certs"]').val() || '';
+            var languagesStr = $('input[name="languages"]').val() || '';
+            var skillsStr = $('input[name="skills"]').val() || '';
+            
+            var skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+            
+            var experiences = [];
+            $('.experience-item').each(function() {
+                experiences.push({
+                    role: $(this).find('input[name="exp_position[]"]').val() || '',
+                    company: $(this).find('input[name="exp_company[]"]').val() || '',
+                    start_date: $(this).find('input[name="exp_start_date[]"]').val() || '',
+                    end_date: $(this).find('input[name="exp_end_date[]"]').val() || '',
+                    is_current: $(this).find('.exp-current-check').is(':checked'),
+                    bullets: $(this).find('textarea[name="exp_description[]"]').val() || ''
+                });
+            });
+
+            var education = [];
+            $('.education-item').each(function() {
+                education.push({
+                    school: $(this).find('input[name="edu_school[]"]').val() || '',
+                    degree: $(this).find('select[name="edu_degree[]"]').val() || '',
+                    field: $(this).find('input[name="edu_field[]"]').val() || '',
+                    year: $(this).find('input[name="edu_year[]"]').val() || ''
+                });
+            });
+
+            var allB = experiences.map(x => x.bullets).join('\n');
+            var bullets = allB.split('\n').map(s => s.trim()).filter(Boolean);
+            var txt = (summary + ' ' + allB + ' ' + skills.join(' ') + ' ' + certsStr).toLowerCase();
+
+            // Perform 17 checklist audits
+            var checks = [];
+
+            // 1. Contact details complete
+            var okContact = !!(name && email && phone && locationStr);
+            checks.push({ ok: okContact, pts: 15, label: "Contact details complete", section: "info" });
+
+            // 2. Summary length (35-120 words)
+            var sw = summary.trim().split(/\s+/).filter(Boolean).length;
+            checks.push({ ok: sw >= 35 && sw <= 120, pts: 15, label: "Summary is 35–120 words (" + sw + ")", section: "summary" });
+
+            // 3. Achievements include numbers
+            var hasNumbers = /\d/.test(allB);
+            checks.push({ ok: hasNumbers, pts: 15, label: "Achievements include numbers", section: "experience" });
+
+            // 4. 5+ achievement bullets
+            checks.push({ ok: bullets.length >= 5, pts: 10, label: "5+ achievement bullets listed", section: "experience" });
+
+            // 5. 6+ skills listed
+            checks.push({ ok: skills.length >= 6, pts: 15, label: "6+ skills listed", section: "skills" });
+
+            // 6. Education included
+            var hasEdu = education.some(e => e.school.trim());
+            checks.push({ ok: hasEdu, pts: 10, label: "Education included", section: "education" });
+
+            // 7. Certifications included
+            checks.push({ ok: certsStr.trim().length > 0, pts: 10, label: "Certifications included", section: "skills" });
+
+            // 8. Substantive content length
+            var totalContentWords = (summary + ' ' + allB).trim().split(/\s+/).filter(Boolean).length;
+            checks.push({ ok: totalContentWords >= 120, pts: 10, label: "Enough content to rank (>120 words)", section: "experience" });
+
+            // Calculate ATS Score
+            var atsScoreValue = checks.reduce((a, c) => a + (c.ok ? c.pts : 0), 0);
+
+            // 9. Missing LinkedIn URL
+            checks.push({ ok: linkedin.trim().length > 0, pts: 0, label: "LinkedIn profile link added", section: "info" });
+
+            // 10. Missing Location
+            checks.push({ ok: locationStr.trim().length > 0, pts: 0, label: "Location city added", section: "info" });
+
+            // 11. Overlong summary
+            checks.push({ ok: sw <= 60, pts: 0, label: "Summary is concise (<=60 words)", section: "summary" });
+
+            // 12. Filler words
+            var FILLER = ["very","really","various","several","successfully","effectively","in order to","a number of","responsible for"];
+            var fhit = FILLER.filter(f => txt.indexOf(f) > -1);
+            checks.push({ ok: fhit.length === 0, pts: 0, label: "No generic filler words used", section: "experience" });
+
+            // 13. Buzzword overload
+            var BUZZ = ["synergy","leverage","spearheaded","utilize","utilized","facilitate","streamline"];
+            var bz = BUZZ.filter(w => txt.indexOf(w) > -1);
+            checks.push({ ok: bz.length < 2, pts: 0, label: "No corporate buzzword overload", section: "experience" });
+
+            // 14. Consistent Date Format (Always consistent since forms enforce date picker)
+            checks.push({ ok: true, pts: 0, label: "Consistent date formats", section: "experience" });
+
+            // 15. Capitalization of bullets
+            var lowerStart = bullets.filter(x => { var c=x.trim()[0]; return c && c===c.toLowerCase() && c!==c.toUpperCase(); }).length;
+            checks.push({ ok: lowerStart === 0, pts: 0, label: "All bullets capitalized", section: "experience" });
+
+            // 16. Punctuation consistency
+            var withDot = bullets.filter(x => /[.]$/.test(x.trim())).length;
+            var okPunct = (bullets.length < 3 || withDot === 0 || withDot === bullets.length);
+            checks.push({ ok: okPunct, pts: 0, label: "Consistent bullet punctuation", section: "experience" });
+
+            // 17. Current role tense consistency
+            var okTense = true;
+            if (experiences.length >= 2) {
+                var cur0 = experiences[0];
+                var isCurrent = cur0.is_current || /present|current/i.test(cur0.end_date);
+                var pastVerbs = /(ed|led|built|ran|made|kept)\b/i;
+                if (isCurrent && cur0.bullets.trim() && cur0.bullets.split('\n').filter(Boolean).every(l => pastVerbs.test(l.trim().split(/\s+/)[0] || ""))) {
+                    okTense = false;
+                }
+            }
+            checks.push({ ok: okTense, pts: 0, label: "Current role uses present tense", section: "experience" });
+
+            // Calculate Intel sub-metrics
+            var cl = CLICHES.filter(c => txt.indexOf(c) > -1);
+            var leads = {};
+            var rep = [];
+            bullets.forEach(x => { var v = x.toLowerCase().split(/\s+/)[0]; leads[v] = (leads[v] || 0) + 1; });
+            for (var v in leads) {
+                if (leads[v] >= 3) rep.push(v);
+            }
+            var human = Math.max(0, 100 - cl.length * 18 - rep.length * 12);
+
+            var av = bullets.filter(x => STRONG_VERBS.indexOf(x.toLowerCase().split(/\s+/)[0]) > -1);
+            var verbs = pct(av.length, bullets.length);
+
+            var imp = bullets.filter(x => { var l = x.toLowerCase(); return /\d/.test(x) || IMPACT_WORDS.some(w => l.indexOf(w) > -1); });
+            var impact = pct(imp.length, bullets.length);
+
+            var rd = bullets.filter(x => { var w = x.split(/\s+/).length; return w >= 4 && w <= 24; });
+            var read = pct(rd.length, bullets.length);
+
+            var cover = null;
+            var jd = $('#jd').length ? $('#jd').val().trim() : '';
+            if (jd.length >= 60) {
+                var kws = keywords(jd);
+                cover = pct(kws.filter(k => semHit(k, txt)).length, kws.length);
+            }
+
+            var parts = [atsScoreValue, human, verbs, impact, read];
+            if (cover !== null) parts.push(cover);
+            var recruiterScore = Math.round(parts.reduce((a, x) => a + x, 0) / parts.length);
+
+            // Update gauges & checklist UI
+            $('#ats-num').text(atsScoreValue);
+            var g = $('#gauge-p');
+            if (g.length) {
+                g.css('stroke-dashoffset', 207 * (1 - atsScoreValue / 100));
+                g.css('stroke', atsScoreValue >= 75 ? 'var(--success)' : (atsScoreValue >= 50 ? 'var(--accent)' : 'var(--danger)'));
+            }
+
+            // Render 6 metrics grid
+            $('#met-grid').html(
+                metBar("Recruiter Score", recruiterScore) +
+                metBar("Human Writing", human) +
+                metBar("Impact", impact) +
+                metBar("Action Verbs", verbs) +
+                metBar("Readability", read) +
+                (cover !== null ? metBar("Keyword Coverage", cover) : "")
+            );
+
+            // Render Checklist items
+            var listHtml = '';
+            checks.forEach(function(c) {
+                var icon = c.ok ? 'ti-circle-check-filled text-success' : 'ti-circle text-muted';
+                var btn = c.ok ? '' : '<button type="button" class="fix-ats btn-link text-decoration-none border-0 bg-transparent text-primary ms-auto" data-target="' + c.section + '" style="font-size: 0.74rem; font-weight:600;">Fix</button>';
+                listHtml += '<li class="' + (c.ok ? 'ok' : 'no') + ' d-flex align-items-center mb-2" style="font-size: 0.8rem;"><i class="ti ' + icon + ' me-2 fs-5"></i><span>' + c.label + '</span>' + btn + '</li>';
+            });
+            $('#ats-list').html(listHtml);
+
+            $('.fix-ats').on('click', function() {
+                var target = $(this).data('target');
+                openEdSec(target);
+            });
+        }
+
+        // Input change listeners
+        $(document).on('input change keyup', '#resume-form input, #resume-form textarea, #resume-form select', function() {
+            renderLivePreview();
+            refreshAts();
+        });
+
+        function resumeTextForMatch() {
+            var summary = $('#resume-summary').val() || '';
+            var skills = ($('input[name="skills"]').val() || '').split(',').map(s => s.trim()).filter(Boolean);
+            var certs = $('textarea[name="certs"]').val() || '';
+            var allBullets = [];
+            $('textarea[name="exp_description[]"]').each(function() { allBullets.push($(this).val() || ''); });
+            return (summary + ' ' + allBullets.join(' ') + ' ' + skills.join(' ') + ' ' + certs).toLowerCase();
+        }
+
+        function runMatch() {
+            var jd = $('#jd').val().trim();
+            var matchWrap = $('#match-wrap');
+            if (jd.length < 60) { matchWrap.addClass('d-none'); refreshAts(); return; }
+            matchWrap.removeClass('d-none');
+            var kws = keywords(jd);
+            var rt = resumeTextForMatch();
+            var hit = kws.filter(k => semHit(k, rt));
+            var score = kws.length ? Math.round(hit.length / kws.length * 100) : 0;
+            $('#match-num').text(score + '%');
+            $('#match-p').css('stroke-dashoffset', 207 * (1 - score / 100));
+            var miss = kws.filter(k => !semHit(k, rt)).slice(0, 8);
+            $('#kw-chips').html(miss.length
+                ? miss.map(k => '<button class="btn btn-sm rounded-pill kw-chip" data-kw="' + k + '" style="border:1.5px solid var(--primary,#0861a9);color:var(--primary,#0861a9);background:#f0f6ff;font-size:.74rem;padding:3px 12px;transition:all .2s;">+ ' + k + '</button>').join('')
+                : '<span class="text-success fw-semibold" style="font-size:.78rem;">Great coverage — no obvious keyword gaps.</span>');
+            // keyword chip click-to-add
+            $('.kw-chip').off('click').on('click', function() {
+                var kw = $(this).data('kw');
+                var pretty = kw.replace(/\b\w/g, c => c.toUpperCase());
+                var skillsInput = $('input[name="skills"]');
+                var current = skillsInput.val().split(',').map(s => s.trim()).filter(Boolean);
+                if (current.indexOf(pretty) === -1) {
+                    current.push(pretty);
+                    skillsInput.val(current.join(', '));
+                }
+                $(this).css({background:'#d1fae5', borderColor:'#10b981', color:'#065f46'}).text('✓ ' + pretty).prop('disabled', true);
+                renderLivePreview(); refreshAts(); runMatch();
+            });
+            // also re-run refreshAts so cover metric updates
+            refreshAts();
+        }
+
+        // JD textarea auto-run match
+        $('#jd').on('input', function() {
+            clearTimeout(window._jdTimer);
+            window._jdTimer = setTimeout(runMatch, 400);
+        });
+
+        // Job picker pre-fill JD
+        $('#job-pick').on('change', function() {
+            var val = $(this).val();
+            var desc = $(this).find('option:selected').data('desc');
+            if (val && desc) {
+                $('#jd').val(desc);
+                runMatch();
+            } else {
+                $('#jd').val('');
+                $('#match-wrap').addClass('d-none');
+            }
+        });
+
+        // Template Selection mapping
+        var tplMap = {
+            'classic': 't-classic',
+            'modern': 't-modern',
+            'creative': 't-creative',
+            'executive': 't-exec',
+            'minimalist': 't-minimal'
+        };
+        var revTplMap = {
+            't-classic': 'classic',
+            't-modern': 'modern',
+            't-creative': 'creative',
+            't-exec': 'executive',
+            't-minimal': 'minimalist'
+        };
+
+        // Template Selection changes
+        $('#tpl-select').on('change', function() {
+            var selected = $(this).val();
+            var rawTpl = revTplMap[selected] || selected.replace('t-', '');
+            $('#template_id').val(rawTpl);
+            $('#template-select-top').val(selected);
+            // trigger active template card highlight
+            $('.template-choice').removeClass('active border-primary border-2 shadow-sm');
+            $('.template-choice[data-template="' + rawTpl + '"]').addClass('active border-primary border-2 shadow-sm');
+            renderLivePreview();
+        });
+
+        $('.template-choice').on('click', function() {
+            var tpl = $(this).data('template');
+            var selectVal = tplMap[tpl] || 't-' + tpl;
+            $('#tpl-select').val(selectVal).trigger('change');
+        });
+
+        // Spacing Selection changes
+        $('#spacing-roomy-btn, #spacing-tight-btn').on('click', function() {
+            $('#spacing-roomy-btn, #spacing-tight-btn').removeClass('on');
+            $(this).addClass('on');
+            renderLivePreview();
+        });
+
+        // Trigger on load
+        setTimeout(function() {
+            var dbTpl = $('#template_id').val() || 'classic';
+            var selectVal = tplMap[dbTpl] || 't-' + dbTpl;
+            $('#tpl-select').val(selectVal).trigger('change');
+            renderLivePreview();
+            refreshAts();
+        }, 300);
+
+        // Step Navigation (accordion-aware)
+        $('.step-item').on('click', function() {
+            const step = $(this).data('step');
+            $('.step-item').removeClass('active');
+            $(this).addClass('active');
+            // Open the target accordion section
+            openEdSec(step);
+            // On mobile, scroll to the form so the user sees it
+            if (window.innerWidth < 992) {
+                const formEl = $('#resume-form');
+                if (formEl.length && formEl.is(':visible') && formEl.offset()) {
+                    const formOffset = formEl.offset().top - 80;
+                    window.scrollTo({ top: formOffset, behavior: 'smooth' });
+                }
+            }
+        });
+
+        // Next/Prev Buttons Navigation
+        $(document).on('click', '.next-step, .prev-step', function(e) {
+            e.preventDefault();
+            const target = $(this).data('step-target');
+            
+            if (target === 'finish') {
+                // Focus on download buttons or trigger save
+                $('#save-resume-btn').trigger('click');
+                const saveBtn = $('#save-resume-btn');
+                if (saveBtn.length && saveBtn.is(':visible') && saveBtn.offset()) {
+                    const formOffset = saveBtn.offset().top - 150;
+                    window.scrollTo({ top: formOffset, behavior: 'smooth' });
+                }
+                return;
+            }
+            
+            // Direct state update
+            $('.step-item').removeClass('active');
+            $('.step-item[data-step="' + target + '"]').addClass('active');
+
+            $('.step-content').addClass('d-none');
+            $('#step-' + target).removeClass('d-none');
+
+            // Scroll to form to avoid showing the top sidebar again on mobile
+            const formEl = $('#resume-form');
+            if (formEl.length && formEl.is(':visible') && formEl.offset()) {
+                const formOffset = formEl.offset().top - 80;
+                window.scrollTo({ top: formOffset, behavior: 'smooth' });
+            }
+        });
+
+        // Click Event for Template Choice
+        $(document).on('click', '.template-choice', function() {
+            $('.template-choice').removeClass('active');
+            $(this).addClass('active');
+            $('#template_id').val($(this).data('template'));
+        });
+
+        // AI Summary Generation
+        $('#generate-summary-ai').on('click', function() {
+            const btn = $(this);
+            const experiences = [];
+            const education = [];
+            const skills = $('input[name="skills"]').val();
+
+            // Extract experience details from inputs to build rich prompt
+            $('.experience-item').each(function() {
+                const company = $(this).find('input[name="exp_company[]"]').val();
+                const position = $(this).find('input[name="exp_position[]"]').val();
+                const desc = $(this).find('textarea[name="exp_description[]"]').val();
+                if (company || position) {
+                    experiences.push({ company, position, description: desc });
+                }
+            });
+
+            // Collect education entries
+            $('.education-item').each(function() {
+                const school = $(this).find('input[name="edu_school[]"]').val();
+                const degree = $(this).find('select[name="edu_degree[]"]').val();
+                const field = $(this).find('input[name="edu_field[]"]').val();
+                if (school || degree) {
+                    education.push({ school, degree, field });
+                }
+            });
+
+            if (experiences.length === 0 && !skills) {
+                toastr.warning('Please add some experience or skills so AI can write a personalized summary.');
+                return;
+            }
+
+            btn.prop('disabled', true);
+            $('#aiLoaderModal').modal('show');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/ai/generate-summary") ?>',
+                type: 'POST',
+                data: {
+                    experiences: experiences,
+                    education: education,
+                    skills: skills,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+                    if (response.summary) {
+                        // Show preview modal with sanitized HTML (server already sanitized)
+                        $('#aiPreviewRender').html(response.summary);
+                        $('#aiPreviewModal').modal('show');
+                        // store raw in the preview container for apply action
+                        $('#aiPreviewRender').data('raw', response.summary);
+                    } else {
+                        toastr.error('AI returned no content.');
+                    }
+                    $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
+                },
+                error: function() {
+                    toastr.error('AI generation failed. Please try again.');
+                    $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // Add Experience Item (Dynamic)
+        $('.add-experience').on('click', function() {
+            $('#experience-container .no-items').hide();
+            
+            // Generate next available index for exp_current value tracking
+            const count = $('.experience-item').length;
+            
+            const html = `
+                <div class="experience-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd; display: none;">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-semibold text-muted">Company Name</label>
+                            <input type="text" name="exp_company[]" class="form-control form-control-sm" placeholder="e.g. Google">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-semibold text-muted">Job Position</label>
+                            <input type="text" name="exp_position[]" class="form-control form-control-sm" placeholder="e.g. Senior Developer">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label small fw-semibold text-muted">Start Date</label>
+                            <input type="date" name="exp_start_date[]" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-4 mb-3 exp-end-date-col">
+                            <label class="form-label small fw-semibold text-muted">End Date</label>
+                            <input type="date" name="exp_end_date[]" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${count}">
+                                <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="small fw-semibold text-muted">Description & Achievements</label>
+                                <div>
+                                    <button type="button" class="ai-assist-btn improve-desc-ai">
+                                        <i class="ti ti-wand"></i> Improve with AI
+                                    </button>
+                                    <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
+                                        <i class="ti ti-list"></i> Generate Bullets
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const $newItem = $(html);
+            $('#experience-container').append($newItem);
+            $newItem.slideDown(200);
+        });
+
+        // Add Education Item (Dynamic)
+        $('.add-education').on('click', function() {
+            $('#education-container .no-items').hide();
+            
+            const html = `
+                <div class="education-item border rounded p-3 mb-3 position-relative" style="background-color: #fcfcfd; display: none;">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold text-muted">School / University</label>
+                            <input type="text" name="edu_school[]" class="form-control form-control-sm" placeholder="School / University">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold text-muted">Degree</label>
+                            <select name="edu_degree[]" class="form-select form-select-sm">
+                                <option value="">Select Degree</option>
+                                <option value="High School">High School</option>
+                                <option value="Associate">Associate Degree</option>
+                                <option value="Bachelor">Bachelor's Degree</option>
+                                <option value="Master">Master's Degree</option>
+                                <option value="PhD">PhD / Doctorate</option>
+                                <option value="Certificate">Certificate</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold text-muted">Field of Study</label>
+                            <input type="text" name="edu_field[]" class="form-control form-control-sm" placeholder="Field of Study">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold text-muted">Graduation Year</label>
+                            <input type="number" name="edu_year[]" class="form-control form-control-sm" placeholder="Graduation Year" min="1950" max="2030">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const $newItem = $(html);
+            $('#education-container').append($newItem);
+            $newItem.slideDown(200);
+        });
+
+        // Dynamic deletion handler for items
+        $(document).on('click', '.remove-item-btn', function() {
+            const $item = $(this).closest('.experience-item, .education-item');
+            const $container = $item.parent();
+            
+            $item.fadeOut(250, function() {
+                $item.remove();
+                if ($container.find('.experience-item, .education-item').length === 0) {
+                    $container.find('.no-items').fadeIn(200);
+                }
+                // Re-index exp_current[] values so they still match each row's position —
+                // save() matches checked values against the submitted exp_company[] array index.
+                $('#experience-container .exp-current-check').each(function(idx) {
+                    $(this).val(idx);
+                });
+            });
+        });
+
+        // Dynamic change handler for 'Currently Work Here' checkbox
+        $(document).on('change', '.exp-current-check', function() {
+            const $endDateCol = $(this).closest('.row').find('.exp-end-date-col');
+            if ($(this).is(':checked')) {
+                $endDateCol.slideUp(200).find('input').val('');
+            } else {
+                $endDateCol.slideDown(200);
+            }
+        });
+
+        // Improve Description with AI
+        $(document).on('click', '.improve-desc-ai', function() {
+            const btn = $(this);
+            const textarea = btn.closest('.col-md-12').find('textarea');
+            if (textarea.length) {
+                lastFocusedTextarea = textarea;
+            }
+            const description = textarea.length ? textarea.val() : '';
+
+            if (!description || !description.trim()) {
+                toastr.warning('Please enter a description first.');
+                return;
+            }
+
+            btn.prop('disabled', true);
+            $('#aiLoaderModal').modal('show');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/ai/improve-description") ?>',
+                type: 'POST',
+                data: {
+                    description: description,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+                    if (response.description) {
+                        // Show preview modal with suggested bullets or description
+                        $('#aiPreviewRender').html(response.description.replace(/\n/g, '<br>'));
+                        $('#aiPreviewRender').data('raw', response.description);
+                        $('#aiPreviewModal').modal('show');
+                    }
+                    $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
+                },
+                error: function() {
+                    toastr.error('AI improvement failed.');
+                    $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // Generate bullets for experience
+        $(document).on('click', '.generate-bullets-ai', function() {
+            const btn = $(this);
+            const textarea = btn.closest('.col-md-12').find('textarea');
+            if (textarea.length) {
+                lastFocusedTextarea = textarea;
+            }
+            const description = textarea.length ? textarea.val() : '';
+            const position = btn.closest('.experience-item').find('input[name="exp_position[]"]').val() || '';
+
+            if (!description || !description.trim()) {
+                toastr.warning('Please enter an experience description first.');
+                return;
+            }
+
+            btn.prop('disabled', true);
+            $('#aiLoaderModal').modal('show');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/ai/generate-bullets") ?>',
+                type: 'POST',
+                data: {
+                    description: description,
+                    job_title: position,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+                    if (response.bullets) {
+                        // Show preview modal with bullets
+                        // convert newlines to <li> list for better UX
+                        const bulletsHtml = response.bullets.split(/\r?\n/).filter(Boolean).map(b => '<li>' + escapeHtml(b.trim()) + '</li>').join('');
+                        const html = '<div class="ai-card"><h3>Suggested Bullets</h3><ul>' + bulletsHtml + '</ul></div>';
+                        $('#aiPreviewRender').html(html);
+                        $('#aiPreviewRender').data('raw', response.bullets);
+                        $('#aiPreviewModal').modal('show');
+                    }
+                    $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
+                },
+                error: function() {
+                    toastr.error('Failed to generate bullets.');
+                    $('#aiLoaderModal').modal('hide');
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // Save Resume
+        $('#save-resume-btn').on('click', function() {
+            // Clear temporary undo data on save
+            $('#resume-summary').removeData('prev');
+            $('textarea[name="exp_description[]"]').each(function() { $(this).removeData('prev'); });
+
+            // Dynamically set checkbox values to their actual array index prior to serialization
+            $('.experience-item').each(function(index) {
+                $(this).find('.exp-current-check').val(index);
+            });
+
+            const formData = $('#resume-form').serialize();
+            const btn = $(this);
+            btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Saving...');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/save") ?>',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    toastr.success('Resume saved successfully!');
+                    if (response.id) {
+                        $('input[name="id"]').val(response.id);
+                    }
+                    // If this save was kicked off by a restore+save, create a snapshot autosave for history
+                    if (window.restoreSavePending) {
+                        try {
+                            // Convert to structured snapshot similar to doAutosave
+                            const snapshot = { experiences: [], education: [] };
+                            snapshot.id = $('input[name="id"]').val() || null;
+                            snapshot.title = $('input[name="title"]').val() || '';
+                            snapshot.summary = $('#resume-summary').val() || '';
+                            snapshot.template_id = $('#template_id').val() || 'classic';
+                            snapshot.skills = $('input[name="skills"]').val() || '';
+                            snapshot.linkedin = $('input[name="linkedin"]').val() || '';
+                            snapshot.certs = $('textarea[name="certs"]').val() || '';
+                            snapshot.languages = $('input[name="languages"]').val() || '';
+
+                            $('.experience-item').each(function() {
+                                snapshot.experiences.push({
+                                    company: $(this).find('input[name="exp_company[]"]').val() || '',
+                                    position: $(this).find('input[name="exp_position[]"]').val() || '',
+                                    description: $(this).find('textarea[name="exp_description[]"]').val() || '',
+                                    start_date: $(this).find('input[name="exp_start_date[]"]').val() || '',
+                                    end_date: $(this).find('input[name="exp_end_date[]"]').val() || '',
+                                    is_current: $(this).find('.exp-current-check').is(':checked') ? 1 : 0
+                                });
+                            });
+
+                            $('.education-item').each(function() {
+                                snapshot.education.push({
+                                    institution: $(this).find('input[name="edu_school[]"]').val() || '',
+                                    degree: $(this).find('select[name="edu_degree[]"]').val() || '',
+                                    field_of_study: $(this).find('input[name="edu_field[]"]').val() || '',
+                                    graduation_year: $(this).find('input[name="edu_year[]"]').val() || ''
+                                });
+                            });
+
+                            $.ajax({
+                                url: '<?= site_url("candidate/resumes/autosave") ?>',
+                                type: 'POST',
+                                data: { snapshot: JSON.stringify(snapshot), id: snapshot.id, '<?= csrf_token() ?>': '<?= csrf_hash() ?>' }
+                            });
+                        } catch (e) {
+                            // ignore autosave snapshot errors
+                        }
+                        window.restoreSavePending = false;
+                        // Visual confirmation for restore+save
+                        toastr.success('Revision restored and saved successfully.');
+                    }
+                    btn.prop('disabled', false).html('<i class="ti ti-device-floppy me-1"></i>Save Resume');
+                },
+                error: function() {
+                    toastr.error('Failed to save resume.');
+                    btn.prop('disabled', false).html('<i class="ti ti-device-floppy me-1"></i>Save Resume');
+                }
+            });
+        });
+
+        // Autosave: debounce per-field and periodic full autosave
+        let autosaveTimer = null;
+        let debounceTimers = new Map();
+        const AUTOSAVE_INTERVAL = 30000; // 30s
+        const FIELD_DEBOUNCE = 500; // 500ms
+
+        function scheduleAutosave() {
+            if (autosaveTimer) clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(doAutosave, AUTOSAVE_INTERVAL);
+        }
+
+        function doAutosave() {
+            const form = $('#resume-form');
+            // Build structured snapshot JSON from current form state
+            const snapshot = {
+                id: $('input[name="id"]').val() || null,
+                title: $('input[name="title"]').val() || '',
+                summary: $('#resume-summary').val() || '',
+                template_id: $('#template_id').val() || 'classic',
+                experiences: [],
+                education: [],
+                skills: $('input[name="skills"]').val() || '',
+                linkedin: $('input[name="linkedin"]').val() || '',
+                certs: $('textarea[name="certs"]').val() || '',
+                languages: $('input[name="languages"]').val() || ''
+            };
+
+            $('.experience-item').each(function() {
+                snapshot.experiences.push({
+                    company: $(this).find('input[name="exp_company[]"]').val() || '',
+                    position: $(this).find('input[name="exp_position[]"]').val() || '',
+                    description: $(this).find('textarea[name="exp_description[]"]').val() || '',
+                    start_date: $(this).find('input[name="exp_start_date[]"]').val() || '',
+                    end_date: $(this).find('input[name="exp_end_date[]"]').val() || '',
+                    is_current: $(this).find('.exp-current-check').is(':checked') ? 1 : 0
+                });
+            });
+
+            $('.education-item').each(function() {
+                snapshot.education.push({
+                    institution: $(this).find('input[name="edu_school[]"]').val() || '',
+                    degree: $(this).find('select[name="edu_degree[]"]').val() || '',
+                    field_of_study: $(this).find('input[name="edu_field[]"]').val() || '',
+                    graduation_year: $(this).find('input[name="edu_year[]"]').val() || ''
+                });
+            });
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/autosave") ?>',
+                type: 'POST',
+                data: {
+                    snapshot: JSON.stringify(snapshot),
+                    id: $('input[name="id"]').val(),
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(resp) {
+                    if (resp.id) {
+                        $('input[name="id"]').val(resp.id);
+                    }
+                    const ts = new Date().toLocaleTimeString();
+                    $('#autosave-indicator').remove();
+                    
+                    const header = $('.page-title').length ? $('.page-title') : $('.page-header');
+                    if (header.length) {
+                        header.append('<span id="autosave-indicator" class="text-muted ms-3" style="font-size:12px;">Autosaved at ' + ts + '</span>');
+                    }
+                }
+            });
+        }
+
+        // Track per-field changes
+        $(document).on('input change', '#resume-form input, #resume-form textarea, #resume-form select', function() {
+            const el = this;
+            // Generate a unique reference using index suffix to avoid debounce key collisions in arrays
+            const name = $(el).attr('name') || '';
+            let key = el; // default to element DOM reference
+            if (name.includes('[]')) {
+                const index = $('[name="' + name + '"]').index(el);
+                key = name + '_' + index;
+            } else if ($(el).attr('id')) {
+                key = $(el).attr('id');
+            }
+            if (debounceTimers.has(key)) clearTimeout(debounceTimers.get(key));
+            debounceTimers.set(key, setTimeout(function() {
+                scheduleAutosave();
+                debounceTimers.delete(key);
+            }, FIELD_DEBOUNCE));
+        });
+
+        // Also autosave on page unload
+        $(window).on('beforeunload', function() {
+            // synchronous navigator sendBeacon unavailable for form data; attempt quick ajax
+            navigator.sendBeacon && navigator.sendBeacon('<?= site_url("candidate/resumes/autosave") ?>', new URLSearchParams({
+                id: $('input[name="id"]').val() || '',
+                payload: $('#resume-form').serialize() || ''
+            }));
+        });
+
+        // Utility escapeHtml is defined earlier; ensure it's available for template building
+
+        // Revision History UI: open modal and load recent autosaves
+        $('#open-revisions-btn').on('click', function() {
+            const resumeId = $('input[name="id"]').val();
+            if (!resumeId) {
+                toastr.info('Please save your resume once to enable revisions.');
+                return;
+            }
+
+            $('#revisions-list').html('<div class="text-muted">Loading revisions...</div>');
+            $('#revisionsModal').modal('show');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/") ?>' + resumeId + '/autosaves',
+                type: 'GET',
+                success: function(resp) {
+                    if (!resp.autosaves || resp.autosaves.length === 0) {
+                        $('#revisions-list').html('<div class="text-muted">No revisions found.</div>');
+                        return;
+                    }
+
+                    const items = resp.autosaves.map(function(a) {
+                        const created = new Date(a.created_at).toLocaleString();
+                        const summ = a.preview && a.preview.summary ? a.preview.summary : '';
+                        const exps = a.preview && a.preview.experiences ? a.preview.experiences.map(e => (e.position || '') + (e.company ? ' at ' + e.company : '')).join('; ') : '';
+                        const previewHtml = '<div class="fw-semibold">' + created + '</div>' +
+                            (summ ? '<div class="text-muted small mt-1">' + escapeHtml(summ) + '</div>' : '') +
+                            (exps ? '<div class="text-muted small mt-1"><strong>Experiences:</strong> ' + escapeHtml(exps) + '</div>' : '');
+
+                        return `<div class="revision-item border rounded p-2 mb-2 d-flex justify-content-between align-items-start">
+                            <div style="max-width: 75%;">
+                                ${previewHtml}
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary restore-autosave-btn" data-id="${a.id}">Restore</button>
+                                <button class="btn btn-sm btn-primary restore-save-autosave-btn" data-id="${a.id}">Restore & Save</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+
+                    $('#revisions-list').html(items);
+                },
+                error: function() {
+                    $('#revisions-list').html('<div class="text-danger">Failed to load revisions.</div>');
+                }
+            });
+        });
+
+        // Restore autosave from revisions modal (structured snapshot restore)
+        $(document).on('click', '.restore-autosave-btn', function() {
+            const autosaveId = $(this).data('id');
+            const resumeId = $('input[name="id"]').val();
+            if (!resumeId) return;
+
+            const btn = $(this);
+            btn.prop('disabled', true).text('Restoring...');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/") ?>' + resumeId + '/restore-autosave',
+                type: 'POST',
+                data: {
+                    autosave_id: autosaveId,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(resp) {
+                    if (resp.payload) {
+                        // load structured JSON snapshot into form and reconstruct repeated groups
+                        const snap = resp.payload;
+                        if (snap.title !== undefined) $('input[name="title"]').val(snap.title);
+                        if (snap.summary !== undefined) $('#resume-summary').val(snap.summary);
+                        if (snap.template_id !== undefined) $('#template_id').val(snap.template_id);
+                        if (snap.skills !== undefined) $('input[name="skills"]').val(snap.skills);
+                        if (snap.linkedin !== undefined) $('input[name="linkedin"]').val(snap.linkedin);
+                        if (snap.certs !== undefined) $('textarea[name="certs"]').val(snap.certs);
+                        if (snap.languages !== undefined) $('input[name="languages"]').val(snap.languages);
+
+                        // Rebuild experiences section
+                        const $expContainer = $('#experience-container');
+                        $expContainer.find('.experience-item').remove();
+                        if (Array.isArray(snap.experiences)) {
+                            snap.experiences.forEach(function(e, idx) {
+                                const html = `
+                                    <div class="experience-item border rounded p-3 mb-3 position-relative">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Company Name</label>
+                                                <input type="text" name="exp_company[]" class="form-control form-control-sm" value="${escapeHtml(e.company || '')}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Job Position</label>
+                                                <input type="text" name="exp_position[]" class="form-control form-control-sm" value="${escapeHtml(e.position || '')}">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Start Date</label>
+                                                <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="${escapeHtml(e.start_date || '')}">
+                                            </div>
+                                            <div class="col-md-4 mb-3 exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">
+                                                <label class="form-label small fw-semibold text-muted">End Date</label>
+                                                <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="${escapeHtml(e.end_date || '')}">
+                                            </div>
+                                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''}>
+                                                    <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-2">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <label class="small fw-semibold text-muted">Description & Achievements</label>
+                                                    <div>
+                                                        <button type="button" class="ai-assist-btn improve-desc-ai">
+                                                            <i class="ti ti-wand"></i> Improve with AI
+                                                        </button>
+                                                        <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
+                                                            <i class="ti ti-list"></i> Generate Bullets
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements...">${escapeHtml(e.description || '')}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                $expContainer.append(html);
+                            });
+                        }
+
+                        // Rebuild education section
+                        const $eduContainer = $('#education-container');
+                        $eduContainer.find('.education-item').remove();
+                        if (Array.isArray(snap.education)) {
+                            snap.education.forEach(function(ed) {
+                                const html = `
+                                    <div class="education-item border rounded p-3 mb-3 position-relative">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">School / University</label>
+                                                <input type="text" name="edu_school[]" class="form-control form-control-sm" value="${escapeHtml(ed.institution || '')}">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Degree</label>
+                                                <select name="edu_degree[]" class="form-select form-select-sm">
+                                                    <option value="">Select Degree</option>
+                                                    <option value="High School" ${ed.degree === 'High School' ? 'selected' : ''}>High School</option>
+                                                    <option value="Associate" ${ed.degree === 'Associate' ? 'selected' : ''}>Associate Degree</option>
+                                                    <option value="Bachelor" ${ed.degree === 'Bachelor' ? 'selected' : ''}>Bachelor's Degree</option>
+                                                    <option value="Master" ${ed.degree === 'Master' ? 'selected' : ''}>Master's Degree</option>
+                                                    <option value="PhD" ${ed.degree === 'PhD' ? 'selected' : ''}>PhD / Doctorate</option>
+                                                    <option value="Certificate" ${ed.degree === 'Certificate' ? 'selected' : ''}>Certificate</option>
+                                                    <option value="Other" ${ed.degree === 'Other' ? 'selected' : ''}>Other</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Field of Study</label>
+                                                <input type="text" name="edu_field[]" class="form-control form-control-sm" value="${escapeHtml(ed.field_of_study || '')}">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Graduation Year</label>
+                                                <input type="number" name="edu_year[]" class="form-control form-control-sm" value="${escapeHtml(ed.graduation_year || '')}" min="1950" max="2030">
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                $eduContainer.append(html);
+                            });
+                        }
+
+                        toastr.success('Revision restored into the form. Please review changes and Save to persist.');
+                        $('#revisionsModal').modal('hide');
+                    } else {
+                        toastr.error('Invalid autosave payload');
+                    }
+                },
+                error: function() {
+                    toastr.error('Failed to restore revision.');
+                    btn.prop('disabled', false).text('Restore');
+                }
+            });
+        });
+
+        // Restore & Save action
+        $(document).on('click', '.restore-save-autosave-btn', function() {
+            const autosaveId = $(this).data('id');
+            const resumeId = $('input[name="id"]').val();
+            if (!resumeId) return;
+
+            const btn = $(this);
+            btn.prop('disabled', true).text('Restoring...');
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/") ?>' + resumeId + '/restore-autosave',
+                type: 'POST',
+                data: {
+                    autosave_id: autosaveId,
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(resp) {
+                    if (resp.payload) {
+                        const snap = resp.payload;
+                        if (snap.title !== undefined) $('input[name="title"]').val(snap.title);
+                        if (snap.summary !== undefined) $('#resume-summary').val(snap.summary);
+                        if (snap.template_id !== undefined) $('#template_id').val(snap.template_id);
+                        if (snap.skills !== undefined) $('input[name="skills"]').val(snap.skills);
+
+                        // Rebuild experiences and education same as restore
+                        const $expContainer = $('#experience-container');
+                        $expContainer.find('.experience-item').remove();
+                        if (Array.isArray(snap.experiences)) {
+                            snap.experiences.forEach(function(e, idx) {
+                                const html = `
+                                    <div class="experience-item border rounded p-3 mb-3 position-relative">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Company Name</label>
+                                                <input type="text" name="exp_company[]" class="form-control form-control-sm" value="${escapeHtml(e.company || '')}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Job Position</label>
+                                                <input type="text" name="exp_position[]" class="form-control form-control-sm" value="${escapeHtml(e.position || '')}">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label small fw-semibold text-muted">Start Date</label>
+                                                <input type="date" name="exp_start_date[]" class="form-control form-control-sm" value="${escapeHtml(e.start_date || '')}">
+                                            </div>
+                                            <div class="col-md-4 mb-3 exp-end-date-col" style="${e.is_current ? 'display: none;' : ''}">
+                                                <label class="form-label small fw-semibold text-muted">End Date</label>
+                                                <input type="date" name="exp_end_date[]" class="form-control form-control-sm" value="${escapeHtml(e.end_date || '')}">
+                                            </div>
+                                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input exp-current-check" type="checkbox" name="exp_current[]" value="${idx}" ${e.is_current ? 'checked' : ''}>
+                                                    <label class="form-check-label small fw-semibold text-muted">Currently Work Here</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-2">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <label class="small fw-semibold text-muted">Description & Achievements</label>
+                                                    <div>
+                                                        <button type="button" class="ai-assist-btn improve-desc-ai">
+                                                            <i class="ti ti-wand"></i> Improve with AI
+                                                        </button>
+                                                        <button type="button" class="ai-assist-btn generate-bullets-ai" style="margin-left:8px;">
+                                                            <i class="ti ti-list"></i> Generate Bullets
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <textarea name="exp_description[]" class="form-control form-control-sm" rows="3" placeholder="Describe your responsibilities and achievements...">${escapeHtml(e.description || '')}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                $expContainer.append(html);
+                            });
+                        }
+
+                        const $eduContainer = $('#education-container');
+                        $eduContainer.find('.education-item').remove();
+                        if (Array.isArray(snap.education)) {
+                            snap.education.forEach(function(ed) {
+                                const html = `
+                                    <div class="education-item border rounded p-3 mb-3 position-relative">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2 remove-item-btn" style="font-size: 0.8rem;"></button>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">School / University</label>
+                                                <input type="text" name="edu_school[]" class="form-control form-control-sm" value="${escapeHtml(ed.institution || '')}">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Degree</label>
+                                                <select name="edu_degree[]" class="form-select form-select-sm">
+                                                    <option value="">Select Degree</option>
+                                                    <option value="High School" ${ed.degree === 'High School' ? 'selected' : ''}>High School</option>
+                                                    <option value="Associate" ${ed.degree === 'Associate' ? 'selected' : ''}>Associate Degree</option>
+                                                    <option value="Bachelor" ${ed.degree === 'Bachelor' ? 'selected' : ''}>Bachelor's Degree</option>
+                                                    <option value="Master" ${ed.degree === 'Master' ? 'selected' : ''}>Master's Degree</option>
+                                                    <option value="PhD" ${ed.degree === 'PhD' ? 'selected' : ''}>PhD / Doctorate</option>
+                                                    <option value="Certificate" ${ed.degree === 'Certificate' ? 'selected' : ''}>Certificate</option>
+                                                    <option value="Other" ${ed.degree === 'Other' ? 'selected' : ''}>Other</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Field of Study</label>
+                                                <input type="text" name="edu_field[]" class="form-control form-control-sm" value="${escapeHtml(ed.field_of_study || '')}">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="form-label small fw-semibold text-muted">Graduation Year</label>
+                                                <input type="number" name="edu_year[]" class="form-control form-control-sm" value="${escapeHtml(ed.graduation_year || '')}" min="1950" max="2030">
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                $eduContainer.append(html);
+                            });
+                        }
+
+                        // After rebuilding, trigger save (and snapshot)
+                        window.restoreSavePending = true;
+                        $('#save-resume-btn').trigger('click');
+                        $('#revisionsModal').modal('hide');
+                    } else {
+                        toastr.error('Invalid autosave payload');
+                        btn.prop('disabled', false).text('Restore & Save');
+                    }
+                },
+                error: function() {
+                    toastr.error('Failed to restore revision.');
+                    btn.prop('disabled', false).text('Restore & Save');
+                }
+            });
+        });
+
+        // Helper: Save resume before download
+        function saveResumeBeforeDownload(onSuccess) {
+            $('.experience-item').each(function(index) {
+                $(this).find('.exp-current-check').val(index);
+            });
+
+            const formData = $('#resume-form').serialize();
+
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/save") ?>',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.id) {
+                        $('input[name="id"]').val(response.id);
+                        onSuccess(response.id);
+                    } else {
+                        const existingId = $('input[name="id"]').val();
+                        if (existingId) {
+                            onSuccess(existingId);
+                        } else {
+                            toastr.error('Could not determine resume ID for download.');
+                        }
+                    }
+                },
+                error: function() {
+                    toastr.error('Failed to save latest changes. Trying to download anyway...');
+                    const existingId = $('input[name="id"]').val();
+                    if (existingId) {
+                        onSuccess(existingId);
+                    } else {
+                        toastr.error('Please save your resume first.');
+                    }
+                }
+            });
+        }
+
+        // PDF Download Click Handler
+        $(document).on('click', '.download-pdf-btn', function() {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Preparing PDF...');
+            
+            saveResumeBeforeDownload(function(id) {
+                btn.prop('disabled', false).html(originalHtml);
+                window.location.href = '<?= site_url("candidate/resumes/download/") ?>' + id;
+            });
+        });
+
+        // DOCX Download Click Handler
+        $(document).on('click', '.download-docx-btn', function() {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Preparing Word...');
+            
+            saveResumeBeforeDownload(function(id) {
+                btn.prop('disabled', false).html(originalHtml);
+                window.location.href = '<?= site_url("candidate/resumes/download-docx/") ?>' + id;
+            });
+        });
+
+        // ==========================================
+        // AI RESUME COACH DRAWER INTEGRATION
+        // ==========================================
+        let coachHistory = [];
+        let lastFocusedTextarea = null;
+
+        // Keep track of focused inputs in the builder form to paste content
+        $(document).on('focus', '#resume-form textarea, #resume-form input[type="text"]', function() {
+            lastFocusedTextarea = $(this);
+        });
+
+        // Toggle / show coach offcanvas event
+        $('#aiResumeCoachDrawer').on('shown.bs.offcanvas', function () {
+            if ($('#coach-chat-messages').children().length === 0) {
+                // Seed initial message from AI Coach (plain text, no markdown)
+                showCoachMessage('coach', 'Hello, I am ResumeAI, your resume consultant. To get started, what is your target role and industry?');
+            }
+        });
+
+        // Submit message form
+        $('#coach-chat-form').on('submit', function(e) {
+            e.preventDefault();
+            sendCoachMessage();
+        });
+
+        function sendCoachMessage() {
+            const inputField = $('#coach-chat-input');
+            const message = inputField.val().trim();
+            if (!message) return;
+
+            // Append user bubble
+            showCoachMessage('user', message);
+            inputField.val('');
+
+            // Append typing indicator
+            showTypingIndicator();
+
+            // Send AJAX request
+            $.ajax({
+                url: '<?= site_url("candidate/resumes/ai/chat") ?>',
+                type: 'POST',
+                data: {
+                    message: message,
+                    history: JSON.stringify(coachHistory),
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                success: function(response) {
+                    removeTypingIndicator();
+                    if (response.reply) {
+                        showCoachMessage('coach', response.reply);
+                        // Save in local history array
+                        coachHistory.push({sender: 'user', message: message});
+                        coachHistory.push({sender: 'model', message: response.reply});
+                    } else {
+                        showCoachMessage('coach', 'I experienced an issue parsing the coaching response. Let\'s continue our session.');
+                    }
+                },
+                error: function() {
+                    removeTypingIndicator();
+                    showCoachMessage('coach', 'Sorry, I am having trouble connecting right now. Let\'s continue.');
+                }
+            });
+        }
+
+        function showCoachMessage(sender, text) {
+            const container = $('#coach-chat-messages');
+            
+            // Helper to escape HTML for user messages
+            function escapeHtml(str) {
+                return String(str).replace(/[&<>"']/g, function (s) {
+                    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]);
+                });
+            }
+
+            // For coach messages we accept simple HTML from the server (server sanitizes). For user messages escape HTML.
+            let formattedText;
+            if (sender === 'coach') {
+                // preserve simple HTML returned by server; normalize line endings
+                formattedText = String(text).replace(/\r/g, '');
+            } else {
+                formattedText = escapeHtml(text).replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            }
+
+            const bubbleId = 'bubble-' + Date.now();
+            let html = `
+                <div class="coach-bubble ${sender}" id="${bubbleId}">
+                    <div>${formattedText}</div>
+            `;
+
+            // If coach, add action pasting toolbar helpers
+            if (sender === 'coach') {
+                html += `
+                    <div class="mt-2 d-flex flex-wrap gap-1 border-top border-secondary border-opacity-10 pt-2">
+                        <button type="button" class="coach-apply-btn apply-to-summary-btn" data-text-id="${bubbleId}-text" style="font-size: 10px; padding: 3px 8px; border-radius: 12px;">
+                            <i class="ti ti-blockquote me-1"></i> Apply to Summary
+                        </button>
+                        <button type="button" class="coach-apply-btn apply-to-active-btn" data-text-id="${bubbleId}-text" style="font-size: 10px; padding: 3px 8px; border-radius: 12px;">
+                            <i class="ti ti-edit me-1"></i> Apply to Active Field
+                        </button>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            container.append(html);
+            
+            // Store raw text in a hidden element inside the bubble for precise extraction
+            if (sender === 'coach') {
+                $(`#${bubbleId}`).append(`<div id="${bubbleId}-text" style="display:none;"></div>`);
+                // Use jQuery data to keep raw payload (may include HTML)
+                $(`#${bubbleId}-text`).data('raw', text);
+            }
+
+            // Scroll chat to bottom
+            const chatWindow = document.getElementById('coach-chat-window');
+            if (chatWindow) {
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        function showTypingIndicator() {
+            removeTypingIndicator();
+            const container = $('#coach-chat-messages');
+            const html = `
+                <div class="coach-bubble coach typing-indicator-bubble align-self-start" id="coach-typing-indicator" style="background-color: #1e293b; border: 1px solid #334155; border-top-left-radius: 4px; max-width: 85%;">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            container.append(html);
+            const chatWindow = document.getElementById('coach-chat-window');
+            if (chatWindow) {
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        function removeTypingIndicator() {
+            $('#coach-typing-indicator').remove();
+        }
+
+        // Apply to Professional Summary action handler
+        $(document).on('click', '.apply-to-summary-btn', function() {
+            const textId = $(this).data('text-id');
+            const $hidden = $('#' + textId);
+            const rawText = $hidden.length && $hidden.data('raw') ? $hidden.data('raw') : $hidden.text();
+            const polishedText = extractResumeContent(rawText);
+
+            // Store previous value for undo
+            const prev = $('#resume-summary').val();
+            $('#resume-summary').data('prev', prev);
+
+            $('#resume-summary').val(polishedText);
+            toastr.success('Applied to Professional Summary!');
+            
+            // Scroll to the professional summary element
+            const targetEl = $("#resume-summary");
+            if (targetEl.length && targetEl.is(':visible') && targetEl.offset()) {
+                $('html, body').animate({
+                    scrollTop: targetEl.offset().top - 120
+                }, 300);
+            }
+        });
+
+        // Apply to Active/Last Focused text input or textarea
+        $(document).on('click', '.apply-to-active-btn', function() {
+            const textId = $(this).data('text-id');
+            const $hidden = $('#' + textId);
+            const rawText = $hidden.length && $hidden.data('raw') ? $hidden.data('raw') : $hidden.text();
+            const polishedText = extractResumeContent(rawText);
+
+            if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
+                // store previous for undo
+                lastFocusedTextarea.data('prev', lastFocusedTextarea.val());
+                lastFocusedTextarea.val(polishedText);
+                toastr.success('Applied to the active input field!');
+                
+                // Focus it and flash it
+                lastFocusedTextarea.focus();
+                lastFocusedTextarea.css('border-color', '#0d609e');
+                setTimeout(function() {
+                    lastFocusedTextarea.css('border-color', '');
+                }, 1000);
+            } else {
+                // Fallback to first work experience description block
+                const firstExpDesc = $('textarea[name="exp_description[]"]').first();
+                if (firstExpDesc.length > 0) {
+                    // store previous for undo
+                    firstExpDesc.data('prev', firstExpDesc.val());
+                    firstExpDesc.val(polishedText);
+                    toastr.info('No active input was selected. Applied to first work experience description.');
+                    
+                    if (firstExpDesc.is(':visible') && firstExpDesc.offset()) {
+                        $('html, body').animate({
+                            scrollTop: firstExpDesc.offset().top - 120
+                        }, 300);
+                    }
+                    firstExpDesc.focus();
+                } else {
+                    // Otherwise default to summary
+                    const targetSummary = $('#resume-summary');
+                    targetSummary.val(polishedText);
+                    toastr.info('No active input was selected. Applied to Professional Summary.');
+                    
+                    if (targetSummary.is(':visible') && targetSummary.offset()) {
+                        $('html, body').animate({
+                            scrollTop: targetSummary.offset().top - 120
+                        }, 300);
+                    }
+                }
+            }
+        });
+
+        // Utility: Extract and clean raw markdown, HTML tags or blockquoted suggestions inside AI messages
+        function extractResumeContent(text) {
+            if (!text || typeof text !== 'string') {
+                if (text === null || text === undefined) return '';
+                text = String(text);
+            }
+            let extracted = text;
+            
+            // 1. Extract content from code block if present
+            const codeBlockRegex = /```(?:[a-zA-Z]+)?\n([\s\S]+?)\n```/;
+            const codeMatch = text.match(codeBlockRegex);
+            if (codeMatch && codeMatch[1]) {
+                extracted = codeMatch[1];
+            } else {
+                // 2. Extract blockquote block if present
+                const quoteRegex = /(?:^|\n)>\s*([\s\S]+?)(?:\n\n|\n$|$)/;
+                const quoteMatch = text.match(quoteRegex);
+                if (quoteMatch && quoteMatch[1]) {
+                    extracted = quoteMatch[1];
+                }
+            }
+            
+            // Strip any remaining HTML tags and markdown markers for clean resume placement
+            return extracted
+                .replace(/<[^>]*>/g, '') // strip HTML tags
+                .replace(/^>\s*/gm, '')  // remove leading blockquote carrots
+                .replace(/[*#`]/g, '')   // strip asterisks, pound headers, and backticks
+                .trim();
+        }
+
+        // AI Preview modal actions
+        $('#aiApplyBtn').on('click', function() {
+            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text() || $('#aiPreviewRender').html() || '';
+            const polished = extractResumeContent(raw);
+            const target = $('#resume-summary');
+            if (target.length) {
+                target.data('prev', target.val());
+                target.val(polished);
+                // Scroll to summary section if hidden/collapsed
+                const secSummary = $('#sec-summary');
+                if (secSummary.length && !secSummary.hasClass('open')) {
+                    secSummary.addClass('open');
+                }
+            }
+            $('#aiPreviewModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('overflow', '');
+            toastr.success('Applied AI content to Professional Summary');
+        });
+
+        $('#aiCopyPlainBtn').on('click', function() {
+            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text() || '';
+            const plain = extractResumeContent(raw);
+            navigator.clipboard.writeText(plain).then(function() {
+                toastr.success('Copied plain text to clipboard');
+            }, function() {
+                toastr.info('Copy failed — you can manually copy from the preview.');
+            });
+        });
+
+        // Apply preview content to last-focused input/textarea (or reasonable fallback)
+        $('#aiApplyActiveBtn').on('click', function() {
+            const raw = $('#aiPreviewRender').data('raw') || $('#aiPreviewRender').text() || '';
+            const polished = extractResumeContent(raw);
+
+            if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
+                // store previous for undo
+                lastFocusedTextarea.data('prev', lastFocusedTextarea.val());
+                lastFocusedTextarea.val(polished);
+                $('#aiPreviewModal').modal('hide');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
+                toastr.success('Applied to the active input field!');
+                lastFocusedTextarea.focus();
+                lastFocusedTextarea.css('border-color', '#0d609e');
+                setTimeout(function() { lastFocusedTextarea.css('border-color', ''); }, 1000);
+                return;
+            }
+
+            // Fallback to first work experience description
+            const firstExpDesc = $('textarea[name="exp_description[]"]').first();
+            if (firstExpDesc.length > 0) {
+                firstExpDesc.data('prev', firstExpDesc.val());
+                firstExpDesc.val(polished);
+                $('#aiPreviewModal').modal('hide');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
+                toastr.info('No active input was selected. Applied to first work experience description.');
+                if (firstExpDesc.is(':visible') && firstExpDesc.offset()) {
+                    $('html, body').animate({ scrollTop: firstExpDesc.offset().top - 120 }, 300);
+                }
+                firstExpDesc.focus();
+                return;
+            }
+
+            // Otherwise default to summary
+            const targetSummary = $('#resume-summary');
+            targetSummary.data('prev', targetSummary.val());
+            targetSummary.val(polished);
+            $('#aiPreviewModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('overflow', '');
+            toastr.info('No active input was selected. Applied to Professional Summary.');
+            if (targetSummary.length && targetSummary.is(':visible') && targetSummary.offset()) {
+                $('html, body').animate({ scrollTop: targetSummary.offset().top - 120 }, 300);
+            }
+        });
+
+        // Undo last AI apply for summary or focused field
+        $(document).on('click', '#undo-ai-apply', function() {
+            const $summary = $('#resume-summary');
+            const prev = $summary.data('prev');
+            if (typeof prev !== 'undefined') {
+                $summary.val(prev);
+                $summary.removeData('prev');
+                toastr.success('Undo applied');
+                return;
+            }
+
+            if (lastFocusedTextarea && lastFocusedTextarea.length > 0) {
+                const prevField = lastFocusedTextarea.data('prev');
+                if (typeof prevField !== 'undefined') {
+                    lastFocusedTextarea.val(prevField);
+                    lastFocusedTextarea.removeData('prev');
+                    toastr.success('Undo applied to active field');
+                    return;
+                }
+            }
+
+            toastr.info('Nothing to undo');
+        });
+    });
+
+    // ── PRINT ARCHITECTURE ──
+    // beforeprint moves #doc out of the preview wrappers (which may have
+    // transforms / overflow: hidden that clip the printed output).
+    // afterprint restores the DOM to its live state.
+    var _printRoot = document.createElement('div');
+    _printRoot.id = 'print-root';
+    _printRoot.style.display = 'none';
+    document.body.appendChild(_printRoot);
+    var _docHome = null;
+
+    function _toPrintRoot() {
+        var doc = document.getElementById('doc');
+        if (doc && doc.parentElement !== _printRoot) {
+            _docHome = doc.parentElement;
+            _printRoot.appendChild(doc);
+        }
+    }
+    function _fromPrintRoot() {
+        var doc = document.getElementById('doc');
+        if (_docHome && doc && doc.parentElement === _printRoot) {
+            _docHome.appendChild(doc);
+            _docHome = null;
+        }
+    }
+
+    window.addEventListener('beforeprint', function () {
+        _toPrintRoot();
+        window._prevDocTitle = document.title;
+        // Use candidate's full name as the print-dialog/PDF filename
+        var nameInput = document.querySelector('input[name="full_name"]');
+        if (nameInput && nameInput.value.trim()) {
+            document.title = nameInput.value.trim() + ' — Resume';
+        }
+    });
+    window.addEventListener('afterprint', function () {
+        _fromPrintRoot();
+        if (window._prevDocTitle) { document.title = window._prevDocTitle; }
+    });
+
+    // Download-as-PDF shortcut via browser print dialog
+    $(document).on('click', '.btn-print-pdf', function () {
+        // Brief toast advising how to save cleanly
+        if (typeof toastr !== 'undefined') {
+            toastr.info(
+                'In the print dialog: set <b>Destination → Save as PDF</b>, ' +
+                'open <b>More settings</b> and untick <b>Headers and footers</b>.',
+                'Saving as PDF', { timeOut: 6000, extendedTimeOut: 2000 }
+            );
+        }
+    // ── 1-CLICK AUTO-FILL FROM CANDIDATE PROFILE ──
+    $(document).on('click', '#btn-autofill-profile', function() {
+        var $btn = $(this);
+        var origHtml = $btn.html();
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Filling...');
+
+        $.ajax({
+            url: '<?= base_url('candidate/resumes/profile-data') ?>',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                if (res.success && res.data) {
+                    var d = res.data;
+                    if (d.full_name) $('input[name="full_name"]').val(d.full_name);
+                    if (d.email) $('input[name="email"]').val(d.email);
+                    if (d.phone) $('input[name="phone"]').val(d.phone);
+                    if (d.location) $('input[name="location"]').val(d.location);
+                    if (d.job_title && !$('input[name="title"]').val()) {
+                        $('input[name="title"]').val(d.job_title + ' Resume');
+                    }
+                    if (d.bio) {
+                        $('textarea[name="summary"]').val(d.bio);
+                        if (window.summaryQuill) {
+                            window.summaryQuill.root.innerHTML = d.bio;
+                        }
+                    }
+
+                    // Auto-fill skills
+                    if (d.skills && d.skills.length > 0) {
+                        d.skills.forEach(function(sk) {
+                            if (typeof addSkillItem === 'function') {
+                                addSkillItem(sk);
+                            }
+                        });
+                    }
+
+                    // Auto-fill experiences if container is empty
+                    if (d.experiences && d.experiences.length > 0) {
+                        d.experiences.forEach(function(exp) {
+                            if (typeof addExperienceItem === 'function') {
+                                addExperienceItem(exp.company, exp.job_title || exp.position, exp.start_date, exp.end_date, exp.description, exp.is_current);
+                            }
+                        });
+                    }
+
+                    // Auto-fill education if container is empty
+                    if (d.education && d.education.length > 0) {
+                        d.education.forEach(function(edu) {
+                            if (typeof addEducationItem === 'function') {
+                                addEducationItem(edu.school || edu.institution, edu.degree, edu.field_of_study, edu.end_year ? edu.end_year + '-12-31' : null);
+                            }
+                        });
+                    }
+
+                    if (typeof updatePreview === 'function') updatePreview();
+                    if (typeof renderPreview === 'function') renderPreview();
+                    if (typeof toastr !== 'undefined') toastr.success('CV auto-filled with your profile info!');
+                } else {
+                    if (typeof toastr !== 'undefined') toastr.warning(res.message || 'Could not fetch profile info.');
+                }
+            },
+            error: function() {
+                if (typeof toastr !== 'undefined') toastr.error('Server error pulling profile data.');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html(origHtml);
+            }
+        });
+    });
+</script>
+<?= $this->endSection() ?>
+

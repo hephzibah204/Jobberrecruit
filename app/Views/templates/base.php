@@ -3,15 +3,7 @@
 <html lang="en">
 
 <head>
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('jr-theme');
-            const preferDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (preferDark ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-theme', theme);
-            document.documentElement.setAttribute('data-theme-mode', theme);
-        })();
-    </script>
+
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3464186884176173"
         crossorigin="anonymous"></script>
     <meta charset="UTF-8">
@@ -34,8 +26,20 @@
     <link rel="apple-touch-icon" href="<?= base_url('images/pwa/icon-192.png'); ?>">
     <meta name="apple-mobile-web-app-title" content="JobberRecruit">
 
+    <!-- Google Analytics (gtag.js) -->
+    <?php $gaId = env('GA_MEASUREMENT_ID', env('GOOGLE_ANALYTICS_ID', 'G-D84YSE03K9')); ?>
+    <?php if (!empty($gaId)): ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc($gaId) ?>"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '<?= esc($gaId) ?>');
+    </script>
+    <?php endif; ?>
+
     <!-- SEO Meta Description -->
-    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt. Post jobs and hire top Nigerian talent.'); ?>">
+    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.'); ?>">
 
     <!-- Keywords -->
     <meta name="keywords" content="<?= $keywords ?? 'jobs in Nigeria, African job portal, find jobs, hire talent, recruitment platform, jobber recruit, employment portal'; ?>">
@@ -43,8 +47,11 @@
     <meta name="author" content="JobberRecruit">
     <meta name="robots" content="<?= (isset($noindex) && $noindex) ? 'noindex, nofollow' : 'index, follow' ?>">
 
-    <!-- Canonical URL -->
+    <!-- Canonical URL & Hreflang Tags -->
     <link rel="canonical" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="en-NG" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="en" href="<?= current_url(); ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= current_url(); ?>">
 
     <!-- Favicons -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.png'); ?>" type="image/png">
@@ -120,6 +127,7 @@
         <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet">
     <?php endif; ?>
     <link href="<?= base_url('css/bootstrap-icons.css'); ?>" rel="stylesheet">
+    <link href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css'); ?>" rel="stylesheet">
     <!-- Sora (headings) + Inter (body) — matching reference design -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,10 +139,16 @@
     <link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
 
     <!-- Section 8 — Native Mobile App Feel -->
-    <link rel="stylesheet" href="<?= base_url('css/mobile-app.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/mobile-app.css') ?>?v=<?= time() ?>">
 
     <!-- Page Custom Styles -->
     <?= $this->renderSection('styles'); ?>
+
+    <style>
+        html, body, a, button, select, input, [role="button"] {
+            cursor: url('/images/favicon_cursor.png'), auto !important;
+        }
+    </style>
 </head>
 
 
@@ -241,7 +255,7 @@
 
             function pingServer() {
                 return $.ajax({
-                    url: "/ping", // lightweight endpoint
+                    url: "<?= base_url('ping') ?>", // lightweight endpoint
                     method: "GET",
                     cache: false,
                     timeout: 3000
@@ -395,9 +409,16 @@
         const nav = document.getElementById('mob-nav');
         if (!nav) return;
         const open = nav.classList.toggle('open');
-        btn.setAttribute('aria-expanded', String(open));
-        document.body.style.overflow = open ? 'hidden' : '';
+        if (btn) btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          document.documentElement.classList.add('menu-open');
+          document.body.classList.add('menu-open');
+        } else {
+          document.documentElement.classList.remove('menu-open');
+          document.body.classList.remove('menu-open');
+        }
       }
+      window.togglePublicMenu = toggleMenu;
       document.addEventListener('DOMContentLoaded', function() {
         const mobNav = document.getElementById('mob-nav');
         if (mobNav) {
@@ -406,7 +427,8 @@
               this.classList.remove('open');
               const hamburger = document.querySelector('.hamburger');
               if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
-              document.body.style.overflow = '';
+              document.documentElement.classList.remove('menu-open');
+              document.body.classList.remove('menu-open');
             }
           });
         }
@@ -449,7 +471,10 @@
     <!-- Mobile Bottom App Navigation -->
     <?= $this->include('partials/mobile_bottom_nav') ?>
     <script src="<?= base_url('assets/js/mobile-app.js?v=1.0'); ?>"></script>
-    <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>
+
+    <?php if (auth()->loggedIn()): ?>
+    <?= $this->include('partials/chatbot'); ?>
+    <?php endif; ?>
     <script src="<?= base_url('js/inline-validation.js'); ?>" type="text/javascript"></script>
     <script src="<?= base_url('js/interactive-ui.js'); ?>" type="text/javascript"></script>
 </body>

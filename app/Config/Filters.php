@@ -40,6 +40,7 @@ class Filters extends BaseFilters
         'guest'         => GuestFilter::class,
         'adminAuth' => \App\Filters\AdminFilter::class,
         'featureGate'   => \App\Filters\FeatureGateFilter::class,
+        'throttle'      => \App\Filters\ThrottleFilter::class,
     ];
 
     /**
@@ -79,20 +80,24 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             'featureGate',
+            'csrf' => [
+                'except' => [
+                    'pricing/webhook',    // Paystack webhook — signed externally, no CSRF token
+                    'webhooks/paystack',  // Paystack webhook — signed externally, no CSRF token
+                    'candidate/resumes/ai/*', // Exclude AI assistant endpoints to prevent CSRF timeout during long resume drafting
+                    'candidate/resumes/autosave', // Exclude for testing mock requests
+                    'candidate/resumes/*/restore-autosave', // Exclude for testing mock requests
+                    'candidate/career-tools/*', // Exclude interactive AI simulation sessions (salary negotiation, mock interviews)
+                    'training/complete/*', // Exclude to prevent token expiration during long learning assessments
+                    'api/*', // Allow Gemini AI Interview API calls
+                ],
+            ],
             // 'honeypot',
-            // 'csrf' => ['except' => ['subscription/webhook']]
-            // 'csrf' => [
-            //     'except' => [
-            //         'login',
-            //         'register',
-            //         'api/*'
-            //     ]
-            // ],
             // 'invalidchars',
         ],
         'after' => [
+            'secureheaders',
             // 'honeypot',
-            // 'secureheaders',
         ],
     ];
 

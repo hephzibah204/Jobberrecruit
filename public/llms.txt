@@ -1,0 +1,23 @@
+# JobberRecruit
+
+> JobberRecruit (https://jobberrecruit.com) is Nigeria's leading recruitment and career portal, connecting job seekers with verified employers across Lagos, Abuja, Port Harcourt, and all 36 Nigerian states. The platform offers AI-powered resume builders, ATS optimization, online training with instant certification, and direct job applications.
+
+## Core Features & Offerings
+
+- [Find Jobs](https://jobberrecruit.com/jobs): Browse thousands of verified job listings across tech, finance, engineering, healthcare, marketing, sales, and remote roles in Nigeria.
+- [AI Career Tools](https://jobberrecruit.com/ai-tools/resume-builder): Create ATS-optimized resumes, practice AI mock interviews, and receive personalized career advice.
+- [Training & Certification](https://jobberrecruit.com/training): Access professional skill courses in data analysis, digital marketing, project management, and cybersecurity with instant certificates.
+- [Employer Services](https://jobberrecruit.com/employer/post-job): Post jobs for free, access verified candidate databases, and manage recruitment via an intuitive dashboard.
+- [Career Blog](https://jobberrecruit.com/blog): Expert guides on job hunting, interview tips, salary trends, and navigating the Nigerian job market.
+- [CV Review Service](https://jobberrecruit.com/cv-review): Professional CV rewrite and expert review tailored for Nigerian and global job markets.
+
+## Key Entities & Locations
+
+- **Supported Regions**: Lagos, Abuja (FCT), Port Harcourt (Rivers State), Ibadan (Oyo State), Kano, Enugu, and Remote Nigeria.
+- **Top Industries**: Information Technology, Banking & Finance, Oil & Gas, Healthcare, Education, Marketing, Operations.
+- **Organization Type**: Job Portal & Talent Acquisition Platform.
+
+## Additional Resources
+
+- [Full Site Overview](https://jobberrecruit.com/llms-full.txt): Detailed specifications of JobberRecruit tools, APIs, and services for AI search engines.
+- [Sitemap](https://jobberrecruit.com/sitemap.xml): Complete URL index of active job vacancies, categories, and blog articles.

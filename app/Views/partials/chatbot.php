@@ -18,11 +18,11 @@
         </div>
         <div class="header-actions">
             <button id="clear-chat" class="btn btn-sm text-white-50 p-0 me-2" title="Clear Chat" aria-label="Delete">
-    <i class="ti ti-trash fs-16"></i>
-</button>
+                <i class="ti ti-trash fs-16"></i>
+            </button>
             <button id="close-chat" class="btn btn-sm text-white p-0" aria-label="Close">
-    <i class="ti ti-x fs-18"></i>
-</button>
+                <i class="ti ti-x fs-18"></i>
+            </button>
         </div>
     </div>
     
@@ -46,8 +46,8 @@
             <div class="input-group">
                 <input type="text" id="chat-input" class="form-control" placeholder="Type a message..." autocomplete="off">
                 <button type="submit" class="btn btn-primary" aria-label="Action">
-    <i class="ti ti-send"></i>
-</button>
+                    <i class="ti ti-send"></i>
+                </button>
             </div>
         </form>
     </div>
@@ -61,7 +61,7 @@
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color), #4e73df);
+        background: linear-gradient(135deg, var(--brand, #0A2F57), #4e73df);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -79,7 +79,7 @@
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        background: var(--primary-color);
+        background: var(--brand, #0A2F57);
         animation: pulse-animation 2s infinite;
         z-index: -1;
         opacity: 0.6;
@@ -165,7 +165,7 @@
     }
     
     .user-message .message-content {
-        background: var(--primary-color);
+        background: var(--brand, #0A2F57);
         color: #fff;
         border-bottom-right-radius: 2px;
     }
@@ -201,6 +201,24 @@
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
     }
+
+    /* Mobile adjustments (clears bottom navigation bar) */
+    @media (max-width: 768px) {
+        .chatbot-toggle {
+            bottom: 80px;
+            right: 18px;
+            width: 50px;
+            height: 50px;
+        }
+        .chatbot-window {
+            bottom: 140px;
+            right: 12px;
+            left: 12px;
+            width: auto;
+            height: calc(100vh - 180px);
+            max-height: 520px;
+        }
+    }
     
     /* Dark mode adjustments */
     [data-theme-mode="dark"] .chatbot-window {
@@ -230,91 +248,123 @@
 </style>
 
 <script>
-$(document).ready(function() {
-    const $toggle = $('#chatbot-toggle');
-    const $window = $('#chatbot-window');
-    const $close = $('#close-chat');
-    const $form = $('#chat-form');
-    const $input = $('#chat-input');
-    const $messages = $('#chat-messages');
-    const $typing = $('#typing-indicator');
-    const $clear = $('#clear-chat');
+document.addEventListener('DOMContentLoaded', function() {
+    var toggle = document.getElementById('chatbot-toggle');
+    var win = document.getElementById('chatbot-window');
+    var close = document.getElementById('close-chat');
+    var form = document.getElementById('chat-form');
+    var input = document.getElementById('chat-input');
+    var messages = document.getElementById('chat-messages');
+    var typing = document.getElementById('typing-indicator');
+    var clear = document.getElementById('clear-chat');
 
-    $toggle.on('click', function() {
-        $window.toggleClass('d-none');
-        scrollToBottom();
-    });
-
-    $close.on('click', function() {
-        $window.addClass('d-none');
-    });
-
-    $clear.on('click', function() {
-        if (confirm('Clear chat history?')) {
-            $.post('<?= site_url('chatbot/clear') ?>', {
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-            }, function() {
-                $messages.empty();
-                addMessage('bot', "Chat history cleared. How can I help you today?");
-            });
-        }
-    });
-
-    $form.on('submit', function(e) {
-        e.preventDefault();
-        const msg = $input.val().trim();
-        if (!msg) return;
-
-        $input.val('');
-        addMessage('user', msg);
-        
-        $typing.removeClass('d-none');
-        scrollToBottom();
-
-        $.post('<?= site_url('chatbot/send') ?>', {
-            message: msg,
-            <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-        }, function(res) {
-            $typing.addClass('d-none');
-            if (res.success) {
-                addMessage('bot', res.response);
-            } else {
-                addMessage('bot', "Sorry, I encountered an error. Please try again.");
-            }
-        }).fail(function() {
-            $typing.addClass('d-none');
-            addMessage('bot', "Connection error. Please check your internet.");
-        });
-    });
-
-    function addMessage(sender, text) {
-        const time = 'Just now';
-        let html = '';
-        
-        if (sender === 'user') {
-            html = `
-                <div class="user-message">
-                    <div class="message-content shadow-sm">${text}</div>
-                    <small class="text-muted me-2 mt-1 d-block">${time}</small>
-                </div>
-            `;
-        } else {
-            // Simple markdown-to-html for bot response
-            const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            html = `
-                <div class="bot-message mb-3">
-                    <div class="message-content shadow-sm">${formattedText}</div>
-                    <small class="text-muted ms-2 mt-1 d-block">${time}</small>
-                </div>
-            `;
-        }
-        
-        $messages.append(html);
-        scrollToBottom();
-    }
+    if (!toggle || !win) return;
 
     function scrollToBottom() {
-        $messages.scrollTop($messages[0].scrollHeight);
+        if (messages) messages.scrollTop = messages.scrollHeight;
+    }
+
+    toggle.addEventListener('click', function() {
+        win.classList.toggle('d-none');
+        scrollToBottom();
+    });
+
+    if (close) {
+        close.addEventListener('click', function() {
+            win.classList.add('d-none');
+        });
+    }
+
+    if (clear) {
+        clear.addEventListener('click', function() {
+            if (confirm('Clear chat history?')) {
+                fetch('<?= site_url('chatbot/clear') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-query-urlencoded'
+                    },
+                    body: '<?= csrf_token() ?>=<?= csrf_hash() ?>'
+                }).then(function() {
+                    if (messages) {
+                        messages.innerHTML = '';
+                        addMessage('bot', "Chat history cleared. How can I help you today?");
+                    }
+                });
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var msg = input.value.trim();
+            if (!msg) return;
+
+            input.value = '';
+            addMessage('user', msg);
+            
+            if (typing) typing.classList.remove('d-none');
+            scrollToBottom();
+
+            var formData = new FormData();
+            formData.append('message', msg);
+            formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+            fetch('<?= site_url('chatbot/send') ?>', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                if (typing) typing.classList.add('d-none');
+                if (res.success) {
+                    addMessage('bot', res.response);
+                } else {
+                    var msg = res.message || "Sorry, I encountered an error. Please try again.";
+                    if (res.redirect) {
+                        msg += '<br><a href="' + res.redirect + '" class="btn btn-sm btn-primary mt-2 d-inline-block text-white" style="text-decoration:none;padding:6px 14px;border-radius:6px;font-weight:600;"><i class="ti ti-crown me-1"></i> Upgrade Candidate Plan</a>';
+                    }
+                    addMessage('bot', msg);
+                }
+            })
+            .catch(function() {
+                if (typing) typing.classList.add('d-none');
+                addMessage('bot', "Connection error. Please check your internet.");
+            });
+        });
+    }
+
+    function addMessage(sender, text) {
+        var time = 'Just now';
+        var html = '';
+        
+        if (sender === 'user') {
+            html = '<div class="user-message">' +
+                        '<div class="message-content shadow-sm">' + escapeHtml(text) + '</div>' +
+                        '<small class="text-muted me-2 mt-1 d-block">' + time + '</small>' +
+                    '</div>';
+        } else {
+            // Server already returns sanitized, allowlisted HTML (see AiService::sanitizeHtml) — render as-is.
+            html = '<div class="bot-message mb-3">' +
+                        '<div class="message-content shadow-sm">' + text + '</div>' +
+                        '<small class="text-muted ms-2 mt-1 d-block">' + time + '</small>' +
+                    '</div>';
+        }
+        
+        if (messages) {
+            messages.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 });
 </script>

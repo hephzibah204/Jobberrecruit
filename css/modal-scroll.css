@@ -1,0 +1,129 @@
+/* ==========================================================================
+   GLOBAL SCROLLABLE POPUP MODAL SYSTEM
+   Forces vertical scrolling & prominent, obvious scrollbars on ALL modals
+   ========================================================================== */
+
+/* 1. Modal Backdrop & Display Alignment */
+.modal {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 2. Modal Dialog Sizing & Flex Behavior */
+.modal-dialog {
+  max-height: calc(100vh - 2rem) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  margin: 1.75rem auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+@media (max-width: 575.98px) {
+  .modal-dialog {
+    max-height: calc(100vh - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    margin: 0.5rem !important;
+    width: calc(100% - 1rem) !important;
+  }
+}
+
+/* 3. Modal Content Flex Container */
+.modal-content {
+  max-height: calc(100vh - 3.5rem) !important;
+  max-height: calc(100dvh - 3.5rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important; /* Keep rounded borders clean */
+  position: relative !important;
+}
+
+@media (max-width: 575.98px) {
+  .modal-content {
+    max-height: calc(100vh - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+}
+
+/* 4. Fixed Header and Footer */
+.modal-header {
+  flex-shrink: 0 !important;
+}
+
+.modal-footer {
+  flex-shrink: 0 !important;
+}
+
+/* 5. Scrollable Body Core */
+.modal-body,
+.modal-dialog-scrollable .modal-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: calc(100vh - 12rem) !important;
+  max-height: calc(100dvh - 12rem) !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  padding: 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+  .modal-body,
+  .modal-dialog-scrollable .modal-body {
+    max-height: calc(100vh - 8rem) !important;
+    max-height: calc(100dvh - 8rem) !important;
+    padding: 1rem;
+  }
+}
+
+/* 6. Prominent & Obvious Custom Scrollbar Styling for ALL Modals */
+.modal-body::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar,
+.modal-dialog-scrollable .modal-body::-webkit-scrollbar,
+.modal::-webkit-scrollbar {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+@media (max-width: 575.98px) {
+  .modal-body::-webkit-scrollbar,
+  .modal-content::-webkit-scrollbar,
+  .modal-dialog-scrollable .modal-body::-webkit-scrollbar,
+  .modal::-webkit-scrollbar {
+    width: 10px !important;
+    height: 10px !important;
+  }
+}
+
+.modal-body::-webkit-scrollbar-track,
+.modal-content::-webkit-scrollbar-track,
+.modal-dialog-scrollable .modal-body::-webkit-scrollbar-track,
+.modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+.modal-body::-webkit-scrollbar-thumb,
+.modal-content::-webkit-scrollbar-thumb,
+.modal-dialog-scrollable .modal-body::-webkit-scrollbar-thumb,
+.modal::-webkit-scrollbar-thumb {
+  background: rgba(10, 47, 87, 0.7) !important;
+  border-radius: 8px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover,
+.modal-content::-webkit-scrollbar-thumb:hover,
+.modal-dialog-scrollable .modal-body::-webkit-scrollbar-thumb:hover,
+.modal::-webkit-scrollbar-thumb:hover {
+  background: #0A2F57 !important;
+}
+
+/* Firefox Scrollbar Rules */
+.modal-body,
+.modal-content,
+.modal {
+  scrollbar-width: auto !important;
+  scrollbar-color: rgba(10, 47, 87, 0.75) rgba(0, 0, 0, 0.08) !important;
+}

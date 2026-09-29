@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Job Approved - <?= $job_title ?></title>
+    <title>Job Approved - <?= htmlspecialchars($job_title ?? 'Job Opportunity') ?></title>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -91,12 +91,13 @@
         .button {
             display: inline-block;
             background: #28a745;
-            color: white;
+            color: white !important;
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 5px;
             margin-top: 20px;
             margin-right: 10px;
+            font-weight: 600;
         }
 
         .button-secondary {
@@ -106,7 +107,7 @@
         .button-outline {
             background: transparent;
             border: 2px solid #28a745;
-            color: #28a745;
+            color: #28a745 !important;
         }
 
         .footer {
@@ -157,7 +158,7 @@
         </div>
 
         <div class="content">
-            <p>Dear <strong><?= htmlspecialchars($employer_name) ?></strong>,</p>
+            <p>Dear <strong><?= htmlspecialchars($employer_name ?? 'Employer') ?></strong>,</p>
 
             <div class="success-badge">
                 🎉 Congratulations! Your job has been approved
@@ -165,16 +166,16 @@
 
             <div class="job-card">
                 <strong>📋 Job Details:</strong><br>
-                <strong>Title:</strong> <?= htmlspecialchars($job_title) ?><br>
-                <strong>Posted on:</strong> <?= $job_created_at ?><br>
+                <strong>Title:</strong> <?= htmlspecialchars($job_title ?? 'Job Opportunity') ?><br>
+                <strong>Posted on:</strong> <?= htmlspecialchars($job_created_at ?? date('F j, Y')) ?><br>
                 <strong>Status:</strong> <span style="color:#28a745;">● Live & Active</span>
             </div>
 
             <p>Your job posting has been reviewed and approved by our team. It is now visible to all job seekers on our platform.</p>
 
             <center>
-                <a href="<?= $job_url ?>" class="button">🔍 View Your Job</a>
-                <a href="<?= $dashboard_url ?>" class="button button-secondary">📊 Go to Dashboard</a>
+                <a href="<?= $job_url ?? base_url('jobs') ?>" class="button">🔍 View Your Job</a>
+                <a href="<?= $dashboard_url ?? base_url('employer/dashboard') ?>" class="button button-secondary">📊 Go to Dashboard</a>
             </center>
 
             <hr>
@@ -184,20 +185,20 @@
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-number"><?= number_format($total_jobs_posted) ?></div>
+                    <div class="stat-number"><?= number_format((int)($total_jobs_posted ?? 1)) ?></div>
                     <div class="stat-label">Total Jobs Posted</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number"><?= number_format($approved_jobs) ?></div>
+                    <div class="stat-number"><?= number_format((int)($approved_jobs ?? 1)) ?></div>
                     <div class="stat-label">Approved Jobs</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number"><?= number_format($pending_jobs) ?></div>
+                    <div class="stat-number"><?= number_format((int)($pending_jobs ?? 0)) ?></div>
                     <div class="stat-label">Pending Review</div>
                 </div>
             </div>
 
-            <?php if ($has_unlimited_access): ?>
+            <?php if (!empty($has_unlimited_access)): ?>
                 <div class="stat-card" style="background: linear-gradient(135deg, #d4edda, #c3e6cb); margin-top: 10px;">
                     <div class="plan-badge plan-unlimited" style="display: inline-block; margin-bottom: 10px;">🌟 UNLIMITED ACCESS</div>
                     <p style="margin: 5px 0 0; font-weight: bold;">You have unlimited job postings on your current plan!</p>
@@ -206,14 +207,14 @@
             <?php else: ?>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-number"><?= number_format($credit_balance) ?></div>
+                        <div class="stat-number"><?= number_format((int)($credit_balance ?? 0)) ?></div>
                         <div class="stat-label">Available Credits</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number"><?= htmlspecialchars($current_plan) ?></div>
+                        <div class="stat-number"><?= htmlspecialchars($current_plan ?? 'Standard') ?></div>
                         <div class="stat-label">Current Plan</div>
                     </div>
-                    <?php if ($subscription_ends_at): ?>
+                    <?php if (!empty($subscription_ends_at)): ?>
                         <div class="stat-card">
                             <div class="stat-number"><?= date('M d, Y', strtotime($subscription_ends_at)) ?></div>
                             <div class="stat-label">Subscription Expires</div>
@@ -221,18 +222,18 @@
                     <?php endif; ?>
                 </div>
 
-                <?php if ($credit_balance <= 2 && $credit_balance > 0): ?>
+                <?php if (isset($credit_balance) && $credit_balance <= 2 && $credit_balance > 0): ?>
                     <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 5px;">
                         <strong>⚠️ Low Credits Warning!</strong><br>
                         You only have <strong><?= $credit_balance ?></strong> credit(s) remaining.
-                        <a href="<?= $pricing_url ?>" style="color: #856404;">Purchase more credits</a> to continue posting jobs.
+                        <a href="<?= $pricing_url ?? base_url('employer/pricing') ?>" style="color: #856404;">Purchase more credits</a> to continue posting jobs.
                     </div>
-                <?php elseif ($credit_balance <= 0 && !$has_unlimited_access): ?>
+                <?php elseif (isset($credit_balance) && $credit_balance <= 0 && empty($has_unlimited_access)): ?>
                     <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px; margin: 15px 0; border-radius: 5px;">
                         <strong>⚠️ No Credits Available!</strong><br>
                         You have 0 job credits.
-                        <a href="<?= $pricing_url ?>" style="color: #721c24;">Purchase a bundle</a> or
-                        <a href="<?= $pricing_url ?>" style="color: #721c24;">subscribe to a plan</a> to post more jobs.
+                        <a href="<?= $pricing_url ?? base_url('employer/pricing') ?>" style="color: #721c24;">Purchase a bundle</a> or
+                        <a href="<?= $pricing_url ?? base_url('employer/pricing') ?>" style="color: #721c24;">subscribe to a plan</a> to post more jobs.
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
@@ -250,13 +251,13 @@
             </div>
 
             <center>
-                <a href="<?= $jobs_url ?>" class="button button-outline">📋 View All Your Jobs</a>
-                <a href="<?= $pricing_url ?>" class="button button-outline">💳 Manage Plan</a>
+                <a href="<?= $jobs_url ?? base_url('employer/jobs') ?>" class="button button-outline">📋 View All Your Jobs</a>
+                <a href="<?= $pricing_url ?? base_url('employer/pricing') ?>" class="button button-outline">💳 Manage Plan</a>
             </center>
         </div>
 
         <div class="footer">
-            <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($platform_name) ?>. All rights reserved.</p>
+            <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($platform_name ?? 'JobberRecruit') ?>. All rights reserved.</p>
             <p>This is an automated message, please do not reply to this email.</p>
             <p>Need help? <a href="<?= base_url('contact') ?>">Contact Support</a></p>
         </div>

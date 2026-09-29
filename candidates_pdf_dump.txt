@@ -1,0 +1,561 @@
+TOTAL PAGES: 20
+
+================ PAGE 1 ================
+JobberRecruit Candidate Dashboard & AI
+Career Tools
+Development Requirements, Fixes & Functional
+Expectations
+Objective
+Please review and implement the following changes across the Candidate
+Dashboard and AI Career Tools.
+The key requirement is that the live implementation should closely match, or improve
+upon, the premium HTML designs previously supplied. Where the HTML contains a
+better workflow, interface, component or AI interaction, use it as the implementation
+reference.
+1. Candidate Aptitude Test Centre
+Candidates need a dedicated section within their dashboard where they can manage
+aptitude-test invitations.
+Required functionality
+Create a separate candidate-facing area where candidates can:
+
+See all aptitude tests they have been invited to take.
+
+See which employer/job each test relates to.
+
+View the test status.
+
+Accept/open an invitation where applicable.
+
+Start the test.
+
+Continue an incomplete test.
+
+See completed tests.
+
+View their test scores/results where the result is available.
+Suggested statuses
+Use clear statuses such as:
+
+Invited
+
+Not Started
+
+In Progress
+
+
+================ PAGE 2 ================
+
+Completed
+
+Results Available
+
+Expired
+The candidate should not have to search through messages or applications to find
+aptitude-test invitations.
+2. Candidate Email Notifications
+Update the email notification system to include the following.
+2.1 Job Alert Emails
+Where a candidate has an active Job Alert, the system should automatically send an
+email when a newly posted job matches the candidate's alert criteria.
+The email should contain relevant job information and a clear link to view/apply for
+the job.
+2.2 Weekly Premium Job Digest
+Candidates should also be able to receive a weekly premium-jobs digest.
+For example:
+
+Premium jobs posted Monday–Friday are collected.
+
+Candidates receive a weekly overview/digest of those premium jobs.
+
+The email should contain the relevant premium jobs posted during the period.
+
+Each job should have a clear link to view the vacancy.
+The email template should look professional and should not send multiple
+unnecessary emails for every premium job if the weekly-digest option is being used.
+
+
+================ PAGE 3 ================
+3. Candidate Profile Visibility Bug
+There is currently a privacy/visibility bug.
+When a candidate switches Profile Visibility OFF, the candidate is still appearing in
+employer search results.
+Required behaviour
+When profile visibility is OFF:
+
+Candidate must not appear in employer candidate search.
+
+Candidate profile must not be publicly discoverable through the employer
+search system.
+
+Any matching/search index should respect the visibility setting.
+
+The change should take effect consistently across the platform.
+Test both:
+Visibility ON →candidate searchable
+Visibility OFF →candidate not searchable
+4. Skill Match Hub – Incorrect Reading
+The Skill Match Hub is displaying a reading/value even when the actual value is zero.
+Required action
+Review the calculation and display logic.
+If the candidate has:
+0 skill matches
+
+
+================ PAGE 4 ================
+the dashboard must display:
+0
+and not an incorrect/previous/default value.
+Also verify that the same issue does not occur with other zero-value dashboard
+statistics.
+5. Candidate Profile Completion
+Percentage
+The Candidate Profile Edit page should use the following exact percentage allocation:
+Profile Section
+Percentage
+Personal Information
+15%
+Job Preference
+15%
+Professional Summary10%
+Work Experience
+20%
+Education
+12%
+Skills
+10%
+
+
+================ PAGE 5 ================
+Resume
+12%
+Portfolio
+3%
+Certificate
+2%
+Language
+1%
+Total
+100%
+Important UI requirement
+The Resume section should appear prominently in the profile-completion structure
+and should not be pushed below the other sections.
+Profile completion threshold
+To earn the ₦500 profile-completion incentive, the candidate must reach at least:
+80% profile completion
+The system should calculate this percentage consistently across the profile and
+dashboard.
+Profile Requirements – Optional Fields
+Please adjust the mandatory/optional rules.
+Remove the optional requirement/status from:
+
+Work Experience
+
+Education
+Make Language: Optional
+The profile completion calculation should still follow the percentage allocation above.
+Do not incorrectly prevent candidates from completing or submitting their profile
+simply because the optional fields are empty
+7. Resume vs Profile Picture
+There is an incorrect label/field where the system currently refers to a profile picture.
+This should be corrected to:
+
+
+================ PAGE 6 ================
+Resume
+The relevant UI, label, upload area and instructions should clearly indicate that the
+candidate is uploading/managing their resume.
+8. Licences & Certifications – External
+Certificate
+When a candidate opens Licences & Certifications to edit the section, there is
+currently no field for entering an external certificate.
+Required functionality
+Add the required external certificate fields based on the supplied HTML design.
+The candidate should be able to enter/upload relevant external certification
+information and save it successfully.
+Please use the previously supplied HTML as the design and functional reference.
+
+
+================ PAGE 7 ================
+9. AI Resume Builder – Delete Resume
+Candidates currently cannot delete a resume from the AI Resume Builder.
+Required action
+Add a functional Delete Resume option.
+For the generated CV, remove all the generic contents experience, education ,
+certifications and language, location, LinkedIn URL that was on the editable profile on
+the CV builder section and profile inputs. Incorporate the list of Nigerian based degree
+under the education section
+
+
+================ PAGE 8 ================
+12. AI Strengthen Achievements /
+Professional Summary / Generate Bullets
+The current AI functionality is not behaving as intended.
+The system is generating random/generic suggestions instead of improving the
+candidate's existing content.
+For example, when a candidate enters:
+"I recruit for Jobber Recruit"
+and asks the AI to strengthen it, the current system generates unrelated
+interpretations such as treating "This is how to improve that you recruit for Jobber
+Recruit" as a generic term rather than understanding the candidate's actual
+employment context and elaborating it.
+Required AI behaviour
+
+
+================ PAGE 9 ================
+The AI must:
+1.
+Read the candidate's existing content.
+2. Understand the context.
+3. Improve the existing wording.
+4. Preserve the underlying facts.
+5. Produce a professional version directly relevant to the candidate.
+6. Avoid inventing unrelated experience or organisations.
+7. Avoid generic suggestions unrelated to the supplied text.
+Strengthen Achievements
+When the candidate clicks Strengthen, the AI should improve the achievement
+already entered.
+It should not provide several unrelated generic answers.
+Generate Bullets
+When Generate Bullets is selected:
+
+Convert the candidate's existing information into relevant professional bullet
+points.
+
+Keep the content factually connected to the original information.
+
+Do not invent responsibilities or achievements.
+Professional Summary Improvement
+The AI should improve the candidate's actual professional summary rather than
+replacing it with a generic profile.
+AI Generation Modal/Panel Does Not Close
+After AI content is generated, the result/popup currently remains open and cannot be
+properly closed.
+The user has to leave the page before the interface closes.
+Required action
+Fix all AI result modals, drawers, overlays and popups so that:
+
+Close button works.
+
+X button works.
+
+Clicking an applicable "Done" button closes it.
+
+Escape key can close it where appropriate.
+
+Closing the AI panel does not require leaving/reloading the page.
+Apply this consistently throughout the Resume Builder.
+
+
+================ PAGE 10 ================
+14. Tailor Resume to a Job
+The Tailor to a Job functionality is not working properly and does not appear to be
+correctly connected to the AI. See the pics above of our HTML we shared.
+Required AI behaviour
+The AI should tailor the candidate's resume based on the specific relevant job, not
+every job posted on JobberRecruit.
+The system should:
+1.
+Identify jobs relevant to the candidate/profile.
+2. Allow the candidate to select the relevant job.
+3. Analyse the selected job description.
+4. Compare the job requirements against the candidate's resume.
+5. Tailor the resume around the selected job.
+6. Preserve truthful candidate information.
+7. Highlight relevant experience, skills and achievements.
+8. Avoid inserting irrelevant content from unrelated job postings.
+The final result should clearly be a targeted version of the candidate's CV for the
+selected vacancy.
+
+
+================ PAGE 11 ================
+15. Recruiter View – Match Premium
+HTML
+The current Recruiter View implementation is significantly different from the
+Recruiter View contained in the supplied HTML.
+Required action
+Use the supplied Recruiter View HTML as the primary implementation reference.
+Review:
+
+Layout
+
+Information hierarchy
+
+Candidate information
+
+Sections
+
+Buttons
+
+Recruiter actions
+
+Resume presentation
+
+Profile presentation
+
+Matching information
+
+Overall visual design
+The live implementation should closely reproduce the HTML design and functionality.
+
+
+================ PAGE 12 ================
+16. CV Output Must Match Premium
+HTML
+The final CV generated by the live Resume Builder does not currently look as
+premium as the supplied HTML.
+Required standard
+The CV templates should:
+
+Match the supplied premium HTML layouts.
+
+Preserve the intended typography.
+
+Maintain the intended spacing.
+
+Maintain the correct sections.
+
+Preserve the intended hierarchy.
+
+Fill the template correctly using the candidate's information.
+
+Remain visually balanced with different amounts of candidate content.
+The objective is not simply to use a similar design.
+The generated CV should fill and render exactly like the premium HTML template, or
+improve on it without reducing its quality.
+
+
+================ PAGE 13 ================
+17. "More AI Outputs" Not Working
+The More AI Outputs option within the AI Resume Builder is currently not functioning.
+Required action
+Make the control functional and ensure that it returns additional useful AI-generated
+alternatives where the feature is applicable.
+The additional outputs must remain relevant to the candidate's original content.
+They must not introduce unrelated or fabricated information.
+18. Resume Builder Watermark
+
+
+================ PAGE 14 ================
+The watermark displayed above the resume does not appear when the candidate
+prints the resume.
+Required action
+The watermark must render correctly in the print/print-preview/PDF output where
+the watermark is intended to appear.
+Test:
+
+Browser print
+
+PDF print
+
+Desktop
+
+Mobile
+Ensure that the print stylesheet does not remove the intended watermark.
+19. Cover Letter Generator
+The Cover Letter Generator is currently not functioning correctly.
+The previously supplied HTML demonstrates a functioning Cover Letter Generator
+and should be used as the implementation reference.
+Required functionality
+The candidate should be able to:
+
+Enter/select the relevant job.
+
+Generate a cover letter.
+
+Use profile information to populate relevant details.
+
+Edit the generated content.
+
+Regenerate/improve the letter.
+
+Close the generation panel properly.
+
+Save/use the generated cover letter where applicable.
+The AI implementation should be properly connected and should produce relevant
+job-specific content rather than generic text.
+Resume Page Count
+
+
+================ PAGE 15 ================
+The 1-page icon/page indicator is currently inaccurate.
+For example, when the resume extends beyond one page, the system still displays
+that it is a one-page document.
+Required action
+The system should dynamically determine the actual page count.
+Examples:
+
+One-page CV →1 page
+
+Two-page CV →2 pages
+
+Three-page CV →3 pages
+The indicator should update when the resume content changes.
+Resume Builder – Autofill From Profile
+The Autofill from Profile functionality is not working.
+Required behaviour
+When the candidate selects Autofill:
+
+Pull the candidate's relevant profile information.
+
+Populate the appropriate Resume Builder fields.
+
+Map each profile field to the correct CV section.
+
+Do not duplicate information incorrectly.
+
+Do not overwrite manually entered information unless the user explicitly
+chooses to do so.
+22. CV Import
+
+
+================ PAGE 16 ================
+The CV Import function is currently not working.
+Required action
+Fix the import process so that candidates can upload an existing CV and have the
+system extract the appropriate information.
+The system should correctly identify and map:
+
+Personal information
+
+Professional title
+
+Professional summary
+
+Work experience
+
+Education
+
+Skills
+
+Certifications
+
+Languages
+
+Portfolio
+
+Relevant links
+The extracted information should then be presented for candidate review/editing
+before being used to generate the final CV.
+23. Resume Revisions Panel Cannot
+Close
+The Resume Revisions panel/modal cannot be closed properly.
+The user currently has to leave the page before the panel disappears.
+Required action
+Fix the close functionality.
+The candidate must be able to close the revision panel without leaving or refreshing
+the page.
+
+
+================ PAGE 17 ================
+24. AI Resume Coach
+The AI Resume Coach is currently applying suggestions directly into the CV instead
+of simply providing recommendations.
+Required behaviour
+The AI Resume Coach should act as a coach/adviser, not automatically modify the
+candidate's document.
+When the AI identifies an issue:
+
+Explain the issue.
+
+Make a recommendation.
+
+Show the proposed improvement.
+
+Allow the candidate to decide whether to apply it.
+The candidate should have an explicit action such as:
+Apply Suggestion
+rather than having the system automatically insert AI recommendations into the
+resume.
+PLEASE and PLEASE, the AI Resume Builder must reproduce the premium HTML
+experience previously supplied or surpass it.
+
+
+================ PAGE 18 ================
+26. Salary Negotiation Simulator – Live
+Transcript
+Under:
+Negotiation Room →Salary Negotiation Simulator
+the Live Transcript functionality is not working.
+Required action
+Fix the live transcript so that it records/displays the ongoing conversation accurately
+while the salary negotiation simulation is taking place.
+The transcript should update during the interaction rather than only displaying
+information after the session ends.
+27. AI Interview Studio – Remove Video
+
+
+================ PAGE 19 ================
+Remove the video component from AI Interview Studio.
+The current video functionality is not applicable to the intended implementation.
+The interview experience should therefore focus on the appropriate text/voice
+interaction rather than presenting a non-functional video interview interface.
+28. AI Interview Studio – Voice Interview
+There are several issues with the voice-based interview.
+Current issues
+When the candidate selects Voice during interview setup:
+
+The interview room initially starts with text instead of voice.
+
+The nine questions appear generic despite the Gemini AI integration.
+
+Switching to voice does not consistently produce audible AI responses.
+
+The AI sometimes speaks only after the candidate skips to the next question.
+
+Voice transcription is not working reliably.
+Required voice-interview behaviour
+When the candidate selects Voice:
+Start the interview in voice mode
+The first question should be delivered through the selected AI voice.
+It should not initially present a text-only interview where voice mode has been
+selected.
+AI voice response
+The AI should:
+
+Speak naturally.
+
+Respond at the appropriate stage of the conversation.
+
+Complete the spoken question before progressing.
+
+Not require the candidate to skip to trigger speech.
+
+Maintain reliable audio throughout the interview.
+Question quality
+The nine interview questions should not feel like generic static questions.
+
+
+================ PAGE 20 ================
+The Gemini-powered system should use the candidate's:
+
+Target role
+
+Experience
+
+Skills
+
+Resume/profile
+
+Relevant job information
+to create a more relevant and realistic interview.
+The interview should feel like an actual AI interviewer rather than a fixed list of generic
+questions.
+Voice transcription
+The candidate's spoken response should be transcribed reliably and displayed in the
+interview interface.
+The system should handle:
+
+Start/stop listening
+
+Speech recognition
+
+Transcription
+
+AI processing
+
+AI response
+
+Next-question progression
+without requiring manual workarounds.
+
+

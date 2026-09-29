@@ -17,16 +17,20 @@ class WebhookController extends Controller
         $payload = file_get_contents('php://input');
 
         // --------------------------------------------------
-        // 1. HMAC-SHA256 SIGNATURE VERIFICATION
+        // 1. HMAC-SHA512 SIGNATURE VERIFICATION
         // --------------------------------------------------
-        $signature = $this->request->getHeaderLine('x-paystack-signature');
-        $secretKey = env('PAYSTACK_SECRET_KEY');
-        if ($secretKey) {
-            $computed = hash_hmac('sha256', $payload, $secretKey);
-            if (!hash_equals($computed, $signature)) {
-                log_message('error', 'Paystack webhook: Invalid HMAC signature');
-                return $this->response->setStatusCode(401)->setBody('Unauthorized');
-            }
+        $signature = $this->request->getHeaderLine('x-paystack-signature') ?: $this->request->getServer('HTTP_X_PAYSTACK_SIGNATURE');
+        $secretKey = env('PAYSTACK_SECRET_KEY') ?: (env('paystack_secret_key') ?: env('paystack.secret_key'));
+        
+        if (empty($secretKey)) {
+            log_message('critical', 'Paystack webhook: PAYSTACK_SECRET_KEY is not configured in .env.');
+            return $this->response->setStatusCode(401)->setBody('Unauthorized');
+        }
+        
+        $computed = hash_hmac('sha512', $payload, $secretKey);
+        if (empty($signature) || !hash_equals($computed, (string)$signature)) {
+            log_message('error', 'Paystack webhook: Invalid HMAC signature. Ensure live secret key matches webhook environment.');
+            return $this->response->setStatusCode(401)->setBody('Unauthorized');
         }
 
         // --------------------------------------------------
@@ -50,6 +54,7 @@ class WebhookController extends Controller
         $userModel    = model(UserModel::class);
         $employerModel = model(EmployerModel::class); // For company_name
 
+        $requestIp = $this->request->getIPAddress();
         log_message('info', "Paystack webhook received from {$requestIp}: {$eventType}");
 
         /*
@@ -108,19 +113,67 @@ class WebhookController extends Controller
             // Find employer for company name (optional fallback)
             $employer = $employerModel->where('user_id', $user->id)->first();
 
-            // Find plan
+            // 1. Check for Job Credit Bundle purchases
+            $meta = $data['metadata'] ?? [];
+            if (isset($meta['type']) && $meta['type'] === 'bundle' && !empty($meta['bundle_id'])) {
+                $bundleService = new \App\Services\BundleService();
+                $bundleService->credit(
+                    userId: (int) ($meta['user_id'] ?? $user->id),
+                    bundleId: (int) $meta['bundle_id'],
+                    reference: $reference,
+                    source: 'paystack'
+                );
+
+                if (!empty($meta['wallet_used']) && $meta['wallet_used'] > 0) {
+                    (new \App\Services\WalletService())->debit(
+                        userId: (int) ($meta['user_id'] ?? $user->id),
+                        amount: (float) $meta['wallet_used'],
+                        source: 'bundle_purchase_hybrid',
+                        reference: $reference . '_wallet',
+                        sourceId: (int) $meta['bundle_id'],
+                        description: 'Partial wallet payment for bundle'
+                    );
+                }
+
+                log_message('info', "Webhook: bundle {$meta['bundle_id']} credited for user {$user->id}");
+                return $this->response->setStatusCode(200);
+            }
+
+            // 2. Check for E-learning Course enrollment purchases
+            if (!empty($meta['course_id'])) {
+                $courseId = (int) $meta['course_id'];
+                $courseUserId = (int) ($meta['user_id'] ?? $user->id);
+                $enrollmentModel = model(\App\Models\CourseEnrollmentModel::class);
+                $existing = $enrollmentModel->where('course_id', $courseId)->where('user_id', $courseUserId)->first();
+                if (!$existing) {
+                    $enrollmentModel->insert([
+                        'course_id' => $courseId,
+                        'user_id' => $courseUserId,
+                        'status' => 'enrolled',
+                        'payment_reference' => $reference,
+                        'amount' => $amount
+                    ]);
+                }
+                log_message('info', "Webhook: enrolled user {$courseUserId} in course {$courseId}");
+                return $this->response->setStatusCode(200);
+            }
+
+            // Find plan for Subscriptions
             $plan = null;
             if ($planCode) {
                 $plan = $planModel->where('paystack_plan_code', $planCode)->first();
             }
-            if (! $plan && $amount > 0) {
+            if (! $plan && $amount > 0 && ($meta['type'] ?? '') === 'subscription') {
                 $plan = $planModel->where('price', $amount)->first();
             }
 
             if (! $plan) {
-                log_message('error', "Webhook charge.success: Plan not found for amount {$amount} / code {$planCode}");
+                log_message('info', "Webhook charge.success: Handled non-subscription charge for amount {$amount} / reference {$reference}");
                 return $this->response->setStatusCode(200);
             }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
 
             // Record payment
             $paymentModel->insert([
@@ -153,14 +206,21 @@ class WebhookController extends Controller
             $subModel->insert([
                 'user_id'                 => $user->id,
                 'plan_id'                 => $plan->id,
-                'start_date'              => $start,
-                'end_date'                => $end,
+                'starts_at'               => $start,
+                'ends_at'                 => $end,
                 'is_active'               => 1,
                 'subscription_code' => $data['subscription']['subscription_code'] ?? null,
                 'authorization'           => isset($data['authorization']) ? json_encode($data['authorization']) : null,
                 'created_at'              => $start,
                 'updated_at'              => $start,
             ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                log_message('error', "Webhook charge.success transaction failed for user {$user->id}");
+                return $this->response->setStatusCode(500)->setBody('Internal Server Error');
+            }
 
             // --------------------------------------------------
             // SEND INVOICE EMAIL TO CUSTOMER
@@ -188,6 +248,25 @@ class WebhookController extends Controller
                     log_message('info', "Monthly credits refilled for user {$user->id}");
                 } catch (\Throwable $e) {
                     log_message('error', "Failed to credit monthly for user {$user->id}: " . $e->getMessage());
+                }
+            }
+
+            // Create in-app payment_confirmed notification for employer
+            if ($employer) {
+                try {
+                    $planName  = $plan->name ?? 'Subscription';
+                    $amountFmt = '₦' . number_format($amount, 0);
+                    model(\App\Models\JobNotificationModel::class)->createNotification(
+                        (int) $employer->id,
+                        'payment_confirmed',
+                        'Payment Confirmed',
+                        "Your payment of {$amountFmt} for \"{$planName}\" was successful. Your subscription is now active until " . date('d M Y', strtotime($end)) . '.',
+                        null,
+                        null,
+                        base_url('employer/subscription')
+                    );
+                } catch (\Throwable $e) {
+                    log_message('error', 'Failed to create payment_confirmed notification: ' . $e->getMessage());
                 }
             }
 
@@ -350,7 +429,7 @@ class WebhookController extends Controller
             ->where('is_active', 1)
             ->first();
 
-        $endDate = $subscription ? date('F j, Y', strtotime($subscription->end_date)) : 'your current billing period';
+        $endDate = $subscription ? date('F j, Y', strtotime($subscription->ends_at)) : 'your current billing period';
 
         $employerModel = model(EmployerModel::class);
         $employer = $employerModel->where('user_id', $user->id)->first();

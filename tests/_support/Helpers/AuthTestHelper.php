@@ -15,6 +15,7 @@ trait AuthTestHelper
         $this->authTestUser = new User();
         $this->authTestUser->id = 9999;
         $this->authTestUser->status = 'active';
+        $this->authTestUser->active = 1;
         $this->authTestUser->email_verified_at = date('Y-m-d H:i:s');
         $this->authTestUser->user_type = 'job_seeker';
         $this->authTestUser->email = 'test@example.com';

@@ -1,0 +1,384 @@
+<?= $this->extend('admin/layouts/app') ?>
+<?= $this->section('section') ?>
+
+<div class="container-fluid page-container main-body-container">
+    <div class="page-header-breadcrumb mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1 class="page-title fw-medium fs-18 mb-0">Subscription Plans</h1>
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Plans & Subscriptions</li>
+                </ol>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-<?= $isFreeMode ? 'danger' : 'outline-warning' ?>" onclick="toggleFreeMode()">
+                    <i class="ti ti-<?= $isFreeMode ? 'lock-open' : 'lock' ?>"></i> <?= $isFreeMode ? 'Disable Free Mode' : 'Enable Free Mode' ?>
+                </button>
+                <a href="<?= base_url('admin/bundles') ?>" class="btn btn-outline-primary"><i class="ti ti-settings"></i> Growth Bundles</a>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#planModal" onclick="openCreateModal()"><i class="ti ti-plus"></i> Add Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($isFreeMode): ?>
+        <div class="alert alert-danger d-flex align-items-center mb-4"><i class="ti ti-alert-triangle me-2"></i><div><strong>FREE MODE ACTIVE:</strong> All features are free for all users. No payments will be collected.</div></div>
+    <?php endif; ?>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="planTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#employerTab">Employer Plans (<?= count($employerPlans) ?>)</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#candidateTab">Candidate Plans (<?= count($candidatePlans) ?>)</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#subsTab">Active Subscriptions</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#unlimitedTab">Unlimited Access</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Employer Plans -->
+        <div class="tab-pane fade show active" id="employerTab">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table text-nowrap mb-0">
+                            <thead><tr><th>Plan</th><th>Code</th><th>Price</th><th>Credits</th><th>Features</th><th>Status</th><th class="text-center">Actions</th></tr></thead>
+                            <tbody>
+                                <?php foreach ($employerPlans as $plan): ?>
+                                    <?php $features = is_string($plan->features ?? null) ? (json_decode($plan->features, true) ?? []) : (array)($plan->features ?? []); ?>
+                                    <tr>
+                                        <td><strong><?= esc($plan->name) ?></strong></td>
+                                        <td><code><?= esc($plan->code) ?></code></td>
+                                        <td>₦<?= number_format($plan->base_price) ?></td>
+                                        <td><?= $plan->monthly_job_credits ?? '—' ?></td>
+                                        <td><?= count(array_filter($features)) ?> enabled</td>
+                                        <td><span class="badge bg-<?= $plan->is_active ? 'success' : 'secondary' ?>"><?= $plan->is_active ? 'Active' : 'Inactive' ?></span></td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-primary-light" onclick='editPlan(<?= json_encode($plan) ?>)'><i class="ti ti-edit"></i></button>
+                                            <button class="btn btn-sm btn-danger-light" onclick="deletePlan(<?= $plan->id ?>)"><i class="ti ti-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($employerPlans)): ?><tr><td colspan="7" class="text-center p-4 text-muted">No employer plans. Click "Add Plan" to create one.</td></tr><?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Candidate Plans -->
+        <div class="tab-pane fade" id="candidateTab">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table text-nowrap mb-0">
+                            <thead><tr><th>Plan</th><th>Code</th><th>Price</th><th>Features</th><th>Status</th><th class="text-center">Actions</th></tr></thead>
+                            <tbody>
+                                <?php foreach ($candidatePlans as $plan): ?>
+                                    <?php $features = is_string($plan->features ?? null) ? (json_decode($plan->features, true) ?? []) : (array)($plan->features ?? []); ?>
+                                    <tr>
+                                        <td><strong><?= esc($plan->name) ?></strong></td>
+                                        <td><code><?= esc($plan->code) ?></code></td>
+                                        <td>₦<?= number_format($plan->base_price) ?></td>
+                                        <td><?= count(array_filter($features)) ?> enabled</td>
+                                        <td><span class="badge bg-<?= $plan->is_active ? 'success' : 'secondary' ?>"><?= $plan->is_active ? 'Active' : 'Inactive' ?></span></td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-primary-light" onclick='editPlan(<?= json_encode($plan) ?>)'><i class="ti ti-edit"></i></button>
+                                            <button class="btn btn-sm btn-danger-light" onclick="deletePlan(<?= $plan->id ?>)"><i class="ti ti-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($candidatePlans)): ?><tr><td colspan="6" class="text-center p-4 text-muted">No candidate plans. Click "Add Plan" to create one.</td></tr><?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Subscriptions -->
+        <div class="tab-pane fade" id="subsTab">
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="card-title mb-0 fs-16"><i class="ti ti-user-plus me-1 text-primary"></i> Assign Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <form id="assignSubscriptionForm" class="row g-3">
+                        <?= csrf_field() ?>
+                        <div class="col-md-3">
+                            <label class="form-label">Select Plan *</label>
+                            <select name="plan_id" id="assign_plan_id" class="form-select" required onchange="onPlanSelected()">
+                                <option value="">Choose plan...</option>
+                                <?php foreach ($employerPlans as $p): ?>
+                                    <?php if (($p->base_price ?? 0) == 0): ?>
+                                        <option value="<?= $p->id ?>" data-type="employer"><?= esc($p->name) ?> (Employer - Free)</option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                <?php foreach ($candidatePlans as $p): ?>
+                                    <?php if (($p->base_price ?? 0) == 0): ?>
+                                        <option value="<?= $p->id ?>" data-type="candidate"><?= esc($p->name) ?> (Candidate - Free)</option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="assign_employer_group" style="display: none;">
+                            <label class="form-label">Select Employer *</label>
+                            <select name="employer_id" id="assign_employer_id" class="form-select">
+                                <option value="">Choose employer...</option>
+                                <?php foreach ($allEmployers as $e): ?>
+                                    <option value="<?= $e->user_id ?>"><?= esc($e->company_name ?: 'N/A') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="assign_candidate_group" style="display: none;">
+                            <label class="form-label">Select Candidate *</label>
+                            <select name="candidate_id" id="assign_candidate_id" class="form-select">
+                                <option value="">Choose candidate...</option>
+                                <?php foreach ($allCandidates as $c): ?>
+                                    <option value="<?= $c->user_id ?>"><?= esc($c->full_name ?: 'N/A') ?> (<?= esc($c->phone ?: 'N/A') ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Starts At *</label>
+                            <input type="date" name="starts_at" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Ends At (Optional)</label>
+                            <input type="date" name="ends_at" class="form-control">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100"><i class="ti ti-plus me-1"></i> Assign</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table text-nowrap mb-0">
+                            <thead><tr><th>Subscriber</th><th>Plan</th><th>Type</th><th>End Date</th><th>Status</th></tr></thead>
+                            <tbody>
+                                <?php foreach ($subscriptions as $sub): ?>
+                                    <tr>
+                                        <td>
+                                            <?php if ($sub->plan_type === 'employer'): ?>
+                                                <strong><?= esc($sub->company_name ?? 'N/A') ?></strong>
+                                            <?php else: ?>
+                                                <strong><?= esc($sub->candidate_name ?? 'N/A') ?></strong> (Candidate)
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= esc($sub->plan_name ?? '—') ?></td>
+                                        <td><span class="badge bg-<?= $sub->plan_type === 'employer' ? 'primary' : 'info' ?>"><?= esc($sub->plan_type) ?></span></td>
+                                        <td><?= $sub->ends_at ? date('M d, Y', strtotime($sub->ends_at)) : '—' ?></td>
+                                        <td><span class="badge bg-<?= $sub->is_active ? 'success' : 'secondary' ?>"><?= $sub->is_active ? 'Active' : 'Expired' ?></span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($subscriptions)): ?><tr><td colspan="5" class="text-center p-4 text-muted">No subscriptions assigned.</td></tr><?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unlimited Access -->
+        <div class="tab-pane fade" id="unlimitedTab">
+            <div class="card">
+                <div class="card-body">
+                    <form id="unlimitedAccessForm" class="mb-4">
+                        <?= csrf_field() ?>
+                        <div class="row g-3">
+                            <div class="col-md-5"><label class="form-label">Select Employer</label><select name="employer_id" class="form-select" required><option value="">Choose...</option><?php foreach ($allEmployers as $e): ?><option value="<?= $e->id ?>"><?= esc($e->company_name) ?></option><?php endforeach; ?></select></div>
+                            <div class="col-md-4"><label class="form-label">Unlimited Until</label><input type="datetime-local" name="unlimited_until" class="form-control"></div>
+                            <div class="col-md-3"><label class="form-label">&nbsp;</label><button type="submit" class="btn btn-primary d-block w-100"><i class="ti ti-infinity"></i> Grant</button></div>
+                        </div>
+                    </form>
+                    <table class="table table-bordered">
+                        <thead><tr><th>Company</th><th>Unlimited Until</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            <?php foreach ($employersWithUnlimited as $employer): ?>
+                                <tr><td><?= esc($employer->company_name) ?></td><td><?= $employer->unlimited_until ? date('M d, Y', strtotime($employer->unlimited_until)) : 'Forever' ?></td><td><button class="btn btn-sm btn-danger" onclick="revokeUnlimitedAccess(<?= $employer->id ?>)">Revoke</button></td></tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plan Modal -->
+<div class="modal fade" id="planModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form class="modal-content" id="planForm" action="<?= base_url('admin/plans') ?>" method="POST">
+            <?= csrf_field() ?>
+            <input type="hidden" name="id" id="plan_id">
+            <div class="modal-header"><h5 class="modal-title" id="modalTitle">Add Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body row g-3">
+                <div class="col-md-6"><label class="form-label">Plan Name *</label><input type="text" name="name" id="plan_name" class="form-control" required></div>
+                <div class="col-md-6"><label class="form-label">Plan Code *</label><input type="text" name="code" id="plan_code" class="form-control" required></div>
+                <div class="col-md-6"><label class="form-label">Plan Type *</label><select name="plan_type" id="plan_type" class="form-select" required><option value="employer">Employer</option><option value="candidate">Candidate</option></select></div>
+                <div class="col-md-6"><label class="form-label">Monthly Price (₦)</label><input type="number" name="base_price" id="plan_base_price" class="form-control" min="0" step="100" value="0"></div>
+                <div class="col-md-6"><label class="form-label">Monthly Job Credits</label><input type="number" name="monthly_job_credits" id="plan_monthly_job_credits" class="form-control" min="0" value="0"></div>
+                <div class="col-md-6"><label class="form-label">Duration (days)</label><input type="number" name="duration" id="plan_duration" class="form-control" min="1" value="30"></div>
+                <div class="col-md-6"><label class="form-label">Status</label><select name="is_active" id="plan_is_active" class="form-select"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                <div class="col-12" id="employer_features_wrapper"><label class="form-label fw-semibold">Employer Features</label><div class="row g-2">
+                    <?php $featList = ['unlimited_job_postings'=>'Unlimited Job Postings','featured'=>'Featured Jobs','network_blast'=>'Network Blast','anonymous'=>'Anonymous Posting','trust_badge'=>'Trust Badge','priority_support'=>'Priority Support','url_redirect'=>'URL Redirect','ai_resume'=>'AI Resume Builder','ai_cover_letter'=>'AI Cover Letter','ai_career_tools'=>'AI Career Tools','unlimited_applications'=>'Unlimited Applications','candidate_messaging'=>'Candidate Messaging','profile_highlight'=>'Profile Highlight']; ?>
+                    <?php foreach ($featList as $key => $label): ?><div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="feat_<?= $key ?>" id="feat_<?= $key ?>" value="1"><label class="form-check-label" for="feat_<?= $key ?>"><?= $label ?></label></div></div><?php endforeach; ?>
+                </div></div>
+                <div class="col-12" id="candidate_features_wrapper" style="display:none;"><label class="form-label fw-semibold">Candidate Features (Comma separated)</label>
+                    <textarea class="form-control" name="candidate_features" id="candidate_features" rows="3" placeholder="e.g. AI Resume Builder, Priority Support, 3 Mock Interviews"></textarea>
+                    <small class="text-muted">Enter features separated by commas. These will be displayed on the candidate pricing page.</small>
+                </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Plan</button></div>
+        </form>
+    </div>
+</div>
+
+<?= $this->endSection() ?>
+<?= $this->section('scripts') ?>
+<script>
+function openCreateModal() {
+    document.getElementById('planForm').reset();
+    document.getElementById('plan_id').value = '';
+    document.getElementById('modalTitle').textContent = 'Add Employer Plan';
+    document.getElementById('candidate_features').value = '';
+    toggleFeaturesWrapper();
+}
+function editPlan(plan) {
+    document.getElementById('plan_id').value = plan.id || '';
+    document.getElementById('plan_name').value = plan.name || '';
+    document.getElementById('plan_code').value = plan.code || '';
+    document.getElementById('plan_type').value = plan.plan_type || 'employer';
+    document.getElementById('plan_base_price').value = plan.base_price || 0;
+    document.getElementById('plan_monthly_job_credits').value = plan.monthly_job_credits || 0;
+    document.getElementById('plan_duration').value = 30;
+    document.getElementById('plan_is_active').value = plan.is_active ? '1' : '0';
+    const typeLabel = plan.plan_type === 'candidate' ? 'Candidate' : 'Employer';
+    document.getElementById('modalTitle').textContent = 'Edit ' + typeLabel + ' Plan: ' + (plan.name || '');
+    const features = typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || {});
+    
+    // Reset all checkboxes
+    document.querySelectorAll('#employer_features_wrapper .form-check-input').forEach(el => el.checked = false);
+    
+    if (plan.plan_type === 'candidate') {
+        document.getElementById('candidate_features').value = Object.keys(features).join(', ');
+    } else {
+        Object.keys(features).forEach(k => { const el = document.getElementById('feat_' + k); if (el) el.checked = !!features[k]; });
+    }
+    
+    toggleFeaturesWrapper();
+    new bootstrap.Modal('#planModal').show();
+}
+
+function toggleFeaturesWrapper() {
+    const pType = document.getElementById('plan_type').value;
+    const typeLabel = pType === 'candidate' ? 'Candidate' : 'Employer';
+    
+    // Update modal title dynamically if adding or editing plan
+    const planId = document.getElementById('plan_id').value;
+    const planName = document.getElementById('plan_name').value;
+    if (planId) {
+        document.getElementById('modalTitle').textContent = 'Edit ' + typeLabel + ' Plan: ' + planName;
+    } else {
+        document.getElementById('modalTitle').textContent = 'Add ' + typeLabel + ' Plan';
+    }
+
+    if (pType === 'candidate') {
+        document.getElementById('employer_features_wrapper').style.display = 'none';
+        document.getElementById('candidate_features_wrapper').style.display = 'block';
+    } else {
+        document.getElementById('employer_features_wrapper').style.display = 'block';
+        document.getElementById('candidate_features_wrapper').style.display = 'none';
+    }
+}
+
+document.getElementById('plan_type').addEventListener('change', toggleFeaturesWrapper);
+function deletePlan(id) {
+    if (!confirm('Delete this plan? Active subscriptions will not be affected.')) return;
+    fetch('<?= base_url("admin/plans/delete") ?>/' + id, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
+}
+function toggleFreeMode() {
+    if (!confirm('Toggle free mode? This affects all users.')) return;
+    fetch('<?= base_url("admin/plans/toggle-free-mode") ?>', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
+}
+document.getElementById('unlimitedAccessForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('<?= base_url("admin/plans/grant-unlimited-access") ?>', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
+});
+function revokeUnlimitedAccess(id) {
+    if (!confirm('Revoke unlimited access?')) return;
+    const fd = new FormData(); fd.append('employer_id', id);
+    fetch('<?= base_url("admin/plans/revoke-unlimited-access") ?>', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json()).then(d => { if (d.success) { location.reload(); } else { toastr.error(d.message); } });
+}
+
+function onPlanSelected() {
+    const select = document.getElementById('assign_plan_id');
+    const selectedOpt = select.options[select.selectedIndex];
+    const type = selectedOpt ? selectedOpt.getAttribute('data-type') : '';
+    
+    const empGroup = document.getElementById('assign_employer_group');
+    const candGroup = document.getElementById('assign_candidate_group');
+    const empSelect = document.getElementById('assign_employer_id');
+    const candSelect = document.getElementById('assign_candidate_id');
+    
+    if (type === 'employer') {
+        empGroup.style.display = 'block';
+        candGroup.style.display = 'none';
+        empSelect.required = true;
+        candSelect.required = false;
+        candSelect.value = '';
+    } else if (type === 'candidate') {
+        empGroup.style.display = 'none';
+        candGroup.style.display = 'block';
+        empSelect.required = false;
+        candSelect.required = true;
+        empSelect.value = '';
+    } else {
+        empGroup.style.display = 'none';
+        candGroup.style.display = 'none';
+        empSelect.required = false;
+        candSelect.required = false;
+    }
+}
+
+document.getElementById('assignSubscriptionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    
+    const select = document.getElementById('assign_plan_id');
+    const selectedOpt = select.options[select.selectedIndex];
+    const type = selectedOpt ? selectedOpt.getAttribute('data-type') : '';
+    
+    let userId = '';
+    if (type === 'employer') {
+        userId = document.getElementById('assign_employer_id').value;
+    } else if (type === 'candidate') {
+        userId = document.getElementById('assign_candidate_id').value;
+    }
+    
+    fd.append('user_id', userId);
+    
+    fetch('<?= base_url("admin/plans/assign") ?>', {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            location.reload();
+        } else {
+            toastr.error(d.message);
+        }
+    });
+});
+</script>
+<?= $this->endSection() ?>

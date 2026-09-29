@@ -22,7 +22,18 @@
                     <li class="breadcrumb-item active" aria-current="page"><?= $blog ? 'Edit' : 'Create' ?></li>
                 </ol>
             </div>
-            <a href="<?= base_url('admin/blogs') ?>" class="btn btn-light"><i class="ti ti-arrow-left"></i> Back</a>
+<div class="d-flex align-items-center gap-2">
+    <a href="<?= base_url('admin/blogs') ?>" class="btn btn-light"><i class="ti ti-arrow-left"></i> Back</a>
+    <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#aiWriterModal">
+        <i class="ti ti-sparkles"></i> AI Writer
+    </button>
+    <button type="button" class="btn btn-warning text-white" data-bs-toggle="modal" data-bs-target="#aiImageModal">
+        <i class="ti ti-image"></i> AI Image
+    </button>
+    <button type="button" class="btn btn-secondary" id="previewToggleBtn">
+        <i class="ti ti-eye"></i> Live Preview
+    </button>
+</div>
         </div>
     </div>
 
@@ -134,6 +145,90 @@
         </div>
     </form>
 </div>
+
+<!-- AI Writer Modal -->
+<div class="modal fade" id="aiWriterModal" tabindex="-1" aria-labelledby="aiWriterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="aiWriterModalLabel"><i class="ti ti-sparkles text-info"></i> AI Blog Assistant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="aiWriterForm">
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-3">Provide a topic or outline, select a tone, and our AI will draft a complete blog post, meta tag set, and excerpt.</p>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Topic or Outline *</label>
+                        <textarea class="form-control" name="prompt" id="ai_prompt" rows="4" placeholder="e.g. 5 essential tips for preparing for a tech job interview in Lagos" required></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label text-muted small fw-bold">Tone of Voice</label>
+                        <select class="form-select" name="tone" id="ai_tone">
+                            <option value="professional" selected>Professional</option>
+                            <option value="informative">Informative</option>
+                            <option value="casual">Casual</option>
+                            <option value="creative">Creative</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white" id="aiGenerateSubmitBtn">Generate Draft</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- AI Image Modal -->
+<div class="modal fade" id="aiImageModal" tabindex="-1" aria-labelledby="aiImageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="aiImageModalLabel"><i class="ti ti-image text-warning"></i> AI Image Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="aiImageForm">
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-3">Describe the image you need and optionally select a style.</p>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Image Description *</label>
+                        <textarea class="form-control" name="prompt" id="ai_image_prompt" rows="3" placeholder="e.g. Young professional reviewing a résumé" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Style</label>
+                        <select class="form-select" name="style" id="ai_image_style">
+                            <option value="photo" selected>Photo</option>
+                            <option value="illustration">Illustration</option>
+                            <option value="abstract">Abstract</option>
+                            <option value="graphic">Graphic</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-white" id="aiImageGenerateBtn">Generate Image</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Live Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="previewModalLabel"><i class="ti ti-eye text-secondary"></i> Live Blog Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height:80vh;">
+                <iframe id="livePreviewIframe" class="w-100 h-100 border-0" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -212,6 +307,7 @@
             .then(res => res.json())
             .then(res => {
                 if (res.success) {
+                    if (typeof window.clearAutosave === 'function') window.clearAutosave();
                     toastr.success(res.message);
                     setTimeout(() => window.location.href = "<?= base_url('admin/blogs') ?>", 700);
                 } else {
@@ -302,6 +398,67 @@
             document.querySelector('#thumbnail_input + div + button').innerHTML = '<i class="ti ti-upload me-2"></i> Change featured image';
         };
         reader.readAsDataURL(file);
+    });
+
+    // AI Writer submission handler
+    document.getElementById('aiWriterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('aiGenerateSubmitBtn');
+        const promptInput = document.getElementById('ai_prompt');
+        const toneInput = document.getElementById('ai_tone');
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Drafting...';
+
+        fetch("<?= base_url('admin/blogs/ai-generate') ?>", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                prompt: promptInput.value,
+                tone: toneInput.value,
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('blog_title').value = data.title || '';
+                document.getElementById('blog_slug').value = data.slug || '';
+                document.getElementById('blog_excerpt').value = data.excerpt || '';
+                document.getElementById('blog_meta_title').value = data.meta_title || '';
+                document.getElementById('blog_meta_description').value = data.meta_description || '';
+                
+                if (window.CKEDITOR && CKEDITOR.instances.blog_content) {
+                    CKEDITOR.instances.blog_content.setData(data.content || '');
+                } else {
+                    document.getElementById('blog_content').value = data.content || '';
+                }
+
+                if (typeof saveDraft === 'function') {
+                    saveDraft();
+                }
+
+                toastr.success('AI Draft generated and loaded successfully!');
+                
+                // Hide modal
+                const modalEl = document.getElementById('aiWriterModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                promptInput.value = '';
+            } else {
+                toastr.error(data.message || 'AI Generation failed');
+            }
+        })
+        .catch(() => {
+            toastr.error('Server error during AI generation');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Generate Draft';
+        });
     });
 </script>
 <?= $this->endSection() ?>

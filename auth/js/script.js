@@ -24,15 +24,17 @@ $(document).ready(function(){
 	$('body').append('<div class="sidebar-overlay"></div>');
 
 
-	$(document).on('click', '#mobile_btn', function() {
+	$(document).on('click touchstart', '#mobile_btn', function(e) {
+		e.preventDefault();
 		$wrapper.toggleClass('slide-nav');
 		$('.sidebar-overlay').toggleClass('opened');
-		$('html').addClass('menu-opened');
+		$('html').toggleClass('menu-opened');
 		$('#task_window').removeClass('opened');
 		return false;
 	});
 
-	$(".sidebar-overlay").on("click", function () {
+	$(document).on('click touchstart', '.sidebar-overlay', function(e) {
+		e.preventDefault();
 		$('html').removeClass('menu-opened');
 		$(this).removeClass('opened');
 		$wrapper.removeClass('slide-nav');

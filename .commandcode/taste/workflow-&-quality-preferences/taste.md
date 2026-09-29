@@ -1,0 +1,11 @@
+# Workflow & quality preferences
+- Wants UI/UX verified through a real browser (visual check), not judged by code alone — repeatedly says "check visually via browser, not code alone." Confidence: 0.95
+- Distrusts agent reports claiming refactoring is "finished": wants manual verification against the mockup rather than trusting a fast job with a fake completion report ("they work too fast and gave fake reports, don't just join them"). Confidence: 0.9
+- Prefers methodical, unhurried review of one view at a time for maximum fidelity to the HTML mockup ("check each view one by one against the html mockup, no rushing, do a very perfect job"). Confidence: 0.95
+- Wants continuous, iterative bug-hunting / QA passes — after finishing the current fix, proactively "find more bugs and fix" rather than stopping. Confidence: 0.9
+- Wants QA conducted like a senior software tester covering ALL user types (candidate, employer, admin) and real workflows end-to-end, catching both visual and code-level bugs — not just checking HTTP 200. Confidence: 0.9
+- Cares about production readiness: explicitly asks whether the app is ready for production and what remains to check before launch. Confidence: 0.8
+- Wants mobile responsiveness fixed sitewide, and pages to support iOS browsers in addition to desktop. Confidence: 0.85
+- Expects AI features (chatbot, interview, resume/advice generation) to actually call the live AI service/works with real auth, not fall back to local templates; keeps real keys in env config. Confidence: 0.85
+- For cPanel deployments, prefers applying migrations/schema changes as raw SQL that can be run directly in phpMyAdmin (asked for "the SQL codes of the last migration" rather than `php spark migrate` on the server). Confidence: 0.7
+- Tracks outstanding issues in a written list (e.g., a PDF) and expects each item to be verified against the actual codebase and reported item-by-item as fixed/partial/broken rather than a blanket confirmation. Confidence: 0.7

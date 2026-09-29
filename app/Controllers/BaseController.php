@@ -37,7 +37,7 @@ abstract class BaseController extends Controller
      *
      * @var list<string>
      */
-    protected $helpers = [];
+    protected $helpers = ['inflector', 'image', 'url'];
 
     /**
      * Be sure to declare properties for any property fetch you initialized.
@@ -100,5 +100,41 @@ abstract class BaseController extends Controller
             'employer'  => $employer,
             'candidate' => $candidate,
         ], 'raw');
+    }
+
+    /**
+     * Validates an uploaded file against an extension whitelist, a real
+     * (content-sniffed, not client-supplied) mime-type whitelist, and a
+     * max size — before the caller trusts it enough to move() it into a
+     * web-accessible uploads directory. isValid() alone only confirms the
+     * upload transport succeeded; it says nothing about what the file is.
+     *
+     * @param array<string, list<string>> $allowedTypes Map of allowed extension => list of acceptable real mime types, e.g. ['pdf' => ['application/pdf']]
+     */
+    protected function validateUploadedFile(
+        ?\CodeIgniter\HTTP\Files\UploadedFile $file,
+        array $allowedTypes,
+        int $maxSizeKB
+    ): array {
+        if (!$file || !$file->isValid() || $file->hasMoved()) {
+            return ['valid' => false, 'error' => null]; // nothing uploaded / not our concern
+        }
+
+        $ext = strtolower($file->getExtension());
+        if (!array_key_exists($ext, $allowedTypes)) {
+            return ['valid' => false, 'error' => 'Unsupported file type. Allowed: ' . implode(', ', array_keys($allowedTypes))];
+        }
+
+        $mime = $file->getMimeType();
+        if (!in_array($mime, $allowedTypes[$ext], true)) {
+            return ['valid' => false, 'error' => 'File content does not match its extension.'];
+        }
+
+        $sizeKB = ($file->getSize() ?: 0) / 1024;
+        if ($sizeKB > $maxSizeKB) {
+            return ['valid' => false, 'error' => 'File is too large. Maximum size is ' . $maxSizeKB . 'KB.'];
+        }
+
+        return ['valid' => true, 'error' => null];
     }
 }

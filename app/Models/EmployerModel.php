@@ -33,6 +33,18 @@ class EmployerModel extends Model
         'verified_at',
         'verified_by',
         'rejection_reason',
+        'tagline',
+        'company_type',
+        'founded_year',
+        'remote_policy',
+        'whatsapp',
+        'benefits',
+        'hiring_process',
+        'rc_number',
+        'linkedin',
+        'twitter',
+        'facebook',
+        'instagram',
     ];
 
     protected $useTimestamps = true;
@@ -129,13 +141,17 @@ class EmployerModel extends Model
     }
 
     /**
-     * Get pending employers for verification
+     * Get pending employers for verification (Only those with submitted documents)
      */
     public function getPendingEmployers(int $limit = 20)
     {
-        return $this->select('employers.*, users.email, users.username')
-            ->join('users', 'users.id = employers.user_id')
-            ->where('verification_status', 'pending')
+        $docSubmittedCondition = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
+
+        return $this->select('employers.*, auth_identities.secret as email, employers.contact_email, users.username')
+            ->join('users', 'users.id = employers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = employers.user_id', 'left')
+            ->where('employers.verification_status', 'pending')
+            ->where($docSubmittedCondition, null, false)
             ->orderBy('employers.created_at', 'ASC')
             ->paginate($limit);
     }
@@ -147,32 +163,47 @@ class EmployerModel extends Model
     {
         $db = db_connect();
 
-        $stats = $db->table('employers')
-            ->select('verification_status, COUNT(*) as total')
-            ->groupBy('verification_status')
-            ->get()
-            ->getResultArray();
+        $docSubmittedCondition = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
 
-        $result = [
-            'pending' => 0,
-            'verified' => 0,
-            'rejected' => 0,
-            'document_required' => 0,
-            'total' => 0
+        $pending = (int) $db->table('employers')
+            ->where('verification_status', 'pending')
+            ->where($docSubmittedCondition, null, false)
+            ->countAllResults();
+
+        $unverified = (int) $db->table('employers')
+            ->where('(verification_status = "unverified" OR (verification_status = "pending" AND NOT ' . $docSubmittedCondition . '))', null, false)
+            ->where('verification_status !=', 'verified')
+            ->where('verification_status !=', 'rejected')
+            ->countAllResults();
+
+        $verified = (int) $db->table('employers')
+            ->where('verification_status', 'verified')
+            ->countAllResults();
+
+        $rejected = (int) $db->table('employers')
+            ->where('verification_status', 'rejected')
+            ->countAllResults();
+
+        $docRequired = (int) $db->table('employers')
+            ->where('verification_status', 'document_required')
+            ->countAllResults();
+
+        $total = (int) $db->table('employers')->countAllResults();
+
+        return [
+            'pending'           => $pending,
+            'unverified'        => $unverified,
+            'verified'          => $verified,
+            'rejected'          => $rejected,
+            'document_required' => $docRequired,
+            'total'             => $total
         ];
-
-        foreach ($stats as $stat) {
-            $result[$stat['verification_status']] = (int)$stat['total'];
-            $result['total'] += (int)$stat['total'];
-        }
-
-        return $result;
     }
 
     /**
      * Verify an employer
      */
-    public function verifyEmployer(int $employerId, int $adminId, string $notes = null): bool
+    public function verifyEmployer(int $employerId, int $adminId, ?string $notes = null): bool
     {
         $data = [
             'verification_status' => 'verified',
@@ -231,7 +262,7 @@ class EmployerModel extends Model
     /**
      * Log verification actions
      */
-    private function logVerification(int $employerId, int $adminId, string $action, string $notes = null)
+    private function logVerification(int $employerId, int $adminId, string $action, ?string $notes = null)
     {
         $logModel = model(EmployerVerificationLogModel::class);
         $logModel->insert([

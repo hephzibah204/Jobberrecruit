@@ -67,13 +67,42 @@ class Mailer
         return $this;
     }
 
+    public function setCC($cc)
+    {
+        $this->email->setCC($cc);
+        return $this;
+    }
+
+    public function setBCC($bcc, $limit = '')
+    {
+        $this->email->setBCC($bcc, $limit);
+        return $this;
+    }
+
+    public function setHeader($header, $value)
+    {
+        $this->email->setHeader($header, $value);
+        return $this;
+    }
+
+    public function attach($file, $disposition = '', $newname = null, $mime = '')
+    {
+        $this->email->attach($file, $disposition, $newname, $mime);
+        return $this;
+    }
+
+    public function printDebugger(array $include = ['headers', 'subject', 'body'])
+    {
+        return $this->email->printDebugger($include);
+    }
+
     public function send()
     {
         return $this->email->send();
     }
 
     /**
-     * Send a verification email using templated views.
+     * Send a verification email using templated views or EmailTemplateService.
      */
     public function sendVerifyEmail(string $to, string $subject, array $data): bool
     {
@@ -81,14 +110,21 @@ class Mailer
         $verifyUrl = $data['verifyUrl'] ?? '';
         $siteName = $data['siteName'] ?? 'JobberRecruit';
 
+        $templateService = new EmailTemplateService();
+        $rendered = $templateService->render('verify_email', array_merge($data, [
+            'fullname'  => $fullname,
+            'verifyUrl' => $verifyUrl,
+            'siteName'  => $siteName,
+        ]));
+
         $this->clear();
 
-        $html = view('emails/verify_email_html', [
+        $html = !empty($rendered['html']) ? $rendered['html'] : view('emails/verify_email_html', [
             'fullname' => $fullname,
             'verifyUrl' => $verifyUrl,
             'siteName' => $siteName,
         ]);
-        $text = view('emails/verify_email_text', [
+        $text = !empty($rendered['text']) ? $rendered['text'] : view('emails/verify_email_text', [
             'fullname' => $fullname,
             'verifyUrl' => $verifyUrl,
             'siteName' => $siteName,
@@ -97,11 +133,12 @@ class Mailer
         $config = config('Email');
         $fromEmail = env('email.fromEmail') ?: ($config->fromEmail ?? 'no-reply@' . parse_url(base_url(), PHP_URL_HOST));
         $fromName  = env('email.fromName') ?: ($config->fromName ?? $siteName);
+        $finalSubject = !empty($rendered['subject']) ? $rendered['subject'] : $subject;
 
         \Config\Services::$bypassQueue = true;
         $result = $this->setTo($to)
             ->setFrom($fromEmail, $fromName)
-            ->setSubject($subject)
+            ->setSubject($finalSubject)
             ->setMessage($html)
             ->setAltMessage($text)
             ->send();
@@ -116,14 +153,21 @@ class Mailer
         $resetLink = $data['resetLink'] ?? '';
         $siteName = $data['siteName'] ?? 'JobberRecruit';
 
+        $templateService = new EmailTemplateService();
+        $rendered = $templateService->render('password_reset', array_merge($data, [
+            'fullname'  => $fullname,
+            'resetLink' => $resetLink,
+            'siteName'  => $siteName,
+        ]));
+
         $this->clear();
 
-        $html = view('emails/password_reset_html', [
+        $html = !empty($rendered['html']) ? $rendered['html'] : view('emails/password_reset_html', [
             'fullname' => $fullname,
             'resetLink' => $resetLink,
             'siteName' => $siteName,
         ]);
-        $text = view('emails/password_reset_text', [
+        $text = !empty($rendered['text']) ? $rendered['text'] : view('emails/password_reset_text', [
             'fullname' => $fullname,
             'resetLink' => $resetLink,
             'siteName' => $siteName,
@@ -132,11 +176,12 @@ class Mailer
         $config = config('Email');
         $fromEmail = env('email.fromEmail') ?: ($config->fromEmail ?? 'no-reply@' . parse_url(base_url(), PHP_URL_HOST));
         $fromName  = env('email.fromName') ?: ($config->fromName ?? $siteName);
+        $finalSubject = !empty($rendered['subject']) ? $rendered['subject'] : $subject;
 
         \Config\Services::$bypassQueue = true;
         $result = $this->setTo($to)
             ->setFrom($fromEmail, $fromName)
-            ->setSubject($subject)
+            ->setSubject($finalSubject)
             ->setMessage($html)
             ->setAltMessage($text)
             ->send();

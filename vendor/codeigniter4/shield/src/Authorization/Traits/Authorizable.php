@@ -15,7 +15,7 @@ namespace CodeIgniter\Shield\Authorization\Traits;
 
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Shield\Authorization\AuthorizationException;
-use CodeIgniter\Shield\Exceptions\LogicException;
+use CodeIgniter\Shield\Authorization\PermissionMatcher;
 use CodeIgniter\Shield\Models\GroupModel;
 use CodeIgniter\Shield\Models\PermissionModel;
 
@@ -26,8 +26,6 @@ trait Authorizable
 
     /**
      * Adds one or more groups to the current User.
-     *
-     * @return $this
      */
     public function addGroup(string ...$groups): self
     {
@@ -43,7 +41,6 @@ trait Authorizable
                 continue;
             }
 
-            /** @var GroupModel $groupModel */
             $groupModel = model(GroupModel::class);
 
             // make sure it's a valid group
@@ -64,8 +61,6 @@ trait Authorizable
 
     /**
      * Removes one or more groups from the user.
-     *
-     * @return $this
      */
     public function removeGroup(string ...$groups): self
     {
@@ -89,15 +84,12 @@ trait Authorizable
      * so only those groups are valid for this user, removing
      * all groups not in this list.
      *
-     * @return $this
-     *
      * @throws AuthorizationException
      */
     public function syncGroups(string ...$groups): self
     {
         $this->populateGroups();
 
-        /** @var GroupModel $groupModel */
         $groupModel = model(GroupModel::class);
 
         foreach ($groups as $group) {
@@ -117,7 +109,7 @@ trait Authorizable
      */
     public function setGroupsCache(array $groups): void
     {
-        $this->groupCache = $groups === [] ? null : $groups;
+        $this->groupCache = $groups;
     }
 
     /**
@@ -125,7 +117,7 @@ trait Authorizable
      */
     public function setPermissionsCache(array $permissions): void
     {
-        $this->permissionsCache = $permissions === [] ? null : $permissions;
+        $this->permissionsCache = $permissions;
     }
 
     /**
@@ -151,8 +143,6 @@ trait Authorizable
 
     /**
      * Adds one or more permissions to the current user.
-     *
-     * @return $this
      *
      * @throws AuthorizationException
      */
@@ -190,8 +180,6 @@ trait Authorizable
 
     /**
      * Removes one or more permissions from the current user.
-     *
-     * @return $this
      */
     public function removePermission(string ...$permissions): self
     {
@@ -214,8 +202,6 @@ trait Authorizable
      * Given an array of permissions, will update the database
      * so only those permissions are valid for this user, removing
      * all permissions not in this list.
-     *
-     * @return $this
      *
      * @throws AuthorizationException
      */
@@ -253,10 +239,9 @@ trait Authorizable
 
     /**
      * Checks user permissions and their group permissions
-     * to see if the user has a specific permission or group
-     * of permissions.
+     * to see if the user has one or more permissions.
      *
-     * @param string $permissions string(s) consisting of a scope and action, like `users.create`
+     * @param string $permissions Permission string(s), usually dot-separated like `users.create`
      */
     public function can(string ...$permissions): bool
     {
@@ -270,34 +255,15 @@ trait Authorizable
         $matrix = setting('AuthGroups.matrix');
 
         foreach ($permissions as $permission) {
-            // Permission must contain a scope and action
-            if (! str_contains($permission, '.')) {
-                throw new LogicException(
-                    'A permission must be a string consisting of a scope and action, like `users.create`.'
-                    . ' Invalid permission: ' . $permission,
-                );
-            }
-
             $permission = strtolower($permission);
 
             // Check user's permissions
-            if (in_array($permission, $this->permissionsCache, true)) {
+            if (PermissionMatcher::matches($permission, $this->permissionsCache)) {
                 return true;
             }
 
-            if (count($this->groupCache) === 0) {
-                return false;
-            }
-
             foreach ($this->groupCache as $group) {
-                // Check exact match
-                if (isset($matrix[$group]) && in_array($permission, $matrix[$group], true)) {
-                    return true;
-                }
-
-                // Check wildcard match
-                $check = substr($permission, 0, strpos($permission, '.')) . '.*';
-                if (isset($matrix[$group]) && in_array($check, $matrix[$group], true)) {
+                if (isset($matrix[$group]) && PermissionMatcher::matches($permission, $matrix[$group])) {
                     return true;
                 }
             }
@@ -333,7 +299,6 @@ trait Authorizable
             return;
         }
 
-        /** @var GroupModel $groupModel */
         $groupModel = model(GroupModel::class);
 
         $this->groupCache = $groupModel->getForUser($this);
@@ -349,7 +314,6 @@ trait Authorizable
             return;
         }
 
-        /** @var PermissionModel $permissionModel */
         $permissionModel = model(PermissionModel::class);
 
         $this->permissionsCache = $permissionModel->getForUser($this);
@@ -360,7 +324,6 @@ trait Authorizable
      */
     private function saveGroups(): void
     {
-        /** @var GroupModel $model */
         $model = model(GroupModel::class);
 
         $cache = $this->groupCache;
@@ -373,7 +336,6 @@ trait Authorizable
      */
     private function savePermissions(): void
     {
-        /** @var PermissionModel $model */
         $model = model(PermissionModel::class);
 
         $cache = $this->permissionsCache;

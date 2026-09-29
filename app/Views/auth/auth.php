@@ -38,11 +38,11 @@
     <!-- Styles -->
     <link href="<?= base_url('assets/css/jobberrecruit.css'); ?>" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('css/global-core.css'); ?>">
+    <link rel="stylesheet" href="<?= base_url('css/modal-scroll.css'); ?>?v=<?= time() ?>">
     <link href="<?= base_url('assets/css/toastr.min.css'); ?>" rel="stylesheet">
 
     <?= $this->renderSection('styles'); ?>
 </head>
-
 
 <body>
     <div id="preloader-active">

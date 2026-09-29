@@ -1,0 +1,448 @@
+TOTAL PAGES: 13
+
+================ PAGE 1 ================
+JobberRecruit Employer Dashboard –
+Development Requirements & Fixes
+Objective
+Please review and implement the following changes and fixes across the Employer
+Dashboard. These are intended to improve the employer experience, correct existing
+bugs, and ensure that subscription plans, candidate search, recruitment tools, and
+employer account functions work according to the intended business model.
+1. Job Posting – Plan/Subscription Access
+There appears to be a bug during job posting where certain features do not become
+active even when the employer has an Unlimited Plan or an active subscription.
+Required action
+
+Review the job-posting permission logic.
+
+Confirm that employers on the Unlimited Plan have access to all features
+included in that plan.
+
+Confirm that employers on applicable subscription plans can use the features
+included in their subscription.
+
+Ensure the system correctly identifies the employer's active plan before
+restricting any feature.
+
+Test the functionality using:
+o
+Pay-as-you-go employer
+o
+Subscription-plan employer
+o
+Unlimited Access employer
+During post a job, there is a bug on this highlighted icon that needs to be fixed.
+
+
+================ PAGE 2 ================
+2. My Jobs – Repost Job Function
+Employers should be able to repost an existing/previously posted job from the My
+Jobs section.
+Reposting rules
+Reposting should not be free.
+For example:
+
+If an employer posted a job one week ago and wants to repost it, the employer
+must pay for the repost.
+
+For Pay-as-you-go employers, the reposting fee should be deducted/charged
+according to the normal job-posting fee.
+
+For employers on a relevant subscription plan, the repost should consume the
+applicable posting allowance/credit from their subscription.
+
+The system should create a new posting cycle rather than simply changing the
+original posting date without recording the repost transaction.
+Job editing restriction
+Employers should only be allowed to edit a newly posted job within one hour of
+posting.
+After the one-hour window:
+
+Editing should be disabled.
+
+The employer should be instructed to contact JobberRecruit Support if
+changes are required.
+
+Support should be able to assist with the required changes.
+3. Employer Dashboard – Invite to Aptitude Test &
+Delete Candidate
+
+
+================ PAGE 3 ================
+The following functions are currently not working:
+
+Invite Candidate to Aptitude Test
+
+Delete Candidate
+Required action
+
+Fix both functions.
+
+Confirm that the employer receives the appropriate success/error notification
+after each action.
+
+Ensure that deleting a candidate does not create broken records or errors
+elsewhere in the employer dashboard.
+
+Ensure that an invited candidate is correctly recorded against the relevant
+job/application and aptitude test.
+4. Candidate Search – Layout & Search Logic
+4.1 Skills qualifications and others Search Field
+There appears to be a UI bug were entering certain skills; qualifications & others
+causes the skills section/input box to become excessively large.
+Required action
+
+Fix the dynamic sizing issue.
+
+The skills & qualifications and others input/filter box should maintain a
+consistent height regardless of the number or length of skills entered.
+
+Long skill names should wrap appropriately or use a controlled input/tag
+layout.
+
+The surrounding search/filter layout must remain stable.
+4.2 Candidate Search Ranking
+
+
+================ PAGE 4 ================
+The candidate search results should prioritise candidates who are most useful and
+most recently active.
+Recommended ranking priority
+Candidates should generally appear in this order:
+1.
+Candidates with a mostly/completely completed profile
+2. Candidates who have uploaded a CV
+3. Candidates with the most recent login/activity
+4. Candidates with relevant skills/qualifications matching the employer's search
+5. Other eligible candidates
+The objective is to ensure that employers see the strongest and most active
+candidates first rather than an arbitrary candidate order.
+4.3 Candidate Visibility / Activity Filter
+Add candidate visibility/activity filters such as:
+
+Visible this week
+
+Visible last week
+
+Visible this month
+
+Visible in the last 3 months
+
+Older/inactive profiles
+The search results should use the candidate's latest login/activity/profile visibility
+information to determine the appropriate category.
+4.4 Candidate Eligibility for Employer Search
+We recommend that only candidates who have substantially/completely completed
+their profile should appear in the employer candidate search.
+At minimum, the system should verify the required profile information before making
+a candidate searchable.
+Candidates with incomplete profiles should not be prioritised over qualified,
+completed profiles.
+4.5 Location-Based Candidate Search
+Add a location filter to candidate search.
+Employers should be able to search candidates based on location, for example:
+
+State
+
+
+================ PAGE 5 ================
+
+City
+The location search should work together with other candidate-search filters.
+4.6 Candidate Profile Unlock Pricing
+The ₦5,000 candidate profile unlock must be implemented correctly.
+Important business rule
+₦5,000 unlocks ONE candidate's profile — not unlimited candidate profiles.
+4.7 Unlimited Access Plan
+The Unlimited Access Plan is different from the standard subscription plan.
+Employers subscribed to the Unlimited Access Plan should have:
+
+Unlimited candidate searching
+
+Unlimited access to the applicable candidate-search functionality
+
+No ₦5,000 individual candidate unlock restriction where the Unlimited Access
+Plan explicitly covers candidate access
+Please ensure the system does not incorrectly treat Unlimited Access employers as
+standard subscription employers.
+5. Screening & Aptitude Test
+The current Screening & Aptitude page does not contain all the functionality required
+by employers.
+Employers need to be able to monitor candidates they have invited to aptitude tests.
+Required functionality
+For each invited candidate, employers should be able to see:
+
+
+================ PAGE 6 ================
+
+Candidate name
+
+Job/position applied for
+
+Test status
+
+Invitation status
+
+Whether the candidate has started the test
+
+Whether the candidate has completed the test
+
+Test score
+
+Percentage score
+
+Date/time completed
+
+Relevant assessment result/details
+
+Any applicable recommendation/status
+Employer actions
+The employer should also be able to perform relevant actions, such as:
+
+View candidate result
+
+Review score
+
+Shortlist candidate
+
+Reject candidate
+
+Continue candidate to the next recruitment stage
+
+Contact candidate where applicable
+The page should function as a proper screening and assessment management area,
+rather than simply displaying that candidates were invited.
+.
+6. Employer Dashboard – Unwanted Blank Space
+There is a UI bug on one of the employer dashboard pages that leaves a large
+unnecessary blank space.
+Required action
+
+Identify the source of the spacing.
+
+Remove the unnecessary empty area.
+
+Ensure the page layout remains responsive across desktop, tablet and mobile.
+
+
+================ PAGE 7 ================
+
+Check for hidden elements, incorrect margins/padding, empty containers or
+CSS height issues.
+7. Messages Page – Employer Perspective
+The Messages page currently needs to reflect the employer's perspective.
+Required action
+Review the messaging interface and ensure that:
+
+Employer messages are clearly identified as employer communications.
+
+Candidate conversations are displayed from the employer's perspective.
+
+Employer-related labels, actions and terminology are used.
+
+The interface does not display candidate-dashboard wording where the user
+is an employer.
+
+Employers can clearly identify who they are communicating with and the
+relevant job/application where applicabl
+8. Affiliate Page – Acceptance Clause
+The Affiliate page previously had a clause that both employers and candidates
+needed to accept before accessing the affiliate functionality.
+This acceptance requirement should be reinstated.
+Required behaviour
+Before accessing the Affiliate section:
+1.
+Display the relevant terms/conditions or acceptance clause.
+2. Require the user to accept it.
+3. Record the acceptance.
+4. Allow access only after acceptance.
+5. Do not repeatedly request acceptance once it has already been properly
+recorded, unless the terms have materially changed and a new acceptance is
+
+
+================ PAGE 8 ================
+required.
+9. Employer Dashboard – 5 Matching Profiles
+Employers currently cannot access the 5 Matching Profiles displayed on the
+employer dashboard.
+Required action
+
+Fix the link/button/card.
+
+Clicking 5 Matching Profiles should take the employer to the relevant
+matching candidate results.
+
+Ensure the matching profiles displayed are actually accessible.
+
+Confirm that the matching logic corresponds to the employer's job
+requirements/profile requirements.
+
+Ensure there are no permission or routing errors.
+10. Employer Account Settings
+Under Settings, employers should have the option to:
+
+Delete account
+
+Deactivate account
+Delete Account
+The employer should be able to permanently request/delete their account subject
+
+
+================ PAGE 9 ================
+to the platform's applicable data/account rules.
+Deactivate Account
+The employer should be able to temporarily deactivate the account without
+permanently deleting it.
+The system should clearly differentiate between Deactivate and Delete.
+11. Employer Notifications
+The Notifications section should contain all relevant employer notifications, not only
+candidate alerts.
+At minimum, notifications should include:
+
+Subscription expiring
+
+Subscription expired
+
+Payment confirmation
+
+Job posting confirmation
+
+Incoming applications
+
+New candidate applications
+
+Candidate status updates
+
+New messages
+
+Aptitude test updates
+
+Candidate assessment results
+
+AI matching recommendations
+
+Matching candidate recommendations
+
+Job posting/reposting notifications
+
+Account-related notifications
+
+Other important employer-specific system notifications
+The notification centre should be designed as the employer's central notification area.
+
+
+================ PAGE 10 ================
+12. Application Details – Candidate
+Information
+When an employer opens an application, the application details page should provide
+enough information to make an informed recruitment decision.
+Display at minimum:
+
+Candidate name
+
+Candidate location
+
+Candidate job title/current professional title
+
+Relevant qualifications
+
+Skills
+
+Experience
+
+CV/profile information
+
+Relevant application information
+Location is particularly important
+The candidate's location should be clearly displayed so employers can quickly
+determine whether the candidate is suitable based on the job location.
+12.1. Internal Job Applications – Profile Completion Requirement
+Candidates applying for internal jobs should be required to maintain a sufficiently
+complete profile.
+Requirement
+A candidate should have at least 60% profile completion before being allowed to
+apply for internal jobs.
+
+
+================ PAGE 11 ================
+Required behaviour
+If the candidate's profile is below 60%:
+
+Prevent the application.
+
+Clearly inform the candidate that their profile must reach at least 80%.
+
+Provide an obvious route/button to complete the profile.
+
+Once the profile reaches 80% or above, allow the candidate to proceed with
+the application.
+13. Public Company Profile – Highlighted
+Profile Error
+Clicking the Highlighted Public Profile from the company profile currently returns an
+error.
+Required action
+
+Fix the link/routing.
+
+Ensure the highlighted public profile loads correctly.
+
+Test the functionality from both the employer dashboard and public-facing
+company profile.
+
+Ensure the profile works on desktop and mobile.
+17. My Jobs – Public Preview Icon
+Under My Jobs, the icon used to preview the job on the public website is currently
+appearing white and is therefore difficult/invisible to see.
+Required action
+
+
+================ PAGE 12 ================
+
+Fix the icon styling/visibility.
+
+Ensure the preview icon is clearly visible against the dashboard background.
+
+Confirm the icon remains visible in both light/dark interface states where
+applicable.
+
+Clicking the icon should open the correct public job page
+17.1. My Jobs – Replace "Pause Job" With "Close Job"
+The current Pause Job action should be replaced with Close Job.
+Required behaviour
+Use Close Job as the employer-facing action.
+When an employer closes a job:
+
+The job should no longer accept new applications.
+
+The job should be clearly marked as closed.
+
+Existing applications should remain accessible to the employer.
+
+The employer should still be able to review previously received applications.
+
+The system should clearly distinguish between active and closed jobs.
+19. WhatsApp Support from Employer
+Dashboard
+All employers should have a direct way to contact JobberRecruit through WhatsApp
+from their dashboard.
+Required action
+Add a clearly visible Contact Us on WhatsApp option/button within the employer
+dashboard.
+The functionality should:
+
+Open WhatsApp.
+
+Direct the employer to the official JobberRecruit support WhatsApp contact.
+
+Work on mobile devices.
+
+Provide an appropriate web/desktop WhatsApp experience where applicable.
+
+
+================ PAGE 13 ================
+Clicking on the profile to provide other information does not work on mobile phones
+and also clicking on the notification.
+ALSO THE EMPLOYERS BASBOARD IS BLURD WHEN VIEW VIA IPHONE CHROME
+AND SAFARI. PLS FIX THIS AS IT HAS BEEN PREVIIOUSLY REPORTED.
+
+

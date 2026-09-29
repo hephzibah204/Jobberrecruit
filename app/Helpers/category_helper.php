@@ -36,8 +36,11 @@ if (!function_exists('applicationBadge')) {
     }
 }
 
-function planFeatures(array $features): array
+function planFeatures(?array $features): array
 {
+    if (!is_array($features)) {
+        return [];
+    }
     return array_map(
         fn($value) => (bool) $value,
         $features

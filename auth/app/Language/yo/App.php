@@ -1,0 +1,22 @@
+<?php
+return [
+    'welcome' => 'Ẹ kú abọ sí JobberRecruit',
+    'sign_in' => 'Báwọlé',
+    'register' => 'Forúkọ sílẹ',
+    'post_job' => 'Ṣàfikún Ìpò Iṣẹ',
+    'home' => 'Ojú-ìwé Àkọ́kọ́',
+    'find_jobs' => 'Wa Iṣẹ́',
+    'employers' => 'Àwọn Agbaniṣẹ́',
+    'manage_jobs' => 'Ṣakoso Àwọn Iṣẹ́',
+    'company_profile' => 'Profaili Ilé-iṣẹ́',
+    'candidates' => 'Àwọn Olùdíje',
+    'pricing_plans' => 'Ètò Ìsanwó',
+    'blog' => 'Bùlógù',
+    'about_us' => 'Nipa Wa',
+    'contact' => 'Kàn Sí Wa',
+    'faqs' => 'Ìbéèrè Àwọn Ọ̀pọ̀lọpọ̀',
+    'language' => 'Èdè',
+    'nigeria' => 'Nàìjíríà',
+    'phone' => 'Tẹlifóònù',
+    'country_language' => 'Nàìjíríà (Èdè)',
+];

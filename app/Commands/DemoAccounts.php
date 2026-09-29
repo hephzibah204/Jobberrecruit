@@ -68,13 +68,23 @@ class DemoAccounts extends BaseCommand
             $user = $userProvider->findById($userId);
             $user->setPassword($employerPassword);
             $userProvider->save($user);
+            // Shield's entity creation only persists its own mapped fields. Set
+            // the application role through our user model so this account is
+            // routed to the employer dashboard during browser tests.
+            $users->update($userId, ['user_type' => 'employer']);
             // Email identity creation removed to prevent duplicate entries
             // Employer profile
             $employerModel->save([
-                'user_id'       => $userId,
-                'company_name'  => 'Demo Employer Inc.',
-                'contact_name'  => 'Demo Employer',
-                'contact_phone' => '1234567890',
+                'user_id'          => $userId,
+                'company_name'     => 'Demo Employer Inc.',
+                'contact_name'     => 'Demo Employer',
+                'contact_phone'    => '1234567890',
+                'contact_email'    => 'demo.employer@example.com',
+                'company_size'     => '11-50',
+                'industry_id'      => 1,
+                'state_id'         => 1,
+                'unlimited_access' => 1,
+                'unlimited_until'  => '2099-12-31 23:59:59',
             ]);
             // Mark email verified
             $users->update($userId, ['email_verified_at' => date('Y-m-d H:i:s')]);
@@ -112,6 +122,7 @@ class DemoAccounts extends BaseCommand
             $user = $userProvider->findById($userId);
             $user->setPassword($candidatePassword);
             $userProvider->save($user);
+            $users->update($userId, ['user_type' => 'job_seeker']);
             // Email identity creation removed to prevent duplicate entries
             // Candidate profile
             $jobSeekerModel->save([
@@ -121,11 +132,11 @@ class DemoAccounts extends BaseCommand
                 'location'  => 'Demo City',
                 'state_id'  => 1,
                 'job_title' => 'Software Engineer',
-                'employment_type' => 'full_time',
+                'employment_type' => 'Full Time',
                 'skills' => 'PHP, JavaScript, HTML, CSS',
                 'experience_years' => 2,
-                'education_level' => "Bachelor's",
-                'resume' => null,
+                'education_level' => "Bachelor's Degree",
+                'resume' => 'uploads/resumes/demo-placeholder.pdf',
             ]);
             // Mark email verified
             $users->update($userId, ['email_verified_at' => date('Y-m-d H:i:s')]);

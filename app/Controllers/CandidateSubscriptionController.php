@@ -12,9 +12,11 @@ class CandidateSubscriptionController extends BaseController
     protected $planModel;
     protected $subModel;
     protected $paymentModel;
+    protected $session;
 
     public function __construct()
     {
+        $this->session = service('session');
         $this->planModel = model(PlanModel::class);
         $this->subModel = model(UserSubscriptionModel::class);
         $this->paymentModel = model(PaymentModel::class);
@@ -32,6 +34,7 @@ class CandidateSubscriptionController extends BaseController
             ->findAll();
 
         $currentPlan = null;
+        $walletBalance = 0.0;
         if (auth()->loggedIn()) {
             $currentPlan = $this->subModel
                 ->select('user_subscriptions.*, plans.name as plan_name')
@@ -39,15 +42,19 @@ class CandidateSubscriptionController extends BaseController
                 ->where('user_subscriptions.user_id', auth()->id())
                 ->where('user_subscriptions.is_active', 1)
                 ->first();
+
+            $wallet = (new \App\Services\WalletService())->getOrCreateWallet(auth()->id());
+            $walletBalance = (float) ($wallet->balance ?? 0.0);
         }
 
-        $isFreeMode = env('site_free_mode') === 'true';
+        $isFreeMode = is_site_free_mode();
 
         return view('candidate/pricing', [
             'title' => 'Candidate Premium Plans',
             'plans' => $plans,
             'currentPlan' => $currentPlan,
             'isFreeMode' => $isFreeMode,
+            'walletBalance' => $walletBalance,
         ]);
     }
 
@@ -61,6 +68,7 @@ class CandidateSubscriptionController extends BaseController
         }
 
         $planId = (int) $this->request->getPost('plan_id');
+        $paymentMethod = $this->request->getPost('payment_method');
         $plan = $this->planModel->find($planId);
 
         if (!$plan || $plan->plan_type !== 'candidate') {
@@ -69,6 +77,44 @@ class CandidateSubscriptionController extends BaseController
 
         if ((float) $plan->base_price <= 0) {
             return $this->activateFreePlan($plan);
+        }
+
+        // Handle Wallet Payment
+        if ($paymentMethod === 'wallet') {
+            $userId = auth()->id();
+            $walletService = new \App\Services\WalletService();
+            $wallet = $walletService->getOrCreateWallet($userId);
+
+            if ((float) $wallet->balance < (float) $plan->base_price) {
+                return redirect()->back()->with('error', 'Insufficient wallet balance (₦' . number_format($wallet->balance, 2) . '). Please top up your wallet or pay via Paystack.');
+            }
+
+            $reference = 'cand_sub_w_' . uniqid();
+            $walletService->debit(
+                userId: $userId,
+                amount: (float) $plan->base_price,
+                source: 'wallet_checkout',
+                reference: $reference,
+                sourceId: $planId,
+                description: 'Paid with wallet for plan: ' . $plan->name
+            );
+
+            // Record Payment
+            $paymentModel = model(\App\Models\PaymentModel::class);
+            $paymentModel->insert([
+                'user_id'        => $userId,
+                'plan_id'        => $planId,
+                'reference'      => $reference,
+                'amount'         => $plan->base_price,
+                'status'         => 'paid',
+                'payment_method' => 'wallet',
+                'paid_at'        => date('Y-m-d H:i:s'),
+                'created_at'     => date('Y-m-d H:i:s'),
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->activatePlan($planId, $reference, $plan->base_price);
+            return redirect()->to('candidate/dashboard')->with('success', 'Subscription plan activated successfully using your wallet balance!');
         }
 
         $paystack = new PaystackService();
@@ -133,34 +179,43 @@ class CandidateSubscriptionController extends BaseController
         $duration = (int) ($plan->pricing_tiers ? json_decode($plan->pricing_tiers, true)[1]['duration'] ?? 30 : 30);
         $endDate = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         // Deactivate existing subscription
         $this->subModel->where('user_id', $userId)->where('is_active', 1)->set(['is_active' => 0, 'updated_at' => $now])->update();
 
         // Record payment
         $this->paymentModel->insert([
-            'user_id' => $userId,
-            'plan_id' => $planId,
-            'reference' => $reference,
-            'amount' => $amount,
-            'amount_paid' => $amount,
-            'currency' => 'NGN',
-            'status' => 'paid',
-            'channel' => 'card',
-            'paid_at' => $now,
+            'user_id'    => $userId,
+            'plan_id'    => $planId,
+            'reference'  => $reference,
+            'amount'     => $amount,
+            'amount_paid'=> $amount,
+            'currency'   => 'NGN',
+            'status'     => 'paid',
+            'channel'    => 'card',
+            'paid_at'    => $now,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
         // Create subscription
         $this->subModel->insert([
-            'user_id' => $userId,
-            'plan_id' => $planId,
-            'start_date' => $now,
-            'end_date' => $endDate,
-            'is_active' => 1,
+            'user_id'    => $userId,
+            'plan_id'    => $planId,
+            'starts_at'  => $now,
+            'ends_at'    => $endDate,
+            'is_active'  => 1,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            log_message('error', "CandidateSubscription: activatePlan failed for user {$userId}, plan {$planId}, ref {$reference}");
+        }
     }
 
     /**
@@ -178,8 +233,8 @@ class CandidateSubscriptionController extends BaseController
         $this->subModel->insert([
             'user_id' => $userId,
             'plan_id' => $plan->id,
-            'start_date' => $now,
-            'end_date' => $endDate,
+            'starts_at' => $now,
+            'ends_at' => $endDate,
             'is_active' => 1,
             'created_at' => $now,
             'updated_at' => $now,

@@ -16,9 +16,43 @@ function isActiveStartsWith($path)
 }
 
 if ($isEmployer) {
+    $logoPath = isset($employer) && ! empty($employer->logo) ? $employer->logo : '';
+    $defaultImage = 'images/favicon.png';
+    $profileImage = $defaultImage;
+    $hasProfileImage = false;
+    if ($logoPath) {
+        if (filter_var($logoPath, FILTER_VALIDATE_URL) || str_starts_with($logoPath, 'http://') || str_starts_with($logoPath, 'https://')) {
+            $profileImage = $logoPath;
+            $hasProfileImage = true;
+        } elseif (file_exists(FCPATH . $logoPath)) {
+            $profileImage = $logoPath;
+            $hasProfileImage = true;
+        }
+    }
     $displayName = isset($employer) && ! empty($employer->company_name) ? $employer->company_name : 'Employer';
 } else {
+    $picPath = isset($candidate) && ! empty($candidate->profile_picture) ? $candidate->profile_picture : '';
+    $defaultImage = 'images/favicon.png';
+    $profileImage = $defaultImage;
+    $hasProfileImage = false;
+    if ($picPath) {
+        if (filter_var($picPath, FILTER_VALIDATE_URL) || str_starts_with($picPath, 'http://') || str_starts_with($picPath, 'https://')) {
+            $profileImage = $picPath;
+            $hasProfileImage = true;
+        } elseif (file_exists(FCPATH . $picPath)) {
+            $profileImage = $picPath;
+            $hasProfileImage = true;
+        }
+    }
     $displayName = isset($candidate) && ! empty($candidate->full_name) ? $candidate->full_name : 'Candidate';
+}
+
+$initials = '';
+$words = explode(' ', preg_replace('/\s+/', ' ', trim($displayName)));
+if (count($words) >= 2) {
+    $initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+} else {
+    $initials = strtoupper(substr($displayName, 0, 2));
 }
 ?>
 <div class="sidebar" id="sidebar">
@@ -37,7 +71,13 @@ if ($isEmployer) {
     <div class="modern-profile p-3 pb-0">
         <div class="text-center rounded bg-light p-3 mb-4 user-profile">
             <div class="avatar avatar-lg online mb-3">
-                <img src="<?= base_url('assets/img/customer/customer15.jpg'); ?>" alt="Img" class="img-fluid rounded-circle">
+                <?php if ($hasProfileImage): ?>
+                    <img src="<?= (str_starts_with($profileImage, 'http://') || str_starts_with($profileImage, 'https://')) ? $profileImage : base_url($profileImage); ?>" alt="Img" class="img-fluid rounded-circle">
+                <?php else: ?>
+                    <span class="d-flex align-items-center justify-content-center text-white rounded-circle fw-bold mx-auto" style="width: 80px; height: 80px; font-size: 24px; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);">
+                        <?= esc($initials) ?>
+                    </span>
+                <?php endif; ?>
             </div>
             <h6 class="fs-14 fw-bold mb-1">
                 <?= esc($displayName) ?>
@@ -93,14 +133,14 @@ if ($isEmployer) {
                                     <i class="ti ti-building fs-16 me-2"></i><span>Company Profile</span>
                                 </a>
                             </li>
-                            <?php if (env('feature_messaging', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_messaging', true)): ?>
                             <li class="<?= isActive('employer/messages') ?>">
                                 <a href="<?= base_url('employer/messages') ?>">
                                     <i class="ti ti-message-dots fs-16 me-2"></i><span>Messages</span>
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_referrals', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_referrals', true)): ?>
                             <li class="<?= isActive('employer/referrals') ?>">
                                 <a href="<?= base_url('employer/referrals') ?>">
                                     <i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span>
@@ -161,18 +201,18 @@ if ($isEmployer) {
                     </li>
 
                     <!-- ===== AI COGNITIVE TOOLS ===== -->
-                    <?php if (env('feature_ai_resume', 'true') == 'true' || env('feature_ai_career_tools', 'true') == 'true'): ?>
+                    <?php if (get_site_setting('feature_ai_resume', true) || get_site_setting('feature_ai_career_tools', true)): ?>
                     <li class="submenu-open">
                         <h6 class="submenu-hdr">AI Cognitive Tools</h6>
                         <ul>
-                            <?php if (env('feature_ai_resume', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_ai_resume', true)): ?>
                             <li class="<?= isActiveStartsWith('candidate/resumes') ?>">
                                 <a href="<?= base_url('candidate/resumes') ?>">
                                     <i class="ti ti-file-spark fs-16 me-2"></i><span>AI Resume Builder</span>
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_ai_career_tools', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_ai_career_tools', true)): ?>
                             <li class="<?= isActiveStartsWith('candidate/career-tools') ?>">
                                 <a href="<?= base_url('candidate/career-tools') ?>">
                                     <i class="ti ti-sparkles fs-16 me-2"></i><span>AI Career Tools</span>
@@ -184,11 +224,11 @@ if ($isEmployer) {
                     <?php endif; ?>
 
                     <!-- ===== LEARNING & TRAINING ===== -->
-                    <?php if (env('feature_elearning', 'true') == 'true' || env('feature_webinars', 'true') == 'true'): ?>
+                    <?php if (get_site_setting('feature_elearning', true) || get_site_setting('feature_webinars', true)): ?>
                     <li class="submenu-open">
                         <h6 class="submenu-hdr">Learning & Training</h6>
                         <ul>
-                            <?php if (env('feature_elearning', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_elearning', true)): ?>
                             <li class="<?= isActiveStartsWith('training') && !isActiveStartsWith('training/certificates') ? 'active' : '' ?>">
                                 <a href="<?= base_url('training') ?>">
                                     <i class="ti ti-book fs-16 me-2"></i><span>Training Catalog</span>
@@ -205,7 +245,7 @@ if ($isEmployer) {
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_webinars', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_webinars', true)): ?>
                             <li class="<?= isActiveStartsWith('webinars') ?>">
                                 <a href="<?= base_url('webinars') ?>">
                                     <i class="ti ti-video fs-16 me-2"></i><span>Career Webinars</span>
@@ -230,14 +270,14 @@ if ($isEmployer) {
                                     <i class="ti ti-receipt fs-16 me-2"></i><span>Transactions</span>
                                 </a>
                             </li>
-                            <?php if (env('feature_messaging', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_messaging', true)): ?>
                             <li class="<?= isActive('candidate/messages') ?>">
                                 <a href="<?= base_url('candidate/messages') ?>">
                                     <i class="ti ti-message-circle fs-16 me-2"></i><span>Messages</span>
                                 </a>
                             </li>
                             <?php endif; ?>
-                            <?php if (env('feature_referrals', 'true') == 'true'): ?>
+                            <?php if (get_site_setting('feature_referrals', true)): ?>
                             <li class="<?= isActive('candidate/referrals') ?>">
                                 <a href="<?= base_url('candidate/referrals') ?>">
                                     <i class="ti ti-share fs-16 me-2"></i><span>Referral Program</span>

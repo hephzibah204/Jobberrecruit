@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A2F57">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<meta name="format-detection" content="telephone=no">
+<!-- DEV: favicon — drop your icon file here, e.g.
+     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"> -->
+
+<title>Employer Dashboard – JobberRecruit</title>
+
+<!-- ══ FONTS · non-render-blocking pattern (matches homepage) ══ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+<!--
+════════════════════════════════════════════════════════════════════════════
+  JOBBERRECRUIT · EMPLOYER DASHBOARD  (premium redesign · v1)
+════════════════════════════════════════════════════════════════════════════
+  DEVELOPER HANDOVER NOTES (CodeIgniter 4)
+  • All figures/lists below are STATIC DEMO content. Replace with view data:
+      $stats            → total_jobs, active_jobs, total_applicants, total_hires
+      $wallet_balance   → topbar wallet chip + sidebar wallet card
+      $applications_7d  → SVG bar chart #chart-apps  (7 ints, Mon..Sun)
+      $jobs_7d          → SVG bar chart #chart-jobs  (7 ints)
+      $pipeline         → funnel counts: posted / applicants / shortlisted / hired
+      $recent_apps      → "Recent Applications" list (max 4)
+      $recent_jobs      → "Recently Posted Jobs" list (max 5)
+      $categories       → "Top Job Categories" list w/ share bars
+      $profile_pct      → completion ring (stroke-dashoffset formula in JS block)
+  • Status pill classes:  .pill--pending (orange) .pill--reviewed (blue)
+                          .pill--rejected (red)  .pill--hired (green)
+    Design rule: orange = pending/action · blue = confirmed/normal · green is
+    tightly scoped to positive-confirmed states only.
+  • ORANGE CTA RULE: exactly one primary conversion CTA per view = "Post New
+    Job". Every other action is blue or outline. Do not add more orange.
+  • Charts are dependency-free inline SVG. Bar heights are set inline as
+    height/y attributes — compute server-side: h = round(v / max * 96).
+    When all values are 0, render the .chart-empty block instead (included).
+  • Mobile: sidebar becomes an off-canvas drawer (#sidebar + #scrim). Sticky
+    bottom action bar (.mobile-cta) uses env(safe-area-inset-bottom).
+════════════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+:root{
+  color-scheme: light;
+  --brand:#0861A9; --brand-dark:#064A85; --brand-deep:#0A2F57; --brand-light:#E6F0F8;
+  --accent:#ED9020; --accent-dark:#C8770E; --accent-light:#FDF1E0;
+  --text:#141926; --muted:#5b6577; --bg:#f5f7fb; --white:#fff; --border:#e2e8f2;
+  --success:#16a34a; --success-light:#e8f7ee; --danger:#dc2626; --danger-light:#fdeaea;
+  --radius:10px; --radius-lg:14px;
+  --shadow:0 2px 14px rgba(10,47,87,.08); --shadow-lg:0 14px 40px rgba(10,47,87,.16);
+  --transition:.18s ease; --sidebar-w:262px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overflow-x:hidden}
+h1,h2,h3,.display{font-family:'Sora','Inter',sans-serif;letter-spacing:-.02em}
+a{color:var(--brand);text-decoration:none}
+button{font-family:inherit}
+img,svg{display:block}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.skip-link{position:absolute;top:-50px;left:16px;background:var(--brand);color:#fff;padding:8px 16px;border-radius:0 0 6px 6px;font-weight:600;z-index:9999;transition:top .2s}
+.skip-link:focus{top:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ══ BUTTONS (design-system) ══ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:var(--transition);text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:44px;white-space:nowrap}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn-outline{background:var(--white);color:var(--brand);border-color:var(--border)}
+.btn-outline:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-accent{background:var(--accent);color:var(--brand-deep);border-color:var(--accent)}
+.btn-accent:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:var(--brand-deep)}
+.btn-ghost-w{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.28)}
+.btn-ghost-w:hover{background:rgba(255,255,255,.2)}
+.btn-sm{padding:8px 14px;font-size:.78rem;min-height:38px}
+
+/* ══ LAYOUT SHELL ══ */
+.shell{display:flex;min-height:100vh}
+.main{flex:1;min-width:0;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+@media (max-width:1024px){.main{margin-left:0}}
+
+/* ══ SIDEBAR · deep-navy, carries the homepage hero language ══ */
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);z-index:1200;display:flex;flex-direction:column;color:#fff;
+  background:radial-gradient(ellipse 90% 40% at 100% 0%,rgba(237,144,32,.14) 0%,transparent 55%),linear-gradient(175deg,#0A2F57 0%,#083a6b 60%,#064A85 100%);
+  padding-top:env(safe-area-inset-top,0)}
+.sidebar::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.45;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:42px 42px;-webkit-mask-image:radial-gradient(ellipse 100% 55% at 50% 0%,#000 25%,transparent 85%);mask-image:radial-gradient(ellipse 100% 55% at 50% 0%,#000 25%,transparent 85%)}
+.sb-head{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;position:relative}
+.sb-logo{font-family:'Sora',sans-serif;font-weight:800;font-size:1.28rem;color:#fff;display:inline-flex;align-items:baseline;letter-spacing:-.02em}
+.sb-logo .o{position:relative;display:inline-block;width:.62em;height:.62em;border:.13em solid var(--accent);border-radius:50%;margin:0 .04em;transform:translateY(.02em)}
+.sb-logo .o::after{content:'';position:absolute;width:.16em;height:.34em;background:var(--accent);border-radius:2px;left:73%;top:78%;transform:rotate(-45deg);transform-origin:top left}
+.sb-close{display:none;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:10px;line-height:0;-webkit-tap-highlight-color:transparent}
+.sb-close svg{width:20px;height:20px}
+.sb-scroll{flex:1;overflow-y:auto;padding:4px 14px 14px;position:relative;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.sb-group{margin-top:16px}
+.sb-label{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:0 12px 7px}
+.sb-link{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:9px;font-size:.86rem;font-weight:500;color:rgba(255,255,255,.82);transition:var(--transition);min-height:44px;position:relative}
+.sb-link svg{width:17px;height:17px;flex-shrink:0;opacity:.85}
+.sb-link:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+.sb-link[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+.sb-link[aria-current="page"]::before{content:'';position:absolute;left:-14px;top:8px;bottom:8px;width:3.5px;border-radius:0 4px 4px 0;background:var(--accent)}
+.sb-count{margin-left:auto;background:var(--accent);color:var(--brand-deep);font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:20px;line-height:1.5}
+/* sidebar wallet card */
+.sb-wallet{margin:20px 2px 6px;padding:15px 15px 14px;border-radius:var(--radius-lg);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden}
+.sb-wallet::after{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(237,144,32,.28),transparent 70%)}
+.sb-wallet-label{font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.sb-wallet-amt{font-family:'Sora',sans-serif;font-weight:800;font-size:1.32rem;margin:2px 0 10px;color:#fff}
+.sb-wallet .btn{width:100%;position:relative;z-index:1}
+.sb-foot{padding:12px 20px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0));font-size:.7rem;color:rgba(255,255,255,.4);position:relative;border-top:1px solid rgba(255,255,255,.1)}
+.scrim{position:fixed;inset:0;background:rgba(10,25,45,.55);backdrop-filter:blur(2px);z-index:1100;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
+@media (max-width:1024px){
+  .sidebar{transform:translateX(-100%);transition:transform .26s ease;box-shadow:var(--shadow-lg)}
+  .sidebar.open{transform:translateX(0)}
+  .scrim.show{opacity:1;visibility:visible}
+  .sb-close{display:block}
+}
+
+/* ══ TOPBAR ══ */
+.topbar{position:sticky;top:0;z-index:900;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top,0)}
+.topbar-inner{display:flex;align-items:center;gap:12px;height:66px;padding:0 clamp(16px,3vw,32px)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:10px;color:var(--text);line-height:0;-webkit-tap-highlight-color:transparent;margin-left:-8px}
+.hamburger svg{width:22px;height:22px}
+@media (max-width:1024px){.hamburger{display:block}}
+.tb-search{flex:1;max-width:420px;position:relative}
+.tb-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.tb-search input{width:100%;min-height:44px;padding:10px 14px 10px 38px;border:1.5px solid var(--border);border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;background:var(--bg);color:var(--text);transition:var(--transition)}
+.tb-search input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(8,97,169,.12)}
+.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.tb-wallet{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px solid var(--border);border-radius:9px;background:#fff;font-size:.8rem;font-weight:600;color:var(--brand-deep);min-height:44px;transition:var(--transition)}
+.tb-wallet:hover{border-color:var(--brand);text-decoration:none}
+.tb-wallet svg{width:16px;height:16px;color:var(--brand)}
+.tb-wallet b{font-family:'Sora',sans-serif;font-weight:700}
+.tb-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:var(--transition)}
+.tb-icon:hover{border-color:var(--brand);color:var(--brand)}
+.tb-icon svg{width:18px;height:18px}
+.tb-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid #fff}
+.tb-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand-deep),var(--brand));color:#fff;font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0}
+@media (max-width:640px){.tb-wallet span.lbl{display:none}.tb-search{display:none}}
+
+/* ══ CONTENT ══ */
+.content{flex:1;padding:clamp(18px,3vw,32px);padding-bottom:96px;display:flex;flex-direction:column;gap:clamp(16px,2.2vw,24px)}
+@media (min-width:1025px){.content{padding-bottom:clamp(18px,3vw,32px)}}
+.greet-row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.greet h1{font-size:clamp(1.3rem,2.4vw,1.7rem);font-weight:800;color:var(--brand-deep)}
+.greet p{color:var(--muted);font-size:.86rem;margin-top:2px}
+.greet p b{color:var(--brand)}
+.greet-date{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:20px;padding:7px 14px}
+.greet-date svg{width:14px;height:14px;color:var(--brand)}
+
+/* ══ AI RECRUITER HERO (signature card) ══ */
+.ai-hero{position:relative;overflow:hidden;border-radius:var(--radius-lg);color:#fff;padding:clamp(20px,3vw,30px);
+  background:radial-gradient(ellipse 60% 90% at 88% 10%,rgba(237,144,32,.22) 0%,transparent 55%),linear-gradient(150deg,#0A2F57 0%,#064A85 55%,#0861A9 100%);
+  box-shadow:var(--shadow)}
+.ai-hero::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse 90% 90% at 70% 20%,#000 25%,transparent 80%);mask-image:radial-gradient(ellipse 90% 90% at 70% 20%,#000 25%,transparent 80%)}
+.ai-hero-grid{position:relative;display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap}
+.ai-badge{display:inline-flex;align-items:center;gap:7px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(237,144,32,.18);border:1px solid rgba(237,144,32,.45);color:#FDD9A8;padding:5px 13px;border-radius:20px;margin-bottom:12px}
+.ai-badge .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(237,144,32,.6);animation:pulse 2.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(237,144,32,.55)}70%{box-shadow:0 0 0 9px rgba(237,144,32,0)}100%{box-shadow:0 0 0 0 rgba(237,144,32,0)}}
+.ai-hero h2{font-size:clamp(1.25rem,2.4vw,1.65rem);font-weight:800;line-height:1.2;margin-bottom:8px}
+.ai-hero h2 span{color:var(--accent)}
+.ai-sub{display:flex;align-items:center;gap:10px;font-size:.85rem;color:rgba(255,255,255,.85);flex-wrap:wrap}
+.ai-avatars{display:inline-flex}
+.ai-avatars span{width:28px;height:28px;border-radius:50%;border:2px solid #0A2F57;background:linear-gradient(135deg,#1d6fb8,#0861A9);color:#fff;font-size:.62rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif}
+.ai-avatars span+span{margin-left:-9px}
+.ai-avatars .more{background:var(--accent);color:var(--brand-deep)}
+.ai-actions{display:flex;gap:10px;flex-wrap:wrap;position:relative}
+@media (max-width:640px){.ai-actions{width:100%}.ai-actions .btn{flex:1;min-width:130px}}
+
+/* ══ KPI STAT CARDS ══ */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(12px,1.6vw,18px)}
+@media (max-width:1200px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.stats{grid-template-columns:1fr 1fr;gap:10px}}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 18px 14px;position:relative;overflow:hidden;transition:var(--transition)}
+.stat:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.stat::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3.5px;border-radius:0 4px 4px 0;background:var(--st-bar,var(--brand))}
+.stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.stat-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--st-icbg,var(--brand-light));color:var(--st-ic,var(--brand))}
+.stat-ic svg{width:18px;height:18px}
+.trend{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:20px}
+.trend svg{width:11px;height:11px}
+.trend--up{background:var(--success-light);color:var(--success)}
+.trend--flat{background:var(--bg);color:var(--muted)}
+.stat-num{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(1.5rem,2.6vw,1.95rem);color:var(--brand-deep);line-height:1.1}
+.stat-lbl{font-size:.76rem;color:var(--muted);font-weight:500;margin-top:2px}
+.stat-spark{position:absolute;right:12px;bottom:10px;width:74px;height:26px;opacity:.9}
+@media (max-width:640px){.stat-spark{display:none}.stat{padding:14px}}
+.stat--jobs{--st-bar:var(--brand)}
+.stat--active{--st-bar:var(--accent);--st-icbg:var(--accent-light);--st-ic:var(--accent-dark)}
+.stat--apps{--st-bar:var(--brand-dark)}
+.stat--hires{--st-bar:var(--success);--st-icbg:var(--success-light);--st-ic:var(--success)}
+
+/* ══ GENERIC CARD ══ */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.card-title{display:inline-flex;align-items:center;gap:9px;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep)}
+.card-title svg{width:16px;height:16px;color:var(--brand)}
+.card-link{font-size:.76rem;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;padding:8px 10px;margin:-8px -10px;border-radius:8px}
+.card-link:hover{background:var(--brand-light);text-decoration:none}
+.card-link svg{width:13px;height:13px}
+.card-body{padding:18px 20px}
+
+/* ══ CHARTS ROW ══ */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.6vw,18px)}
+@media (max-width:900px){.charts{grid-template-columns:1fr}}
+.chart-legend{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);font-weight:500}
+.chart-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.bar-chart{width:100%;height:auto;display:block}
+.bar-chart .grid-line{stroke:var(--border);stroke-width:1;stroke-dasharray:3 4}
+.bar-chart .axis-lbl{font-family:'Inter',sans-serif;font-size:10.5px;fill:var(--muted)}
+.bar-chart .val-lbl{font-family:'Sora',sans-serif;font-size:10.5px;font-weight:700;fill:var(--brand-deep)}
+.bar-chart .bar{rx:5;transition:opacity var(--transition)}
+.bar-chart .bar:hover{opacity:.8}
+.bar-chart .bar--zero{fill:var(--border)}
+.chart-note{font-size:.72rem;color:var(--muted);margin-top:10px;display:flex;align-items:center;gap:6px}
+.chart-note svg{width:13px;height:13px;color:var(--accent-dark);flex-shrink:0}
+
+/* ══ THREE-COLUMN INSIGHT ROW ══ */
+.tri{display:grid;grid-template-columns:1fr 1.15fr 1.15fr;gap:clamp(12px,1.6vw,18px);align-items:start}
+@media (max-width:1200px){.tri{grid-template-columns:1fr 1fr}}
+@media (max-width:800px){.tri{grid-template-columns:1fr}}
+
+/* categories */
+.cat-list{list-style:none;display:flex;flex-direction:column;gap:14px}
+.cat-item{display:flex;flex-direction:column;gap:6px}
+.cat-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.82rem}
+.cat-name{font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:8px;min-width:0}
+.cat-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.cat-jobs{font-size:.72rem;font-weight:700;color:var(--muted);flex-shrink:0}
+.cat-track{height:7px;border-radius:20px;background:var(--bg);overflow:hidden}
+.cat-fill{height:100%;border-radius:20px}
+
+/* applications list */
+.app-list{list-style:none;display:flex;flex-direction:column}
+.app-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.app-item:last-child{border-bottom:none;padding-bottom:2px}
+.app-item:first-child{padding-top:2px}
+.app-ava{width:42px;height:42px;border-radius:10px;background:var(--brand-light);border:1px solid var(--border);color:var(--brand);font-family:'Sora',sans-serif;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.app-info{min-width:0;flex:1}
+.app-name{font-weight:700;font-size:.84rem;color:var(--brand-deep);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-meta{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px;margin-top:1px}
+.app-meta svg{width:12px;height:12px;flex-shrink:0}
+.pill{font-size:.66rem;font-weight:700;padding:4px 11px;border-radius:20px;flex-shrink:0;letter-spacing:.02em}
+.pill--pending{background:var(--accent-light);color:var(--accent-dark)}
+.pill--reviewed{background:var(--brand-light);color:var(--brand)}
+.pill--rejected{background:var(--danger-light);color:var(--danger)}
+.pill--hired{background:var(--success-light);color:var(--success)}
+
+/* recent jobs list */
+.job-list{list-style:none;display:flex;flex-direction:column}
+.job-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.job-item:last-child{border-bottom:none;padding-bottom:2px}
+.job-item:first-child{padding-top:2px}
+.job-ic{width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0}
+.job-ic svg{width:16px;height:16px}
+.job-info{min-width:0;flex:1}
+.job-title{font-weight:600;font-size:.82rem;color:var(--text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.job-title a{color:inherit}
+.job-title a:hover{color:var(--brand);text-decoration:none}
+.job-sub{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:5px;margin-top:3px}
+.job-sub svg{width:11px;height:11px}
+.job-views{flex-shrink:0;text-align:right}
+.job-views b{display:block;font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;color:var(--brand-deep);line-height:1.2}
+.job-views i{font-style:normal;font-size:.64rem;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+
+/* ══ PIPELINE + PROFILE ROW ══ */
+.duo{display:grid;grid-template-columns:1.6fr 1fr;gap:clamp(12px,1.6vw,18px);align-items:start}
+@media (max-width:900px){.duo{grid-template-columns:1fr}}
+.pipe{display:flex;flex-direction:column;gap:14px}
+.pipe-stage{display:grid;grid-template-columns:150px 1fr 42px;align-items:center;gap:12px}
+@media (max-width:520px){.pipe-stage{grid-template-columns:112px 1fr 36px}}
+.pipe-lbl{font-size:.78rem;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:8px}
+.pipe-lbl svg{width:14px;height:14px;color:var(--muted);flex-shrink:0}
+.pipe-track{height:26px;border-radius:8px;background:var(--bg);overflow:hidden}
+.pipe-fill{height:100%;border-radius:8px;display:flex;align-items:center;min-width:4px}
+.pipe-num{font-family:'Sora',sans-serif;font-weight:800;font-size:.92rem;color:var(--brand-deep);text-align:right}
+.pipe-hint{margin-top:4px;font-size:.74rem;color:var(--muted);display:flex;gap:7px;align-items:flex-start;background:var(--bg);border:1px dashed var(--border);border-radius:10px;padding:11px 13px}
+.pipe-hint svg{width:14px;height:14px;color:var(--accent-dark);flex-shrink:0;margin-top:2px}
+
+/* profile completion */
+.pf{display:flex;align-items:center;gap:18px}
+.pf-ring{position:relative;width:96px;height:96px;flex-shrink:0}
+.pf-ring svg{width:96px;height:96px;transform:rotate(-90deg)}
+.pf-ring .track{fill:none;stroke:var(--bg);stroke-width:9}
+.pf-ring .prog{fill:none;stroke:var(--brand);stroke-width:9;stroke-linecap:round;stroke-dasharray:264;stroke-dashoffset:66} /* 75% => 264*(1-.75)=66 */
+.pf-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:1.05rem;color:var(--brand-deep)}
+.pf-tasks{list-style:none;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pf-task{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text)}
+.pf-task svg{width:15px;height:15px;flex-shrink:0}
+.pf-task.done{color:var(--muted);text-decoration:line-through}
+.pf-task.done svg{color:var(--success)}
+.pf-task.todo svg{color:var(--accent-dark)}
+.pf-task a{font-weight:600}
+
+/* empty state (onboarded hires) */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:30px 18px}
+.empty-ic{width:56px;height:56px;border-radius:16px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center}
+.empty-ic svg{width:26px;height:26px}
+.empty h3{font-size:.94rem;font-weight:700;color:var(--brand-deep)}
+.empty p{font-size:.8rem;color:var(--muted);max-width:340px}
+
+/* ══ SLIM DASHBOARD FOOTER ══ */
+.dash-foot{border-top:1px solid var(--border);background:#fff;padding:16px clamp(16px,3vw,32px);padding-bottom:max(16px,env(safe-area-inset-bottom,0));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
+.dash-foot nav{display:flex;gap:16px;flex-wrap:wrap}
+.dash-foot a{color:var(--muted);font-weight:500}
+.dash-foot a:hover{color:var(--brand);text-decoration:none}
+
+/* ══ MOBILE STICKY ACTION BAR ══ */
+.mobile-cta{position:fixed;left:0;right:0;bottom:0;z-index:950;display:none;gap:10px;padding:10px clamp(14px,4vw,18px);padding-bottom:max(10px,env(safe-area-inset-bottom,0));background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(12px);border-top:1px solid var(--border);transition:transform .28s ease}
+.mobile-cta.hidden{transform:translateY(110%)}
+.mobile-cta .btn{flex:1}
+@media (max-width:1024px){.mobile-cta{display:flex}}
+
+/* ══ INSIGHTS + CLOSING SOON ══ */
+.insight-row{display:grid;grid-template-columns:1.6fr 1fr;gap:clamp(12px,1.6vw,18px);align-items:start}
+@media (max-width:900px){.insight-row{grid-template-columns:1fr}}
+.ins-item{display:grid;grid-template-columns:1fr auto;gap:4px 14px;padding:13px 0;border-bottom:1px solid var(--border)}
+.ins-item:first-child{padding-top:2px}
+.ins-item:last-child{border-bottom:none;padding-bottom:2px}
+.ins-title{font-weight:600;font-size:.82rem;color:var(--brand-deep);line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.ins-nums{font-size:.7rem;color:var(--muted);white-space:nowrap;text-align:right}
+.ins-nums b{color:var(--brand-deep);font-family:'Sora',sans-serif}
+.ins-bar-row{grid-column:1/-1;display:flex;align-items:center;gap:10px}
+.ins-track{flex:1;height:7px;border-radius:20px;background:var(--bg);overflow:hidden;position:relative}
+.ins-track::after{content:'';position:absolute;left:24%;top:-2px;bottom:-2px;width:2px;background:var(--muted);opacity:.5}
+.ins-fill{height:100%;border-radius:20px;min-width:3px}
+.ins-rate{font-family:'Sora',sans-serif;font-weight:700;font-size:.74rem;color:var(--brand-deep);width:44px;text-align:right;flex-shrink:0}
+.ins-hint{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ins-tip{font-size:.7rem;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+.ins-tip svg{width:12px;height:12px;color:var(--accent-dark);flex-shrink:0}
+.ins-tip--good svg{color:var(--success)}
+.ins-bench{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:12px}
+.ins-bench i{width:12px;height:2px;background:var(--muted);opacity:.6;display:inline-block;flex-shrink:0}
+.close-item{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--border)}
+.close-item:first-child{padding-top:2px}
+.close-item:last-child{border-bottom:none;padding-bottom:2px}
+.close-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.close-ic svg{width:16px;height:16px}
+.close-ic--warn{background:var(--accent-light);color:var(--accent-dark)}
+.close-ic--ok{background:var(--brand-light);color:var(--brand)}
+.close-info{flex:1;min-width:0}
+.close-title{font-weight:600;font-size:.8rem;color:var(--brand-deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.close-sub{font-size:.7rem;color:var(--muted)}
+.close-sub b{color:var(--accent-dark)}
+
+
+.sb-logo-text{font-family:'Sora',sans-serif;font-weight:800;font-size:1.24rem;color:#fff;letter-spacing:-.02em;line-height:1}.sb-logo-img{height:26px;width:auto;display:block}
+
+/* ══ TOPBAR DROPDOWNS ══ */
+.tb-drop{position:relative}
+.tb-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:230px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:8px;z-index:1000;opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.tb-drop.open .tb-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.tb-menu a,.tb-menu .tb-menu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:.84rem;font-weight:500;color:var(--text);transition:var(--transition);min-height:42px}
+.tb-menu a:hover{background:var(--brand-light);color:var(--brand);text-decoration:none}
+.tb-menu a svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
+.tb-menu a:hover svg{color:var(--brand)}
+.tb-menu hr{border:none;border-top:1px solid var(--border);margin:7px 4px}
+.tb-menu .tm-head{padding:8px 12px 10px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.tb-menu .tm-name{font-family:'Sora',sans-serif;font-weight:700;font-size:.86rem;color:var(--brand-deep)}
+.tb-menu .tm-mail{font-size:.72rem;color:var(--muted);overflow-wrap:anywhere}
+.tb-menu a.tm-out{color:var(--danger)}
+.tb-menu a.tm-out svg{color:var(--danger)}
+.tb-menu a.tm-out:hover{background:var(--danger-light);color:var(--danger)}
+.tb-menu--notif{min-width:300px}
+.tn-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;transition:var(--transition)}
+.tn-item:hover{background:var(--bg);text-decoration:none}
+.tn-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand-light);color:var(--brand)}
+.tn-ic--accent{background:var(--accent-light);color:var(--accent-dark)}
+.tn-ic svg{width:14px;height:14px}
+.tn-item b{font-size:.78rem;color:var(--brand-deep);display:block;line-height:1.4;font-weight:600}
+.tn-item i{font-style:normal;font-size:.68rem;color:var(--muted)}
+@media (max-width:480px){.tb-menu{right:-52px}.tb-menu--notif{min-width:min(300px,calc(100vw - 24px))}}
+/* ══ ENTRY MOTION ══ */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.content>*{animation:rise .34s ease both}
+.content>*:nth-child(2){animation-delay:.05s}
+.content>*:nth-child(3){animation-delay:.1s}
+.content>*:nth-child(4){animation-delay:.15s}
+.content>*:nth-child(5){animation-delay:.2s}
+.content>*:nth-child(n+6){animation-delay:.24s}
+
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<!-- ══ SVG SPRITE ══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-search-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 20a7 7 0 0 1 11-5.5"/><circle cx="17.5" cy="16.5" r="3.5"/><path d="m20 19 2.5 2.5"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M10 21v-3h4v3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2.5-1.5L9 22l2.5-1.5L14 22l2.5-1.5L19 22V2l-2.5 1.5L14 2l-2.5 1.5L9 2 6.5 3.5Z"/><path d="M8 8h7M8 12h7"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5.5 5.5 0 0 0-4-5.3"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 13-3.5"/><path d="m15 18 2.5 2.5L22 16"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></symbol>
+    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></symbol>
+    <symbol id="i-funnel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8Z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 15v3M13 11v7M18 7v11"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.3 9.3a1.9 1.9 0 0 0 2.7 0l7.3-7.3a1.9 1.9 0 0 0 0-2.7Z"/><path d="M7 7h.01"/></symbol>
+  </defs>
+</svg>
+
+<!-- ══ MOBILE SCRIM ══ -->
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="shell">
+
+  <!-- ════════ SIDEBAR ════════ -->
+  <aside class="sidebar" id="sidebar" aria-label="Dashboard navigation">
+    <div class="sb-head">
+      <a href="/" class="sb-logo" aria-label="JobberRecruit home"><!-- DEV: insert logo here — recommended <img src="/assets/logo-white.svg" alt="JobberRecruit" class="sb-logo-img"> (white/mono version, ~150×26). Placeholder text shown until then. --><span class="sb-logo-text">JobberRecruit</span></a>
+      <button class="sb-close" id="sb-close" aria-label="Close menu"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <nav class="sb-scroll" aria-label="Employer menu">
+      <div class="sb-group">
+        <div class="sb-label">Recruitment Hub</div>
+        <a class="sb-link" href="employer-dashboard.html" aria-current="page"><svg aria-hidden="true"><use href="#i-grid"/></svg> Dashboard</a>
+        <a class="sb-link" href="employer-jobs.html"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> My Jobs</a>
+        <a class="sb-link" href="employer-applications.html"><svg aria-hidden="true"><use href="#i-doc"/></svg> Applications <span class="sb-count">4</span></a>
+        <a class="sb-link" href="employer-candidates.html"><svg aria-hidden="true"><use href="#i-search-user"/></svg> Candidates Search</a>
+      </div>
+      <div class="sb-group">
+        <div class="sb-label">Organization Space</div>
+        <a class="sb-link" href="employer-company-profile.html"><svg aria-hidden="true"><use href="#i-building"/></svg> Company Profile</a>
+        <a class="sb-link" href="employer-messages.html"><svg aria-hidden="true"><use href="#i-chat"/></svg> Messages</a>
+        <a class="sb-link" href="employer-referrals.html"><svg aria-hidden="true"><use href="#i-share"/></svg> Referral Program</a>
+      </div>
+      <div class="sb-group">
+        <div class="sb-label">Billing &amp; Alerts</div>
+        <a class="sb-link" href="employer-billing.html"><svg aria-hidden="true"><use href="#i-card"/></svg> Billing &amp; Plans</a>
+        <a class="sb-link" href="employer-transactions.html"><svg aria-hidden="true"><use href="#i-receipt"/></svg> Transactions</a>
+        <a class="sb-link" href="employer-candidate-alerts.html"><svg aria-hidden="true"><use href="#i-bell"/></svg> Candidate Alerts</a>
+      </div>
+      <div class="sb-group"><div class="sb-label">Training</div>
+<a class="sb-link" href="/training"><svg aria-hidden="true"><use href="#i-book"/></svg> Training Centre</a>
+</div>
+<div class="sb-group"><div class="sb-label">Settings</div>
+<a class="sb-link" href="/employer/settings"><svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings</a>
+<a class="sb-link" href="/logout"><svg aria-hidden="true"><use href="#i-logout"/></svg> Sign Out</a>
+</div>
+
+      <!-- wallet card · $wallet_balance -->
+      <div class="sb-wallet">
+        <div class="sb-wallet-label">Wallet balance</div>
+        <div class="sb-wallet-amt">₦0.00</div>
+        <a href="/employer/wallet/fund" class="btn btn-ghost-w btn-sm"><svg aria-hidden="true"><use href="#i-wallet"/></svg> Fund Wallet</a>
+      </div>
+    </nav>
+    <div class="sb-foot">© 2026 JobberRecruit</div>
+  </aside>
+
+  <!-- ════════ MAIN ════════ -->
+  <div class="main">
+
+    <!-- topbar -->
+    <header class="topbar" role="banner">
+      <div class="topbar-inner">
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg aria-hidden="true"><use href="#i-menu"/></svg></button>
+        <div class="tb-search" role="search">
+          <svg aria-hidden="true"><use href="#i-search"/></svg>
+          <input type="search" placeholder="Search jobs, applicants, candidates…" aria-label="Search dashboard">
+        </div>
+        <div class="tb-right">
+          <a href="/employer/wallet/fund" class="tb-wallet" aria-label="Wallet balance ₦0.00 — fund wallet">
+            <svg aria-hidden="true"><use href="#i-wallet"/></svg><span class="lbl">Wallet</span> <b>₦0.00</b>
+          </a>
+          <div class="tb-drop" id="notif-drop">
+<button class="tb-icon" aria-label="Notifications — 2 unread" aria-haspopup="true" aria-expanded="false"><svg aria-hidden="true"><use href="#i-bell"/></svg><span class="tb-dot" aria-hidden="true"></span></button>
+<div class="tb-menu tb-menu--notif" role="menu" aria-label="Notifications">
+<a href="employer-applications.html" class="tn-item" role="menuitem"><span class="tn-ic" aria-hidden="true"><svg><use href="#i-doc"/></svg></span><span><b>New application: Administrative Officer</b><i>Sampson Usang · today</i></span></a>
+<a href="employer-candidate-alerts.html" class="tn-item" role="menuitem"><span class="tn-ic tn-ic--accent" aria-hidden="true"><svg><use href="#i-bell"/></svg></span><span><b>2 new matches: “Accountants in Lagos”</b><i>Candidate alert · today</i></span></a>
+<hr><a href="#" role="menuitem" style="justify-content:center;font-weight:600;color:var(--brand)">View all notifications</a>
+</div></div>
+          <div class="tb-drop" id="account-drop">
+<button class="tb-avatar" aria-label="Account menu — Jobber Recruit LTD" aria-haspopup="true" aria-expanded="false">JR</button>
+<div class="tb-menu" role="menu" aria-label="Account">
+<div class="tm-head"><div class="tm-name">Jobber Recruit LTD</div><div class="tm-mail">jobberrecruit@gmail.com</div></div>
+<a href="employer-company-profile.html" role="menuitem"><svg aria-hidden="true"><use href="#i-building"/></svg> Company Profile</a>
+<a href="employer-billing.html" role="menuitem"><svg aria-hidden="true"><use href="#i-card"/></svg> Billing &amp; Plans</a>
+<a href="/employer/settings" role="menuitem"><svg aria-hidden="true"><use href="#i-cog"/></svg> General Settings</a>
+<hr><a href="/logout" class="tm-out" role="menuitem"><svg aria-hidden="true"><use href="#i-logout"/></svg> Sign Out</a>
+</div></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- content -->
+    <main class="content" id="main-content">
+
+      <!-- greeting -->
+      <div class="greet-row">
+        <div class="greet">
+          <h1>Good morning, Jobber Recruit LTD 👋</h1>
+          <p>You have <b>4 new applications</b> waiting for review today.</p>
+        </div>
+        <span class="greet-date"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Friday, 10 July 2026</span>
+      </div>
+
+      <!-- AI recruiter hero (signature) -->
+      <section class="ai-hero" aria-labelledby="ai-title">
+        <div class="ai-hero-grid">
+          <div>
+            <span class="ai-badge"><span class="pulse" aria-hidden="true"></span> JobberRecruit AI Recruiter · Active</span>
+            <h2 id="ai-title">Find the perfect match, <span>faster.</span></h2>
+            <div class="ai-sub">
+              <span class="ai-avatars" aria-hidden="true"><span>AO</span><span>CN</span><span>FE</span><span class="more">+1</span></span>
+              <span><b>4 new matching profiles</b> found for your open roles today.</span>
+            </div>
+          </div>
+          <div class="ai-actions">
+            <!-- ORANGE = the single conversion CTA on this page -->
+            <a href="employer-post-job.html" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-plus"/></svg> Post New Job</a>
+            <a href="employer-applications.html" class="btn btn-ghost-w"><svg aria-hidden="true"><use href="#i-users"/></svg> View Applicants</a>
+            <a href="/recruitment-services" class="btn btn-ghost-w"><svg aria-hidden="true"><use href="#i-spark"/></svg> Let Us Help You Hire</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI stats · $stats -->
+      <section class="stats" aria-label="Key statistics">
+        <div class="stat stat--jobs">
+          <div class="stat-top">
+            <span class="stat-ic"><svg aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+            <span class="trend trend--up"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg> +2 this month</span>
+          </div>
+          <div class="stat-num">8</div>
+          <div class="stat-lbl">Total Jobs Posted</div>
+          <svg class="stat-spark" viewBox="0 0 74 26" aria-hidden="true"><polyline points="2,20 14,17 26,18 38,12 50,13 62,7 72,4" fill="none" stroke="#0861A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="stat stat--active">
+          <div class="stat-top">
+            <span class="stat-ic"><svg aria-hidden="true"><use href="#i-spark"/></svg></span>
+            <span class="trend trend--flat">All live</span>
+          </div>
+          <div class="stat-num">8</div>
+          <div class="stat-lbl">Active Jobs</div>
+          <svg class="stat-spark" viewBox="0 0 74 26" aria-hidden="true"><polyline points="2,16 14,16 26,12 38,12 50,8 62,8 72,5" fill="none" stroke="#ED9020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="stat stat--apps">
+          <div class="stat-top">
+            <span class="stat-ic"><svg aria-hidden="true"><use href="#i-users"/></svg></span>
+            <span class="trend trend--up"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg> +4 today</span>
+          </div>
+          <div class="stat-num">4</div>
+          <div class="stat-lbl">Total Applicants</div>
+          <svg class="stat-spark" viewBox="0 0 74 26" aria-hidden="true"><polyline points="2,22 14,22 26,18 38,19 50,14 62,10 72,6" fill="none" stroke="#064A85" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="stat stat--hires">
+          <div class="stat-top">
+            <span class="stat-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span>
+            <span class="trend trend--flat">Awaiting first hire</span>
+          </div>
+          <div class="stat-num">0</div>
+          <div class="stat-lbl">Total Hires</div>
+        </div>
+      </section>
+
+      <!-- charts · $jobs_7d / $applications_7d
+           Bars: chart area y=8..104 (96px tall) · h = round(v/max*96) · y = 104-h
+           Zero values render 4px stubs with .bar--zero -->
+      <section class="charts" aria-label="Seven day activity">
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-chart"/></svg> Jobs Posted <span style="font-weight:500;color:var(--muted);font-size:.76rem">· Last 7 days</span></span>
+            <span class="chart-legend"><i style="background:var(--brand)"></i> Jobs</span>
+          </div>
+          <div class="card-body">
+            <svg class="bar-chart" viewBox="0 0 560 140" role="img" aria-label="Bar chart: jobs posted per day for the last 7 days. Saturday 1, Tuesday 1, Wednesday 2, all other days 0.">
+              <line class="grid-line" x1="30" y1="8"  x2="552" y2="8"/>
+              <line class="grid-line" x1="30" y1="56" x2="552" y2="56"/>
+              <line class="grid-line" x1="30" y1="104" x2="552" y2="104"/>
+              <text class="axis-lbl" x="24" y="12"  text-anchor="end">2</text>
+              <text class="axis-lbl" x="24" y="60"  text-anchor="end">1</text>
+              <text class="axis-lbl" x="24" y="108" text-anchor="end">0</text>
+              <!-- Fri 0 -->
+              <rect class="bar bar--zero" x="44"  y="100" width="34" height="4"><title>Fri 04 Jul · 0 jobs</title></rect>
+              <!-- Sat 1 -->
+              <rect class="bar" x="118" y="56" width="34" height="48" fill="#0861A9"><title>Sat 05 Jul · 1 job</title></rect>
+              <text class="val-lbl" x="135" y="49" text-anchor="middle">1</text>
+              <!-- Sun 0 -->
+              <rect class="bar bar--zero" x="192" y="100" width="34" height="4"><title>Sun 06 Jul · 0 jobs</title></rect>
+              <!-- Mon 0 -->
+              <rect class="bar bar--zero" x="266" y="100" width="34" height="4"><title>Mon 07 Jul · 0 jobs</title></rect>
+              <!-- Tue 1 -->
+              <rect class="bar" x="340" y="56" width="34" height="48" fill="#0861A9"><title>Tue 08 Jul · 1 job</title></rect>
+              <text class="val-lbl" x="357" y="49" text-anchor="middle">1</text>
+              <!-- Wed 2 -->
+              <rect class="bar" x="414" y="8" width="34" height="96" fill="#0861A9"><title>Wed 09 Jul · 2 jobs</title></rect>
+              <text class="val-lbl" x="431" y="20" text-anchor="middle" fill="#fff">2</text>
+              <!-- Thu 0 -->
+              <rect class="bar bar--zero" x="488" y="100" width="34" height="4"><title>Thu 10 Jul · 0 jobs</title></rect>
+              <text class="axis-lbl" x="61"  y="124" text-anchor="middle">Fri</text>
+              <text class="axis-lbl" x="135" y="124" text-anchor="middle">Sat</text>
+              <text class="axis-lbl" x="209" y="124" text-anchor="middle">Sun</text>
+              <text class="axis-lbl" x="283" y="124" text-anchor="middle">Mon</text>
+              <text class="axis-lbl" x="357" y="124" text-anchor="middle">Tue</text>
+              <text class="axis-lbl" x="431" y="124" text-anchor="middle">Wed</text>
+              <text class="axis-lbl" x="505" y="124" text-anchor="middle">Thu</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Applications Received <span style="font-weight:500;color:var(--muted);font-size:.76rem">· Last 7 days</span></span>
+            <span class="chart-legend"><i style="background:var(--accent)"></i> Applications</span>
+          </div>
+          <div class="card-body">
+            <svg class="bar-chart" viewBox="0 0 560 140" role="img" aria-label="Bar chart: applications received per day for the last 7 days. No applications were received this week.">
+              <line class="grid-line" x1="30" y1="8"  x2="552" y2="8"/>
+              <line class="grid-line" x1="30" y1="56" x2="552" y2="56"/>
+              <line class="grid-line" x1="30" y1="104" x2="552" y2="104"/>
+              <text class="axis-lbl" x="24" y="12"  text-anchor="end">2</text>
+              <text class="axis-lbl" x="24" y="60"  text-anchor="end">1</text>
+              <text class="axis-lbl" x="24" y="108" text-anchor="end">0</text>
+              <rect class="bar bar--zero" x="44"  y="100" width="34" height="4"><title>Fri 04 Jul · 0</title></rect>
+              <rect class="bar bar--zero" x="118" y="100" width="34" height="4"><title>Sat 05 Jul · 0</title></rect>
+              <rect class="bar bar--zero" x="192" y="100" width="34" height="4"><title>Sun 06 Jul · 0</title></rect>
+              <rect class="bar bar--zero" x="266" y="100" width="34" height="4"><title>Mon 07 Jul · 0</title></rect>
+              <rect class="bar bar--zero" x="340" y="100" width="34" height="4"><title>Tue 08 Jul · 0</title></rect>
+              <rect class="bar bar--zero" x="414" y="100" width="34" height="4"><title>Wed 09 Jul · 0</title></rect>
+              <rect class="bar bar--zero" x="488" y="100" width="34" height="4"><title>Thu 10 Jul · 0</title></rect>
+              <text class="axis-lbl" x="61"  y="124" text-anchor="middle">Fri</text>
+              <text class="axis-lbl" x="135" y="124" text-anchor="middle">Sat</text>
+              <text class="axis-lbl" x="209" y="124" text-anchor="middle">Sun</text>
+              <text class="axis-lbl" x="283" y="124" text-anchor="middle">Mon</text>
+              <text class="axis-lbl" x="357" y="124" text-anchor="middle">Tue</text>
+              <text class="axis-lbl" x="431" y="124" text-anchor="middle">Wed</text>
+              <text class="axis-lbl" x="505" y="124" text-anchor="middle">Thu</text>
+            </svg>
+            <p class="chart-note"><svg aria-hidden="true"><use href="#i-bulb"/></svg> Quiet week? Featured job posts get up to 5× more applications. <a href="employer-billing.html">Boost a job</a></p>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- insights + closing soon · $job_insights / $closing_jobs -->
+      <section class="insight-row" aria-label="Job performance and expiry">
+
+        <!-- performance insights: conversion = applications / views
+             tick on .ins-track::after marks the 1.2% platform benchmark;
+             bar width = min(rate / 5%, 100)% -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-chart"/></svg> Job Performance Insights</span>
+            <a href="employer-jobs.html" class="card-link">All jobs <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+          </div>
+          <div class="card-body">
+            <div class="ins-item">
+              <div class="ins-title">Administrative Officer</div>
+              <div class="ins-nums"><b>98</b> views · <b>4</b> applications</div>
+              <div class="ins-bar-row"><div class="ins-track"><div class="ins-fill" style="width:82%;background:linear-gradient(90deg,#16a34a,#4ade80)"></div></div><span class="ins-rate">4.1%</span></div>
+              <div class="ins-hint"><span class="ins-tip ins-tip--good"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Converting 3× above the platform benchmark — no action needed</span></div>
+            </div>
+            <div class="ins-item">
+              <div class="ins-title">Multiple Vacancies at Renaissance Africa Energy Company</div>
+              <div class="ins-nums"><b>1,538</b> views · <b>0</b> applications</div>
+              <div class="ins-bar-row"><div class="ins-track"><div class="ins-fill" style="width:2%;background:var(--border)"></div></div><span class="ins-rate">0.0%</span></div>
+              <div class="ins-hint"><span class="ins-tip"><svg aria-hidden="true"><use href="#i-bulb"/></svg> High views, no applications — check the apply method or add a salary range</span>
+                <a href="employer-jobs.html" class="btn btn-outline btn-sm">Review job</a></div>
+            </div>
+            <div class="ins-item">
+              <div class="ins-title">Halliburton 2026 Graduate Internship Program</div>
+              <div class="ins-nums"><b>1,445</b> views · <b>0</b> applications</div>
+              <div class="ins-bar-row"><div class="ins-track"><div class="ins-fill" style="width:2%;background:var(--border)"></div></div><span class="ins-rate">0.0%</span></div>
+              <div class="ins-hint"><span class="ins-tip"><svg aria-hidden="true"><use href="#i-bulb"/></svg> Strong interest — a displayed salary lifts applications up to 3×</span>
+                <a href="employer-jobs.html" class="btn btn-outline btn-sm">Review job</a></div>
+            </div>
+            <p class="ins-bench"><i aria-hidden="true"></i> Benchmark: similar jobs convert about 12 applications per 1,000 views (1.2%)</p>
+          </div>
+        </div>
+
+        <!-- closing soon: jobs expiring within 14 days -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-clock"/></svg> Closing Soon</span>
+            <span class="pill pill--pending">3 jobs</span>
+          </div>
+          <div class="card-body">
+            <div class="close-item">
+              <span class="close-ic close-ic--warn" aria-hidden="true"><svg><use href="#i-clock"/></svg></span>
+              <div class="close-info"><div class="close-title">Registered Nurse – Private Clinic, Lekki</div>
+                <div class="close-sub">Closes 14 Jul · <b>in 4 days</b></div></div>
+              <a href="employer-jobs.html" class="btn btn-outline btn-sm">Extend</a>
+            </div>
+            <div class="close-item">
+              <span class="close-ic close-ic--warn" aria-hidden="true"><svg><use href="#i-clock"/></svg></span>
+              <div class="close-info"><div class="close-title">Administrative Officer</div>
+                <div class="close-sub">Closes 18 Jul · <b>in 8 days</b></div></div>
+              <a href="employer-jobs.html" class="btn btn-outline btn-sm">Extend</a>
+            </div>
+            <div class="close-item">
+              <span class="close-ic close-ic--ok" aria-hidden="true"><svg><use href="#i-clock"/></svg></span>
+              <div class="close-info"><div class="close-title">Sales Executive – Lagos Mainland</div>
+                <div class="close-sub">Closes 20 Jul · in 10 days</div></div>
+              <a href="employer-jobs.html" class="btn btn-outline btn-sm">Extend</a>
+            </div>
+            <p style="font-size:.72rem;color:var(--muted);margin-top:12px">Jobs expire automatically at their closing date. Extending keeps your listing live without reposting.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- three-column insight row -->
+      <section class="tri" aria-label="Recruitment insights">
+
+        <!-- categories · $categories · share = jobs/total_jobs -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-tag"/></svg> Top Job Categories</span>
+          </div>
+          <div class="card-body">
+            <ul class="cat-list">
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#0861A9"></i><span>Energy, Oil &amp; Gas</span></span><span class="cat-jobs">2 jobs</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:25%;background:#0861A9"></div></div>
+              </li>
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#ED9020"></i><span>Sales &amp; Business Development</span></span><span class="cat-jobs">1 job</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:12.5%;background:#ED9020"></div></div>
+              </li>
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#064A85"></i><span>Engineering &amp; Technical</span></span><span class="cat-jobs">1 job</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:12.5%;background:#064A85"></div></div>
+              </li>
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#1d6fb8"></i><span>Customer Service &amp; Call Center</span></span><span class="cat-jobs">1 job</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:12.5%;background:#1d6fb8"></div></div>
+              </li>
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#C8770E"></i><span>Human Resources &amp; Recruitment</span></span><span class="cat-jobs">1 job</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:12.5%;background:#C8770E"></div></div>
+              </li>
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#0A2F57"></i><span>Healthcare &amp; Pharmaceuticals</span></span><span class="cat-jobs">1 job</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:12.5%;background:#0A2F57"></div></div>
+              </li>
+              <li class="cat-item">
+                <div class="cat-row"><span class="cat-name"><i class="cat-dot" style="background:#5b6577"></i><span>Graduate Trainee, NYSC &amp; Internships</span></span><span class="cat-jobs">1 job</span></div>
+                <div class="cat-track"><div class="cat-fill" style="width:12.5%;background:#5b6577"></div></div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- recent applications · $recent_apps -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-clock"/></svg> Recent Applications</span>
+            <a href="employer-applications.html" class="card-link">View all <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+          </div>
+          <div class="card-body">
+            <ul class="app-list">
+              <li class="app-item">
+                <span class="app-ava" aria-hidden="true">AO</span>
+                <div class="app-info">
+                  <div class="app-name">Administrative Officer</div>
+                  <div class="app-meta"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Applied 10 Mar 2026</div>
+                </div>
+                <span class="pill pill--pending">Pending</span>
+              </li>
+              <li class="app-item">
+                <span class="app-ava" aria-hidden="true">AO</span>
+                <div class="app-info">
+                  <div class="app-name">Administrative Officer</div>
+                  <div class="app-meta"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Applied 15 Feb 2026</div>
+                </div>
+                <span class="pill pill--pending">Pending</span>
+              </li>
+              <li class="app-item">
+                <span class="app-ava" aria-hidden="true">AO</span>
+                <div class="app-info">
+                  <div class="app-name">Administrative Officer</div>
+                  <div class="app-meta"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Applied 12 Feb 2026</div>
+                </div>
+                <span class="pill pill--pending">Pending</span>
+              </li>
+              <li class="app-item">
+                <span class="app-ava" aria-hidden="true">AO</span>
+                <div class="app-info">
+                  <div class="app-name">Administrative Officer</div>
+                  <div class="app-meta"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Applied 11 Feb 2026</div>
+                </div>
+                <span class="pill pill--rejected">Rejected</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- recently posted jobs · $recent_jobs -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Recently Posted Jobs</span>
+            <a href="employer-jobs.html" class="card-link">View all <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+          </div>
+          <div class="card-body">
+            <ul class="job-list">
+              <li class="job-item">
+                <span class="job-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
+                <div class="job-info">
+                  <div class="job-title"><a href="#">2026 AP Graduate Trainee Programme – Graduate Jobs in Nigeria</a></div>
+                  <div class="job-sub"><svg aria-hidden="true"><use href="#i-clock"/></svg> Posted 06 Jun 2026</div>
+                </div>
+                <div class="job-views"><b>196</b><i>views</i></div>
+              </li>
+              <li class="job-item">
+                <span class="job-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
+                <div class="job-info">
+                  <div class="job-title"><a href="#">We Are Hiring: HR/People &amp; Operations Manager</a></div>
+                  <div class="job-sub"><svg aria-hidden="true"><use href="#i-clock"/></svg> Posted 03 Jun 2026</div>
+                </div>
+                <div class="job-views"><b>157</b><i>views</i></div>
+              </li>
+              <li class="job-item">
+                <span class="job-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
+                <div class="job-info">
+                  <div class="job-title"><a href="#">Nigerian Agip Exploration Limited (NAE) – 2026/2027 Postgraduate Scholarship Award Scheme</a></div>
+                  <div class="job-sub"><svg aria-hidden="true"><use href="#i-clock"/></svg> Posted 25 Apr 2026</div>
+                </div>
+                <div class="job-views"><b>262</b><i>views</i></div>
+              </li>
+              <li class="job-item">
+                <span class="job-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
+                <div class="job-info">
+                  <div class="job-title"><a href="#">Halliburton 2026 Graduate Internship Program in Port Harcourt</a></div>
+                  <div class="job-sub"><svg aria-hidden="true"><use href="#i-clock"/></svg> Posted 19 Mar 2026</div>
+                </div>
+                <div class="job-views"><b>1,445</b><i>views</i></div>
+              </li>
+              <li class="job-item">
+                <span class="job-ic" aria-hidden="true"><svg><use href="#i-briefcase"/></svg></span>
+                <div class="job-info">
+                  <div class="job-title"><a href="#">Multiple Vacancies at Renaissance Africa Energy Company – Finance, HR &amp; Supply Chain Roles</a></div>
+                  <div class="job-sub"><svg aria-hidden="true"><use href="#i-clock"/></svg> Posted 18 Mar 2026</div>
+                </div>
+                <div class="job-views"><b>1,538</b><i>views</i></div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- pipeline + profile completion -->
+      <section class="duo" aria-label="Pipeline and profile health">
+
+        <!-- hiring pipeline · $pipeline · width = count/max*100 (max = posted) -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-funnel"/></svg> Hiring Pipeline</span>
+            <a href="employer-applications.html" class="card-link">Manage <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
+          </div>
+          <div class="card-body">
+            <div class="pipe">
+              <div class="pipe-stage">
+                <span class="pipe-lbl"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Jobs posted</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width:100%;background:linear-gradient(90deg,#0A2F57,#0861A9)"></div></div>
+                <span class="pipe-num">8</span>
+              </div>
+              <div class="pipe-stage">
+                <span class="pipe-lbl"><svg aria-hidden="true"><use href="#i-users"/></svg> Applicants</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width:50%;background:linear-gradient(90deg,#064A85,#1d6fb8)"></div></div>
+                <span class="pipe-num">4</span>
+              </div>
+              <div class="pipe-stage">
+                <span class="pipe-lbl"><svg aria-hidden="true"><use href="#i-doc"/></svg> Shortlisted</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width:12.5%;background:linear-gradient(90deg,#ED9020,#f0a94d)"></div></div>
+                <span class="pipe-num">1</span>
+              </div>
+              <div class="pipe-stage">
+                <span class="pipe-lbl"><svg aria-hidden="true"><use href="#i-user-check"/></svg> Hired</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width:2%;background:var(--border)"></div></div>
+                <span class="pipe-num">0</span>
+              </div>
+            </div>
+            <p class="pipe-hint"><svg aria-hidden="true"><use href="#i-bulb"/></svg> 3 pending applications haven't been reviewed yet. Candidates who hear back within 48 hours are far more likely to accept an offer.</p>
+          </div>
+        </div>
+
+        <!-- profile completion · $profile_pct · dashoffset = 264*(1-pct/100) -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><svg aria-hidden="true"><use href="#i-building"/></svg> Company Profile Strength</span>
+          </div>
+          <div class="card-body">
+            <div class="pf">
+              <div class="pf-ring" role="img" aria-label="Profile 75 percent complete">
+                <svg viewBox="0 0 96 96" aria-hidden="true">
+                  <circle class="track" cx="48" cy="48" r="42"/>
+                  <circle class="prog"  cx="48" cy="48" r="42"/>
+                </svg>
+                <span class="pct">75%</span>
+              </div>
+              <ul class="pf-tasks">
+                <li class="pf-task done"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Company details added</li>
+                <li class="pf-task done"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Contact info verified</li>
+                <li class="pf-task done"><svg aria-hidden="true"><use href="#i-check-c"/></svg> First job posted</li>
+                <li class="pf-task todo"><svg aria-hidden="true"><use href="#i-circle"/></svg> <a href="employer-company-profile.html">Upload company logo</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- onboarded hires · empty state -->
+      <section class="card" aria-label="Recent onboarded hires">
+        <div class="card-head">
+          <span class="card-title"><svg aria-hidden="true"><use href="#i-user-check"/></svg> Recent Onboarded Hires</span>
+        </div>
+        <div class="empty">
+          <span class="empty-ic"><svg aria-hidden="true"><use href="#i-user-check"/></svg></span>
+          <h3>No onboarded hires yet</h3>
+          <p>Your first hire will appear here. Review your 4 pending applications, or let our recruitment team shortlist candidates for you.</p>
+          <a href="employer-applications.html" class="btn btn-primary btn-sm"><svg aria-hidden="true"><use href="#i-users"/></svg> Review Applications</a>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- slim footer -->
+    <footer class="dash-foot">
+      <span>© 2026 JobberRecruit · Jobber Recruit Ltd</span>
+      <nav aria-label="Footer links">
+        <a href="/help">Help Centre</a>
+        <a href="/privacy-policy">Privacy</a>
+        <a href="/terms-of-service">Terms</a>
+        <a href="/contact">Contact</a>
+      </nav>
+    </footer>
+  </div>
+</div>
+
+<!-- mobile sticky action bar -->
+<div class="mobile-cta" id="mobile-cta">
+  <a href="employer-applications.html" class="btn btn-outline"><svg aria-hidden="true"><use href="#i-users"/></svg> Applicants</a>
+  <a href="employer-post-job.html" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-plus"/></svg> Post New Job</a>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var sidebar=document.getElementById('sidebar'),
+      scrim=document.getElementById('scrim'),
+      burger=document.getElementById('hamburger'),
+      closeBtn=document.getElementById('sb-close');
+
+  function openMenu(){sidebar.classList.add('open');scrim.hidden=false;requestAnimationFrame(function(){scrim.classList.add('show')});burger.setAttribute('aria-expanded','true');document.body.style.overflow='hidden'}
+  function closeMenu(){sidebar.classList.remove('open');scrim.classList.remove('show');burger.setAttribute('aria-expanded','false');document.body.style.overflow='';setTimeout(function(){if(!scrim.classList.contains('show'))scrim.hidden=true},240)}
+  burger.addEventListener('click',openMenu);
+  closeBtn.addEventListener('click',closeMenu);
+  scrim.addEventListener('click',closeMenu);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&sidebar.classList.contains('open'))closeMenu()});
+
+  /* Sticky mobile bar: hide on scroll down, show on scroll up + near page bottom */
+  var bar=document.getElementById('mobile-cta'),lastY=window.scrollY,ticking=false;
+  window.addEventListener('scroll',function(){
+    if(ticking)return;ticking=true;
+    requestAnimationFrame(function(){
+      var y=window.scrollY,
+          nearBottom=(window.innerHeight+y)>=(document.documentElement.scrollHeight-120);
+      if(nearBottom||y<lastY||y<60){bar.classList.remove('hidden')}
+      else if(y>lastY+8){bar.classList.add('hidden')}
+      lastY=y;ticking=false;
+    });
+  },{passive:true});
+
+  /* Time-of-day greeting · dev: replace with server-side greeting if preferred */
+  var h=new Date().getHours(),
+      g=h<12?'Good morning':h<17?'Good afternoon':'Good evening',
+      el=document.querySelector('.greet h1');
+  if(el)el.firstChild.textContent=g+', Jobber Recruit LTD \ud83d\udc4b';
+})();
+
+/* ── Topbar dropdowns ── */
+(function(){
+var drops=document.querySelectorAll('.tb-drop');
+drops.forEach(function(d){
+  var btn=d.querySelector('button');
+  btn.addEventListener('click',function(e){e.stopPropagation();
+    var was=d.classList.contains('open');
+    drops.forEach(function(x){x.classList.remove('open');x.querySelector('button').setAttribute('aria-expanded','false')});
+    if(!was){d.classList.add('open');btn.setAttribute('aria-expanded','true')}
+  });
+});
+document.addEventListener('click',function(){drops.forEach(function(d){d.classList.remove('open');d.querySelector('button').setAttribute('aria-expanded','false')})});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')drops.forEach(function(d){d.classList.remove('open');d.querySelector('button').setAttribute('aria-expanded','false')})});
+})();
+
+</script>
+</body>
+</html>
