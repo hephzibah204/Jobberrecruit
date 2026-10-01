@@ -754,7 +754,7 @@ class AptitudeController extends BaseController
                     if ($employerEmail) {
                         $candidateName = $candidate->full_name ?? ($candidateUser->username ?? 'Candidate');
                         $emailService = new \App\Services\EmailNotificationService();
-                        $candidateProfileUrl = site_url('employer/candidates/view/' . $userId);
+                        $candidateProfileUrl = site_url('employer/candidates/view/' . $candidate->id);
                         $emailService->sendAssessmentLinkCompletedEmail(
                             $employerEmail,
                             $employer->company_name ?? 'Employer',

@@ -7141,10 +7141,10 @@ class EmployerController extends BaseController
             ->select('
                 job_seekers.*,
                 auth_identities.secret as email,
-                states.name AS state_name,
+                states.name AS state_name
             ')
             ->join('states', 'states.id = job_seekers.state_id', 'left')
-            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id AND auth_identities.type = "email_password"', 'left')
             ->where('job_seekers.id', $id)
             ->first();
 
