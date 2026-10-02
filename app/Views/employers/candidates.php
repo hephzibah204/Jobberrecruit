@@ -9,7 +9,7 @@
   gap: 20px;
   align-items: start;
 }
-@media (max-width: 991px) {
+@media (max-width: 1024px) {
   .cand-layout { grid-template-columns: 1fr; }
 }
 .cand-card {
@@ -115,7 +115,7 @@
   gap: 8px;
   flex-shrink: 0;
 }
-@media (max-width: 991px) {
+@media (max-width: 1024px) {
   .cand-card {
     grid-template-columns: 44px 1fr;
     gap: 12px;
