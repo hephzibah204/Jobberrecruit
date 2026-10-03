@@ -417,8 +417,13 @@ class ResumeController extends BaseController
     /**
      * Get Candidate Profile JSON for 1-click Auto-Fill in Resume Builder
      */
-    public function getProfileData()
-    {
+    public function getProfileData() {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('candidate/resumes/build');
+        }
+        $this->response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        // Fetch candidate profile
+
         $user = auth()->user();
         $candidateModel = model(\App\Models\JobSeekerModel::class);
         $candidate = $candidateModel->where('user_id', $user->id)->first();

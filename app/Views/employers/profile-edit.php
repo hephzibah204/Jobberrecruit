@@ -4,6 +4,77 @@
 
 
 <?= $this->section('content') ?>
+<style>
+  .cv-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 24px;
+    flex-wrap: wrap;
+  }
+  .cv-card-title {
+    flex: 1 1 180px;
+    min-width: 140px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    line-height: 1.3;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+  .cv-card-title svg {
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .cv-card-title-text {
+    display: block;
+    min-width: 0;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+  .cv-card-sub {
+    font-size: .72rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 6px;
+    display: inline-block;
+  }
+  .cv-gain-tip {
+    margin-left: 0 !important;
+    margin-right: 2px !important;
+  }
+  @media (max-width: 640px) {
+    .cv-card-header {
+      padding: 14px 16px;
+      gap: 6px;
+    }
+    .cv-card .cv-card-body {
+      padding: 0 16px 18px;
+    }
+    .cv-card-title {
+      font-size: .95rem;
+      flex: 1 1 135px;
+      min-width: 130px;
+      gap: 8px;
+    }
+    .cv-card-sub {
+      display: block;
+      margin-left: 0;
+      margin-top: 2px;
+      line-height: 1.25;
+    }
+    .cv-card-done {
+      font-size: .64rem;
+      padding: 3px 8px;
+    }
+    .cv-gain-tip {
+      font-size: .64rem;
+      padding: 3px 7px;
+      margin-right: 0 !important;
+    }
+  }
+</style>
 <div class="page-head">
   <div class="page-head-left">
     <h1><svg aria-hidden="true"><use href="#i-edit"/></svg> Edit Company Profile</h1>
@@ -41,7 +112,8 @@
       <details class="cv-card" aria-labelledby="h-identity" open>
         <summary class="cv-card-header">
           <h2 class="cv-card-title" id="h-identity">
-            <svg aria-hidden="true"><use href="#i-building"/></svg> Company Identity
+            <svg aria-hidden="true"><use href="#i-building"/></svg>
+            <span class="cv-card-title-text">Company Identity</span>
           </h2>
           <span class="cv-card-done incomplete">Incomplete</span>
           <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -765,6 +837,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   updateProgress();
   updateBarTip();
+
+  const editEmployerForm = document.getElementById('editEmployerForm');
+  if (editEmployerForm) {
+      editEmployerForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+      });
+  }
 
   // Industry multi-select dropdown
   (function() {

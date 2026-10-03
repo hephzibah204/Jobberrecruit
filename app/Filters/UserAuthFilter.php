@@ -34,21 +34,38 @@ class UserAuthFilter implements FilterInterface
 
         // Check if user is logged in
         if (!$auth->loggedIn()) {
-            // Store intended URL for redirect after login
+            // Store intended URL for redirect after login (only for normal GET page navigations, never AJAX/JSON/download endpoints)
             $remember = service('rememberer');
             $remember?->login();
             $currentURL = current_url();
             $path = trim(parse_url($currentURL, PHP_URL_PATH) ?? '', '/');
-            if ($path !== '' && $path !== '/' && !str_contains($path, 'login') && !str_contains($path, 'register')) {
+            $isJsonOrDownloadPath = str_contains($path, 'profile-data')
+                || str_contains($path, 'download')
+                || str_contains($path, 'export-data')
+                || str_contains($path, 'autosave')
+                || str_contains($path, 'visibility');
+
+            if (
+                !$request->isAJAX()
+                && strtoupper($request->getMethod()) === 'GET'
+                && !$isJsonOrDownloadPath
+                && $path !== ''
+                && $path !== '/'
+                && !str_contains($path, 'login')
+                && !str_contains($path, 'register')
+            ) {
                 $session->set('redirect_url', $currentURL);
             }
 
             if ($request->isAJAX()) {
-                return $response->setJSON([
-                    'status' => 'error',
-                    'message' => 'Your session has expired. Please login again.',
-                    'redirect_url' => base_url('login')
-                ]);
+                return $response
+                    ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    ->setHeader('Vary', 'X-Requested-With, Accept')
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Your session has expired. Please login again.',
+                        'redirect_url' => base_url('login')
+                    ]);
             }
 
             return redirect()->to('login')->with('error', 'Please login to continue.');
