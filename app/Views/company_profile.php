@@ -35,12 +35,18 @@
             </span>
           <?php endif; ?>
         </h1>
-        <p class="ep-tagline"><?= esc($company->tagline) ?: 'Building the payments infrastructure that powers businesses across Africa' ?></p>
-        <div class="ep-pills">
-          <span class="ep-pill"><svg aria-hidden="true"><use href="#i-chip"/></svg> <?= esc($company->industry ?? "Not specified") ?></span>
+        <?php if (!empty($company->tagline)): ?>
+          <p class="ep-tagline"><?= esc($company->tagline) ?></p>
+        <?php endif; ?>
+                <div class="ep-pills">
+          <span class="ep-pill"><svg aria-hidden="true"><use href="#i-chip"/></svg> <?= esc(!empty($industries) ? implode(', ', array_column($industries, 'name')) : "Not specified") ?></span>
           <span class="ep-pill"><svg aria-hidden="true"><use href="#i-pin"/></svg> <?= esc($company->location) ?> State</span>
-          <span class="ep-pill"><svg aria-hidden="true"><use href="#i-users"/></svg> <?= esc($company->company_size) ?: '201–500' ?> employees</span>
-          <span class="ep-pill"><svg aria-hidden="true"><use href="#i-globe"/></svg> <?= esc($company->remote_policy) ?: 'Hybrid' ?></span>
+          <?php if (!empty($company->company_size)): ?>
+            <span class="ep-pill"><svg aria-hidden="true"><use href="#i-users"/></svg> <?= esc($company->company_size) ?> employees</span>
+          <?php endif; ?>
+          <?php if (!empty($company->remote_policy)): ?>
+            <span class="ep-pill"><svg aria-hidden="true"><use href="#i-globe"/></svg> <?= esc($company->remote_policy) ?></span>
+          <?php endif; ?>
           <span class="ep-pill"><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= count($openJobs) ?> open <?= count($openJobs) === 1 ? 'role' : 'roles' ?></span>
         </div>
         <div class="ep-hero-actions">
@@ -92,7 +98,7 @@
         <?php if (!empty($company->description)): ?>
           <?= nl2br(esc($company->description)) ?>
         <?php else: ?>
-          <p><?= esc($company->company_name) ?> is a leading organization in the <?= esc(!empty($industries) ? implode(', ', array_column($industries, 'name')) : 'specified') ?> sector. They are dedicated to delivering top-tier services and building long-term value for their clients.</p>
+          <p style="color:var(--muted); font-style:italic;">No company description provided.</p>
         <?php endif; ?>
       </div>
     </div>
@@ -103,9 +109,17 @@
         <h2 class="ep-card-title"><svg aria-hidden="true"><use href="#i-gift"/></svg> Benefits &amp; Perks</h2>
         <div class="ep-benefits">
           <?php 
-            $bList = is_string($company->benefits) ? explode("\n", $company->benefits) : [];
+            $bList = [];
+            if (is_string($company->benefits) && $company->benefits !== '') {
+              $decoded = json_decode($company->benefits, true);
+              if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $bList = $decoded;
+              } else {
+                $bList = explode("\n", $company->benefits);
+              }
+            }
             foreach ($bList as $b):
-              $b = trim($b);
+              $b = trim((string) $b);
               if (empty($b)) continue;
           ?>
             <span class="ep-benefit-pill"><svg aria-hidden="true"><use href="#i-check-circle"/></svg> <?= esc($b) ?></span>
@@ -235,3 +249,5 @@
 
 </main>
 <?= $this->endSection() ?>
+
+

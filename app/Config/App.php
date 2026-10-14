@@ -16,20 +16,32 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'http://example.com/';
+    public string $baseURL = 'https://jobberrecruit.com/';
 
     public function __construct()
     {
         parent::__construct();
         
-        // Dynamically detect base URL on live/dev servers if not defined in .env
-        if (empty($this->baseURL) || $this->baseURL === 'http://localhost:8085/') {
-            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $this->baseURL = $protocol . $host . '/';
+        // Dynamically detect base URL on live/dev servers whenever HTTP_HOST is present
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $isHttps = (
+                (isset($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off' && $_SERVER['HTTPS'] !== '')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+                || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
+                || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+            );
+            $protocol = $isHttps ? 'https://' : 'http://';
+            $host = $_SERVER['HTTP_HOST'];
+            $this->baseURL = rtrim($protocol . $host, '/') . '/';
+        } elseif (empty($this->baseURL) || $this->baseURL === 'http://example.com/' || str_contains($this->baseURL, 'localhost')) {
+            if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
+                $this->baseURL = 'http://localhost:8080/';
+            } else {
+                $this->baseURL = 'https://jobberrecruit.com/';
+            }
         }
         
-        if (ENVIRONMENT === 'testing' && ($this->baseURL === 'http://localhost/' || empty($this->baseURL))) {
+        if (defined('ENVIRONMENT') && ENVIRONMENT === 'testing' && ($this->baseURL === 'http://localhost/' || empty($this->baseURL))) {
             $this->baseURL = 'http://example.com/';
         }
     }

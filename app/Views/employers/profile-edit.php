@@ -229,7 +229,7 @@
                 <?php
                 $ranges = ['1–5', '6–10', '11–50', '51–200', '201–500', '501–1,000', '1,001–5,000', '5,000+'];
                 foreach ($ranges as $range):
-                  $sel = (isset($employer->company_size) && $employer->company_size == $range) ? 'selected' : '';
+                  $sel = (isset($employer->company_size) && str_replace(['–', '—'], '-', (string)$employer->company_size) === str_replace(['–', '—'], '-', (string)$range)) ? 'selected' : '';
                 ?>
                   <option value="<?= esc($range) ?>" <?= $sel ?>><?= esc($range) ?></option>
                 <?php endforeach; ?>
@@ -273,7 +273,8 @@
       <details class="cv-card" aria-labelledby="h-contact">
         <summary class="cv-card-header">
           <h2 class="cv-card-title" id="h-contact">
-            <svg aria-hidden="true"><use href="#i-phone"/></svg> Contact &amp; Location
+            <svg aria-hidden="true"><use href="#i-phone"/></svg>
+            <span class="cv-card-title-text">Contact &amp; Location</span>
           </h2>
           <span class="cv-card-done incomplete">Incomplete</span>
           <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -302,6 +303,11 @@
               <input type="text" id="company-address" name="company_address" placeholder="e.g. 3rd Floor, 123 Broad Street, Lagos Island" value="<?= esc($employer->company_address ?? '') ?>">
             </div>
             <div class="form-field">
+              <label for="company-whatsapp">WhatsApp number <span class="opt">(optional)</span></label>
+              <input type="tel" id="company-whatsapp" name="whatsapp" placeholder="e.g. 07038399120" value="<?= esc($employer->whatsapp ?? '') ?>">
+              <span style="font-size:.76rem;color:var(--muted);margin-top:4px;display:block">Candidates can reach out directly. Include country code for international numbers.</span>
+            </div>
+            <div class="form-field">
               <label for="company-state">State <span class="required-star">*</span></label>
               <select id="company-state" name="state_id">
                 <option value="">Select state</option>
@@ -326,7 +332,8 @@
       <details class="cv-card" aria-labelledby="h-about">
         <summary class="cv-card-header">
           <h2 class="cv-card-title" id="h-about">
-            <svg aria-hidden="true"><use href="#i-briefcase"/></svg> About the Company
+            <svg aria-hidden="true"><use href="#i-briefcase"/></svg>
+            <span class="cv-card-title-text">About the Company</span>
           </h2>
           <span class="cv-card-done incomplete">Incomplete</span>
           <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -430,8 +437,8 @@
       <details class="cv-card" aria-labelledby="h-verify">
         <summary class="cv-card-header">
           <h2 class="cv-card-title" id="h-verify">
-            <svg aria-hidden="true"><use href="#i-shield"/></svg> Verification
-            <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(unlocks Verified Employer badge)</span>
+            <svg aria-hidden="true"><use href="#i-shield"/></svg>
+            <span class="cv-card-title-text">Verification <span class="cv-card-sub">(unlocks Verified Employer badge)</span></span>
           </h2>
           <span class="cv-card-done incomplete">Incomplete</span>
           <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -439,9 +446,9 @@
         <div class="cv-card-body">
 
           <!-- Verified Employer Badge Preview -->
-          <div class="verified-banner">
+          <div class="verified-banner" style="flex-wrap:wrap">
             <svg aria-hidden="true"><use href="#i-shield"/></svg>
-            <div class="verified-banner-body">
+            <div class="verified-banner-body" style="min-width:180px">
               <strong>Verified Employer Badge</strong>
               <p>Once verified, a ✓ Verified badge appears on all your job listings. Candidates trust verified employers and are 3× more likely to apply.</p>
             </div>
@@ -482,8 +489,8 @@
       <details class="cv-card" aria-labelledby="h-social">
         <summary class="cv-card-header">
           <h2 class="cv-card-title" id="h-social">
-            <svg aria-hidden="true"><use href="#i-globe"/></svg> Social Profiles
-            <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px">(optional)</span>
+            <svg aria-hidden="true"><use href="#i-globe"/></svg>
+            <span class="cv-card-title-text">Social Profiles <span class="cv-card-sub">(optional)</span></span>
           </h2>
           <span class="cv-card-done optional">Optional</span>
           <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -665,6 +672,7 @@ function pulseBar() {
       url: form.getAttribute('action'),
       type: 'POST',
       data: formData,
+      dataType: 'json',
       processData: false,
       contentType: false,
       headers: {
@@ -672,11 +680,17 @@ function pulseBar() {
       },
       success: function(response) {
           btn.disabled = false;
-          // If the server returned status:'error' inside a 200 response, treat it as failure
-          if (response && response.status === 'error') {
+          // Refresh CSRF token whenever returned to keep session in sync
+          if (response && response.csrf_token && response.csrf_hash) {
+              var csrfInput = document.querySelector('input[name="' + response.csrf_token + '"]');
+              if (csrfInput) csrfInput.value = response.csrf_hash;
+          }
+
+          // If the server returned an error or non-success object, treat as failure
+          if (!response || typeof response !== 'object' || response.status !== 'success') {
               btn.innerHTML = orig;
-              var errMsg = response.message || 'Validation failed. Please check all required fields.';
-              if (response.errors) {
+              var errMsg = (response && response.message) ? response.message : 'Validation failed. Please check all required fields.';
+              if (response && response.errors) {
                   var errList = Object.values(response.errors).join('<br>');
                   errMsg = errList;
               }
@@ -710,12 +724,24 @@ function pulseBar() {
               toastr.success(response.message || 'Section saved successfully.');
           }
       },
-      error: function(xhr) {
+      error: function(xhr, status, error) {
           btn.disabled = false;
           btn.innerHTML = orig;
           var message = 'An error occurred while saving.';
-          if (xhr.responseJSON && xhr.responseJSON.message) {
-              message = xhr.responseJSON.message;
+          if (xhr.responseJSON) {
+              if (xhr.responseJSON.message) {
+                  message = xhr.responseJSON.message;
+              } else if (xhr.responseJSON.errors) {
+                  message = Object.values(xhr.responseJSON.errors).join('<br>');
+              }
+              if (xhr.responseJSON.csrf_token && xhr.responseJSON.csrf_hash) {
+                  var csrfInput = document.querySelector('input[name="' + xhr.responseJSON.csrf_token + '"]');
+                  if (csrfInput) csrfInput.value = xhr.responseJSON.csrf_hash;
+              }
+          } else if (xhr.status === 403 || xhr.status === 419) {
+              message = 'Security token or session expired. Please refresh the page.';
+          } else if (status === 'parsererror') {
+              message = 'Invalid server response. Please refresh the page.';
           }
           if (typeof toastr !== 'undefined') {
               toastr.error(message);
@@ -737,11 +763,13 @@ function pulseBar() {
 
   var form = document.getElementById('editEmployerForm');
   var formData = new FormData(form);
+  formData.append('section', 'all');
 
   $.ajax({
       url: form.getAttribute('action'),
       type: 'POST',
       data: formData,
+      dataType: 'json',
       processData: false,
       contentType: false,
       headers: {
@@ -750,9 +778,16 @@ function pulseBar() {
       success: function(response) {
           btn.disabled = false;
           btn.innerHTML = orig;
-          if (response && response.status === 'error') {
-              var errMsg = response.message || 'Validation failed. Please check all required fields.';
-              if (response.errors) {
+          // Refresh CSRF token whenever returned to keep session in sync
+          if (response && response.csrf_token && response.csrf_hash) {
+              var csrfInput = document.querySelector('input[name="' + response.csrf_token + '"]');
+              if (csrfInput) csrfInput.value = response.csrf_hash;
+          }
+
+          // If the server returned an error or non-success object, treat as failure
+          if (!response || typeof response !== 'object' || response.status !== 'success') {
+              var errMsg = (response && response.message) ? response.message : 'Validation failed. Please check all required fields.';
+              if (response && response.errors) {
                   var errList = Object.values(response.errors).join('<br>');
                   errMsg = errList;
               }
@@ -779,17 +814,29 @@ function pulseBar() {
               toastr.success(response.message || 'All sections saved.');
               setTimeout(function() {
                   window.location.href = '<?= base_url('employer/profile') ?>';
-              }, 1000);
+              }, 800);
           } else {
               window.location.href = '<?= base_url('employer/profile') ?>';
           }
       },
-      error: function(xhr) {
+      error: function(xhr, status, error) {
           btn.disabled = false;
           btn.innerHTML = orig;
           var message = 'An error occurred while saving.';
-          if (xhr.responseJSON && xhr.responseJSON.message) {
-              message = xhr.responseJSON.message;
+          if (xhr.responseJSON) {
+              if (xhr.responseJSON.message) {
+                  message = xhr.responseJSON.message;
+              } else if (xhr.responseJSON.errors) {
+                  message = Object.values(xhr.responseJSON.errors).join('<br>');
+              }
+              if (xhr.responseJSON.csrf_token && xhr.responseJSON.csrf_hash) {
+                  var csrfInput = document.querySelector('input[name="' + xhr.responseJSON.csrf_token + '"]');
+                  if (csrfInput) csrfInput.value = xhr.responseJSON.csrf_hash;
+              }
+          } else if (xhr.status === 403 || xhr.status === 419) {
+              message = 'Security token or session expired. Please refresh the page.';
+          } else if (status === 'parsererror') {
+              message = 'Invalid server response. Please refresh the page.';
           }
           if (typeof toastr !== 'undefined') {
               toastr.error(message);

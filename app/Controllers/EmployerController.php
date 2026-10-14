@@ -373,21 +373,35 @@ class EmployerController extends BaseController
             return true;
         }
 
-        // Check if user has an active subscription with featured feature
-        if ($plan && $plan->features) {
+        // Active subscription or paid plan
+        if ($plan) {
+            $planCode = strtolower((string) ($plan->code ?? ''));
+            $planPrice = (float) ($plan->base_price ?? 0);
+            if ($planCode !== 'free' && ($planPrice > 0 || !empty($plan->features))) {
+                return true;
+            }
+
             $features = is_string($plan->features) ? json_decode($plan->features, true) : $plan->features;
             if (is_object($features)) {
                 $features = (array) $features;
             }
-            if ((isset($features['featured']) && $features['featured']) ||
-                (isset($features['featured_job']) && $features['featured_job']) ||
-                (isset($features['unlimited_jobs']) && $features['unlimited_jobs'])) {
+            if (!empty($features['featured']) || !empty($features['featured_job']) || !empty($features['unlimited_jobs'])) {
                 return true;
             }
         }
 
-        // Bundle users: feature if they have 5+ credits
-        if ($creditBalance >= 5) {
+        // Active subscription in DB directly
+        $subscription = model(\App\Models\UserSubscriptionModel::class)
+            ->where('user_id', $userId)
+            ->where('is_active', 1)
+            ->where('ends_at >', date('Y-m-d H:i:s'))
+            ->first();
+        if ($subscription) {
+            return true;
+        }
+
+        // Paid bundle / credit users: feature if they have any available credits
+        if ($creditBalance > 0) {
             return true;
         }
 
@@ -873,14 +887,15 @@ class EmployerController extends BaseController
             $application_deadline = $postData['application_deadline'] ?? null;
             $start_date = $postData['start_date'] ?? null;
 
-            // Set premium features
+            // Set premium features - all jobs should be featured if not free
+            $isNotFree = ($hasUnlimitedAccess || !empty($subscription) || ($currentPlan && strtolower($currentPlan->code ?? '') !== 'free') || $creditBalance > 0 || $shouldBeFeatured);
             $isFeaturedRequested = $this->request->getPost('featured_listing') || $this->request->getPost('is_featured');
-            $isFeatured = (!$isDraft && $shouldBeFeatured && ($isFeaturedRequested || $hasUnlimitedAccess));
+            $isFeatured = (!$isDraft && ($isNotFree || $isFeaturedRequested));
             $postData['is_featured'] = $isFeatured ? 1 : 0;
             $postData['featured_until'] = $isFeatured ? date('Y-m-d H:i:s', strtotime('+30 days')) : null;
             // Urgent Hiring shares the same plan/credit eligibility as Featured Listing
             $isUrgentRequested = $this->request->getPost('urgent_hiring') || $this->request->getPost('is_urgent');
-            $postData['is_urgent'] = (!$isDraft && $shouldBeFeatured && $isUrgentRequested) ? 1 : 0;
+            $postData['is_urgent'] = (!$isDraft && ($isNotFree || $shouldBeFeatured) && $isUrgentRequested) ? 1 : 0;
             $postData['is_anonymous'] = (!$isDraft && $canPostAnonymous && $this->request->getPost('is_anonymous')) ? 1 : 0;
             $postData['network_blast'] = (!$isDraft && $canUseNetworkBlast) ? 1 : 0;
             $postData['application_deadline'] = $application_deadline ? date('Y-m-d H:i:s', strtotime($application_deadline)) : null;
@@ -1026,7 +1041,7 @@ class EmployerController extends BaseController
                     'message' => $successMessage,
                     'job_id' => $jobId,
                     'is_draft' => $isDraft,
-                    'is_featured' => $shouldBeFeatured,
+                    'is_featured' => (bool)$postData['is_featured'],
                     'is_anonymous' => (bool)$postData['is_anonymous'],
                     'network_blast' => (bool)$postData['network_blast']
                 ]);
@@ -1545,43 +1560,48 @@ class EmployerController extends BaseController
     }
 
     /**
-     * Get monthly analytics for charts
+     * Get monthly analytics for charts (last 12 months).
+     *
+     * "Views" (jobs.views) is a cumulative counter with no date history, so
+     * we cannot break it down by month.  Instead we count apply-button clicks
+     * from job_clicks — those rows carry a created_at timestamp and represent
+     * genuine candidate engagement.
      */
     private function getMonthlyAnalytics($employerId)
     {
-        $db = db_connect();
+        $db     = db_connect();
         $months = [];
 
         for ($i = 11; $i >= 0; $i--) {
-            $month = date('Y-m', strtotime("-$i months"));
-            $monthName = date('M', strtotime("-$i months"));
+            $month     = date('Y-m', strtotime("-$i months"));
+            $monthName = date('M',   strtotime("-$i months"));
 
-            // Jobs posted
+            // Jobs posted this month
             $jobsPosted = $db->table('jobs')
                 ->where('employer_id', $employerId)
                 ->where('DATE_FORMAT(created_at, "%Y-%m")', $month)
                 ->countAllResults();
 
-            // Applications
+            // Applications received this month
             $applications = $db->table('job_applications')
                 ->join('jobs', 'jobs.id = job_applications.job_id')
                 ->where('jobs.employer_id', $employerId)
                 ->where('DATE_FORMAT(job_applications.created_at, "%Y-%m")', $month)
                 ->countAllResults();
 
-            // Views
-            $views = $db->table('jobs')
-                ->select('COALESCE(SUM(views), 0) as total')
-                ->where('employer_id', $employerId)
-                ->where('DATE_FORMAT(created_at, "%Y-%m")', $month)
-                ->get()
-                ->getRow();
+            // Apply-button clicks that occurred this month (time-stamped, accurate).
+            // jobs.views is a running total — it has no per-month breakdown.
+            $clicks = $db->table('job_clicks')
+                ->join('jobs', 'jobs.id = job_clicks.job_id')
+                ->where('jobs.employer_id', $employerId)
+                ->where('DATE_FORMAT(job_clicks.created_at, "%Y-%m")', $month)
+                ->countAllResults();
 
             $months[] = [
-                'month' => $monthName,
-                'jobs_posted' => $jobsPosted,
+                'month'        => $monthName,
+                'jobs_posted'  => $jobsPosted,
                 'applications' => $applications,
-                'views' => (int)($views->total ?? 0)
+                'views'        => $clicks,   // field kept as "views" so the chart JS needs no change
             ];
         }
 
@@ -1646,7 +1666,7 @@ class EmployerController extends BaseController
             ->first();
 
         if (!$job) {
-            return redirect()->to('employer/my-jobs')->with('error', 'Job not found or access denied.');
+            return redirect()->to('employer/jobs')->with('error', 'Job not found or access denied.');
         }
 
         // Get applications for this job
@@ -1734,12 +1754,12 @@ class EmployerController extends BaseController
         $creditBalance = $creditService->getAvailableCredits($user->id);
         $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($user->id);
         $currentPlan = $creditService->getCurrentPlan($user->id);
+        $subscription = $creditService->getCurrentSubscription($user->id);
 
-        // Check if job can be featured
-        $canFeature = false;
-        if ($hasUnlimitedAccess) {
-            $canFeature = true;
-        } elseif ($currentPlan && $currentPlan->features) {
+        // Check if job can be featured (all non-free tier employers can feature)
+        $isNotFree = ($hasUnlimitedAccess || !empty($subscription) || ($currentPlan && strtolower($currentPlan->code ?? '') !== 'free') || $creditBalance > 0 || $this->shouldFeatureJob($employer->id, $user->id, $currentPlan, $creditBalance, $hasUnlimitedAccess));
+        $canFeature = $isNotFree;
+        if (!$canFeature && $currentPlan && $currentPlan->features) {
             $features = is_string($currentPlan->features) ? json_decode($currentPlan->features, true) : ($currentPlan->features ?? []);
             $canFeature = $features['featured'] ?? false;
         }
@@ -1754,6 +1774,7 @@ class EmployerController extends BaseController
             'dailyTrend' => $dailyTrend,
             'dailyClicks' => $dailyClicks,
             'totalClicks' => $totalClicks,
+            'totalViews' => (int) ($job->views ?? 0),
             'creditBalance' => $creditBalance,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
             'canFeature' => $canFeature,
@@ -2208,7 +2229,7 @@ class EmployerController extends BaseController
         $aiService = new \App\Services\AiService();
         $questions = $aiService->generateCustomAptitudeQuestions($title, $description, $numQ);
         if (empty($questions)) {
-            $questions = $aiService->getFallbackCourseTestQuestions($title, $numQ);
+            $questions = $aiService->getFallbackAptitudeQuestions($title, $description, $numQ);
         }
 
         return $this->response->setJSON(['success' => true, 'questions' => $questions]);
@@ -2314,57 +2335,71 @@ class EmployerController extends BaseController
             $aiQuestions = $aiService->generateCustomAptitudeQuestions($job->title, $job->description ?? '', $reqNumQuestions, $reqDifficulty);
 
             if (empty($aiQuestions)) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Failed to generate AI custom questions. Please select a preset test or try again.']);
-            }
+                // Graceful fallback to category or standard test if AI generation returns empty
+                $fallbackTest = $db->table('tests')
+                    ->where('category_id', $job->category_id ?? 1)
+                    ->where('is_active', 1)
+                    ->orderBy('id', 'ASC')
+                    ->get()->getRowObject();
+                if (!$fallbackTest) {
+                    $fallbackTest = $db->table('tests')->where('is_active', 1)->orderBy('id', 'ASC')->get()->getRowObject();
+                }
+                if ($fallbackTest) {
+                    $test = $fallbackTest;
+                } else {
+                    return $this->response->setJSON(['success' => false, 'message' => 'Failed to generate AI custom questions. Please select a preset test or try again.']);
+                }
+            } else {
+                $testSlug = 'custom-ai-' . $job->id . '-' . time();
+                $testTitle = "AI Custom Assessment: " . $job->title;
+                $now = date('Y-m-d H:i:s');
 
-            $testSlug = 'custom-ai-' . $job->id . '-' . time();
-            $testTitle = "AI Custom Assessment: " . $job->title;
-            $now = date('Y-m-d H:i:s');
-
-            $db->table('tests')->insert([
-                'category_id'    => $job->category_id ?? 1,
-                'title'          => $testTitle,
-                'slug'           => $testSlug,
-                'description'    => "AI-generated tailored candidate screening test for " . $job->title,
-                'duration_mins'  => $reqDuration,
-                'num_questions'  => count($aiQuestions),
-                'pass_threshold' => 60,
-                'difficulty'     => $reqDifficulty,
-                'is_active'      => 1,
-                'created_at'     => $now,
-                'updated_at'     => $now,
-            ]);
-
-            $testId = $db->insertID();
-
-            foreach ($aiQuestions as $qItem) {
-                $db->table('questions')->insert([
-                    'test_id'     => $testId,
-                    'type'        => 'mcq',
-                    'body'        => $qItem['question'] ?? 'Question',
-                    'difficulty'  => $qItem['difficulty'] ?? 'intermediate',
-                    'points'      => 1,
-                    'explanation' => $qItem['explanation'] ?? '',
-                    'is_active'   => 1,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
+                $db->table('tests')->insert([
+                    'employer_id'    => $employer->id,
+                    'category_id'    => $job->category_id ?? 1,
+                    'title'          => $testTitle,
+                    'slug'           => $testSlug,
+                    'description'    => "AI-generated tailored candidate screening test for " . $job->title,
+                    'duration_mins'  => $reqDuration,
+                    'num_questions'  => count($aiQuestions),
+                    'pass_threshold' => 60,
+                    'difficulty'     => $reqDifficulty,
+                    'is_active'      => 1,
+                    'created_at'     => $now,
+                    'updated_at'     => $now,
                 ]);
-                $qId = $db->insertID();
 
-                if (!empty($qItem['options'])) {
-                    $sort = 0;
-                    foreach ($qItem['options'] as $opt) {
-                        $db->table('question_options')->insert([
-                            'question_id' => $qId,
-                            'body'        => $opt['text'] ?? 'Option',
-                            'is_correct'  => !empty($opt['is_correct']) ? 1 : 0,
-                            'sort_order'  => $sort++,
-                        ]);
+                $testId = $db->insertID();
+
+                foreach ($aiQuestions as $qItem) {
+                    $db->table('questions')->insert([
+                        'test_id'     => $testId,
+                        'type'        => 'mcq',
+                        'body'        => $qItem['question'] ?? 'Question',
+                        'difficulty'  => $qItem['difficulty'] ?? 'intermediate',
+                        'points'      => 1,
+                        'explanation' => $qItem['explanation'] ?? '',
+                        'is_active'   => 1,
+                        'created_at'  => $now,
+                        'updated_at'  => $now,
+                    ]);
+                    $qId = $db->insertID();
+
+                    if (!empty($qItem['options'])) {
+                        $sort = 0;
+                        foreach ($qItem['options'] as $opt) {
+                            $db->table('question_options')->insert([
+                                'question_id' => $qId,
+                                'body'        => $opt['text'] ?? 'Option',
+                                'is_correct'  => !empty($opt['is_correct']) ? 1 : 0,
+                                'sort_order'  => $sort++,
+                            ]);
+                        }
                     }
                 }
-            }
 
-            $test = $db->table('tests')->where('id', $testId)->get()->getRowObject();
+                $test = $db->table('tests')->where('id', $testId)->get()->getRowObject();
+            }
         } else {
             $testId = (int) $rawTestId;
             $test = $db->table('tests')->where('id', $testId)->where('is_active', 1)->get()->getRowObject();
@@ -2378,37 +2413,116 @@ class EmployerController extends BaseController
         $dueDate = date('Y-m-d H:i:s', strtotime("+{$daysToComplete} days"));
 
         $candidateUserId = (int) ($application->user_id ?? 0);
-        if ($candidateUserId === 0 && !empty($application->job_seeker_id)) {
-            $js = $db->table('job_seekers')->select('user_id')->where('id', $application->job_seeker_id)->get()->getRowObject();
+        $seekerFullName  = '';
+        if (!empty($application->job_seeker_id)) {
+            $js = $db->table('job_seekers')->select('user_id, full_name')->where('id', $application->job_seeker_id)->get()->getRowObject();
             if ($js) {
-                $candidateUserId = (int) $js->user_id;
+                if ($candidateUserId === 0 && !empty($js->user_id)) {
+                    $candidateUserId = (int) $js->user_id;
+                }
+                $seekerFullName = trim((string) ($js->full_name ?? ''));
             }
         }
 
-        $candidateName = trim(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')) ?: 'Candidate';
-        $candidateEmail = (string) ($application->email ?? '');
+        $candidateName = trim(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')) ?: ($seekerFullName ?: 'Candidate');
+        $candidateEmail = trim((string) ($application->email ?? ''));
+
         if (empty($candidateEmail) && $candidateUserId > 0) {
-            $userModel = model(\App\Models\UserModel::class);
-            $candUser = $userModel->find($candidateUserId);
-            if ($candUser && !empty($candUser->email)) {
-                $candidateEmail = (string) $candUser->email;
+            $ident = $db->table('auth_identities')
+                ->select('secret')
+                ->where('user_id', $candidateUserId)
+                ->where('type', 'email_password')
+                ->get()->getRowObject();
+            if ($ident && !empty($ident->secret)) {
+                $candidateEmail = trim((string) $ident->secret);
             }
+        }
+
+        // If candidateUserId is still 0, see if user exists by email in auth_identities
+        if ($candidateUserId === 0 && !empty($candidateEmail)) {
+            $identity = $db->table('auth_identities')
+                ->select('user_id')
+                ->where('secret', $candidateEmail)
+                ->where('type', 'email_password')
+                ->get()->getRowObject();
+            if ($identity && !empty($identity->user_id)) {
+                $candidateUserId = (int) $identity->user_id;
+            }
+        }
+
+        if (empty($candidateEmail)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Candidate email address is missing. Cannot send test invitation.'
+            ]);
+        }
+
+        // Ensure aptitude_test_invitations schema has all required columns
+        $invFields = $db->getFieldNames('aptitude_test_invitations');
+        if (!in_array('application_id', $invFields, true)) {
+            try {
+                $db->query("ALTER TABLE `aptitude_test_invitations` ADD COLUMN `application_id` INT UNSIGNED NULL DEFAULT NULL AFTER `job_id`");
+                $invFields[] = 'application_id';
+            } catch (\Throwable $e) {}
+        }
+        if (!in_array('invitation_code', $invFields, true)) {
+            try {
+                $db->query("ALTER TABLE `aptitude_test_invitations` ADD COLUMN `invitation_code` VARCHAR(64) NULL DEFAULT NULL");
+                $invFields[] = 'invitation_code';
+            } catch (\Throwable $e) {}
+        }
+        if (!in_array('email', $invFields, true)) {
+            try {
+                $db->query("ALTER TABLE `aptitude_test_invitations` ADD COLUMN `email` VARCHAR(255) NULL DEFAULT NULL");
+                $invFields[] = 'email';
+            } catch (\Throwable $e) {}
+        }
+        if (!in_array('message', $invFields, true)) {
+            try {
+                $db->query("ALTER TABLE `aptitude_test_invitations` ADD COLUMN `message` TEXT NULL DEFAULT NULL");
+                $invFields[] = 'message';
+            } catch (\Throwable $e) {}
         }
 
         $invitationModel = model(\App\Models\AptitudeTestInvitationModel::class);
-        $invitationModel->insert([
-            'employer_id'     => $employer->id,
-            'candidate_id'    => $candidateUserId,
-            'job_id'          => $job->id,
-            'application_id'  => $application->id,
-            'test_id'         => $test->id,
-            'code'            => $token,
-            'invitation_code' => $token,
-            'email'           => $candidateEmail,
-            'message'         => $customMessage,
-            'due_date'        => $dueDate,
-            'status'          => 'pending',
-        ]);
+
+        // Check if an active invitation already exists for this application and test
+        $existingInv = $invitationModel->where('application_id', $application->id)
+            ->where('test_id', $test->id)
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->first();
+
+        if ($existingInv) {
+            // Refresh token and update due date
+            $invId = $existingInv->id;
+            $token = ($existingInv->invitation_code ?? '') ?: (($existingInv->code ?? '') ?: bin2hex(random_bytes(24)));
+            $updatePayload = [
+                'candidate_id'    => $candidateUserId ?: ($existingInv->candidate_id ?? 0),
+                'code'            => $token,
+                'invitation_code' => $token,
+                'email'           => $candidateEmail,
+                'due_date'        => $dueDate,
+                'message'         => $customMessage ?: ($existingInv->message ?? ''),
+            ];
+            $updatePayload = array_intersect_key($updatePayload, array_flip($invFields));
+            $invitationModel->update($invId, $updatePayload);
+        } else {
+            $insertPayload = [
+                'employer_id'     => $employer->id,
+                'candidate_id'    => $candidateUserId ?: 0,
+                'job_id'          => $job->id,
+                'application_id'  => $application->id,
+                'test_id'         => $test->id,
+                'code'            => $token,
+                'invitation_code' => $token,
+                'email'           => $candidateEmail,
+                'message'         => $customMessage,
+                'due_date'        => $dueDate,
+                'status'          => 'pending',
+            ];
+            $insertPayload = array_intersect_key($insertPayload, array_flip($invFields));
+            $invId = $invitationModel->insert($insertPayload);
+        }
 
         // Update application status to shortlisted if currently pending/reviewed
         if (in_array($application->status, ['pending', 'reviewed'])) {
@@ -2446,10 +2560,21 @@ class EmployerController extends BaseController
             );
         }
 
+        // Send in-app notification if candidate user exists
+        if ($candidateUserId > 0) {
+            $emailService->createInAppNotification(
+                $candidateUserId,
+                'aptitude_invite',
+                "New Aptitude Assessment: {$test->title}",
+                "{$employer->company_name} invited you to complete an aptitude test for {$job->title}. Due by " . date('M j, Y', strtotime($dueDate)) . ".",
+                $invId
+            );
+        }
+
         return $this->response->setJSON([
-            'success' => true,
-            'message' => "Aptitude test invitation sent successfully to {$candidateName}!",
-            'email_sent' => $emailSent,
+            'success'        => true,
+            'message'        => "Aptitude test invitation sent successfully to {$candidateName}!",
+            'email_sent'     => $emailSent,
             'invitation_url' => $invitationUrl
         ]);
     }
@@ -2472,7 +2597,7 @@ class EmployerController extends BaseController
         $invId = (int) $this->request->getPost('invitation_id');
         $db = \Config\Database::connect();
         $inv = $db->table('aptitude_test_invitations ati')
-            ->select('ati.*, t.title as test_title, j.title as job_title, ja.first_name, ja.last_name, ja.email as applicant_email, js.full_name as seeker_full_name')
+            ->select('ati.*, t.title as test_title, j.title as job_title, ja.first_name, ja.last_name, ja.email as applicant_email, js.full_name as seeker_full_name, js.user_id as seeker_user_id')
             ->join('tests t', 't.id = ati.test_id', 'left')
             ->join('jobs j', 'j.id = ati.job_id', 'left')
             ->join('job_seekers js', 'js.id = ati.candidate_id OR js.user_id = ati.candidate_id', 'left')
@@ -2487,15 +2612,17 @@ class EmployerController extends BaseController
 
         $candName = trim(($inv['first_name'] ?? '') . ' ' . ($inv['last_name'] ?? '')) ?: ($inv['seeker_full_name'] ?? 'Candidate');
         $candEmail = $inv['applicant_email'] ?? ($inv['email'] ?? '');
-        if (empty($candEmail) && !empty($inv['candidate_id'])) {
-            $seeker = $db->table('job_seekers js')
-                ->select('u.email')
-                ->join('users u', 'u.id = js.user_id', 'left')
-                ->where('js.id', $inv['candidate_id'])
-                ->orWhere('js.user_id', $inv['candidate_id'])
-                ->get()->getRowArray();
-            if ($seeker && !empty($seeker['email'])) {
-                $candEmail = $seeker['email'];
+        if (empty($candEmail)) {
+            $lookupUserId = (int) ($inv['seeker_user_id'] ?? $inv['candidate_id'] ?? 0);
+            if ($lookupUserId > 0) {
+                $ident = $db->table('auth_identities')
+                    ->select('secret')
+                    ->where('user_id', $lookupUserId)
+                    ->where('type', 'email_password')
+                    ->get()->getRowArray();
+                if ($ident && !empty($ident['secret'])) {
+                    $candEmail = trim((string) $ident['secret']);
+                }
             }
         }
 
@@ -2515,6 +2642,14 @@ class EmployerController extends BaseController
                 $inv['due_date'] ?? date('Y-m-d H:i:s', strtotime('+7 days')),
                 $inv['message'] ?? ''
             );
+
+            $invFields = $db->getFieldNames('aptitude_test_invitations');
+            if (in_array('reminder_count', $invFields, true) && in_array('last_reminder_at', $invFields, true)) {
+                $db->table('aptitude_test_invitations')->where('id', $invId)->update([
+                    'reminder_count'   => ((int) ($inv['reminder_count'] ?? 0)) + 1,
+                    'last_reminder_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
         }
 
         return $this->response->setJSON([
@@ -2936,25 +3071,27 @@ class EmployerController extends BaseController
         $postData['application_email'] = $method === 'email' ? trim($postData['application_email'] ?? '') : null;
         $postData['external_url'] = $method === 'external' ? trim($postData['external_url'] ?? '') : null;
 
-        // Handle featured status (only if user can feature)
+        // Handle featured status (all jobs should be featured if not free)
         $creditService = new \App\Services\CreditService();
         $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($user->id);
         $currentPlan = $creditService->getCurrentPlan($user->id);
+        $creditBalance = $creditService->getAvailableCredits($user->id);
+        $subscription = $creditService->getCurrentSubscription($user->id);
 
-        $canFeature = false;
-        if ($hasUnlimitedAccess) {
-            $canFeature = true;
-        } elseif ($currentPlan && $currentPlan->features) {
+        $isNotFree = ($hasUnlimitedAccess || !empty($subscription) || ($currentPlan && strtolower($currentPlan->code ?? '') !== 'free') || $creditBalance > 0 || $this->shouldFeatureJob($employer->id, $user->id, $currentPlan, $creditBalance, $hasUnlimitedAccess));
+        $canFeature = $isNotFree;
+        if (!$canFeature && $currentPlan && $currentPlan->features) {
             $features = is_string($currentPlan->features) ? json_decode($currentPlan->features, true) : ($currentPlan->features ?? []);
             $canFeature = $features['featured'] ?? false;
         }
 
-        if ($canFeature && $this->request->getPost('is_featured')) {
+        $isFeaturedRequested = (bool) $this->request->getPost('is_featured');
+        if ($isNotFree || ($isFeaturedRequested && $canFeature)) {
             $postData['is_featured'] = 1;
             if (!$job->featured_until || strtotime($job->featured_until) <= time()) {
                 $postData['featured_until'] = date('Y-m-d H:i:s', strtotime('+30 days'));
             }
-        } elseif (!$canFeature) {
+        } elseif (!$isNotFree && !$isFeaturedRequested) {
             $postData['is_featured'] = 0;
             $postData['featured_until'] = null;
         }
@@ -3020,11 +3157,11 @@ class EmployerController extends BaseController
         $creditService = new \App\Services\CreditService();
         $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($user->id);
         $currentPlan = $creditService->getCurrentPlan($user->id);
+        $creditBalance = $creditService->getAvailableCredits($user->id);
+        $subscription = $creditService->getCurrentSubscription($user->id);
 
-        $canFeature = false;
-        if ($hasUnlimitedAccess) {
-            $canFeature = true;
-        } elseif ($currentPlan && $currentPlan->features) {
+        $canFeature = ($hasUnlimitedAccess || !empty($subscription) || ($currentPlan && strtolower($currentPlan->code ?? '') !== 'free') || $creditBalance > 0 || $this->shouldFeatureJob($employer->id, $user->id, $currentPlan, $creditBalance, $hasUnlimitedAccess));
+        if (!$canFeature && $currentPlan && $currentPlan->features) {
             $features = is_string($currentPlan->features) ? json_decode($currentPlan->features, true) : ($currentPlan->features ?? []);
             $canFeature = $features['featured'] ?? false;
         }
@@ -3094,11 +3231,10 @@ class EmployerController extends BaseController
         $hasUnlimited = $creditService->hasUnlimitedAccess($user->id);
         $plan = $creditService->getCurrentPlan($user->id);
         $creditBalance = $creditService->getAvailableCredits($user->id);
+        $subscription = $creditService->getCurrentSubscription($user->id);
 
-        $canFeatureFree = false;
-        if ($hasUnlimited) {
-            $canFeatureFree = true;
-        } elseif ($plan && $plan->features) {
+        $canFeatureFree = ($hasUnlimited || !empty($subscription) || ($plan && strtolower($plan->code ?? '') !== 'free') || $creditBalance > 0 || $this->shouldFeatureJob($employer->id, $user->id, $plan, $creditBalance, $hasUnlimited));
+        if (!$canFeatureFree && $plan && $plan->features) {
             $features = is_string($plan->features) ? json_decode($plan->features, true) : (array)$plan->features;
             $canFeatureFree = !empty($features['featured']);
         }
@@ -3474,6 +3610,15 @@ class EmployerController extends BaseController
             $updateData['application_deadline'] = $newDeadline;
             $updateData['updated_at'] = $now;
 
+            // All jobs should be featured if not free
+            $subscription = $creditService->getCurrentSubscription($user->id);
+            $currentPlan = $creditService->getCurrentPlan($user->id);
+            $isNotFree = ($hasUnlimitedAccess || !empty($subscription) || ($currentPlan && strtolower($currentPlan->code ?? '') !== 'free') || $creditBalance > 0 || $this->shouldFeatureJob($employer->id, $user->id, $currentPlan, $creditBalance, $hasUnlimitedAccess));
+            if ($isNotFree) {
+                $updateData['is_featured'] = 1;
+                $updateData['featured_until'] = date('Y-m-d H:i:s', strtotime('+30 days'));
+            }
+
             $jobModel->update($jobId, $updateData);
 
             // Log activity
@@ -3843,7 +3988,15 @@ class EmployerController extends BaseController
             ->first();
 
         if (!$employer) {
-            return redirect()->to('employer/profile/edit')->with('error', 'Please create your company profile first.');
+            $employerId = $employerModel->insert([
+                'user_id'       => $user->id,
+                'company_name'  => $user->username ?? 'Company Profile',
+                'contact_email' => $user->email ?? null,
+            ]);
+            $employer = $employerModel->select('employers.*, states.name as location')
+                ->join('states', 'states.id = employers.state_id', 'left')
+                ->where('user_id', $user->id)
+                ->first();
         }
 
         // Get CAC document from employer_documents table
@@ -4035,56 +4188,77 @@ class EmployerController extends BaseController
 
     public function edit_profile()
     {
-        if ($this->request->getMethod() === "POST") {
-            $user = $this->auth->user();
-            $employerModel = model(EmployerModel::class);
-            $employer = $employerModel->where('user_id', $user->id)->first();
-            $employerIndustryModel = model('App\Models\EmployerIndustryModel');
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
 
+        // Auto-create basic employer profile record if missing to prevent redirect loops or save failures
+        if (!$employer) {
+            $employerId = $employerModel->insert([
+                'user_id'       => $user->id,
+                'company_name'  => $user->username ?? 'Company Profile',
+                'contact_email' => $user->email ?? null,
+            ]);
+            $employer = $employerModel->find($employerId);
+        }
+
+        if ($this->request->is('post') || strtoupper((string)$this->request->getMethod()) === 'POST') {
             if (!$employer) {
                 return $this->response->setJSON([
-                    'status' => 'error',
-                    'message' => 'Employer not found.'
+                    'status'     => 'error',
+                    'message'    => 'Employer profile could not be found or created.',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
+                ])->setStatusCode(404);
+            }
+
+            $section = $this->request->getPost('section'); // e.g. 'identity','contact','about','verify','social','all'
+
+            // Section-aware validation: validate input format when fields are provided, without blocking progressive profile completion
+            $rules = [];
+            if ($section === 'identity') {
+                $rules = [
+                    'company_name' => 'permit_empty|min_length[2]',
+                ];
+            } elseif ($section === 'contact') {
+                $rules = [
+                    'contact_email' => 'permit_empty|valid_email',
+                    'contact_phone' => 'permit_empty|min_length[5]',
+                    'state_id'      => 'permit_empty|integer',
+                ];
+            } elseif ($section === 'about') {
+                $rules = [
+                    'description' => 'permit_empty',
+                ];
+            } elseif ($section === 'all' || empty($section)) {
+                $rules = [
+                    'company_name'  => 'permit_empty|min_length[2]',
+                    'contact_email' => 'permit_empty|valid_email',
+                    'contact_phone' => 'permit_empty|min_length[5]',
+                    'state_id'      => 'permit_empty|integer',
+                ];
+            }
+
+            if (!empty($rules) && !$this->validate($rules)) {
+                return $this->response->setJSON([
+                    'status'     => 'error',
+                    'errors'     => $this->validator->getErrors(),
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
                 ]);
             }
 
-            $section = $this->request->getPost('section'); // e.g. 'identity','contact','about','verify','social'
-
-            // Section-aware validation — only require fields relevant to the section being saved
-            $allRules = [
-                'identity' => [
-                    'company_name'  => 'required|min_length[3]',
-                    'company_size'  => 'required',
-                    'industry_ids[]' => 'required',
-                ],
-                'contact' => [
-                    'state_id'      => 'required|integer',
-                    'contact_name'  => 'required|min_length[3]',
-                    'contact_email' => 'required|valid_email',
-                    'contact_phone' => 'required|min_length[6]',
-                ],
-                'about'  => [],
-                'verify' => [],
-                'social' => [],
+            // ── Section-scoped field maps ──────────────────────────────────────
+            $sectionFields = [
+                'identity' => ['company_name', 'tagline', 'company_size', 'company_type', 'founded_year', 'remote_policy'],
+                'contact'  => ['state_id', 'contact_name', 'contact_email', 'contact_phone', 'whatsapp', 'company_address', 'website'],
+                'about'    => ['description', 'benefits', 'hiring_process'],
+                'verify'   => ['rc_number'],
+                'social'   => ['linkedin', 'twitter', 'facebook', 'instagram'],
             ];
 
-            // If section matches a known section, validate only that section's rules.
-            // Otherwise (Save All / unknown), validate all required fields together.
-            if ($section && isset($allRules[$section])) {
-                $rules = $allRules[$section];
-            } else {
-                $rules = array_merge(...array_values($allRules));
-            }
-
-            if (!$this->validate($rules)) {
-                return $this->response->setJSON([
-                    'status' => 'error',
-                    'errors' => $this->validator->getErrors()
-                ]);
-            }
-
-            $website = trim($this->request->getPost('website'));
-
+            // Build sanitized data array
+            $website = trim((string) $this->request->getPost('website'));
             if ($website && !preg_match('#^https?://#i', $website)) {
                 $website = 'https://' . $website;
             }
@@ -4092,97 +4266,127 @@ class EmployerController extends BaseController
             $benefits = (array) $this->request->getPost('benefits');
             $benefits = array_values(array_filter(array_map('trim', $benefits)));
 
-            $data = [
-                'company_name'      => $this->request->getPost('company_name'),
-                'state_id'          => $this->request->getPost('state_id'),
-                'company_size'      => $this->request->getPost('company_size'),
-                'website'           => $website ?: null,
-                'description'       => $this->request->getPost('description'),
-                'contact_name'      => $this->request->getPost('contact_name'),
-                'contact_email'     => $this->request->getPost('contact_email'),
-                'contact_phone'     => $this->request->getPost('contact_phone'),
-                'company_address'   => trim($this->request->getPost('company_address')),
-                'tagline'           => trim((string) $this->request->getPost('tagline')) ?: null,
-                'company_type'      => $this->request->getPost('company_type') ?: null,
-                'founded_year'      => $this->request->getPost('founded_year') ?: null,
-                'remote_policy'     => $this->request->getPost('remote_policy') ?: null,
-                'whatsapp'          => trim((string) $this->request->getPost('whatsapp')) ?: null,
-                'benefits'          => !empty($benefits) ? json_encode($benefits) : null,
-                'hiring_process'    => trim((string) $this->request->getPost('hiring_process')) ?: null,
-                'rc_number'         => trim((string) $this->request->getPost('rc_number')) ?: null,
-                'linkedin'          => trim((string) $this->request->getPost('linkedin')) ?: null,
-                'twitter'           => trim((string) $this->request->getPost('twitter')) ?: null,
-                'facebook'          => trim((string) $this->request->getPost('facebook')) ?: null,
-                'instagram'         => trim((string) $this->request->getPost('instagram')) ?: null,
+            $rawStateId = $this->request->getPost('state_id');
+            $stateId = (!empty($rawStateId) && is_numeric($rawStateId) && (int)$rawStateId > 0) ? (int)$rawStateId : null;
+
+            $allData = [
+                'company_name'    => trim((string) $this->request->getPost('company_name')) ?: null,
+                'tagline'         => trim((string) $this->request->getPost('tagline')) ?: null,
+                'company_size'    => trim((string) $this->request->getPost('company_size')) ?: null,
+                'company_type'    => trim((string) $this->request->getPost('company_type')) ?: null,
+                'founded_year'    => trim((string) $this->request->getPost('founded_year')) ?: null,
+                'remote_policy'   => trim((string) $this->request->getPost('remote_policy')) ?: null,
+                'state_id'        => $stateId,
+                'contact_name'    => trim((string) $this->request->getPost('contact_name')) ?: null,
+                'contact_email'   => trim((string) $this->request->getPost('contact_email')) ?: null,
+                'contact_phone'   => trim((string) $this->request->getPost('contact_phone')) ?: null,
+                'whatsapp'        => trim((string) $this->request->getPost('whatsapp')) ?: null,
+                'company_address' => trim((string) $this->request->getPost('company_address')) ?: null,
+                'website'         => $website ?: null,
+                'description'     => trim((string) $this->request->getPost('description')) ?: null,
+                'benefits'        => !empty($benefits) ? json_encode($benefits) : null,
+                'hiring_process'  => trim((string) $this->request->getPost('hiring_process')) ?: null,
+                'rc_number'       => trim((string) $this->request->getPost('rc_number')) ?: null,
+                'linkedin'        => trim((string) $this->request->getPost('linkedin')) ?: null,
+                'twitter'         => trim((string) $this->request->getPost('twitter')) ?: null,
+                'facebook'        => trim((string) $this->request->getPost('facebook')) ?: null,
+                'instagram'       => trim((string) $this->request->getPost('instagram')) ?: null,
             ];
 
-            // === Handle Logo Upload Only ===
-            helper(['filesystem', 'form']);
-
-            // Upload directory
-            $uploadPath = 'uploads/employers/' . $employer->id . '/';
-            if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0775, true);
+            // If a specific section is being saved, restrict to only that section's fields
+            if ($section && isset($sectionFields[$section])) {
+                $allowedKeys = $sectionFields[$section];
+                $data = array_intersect_key($allData, array_flip($allowedKeys));
+            } else {
+                // "Save All" or no specific section: save all fields
+                $data = $allData;
             }
 
-            // Logo upload
+            // === Handle Logo Upload ===
+            helper(['filesystem', 'form']);
             $logoFile = $this->request->getFile('logo');
-            if ($logoFile && $logoFile->isValid()) {
-                if ($employer->logo && file_exists($employer->logo)) {
-                    unlink($employer->logo);
+            if ($logoFile && $logoFile->isValid() && !$logoFile->hasMoved()) {
+                $uploadPath = FCPATH . 'uploads/employers/' . $employer->id . '/';
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0775, true);
+                }
+                if ($employer->logo && file_exists(FCPATH . $employer->logo)) {
+                    @unlink(FCPATH . $employer->logo);
                 }
                 $newLogoName = $logoFile->getRandomName();
                 $logoFile->move($uploadPath, $newLogoName);
                 $data['logo'] = 'uploads/employers/' . $employer->id . '/' . $newLogoName;
             } elseif ($this->request->getPost('remove_logo')) {
-                if ($employer->logo && file_exists($employer->logo)) {
-                    unlink($employer->logo);
+                if ($employer->logo && file_exists(FCPATH . $employer->logo)) {
+                    @unlink(FCPATH . $employer->logo);
                 }
                 $data['logo'] = null;
             }
 
-            // REMOVED: verification_doc handling entirely
-
             $db = \Config\Database::connect();
             $db->transStart();
 
-            // === Update Employer record ===
-            $employerModel->update($employer->id, $data);
+            try {
+                if (!empty($data)) {
+                    $data['updated_at'] = date('Y-m-d H:i:s');
+                    $db->table('employers')->where('id', $employer->id)->update($data);
+                }
 
-            // === Update Industry relationships ===
-            $industryIds = $this->request->getPost('industry_ids[]') ?? [];
-            $employerIndustryModel->where('employer_id', $employer->id)->delete();
-            foreach ($industryIds as $industryId) {
-                $employerIndustryModel->insert([
-                    'employer_id' => $employer->id,
-                    'industry_id' => $industryId
-                ]);
+                // === Update Industry relationships (only when identity or all sections saved) ===
+                if (!$section || $section === 'identity' || $section === 'all') {
+                    $industryIds = $this->request->getPost('industry_ids') ?? [];
+                    if (!is_array($industryIds)) {
+                        $industryIds = [];
+                    }
+                    $industryIds = array_filter(array_map('intval', $industryIds));
+
+                    $db->table('employer_industries')->where('employer_id', $employer->id)->delete();
+                    foreach ($industryIds as $industryId) {
+                        if ($industryId > 0) {
+                            $db->table('employer_industries')->insert([
+                                'employer_id' => $employer->id,
+                                'industry_id' => $industryId,
+                            ]);
+                        }
+                    }
+
+                    // Keep employers.industry_id legacy column in sync
+                    $primaryIndustryId = !empty($industryIds) ? reset($industryIds) : null;
+                    $db->table('employers')->where('id', $employer->id)->update(['industry_id' => $primaryIndustryId]);
+                }
+
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                log_message('error', 'edit_profile save failed: ' . $e->getMessage());
+                return $this->response->setJSON([
+                    'status'     => 'error',
+                    'message'    => 'Failed to save profile. Please try again.',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
+                ])->setStatusCode(500);
             }
 
             $db->transComplete();
 
             if ($db->transStatus() === false) {
+                log_message('error', 'edit_profile transComplete() failed for employer #' . $employer->id);
                 return $this->response->setJSON([
-                    'status' => 'error',
-                    'message' => 'Failed to update company profile. Database error.'
+                    'status'     => 'error',
+                    'message'    => 'Failed to save profile. Please try again.',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
                 ])->setStatusCode(500);
             }
 
             return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Company profile updated successfully.'
+                'status'     => 'success',
+                'message'    => 'Profile saved successfully.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
             ])->setStatusCode(200);
         }
 
         // GET request - show edit form
-        $user = $this->auth->user();
-        $employerModel = model(EmployerModel::class);
-        $employer = $employerModel->where('user_id', $user->id)->first();
-
-        if (!$employer) {
-            return redirect()->to('employer/profile/edit')->with('error', 'Please create your company profile first.');
-        }
-
         $industryModel = model('App\Models\IndustryModel');
         $stateModel = model('App\Models\StateModel');
         $employerIndustryModel = model('App\Models\EmployerIndustryModel');

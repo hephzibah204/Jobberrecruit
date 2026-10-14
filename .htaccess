@@ -56,7 +56,7 @@ Options -Indexes
 	RewriteRule ^(aptitude|aptitude/.*)$ index.php/$1 [L,NC,QSA]
 	RewriteRule ^(webinars|webinars/.*)$ index.php/$1 [L,NC,QSA]
 	RewriteRule ^(career-advice|career-advice/.*)$ index.php/$1 [L,NC,QSA]
-	RewriteRule ^(job-ads|employers|recruitment|about-us|contact-us|blog|faq|candidates|career)(/.*)?$ index.php/$1$2 [L,NC,QSA]
+	RewriteRule ^(job-ads|employer|employers|recruitment|about-us|contact-us|blog|faq|candidate|candidates|career)(/.*)?$ index.php/$1$2 [L,NC,QSA]
 
 	# General catch-all: if not a real file or directory, route to index.php
 	RewriteCond %{REQUEST_FILENAME} !-f
