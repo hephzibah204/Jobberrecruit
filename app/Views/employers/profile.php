@@ -386,6 +386,10 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
             <div class="info-lbl"><svg aria-hidden="true" width="13" height="13"><use href="#i-doc"/></svg> User ID reference</div>
             <div class="info-val"><?= esc($employer->user_id ?? '') ?></div>
           </div>
+          <div class="info-item">
+            <div class="info-lbl"><svg aria-hidden="true" width="13" height="13"><use href="#i-shield"/></svg> RC / CAC Number</div>
+            <div class="info-val"><?= esc(!empty($employer->rc_number) ? $employer->rc_number : 'Not Set') ?></div>
+          </div>
           <div class="info-desc">
             <div class="info-lbl" style="margin-bottom:4px"><svg aria-hidden="true" width="13" height="13"><use href="#i-note"/></svg> Company description</div>
             <?= !empty($employer->description) ? nl2br(esc($employer->description)) : 'No description provided.' ?>
@@ -502,6 +506,9 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
         <?php endif; ?>
       </div>
       <div class="card-body">
+        <?php if (!empty($employer->rc_number)): ?>
+          <p style="font-size:.84rem;font-weight:600;margin-bottom:12px;color:var(--brand-deep);"><span style="color:var(--muted);font-weight:400;">CAC / RC Registration Number:</span> <?= esc($employer->rc_number) ?></p>
+        <?php endif; ?>
         <div class="cac-row">
           <?php if (!empty($cacFilePath)): ?>
             <a href="<?= base_url(esc($cacFilePath)) ?>" target="_blank" class="emp-btn emp-btn-outline emp-btn-sm"><svg aria-hidden="true" width="14" height="14"><use href="#i-doc"/></svg> View Uploaded CAC Certificate</a>
