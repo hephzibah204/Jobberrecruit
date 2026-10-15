@@ -627,8 +627,18 @@ body.emp-shell, .emp-shell-wrap, .emp-main, .emp-content, .topbar-inner, .emp-to
   }
 
   function handleClose(e) {
-    if (e) e.preventDefault();
+    if (e && e.cancelable && e.type !== 'touchstart') e.preventDefault();
     toggleMobileMenu(false);
+    if (typeof window.closeCandidateFilters === 'function') {
+      window.closeCandidateFilters();
+    } else {
+      var filterDrawer = document.getElementById('filters');
+      if (filterDrawer && filterDrawer.classList.contains('open')) {
+        filterDrawer.classList.remove('open');
+        var filterBtn = document.getElementById('f-open');
+        if (filterBtn) filterBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
   }
 
   if (burger) {
@@ -670,11 +680,6 @@ body.emp-shell, .emp-shell-wrap, .emp-main, .emp-content, .topbar-inner, .emp-to
   var drops = document.querySelectorAll('.tb-drop');
   if (!drops.length) return;
 
-  // Flag set while a touch interaction is inside a drop; prevents the
-  // document-level touchend listener from immediately closing the dropdown
-  // that the button touchstart just opened (a race on iOS Safari).
-  var touchInsideDrop = false;
-
   function closeAllDrops() {
     drops.forEach(function(d) {
       d.classList.remove('open');
@@ -689,11 +694,36 @@ body.emp-shell, .emp-shell-wrap, .emp-main, .emp-content, .topbar-inner, .emp-to
 
     var menu = d.querySelector('.tb-menu');
 
-    // Keep clicks/touches inside the open menu from closing it immediately.
+    // Keep clicks/touches inside the open menu from closing it before navigation,
+    // and guarantee immediate link navigation on mobile tap.
     if (menu) {
-      menu.addEventListener('click', function(e) { e.stopPropagation(); });
-      menu.addEventListener('touchstart', function() { touchInsideDrop = true; }, { passive: true });
-      menu.addEventListener('touchend',   function() { touchInsideDrop = false; }, { passive: true });
+      var startX = 0, startY = 0;
+
+      menu.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches[0]) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+        e.stopPropagation();
+      }, { passive: true });
+
+      menu.addEventListener('touchend', function(e) {
+        e.stopPropagation();
+        var link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!link) return;
+        var href = link.getAttribute('href');
+        if (!href || href === '#' || href.indexOf('javascript:') === 0) return;
+        if (e.changedTouches && e.changedTouches[0]) {
+          var dx = Math.abs(e.changedTouches[0].clientX - startX);
+          var dy = Math.abs(e.changedTouches[0].clientY - startY);
+          if (dx > 12 || dy > 12) return; // user was scrolling
+        }
+        window.location.href = link.href;
+      }, { passive: true });
+
+      menu.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
     }
 
     var lastToggleTime = 0;
@@ -705,21 +735,14 @@ body.emp-shell, .emp-shell-wrap, .emp-main, .emp-content, .topbar-inner, .emp-to
       if (!wasOpen) {
         d.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
-        touchInsideDrop = true;   // mark: we are now inside an open drop
       }
       lastToggleTime = Date.now();
     }
 
     // Touch: open on touchstart so it feels instant on mobile.
     btn.addEventListener('touchstart', function(e) {
-      touchInsideDrop = true;
       handleToggle(e);
     }, { passive: false });
-
-    btn.addEventListener('touchend', function() {
-      // Short grace period so the document touchend doesn't close right away.
-      setTimeout(function() { touchInsideDrop = false; }, 300);
-    }, { passive: true });
 
     // Mouse click (desktop): guard against the synthetic click fired after
     // touchstart on mobile (which would double-toggle).
@@ -734,8 +757,8 @@ body.emp-shell, .emp-shell-wrap, .emp-main, .emp-content, .topbar-inner, .emp-to
   });
 
   // Close when touching/clicking anywhere outside a tb-drop.
-  document.addEventListener('touchend', function() {
-    if (touchInsideDrop) { touchInsideDrop = false; return; }
+  document.addEventListener('touchend', function(e) {
+    if (e.target && e.target.closest && e.target.closest('.tb-drop')) return;
     closeAllDrops();
   }, { passive: true });
 

@@ -139,6 +139,92 @@
 .cand-list-head span {
   white-space: nowrap;
 }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE & iOS SAFARI FILTERS DRAWER HARDENING
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .filters-card,
+  #filters,
+  aside#filters.card {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    right: auto !important;
+    width: min(320px, 86vw) !important;
+    max-width: 86vw !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    z-index: 1300 !important;
+    background: #ffffff !important;
+    border-radius: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+
+    /* Off-canvas state (CLOSED) - strictly hidden from view & interaction */
+    transform: translateX(-100%) !important;
+    -webkit-transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                -webkit-transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0.28s !important;
+  }
+
+  /* When OPEN - slide smoothly into view */
+  .filters-card.open,
+  #filters.open,
+  aside#filters.card.open {
+    transform: translateX(0) !important;
+    -webkit-transform: translateX(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                -webkit-transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0s !important;
+  }
+
+  .f-close {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .f-close svg,
+  .f-close svg * {
+    pointer-events: none;
+  }
+
+  #f-open {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #f-open svg,
+  #f-open svg * {
+    pointer-events: none;
+  }
+
+  .f-actions-mobile {
+    display: block;
+    padding: 14px 18px 20px;
+  }
+}
+@media (min-width: 1025px) {
+  .f-actions-mobile {
+    display: none;
+  }
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -308,6 +394,9 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
             </div>
 
             <a href="<?= current_url() ?>" class="emp-btn emp-btn-outline emp-btn-sm f-clear text-center">Clear all filters</a>
+            <div class="f-actions-mobile">
+                <button type="button" class="emp-btn emp-btn-primary w-100" id="f-apply-btn">View Results</button>
+            </div>
         </form>
     </aside>
 
@@ -490,34 +579,94 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
 <?= $this->section('scripts') ?>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
-/* Mobile filters drawer toggle */
+/* Mobile filters drawer toggle - iOS Safari & Android hardened */
 (function() {
     var f = document.getElementById('filters'),
         o = document.getElementById('f-open'),
         c = document.getElementById('f-close'),
-        sc = document.getElementById('emp-scrim');
+        sc = document.getElementById('emp-scrim'),
+        applyBtn = document.getElementById('f-apply-btn');
         
-    function open() {
+    if (!f) return;
+
+    var lastActionTime = 0;
+
+    function openDrawer(e) {
+        if (e) {
+            if (e.cancelable && e.type !== 'touchstart') e.preventDefault();
+            e.stopPropagation();
+        }
+        if (Date.now() - lastActionTime < 280) return;
+        lastActionTime = Date.now();
+
         f.classList.add('open');
-        sc.hidden = false;
-        requestAnimationFrame(function() { sc.classList.add('show'); });
-        o.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
+        if (sc) {
+            sc.removeAttribute('hidden');
+            sc.hidden = false;
+            requestAnimationFrame(function() {
+                sc.classList.add('show');
+            });
+        }
+        if (o) o.setAttribute('aria-expanded', 'true');
+        document.documentElement.classList.add('menu-open');
+        document.body.classList.add('menu-open');
     }
     
-    function close() {
+    function closeDrawer(e) {
+        if (e) {
+            if (e.cancelable && e.type !== 'touchstart') e.preventDefault();
+            e.stopPropagation();
+        }
+        if (Date.now() - lastActionTime < 280) return;
+        lastActionTime = Date.now();
+
         f.classList.remove('open');
-        sc.classList.remove('show');
-        o.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-        setTimeout(function() { if (!sc.classList.contains('show')) sc.hidden = true; }, 240);
+        if (o) o.setAttribute('aria-expanded', 'false');
+
+        var sidebar = document.getElementById('emp-sidebar');
+        var sidebarOpen = sidebar && sidebar.classList.contains('open');
+
+        if (!sidebarOpen) {
+            document.documentElement.classList.remove('menu-open');
+            document.body.classList.remove('menu-open');
+            if (sc) {
+                sc.classList.remove('show');
+                setTimeout(function() {
+                    if (!f.classList.contains('open') && (!sidebar || !sidebar.classList.contains('open'))) {
+                        sc.setAttribute('hidden', '');
+                        sc.hidden = true;
+                    }
+                }, 280);
+            }
+        }
     }
+
+    // Expose globally so layout scrim/sidebar handlers can cleanly dismiss filters
+    window.closeCandidateFilters = closeDrawer;
+    window.openCandidateFilters = openDrawer;
     
-    if (o) o.addEventListener('click', open);
-    if (c) c.addEventListener('click', close);
-    if (sc) sc.addEventListener('click', close);
+    if (o) {
+        o.addEventListener('click', openDrawer);
+        o.addEventListener('touchstart', openDrawer, { passive: true });
+    }
+    if (c) {
+        c.addEventListener('click', closeDrawer);
+        c.addEventListener('touchstart', closeDrawer, { passive: true });
+    }
+    if (applyBtn) {
+        applyBtn.addEventListener('click', closeDrawer);
+        applyBtn.addEventListener('touchstart', closeDrawer, { passive: true });
+    }
+    if (sc) {
+        sc.addEventListener('click', function(e) {
+            if (f.classList.contains('open')) closeDrawer(e);
+        });
+        sc.addEventListener('touchstart', function(e) {
+            if (f.classList.contains('open')) closeDrawer(e);
+        }, { passive: true });
+    }
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && f.classList.contains('open')) close();
+        if (e.key === 'Escape' && f.classList.contains('open')) closeDrawer(e);
     });
 })();
 
