@@ -15,16 +15,20 @@ if ($employer) {
     );
 }
 
-if (!isset($savedIds) && $employer) {
+if (!isset($savedIds) && ($employer || $user)) {
     try {
-        $savedIds = array_column(
-            $db->table('candidate_shortlists')
-               ->select('job_seeker_id')
-               ->where('employer_id', $employer->id)
-               ->get()
-               ->getResultArray(),
-            'job_seeker_id'
-        );
+        $builder = $db->table('candidate_shortlists')->select('job_seeker_id');
+        if ($employer && $user) {
+            $builder->groupStart()
+                ->where('employer_id', $employer->id)
+                ->orWhere('user_id', $user->id)
+            ->groupEnd();
+        } elseif ($employer) {
+            $builder->where('employer_id', $employer->id);
+        } else {
+            $builder->where('user_id', $user->id);
+        }
+        $savedIds = array_unique(array_column($builder->get()->getResultArray(), 'job_seeker_id'));
     } catch (\Throwable $e) {
         $savedIds = [];
     }

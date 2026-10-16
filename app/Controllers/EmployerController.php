@@ -7345,7 +7345,10 @@ class EmployerController extends BaseController
 
         $db = \Config\Database::connect();
         $savedIds = [];
-        if (!empty($employer->id)) {
+        $userId = $this->auth->id();
+        $employerId = $employer ? $employer->id : null;
+
+        if ($userId || $employerId) {
             try {
                 $db->query("CREATE TABLE IF NOT EXISTS `candidate_shortlists` (
                     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -7355,15 +7358,24 @@ class EmployerController extends BaseController
                     `job_seeker_id` INT NOT NULL,
                     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                     INDEX (`employer_id`),
+                    INDEX (`user_id`),
                     INDEX (`job_seeker_id`)
                 )");
 
-                $savedRows = $db->table('candidate_shortlists')
-                    ->select('job_seeker_id')
-                    ->where('employer_id', $employer->id)
-                    ->get()
-                    ->getResultArray();
-                $savedIds = array_column($savedRows, 'job_seeker_id');
+                $builder = $db->table('candidate_shortlists')->select('job_seeker_id');
+                if ($employerId && $userId) {
+                    $builder->groupStart()
+                        ->where('employer_id', $employerId)
+                        ->orWhere('user_id', $userId)
+                    ->groupEnd();
+                } elseif ($employerId) {
+                    $builder->where('employer_id', $employerId);
+                } else {
+                    $builder->where('user_id', $userId);
+                }
+
+                $savedRows = $builder->get()->getResultArray();
+                $savedIds = array_unique(array_column($savedRows, 'job_seeker_id'));
             } catch (\Throwable $e) {
                 $savedIds = [];
             }
@@ -7408,9 +7420,8 @@ class EmployerController extends BaseController
         }
 
         $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
-        if (!$employer) {
-            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Employer account not found']);
-        }
+        $employerId = $employer ? (int)$employer->id : null;
+        $userId = (int)$user->id;
 
         $candidateId = (int)$this->request->getPost('candidate_id');
         if ($candidateId <= 0) {
@@ -7427,14 +7438,23 @@ class EmployerController extends BaseController
                 `job_seeker_id` INT NOT NULL,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 INDEX (`employer_id`),
+                INDEX (`user_id`),
                 INDEX (`job_seeker_id`)
             )");
 
-            $existing = $db->table('candidate_shortlists')
-                ->where('employer_id', $employer->id)
-                ->where('job_seeker_id', $candidateId)
-                ->get()
-                ->getRow();
+            $builder = $db->table('candidate_shortlists')->where('job_seeker_id', $candidateId);
+            if ($employerId && $userId) {
+                $builder->groupStart()
+                    ->where('employer_id', $employerId)
+                    ->orWhere('user_id', $userId)
+                ->groupEnd();
+            } elseif ($employerId) {
+                $builder->where('employer_id', $employerId);
+            } else {
+                $builder->where('user_id', $userId);
+            }
+
+            $existing = $builder->get()->getRow();
 
             if ($existing) {
                 $db->table('candidate_shortlists')
@@ -7448,8 +7468,8 @@ class EmployerController extends BaseController
                 ]);
             } else {
                 $db->table('candidate_shortlists')->insert([
-                    'employer_id'   => $employer->id,
-                    'user_id'       => $user->id,
+                    'employer_id'   => $employerId,
+                    'user_id'       => $userId,
                     'job_seeker_id' => $candidateId,
                     'created_at'    => date('Y-m-d H:i:s'),
                 ]);
