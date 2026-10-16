@@ -265,6 +265,7 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
 
     // Transactions
     $routes->get('transactions', 'EmployerController::transactions');
+    $routes->get('receipt/(:segment)', 'EmployerController::receipt/$1');
     $routes->get('wallet', 'WalletController::employerWallet');
     $routes->post('wallet/pay-with-wallet', 'WalletController::payWithWallet');
 
@@ -285,9 +286,11 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('download-cv/(:num)', 'EmployerController::downloadCv/$1');
     $routes->post('candidates/unlock', 'EmployerController::unlockCandidate');
     $routes->post('candidates/unlock-verify', 'EmployerController::verifyUnlockAjax');
+    $routes->post('candidates/toggle-save', 'EmployerController::toggleSaveCandidate');
 
     // Messaging
     $routes->get('messages', 'MessageController::inbox');
+    $routes->get('messages/alerts', 'MessageController::alerts');
     $routes->get('messages/conversation/(:num)', 'MessageController::conversation/$1');
     $routes->post('messages/send', 'MessageController::send');
     $routes->post('messages/start', 'MessageController::startConversation');
@@ -383,6 +386,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
 
     // Messaging
     $routes->get('messages', 'MessageController::inbox');
+    $routes->get('messages/alerts', 'MessageController::alerts');
     $routes->get('messages/conversation/(:num)', 'MessageController::conversation/$1');
     $routes->post('messages/send', 'MessageController::send');
 
@@ -416,6 +420,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
 
     // Transactions
     $routes->get('transactions', 'JobSeekerController::transactions');
+    $routes->get('receipt/(:segment)', 'JobSeekerController::receipt/$1');
     $routes->get('wallet', 'WalletController::candidateWallet');
     $routes->post('wallet/pay-with-wallet', 'WalletController::payWithWallet');
 });

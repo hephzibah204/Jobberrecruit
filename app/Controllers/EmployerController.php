@@ -254,19 +254,9 @@ class EmployerController extends BaseController
         // ============================
         // 🔹 PROFILE COMPLETION (%)
         // ============================
-        $profileFields = [
-            !empty($employer->company_name),
-            !empty($employer->contact_email),
-            !empty($employer->company_size),
-            !empty($employer->description),
-            !empty($employer->website),
-            !empty($employer->logo),
-            $totalJobs > 0,
-            $hasCACDocument,
-        ];
-        $profileCompletion = (int) round(
-            (array_sum(array_map('intval', $profileFields)) / count($profileFields)) * 100
-        );
+        $completionIndustryIds = model(\App\Models\EmployerIndustryModel::class)
+            ->where('employer_id', $employer->id)->findColumn('industry_id') ?? [];
+        $profileCompletion = \App\Services\EmployerProfileCompletion::percentage($employer, $completionIndustryIds);
 
         // ============================
         // 🔹 JOBS CLOSING SOON (within 14 days)
@@ -2338,11 +2328,14 @@ class EmployerController extends BaseController
                 // Graceful fallback to category or standard test if AI generation returns empty
                 $fallbackTest = $db->table('tests')
                     ->where('category_id', $job->category_id ?? 1)
+                    ->groupStart()->where('employer_id', null)->orWhere('employer_id', $employer->id)->groupEnd()
                     ->where('is_active', 1)
                     ->orderBy('id', 'ASC')
                     ->get()->getRowObject();
                 if (!$fallbackTest) {
-                    $fallbackTest = $db->table('tests')->where('is_active', 1)->orderBy('id', 'ASC')->get()->getRowObject();
+                    $fallbackTest = $db->table('tests')->where('is_active', 1)
+                        ->groupStart()->where('employer_id', null)->orWhere('employer_id', $employer->id)->groupEnd()
+                        ->orderBy('id', 'ASC')->get()->getRowObject();
                 }
                 if ($fallbackTest) {
                     $test = $fallbackTest;
@@ -2402,7 +2395,9 @@ class EmployerController extends BaseController
             }
         } else {
             $testId = (int) $rawTestId;
-            $test = $db->table('tests')->where('id', $testId)->where('is_active', 1)->get()->getRowObject();
+            $test = $db->table('tests')->where('id', $testId)->where('is_active', 1)
+                ->groupStart()->where('employer_id', null)->orWhere('employer_id', $employer->id)->groupEnd()
+                ->get()->getRowObject();
         }
 
         if (!$test) {
@@ -3981,10 +3976,17 @@ class EmployerController extends BaseController
     public function profile()
     {
         $user = $this->auth->user();
+        if (!$user) {
+            return redirect()->to('login');
+        }
+
+        $db = \Config\Database::connect();
+        $this->ensureEmployerProfileColumns($db);
+
         $employerModel = model(EmployerModel::class);
         $employer = $employerModel->select('employers.*, states.name as location')
             ->join('states', 'states.id = employers.state_id', 'left')
-            ->where('user_id', $user->id)
+            ->where('employers.user_id', $user->id)
             ->first();
 
         if (!$employer) {
@@ -3995,7 +3997,7 @@ class EmployerController extends BaseController
             ]);
             $employer = $employerModel->select('employers.*, states.name as location')
                 ->join('states', 'states.id = employers.state_id', 'left')
-                ->where('user_id', $user->id)
+                ->where('employers.user_id', $user->id)
                 ->first();
         }
 
@@ -4068,19 +4070,9 @@ class EmployerController extends BaseController
 
         // Profile completion % — mirrors dashboard()'s calculation
         $totalJobs = model(JobModel::class)->where('employer_id', $employer->id)->countAllResults();
-        $profileFields = [
-            !empty($employer->company_name),
-            !empty($employer->contact_email),
-            !empty($employer->company_size),
-            !empty($employer->description),
-            !empty($employer->website),
-            !empty($employer->logo),
-            $totalJobs > 0,
-            $hasCACDocument,
-        ];
-        $profileCompletion = (int) round(
-            (array_sum(array_map('intval', $profileFields)) / count($profileFields)) * 100
-        );
+        $completionIndustryIds = model(\App\Models\EmployerIndustryModel::class)
+            ->where('employer_id', $employer->id)->findColumn('industry_id') ?? [];
+        $profileCompletion = \App\Services\EmployerProfileCompletion::percentage($employer, $completionIndustryIds);
 
         $data = [
             'title' => 'Company Profile',
@@ -4101,94 +4093,64 @@ class EmployerController extends BaseController
         return view('employers/profile', $data);
     }
 
-    // public function profile()
-    // {
-    //     $user = $this->auth->user();
-    //     $employerModel = model(EmployerModel::class);
-    //     $employer = $employerModel->select('employers.*, states.name as location')
-    //         ->join('states', 'states.id = employers.state_id', 'left')
-    //         ->where('user_id', $user->id)
-    //         ->first();
+    /**
+     * Ensure the employers table has all extended profile columns.
+     * Prevents failures when running on production where migrations haven't run.
+     */
+    private function ensureEmployerProfileColumns($db): array
+    {
+        try {
+            $existing = $db->getFieldNames('employers');
+            $columnDefs = [
+                'tagline'        => 'VARCHAR(120) NULL DEFAULT NULL',
+                'company_type'   => 'VARCHAR(60) NULL DEFAULT NULL',
+                'founded_year'   => 'VARCHAR(20) NULL DEFAULT NULL',
+                'remote_policy'  => 'VARCHAR(30) NULL DEFAULT NULL',
+                'whatsapp'       => 'VARCHAR(50) NULL DEFAULT NULL',
+                'benefits'       => 'TEXT NULL DEFAULT NULL',
+                'hiring_process' => 'TEXT NULL DEFAULT NULL',
+                'rc_number'      => 'VARCHAR(50) NULL DEFAULT NULL',
+                'linkedin'       => 'VARCHAR(255) NULL DEFAULT NULL',
+                'twitter'        => 'VARCHAR(255) NULL DEFAULT NULL',
+                'facebook'       => 'VARCHAR(255) NULL DEFAULT NULL',
+                'instagram'      => 'VARCHAR(255) NULL DEFAULT NULL',
+            ];
 
-    //     if (!$employer) {
-    //         return redirect()->to('employer/profile/edit')->with('error', 'Please create your company profile first.');
-    //     }
-
-    //     // Check if employer has uploaded CAC document
-    //     $hasCACDocument = $this->hasUploadedCACDocument($employer->id);
-
-    //     // If no CAC document and not on upload page, redirect
-    //     if (!$hasCACDocument && !in_array($this->request->getUri()->getSegment(2), ['upload-document', 'process-document-upload'])) {
-    //         return redirect()->to('employer/upload-document')
-    //             ->with('error', 'Please upload your CAC certificate to continue.');
-    //     }
-
-    //     // Get CAC document info if exists
-    //     $cacDocument = null;
-    //     $documentModel = model(EmployerDocumentModel::class);
-    //     $cacDocument = $documentModel
-    //         ->where('employer_id', $employer->id)
-    //         ->where('document_type', 'cac_certificate')
-    //         ->first();
-
-    //     $industryModel = model('App\Models\IndustryModel');
-    //     $stateModel = model('App\Models\StateModel');
-    //     $employerIndustryModel = model('App\Models\EmployerIndustryModel');
-
-    //     // Fetch parent industries with their children
-    //     $industries = $industryModel->where('parent_id', null)->findAll();
-    //     foreach ($industries as &$industry) {
-    //         $industry->children = $industryModel->where('parent_id', $industry->id)->findAll();
-    //     }
-
-    //     // Fetch all states
-    //     $states = $stateModel->findAll();
-
-    //     // Fetch the industries the employer belongs to
-    //     $employerIndustryIds = $employerIndustryModel
-    //         ->where('employer_id', $employer->id)
-    //         ->findColumn('industry_id');
-
-    //     $subscriptionModel = model(UserSubscriptionModel::class);
-    //     $activeSub = $subscriptionModel
-    //         ->select('user_subscriptions.*, plans.name AS plan_name, plans.features AS plan_features')
-    //         ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
-    //         ->where('user_id', $user->id)
-    //         ->where('user_subscriptions.is_active', 1)
-    //         ->first();
-
-    //     if ($activeSub && !empty($activeSub['plan_features'])) {
-    //         $activeSub['features_array'] = json_decode($activeSub['plan_features'], true) ?? [];
-    //     } else {
-    //         $activeSub['features_array'] = [];
-    //     }
-    //     $features = planFeatures($activeSub['features_array']);
-
-    //     // Check for unlimited access
-    //     $hasUnlimitedAccess = $this->hasUnlimitedAccess($employer->id);
-
-    //     $canShowTrustBadge = ($features['trust_badge'] ?? false) && !empty($employer->is_verified);
-
-    //     $data = [
-    //         'title' => 'Company Profile',
-    //         'user' => $user,
-    //         'employer' => $employer,
-    //         'industries' => $industries,
-    //         'states' => $states,
-    //         'employerIndustryIds' => $employerIndustryIds,
-    //         'canShowTrustBadge' => $canShowTrustBadge,
-    //         'activeSubscription' => $activeSub,
-    //         'hasCACDocument' => $hasCACDocument,
-    //         'cacDocument' => $cacDocument,
-    //         'hasUnlimitedAccess' => $hasUnlimitedAccess,
-    //     ];
-
-    //     return view('employers/profile', $data);
-    // }
+            foreach ($columnDefs as $col => $sqlType) {
+                if (!in_array($col, $existing, true)) {
+                    try {
+                        $db->query("ALTER TABLE `employers` ADD COLUMN `{$col}` {$sqlType}");
+                        $existing[] = $col;
+                    } catch (\Throwable $e) {
+                        log_message('error', "Failed to add column {$col} to employers: " . $e->getMessage());
+                    }
+                }
+            }
+            return $existing;
+        } catch (\Throwable $e) {
+            log_message('error', 'ensureEmployerProfileColumns failed: ' . $e->getMessage());
+            return [];
+        }
+    }
 
     public function edit_profile()
     {
         $user = $this->auth->user();
+        if (!$user) {
+            if ($this->request->isAJAX() || $this->request->is('post') || strtoupper((string)$this->request->getMethod()) === 'POST') {
+                return $this->response->setJSON([
+                    'status'     => 'error',
+                    'message'    => 'Session expired. Please log in again.',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash'  => csrf_hash(),
+                ])->setStatusCode(401);
+            }
+            return redirect()->to('login');
+        }
+
+        $db = \Config\Database::connect();
+        $existingFields = $this->ensureEmployerProfileColumns($db);
+
         $employerModel = model(EmployerModel::class);
         $employer = $employerModel->where('user_id', $user->id)->first();
 
@@ -4245,7 +4207,7 @@ class EmployerController extends BaseController
                     'errors'     => $this->validator->getErrors(),
                     'csrf_token' => csrf_token(),
                     'csrf_hash'  => csrf_hash(),
-                ]);
+                ])->setStatusCode(422);
             }
 
             // ── Section-scoped field maps ──────────────────────────────────────
@@ -4267,10 +4229,22 @@ class EmployerController extends BaseController
             $benefits = array_values(array_filter(array_map('trim', $benefits)));
 
             $rawStateId = $this->request->getPost('state_id');
-            $stateId = (!empty($rawStateId) && is_numeric($rawStateId) && (int)$rawStateId > 0) ? (int)$rawStateId : null;
+            $stateId = null;
+            if (!empty($rawStateId) && is_numeric($rawStateId) && (int)$rawStateId > 0) {
+                // Ensure state exists in database to prevent FK constraint failure
+                $stateExists = $db->table('states')->where('id', (int)$rawStateId)->countAllResults();
+                if ($stateExists > 0) {
+                    $stateId = (int)$rawStateId;
+                }
+            }
+
+            $companyName = trim((string) $this->request->getPost('company_name'));
+            if (!$companyName && ($section === 'identity' || $section === 'all' || empty($section))) {
+                $companyName = $employer->company_name ?: ($user->username ?? 'Company Profile');
+            }
 
             $allData = [
-                'company_name'    => trim((string) $this->request->getPost('company_name')) ?: null,
+                'company_name'    => $companyName ?: null,
                 'tagline'         => trim((string) $this->request->getPost('tagline')) ?: null,
                 'company_size'    => trim((string) $this->request->getPost('company_size')) ?: null,
                 'company_type'    => trim((string) $this->request->getPost('company_type')) ?: null,
@@ -4323,12 +4297,18 @@ class EmployerController extends BaseController
                 $data['logo'] = null;
             }
 
-            $db = \Config\Database::connect();
+            // Filter to only columns that exist in the employers table
+            if (!empty($existingFields)) {
+                $data = array_intersect_key($data, array_flip($existingFields));
+            }
+
             $db->transStart();
 
             try {
                 if (!empty($data)) {
-                    $data['updated_at'] = date('Y-m-d H:i:s');
+                    if (in_array('updated_at', $existingFields ?: [], true)) {
+                        $data['updated_at'] = date('Y-m-d H:i:s');
+                    }
                     $db->table('employers')->where('id', $employer->id)->update($data);
                 }
 
@@ -4351,8 +4331,10 @@ class EmployerController extends BaseController
                     }
 
                     // Keep employers.industry_id legacy column in sync
-                    $primaryIndustryId = !empty($industryIds) ? reset($industryIds) : null;
-                    $db->table('employers')->where('id', $employer->id)->update(['industry_id' => $primaryIndustryId]);
+                    if (in_array('industry_id', $existingFields ?: [], true)) {
+                        $primaryIndustryId = !empty($industryIds) ? reset($industryIds) : null;
+                        $db->table('employers')->where('id', $employer->id)->update(['industry_id' => $primaryIndustryId]);
+                    }
                 }
 
             } catch (\Throwable $e) {
@@ -4360,7 +4342,7 @@ class EmployerController extends BaseController
                 log_message('error', 'edit_profile save failed: ' . $e->getMessage());
                 return $this->response->setJSON([
                     'status'     => 'error',
-                    'message'    => 'Failed to save profile. Please try again.',
+                    'message'    => 'Failed to save profile: ' . $e->getMessage(),
                     'csrf_token' => csrf_token(),
                     'csrf_hash'  => csrf_hash(),
                 ])->setStatusCode(500);
@@ -4372,15 +4354,21 @@ class EmployerController extends BaseController
                 log_message('error', 'edit_profile transComplete() failed for employer #' . $employer->id);
                 return $this->response->setJSON([
                     'status'     => 'error',
-                    'message'    => 'Failed to save profile. Please try again.',
+                    'message'    => 'Failed to save profile due to a database error. Please try again.',
                     'csrf_token' => csrf_token(),
                     'csrf_hash'  => csrf_hash(),
                 ])->setStatusCode(500);
             }
 
+            $savedEmployer = $employerModel->find($employer->id);
+            $savedIndustryIds = model(\App\Models\EmployerIndustryModel::class)
+                ->where('employer_id', $employer->id)->findColumn('industry_id') ?? [];
+
             return $this->response->setJSON([
                 'status'     => 'success',
                 'message'    => 'Profile saved successfully.',
+                'completedSections' => \App\Services\EmployerProfileCompletion::sections($savedEmployer, $savedIndustryIds),
+                'profileCompletion' => \App\Services\EmployerProfileCompletion::percentage($savedEmployer, $savedIndustryIds),
                 'csrf_token' => csrf_token(),
                 'csrf_hash'  => csrf_hash(),
             ])->setStatusCode(200);
@@ -4416,141 +4404,6 @@ class EmployerController extends BaseController
 
         return view('employers/profile-edit', $data);
     }
-
-    // public function edit_profile()
-    // {
-    //     if ($this->request->getMethod() === "POST") {
-    //         $user = $this->auth->user();
-    //         $employerModel = model(EmployerModel::class);
-    //         $employer = $employerModel->where('user_id', $user->id)->first();
-    //         $employerIndustryModel = model('App\Models\EmployerIndustryModel');
-
-    //         if (!$employer) {
-    //             return $this->response->setJSON([
-    //                 'status' => 'error',
-    //                 'message' => 'Employer not found.'
-    //             ]);
-    //         }
-
-    //         $rules = [
-    //             'company_name'      => 'required|min_length[3]',
-    //             'state_id'          => 'required|integer',
-    //             'company_size'      => 'required',
-    //             'contact_name'      => 'required|min_length[3]',
-    //             'contact_email'     => 'required|valid_email',
-    //             'contact_phone'     => 'required|min_length[6]',
-    //             'industry_ids'      => 'required',
-    //         ];
-
-    //         if (!$this->validate($rules)) {
-    //             return $this->response->setJSON([
-    //                 'status' => 'error',
-    //                 'errors' => $this->validator->getErrors()
-    //             ]);
-    //         }
-
-    //         $website = trim($this->request->getPost('website'));
-
-    //         if ($website && !preg_match('#^https?://#i', $website)) {
-    //             $website = 'https://' . $website;
-    //         }
-
-    //         $data = [
-    //             'company_name'      => $this->request->getPost('company_name'),
-    //             'state_id'          => $this->request->getPost('state_id'),
-    //             'company_size'      => $this->request->getPost('company_size'),
-    //             'website'           => $website ?: null,
-    //             'description'       => $this->request->getPost('description'),
-    //             'contact_name'      => $this->request->getPost('contact_name'),
-    //             'contact_email'     => $this->request->getPost('contact_email'),
-    //             'contact_phone'     => $this->request->getPost('contact_phone'),
-    //             'company_address'   => trim($this->request->getPost('company_address')),
-    //         ];
-
-    //         // === Handle file uploads ===
-    //         helper(['filesystem', 'form']);
-
-    //         // Upload directory
-    //         $uploadPath = 'uploads/employers/' . $employer->id . '/';
-    //         if (!is_dir($uploadPath)) {
-    //             mkdir($uploadPath, 0775, true);
-    //         }
-
-    //         // Logo upload (keep this)
-    //         $logoFile = $this->request->getFile('logo');
-    //         if ($logoFile && $logoFile->isValid()) {
-    //             if ($employer->logo && file_exists($employer->logo)) {
-    //                 unlink($employer->logo);
-    //             }
-    //             $newLogoName = $logoFile->getRandomName();
-    //             $logoFile->move($uploadPath, $newLogoName);
-    //             $data['logo'] = 'uploads/employers/' . $employer->id . '/' . $newLogoName;
-    //         } elseif ($this->request->getPost('remove_logo')) {
-    //             if ($employer->logo && file_exists($employer->logo)) {
-    //                 unlink($employer->logo);
-    //             }
-    //             $data['logo'] = null;
-    //         }
-
-    //         // REMOVED: verification_doc upload from here - moved to separate CAC upload
-
-    //         // === Update Employer record ===
-    //         $employerModel->update($employer->id, $data);
-
-    //         // === Update Industry relationships ===
-    //         $industryIds = $this->request->getVar('industry_ids') ?? [];
-    //         $employerIndustryModel->where('employer_id', $employer->id)->delete();
-    //         foreach ($industryIds as $industryId) {
-    //             $employerIndustryModel->insert([
-    //                 'employer_id' => $employer->id,
-    //                 'industry_id' => $industryId
-    //             ]);
-    //         }
-
-    //         return $this->response->setJSON([
-    //             'status' => 'success',
-    //             'message' => 'Company profile updated successfully.'
-    //         ])->setStatusCode(200);
-    //     }
-
-    //     // GET request - show edit form
-    //     $user = $this->auth->user();
-    //     $employerModel = model(EmployerModel::class);
-    //     $employer = $employerModel->where('user_id', $user->id)->first();
-
-    //     if (!$employer) {
-    //         return redirect()->to('employer/profile/edit')->with('error', 'Please create your company profile first.');
-    //     }
-
-    //     $industryModel = model('App\Models\IndustryModel');
-    //     $stateModel = model('App\Models\StateModel');
-    //     $employerIndustryModel = model('App\Models\EmployerIndustryModel');
-
-    //     // Fetch parent industries and children
-    //     $industries = $industryModel->where('parent_id', null)->findAll();
-    //     foreach ($industries as &$industry) {
-    //         $industry->children = $industryModel->where('parent_id', $industry->id)->findAll();
-    //     }
-
-    //     // Fetch all states
-    //     $states = $stateModel->findAll();
-
-    //     // Employer's linked industries
-    //     $employerIndustryIds = $employerIndustryModel
-    //         ->where('employer_id', $employer->id)
-    //         ->findColumn('industry_id');
-
-    //     $data = [
-    //         'title' => 'Update Company Profile',
-    //         'user' => $user,
-    //         'employer' => $employer,
-    //         'industries' => $industries,
-    //         'states' => $states,
-    //         'employerIndustryIds' => $employerIndustryIds,
-    //     ];
-
-    //     return view('employers/profile-edit', $data);
-    // }
 
     /**
      * Show document upload page
@@ -4890,7 +4743,11 @@ class EmployerController extends BaseController
         }
 
         $subService = new \App\Services\SubscriptionService();
-        $proration  = $subService->calculateUpgradeProration($user->id, (int)$subscriptionPlan->id, $months);
+        try {
+            $proration = $subService->calculateUpgradeProration($user->id, (int) $subscriptionPlan->id, $months);
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
 
         return $this->response->setJSON([
             'success'   => true,
@@ -4946,6 +4803,142 @@ class EmployerController extends BaseController
             'wallet' => $wallet,
             'transactions' => $transactions,
             'totalSpent' => $totalSpent
+        ]);
+    }
+
+    /**
+     * Display printable / downloadable transaction receipt
+     */
+    public function receipt($reference = null)
+    {
+        $user = $this->auth->user();
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (empty($reference)) {
+            return redirect()->to('employer/transactions')->with('error', 'Transaction reference is missing.');
+        }
+
+        $db = \Config\Database::connect();
+        $wallet = model(\App\Models\WalletModel::class)->where('user_id', $user->id)->first();
+
+        $txData = null;
+
+        // 1. Check wallet_transactions by reference or ID
+        if ($wallet && $db->tableExists('wallet_transactions')) {
+            $builder = $db->table('wallet_transactions')->where('wallet_id', $wallet->id);
+            if (is_numeric($reference)) {
+                $builder->groupStart()
+                    ->where('reference', $reference)
+                    ->orWhere('id', (int)$reference)
+                    ->groupEnd();
+            } elseif (str_starts_with($reference, 'WTX-')) {
+                $rawId = preg_match('/^WTX-([1-9][0-9]*)$/D', $reference, $match) ? (int)$match[1] : 0;
+                $builder->groupStart()
+                    ->where('reference', $reference)
+                    ->orWhere('id', $rawId)
+                    ->groupEnd();
+            } else {
+                $builder->where('reference', $reference);
+            }
+            $walletTx = $builder->get()->getRow();
+
+            if ($walletTx) {
+                // Also check if there is an associated record in payments table for more metadata
+                $paymentTx = null;
+                if ($db->tableExists('payments') && !empty($walletTx->reference)) {
+                    $paymentTx = $db->table('payments')->where('reference', $walletTx->reference)->get()->getRow();
+                }
+
+                $txData = [
+                    'reference'      => $walletTx->reference ?: ('WTX-' . $walletTx->id),
+                    'date'           => $walletTx->created_at ?? date('Y-m-d H:i:s'),
+                    'amount'         => (float) ($walletTx->amount ?? 0),
+                    'type'           => $walletTx->type === 'credit' ? 'Wallet Funding' : 'Wallet Payment',
+                    'status'         => $walletTx->status ?? 'completed',
+                    'payment_method' => $paymentTx->payment_method ?? ($walletTx->type === 'credit' ? 'Paystack / Card' : 'JobberRecruit Wallet'),
+                    'description'    => $walletTx->description ?? 'Wallet Transaction',
+                    'item_details'   => $walletTx->type === 'credit' ? 'Wallet account credited successfully' : 'Deducted from wallet balance for service purchase',
+                    'customer_name'  => $employer->contact_name ?? ($user->username ?? 'Employer'),
+                    'company_name'   => $employer->company_name ?? null,
+                    'customer_email' => $employer->contact_email ?? ($user->email ?? ''),
+                    'customer_phone' => $employer->contact_phone ?? '',
+                ];
+            }
+        }
+
+        // 2. If not found in wallet_transactions, check payments table
+        if (!$txData && $db->tableExists('payments')) {
+            $builder = $db->table('payments')->groupStart()->where('user_id', $user->id);
+            if (!empty($employer->id)) {
+                $builder->orWhere('employer_id', $employer->id);
+            }
+            $builder->groupEnd();
+
+            if (is_numeric($reference)) {
+                $builder->groupStart()
+                    ->where('reference', $reference)
+                    ->orWhere('id', (int)$reference)
+                    ->groupEnd();
+            } elseif (preg_match('/^PAY-([1-9][0-9]*)$/D', $reference, $match)) {
+                $builder->groupStart()->where('reference', $reference)->orWhere('id', (int)$match[1])->groupEnd();
+            } else {
+                $builder->where('reference', $reference);
+            }
+
+            $payTx = $builder->get()->getRow();
+            if ($payTx) {
+                $meta = is_string($payTx->metadata ?? null) ? json_decode($payTx->metadata, true) : (array)($payTx->metadata ?? []);
+                $desc = 'Service Payment';
+                $details = 'Direct payment verified on JobberRecruit';
+
+                if (!empty($meta['type'])) {
+                    if ($meta['type'] === 'subscription') {
+                        $desc = 'Subscription Plan Purchase';
+                        if (!empty($meta['plan_id']) && $db->tableExists('plans')) {
+                            $plan = $db->table('plans')->where('id', $meta['plan_id'])->get()->getRow();
+                            if ($plan) $desc = "Subscription: {$plan->name}";
+                        }
+                    } elseif ($meta['type'] === 'bundle') {
+                        $desc = 'Job Posting Bundle Purchase';
+                        if (!empty($meta['bundle_id']) && $db->tableExists('plan_bundles')) {
+                            $bundle = $db->table('plan_bundles')->where('id', $meta['bundle_id'])->get()->getRow();
+                            if ($bundle) $desc = "Job Bundle: {$bundle->name}";
+                        }
+                    } elseif ($meta['type'] === 'wallet_funding') {
+                        $desc = 'Wallet Funding via Paystack';
+                    }
+                }
+
+                $txData = [
+                    'reference'      => $payTx->reference ?: ('PAY-' . $payTx->id),
+                    'date'           => $payTx->paid_at ?? ($payTx->created_at ?? date('Y-m-d H:i:s')),
+                    'amount'         => (float) ($payTx->amount_paid ?? ($payTx->amount ?? 0)),
+                    'type'           => $meta['type'] ?? 'Payment',
+                    'status'         => $payTx->status ?? 'completed',
+                    'payment_method' => $payTx->payment_method ?? 'Paystack / Card',
+                    'description'    => $desc,
+                    'item_details'   => $details,
+                    'customer_name'  => $employer->contact_name ?? ($user->username ?? 'Employer'),
+                    'company_name'   => $employer->company_name ?? null,
+                    'customer_email' => $employer->contact_email ?? ($user->email ?? ''),
+                    'customer_phone' => $employer->contact_phone ?? '',
+                ];
+            }
+        }
+
+        if (!$txData) {
+            return redirect()->to('employer/transactions')->with('error', 'Transaction receipt could not be found.');
+        }
+
+        return view('receipt', [
+            'receipt' => $txData,
+            'backUrl' => base_url('employer/transactions'),
+            'user'    => $user,
         ]);
     }
 
@@ -5148,7 +5141,9 @@ class EmployerController extends BaseController
             $metadata = [
                 'type'         => 'unlock',
                 'candidate_id' => (int)$candidateId,
+                'user_id'      => (int)$user->id,
             ];
+            $email = $user->email;
         } else {
             return $this->response->setJSON([
                 'success' => false,
@@ -5168,6 +5163,20 @@ class EmployerController extends BaseController
                 'success' => false,
                 'message' => 'Paystack API key is not configured. Please add paystack_public_key and paystack_secret_key to your .env file.'
             ]);
+        }
+
+        if ($type === 'unlock') {
+            $owner = model(EmployerModel::class)->where('user_id', $user->id)->first();
+            if (!$owner || !model(JobSeekerModel::class)->find((int)$candidateId)) {
+                return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Employer or candidate profile not found.']);
+            }
+            if (!model(PaymentModel::class)->insert([
+                'user_id' => $user->id, 'employer_id' => $owner->id,
+                'reference' => $reference, 'amount' => $amount, 'currency' => 'NGN',
+                'status' => 'pending', 'metadata' => json_encode($metadata),
+            ])) {
+                return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Unable to prepare payment. Please try again.']);
+            }
         }
 
         return $this->response->setJSON([
@@ -5392,6 +5401,7 @@ class EmployerController extends BaseController
                 $paymentId = $paymentModel->insert([
                     'user_id' => $user->id,
                     'employer_id' => $employer->id,
+                    'plan_id' => $type === 'subscription' ? ($metadata['plan_id'] ?? null) : null,
                     'reference' => $reference,
                     'amount' => $amount,
                     'status' => 'paid',
@@ -5441,6 +5451,10 @@ class EmployerController extends BaseController
                     'is_active' => 1,
                     'auto_renew' => 0
                 ]);
+
+                $metadata['subscription_id'] = $subscriptionId;
+                $metadata['subscription_value'] = $metadata['proration']['new_plan_price'] ?? $amount;
+                $paymentModel->update($paymentId, ['metadata' => json_encode($metadata)]);
 
                 // Update employer unlimited access flag if plan provides unlimited posting
                 if ($creditService->planProvidesUnlimitedPosting($plan)) {
@@ -6394,6 +6408,9 @@ class EmployerController extends BaseController
 
         // Validate signature using HMAC SHA512 with your secret key
         $secret = $this->paystackSecret;
+        if (empty($secret)) {
+            return $this->response->setStatusCode(401)->setBody('Payment service is not configured');
+        }
         $hash = hash_hmac('sha512', $raw, $secret);
         if (!hash_equals($hash, $signature)) {
             // Invalid signature
@@ -6407,6 +6424,20 @@ class EmployerController extends BaseController
 
         $event = $payload['event'];
         $data = $payload['data'] ?? [];
+
+        $meta = \App\Services\PaymentFulfillmentService::metadata($data);
+        if (in_array($event, ['charge.success', 'transaction.success'], true)
+            && in_array($meta['type'] ?? '', ['wallet_funding', 'cv_review'], true)) {
+            try {
+                (new \App\Services\PaymentFulfillmentService())->fulfill($data);
+                return $this->response->setStatusCode(200)->setBody('OK');
+            } catch (\InvalidArgumentException $e) {
+                return $this->response->setStatusCode(400)->setBody('Payment order mismatch');
+            } catch (\Throwable $e) {
+                log_message('error', 'Webhook fulfillment: ' . $e->getMessage());
+                return $this->response->setStatusCode(500)->setBody('Payment fulfillment failed');
+            }
+        }
 
         // Interested events: charge.success, transaction.success (Paystack uses charge.success for card charges)
         if (in_array($event, ['charge.success', 'transaction.success'])) {
@@ -7312,6 +7343,36 @@ class EmployerController extends BaseController
             'sort'             => $this->request->getGet('sort') ?: 'best_match',
         ];
 
+        $db = \Config\Database::connect();
+        $savedIds = [];
+        if (!empty($employer->id)) {
+            try {
+                $db->query("CREATE TABLE IF NOT EXISTS `candidate_shortlists` (
+                    `id` INT AUTO_INCREMENT PRIMARY KEY,
+                    `employer_id` INT NULL,
+                    `user_id` INT NULL,
+                    `admin_id` INT NULL,
+                    `job_seeker_id` INT NOT NULL,
+                    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX (`employer_id`),
+                    INDEX (`job_seeker_id`)
+                )");
+
+                $savedRows = $db->table('candidate_shortlists')
+                    ->select('job_seeker_id')
+                    ->where('employer_id', $employer->id)
+                    ->get()
+                    ->getResultArray();
+                $savedIds = array_column($savedRows, 'job_seeker_id');
+            } catch (\Throwable $e) {
+                $savedIds = [];
+            }
+        }
+
+        if ($this->request->getGet('view') === 'favorites' || $this->request->getGet('view') === 'saved') {
+            $filters['ids'] = !empty($savedIds) ? $savedIds : [-1];
+        }
+
         $candidates = $jobSeekerModel->getCandidates($filters, 20);
 
         $data = [
@@ -7319,6 +7380,7 @@ class EmployerController extends BaseController
             'user'       => $this->auth->user(),
             'employer'   => $employer,
             'candidates' => $candidates,
+            'savedIds'   => $savedIds,
             'pager'      => $jobSeekerModel->pager,
             'total'      => $jobSeekerModel->pager ? $jobSeekerModel->pager->getTotal() : count($candidates),
             'hasUnlimitedAccess' => $employer ? $this->hasUnlimitedAccess($employer->id) : false,
@@ -7336,6 +7398,75 @@ class EmployerController extends BaseController
         }
 
         return view('employers/candidates', $data);
+    }
+
+    public function toggleSaveCandidate()
+    {
+        $user = $this->auth->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Please login to save candidates']);
+        }
+
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Employer account not found']);
+        }
+
+        $candidateId = (int)$this->request->getPost('candidate_id');
+        if ($candidateId <= 0) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Invalid candidate ID']);
+        }
+
+        $db = \Config\Database::connect();
+        try {
+            $db->query("CREATE TABLE IF NOT EXISTS `candidate_shortlists` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `employer_id` INT NULL,
+                `user_id` INT NULL,
+                `admin_id` INT NULL,
+                `job_seeker_id` INT NOT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`employer_id`),
+                INDEX (`job_seeker_id`)
+            )");
+
+            $existing = $db->table('candidate_shortlists')
+                ->where('employer_id', $employer->id)
+                ->where('job_seeker_id', $candidateId)
+                ->get()
+                ->getRow();
+
+            if ($existing) {
+                $db->table('candidate_shortlists')
+                   ->where('id', $existing->id)
+                   ->delete();
+                return $this->response->setJSON([
+                    'success'  => true,
+                    'saved'    => false,
+                    'is_saved' => false,
+                    'message'  => 'Candidate removed from your shortlist'
+                ]);
+            } else {
+                $db->table('candidate_shortlists')->insert([
+                    'employer_id'   => $employer->id,
+                    'user_id'       => $user->id,
+                    'job_seeker_id' => $candidateId,
+                    'created_at'    => date('Y-m-d H:i:s'),
+                ]);
+                return $this->response->setJSON([
+                    'success'  => true,
+                    'saved'    => true,
+                    'is_saved' => true,
+                    'message'  => 'Candidate saved to your shortlist'
+                ]);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'toggleSaveCandidate error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'success' => false,
+                'message' => 'Failed to save candidate. Please try again.'
+            ]);
+        }
     }
 
     public function viewCandidate(int $id)
@@ -7583,12 +7714,13 @@ class EmployerController extends BaseController
 
         // ── Also guard against duplicate Paystack references ───────────────
         $paymentModel    = model(PaymentModel::class);
-        $referenceExists = $paymentModel->where('reference', $reference)->countAllResults() > 0;
-        if ($referenceExists) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Payment already processed.'
-            ]);
+        $order = $paymentModel->where('reference', $reference)->where('user_id', $this->auth->user()->id)
+            ->where('employer_id', $employer->id)->first();
+        $order = $order ?: [];
+        $orderMeta = \App\Services\PaymentFulfillmentService::metadata($order);
+        if (!$order || ($orderMeta['type'] ?? '') !== 'unlock'
+            || (int)($orderMeta['candidate_id'] ?? 0) !== $candidateId) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Payment does not belong to this profile unlock.']);
         }
 
         // Verify with Paystack
@@ -7601,6 +7733,17 @@ class EmployerController extends BaseController
             ]);
         }
 
+        try {
+            $data = $verify['data'];
+            $meta = \App\Services\PaymentFulfillmentService::metadata($data);
+            \App\Services\PaymentFulfillmentService::validate($data, $order, $meta, (string)$this->auth->user()->email);
+            if ((int)($meta['candidate_id'] ?? 0) !== $candidateId || (float)$order['amount'] !== 5000.0) {
+                throw new \InvalidArgumentException('Unlock details do not match.');
+            }
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Payment verification did not match this profile unlock.']);
+        }
+
         // ── Atomic: record unlock + payment in one transaction ─────────────
         $db->transBegin();
         try {
@@ -7610,11 +7753,7 @@ class EmployerController extends BaseController
                 'created_at'    => date('Y-m-d H:i:s'),
             ]);
 
-            $paymentModel->insert([
-                'user_id'        => $this->auth->user()->id,
-                'employer_id'    => $employer->id,
-                'reference'      => $reference,
-                'amount'         => $verify['data']['amount'] / 100,
+            $paymentSaved = $paymentModel->update($order['id'], [
                 'status'         => 'paid',
                 'payment_method' => $verify['data']['channel'] ?? 'card',
                 'metadata'       => json_encode([
@@ -7625,7 +7764,7 @@ class EmployerController extends BaseController
                 'paid_at'        => date('Y-m-d H:i:s'),
             ]);
 
-            if ($db->transStatus() === false) {
+            if (!$paymentSaved || $db->transStatus() === false) {
                 throw new \RuntimeException('Database error recording Paystack unlock.');
             }
 

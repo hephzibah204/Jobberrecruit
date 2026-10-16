@@ -6,6 +6,9 @@ use CodeIgniter\Model;
 
 class JobSeekerModel extends Model
 {
+    // Account activity is recorded by Shield on authenticated requests. Profile
+    // updated_at is deliberately excluded: admin edits are not candidate activity.
+    private const ACTIVITY_SQL = "CASE WHEN MAX(job_applications.created_at) > MAX(COALESCE(users.last_active, users.created_at)) OR MAX(COALESCE(users.last_active, users.created_at)) IS NULL THEN MAX(job_applications.created_at) ELSE MAX(COALESCE(users.last_active, users.created_at)) END";
     protected $table      = 'job_seekers';
     protected $primaryKey = 'id';
     protected $returnType = \App\Entities\JobSeeker::class;
@@ -125,6 +128,8 @@ class JobSeekerModel extends Model
             ->where('(users.user_type != "employer" AND users.user_type != "admin" AND users.user_type != "superadmin" OR users.user_type IS NULL)')
             ->groupBy('job_seekers.id');
 
+        $builder->select(self::ACTIVITY_SQL . ' AS last_activity_at', false);
+
         // Only enforce is_visible if not admin or if explicitly requested
         if (!$isAdmin) {
             $builder->where('job_seekers.is_visible', 1);
@@ -193,15 +198,15 @@ class JobSeekerModel extends Model
         /* Activity / Visibility filter */
         if (!empty($filters['activity']) && $filters['activity'] !== 'all') {
             if ($filters['activity'] === 'this_week') {
-                $builder->where('job_seekers.updated_at >=', date('Y-m-d H:i:s', strtotime('-7 days')));
+                $builder->having('last_activity_at >=', date('Y-m-d H:i:s', strtotime('-7 days')));
             } elseif ($filters['activity'] === 'last_week') {
-                $builder->where('job_seekers.updated_at >=', date('Y-m-d H:i:s', strtotime('-14 days')));
+                $builder->having('last_activity_at >=', date('Y-m-d H:i:s', strtotime('-14 days')));
             } elseif ($filters['activity'] === 'this_month') {
-                $builder->where('job_seekers.updated_at >=', date('Y-m-d H:i:s', strtotime('-30 days')));
+                $builder->having('last_activity_at >=', date('Y-m-d H:i:s', strtotime('-30 days')));
             } elseif ($filters['activity'] === 'last_3_months') {
-                $builder->where('job_seekers.updated_at >=', date('Y-m-d H:i:s', strtotime('-90 days')));
+                $builder->having('last_activity_at >=', date('Y-m-d H:i:s', strtotime('-90 days')));
             } elseif ($filters['activity'] === 'older') {
-                $builder->where('job_seekers.updated_at <', date('Y-m-d H:i:s', strtotime('-90 days')));
+                $builder->having('(last_activity_at < ' . $this->db->escape(date('Y-m-d H:i:s', strtotime('-90 days'))) . ' OR last_activity_at IS NULL)', null, false);
             }
         }
 
@@ -277,6 +282,16 @@ class JobSeekerModel extends Model
             }
         }
 
+        /* Filter by explicit candidate IDs (e.g. saved / shortlisted candidates) */
+        if (isset($filters['ids'])) {
+            $idList = array_filter(array_map('intval', (array)$filters['ids']));
+            if (!empty($idList)) {
+                $builder->whereIn('job_seekers.id', $idList);
+            } else {
+                $builder->where('1 = 0', null, false);
+            }
+        }
+
         switch ($filters['sort'] ?? 'best_match') {
             case 'most_experienced':
                 $builder->orderBy('job_seekers.experience_years', 'DESC');
@@ -285,7 +300,7 @@ class JobSeekerModel extends Model
                 $builder->orderBy('total_applications', 'DESC');
                 break;
             case 'recently_active':
-                $builder->orderBy('job_seekers.updated_at', 'DESC');
+                $builder->orderBy('last_activity_at', 'DESC');
                 break;
             case 'name_asc':
                 $builder->orderBy('job_seekers.full_name', 'ASC');
@@ -302,7 +317,7 @@ class JobSeekerModel extends Model
                 $builder->orderBy('COALESCE(job_seekers.profile_completion, 0)', 'DESC', false);
                 $builder->orderBy('(CASE WHEN job_seekers.resume IS NOT NULL AND job_seekers.resume != "" THEN 1 ELSE 0 END)', 'DESC', false);
                 $builder->orderBy('(CASE WHEN job_seekers.phone IS NOT NULL AND job_seekers.job_title IS NOT NULL AND job_seekers.skills IS NOT NULL THEN 1 ELSE 0 END)', 'DESC', false);
-                $builder->orderBy('job_seekers.updated_at', 'DESC');
+                $builder->orderBy('last_activity_at', 'DESC');
                 $builder->orderBy('job_seekers.created_at', 'DESC');
         }
 
