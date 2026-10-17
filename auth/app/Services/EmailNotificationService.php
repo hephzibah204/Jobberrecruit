@@ -69,14 +69,24 @@ class EmailNotificationService
             ? nl2br(htmlspecialchars($messageToCandidate))
             : $defaultMessages[$status];
 
+        $companyName = !empty($companyName) ? trim($companyName) : 'JobberRecruit Hiring Team';
+        $jobTitle    = !empty($jobTitle) ? trim($jobTitle) : 'Position';
+
         $data = [
-            'name' => htmlspecialchars($application->first_name . ' ' . $application->last_name),
-            'statusLabel' => $statusMap[$status]['label'],
-            'statusColor' => $statusMap[$status]['color'],
-            'message' => $finalMessage,
-            'isGuest' => (bool)($application->is_guest ?? false),
-            'companyName' => htmlspecialchars($companyName),
-            'jobTitle' => htmlspecialchars($jobTitle),
+            'name'         => htmlspecialchars(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')),
+            'statusLabel'  => $statusMap[$status]['label'],
+            'status_label' => $statusMap[$status]['label'],
+            'statusColor'  => $statusMap[$status]['color'],
+            'status_color' => $statusMap[$status]['color'],
+            'message'      => $finalMessage,
+            'isGuest'      => (bool)($application->is_guest ?? false),
+            'companyName'  => htmlspecialchars($companyName),
+            'company_name' => htmlspecialchars($companyName),
+            'company'      => htmlspecialchars($companyName),
+            'jobTitle'     => htmlspecialchars($jobTitle),
+            'job_title'    => htmlspecialchars($jobTitle),
+            'position'     => htmlspecialchars($jobTitle),
+            'role'         => htmlspecialchars($jobTitle),
         ];
 
         $subject = "Application Status Update: " . $statusMap[$status]['label'];
@@ -102,10 +112,17 @@ class EmailNotificationService
      */
     public function sendGuestApplicationReceivedEmail($application, string $jobTitle, string $companyName): bool
     {
+        $companyName = !empty($companyName) ? trim($companyName) : 'JobberRecruit Hiring Team';
+        $jobTitle    = !empty($jobTitle) ? trim($jobTitle) : 'Position';
+
         $data = [
-            'name' => htmlspecialchars($application->first_name . ' ' . $application->last_name),
-            'jobTitle' => htmlspecialchars($jobTitle),
-            'companyName' => htmlspecialchars($companyName),
+            'name'         => htmlspecialchars(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')),
+            'jobTitle'     => htmlspecialchars($jobTitle),
+            'job_title'    => htmlspecialchars($jobTitle),
+            'position'     => htmlspecialchars($jobTitle),
+            'companyName'  => htmlspecialchars($companyName),
+            'company_name' => htmlspecialchars($companyName),
+            'company'      => htmlspecialchars($companyName),
         ];
 
         return $this->sendEmail(

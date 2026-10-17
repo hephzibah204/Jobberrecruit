@@ -395,6 +395,9 @@ class EmailNotificationService
             throw new \InvalidArgumentException("Invalid status: {$status}");
         }
 
+        $companyName = !empty($companyName) ? trim($companyName) : 'JobberRecruit Hiring Team';
+        $jobTitle    = !empty($jobTitle) ? trim($jobTitle) : 'Position';
+
         $defaultMessages = [
             'pending'     => "Your application for <strong>{$jobTitle}</strong> at <strong>{$companyName}</strong> has been received and is currently under review.",
             'reviewed'    => "Your application for <strong>{$jobTitle}</strong> at <strong>{$companyName}</strong> has been reviewed by our team.",
@@ -407,14 +410,28 @@ class EmailNotificationService
             ? nl2br(htmlspecialchars($messageToCandidate))
             : $defaultMessages[$status];
 
+        $firstName = $application->first_name ?? '';
+        $lastName  = $application->last_name ?? '';
+        $fullName  = trim($firstName . ' ' . $lastName);
+
         $data = [
-            'name'        => htmlspecialchars(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')),
-            'statusLabel' => $statusMap[$status]['label'],
-            'statusColor' => $statusMap[$status]['color'],
-            'message'     => $finalMessage,
-            'isGuest'     => (bool)($application->is_guest ?? false),
-            'companyName' => htmlspecialchars($companyName),
-            'jobTitle'    => htmlspecialchars($jobTitle),
+            'name'         => htmlspecialchars($fullName ?: 'Candidate'),
+            'first_name'   => htmlspecialchars($firstName),
+            'last_name'    => htmlspecialchars($lastName),
+            'full_name'    => htmlspecialchars($fullName),
+            'statusLabel'  => $statusMap[$status]['label'],
+            'status_label' => $statusMap[$status]['label'],
+            'statusColor'  => $statusMap[$status]['color'],
+            'status_color' => $statusMap[$status]['color'],
+            'message'      => $finalMessage,
+            'isGuest'      => (bool)($application->is_guest ?? false),
+            'companyName'  => htmlspecialchars($companyName),
+            'company_name' => htmlspecialchars($companyName),
+            'company'      => htmlspecialchars($companyName),
+            'jobTitle'     => htmlspecialchars($jobTitle),
+            'job_title'    => htmlspecialchars($jobTitle),
+            'position'     => htmlspecialchars($jobTitle),
+            'role'         => htmlspecialchars($jobTitle),
         ];
 
         $subject = "Application Status Update: " . $statusMap[$status]['label'];
@@ -464,10 +481,24 @@ class EmailNotificationService
      */
     public function sendGuestApplicationReceivedEmail($application, string $jobTitle, string $companyName): bool
     {
+        $companyName = !empty($companyName) ? trim($companyName) : 'JobberRecruit Hiring Team';
+        $jobTitle    = !empty($jobTitle) ? trim($jobTitle) : 'Position';
+
+        $firstName = $application->first_name ?? '';
+        $lastName  = $application->last_name ?? '';
+        $fullName  = trim($firstName . ' ' . $lastName);
+
         $data = [
-            'name'        => htmlspecialchars(($application->first_name ?? '') . ' ' . ($application->last_name ?? '')),
-            'jobTitle'    => htmlspecialchars($jobTitle),
-            'companyName' => htmlspecialchars($companyName),
+            'name'         => htmlspecialchars($fullName ?: 'Candidate'),
+            'first_name'   => htmlspecialchars($firstName),
+            'last_name'    => htmlspecialchars($lastName),
+            'full_name'    => htmlspecialchars($fullName),
+            'jobTitle'     => htmlspecialchars($jobTitle),
+            'job_title'    => htmlspecialchars($jobTitle),
+            'position'     => htmlspecialchars($jobTitle),
+            'companyName'  => htmlspecialchars($companyName),
+            'company_name' => htmlspecialchars($companyName),
+            'company'      => htmlspecialchars($companyName),
         ];
 
         return $this->sendEmail(
@@ -491,6 +522,8 @@ class EmailNotificationService
         ?string $dueDate = null,
         ?string $customMessage = null
     ): bool {
+        $companyName = !empty($companyName) ? trim($companyName) : 'JobberRecruit Hiring Team';
+        $jobTitle    = !empty($jobTitle) ? trim($jobTitle) : 'Position';
         $formattedDueDate = $dueDate ? date('F j, Y', strtotime($dueDate)) : 'No strict deadline';
 
         $htmlMessage = "
@@ -508,12 +541,24 @@ class EmailNotificationService
         <p>Best regards,<br>The Recruitment Team at " . htmlspecialchars($companyName) . "</p>";
 
         $data = [
-            'name'        => htmlspecialchars($candidateName),
-            'statusLabel' => 'Aptitude Test Invitation',
-            'statusColor' => '#0d6efd',
-            'message'     => $htmlMessage,
-            'companyName' => htmlspecialchars($companyName),
-            'jobTitle'    => htmlspecialchars($jobTitle),
+            'name'          => htmlspecialchars($candidateName),
+            'first_name'    => htmlspecialchars($candidateName),
+            'full_name'     => htmlspecialchars($candidateName),
+            'statusLabel'   => 'Aptitude Test Invitation',
+            'status_label'  => 'Aptitude Test Invitation',
+            'statusColor'   => '#0d6efd',
+            'status_color'  => '#0d6efd',
+            'message'       => $htmlMessage,
+            'companyName'   => htmlspecialchars($companyName),
+            'company_name'  => htmlspecialchars($companyName),
+            'company'       => htmlspecialchars($companyName),
+            'jobTitle'      => htmlspecialchars($jobTitle),
+            'job_title'     => htmlspecialchars($jobTitle),
+            'position'      => htmlspecialchars($jobTitle),
+            'testTitle'     => htmlspecialchars($testTitle),
+            'test_title'    => htmlspecialchars($testTitle),
+            'invitationUrl' => $invitationUrl,
+            'invitation_url'=> $invitationUrl,
         ];
 
         return $this->sendEmail(

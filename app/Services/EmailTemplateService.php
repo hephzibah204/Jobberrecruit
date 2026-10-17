@@ -37,9 +37,9 @@ class EmailTemplateService
                 $html    = EmailTemplateModel::parseVariables($default['body_html'], $data, $greetingType);
                 $text    = EmailTemplateModel::parseVariables($default['body_text'] ?? strip_tags($default['body_html']), $data, $greetingType);
                 return [
-                    'subject' => $subject,
+                    'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                     'html'    => $html,
-                    'text'    => $text,
+                    'text'    => html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                     'template'=> (object)$default,
                 ];
             }
@@ -49,9 +49,9 @@ class EmailTemplateService
             $subject = $data['subject'] ?? 'Notification from JobberRecruit';
             $html = is_file(APPPATH . "Views/{$viewPath}.php") ? view($viewPath, $data) : '';
             return [
-                'subject' => $subject,
+                'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'html'    => $html,
-                'text'    => strip_tags($html),
+                'text'    => html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'template'=> null,
             ];
         }
@@ -64,9 +64,9 @@ class EmailTemplateService
             : strip_tags($html);
 
         return [
-            'subject' => $subject,
+            'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
             'html'    => $html,
-            'text'    => $text,
+            'text'    => html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
             'template'=> $template,
         ];
     }
