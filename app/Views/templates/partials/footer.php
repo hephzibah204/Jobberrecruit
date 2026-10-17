@@ -27,15 +27,43 @@
               </a>
             </div>
           </div>
-          <div class="footer-col"><h3>Quick links</h3><ul><li><a href="<?= base_url('about-us') ?>">About us</a></li><li><a href="<?= base_url('contact-us') ?>">Contact</a></li><li><a href="<?= base_url('blog') ?>">Blog</a></li><li><a href="<?= base_url('faq') ?>">FAQs</a></li></ul></div>
-          <div class="footer-col"><h3>For candidates</h3><ul><li><a href="<?= base_url('jobs') ?>">Browse jobs</a></li><li><a href="<?= base_url('candidates') ?>">Talents</a></li></ul></div>
-          <div class="footer-col"><h3>For employers</h3><ul><li><a href="<?= base_url('employer/post-job') ?>">Post a job</a></li><li><a href="<?= base_url('job-ads') ?>">Job ad pricing</a></li><li><a href="<?= base_url('recruitment') ?>">Recruitment services</a></li></ul></div>
+          <div class="footer-col">
+            <h3>For candidates</h3>
+            <ul>
+              <li><a href="<?= base_url('jobs') ?>">Browse jobs</a></li>
+              <li><a href="<?= base_url('ai-tools/resume-builder') ?>">AI resume builder</a></li>
+              <li><a href="<?= base_url('ai-tools/mock-interview') ?>">AI mock interview</a></li>
+              <li><a href="<?= base_url('job-alerts') ?>">Job alerts</a></li>
+              <li><a href="<?= base_url('training') ?>">Training &amp; certificates</a></li>
+              <li><a href="<?= base_url('career-advice') ?>">Career advice</a></li>
+              <li><a href="<?= base_url('referral') ?>">Referral rewards</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>For employers</h3>
+            <ul>
+              <li><a href="<?= base_url('employer/post-job') ?>">Post a job</a></li>
+              <li><a href="<?= base_url('job-ads') ?>">Job ad pricing</a></li>
+              <li><a href="<?= base_url('recruitment') ?>">Recruitment services</a></li>
+              <li><a href="<?= base_url('contact-us') ?>">Recruitment support</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>Quick links</h3>
+            <ul>
+              <li><a href="<?= base_url('about-us') ?>">About us</a></li>
+              <li><a href="<?= base_url('contact-us') ?>">Contact</a></li>
+              <li><a href="<?= base_url('blog') ?>">Blog</a></li>
+              <li><a href="<?= base_url('faq') ?>">FAQs</a></li>
+            </ul>
+          </div>
         </div>
         <div class="footer-bottom">
           <span>&copy; <?= date('Y') ?> JobberRecruit — Job Portal. All rights reserved.</span>
           <div class="footer-links">
             <a href="<?= base_url('privacy-policy') ?>">Privacy policy</a>
             <a href="<?= base_url('terms-and-conditions') ?>">Terms &amp; conditions</a>
+            <a href="<?= base_url('sitemap.xml') ?>">Sitemap</a>
           </div>
         </div>
       </div>

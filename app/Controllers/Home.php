@@ -69,6 +69,7 @@ class Home extends BaseController
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
                 ->groupBy('jobs.title')
                 ->orderBy('job_count', 'DESC')
                 ->findAll(12);
@@ -145,6 +146,7 @@ class Home extends BaseController
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -212,6 +214,7 @@ class Home extends BaseController
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
                 ->where('jobs.is_featured', 1)
                 ->orderBy('jobs.created_at', 'DESC')
                 ->findAll(18);
@@ -229,6 +232,7 @@ class Home extends BaseController
                 ->join('states', 'states.id = employers.state_id', 'left')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
                 ->where('is_anonymous', '0')
                 ->groupBy('employers.id')
                 ->orderBy('job_count', 'DESC')
@@ -340,6 +344,16 @@ class Home extends BaseController
             ->limit(5)
             ->findAll();
 
+        $savedJobIds = [];
+        if ($this->auth && $this->auth->loggedIn()) {
+            $savedJobModel = model(\App\Models\SavedJobModel::class);
+            $user = $this->auth->user();
+            if ($user) {
+                $saved = $savedJobModel->where('user_id', $user->id)->findAll();
+                $savedJobIds = array_map('intval', array_column($saved, 'job_id'));
+            }
+        }
+
         $data = [
             'title' => 'Find Jobs in Nigeria | JobberRecruit — Hire Top Talent',
             'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.',
@@ -356,6 +370,7 @@ class Home extends BaseController
             'featured_jobs' => $featured_jobs,
             'popular_vacancies' => $popular_vacancies,
             'featured_courses' => $featuredCourses,
+            'savedJobIds' => $savedJobIds,
             'website_logo' => 'assets/imgs/page/homepage4/banner.png',
             'activeJobsCount' => $activeJobsCount,
             'verifiedEmployersCount' => $verifiedEmployersCount,
@@ -408,6 +423,7 @@ class Home extends BaseController
             ->where('jobs.state_id', $state->id)
             ->where('jobs.status', 'open')
             ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
             ->orderBy('jobs.created_at', 'DESC')
             ->limit(12)
             ->get()
@@ -517,6 +533,7 @@ class Home extends BaseController
 
         $jobs = $builder->where('jobs.status', 'open')
             ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
             ->orderBy('jobs.is_featured', 'DESC')
             ->orderBy('jobs.created_at',  'DESC')
             ->limit(12)
@@ -604,7 +621,8 @@ class Home extends BaseController
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->where('jobs.status', 'open')
-            ->where('jobs.admin_status', 'approved');
+            ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd();
 
         $selectedIndustryName = null;
         $selectedStateName = null;
@@ -851,6 +869,15 @@ class Home extends BaseController
         return view('home/jobs', $data);
     }
 
+    public function unsave_job($jobId)
+    {
+        if (!$this->auth->loggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Please login.']);
+        }
+        $success = model(\App\Models\SavedJobModel::class)->removeJob((int) $this->auth->id(), (int) $jobId);
+        return $this->response->setJSON(['success' => $success, 'csrfHash' => csrf_hash()]);
+    }
+
     public function toggleSave($jobId)
     {
         if (!$this->auth->loggedIn()) {
@@ -934,7 +961,7 @@ class Home extends BaseController
 
         $job = $query->first();
 
-        if (!$job) {
+        if (!$job || strtolower((string) $job->admin_status) !== 'approved' || strtolower((string) $job->status) === 'draft') {
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Job not found');
         }
 
@@ -950,6 +977,7 @@ class Home extends BaseController
 
         if (!$lastViewed || ($now - $lastViewed) >= $cooldownSec) {
             $jobModel->set('views', 'views+1', false)->where('id', $jobIdNum)->update();
+            $job->views = (int) ($job->views ?? 0) + 1;
             $session->set($sessionKey, $now);
         }
 
@@ -1117,7 +1145,8 @@ class Home extends BaseController
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->where('jobs.is_featured', 1)
             ->where('jobs.status', 'open')
-            ->where('jobs.admin_status', 'approved');
+            ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd();
 
         if ($jobType) $query->where('jobs.job_type', $jobType);
         if ($stateId) $query->where('jobs.state_id', $stateId);
@@ -1197,6 +1226,7 @@ class Home extends BaseController
             ->where('jobs.category_id', $categoryId)
             ->where('jobs.status', 'open')
             ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
             ->orderBy('jobs.is_featured', 'DESC')
             ->orderBy('jobs.featured_until', 'DESC')
             ->findAll($limit, $offset);
@@ -1517,7 +1547,7 @@ class Home extends BaseController
         }
 
         $jobStatus = strtolower((string) ($job->status ?? ''));
-        if (in_array($jobStatus, ['closed', 'paused', 'expired', 'rejected'])) {
+        if (!\App\Services\JobApplicationEligibility::accepts($job)) {
             return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))
                 ->with('error', 'This job is closed and is no longer accepting applications.');
         }
@@ -1904,7 +1934,7 @@ class Home extends BaseController
         }
 
         $jobStatus = strtolower((string) ($job->status ?? ''));
-        if (in_array($jobStatus, ['closed', 'paused', 'expired', 'rejected'])) {
+        if (!\App\Services\JobApplicationEligibility::accepts($job)) {
             return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))
                 ->with('error', 'This job is closed and is no longer accepting applications.');
         }
@@ -2881,6 +2911,11 @@ class Home extends BaseController
 
     public function viewCompany($identifier)
     {
+        $reserved = ['dashboard', 'jobs', 'profile', 'pricing', 'applications', 'candidates', 'messages', 'notifications', 'settings', 'referrals', 'bundles', 'wallet', 'transactions', 'post-job', 'no-access', 'initiate-payment', 'verify-subscription', 'checkout-subscription'];
+        if (in_array(strtolower(trim((string)$identifier)), $reserved)) {
+            return redirect()->to(base_url("employer/{$identifier}"));
+        }
+
         $employerModel = new EmployerModel();
         $jobsModel = new JobModel();
         $industryMap = new EmployerIndustryModel();
@@ -2957,6 +2992,7 @@ class Home extends BaseController
             ->where('jobs.employer_id', $id)
             ->where('jobs.status', 'open')
             ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
             ->where('jobs.is_anonymous', '0')
             ->join('employers', 'employers.id = jobs.employer_id')
             ->join('states', 'states.id = jobs.state_id', 'left')
@@ -3197,6 +3233,7 @@ class Home extends BaseController
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.company_name as employer_name')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')

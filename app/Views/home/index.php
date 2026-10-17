@@ -431,6 +431,12 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
   .ticker-dot { animation: none !important; }
   .hero-motif .ring, .hero-motif .head { animation: none !important; }
 }
+
+#btt { position: fixed; bottom: 24px; right: 24px; bottom: max(24px, calc(24px + env(safe-area-inset-bottom, 0px))); width: 46px; height: 46px; border-radius: 50%; background: var(--brand); color: #ffffff; border: none; cursor: pointer; box-shadow: var(--shadow-lg); display: none; align-items: center; justify-content: center; z-index: 900; transition: var(--transition); -webkit-tap-highlight-color: transparent; }
+#btt svg { width: 20px; height: 20px; }
+#btt.show { display: flex; }
+#btt:hover { background: var(--brand-dark); }
+.live-count { font-weight: inherit; color: inherit; }
 </style>
 <?= $this->endSection() ?>
 
@@ -518,8 +524,8 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         <p class="hero-sub">Post your vacancy free and reach verified, pre-screened candidates across Lagos, Abuja, Port Harcourt, and every state in Nigeria.</p>
         <div class="hero-trust"><span><svg aria-hidden="true"><use href="#i-check"/></svg> Verified candidate pool</span><span><svg aria-hidden="true"><use href="#i-check"/></svg> Post your first job free</span><span><svg aria-hidden="true"><use href="#i-check"/></svg> Smart recruitment dashboard</span></div>
         <div class="hero-employer-actions">
-          <a href="<?= base_url('employer/post-job') ?>" class="btn-m btn-m-accent"><svg aria-hidden="true"><use href="#i-edit"/></svg> Post a job free</a>
-          <a href="<?= base_url('contact-us') ?>" class="btn-m btn-m-white">Let us help you recruit</a>
+          <a href="<?= base_url('employer/post-job') ?>" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-edit"/></svg> Post a job free</a>
+          <a href="<?= base_url('contact-us') ?>" class="btn btn-white">Let us help you recruit</a>
         </div>
         <div class="hero-pills" aria-label="Employer quick access">
           <a href="<?= base_url('job-ads') ?>"><svg aria-hidden="true"><use href="#i-bag"/></svg> View pricing plans</a>
@@ -565,8 +571,8 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
       <div class="jobs-header">
         <h2 class="section-title" id="jobs-h">Recent jobs in <span>Nigeria</span></h2>
         <div class="jobs-header-cta">
-          <span class="jobs-total">Showing <strong><?= min(count($jobs), 8) ?></strong> of <strong class="live-count" data-count="<?= $activeJobsCount ?? 0 ?>"><?= number_format($activeJobsCount ?? 0) ?></strong>+ live jobs</span>
-          <a href="<?= base_url('jobs') ?>" class="btn-m btn-m-outline">All featured jobs →</a>
+          <span class="jobs-total">Showing <strong><?= min(count($jobs), 8) ?></strong> of <strong class="live-count" data-count="<?= $activeJobsCount ?? 0 ?>" id="jobs-total-count"><?= number_format($activeJobsCount ?? 0) ?></strong>+ live jobs</span>
+          <a href="<?= base_url('jobs') ?>" class="btn btn-outline">All featured jobs →</a>
         </div>
       </div>
       <p class="section-sub">Top companies are actively hiring. Don't miss your window.</p>
@@ -578,6 +584,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               $coName = !empty($job->anonymous) ? 'Confidential Employer' : ($job->employer_name ?? 'Company');
               $coLogo = !empty($job->anonymous) ? base_url('images/favicon.png') : resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company');
               $timeAgo = time_ago($job->created_at);
+              $isSaved = in_array((int)$job->id, $savedJobIds ?? []);
           ?>
             <article class="job-card <?= $isFeatured ? 'job-card--featured' : '' ?>" aria-label="<?= esc($job->title) ?> – Jobs in Nigeria">
               <?php if ($isFeatured): ?>
@@ -623,9 +630,9 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                 </span>
               </div>
               <div class="job-actions">
-                <a href="<?= base_url('job/view/' . $job->id) ?>" class="btn-m btn-m-primary">Quick apply</a>
-                <button class="save-btn" data-job-id="<?= $job->id ?>" aria-label="Save job" data-saved="false">
-                  <svg aria-hidden="true"><use href="#i-bookmark"/></svg> Save
+                <a href="<?= base_url('job/view/' . $job->id) ?>" class="btn btn-primary">Quick apply</a>
+                <button class="save-btn" data-job-id="<?= $job->id ?>" aria-label="<?= $isSaved ? 'Job saved — click to remove' : 'Save job' ?>" data-saved="<?= $isSaved ? 'true' : 'false' ?>">
+                  <svg aria-hidden="true"><use href="<?= $isSaved ? '#i-bookmark-fill' : '#i-bookmark' ?>"/></svg> <?= $isSaved ? 'Saved' : 'Save' ?>
                 </button>
               </div>
             </article>
@@ -639,13 +646,23 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
     </div>
   </section>
 
+  <!-- Google AdSense Unit (Reference Layout) -->
+  <aside class="ad-section" aria-label="Advertisement">
+    <div class="ad-slot">
+      <div class="ad-unit">
+        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3464186884176173" data-ad-slot="6229476516" data-ad-format="auto" data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
+    </div>
+  </aside>
+
   <!-- ========== 3. BROWSE BY CATEGORY ========== -->
   <section class="section hiw-bg" id="categories" aria-labelledby="cat-h">
     <div class="container">
       <p class="section-label"><svg aria-hidden="true"><use href="#i-bag"/></svg> Find your field</p>
       <div class="jobs-header">
         <h2 class="section-title" id="cat-h">Browse jobs by <span>category</span></h2>
-        <a href="<?= base_url('jobs') ?>" class="btn-m btn-m-outline">All categories →</a>
+        <a href="<?= base_url('jobs') ?>" class="btn btn-outline">All categories →</a>
       </div>
       <p class="section-sub">Explore opportunities across every industry in Nigeria — from technology to oil &amp; gas, healthcare, and beyond.</p>
       
@@ -739,7 +756,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
       <p class="section-label"><svg aria-hidden="true"><use href="#i-cap"/></svg> Upskill &amp; certify</p>
       <div class="jobs-header">
         <h2 class="section-title" id="train-h">Learn new skills &amp; earn <span>instant certificates</span></h2>
-        <a href="<?= base_url('training') ?>" class="btn-m btn-m-outline">Browse courses →</a>
+        <a href="<?= base_url('training') ?>" class="btn btn-outline">Browse courses →</a>
       </div>
       <p class="section-sub">Industry-relevant courses — paid courses come with an employer-recognised certificate. Learn at your own pace.</p>
       
@@ -781,7 +798,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                   <span class="course-price <?= $isPaid ? 'course-price--paid' : 'course-price--free' ?>">
                     <?= $isPaid ? '₦' . number_format($c->price) : 'Free' ?>
                   </span>
-                  <a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">
+                  <a href="<?= base_url('training') ?>" class="btn btn-primary btn-sm">
                     <?= $isPaid ? 'Enrol now' : 'Enrol free' ?>
                   </a>
                 </div>
@@ -789,10 +806,10 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
             </div>
           <?php endforeach; ?>
         <?php else: ?>
-          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb"><img class="thumb-img" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=240&fit=crop" alt="Data Analysis with Excel &amp; Python course thumbnail" loading="lazy"></div><div class="course-body"><h3 class="course-title">Data Analysis with Excel &amp; Python</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 8 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol free</a></div></div></div>
-          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-purple"><svg aria-hidden="true"><use href="#i-mega"/></svg></div><div class="course-body"><h3 class="course-title">Digital Marketing Fundamentals</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 6 hours</span><span><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span></div></div><div class="course-footer"><span class="course-cert"><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span><div class="course-price-row"><span class="course-price course-price--paid">₦15,000</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol now</a></div></div></div>
-          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-green"><svg aria-hidden="true"><use href="#i-bag"/></svg></div><div class="course-body"><h3 class="course-title">Project Management Essentials</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 10 hours</span><span><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span></div></div><div class="course-footer"><span class="course-cert"><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span><div class="course-price-row"><span class="course-price course-price--paid">₦25,000</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol now</a></div></div></div>
-          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-orange"><svg aria-hidden="true"><use href="#i-lock"/></svg></div><div class="course-body"><h3 class="course-title">Cybersecurity for Beginners</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 12 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn-m btn-m-primary btn-m-sm">Enrol free</a></div></div></div>
+          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb"><img class="thumb-img" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=240&fit=crop" alt="Data Analysis with Excel &amp; Python course thumbnail" loading="lazy"></div><div class="course-body"><h3 class="course-title">Data Analysis with Excel &amp; Python</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 8 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn btn-primary btn-sm">Enrol free</a></div></div></div>
+          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-purple"><svg aria-hidden="true"><use href="#i-mega"/></svg></div><div class="course-body"><h3 class="course-title">Digital Marketing Fundamentals</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 6 hours</span><span><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span></div></div><div class="course-footer"><span class="course-cert"><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span><div class="course-price-row"><span class="course-price course-price--paid">₦15,000</span><a href="<?= base_url('training') ?>" class="btn btn-primary btn-sm">Enrol now</a></div></div></div>
+          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-green"><svg aria-hidden="true"><use href="#i-bag"/></svg></div><div class="course-body"><h3 class="course-title">Project Management Essentials</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 10 hours</span><span><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span></div></div><div class="course-footer"><span class="course-cert"><svg aria-hidden="true"><use href="#i-cap"/></svg> Certificate</span><div class="course-price-row"><span class="course-price course-price--paid">₦25,000</span><a href="<?= base_url('training') ?>" class="btn btn-primary btn-sm">Enrol now</a></div></div></div>
+          <div class="course-card"><span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span><div class="course-thumb thumb-orange"><svg aria-hidden="true"><use href="#i-lock"/></svg></div><div class="course-body"><h3 class="course-title">Cybersecurity for Beginners</h3><div class="course-meta"><span><svg aria-hidden="true"><use href="#i-clock"/></svg> 12 hours</span><span><svg aria-hidden="true"><use href="#i-book"/></svg> Beginner</span></div></div><div class="course-footer"><div class="course-price-row"><span class="course-price course-price--free">Free</span><a href="<?= base_url('training') ?>" class="btn btn-primary btn-sm">Enrol free</a></div></div></div>
         <?php endif; ?>
       </div>
     </div>
@@ -857,7 +874,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
           <svg aria-hidden="true"><use href="#i-mail"/></svg>
           <input id="news-email" type="email" name="email" placeholder="Enter your email" required autocomplete="email">
         </div>
-        <button type="submit" class="btn-m btn-m-primary">Subscribe</button>
+        <button type="submit" class="btn btn-primary">Subscribe</button>
       </form>
     </div>
   </section>
@@ -873,7 +890,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
             <p class="referral-band-sub">Sign up, share your link, and earn 10% every time someone you refer makes their first payment. Earnings go to your wallet and can be spent on JobberRecruit services (wallet funds are non-withdrawable).</p>
           </div>
         </div>
-        <a href="<?= base_url('register') ?>" class="btn-m btn-m-accent referral-band-cta"><svg aria-hidden="true"><use href="#i-gift"/></svg> Start earning</a>
+        <a href="<?= base_url('register') ?>" class="btn btn-accent referral-band-cta"><svg aria-hidden="true"><use href="#i-gift"/></svg> Start earning</a>
       </div>
     </div>
   </section>
@@ -890,7 +907,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">Can employers post jobs for free on JobberRecruit?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Yes. Employers can post their first job listing for free. Premium plans offer additional visibility and featured placements. Access to the verified candidate database is a separate paid product and is not included in premium plans. Visit our Pricing page for full details.</p></div></details>
         <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">How does the JobberRecruit referral programme work?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Share your unique referral link with friends, candidates, or employers. When someone you referred makes their first qualifying payment, you instantly receive 10% commission added to your JobberRecruit wallet. There is no limit on referrals. Please note: all wallet funds — whether earned through referrals or added by you — are non-withdrawable and non-refundable. Wallet balance cannot be cashed out, but can be used to pay for JobberRecruit services such as job postings, premium plans, and certificates.</p></div></details>
       </div>
-      <div class="faq-more"><a href="<?= base_url('faq') ?>" class="btn-m btn-m-outline">See all FAQs →</a></div>
+      <div class="faq-more"><a href="<?= base_url('faq') ?>" class="btn btn-outline">See all FAQs →</a></div>
     </div>
   </section>
 
@@ -909,7 +926,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
             <li><svg aria-hidden="true"><use href="#i-check"/></svg> Smart job alerts</li>
             <li><svg aria-hidden="true"><use href="#i-check"/></svg> Training &amp; certificates</li>
           </ul>
-          <a href="<?= base_url('register') ?>" class="btn-m btn-m-accent">Create free account →</a>
+          <a href="<?= base_url('register') ?>" class="btn btn-accent">Create free account →</a>
         </div>
         <div class="cta-panel light">
           <div class="cta-ic"><svg aria-hidden="true"><use href="#i-rocket"/></svg></div>
@@ -922,11 +939,14 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
             <li class="cta-list-paid"><svg aria-hidden="true"><use href="#i-check"/></svg> Verified candidate database <span class="cta-tag">Paid</span></li>
             <li><svg aria-hidden="true"><use href="#i-check"/></svg> Referral rewards</li>
           </ul>
-          <a href="<?= base_url('employer/post-job') ?>" class="btn-m btn-m-primary">Post a job free →</a>
+          <a href="<?= base_url('employer/post-job') ?>" class="btn btn-primary">Post a job free →</a>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- Back to top button -->
+  <button id="btt" aria-label="Back to top" title="Back to top"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
 
 </main>
 <?= $this->endSection() ?>
@@ -1027,12 +1047,88 @@ document.querySelectorAll('.save-btn').forEach(btn => {
   if (!isLoggedIn()) return;
   const pending = new URLSearchParams(window.location.search).get('save');
   if (!pending) return;
-  const btn = document.querySelector('.save-btn[data-job-id="' + pending + '"');
+  const btn = document.querySelector('.save-btn[data-job-id="' + pending + '"]');
   if (btn && btn.dataset.saved !== 'true') {
     renderSaveBtn(btn, true);
     persistSave(pending, true).catch(() => renderSaveBtn(btn, false));
   }
 })();
+
+const btt = document.getElementById('btt');
+if (btt) {
+  window.addEventListener('scroll', () => { btt.classList.toggle('show', window.scrollY > 400); }, { passive: true });
+  btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+const SEED_JOBS = [
+  { role: '2026 AP Graduate Trainee Programme', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
+  { role: 'HR/People & Operations Manager', company: 'Confidential', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
+  { role: 'Social Media Manager & Creative Assistant', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
+  { role: 'Sales and Procurement Manager', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: false },
+  { role: 'NAE Postgraduate Scholarship', company: 'Confidential', location: 'Port Harcourt', url: '<?= base_url('jobs') ?>', isNew: false },
+  { role: 'Administrative Officer', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: false },
+  { role: 'Halliburton 2026 Graduate Internship', company: 'Jobber Recruit LTD', location: 'Port Harcourt', url: '<?= base_url('jobs') ?>', isNew: false },
+  { role: 'Multiple Vacancies — Finance, HR & Supply Chain', company: 'Renaissance Africa Energy', location: 'Nigeria', url: '<?= base_url('jobs') ?>', isNew: false }
+];
+
+function tickerItem(j) {
+  const newTag = j.isNew ? '<span class="ticker-new">NEW</span>' : '';
+  return '<a class="ticker-item" href="' + j.url + '">' + newTag + '<span class="ticker-role">' + j.role + '</span><span class="ticker-co">· ' + j.company + '</span><span class="ticker-loc"><svg aria-hidden="true"><use href="#i-pin"/></svg>' + j.location + '</span></a>';
+}
+
+function renderTicker(jobs) {
+  const track = document.getElementById('ticker-track');
+  if (!track || !jobs.length) return;
+  const html = jobs.map(tickerItem).join('');
+  track.innerHTML = html + html;
+}
+
+function initTicker() {
+  const track = document.getElementById('ticker-track');
+  if (track && track.children.length === 0) {
+    renderTicker(SEED_JOBS);
+  }
+  fetch('<?= base_url('api/latest-jobs') ?>')
+    .then(r => r.ok ? r.json() : null)
+    .then(data => { if (Array.isArray(data) && data.length) renderTicker(data); })
+    .catch(() => {});
+}
+
+function initLiveCounts() {
+  const fmt = n => Number(n).toLocaleString('en-NG');
+  document.querySelectorAll('.live-count[data-count]').forEach(el => {
+    el.textContent = fmt(el.dataset.count);
+  });
+  fetch('<?= base_url('api/job-counts') ?>')
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      if (data.total !== undefined) {
+        const t = document.getElementById('jobs-total-count');
+        if (t) t.textContent = fmt(data.total);
+      }
+      if (data.categories) {
+        document.querySelectorAll('a[href*="category="]').forEach(link => {
+          const m = link.href.match(/category=([^&]+)/);
+          if (!m) return;
+          const el = link.querySelector('.live-count');
+          if (el && data.categories[m[1]] !== undefined) el.textContent = fmt(data.categories[m[1]]);
+        });
+      }
+      if (data.locations) {
+        document.querySelectorAll('a[href*="location="]').forEach(link => {
+          const m = link.href.match(/location=([^&]+)/);
+          if (!m) return;
+          const el = link.querySelector('.live-count');
+          if (el && data.locations[m[1]] !== undefined) el.textContent = fmt(data.locations[m[1]]);
+        });
+      }
+    })
+    .catch(() => {});
+}
+
+initTicker();
+initLiveCounts();
 </script>
 
 <!-- SVG Icon Sprites -->
