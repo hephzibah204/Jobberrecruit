@@ -651,7 +651,9 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
     <div class="ad-slot">
       <div class="ad-unit">
         <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3464186884176173" data-ad-slot="6229476516" data-ad-format="auto" data-full-width-responsive="true"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        <script>
+          try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+        </script>
       </div>
     </div>
   </aside>
@@ -945,9 +947,6 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
     </div>
   </section>
 
-  <!-- Back to top button -->
-  <button id="btt" aria-label="Back to top" title="Back to top"><svg aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
-
 </main>
 <?= $this->endSection() ?>
 
@@ -1053,12 +1052,6 @@ document.querySelectorAll('.save-btn').forEach(btn => {
     persistSave(pending, true).catch(() => renderSaveBtn(btn, false));
   }
 })();
-
-const btt = document.getElementById('btt');
-if (btt) {
-  window.addEventListener('scroll', () => { btt.classList.toggle('show', window.scrollY > 400); }, { passive: true });
-  btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-}
 
 const SEED_JOBS = [
   { role: '2026 AP Graduate Trainee Programme', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
