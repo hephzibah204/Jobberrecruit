@@ -1,4 +1,5 @@
 <?= $this->extend('templates/base') ?>
+<?= $this->section('homepage_design') ?>reference<?= $this->endSection() ?>
 
 <?= $this->section('schema') ?>
 <script type="application/ld+json">
@@ -49,395 +50,7 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('styles') ?>
-<style>
-/* ============================================================
-   DESIGN SYSTEM — BRAND COLORS ONLY
-   ⚠️ IMPORTANT: Reference/mockup design files may use
-   different hex values (e.g. #0D609E, #ED9020). NEVER copy
-   those hexes directly — always use the BRAND COLORS below:
-     Blue   → var(--brand)  (primary)
-     Orange → var(--accent)  (accent)
-   ============================================================ */
-:root {
-  --brand: #0D609E;
-  --brand-dark: #0A4D7E;
-  --brand-deep: #07304F;
-  --brand-light: #E6F0F9;
-  --accent: #F08F1A;
-  --accent-dark: #C8750E;
-  --text: #141926;
-  --muted: #5b6577;
-  --bg: #f5f7fb;
-  --white: #ffffff;
-  --border: #e2e8f2;
-  --success: #16a34a;
-  --warning-color: #F59E0B;
-  --radius: 10px; 
-  --shadow: 0 2px 14px rgba(10,47,87,.08); 
-  --shadow-lg: 0 14px 40px rgba(10,47,87,.16); 
-  --transition: .18s ease;
-}
-
-*, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-/* Page-level background: the reference uses #f5f7fb, not white */
-html, body { background: #f5f7fb; }
-main, .section, .container, .jobs-header, .jobs-grid { background-color: transparent; }
-.section { background-color: #f5f7fb; }
-.section.hiw-bg, .section.faq-bg, .section.training-bg, .section.testi-bg { background-color: #ffffff; }
-/* All surface text uses the dark text color by default; only the few
-   elements that live INSIDE dark surfaces stay light. .cta-panel.blue
-   is the only light-on-dark text in the homepage. */
-.section-title, .job-title, .cat-name, .loc-name, .step-title, .course-title, .testi-name, .feat-name {
-  color: var(--text);
-}
-.cta-panel.blue h2, .cta-panel.blue p { color: #ffffff; }
-.cta-panel.light h2 { color: #141926; }
-.section-title span { color: var(--brand); }
-.section-sub { color: #5b6577; }
-.job-card { background: #ffffff; }
-.job-card--featured { background: linear-gradient(180deg, #fffaf0, #fff); }
-.cat-card, .loc-card, .feat-card, .step-card, .course-card, .testi-card, .ai-card.light, .cta-panel.light, details.faq-item { background: #ffffff; }
-.loc-card.featured { background: var(--brand); }
-.step-card { background: #f5f7fb; }
-
-/* Custom homepage style classes using mockup mapping */
-.section { padding: 76px 0; background-color: var(--bg); }
-.section.hiw-bg, .section.faq-bg, .section.training-bg, .section.testi-bg { background-color: var(--white); }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.text-center { text-align: center; }
-.ic { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
-.section-label { display: inline-flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand); background: var(--brand-light); padding: 5px 13px; border-radius: 20px; margin-bottom: 14px; }
-.section-label svg { width: 13px; height: 13px; }
-.section-title { font-size: clamp(1.6rem, 2.9vw, 2.25rem); font-weight: 800; line-height: 1.15; margin-bottom: 12px; color: var(--text); }
-.section-title span { color: var(--brand); }
-.section-sub { color: var(--muted); font-size: .95rem; max-width: 560px; }
-
-/* Buttons — Reference uses .btn, current codebase uses .btn-m.
-   Both selectors are listed so either works, matching the reference's
-   exact visual output (padding, gap, radius, font, transition). */
-.btn, .btn-m { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 22px; border-radius: 8px; font-family: 'Inter',sans-serif; font-size: .88rem; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: var(--transition); text-decoration: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-.btn svg, .btn-m svg { width: 16px; height: 16px; }
-.btn-primary, .btn-m-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-.btn-primary:hover, .btn-m-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); text-decoration: none; color: #fff; }
-.btn-outline, .btn-m-outline { background: transparent; color: var(--brand); border-color: var(--border); }
-.btn-outline:hover, .btn-m-outline:hover { background: var(--brand); color: #fff; border-color: var(--brand); text-decoration: none; }
-.btn-accent, .btn-m-accent { background: var(--accent); color: var(--brand-deep); border-color: var(--accent); }
-.btn-accent:hover, .btn-m-accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--brand-deep); text-decoration: none; }
-.btn-white, .btn-m-white { background: var(--white); color: var(--brand); border-color: var(--white); }
-.btn-white:hover, .btn-m-white:hover { background: var(--brand-light); text-decoration: none; }
-.btn-sm, .btn-m-sm { padding: 8px 14px; font-size: .78rem; }
-.btn-lg, .btn-m-lg { padding: 14px 32px; font-size: .95rem; }
-
-/* Badges */
-.badge-featured { background: var(--accent); color: var(--brand-deep); font-size: .68rem; font-weight: 700; padding: 4px 11px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; letter-spacing: .03em; }
-.badge-featured svg { width: 12px; height: 12px; }
-.badge-verified { background: var(--brand); color: #fff; font-size: .68rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--brand); }
-.badge-verified svg { width: 12px; height: 12px; }
-
-/* Hero */
-.hero { background: radial-gradient(ellipse 70% 60% at 82% 20%, rgba(240,143,26,.16) 0%, transparent 55%), radial-gradient(ellipse 80% 70% at 10% 90%, rgba(13,96,158,.34) 0%, transparent 55%), linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-dark) 55%, var(--brand) 100%); color: #fff; padding: 64px 0 0; position: relative; overflow: hidden; }
-.hero-grid-bg { position: absolute; inset: 0; pointer-events: none; opacity: .5; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 46px 46px; -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 30%, transparent 80%); }
-.hero-motif { position: absolute; top: 46%; right: -50px; transform: translateY(-50%); width: min(500px, 44vw); height: auto; pointer-events: none; z-index: 0; opacity: .55; }
-.hero-motif .ring { animation: motif-float 7s ease-in-out infinite; transform-origin: center; }
-.hero-motif .head { animation: motif-bob 7s ease-in-out infinite; transform-origin: center; }
-.hero-motif .scan { transform-origin: 50% 50%; }
-@keyframes motif-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@keyframes motif-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-@media (max-width: 900px) { .hero-motif { top: -30px; right: -70px; transform: none; width: 240px; opacity: .28; } }
-@media (max-width: 580px) { .hero-motif { top: -24px; right: -80px; width: 190px; opacity: .22; } }
-.hero-inner { position: relative; z-index: 1; padding-bottom: 44px; }
-#hero-seeker:not([hidden]), #hero-employer:not([hidden]) { animation: hero-fade .32s ease; }
-@keyframes hero-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.hero-tabs { display: inline-flex; background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; padding: 4px; margin-bottom: 26px; }
-.hero-tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 18px; border-radius: 7px; border: none; background: transparent; color: rgba(255,255,255,.92); font-family: 'Inter',sans-serif; font-size: .83rem; font-weight: 600; cursor: pointer; transition: var(--transition); min-height: 40px; }
-.hero-tabs button svg { width: 15px; height: 15px; }
-.hero-tabs button:not(.active):hover { background: rgba(255,255,255,.12); }
-.hero-tabs button.active { background: #fff; color: var(--brand); }
-.hero-tag { display: inline-flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
-.hero-tag svg { width: 14px; height: 14px; }
-.hero h1 { font-size: clamp(1.9rem, 4.8vw, 3.1rem); font-weight: 800; line-height: 1.1; margin-bottom: 16px; color: #fff; }
-.hero h1 em { font-style: normal; color: var(--accent); }
-.hero-sub { font-size: 1rem; color: rgba(255,255,255,.9); max-width: 560px; margin-bottom: 28px; }
-.hero-trust { display: flex; flex-wrap: wrap; gap: 18px; font-size: .82rem; margin-bottom: 28px; opacity: .94; }
-.hero-trust span { display: flex; align-items: center; gap: 6px; }
-.hero-trust svg { width: 15px; height: 15px; color: var(--accent); }
-.search-card { background: #fff; border-radius: 12px; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; box-shadow: var(--shadow-lg); max-width: 820px; }
-.search-field { position: relative; flex: 1 1 150px; display: flex; align-items: center; }
-.search-field svg { position: absolute; left: 12px; width: 17px; height: 17px; color: var(--muted); pointer-events: none; }
-.search-card input, .search-card select { width: 100%; border: 1px solid var(--border); border-radius: 7px; padding: 11px 14px 11px 38px; font-family: 'Inter',sans-serif; font-size: 1rem; color: var(--text); background: var(--bg); outline: none; appearance: none; -webkit-appearance: none; min-height: 46px; }
-.search-card select { padding-left: 38px; }
-.search-card input:focus, .search-card select:focus { border-color: var(--brand); background: var(--white); }
-.search-card > button { flex: 0 0 auto; padding: 11px 24px; background: var(--accent); color: var(--brand-deep); border: none; border-radius: 7px; font-family: 'Inter',sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: var(--transition); min-height: 46px; display: inline-flex; align-items: center; gap: 7px; }
-.search-card > button svg { width: 17px; height: 17px; }
-.search-card > button:hover { background: var(--accent-dark); }
-.trending { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; font-size: .8rem; }
-.trending strong { opacity: .8; letter-spacing: .04em; }
-.trending a { background: rgba(255,255,255,.12); color: #fff; padding: 5px 12px; border-radius: 20px; font-weight: 500; border: 1px solid rgba(255,255,255,.2); transition: var(--transition); min-height: 32px; display: inline-flex; align-items: center; }
-.trending a:hover { background: rgba(255,255,255,.26); text-decoration: none; }
-.hero-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
-.hero-pills a { background: rgba(255,255,255,.09); color: #fff; padding: 8px 13px; border-radius: 8px; font-size: .8rem; font-weight: 500; border: 1px solid rgba(255,255,255,.16); transition: var(--transition); text-decoration: none; min-height: 36px; display: inline-flex; align-items: center; gap: 7px; }
-.hero-pills a svg { width: 15px; height: 15px; color: var(--accent); }
-.hero-pills a:hover { background: rgba(255,255,255,.2); }
-.hero-employer-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 28px; }
-.hero-employer-h2 { font-size: clamp(1.9rem, 4.8vw, 3.1rem); font-weight: 800; line-height: 1.1; margin-bottom: 16px; color: #fff; }
-.hero-employer-h2 em { font-style: normal; color: var(--accent); }
-
-/* Ticker */
-.ticker { position: relative; z-index: 1; background: rgba(10,47,87,.55); border-top: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); overflow: hidden; display: flex; align-items: stretch; max-width: 100%; width: 100%; }
-.ticker-label { flex-shrink: 0; display: flex; align-items: center; gap: 8px; background: var(--accent); color: var(--brand-deep); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 0 16px; z-index: 2; }
-.ticker-dot { width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px rgba(10,47,87,.55); animation: pulse 1.5s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.72); opacity: .7; } }
-.ticker-viewport { flex: 1 1 0%; min-width: 0; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
-.ticker-track { display: inline-flex; align-items: center; white-space: nowrap; padding: 12px 0; will-change: transform; animation: ticker-scroll 48s linear infinite; }
-.ticker-viewport:hover .ticker-track { animation-play-state: paused; }
-@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.ticker-item { display: inline-flex; align-items: center; gap: 8px; color: rgba(255,255,255,.92); font-size: .82rem; padding: 0 22px; border-right: 1px solid rgba(255,255,255,.1); text-decoration: none; }
-.ticker-item:hover { text-decoration: none; color: #fff; }
-.ticker-item:hover .ticker-role { color: var(--accent); }
-.ticker-role { font-weight: 600; }
-.ticker-co { opacity: .65; }
-.ticker-loc { display: inline-flex; align-items: center; gap: 4px; opacity: .65; font-size: .78rem; }
-.ticker-loc svg { width: 11px; height: 11px; }
-.ticker-new { background: var(--accent); color: var(--brand-deep); font-size: .64rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; letter-spacing: .04em; }
-
-/* Job Card Grid */
-.jobs-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
-.jobs-header-cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.jobs-total { font-size: .82rem; color: var(--muted); }
-.jobs-total strong { color: var(--brand); font-weight: 700; }
-.jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 28px; }
-.job-card { position: relative; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; transition: var(--transition); display: flex; flex-direction: column; gap: 11px; }
-.job-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand); transform: translateY(-3px); }
-.job-card--featured { background: linear-gradient(180deg, rgba(245, 166, 35, 0.05), var(--white)); border-color: rgba(245,166,32,.35); border-left: 3px solid var(--accent); }
-.job-card--featured:hover { border-color: var(--accent); }
-.job-card .badge-featured { position: absolute; top: -9px; left: 16px; z-index: 2; box-shadow: 0 2px 6px rgba(10,47,87,.18); }
-.job-card--featured { padding-top: 24px; }
-.job-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.job-card-top > div:first-child { min-width: 0; }
-.job-logo { width: 44px; height: 44px; border-radius: 9px; background: var(--brand-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Sora',sans-serif; font-weight: 700; font-size: .9rem; color: var(--brand); flex-shrink: 0; }
-.job-logo img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
-.job-title { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text); }
-.job-company { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
-.job-company-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-
-.verified-check { position: relative; display: inline-flex; align-items: center; justify-content: center; color: var(--brand); flex-shrink: 0; background: none; border: none; padding: 0 0 0 1px; margin: 0; cursor: pointer; line-height: 0; vertical-align: middle; }
-.verified-check svg { width: 14px; height: 14px; pointer-events: none; }
-.verified-check:hover { color: var(--brand-dark); }
-.verified-tip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px); background: var(--white); color: var(--text); font-size: .72rem; font-weight: 600; line-height: 1.4; letter-spacing: 0; white-space: nowrap; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(10,47,87,.16); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s ease, transform .16s ease; z-index: 40; display: inline-flex; align-items: center; gap: 6px; }
-.verified-tip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--white); filter: drop-shadow(0 1px 0 var(--border)); }
-.verified-tip svg { width: 13px; height: 13px; color: var(--success); }
-.verified-tip strong { font-weight: 700; }
-.verified-check.open .verified-tip, .verified-check:hover .verified-tip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
-
-.job-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: .78rem; color: var(--muted); }
-.job-meta span { display: inline-flex; align-items: center; gap: 5px; }
-.job-meta svg { width: 13px; height: 13px; color: var(--muted); }
-.job-salary { font-size: .92rem; font-weight: 700; color: var(--accent-dark); }
-.job-salary-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.job-actions { display: flex; gap: 8px; margin-top: 4px; }
-.job-actions .btn-m { flex: 1; padding: 10px; font-size: .82rem; min-height: 44px; }
-.save-btn { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 13px; cursor: pointer; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-family: 'Inter',sans-serif; transition: var(--transition); min-height: 44px; }
-.save-btn svg { width: 15px; height: 15px; }
-.save-btn:hover { border-color: var(--brand); color: var(--brand); }
-.save-btn[data-saved="true"] { color: var(--success); border-color: var(--success); }
-
-/* Category Grid */
-.cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 28px; }
-.cat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; text-align: center; text-decoration: none; display: block; transition: var(--transition); }
-.cat-card:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-3px); text-decoration: none; }
-.cat-icon { width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 12px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; }
-.cat-icon svg { width: 23px; height: 23px; }
-.cat-card:hover .cat-icon { background: var(--brand); color: #fff; }
-.cat-name { font-weight: 700; font-size: .88rem; color: var(--text); margin-bottom: 3px; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4em; }
-.cat-count { font-size: .76rem; color: var(--muted); }
-
-/* Location Grid */
-.loc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 28px; }
-.loc-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 14px; text-align: center; text-decoration: none; transition: var(--transition); display: block; }
-.loc-card:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-3px); text-decoration: none; }
-.loc-card.featured { background: var(--brand); border-color: var(--brand); }
-.loc-ic { width: 38px; height: 38px; margin: 0 auto 8px; border-radius: 10px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; }
-.loc-ic svg { width: 19px; height: 19px; }
-.loc-card.featured .loc-ic { background: rgba(255,255,255,.16); color: #fff; }
-.loc-name { font-weight: 700; font-size: .85rem; color: var(--text); }
-.loc-count { font-size: .74rem; color: var(--muted); margin-top: 2px; }
-.loc-card.featured .loc-name, .loc-card.featured .loc-count { color: #fff; }
-
-/* How It Works Steps */
-.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; margin-top: 40px; counter-reset: step; }
-.step-card { position: relative; border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 24px 26px; background: var(--bg); transition: var(--transition); }
-.step-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand); transform: translateY(-3px); background: var(--white); }
-.step-num { counter-increment: step; font-family: 'Sora',sans-serif; font-size: 2.6rem; font-weight: 900; color: var(--brand-dark); line-height: 1; margin-bottom: 4px; letter-spacing: -.03em; }
-.step-num::before { content: counter(step, decimal-leading-zero); }
-.step-card:last-child .step-num { color: var(--accent-dark); }
-.step-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; margin: -22px 0 14px auto; }
-.step-card:last-child .step-ic { background: var(--accent); color: var(--brand-deep); }
-.step-ic svg { width: 20px; height: 20px; }
-.step-title { font-weight: 700; font-size: .98rem; margin-bottom: 8px; color: var(--text); }
-.step-desc { font-size: .83rem; color: var(--muted); line-height: 1.65; }
-
-/* Platform Features Grid */
-.feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 28px; }
-.feat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 20px; display: flex; gap: 14px; align-items: flex-start; }
-.feat-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; }
-.feat-icon svg { width: 21px; height: 21px; }
-.feat-name { font-weight: 700; font-size: .9rem; margin-bottom: 3px; color: var(--text); }
-.feat-desc { font-size: .8rem; color: var(--muted); line-height: 1.55; }
-.ai-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 18px; }
-.ai-card { border-radius: var(--radius); padding: 30px 26px; display: flex; flex-direction: column; }
-.ai-card.dark { background: linear-gradient(150deg, var(--brand-deep), var(--brand)); color: #fff; }
-.ai-card.light { background: var(--white); border: 1px solid var(--border); color: var(--text); }
-.ai-icon { width: 50px; height: 50px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; background: var(--brand-light); color: var(--brand); }
-.ai-card.dark .ai-icon { background: rgba(255,255,255,.12); color: #fff; }
-.ai-icon svg { width: 26px; height: 26px; }
-.ai-card h3 { font-size: 1.08rem; font-weight: 700; margin-bottom: 8px; }
-.ai-card p { font-size: .85rem; margin-bottom: 18px; flex: 1; }
-.ai-card.dark p { opacity: .86; }
-.ai-card.light p { color: var(--muted); }
-.ai-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 700; letter-spacing: .03em; padding: 4px 11px; border-radius: 20px; margin-bottom: 14px; width: fit-content; }
-.ai-badge svg { width: 12px; height: 12px; }
-.ai-badge--ai { background: var(--brand-light); color: var(--brand-dark); }
-.ai-badge--human { background: #ecfdf5; color: #166534; }
-.ai-card.dark .ai-badge--ai { background: rgba(255,255,255,.15); color: #fff; }
-
-/* Course Card Teasers */
-.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-top: 28px; }
-.course-card { position: relative; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--white); transition: var(--transition); display: flex; flex-direction: column; }
-.course-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
-.course-featured-badge { position: absolute; top: 10px; left: 10px; z-index: 3; display: inline-flex; align-items: center; gap: 5px; background: var(--accent); color: var(--brand-deep); font-size: .64rem; font-weight: 800; letter-spacing: .03em; padding: 4px 9px; border-radius: 20px; box-shadow: 0 2px 6px rgba(10,47,87,.22); }
-.course-featured-badge svg { width: 11px; height: 11px; }
-.course-thumb { height: 110px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.92); position: relative; overflow: hidden; }
-.course-thumb svg { width: 42px; height: 42px; }
-.course-thumb img.thumb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.thumb-blue { background: linear-gradient(135deg, var(--brand-deep), var(--brand)); }
-.thumb-purple { background: linear-gradient(135deg, var(--brand-dark), #1d6fb8); }
-.thumb-green { background: linear-gradient(135deg, var(--brand), var(--accent-dark)); }
-.thumb-orange { background: linear-gradient(135deg, var(--brand-deep), var(--accent)); }
-.course-body { padding: 18px; flex: 1; }
-.course-title { font-weight: 700; font-size: .9rem; margin-bottom: 6px; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; color: var(--text); }
-.course-meta { font-size: .75rem; color: var(--muted); display: flex; gap: 14px; }
-.course-meta span { display: inline-flex; align-items: center; gap: 5px; }
-.course-meta svg { width: 13px; height: 13px; }
-.course-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-.course-cert { font-size: .72rem; color: var(--brand); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; background: var(--brand-light); padding: 3px 9px; border-radius: 20px; }
-.course-cert svg { width: 13px; height: 13px; }
-.course-price-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.course-price { font-size: .9rem; font-weight: 800; }
-.course-price--free { color: var(--accent-dark); }
-.course-price--paid { color: var(--brand); }
-
-/* Testimonials */
-.testi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 36px; }
-.testi-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
-.testi-stars { color: var(--accent); display: flex; gap: 2px; margin-bottom: 14px; }
-.testi-stars svg { width: 16px; height: 16px; }
-.testi-text { font-size: .88rem; color: var(--text); line-height: 1.75; margin-bottom: 16px; }
-.testi-author { display: flex; align-items: center; gap: 11px; }
-.testi-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #fff; font-family: 'Sora',sans-serif; font-weight: 600; font-size: .82rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.testi-name { font-weight: 700; font-size: .85rem; color: var(--text); }
-.testi-role { font-size: .74rem; color: var(--muted); }
-
-/* Referral Band */
-.referral-band { background: linear-gradient(120deg, #fffbeb, #fef3c7); border: 1px solid #fde68a; border-radius: 14px; padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
-.referral-band-text { display: flex; align-items: center; gap: 18px; flex: 1 1 420px; }
-.ref-ic { width: 46px; height: 46px; border-radius: 12px; background: var(--accent); color: var(--brand-deep); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.ref-ic svg { width: 22px; height: 22px; }
-.ref-ic--lg { width: 54px; height: 54px; }
-.ref-ic--lg svg { width: 26px; height: 26px; }
-.referral-band-title { font-family: 'Sora',sans-serif; font-size: clamp(1.15rem, 2vw, 1.45rem); font-weight: 800; line-height: 1.25; letter-spacing: -.01em; margin-bottom: 4px; color: var(--text); }
-.referral-band-title span { color: var(--accent-dark); }
-.referral-band-sub { font-size: .86rem; color: var(--muted); max-width: 520px; }
-.referral-band-cta { flex-shrink: 0; }
-
-/* Newsletter */
-.newsletter-band { background: linear-gradient(120deg, var(--brand-light) 0%, #dce9f8 100%); padding: 40px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.newsletter-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
-.newsletter-text { flex: 1 1 380px; }
-.newsletter-text .section-label { margin-bottom: 10px; }
-.newsletter-title { font-family: 'Sora',sans-serif; font-size: clamp(1.25rem, 2.2vw, 1.6rem); font-weight: 800; line-height: 1.2; letter-spacing: -.02em; margin-bottom: 8px; color: var(--text); }
-.newsletter-title span { color: var(--brand); }
-.newsletter-sub { color: var(--muted); font-size: .88rem; max-width: 460px; }
-.newsletter-form { flex: 0 1 420px; display: flex; gap: 8px; }
-.newsletter-field { position: relative; flex: 1; display: flex; align-items: center; }
-.newsletter-field svg { position: absolute; left: 13px; width: 17px; height: 17px; color: var(--muted); pointer-events: none; }
-.newsletter-field input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px 12px 38px; font-family: 'Inter',sans-serif; font-size: 1rem; color: var(--text); background: var(--white); outline: none; min-height: 46px; }
-.newsletter-field input:focus { border-color: var(--brand); }
-.newsletter-form .btn-m { flex: 0 0 auto; min-height: 46px; padding: 12px 24px; }
-.newsletter-form .btn-m:hover { background: var(--accent); border-color: var(--accent); color: var(--brand-deep); }
-
-/* FAQ Accordion using details */
-.faq-list { max-width: 760px; margin: 32px auto 0; }
-details.faq-item { border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); margin-bottom: 8px; overflow: hidden; }
-details.faq-item[open] { border-color: var(--brand); }
-details.faq-item summary { padding: 18px 22px; font-weight: 600; font-size: .9rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; user-select: none; min-height: 48px; color: var(--text); }
-details.faq-item summary::-webkit-details-marker { display: none; }
-.faq-chev { flex-shrink: 0; width: 18px; height: 18px; color: var(--brand); transition: transform .2s; }
-details.faq-item[open] .faq-chev { transform: rotate(180deg); }
-.faq-answer { padding: 0 22px 18px; font-size: .87rem; color: var(--muted); line-height: 1.75; }
-.faq-more { text-align: center; margin-top: 24px; }
-
-/* Dual Call to Action panels */
-.dual-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.cta-panel { border-radius: 12px; padding: 44px 32px; }
-.cta-panel.blue { background: linear-gradient(150deg, var(--brand-deep), var(--brand)); color: #fff; }
-.cta-panel.light { background: var(--white); color: var(--text); border: 1px solid var(--border); }
-.cta-ic { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-.cta-panel.blue .cta-ic { background: rgba(255,255,255,.14); color: #fff; }
-.cta-panel.light .cta-ic { background: var(--brand-light); color: var(--brand); }
-.cta-ic svg { width: 25px; height: 25px; }
-.cta-panel h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 10px; color: inherit; }
-.cta-panel p { font-size: .87rem; margin-bottom: 22px; }
-.cta-panel.blue p { opacity: .86; }
-.cta-panel.light p { color: var(--muted); }
-.cta-list { list-style: none; margin-bottom: 26px; display: flex; flex-direction: column; gap: 9px; padding-left: 0; }
-.cta-list li { display: flex; align-items: center; gap: 9px; font-size: .85rem; }
-.cta-tag { font-size: .64rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: var(--brand-deep); padding: 1px 7px; border-radius: 20px; margin-left: 2px; }
-.cta-list li svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); }
-
-/* Ad slot — Google AdSense container matching reference spacing */
-.ad-slot { margin: 0 auto; max-width: 1160px; padding: 0 20px; }
-.ad-unit { background: #f0f3f8; border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; overflow: hidden; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.ad-unit::before { content: "Advertisement"; display: block; font-size: .64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; align-self: center; }
-.ad-unit .adsbygoogle { width: 100%; display: block; }
-.ad-section { padding: 28px 0; }
-
-/* Responsive adjustments */
-@media (max-width: 860px) { .nav-links, .nav-actions .btn-outline { display: none; } .hamburger { display: block; } .dual-cta { grid-template-columns: 1fr; } .footer-grid { grid-template-columns: 1fr 1fr; } .cat-grid { grid-template-columns: repeat(2, 1fr); } .ticker-label { padding: 0 12px; font-size: .68rem; } }
-@media (max-width: 580px) {
-  .section { padding: 54px 0; }
-  .search-card { flex-direction: column; }
-  .search-field { flex: 1 1 auto; width: 100%; }
-  .search-card > button { width: 100%; justify-content: center; }
-  .cta-panel { padding: 30px 22px; }
-  .referral-band { flex-direction: column; align-items: flex-start; text-align: left; padding: 22px 20px; gap: 18px; }
-  .referral-band-text { align-items: flex-start; gap: 14px; flex: 1 1 auto; width: 100%; }
-  .referral-band-cta { width: 100%; justify-content: center; }
-  .hero-tabs { width: 100%; }
-  .hero-tabs button { flex: 1; justify-content: center; padding: 8px 10px; font-size: .78rem; }
-  .hero-trust { gap: 12px; font-size: .78rem; }
-  .jobs-grid { grid-template-columns: 1fr; }
-  .ai-grid { grid-template-columns: 1fr; }
-  .newsletter-form { flex: 1 1 100%; width: 100%; }
-  .cat-grid, .loc-grid { grid-template-columns: repeat(2, 1fr); }
-  .footer-bottom { flex-direction: column; text-align: center; }
-  .footer-links { justify-content: center; }
-  .ticker-label { padding: 0 10px; font-size: .6rem; letter-spacing: .04em; }
-}
-@media (max-width: 380px) { .container { padding: 0 14px; } .nav-logo img { height: 50px; } .cat-grid, .loc-grid { grid-template-columns: repeat(2, 1fr); } .steps-grid, .course-grid { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .ticker-track { animation: none !important; transform: none !important; }
-  .ticker-dot { animation: none !important; }
-  .hero-motif .ring, .hero-motif .head { animation: none !important; }
-}
-
-#btt { position: fixed; bottom: 24px; right: 24px; bottom: max(24px, calc(24px + env(safe-area-inset-bottom, 0px))); width: 46px; height: 46px; border-radius: 50%; background: var(--brand); color: #ffffff; border: none; cursor: pointer; box-shadow: var(--shadow-lg); display: none; align-items: center; justify-content: center; z-index: 900; transition: var(--transition); -webkit-tap-highlight-color: transparent; }
-#btt svg { width: 20px; height: 20px; }
-#btt.show { display: flex; }
-#btt:hover { background: var(--brand-dark); }
-.live-count { font-weight: inherit; color: inherit; }
-</style>
+<link rel="stylesheet" href="<?= base_url('css/homepage.css') ?>?v=<?= @filemtime(FCPATH . 'css/homepage.css') ?: time() ?>">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -510,12 +123,12 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
           <a href="<?= base_url('jobs?q=oil+and+gas') ?>">Oil &amp; Gas</a>
         </div>
         <div class="hero-pills" aria-label="Quick access">
-          <a href="<?= base_url('ai-tools/resume-builder') ?>"><svg aria-hidden="true"><use href="#i-bot"/></svg> AI resume builder</a>
-          <a href="<?= base_url('training/cv-revamp') ?>"><svg aria-hidden="true"><use href="#i-doc"/></svg> CV revamp</a>
+          <a href="<?= base_url('candidate/resumes/build') ?>"><svg aria-hidden="true"><use href="#i-bot"/></svg> AI resume builder</a>
+          <a href="<?= base_url('cv-review') ?>"><svg aria-hidden="true"><use href="#i-doc"/></svg> CV revamp</a>
           <a href="<?= base_url('training') ?>"><svg aria-hidden="true"><use href="#i-cap"/></svg> Instant certificates</a>
-          <a href="<?= base_url('ai-tools/mock-interview') ?>"><svg aria-hidden="true"><use href="#i-mic"/></svg> AI mock interview</a>
+          <a href="<?= base_url('candidate/career-tools/mock-interview') ?>"><svg aria-hidden="true"><use href="#i-mic"/></svg> AI mock interview</a>
           <a href="<?= base_url('job-alerts') ?>"><svg aria-hidden="true"><use href="#i-bell"/></svg> Job alerts</a>
-          <a href="<?= base_url('referral') ?>"><svg aria-hidden="true"><use href="#i-gift"/></svg> Referral rewards</a>
+          <a href="#referral"><svg aria-hidden="true"><use href="#i-gift"/></svg> Referral rewards</a>
         </div>
       </div>
       
@@ -531,7 +144,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
           <a href="<?= base_url('job-ads') ?>"><svg aria-hidden="true"><use href="#i-bag"/></svg> View pricing plans</a>
           <a href="<?= base_url('candidates') ?>"><svg aria-hidden="true"><use href="#i-users"/></svg> Browse candidate database</a>
           <a href="<?= base_url('employer/post-job') ?>"><svg aria-hidden="true"><use href="#i-doc"/></svg> Job posting guide</a>
-          <a href="<?= base_url('referral') ?>"><svg aria-hidden="true"><use href="#i-gift"/></svg> Referral rewards</a>
+          <a href="#referral"><svg aria-hidden="true"><use href="#i-gift"/></svg> Referral rewards</a>
         </div>
       </div>
     </div>
@@ -547,7 +160,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               foreach ($tickerJobs as $j):
                   $isNew = (strtotime($j->created_at) > strtotime('-3 days'));
                   $coName = !empty($j->anonymous) ? 'Confidential Employer' : ($j->employer_name ?? 'Company');
-                  $coLogo = !empty($j->anonymous) ? base_url('images/favicon.png') : resolve_image_url($j->company_logo ?? '', 'company', $j->employer_name ?? 'Company');
+                  $coLogo = !empty($j->anonymous) ? base_url('images/favicon.png') : resolve_image_url($j->company_logo ?? '', 'company', $coName);
                   ?>
                   <a class="ticker-item" href="<?= base_url('job/view/' . $j->id) ?>">
                     <?php if ($isNew): ?><span class="ticker-new">NEW</span><?php endif; ?>
@@ -572,7 +185,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         <h2 class="section-title" id="jobs-h">Recent jobs in <span>Nigeria</span></h2>
         <div class="jobs-header-cta">
           <span class="jobs-total">Showing <strong><?= min(count($jobs), 8) ?></strong> of <strong class="live-count" data-count="<?= $activeJobsCount ?? 0 ?>" id="jobs-total-count"><?= number_format($activeJobsCount ?? 0) ?></strong>+ live jobs</span>
-          <a href="<?= base_url('jobs') ?>" class="btn btn-outline">All featured jobs →</a>
+          <a href="<?= base_url('jobs/featured') ?>" class="btn btn-outline">See more featured jobs →</a>
         </div>
       </div>
       <p class="section-sub">Top companies are actively hiring. Don't miss your window.</p>
@@ -582,7 +195,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
           <?php foreach (array_slice($jobs, 0, 8) as $job): 
               $isFeatured = !empty($job->is_featured);
               $coName = !empty($job->anonymous) ? 'Confidential Employer' : ($job->employer_name ?? 'Company');
-              $coLogo = !empty($job->anonymous) ? base_url('images/favicon.png') : resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company');
+              $coLogo = !empty($job->anonymous) ? base_url('images/favicon.png') : resolve_image_url($job->company_logo ?? '', 'company', $coName);
               $timeAgo = time_ago($job->created_at);
               $isSaved = in_array((int)$job->id, $savedJobIds ?? []);
           ?>
@@ -595,7 +208,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                   <h3 class="job-title" title="<?= esc($job->title) ?>"><?= esc($job->title) ?></h3>
                   <div class="job-company">
                     <span class="job-company-name"><?= esc($coName) ?></span>
-                    <?php if (!empty($job->show_trust_badge)): ?>
+                    <?php if (!empty($job->show_trust_badge) && empty($job->anonymous)): ?>
                       <button type="button" class="verified-check" aria-label="Verified employer — tap for details">
                         <svg aria-hidden="true"><use href="#i-verified-disc"/></svg>
                         <span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span>
@@ -613,13 +226,17 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               </div>
               <div class="job-meta">
                 <span><svg aria-hidden="true"><use href="#i-pin"/></svg> <?= esc($job->location ?? 'Nigeria') ?></span>
-                <span><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= esc($job->employment_type ?? 'Full-time') ?></span>
+                <span><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= esc($job->job_type ?? 'Full-time') ?></span>
                 <span><svg aria-hidden="true"><use href="#i-clock"/></svg> <?= $timeAgo ?></span>
               </div>
               <div class="job-salary-row">
                 <span class="job-salary">
                   <?php 
-                  if (!empty($job->min_salary) && !empty($job->max_salary)) {
+                  if (!empty($job->salary_details)) {
+                      echo esc($job->salary_details);
+                  } elseif (!empty($job->salary)) {
+                      echo '₦' . number_format((float) $job->salary);
+                  } elseif (!empty($job->min_salary) && !empty($job->max_salary)) {
                       echo '₦' . number_format($job->min_salary) . ' - ₦' . number_format($job->max_salary);
                   } elseif (!empty($job->min_salary)) {
                       echo '₦' . number_format($job->min_salary);
@@ -638,10 +255,13 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
             </article>
           <?php endforeach; ?>
         <?php else: ?>
-          <div class="col-12 text-center py-5">
+          <div class="jobs-empty">
             <h5 class="text-muted">No recent jobs available at the moment.</h5>
           </div>
         <?php endif; ?>
+      </div>
+      <div class="jobs-more">
+        <a href="<?= base_url('jobs/featured') ?>" class="btn btn-primary">See more featured jobs →</a>
       </div>
     </div>
   </section>
@@ -713,13 +333,12 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
       
       <div class="loc-grid">
         <?php if (!empty($top_locations)): ?>
-          <?php foreach ($top_locations as $loc): 
+          <?php foreach (array_slice($top_locations, 0, 6) as $loc): 
               $locName = $loc->name;
               $svgIcon = '#i-building'; // Default
               if (stripos($locName, 'Lagos') !== false) $svgIcon = '#i-building';
               elseif (stripos($locName, 'Abuja') !== false || stripos($locName, 'FCT') !== false) $svgIcon = '#i-building';
               elseif (stripos($locName, 'Harcourt') !== false) $svgIcon = '#i-drop';
-              elseif (stripos($locName, 'Remote') !== false) $svgIcon = '#i-globe';
           ?>
             <a href="<?= esc($loc->url) ?>" class="loc-card">
               <div class="loc-ic"><svg aria-hidden="true"><use href="<?= $svgIcon ?>"/></svg></div>
@@ -727,12 +346,24 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               <div class="loc-count"><span class="live-count" data-count="<?= $loc->job_count ?? 0 ?>"><?= number_format($loc->job_count ?? 0) ?></span> jobs</div>
             </a>
           <?php endforeach; ?>
-          <a href="<?= base_url('jobs') ?>" class="loc-card featured">
-            <div class="loc-ic"><svg aria-hidden="true"><use href="#i-pin"/></svg></div>
-            <h3 class="loc-name">All 36 states</h3>
-            <div class="loc-count">View all locations</div>
-          </a>
+        <?php else: ?>
+          <a href="<?= base_url('jobs?location=lagos') ?>" class="loc-card"><div class="loc-ic"><svg aria-hidden="true"><use href="#i-building"/></svg></div><h3 class="loc-name">Lagos</h3><div class="loc-count"><span class="live-count" data-count="4820">4,820</span> jobs</div></a>
+          <a href="<?= base_url('jobs?location=abuja') ?>" class="loc-card"><div class="loc-ic"><svg aria-hidden="true"><use href="#i-building"/></svg></div><h3 class="loc-name">Abuja (FCT)</h3><div class="loc-count"><span class="live-count" data-count="2340">2,340</span> jobs</div></a>
+          <a href="<?= base_url('jobs?location=port-harcourt') ?>" class="loc-card"><div class="loc-ic"><svg aria-hidden="true"><use href="#i-drop"/></svg></div><h3 class="loc-name">Port Harcourt</h3><div class="loc-count"><span class="live-count" data-count="1560">1,560</span> jobs</div></a>
+          <a href="<?= base_url('jobs?location=kano') ?>" class="loc-card"><div class="loc-ic"><svg aria-hidden="true"><use href="#i-building"/></svg></div><h3 class="loc-name">Kano</h3><div class="loc-count"><span class="live-count" data-count="680">680</span> jobs</div></a>
+          <a href="<?= base_url('jobs?location=ibadan') ?>" class="loc-card"><div class="loc-ic"><svg aria-hidden="true"><use href="#i-building"/></svg></div><h3 class="loc-name">Ibadan</h3><div class="loc-count"><span class="live-count" data-count="520">520</span> jobs</div></a>
+          <a href="<?= base_url('jobs?location=enugu') ?>" class="loc-card"><div class="loc-ic"><svg aria-hidden="true"><use href="#i-building"/></svg></div><h3 class="loc-name">Enugu</h3><div class="loc-count"><span class="live-count" data-count="340">340</span> jobs</div></a>
         <?php endif; ?>
+        <a href="<?= base_url('jobs?location=remote') ?>" class="loc-card">
+          <div class="loc-ic"><svg aria-hidden="true"><use href="#i-globe"/></svg></div>
+          <h3 class="loc-name">Remote</h3>
+          <div class="loc-count"><span class="live-count" data-count="<?= $remoteJobsCount ?? 0 ?>"><?= number_format($remoteJobsCount ?? 0) ?></span> jobs</div>
+        </a>
+        <a href="<?= base_url('jobs') ?>" class="loc-card featured">
+          <div class="loc-ic"><svg aria-hidden="true"><use href="#i-pin"/></svg></div>
+          <h3 class="loc-name">All 36 states</h3>
+          <div class="loc-count">View all locations</div>
+        </a>
       </div>
     </div>
   </section>
@@ -768,13 +399,13 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               $isPaid = ($c->price > 0);
               $colorClasses = ['thumb-blue', 'thumb-purple', 'thumb-green', 'thumb-orange'];
               $gradientClass = $colorClasses[$c->id % count($colorClasses)];
-              $imgUrl = !empty($c->thumbnail) ? base_url($c->thumbnail) : '';
+              $imgUrl = !empty($c->thumbnail) ? (preg_match('#^https?://#i', $c->thumbnail) ? $c->thumbnail : base_url($c->thumbnail)) : '';
           ?>
             <div class="course-card">
               <span class="course-featured-badge"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
               <div class="course-thumb <?= empty($imgUrl) ? $gradientClass : '' ?>">
                 <?php if (!empty($imgUrl)): ?>
-                  <img class="thumb-img" src="<?= $imgUrl ?>" alt="<?= esc($c->title) ?> course thumbnail" loading="lazy">
+                  <img class="thumb-img" src="<?= esc($imgUrl) ?>" alt="<?= esc($c->title) ?> course thumbnail" loading="lazy">
                 <?php else: ?>
                   <svg aria-hidden="true"><use href="#i-book"/></svg>
                 <?php endif; ?>
@@ -800,7 +431,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                   <span class="course-price <?= $isPaid ? 'course-price--paid' : 'course-price--free' ?>">
                     <?= $isPaid ? '₦' . number_format($c->price) : 'Free' ?>
                   </span>
-                  <a href="<?= base_url('training') ?>" class="btn btn-primary btn-sm">
+                  <a href="<?= base_url('training/course/' . (int) $c->id) ?>" class="btn btn-primary btn-sm">
                     <?= $isPaid ? 'Enrol now' : 'Enrol free' ?>
                   </a>
                 </div>
@@ -871,12 +502,14 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         <p class="newsletter-sub">Weekly advice on landing roles, salary trends, and hiring in Nigeria. No account needed — unsubscribe anytime.</p>
       </div>
       <form class="newsletter-form" action="<?= base_url('newsletter/subscribe') ?>" method="post" aria-label="Newsletter signup">
+        <?= csrf_field() ?>
         <label for="news-email" class="sr-only">Email address</label>
         <div class="newsletter-field">
           <svg aria-hidden="true"><use href="#i-mail"/></svg>
           <input id="news-email" type="email" name="email" placeholder="Enter your email" required autocomplete="email">
         </div>
         <button type="submit" class="btn btn-primary">Subscribe</button>
+        <p class="newsletter-feedback" role="status" aria-live="polite" hidden></p>
       </form>
     </div>
   </section>
@@ -994,6 +627,30 @@ document.addEventListener('keydown', (e) => {
 const BM = '<svg aria-hidden="true"><use href="#i-bookmark"/></svg> Save';
 const BMF = '<svg aria-hidden="true"><use href="#i-bookmark-fill"/></svg> Saved';
 
+document.querySelector('.newsletter-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const feedback = form.querySelector('.newsletter-feedback');
+  button.disabled = true;
+  feedback.hidden = false;
+  feedback.textContent = 'Subscribing…';
+  try {
+    const response = await fetch(form.action, {
+      method: 'POST', body: new FormData(form),
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await response.json();
+    const message = data.message || (data.messages && data.messages.error);
+    feedback.textContent = message || (response.ok ? 'You are subscribed!' : 'Unable to subscribe. Please try again.');
+    if (response.ok) form.reset();
+  } catch (error) {
+    feedback.textContent = 'Unable to subscribe. Please check your connection and try again.';
+  } finally {
+    button.disabled = false;
+  }
+});
+
 function isLoggedIn() {
   return !!(window.JR_USER && window.JR_USER.loggedIn);
 }
@@ -1011,7 +668,8 @@ function persistSave(jobId, save) {
   return fetch('<?= base_url('jobs/toggle-save') ?>/' + jobId, {
     method: 'POST',
     headers: {
-      'X-Requested-With': 'XMLHttpRequest'
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-TOKEN': <?= json_encode(csrf_hash()) ?>
     }
   }).then(r => r.ok ? r.json() : Promise.reject(r.status));
 }
@@ -1045,7 +703,7 @@ document.querySelectorAll('.save-btn').forEach(btn => {
 (function resumePendingSave() {
   if (!isLoggedIn()) return;
   const pending = new URLSearchParams(window.location.search).get('save');
-  if (!pending) return;
+  if (!pending || !/^\d+$/.test(pending)) return;
   const btn = document.querySelector('.save-btn[data-job-id="' + pending + '"]');
   if (btn && btn.dataset.saved !== 'true') {
     renderSaveBtn(btn, true);
@@ -1053,75 +711,10 @@ document.querySelectorAll('.save-btn').forEach(btn => {
   }
 })();
 
-const SEED_JOBS = [
-  { role: '2026 AP Graduate Trainee Programme', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
-  { role: 'HR/People & Operations Manager', company: 'Confidential', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
-  { role: 'Social Media Manager & Creative Assistant', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: true },
-  { role: 'Sales and Procurement Manager', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: false },
-  { role: 'NAE Postgraduate Scholarship', company: 'Confidential', location: 'Port Harcourt', url: '<?= base_url('jobs') ?>', isNew: false },
-  { role: 'Administrative Officer', company: 'Jobber Recruit LTD', location: 'Lagos', url: '<?= base_url('jobs') ?>', isNew: false },
-  { role: 'Halliburton 2026 Graduate Internship', company: 'Jobber Recruit LTD', location: 'Port Harcourt', url: '<?= base_url('jobs') ?>', isNew: false },
-  { role: 'Multiple Vacancies — Finance, HR & Supply Chain', company: 'Renaissance Africa Energy', location: 'Nigeria', url: '<?= base_url('jobs') ?>', isNew: false }
-];
-
-function tickerItem(j) {
-  const newTag = j.isNew ? '<span class="ticker-new">NEW</span>' : '';
-  return '<a class="ticker-item" href="' + j.url + '">' + newTag + '<span class="ticker-role">' + j.role + '</span><span class="ticker-co">· ' + j.company + '</span><span class="ticker-loc"><svg aria-hidden="true"><use href="#i-pin"/></svg>' + j.location + '</span></a>';
-}
-
-function renderTicker(jobs) {
-  const track = document.getElementById('ticker-track');
-  if (!track || !jobs.length) return;
-  const html = jobs.map(tickerItem).join('');
-  track.innerHTML = html + html;
-}
-
-function initTicker() {
-  const track = document.getElementById('ticker-track');
-  if (track && track.children.length === 0) {
-    renderTicker(SEED_JOBS);
-  }
-  fetch('<?= base_url('api/latest-jobs') ?>')
-    .then(r => r.ok ? r.json() : null)
-    .then(data => { if (Array.isArray(data) && data.length) renderTicker(data); })
-    .catch(() => {});
-}
-
-function initLiveCounts() {
-  const fmt = n => Number(n).toLocaleString('en-NG');
-  document.querySelectorAll('.live-count[data-count]').forEach(el => {
-    el.textContent = fmt(el.dataset.count);
-  });
-  fetch('<?= base_url('api/job-counts') ?>')
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      if (!data) return;
-      if (data.total !== undefined) {
-        const t = document.getElementById('jobs-total-count');
-        if (t) t.textContent = fmt(data.total);
-      }
-      if (data.categories) {
-        document.querySelectorAll('a[href*="category="]').forEach(link => {
-          const m = link.href.match(/category=([^&]+)/);
-          if (!m) return;
-          const el = link.querySelector('.live-count');
-          if (el && data.categories[m[1]] !== undefined) el.textContent = fmt(data.categories[m[1]]);
-        });
-      }
-      if (data.locations) {
-        document.querySelectorAll('a[href*="location="]').forEach(link => {
-          const m = link.href.match(/location=([^&]+)/);
-          if (!m) return;
-          const el = link.querySelector('.live-count');
-          if (el && data.locations[m[1]] !== undefined) el.textContent = fmt(data.locations[m[1]]);
-        });
-      }
-    })
-    .catch(() => {});
-}
-
-initTicker();
-initLiveCounts();
+// Counts and ticker entries come from the live server-rendered data.
+document.querySelectorAll('.live-count[data-count]').forEach(el => {
+  el.textContent = Number(el.dataset.count).toLocaleString('en-NG');
+});
 </script>
 
 <!-- SVG Icon Sprites -->

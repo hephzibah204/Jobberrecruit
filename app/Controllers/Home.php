@@ -137,13 +137,13 @@ class Home extends BaseController
             $category->url = base_url(($category->slug ?? url_title($category->name, '-', true)) . '-jobs');
         }
 
-        // Fetch recent jobs (limit to 18)
-        $jobsCacheKey = 'recent_jobs';
+        // Homepage preview: eight jobs, with featured postings first.
+        $jobsCacheKey = 'homepage_eight_jobs_with_employer_identity_v4';
         $jobs = $cache->get($jobsCacheKey);
 
         if (!$jobs) {
             $jobs = $jobModel
-                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified')
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.is_verified as employer_is_verified, employers.verification_status as employer_verification_status')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
             ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
@@ -153,7 +153,7 @@ class Home extends BaseController
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 // ->orderBy('jobs.created_at', 'DESC')
                 ->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC')
-                ->findAll(18);
+                ->findAll(8);
 
             $cache->save($jobsCacheKey, $jobs, 3600);
         }
@@ -190,9 +190,13 @@ class Home extends BaseController
                 $planFeatures = planFeatures(json_decode($featuresJson, true));
             }
 
-            // TRUST BADGE
+            // Use the employer's explicit verification status, not a job-level flag.
+            // Some verification workflows update status without the legacy boolean.
+            $verificationStatus = strtolower(trim((string) ($job->employer_verification_status ?? '')));
+            $employerVerified = $verificationStatus === 'verified'
+                || (in_array($verificationStatus, ['', 'unverified'], true) && (int) ($job->employer_is_verified ?? 0) === 1);
             $job->show_trust_badge =
-                !empty($planFeatures['trust_badge']) && ($job->is_verified == 1);
+                !empty($planFeatures['trust_badge']) && $employerVerified;
 
             $job->anonymous = !empty($planFeatures['anonymous']) && ($job->is_anonymous);
 
@@ -324,6 +328,29 @@ class Home extends BaseController
 
         $activeJobsCount = $jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults();
 
+        $remoteJobsQuery = model(\App\Models\JobModel::class)
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
+            ->groupStart()
+                ->where('jobs.application_deadline', null)
+                ->orWhere('jobs.application_deadline', '')
+                ->orWhere('jobs.application_deadline', '0000-00-00')
+                ->orWhere('jobs.application_deadline >=', date('Y-m-d'))
+            ->groupEnd();
+        if ($this->db->fieldExists('work_arrangement', 'jobs')) {
+            $remoteJobsQuery->groupStart()
+                ->where('jobs.work_arrangement', 'remote')
+                ->orLike('jobs.title', 'remote')
+                ->orLike('jobs.skills', 'remote')
+            ->groupEnd();
+        } else {
+            $remoteJobsQuery->groupStart()
+                ->like('jobs.title', 'remote')
+                ->orLike('jobs.skills', 'remote')
+            ->groupEnd();
+        }
+        $remoteJobsCount = $remoteJobsQuery->countAllResults();
+
         $verifiedEmployersCount = $employerModel->groupStart()
             ->where('verification_status', 'verified')
             ->orWhere('is_verified', 1)
@@ -377,6 +404,7 @@ class Home extends BaseController
             'monthlyApplicantsCount' => $monthlyApplicantsCount,
             'placementSuccess' => $placementSuccess,
             'testimonials' => model(\App\Models\TestimonialModel::class)->where('status', 'active')->orderBy('created_at', 'DESC')->findAll(),
+            'remoteJobsCount' => $remoteJobsCount,
             'q' => $this->request->getGet('q') ?? ''
         ];
 
@@ -595,6 +623,18 @@ class Home extends BaseController
         $keywords = $this->request->getGet('keywords') ? htmlspecialchars(trim($this->request->getGet('keywords')), ENT_QUOTES, 'UTF-8') : null;
         $position = $this->request->getGet('position') ? htmlspecialchars(trim($this->request->getGet('position')), ENT_QUOTES, 'UTF-8') : null;
         $workArrangement = $this->request->getGet('work_arrangement') ? htmlspecialchars(trim($this->request->getGet('work_arrangement')), ENT_QUOTES, 'UTF-8') : null;
+        $locationParam = $this->request->getGet('location');
+        if (!empty($locationParam)) {
+            $locClean = strtolower(trim($locationParam));
+            if ($locClean === 'remote') {
+                $workArrangement = 'remote';
+            } elseif (!$stateId) {
+                $st = $stateModel->where('slug', $locClean)->orLike('name', $locClean)->first();
+                if ($st) {
+                    $stateId = (int)$st->id;
+                }
+            }
+        }
         $jobTypeRaw = $this->request->getGet('job_type');
         if (is_array($jobTypeRaw)) {
             $validTypes = ['full-time','part-time','contract','freelance','internship'];
