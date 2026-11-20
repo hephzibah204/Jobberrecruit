@@ -20,13 +20,19 @@ class InterviewTranscription extends Controller
             ]);
         }
 
-        if ($file->getSize() > 10 * 1024 * 1024 || !in_array($file->getMimeType(), ['audio/webm','video/webm','audio/ogg','application/ogg','audio/wav','audio/x-wav','audio/mpeg','audio/mp4','video/mp4','audio/x-m4a'], true)) {
+        // Normalize the detected mime: uploads can arrive as
+        // 'audio/webm;codecs=opus', which a strict whitelist rejects even
+        // though the audio itself is perfectly supported.
+        $rawMime = (string) $file->getMimeType();
+        $mimeType = strtolower(trim(explode(';', $rawMime)[0]));
+
+        if ($file->getSize() > 10 * 1024 * 1024 || !in_array($mimeType, ['audio/webm','video/webm','audio/ogg','application/ogg','audio/wav','audio/x-wav','audio/mpeg','audio/mp4','video/mp4','audio/x-m4a'], true)) {
+            log_message('error', 'InterviewTranscription rejected upload: mime=' . $rawMime . ' size=' . $file->getSize());
             return $this->response->setStatusCode(422)->setJSON(['error'=>'Upload supported audio of 10 MB or less.']);
         }
         // Get the file contents and encode it as base64
         $fileData = file_get_contents($file->getTempName());
         $base64Data = base64_encode($fileData);
-        $mimeType = $file->getMimeType();
 
         // Let the AI Service handle the transcription via Gemini Flash
         $aiService = new AiService();

@@ -43,7 +43,9 @@ class InterviewReply extends Controller
 {
     private const MODEL = 'gemini-3.8-flash';
 
-    private const TIMEOUT_SECONDS = 11;
+    private const TIMEOUT_SECONDS = 14;
+
+    private const RETRY_TIMEOUT_SECONDS = 6;
 
     private const PERSONA_VOICE = [
         'corporate-hr'      => 'a warm, professional Nigerian HR business partner. Encouraging but still probing.',
@@ -97,7 +99,13 @@ class InterviewReply extends Controller
             ]],
             'generationConfig' => [
                 'temperature'        => 0.8,
+                // Thinking OFF: with thinking enabled, the model's hidden
+                // reasoning ate this 800-token budget and the JSON came back
+                // truncated (live failures 2026-11-19 19:08 and 19:25 WAT),
+                // sending candidates to the canned pattern-matched
+                // follow-ups. Off, the reply is faster AND complete.
                 'maxOutputTokens'    => 800,
+                'thinkingConfig'     => ['thinkingBudget' => 0],
                 'response_mime_type' => 'application/json',
             ],
         ];
@@ -106,23 +114,38 @@ class InterviewReply extends Controller
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
              . $model . ':generateContent';
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($body),
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
+        $raw = false;
+        $httpCode = 0;
+        $curlErr = '';
+        // One retry on transport failure / rate limit / upstream 5xx: a
+        // single slow or throttled call used to send the candidate to the
+        // canned pattern-matched follow-ups even though a quick second
+        // attempt usually succeeds.
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode($body),
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
                 'x-goog-api-key: ' . $apiKey,
-            ],
-            CURLOPT_TIMEOUT        => self::TIMEOUT_SECONDS,
-            CURLOPT_CONNECTTIMEOUT => 4,
-        ]);
+                ],
+                CURLOPT_TIMEOUT        => $attempt === 1 ? self::TIMEOUT_SECONDS : self::RETRY_TIMEOUT_SECONDS,
+                CURLOPT_CONNECTTIMEOUT => 4,
+            ]);
 
-        $raw      = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_error($ch);
-        curl_close($ch);
+            $raw      = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr  = curl_error($ch);
+            curl_close($ch);
+
+            $retryable = ($raw === false) || $httpCode === 429 || $httpCode >= 500;
+            if (!$retryable || $attempt === 2) {
+                break;
+            }
+            log_message('error', "Reply Gemini attempt {$attempt} failed (HTTP {$httpCode}): {$curlErr} - retrying");
+        }
 
         if ($raw === false) {
             log_message('error', 'Reply cURL failure: ' . $curlErr);

@@ -414,6 +414,10 @@ label.lbl,.lbl{display:block;font-size:.76rem;font-weight:600;color:var(--muted)
 .voice-input-status{font-size:.74rem;color:var(--brand);margin-top:6px;display:flex;align-items:center;gap:6px;font-weight:600}
 .voice-input-status .pulse-dot{width:8px;height:8px;border-radius:50%;background:#dc2626;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* iOS Safari (2026-11-20): inputs under 16px trigger focus auto-zoom.
+   Force 16px on touch (coarse-pointer) devices only - desktop untouched. */
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}}
 </style>
 <?= $this->endSection() ?>
 
@@ -1384,6 +1388,40 @@ function stopCurrentSpeech(){
   }
 }
 
+/* -- Media unlock (iOS/Safari autoplay policy) --------------------------
+   Same pattern as the mock interview: one persistent audio element,
+   primed with a silent clip during a user gesture (the Start tap), so
+   recruiter lines fetched afterwards can actually play on iOS. Without
+   this, iOS rejected playback and the coach silently degraded to the
+   robotic browser voice or nothing. -- */
+var SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwYAAAAAAAAAAAAAAAAAAAAA//tQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZB4P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZB8P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCUP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCYP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCkP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCoP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCwP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZC4P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZDEP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZDIP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZDMX8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA';
+var recruiterAudioEl = null;
+function recruiterEl(){
+  if(!recruiterAudioEl){
+    recruiterAudioEl = new Audio();
+    recruiterAudioEl.preload = 'auto';
+  }
+  return recruiterAudioEl;
+}
+function primeRecruiterAudio(){
+  var el = recruiterEl();
+  try {
+    el.src = SILENT_MP3;
+    var pr = el.play();
+    if(pr && typeof pr.then === 'function'){
+      pr.then(function(){ try { el.pause(); el.currentTime = 0; } catch(e){} }).catch(function(){});
+    }
+  } catch(e){}
+  if('speechSynthesis' in window){
+    try {
+      var u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch(e){}
+  }
+}
+document.addEventListener('pointerdown', function(){ primeRecruiterAudio(); }, {once: true});
+
 function speakRecruiter(text, onDone){
   if(!VOICE_ON){
     if(onDone) onDone();
@@ -1422,19 +1460,27 @@ function speakRecruiter(text, onDone){
       return;
     }
     var url = URL.createObjectURL(blob);
-    var audio = new Audio(url);
+    var audio = recruiterEl();
     currentSpeechAudio = audio;
     audio.onended = function(){
       URL.revokeObjectURL(url);
+      audio.onended = null;
+      audio.onerror = null;
       currentSpeechAudio = null;
       if(onDone) onDone();
     };
     audio.onerror = function(){
       URL.revokeObjectURL(url);
+      audio.onended = null;
+      audio.onerror = null;
       currentSpeechAudio = null;
       fallbackBrowserTts(cleanText, onDone);
     };
+    try { audio.pause(); } catch(e){}
+    audio.src = url;
     audio.play().catch(function(){
+      audio.onended = null;
+      audio.onerror = null;
       fallbackBrowserTts(cleanText, onDone);
     });
   })
@@ -1555,6 +1601,7 @@ function toggleRecording(){
 
 /* ── start session ── */
 function startSession(){
+  primeRecruiterAudio();
   var offer=parseNaira($('n-offer').value),target=parseNaira($('n-target').value);
   var job=$('n-job').value.trim();
   if(!job){$('n-job').focus();toast('Add the job title on the offer');return}

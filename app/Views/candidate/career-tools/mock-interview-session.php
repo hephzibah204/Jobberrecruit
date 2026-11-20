@@ -416,6 +416,11 @@ body.in-lobby .stage,body.in-lobby .dock,body.in-lobby .coach,body.in-lobby .coa
   0%{transform:translate(var(--cx),var(--cy)) rotate(0deg) scale(1);opacity:1}
   100%{transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scale(.6);opacity:0}
 }
+
+/* iOS Safari: dynamic viewport height so the toolbar never clips the dock,
+   and no focus auto-zoom on the answer box. */
+@supports (height:100dvh){body{min-height:100dvh}}
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important}}
 </style></head>
 <body>
 <div class="offline-bar" id="offline-bar" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#i-info"/></svg><span id="offline-txt">You are offline. Keep this page open to retain your answers, then retry saving when connected.</span></div>
@@ -1446,6 +1451,7 @@ var VOICE = {
   unlocked: false,
   playing: false,
   currentAudio: null,
+  el: null,
   onDone: null,
   pendingText: null
 };
@@ -1464,6 +1470,8 @@ function stopCurrentSpeech() {
     try {
       VOICE.currentAudio.pause();
       VOICE.currentAudio.currentTime = 0;
+      VOICE.currentAudio.onended = null;
+      VOICE.currentAudio.onerror = null;
     } catch(e) {}
     VOICE.currentAudio = null;
   }
@@ -1472,6 +1480,32 @@ function stopCurrentSpeech() {
   }
   VOICE.playing = false;
   setTalking(false);
+}
+
+function speakViaBrowser(text) {
+  if ('speechSynthesis' in window && text) {
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = CFG.language === 'en-uk' ? 'en-GB' : 'en-US';
+      u.rate = 1.0;
+      var done = function() {
+        VOICE.playing = false;
+        setTalking(false);
+        var cb = VOICE.onDone;
+        VOICE.onDone = null;
+        if (cb) cb();
+      };
+      u.onend = done;
+      u.onerror = done;
+      window.speechSynthesis.speak(u);
+      return;
+    } catch(e) {}
+  }
+  VOICE.playing = false;
+  setTalking(false);
+  var cb2 = VOICE.onDone;
+  VOICE.onDone = null;
+  if (cb2) cb2();
 }
 
 function speak(text, onDone) {
@@ -1528,11 +1562,12 @@ function speak(text, onDone) {
     }
 
     var url = URL.createObjectURL(blob);
-    var audio = new Audio(url);
+    var audio = voiceEl();
     VOICE.currentAudio = audio;
 
     function finish() {
       URL.revokeObjectURL(url);
+      try { audio.onended = null; audio.onerror = null; } catch(e) {}
       VOICE.currentAudio = null;
       VOICE.playing = false;
       setTalking(false);
@@ -1547,51 +1582,67 @@ function speak(text, onDone) {
       finish();
     };
 
+    try { audio.pause(); } catch(e) {}
+    audio.src = url;
     audio.play().catch(function(err) {
-      if (DEBUG) dlog('Audio playback blocked: ' + err.message, false);
-      finish();
+      // Playback blocked (e.g. iOS gesture policy): the candidate must still
+      // HEAR the question — fall back to browser speech instead of silently
+      // advancing the interview.
+      if (DEBUG) dlog('Audio playback blocked: ' + err.message + ' - falling back to browser speech', false);
+      try { audio.onended = null; audio.onerror = null; } catch(e) {}
+      URL.revokeObjectURL(url);
+      VOICE.currentAudio = null;
+      speakViaBrowser(cleanText);
     });
   })
   .catch(function(err) {
-    if (DEBUG) dlog('Edge TTS request error (' + err.message + ') — attempting browser speech synthesis', false);
-    if ('speechSynthesis' in window && cleanText) {
-      try {
-        var u = new SpeechSynthesisUtterance(cleanText);
-        u.lang = CFG.language === 'en-uk' ? 'en-GB' : 'en-US';
-        u.rate = 1.0;
-        u.onend = function() {
-          VOICE.playing = false;
-          setTalking(false);
-          var cb = VOICE.onDone;
-          VOICE.onDone = null;
-          if (cb) cb();
-        };
-        u.onerror = function() {
-          VOICE.playing = false;
-          setTalking(false);
-          var cb = VOICE.onDone;
-          VOICE.onDone = null;
-          if (cb) cb();
-        };
-        window.speechSynthesis.speak(u);
-        return;
-      } catch(e) {}
-    }
-    VOICE.playing = false;
-    setTalking(false);
-    var cb = VOICE.onDone;
-    VOICE.onDone = null;
-    if (cb) cb();
+    if (DEBUG) dlog('Edge TTS request error (' + err.message + ') - attempting browser speech synthesis', false);
+    speakViaBrowser(cleanText);
   });
+}
+
+/* -- Media unlock (iOS/Safari autoplay policy) --------------------------
+   Safari only allows a media element to play if that element has already
+   played during a user gesture. A fresh `new Audio()` per question, played
+   after a network fetch, is rejected (NotAllowedError) - and the interview
+   used to advance without the candidate ever hearing the question. All
+   Edge TTS audio now plays through ONE persistent element, primed with a
+   silent clip inside the first tap. The same element behaves identically
+   on Android and Windows. -- */
+var SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwYAAAAAAAAAAAAAAAAAAAAA//tQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZB4P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZB8P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCUP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCYP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCkP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCoP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZCwP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZC4P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZDEP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZDIP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE//tQZDMX8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA';
+function voiceEl() {
+  if (!VOICE.el) {
+    VOICE.el = new Audio();
+    VOICE.el.preload = 'auto';
+  }
+  return VOICE.el;
+}
+function unlockVoice() {
+  var el = voiceEl();
+  try {
+    el.src = SILENT_MP3;
+    var pr = el.play();
+    if (pr && typeof pr.then === 'function') {
+      pr.then(function() {
+        try { el.pause(); el.currentTime = 0; } catch(e) {}
+        VOICE.unlocked = true;
+      }).catch(function() {});
+    } else {
+      VOICE.unlocked = true;
+    }
+  } catch(e) {}
+  if ('speechSynthesis' in window) {
+    try {
+      var u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
 }
 
 /* mobile unlock: autoplay policy blocks speech until the first gesture */
 document.addEventListener('pointerdown', function() {
-  if (VOICE.unlocked) return;
-  VOICE.unlocked = true;
-  if ('speechSynthesis' in window) {
-    try { window.speechSynthesis.cancel(); } catch(e) {}
-  }
+  unlockVoice();
   if (VOICE.pendingText && !VOICE.playing) {
     speak(VOICE.pendingText, VOICE.onDone);
   }
@@ -1818,7 +1869,7 @@ function fetchAIReply(question,answer,alreadyFollowedUp,onDone){
     if(settled)return;settled=true;
     if(DEBUG)dlog('AI reply timed out - pattern-matched fallback',false);
     onDone(null);
-  },12000); /* 12s client guard: must exceed the server 11s budget (InterviewReply TIMEOUT_SECONDS) - at 5s, slow-but-valid AI replies were abandoned and canned pattern-matched follow-ups shown instead */
+  },21000); /* 21s client guard: must exceed the server budget (InterviewReply: 14s first attempt + one 6s retry) - a shorter guard abandons slow-but-valid AI replies and shows canned pattern-matched follow-ups instead */
   fetch('<?= site_url("api/interview/reply") ?>',{
     method:'POST',
     headers:{
@@ -2187,11 +2238,22 @@ $('rec-orb').addEventListener('click',function(){
           sub.disabled=false;
           submitAnswer();
         } else {
-          $('media-hint').textContent='Transcription failed. Please try again.';
+          /* Transcription failed server-side: do NOT dead-end the session
+             or lose the answer. Continue with the honest completion-based
+             scoring path (same as browsers without live transcription). */
+          $('media-hint').textContent='Could not transcribe that answer - continuing with a completion score.';
+          toast('Transcription failed - your answer still counts. Type answers for full AI coaching.');
+          srFinal = '';
+          sub.disabled=false;
+          submitAnswer();
         }
       })
       .catch(function(e){
-        $('media-hint').textContent='Transcription error. Please try again.';
+        $('media-hint').textContent='Could not transcribe that answer - continuing with a completion score.';
+        toast('Transcription failed - your answer still counts. Type answers for full AI coaching.');
+        srFinal = '';
+        sub.disabled=false;
+        submitAnswer();
       });
     });
   }

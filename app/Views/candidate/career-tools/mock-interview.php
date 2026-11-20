@@ -718,6 +718,10 @@ label.lbl { display: block; font-size: .74rem; font-weight: 600; color: var(--mu
 .job-chip:hover { border-color: var(--brand); background: var(--brand-light); color: var(--brand); }
 .job-chip svg { width: 11px; height: 11px; color: var(--muted); flex-shrink: 0; }
 .job-chip:hover svg { color: var(--brand); }
+
+/* iOS Safari (2026-11-20): inputs under 16px trigger focus auto-zoom.
+   Force 16px on touch (coarse-pointer) devices only - desktop untouched. */
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}}
 </style>
 <?= $this->endSection() ?>
 

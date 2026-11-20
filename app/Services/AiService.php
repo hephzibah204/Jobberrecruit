@@ -602,6 +602,7 @@ class AiService
     public function getSalaryNegotiationResponse($message, $history = [], $offerDetails = '')
     {
         if (empty($this->apiKey)) {
+            log_message('error', 'AiService::getSalaryNegotiationResponse - GEMINI_API_KEY is missing; serving context fallback');
             return $this->getFallbackNegotiationReply($message, $offerDetails);
         }
 
@@ -648,34 +649,113 @@ class AiService
             'contents' => $contents,
             'generationConfig' => [
                 'temperature'     => 0.6,
-                'maxOutputTokens' => 250,
+                // 1024 (was 250): the old cap was shared with the model's
+                // internal "thinking", so visible replies were cut off
+                // mid-sentence. Thinking is disabled below so the whole
+                // budget goes to the reply (the prompt caps it at 60 words).
+                'maxOutputTokens' => 1024,
+                'thinkingConfig'  => ['thinkingBudget' => 0],
             ]
         ];
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $payloadJson = json_encode($payload);
+        $lastErr = '';
+        $maxAttempts = 2;
 
-        if (!$err && $httpCode === 200) {
-            $result = json_decode($response, true);
-            if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-                $reply = trim($result['candidates'][0]['content']['parts'][0]['text']);
-                return strip_tags(str_replace(['**', '*'], '', $reply));
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            $response = curl_exec($ch);
+            $err = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err) {
+                $lastErr = $err;
+                log_message('error', "Gemini negotiation request failed (attempt {$attempt}/{$maxAttempts}): {$err}");
+                continue;
             }
+
+            if ($httpCode === 400 && isset($payload['generationConfig']['thinkingConfig'])) {
+                // This model rejected the thinking config: drop it and retry
+                // with the plain payload rather than failing the turn.
+                unset($payload['generationConfig']['thinkingConfig']);
+                $payloadJson = json_encode($payload);
+                $lastErr = 'HTTP 400 (thinkingConfig rejected; retrying without it)';
+                log_message('error', "Gemini negotiation API error (HTTP 400, attempt {$attempt}/{$maxAttempts}): thinkingConfig rejected, retrying without it");
+                continue;
+            }
+
+            if ($httpCode !== 200) {
+                $lastErr = 'HTTP ' . $httpCode;
+                log_message('error', "Gemini negotiation API error (HTTP {$httpCode}, attempt {$attempt}/{$maxAttempts}): " . substr((string) $response, 0, 500));
+                continue;
+            }
+
+            $result = json_decode($response, true);
+            $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            $finish = $result['candidates'][0]['finishReason'] ?? '';
+
+            if (trim((string) $text) === '') {
+                $lastErr = 'empty candidate text';
+                log_message('error', "Gemini negotiation returned no text (attempt {$attempt}/{$maxAttempts}, finishReason: {$finish}): " . substr((string) $response, 0, 500));
+                continue;
+            }
+
+            if ($finish === 'MAX_TOKENS') {
+                // Never serve a reply that was cut off mid-sentence.
+                $lastErr = 'reply truncated (MAX_TOKENS)';
+                log_message('error', "Gemini negotiation reply truncated at MAX_TOKENS (attempt {$attempt}/{$maxAttempts}): " . substr((string) $text, 0, 200));
+                continue;
+            }
+
+            $reply = trim((string) $text);
+            return strip_tags(str_replace(['**', '*'], '', $reply));
         }
 
+        log_message('error', 'AiService::getSalaryNegotiationResponse - all attempts failed (' . $lastErr . '); serving context fallback');
         return $this->getFallbackNegotiationReply($message, $offerDetails);
     }
 
     private function getFallbackNegotiationReply($message, $offerDetails)
     {
+        // Context-aware fallback: reference the figures actually in play so
+        // the reply stays on the conversation even when the AI is unreachable.
+        $offer = null;
+        $target = null;
+        if (preg_match('/Offer:\\s*(?:\\x{20A6})?\\s*([\\d,]+)/iu', (string) $offerDetails, $m)) {
+            $offer = (int) str_replace(',', '', $m[1]);
+        }
+        if (preg_match('/Target:\\s*(?:\\x{20A6})?\\s*([\\d,]+)/iu', (string) $offerDetails, $m)) {
+            $target = (int) str_replace(',', '', $m[1]);
+        }
+        $fmt = static function ($n) {
+            return "\u{20A6}" . number_format($n);
+        };
+
+        $ask = null;
+        if (preg_match('/\\x{20A6}\\s*([\\d,]+)/u', (string) $message, $m)) {
+            $ask = (int) str_replace(',', '', $m[1]);
+        } elseif (preg_match('/\\b(\\d{2,3})\\s*k\\b/i', (string) $message, $m)) {
+            $ask = ((int) $m[1]) * 1000;
+        }
+
+        if ($ask && $offer && $ask > $offer) {
+            $mid = (int) (round((($offer + $ask) / 2) / 1000) * 1000);
+            return "I hear you on " . $fmt($ask) . ". That is above the " . $fmt($offer) . " we opened with for this role, but I can meet you partway at " . $fmt($mid) . " if we agree on clear deliverables for the first quarter. Can you work with that?";
+        }
+        if ($offer && $target && $target > $offer) {
+            $mid = (int) (round((($offer + $target) / 2) / 1000) * 1000);
+            return "I understand where you are coming from. Our opening for this role is " . $fmt($offer) . "; the most I can stretch today is " . $fmt($mid) . ", with a performance review at six months to revisit the rest. What would make that work for you?";
+        }
+        if ($offer) {
+            return "I hear your point. The band for this role starts at " . $fmt($offer) . ", but there is flexibility on the review timeline, the bonus structure and health coverage. Which of those matters most to you?";
+        }
+
         $responses = [
             "I hear your point regarding the scope of the role. While our base band is firm at this level, could we look at a 6-month performance review to adjust your compensation?",
             "That's a reasonable ask given your background. The most I can stretch the base is halfway towards your target, provided we align on immediate quarterly deliverables.",
@@ -2666,6 +2746,17 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
             return null;
         }
 
+        // MediaRecorder uploads often carry codec parameters
+        // (audio/webm;codecs=opus) or container aliases (video/webm for an
+        // audio-only recording). Gemini wants a clean, supported mime type.
+        $mimeType = strtolower(trim(explode(';', $mimeType)[0]));
+        if ($mimeType === 'video/webm') {
+            $mimeType = 'audio/webm';
+        }
+        if ($mimeType === 'audio/x-m4a' || $mimeType === 'video/mp4') {
+            $mimeType = 'audio/mp4';
+        }
+
         $url = $this->getApiUrl($mimeType === 'application/pdf' ? 'fast' : 'audio') . '?key=' . $this->apiKey;
 
         $prompt = $instruction ?? "You are an expert transcriptionist. Transcribe the provided audio accurately. Output ONLY the raw transcribed text with proper punctuation. Do not add any introductory, concluding, or explanatory text.";
@@ -2686,35 +2777,52 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
             ],
             'generationConfig' => [
                 'temperature' => 0.1,
+                // Transcription is mechanical: thinking off and a capped
+                // output make it several times faster and stop the model
+                // spending the response budget on hidden reasoning.
+                'maxOutputTokens' => 2048,
+                'thinkingConfig' => ['thinkingBudget' => 0],
             ]
         ];
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        $maxAttempts = 2;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        curl_close($ch);
+            $response = curl_exec($ch);
+            $err = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-        if ($err || !$response) {
-            log_message('error', 'Gemini transcription failed: ' . $err);
-            return null;
+            if ($err || !$response) {
+                log_message('error', "Gemini transcription failed (attempt {$attempt}/{$maxAttempts}): {$err}");
+                continue;
+            }
+
+            $result = json_decode($response, true);
+
+            if (isset($result['error'])) {
+                log_message('error', "Gemini transcription API Error (HTTP {$httpCode}, attempt {$attempt}/{$maxAttempts}): " . json_encode($result['error']));
+                if ($httpCode === 400 && isset($payload['generationConfig']['thinkingConfig'])) {
+                    // Model rejected the thinking config: drop it and retry
+                    // plain rather than failing every transcription.
+                    unset($payload['generationConfig']['thinkingConfig']);
+                    continue;
+                }
+                return null;
+            }
+
+            $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            return trim($text);
         }
 
-        $result = json_decode($response, true);
-        
-        if (isset($result['error'])) {
-            log_message('error', 'Gemini transcription API Error: ' . json_encode($result['error']));
-            return null;
-        }
-
-        $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
-        return trim($text);
+        return null;
     }
 
     /**
