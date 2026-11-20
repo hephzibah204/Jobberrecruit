@@ -56,9 +56,20 @@
                         'hired' => 'success'
                     ];
                     $color = $colors[strtolower($application->status)] ?? 'muted';
+                    $labels = [
+                        'pending'     => 'Pending Review',
+                        'reviewed'    => 'Reviewed',
+                        'shortlisted' => 'Shortlisted',
+                        'interview'   => 'Interview',
+                        'hired'       => 'Hired',
+                        'accepted'    => 'Hired',
+                        'rejected'    => 'Rejected',
+                        'withdrawn'   => 'Withdrawn',
+                    ];
+                    $statusLabel = $labels[strtolower($application->status)] ?? ucfirst($application->status);
                     ?>
                     <span class="pill pill--<?= $color ?>" style="font-size:0.78rem; padding:4px 12px; font-weight:700;">
-                        <?= ucfirst($application->status) ?>
+                        <?= esc($statusLabel) ?>
                     </span>
                 </div>
             </div>

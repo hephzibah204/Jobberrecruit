@@ -1,316 +1,446 @@
+<?php
+$state = \App\Services\RemoteLandingPage::prepare($state);
+$isRemote = ($state->slug ?? '') === 'remote';
+if (in_array($state->slug ?? '', ['remote', 'nigeria-nationwide'], true)) {
+    $meta_description = $state->meta_description;
+    $seo_h1 = $state->seo_h1;
+    $location_label = $state->name;
+}
+?>
 <?= $this->extend('templates/base') ?>
+<?= $this->section('homepage_design') ?>reference<?= $this->endSection() ?>
+
+<?= $this->section('meta') ?>
+<?php if (!$isRemote): ?>
+<meta name="geo.region" content="<?= esc($geo_region ?? 'NG') ?>">
+<meta name="geo.placename" content="<?= esc($state->name) ?>">
+<?php endif; ?>
+<meta property="og:locale" content="en_NG">
+<?= $this->endSection() ?>
 
 <?= $this->section('schema') ?>
 <?php
-include_once APPPATH . 'Views/partials/schema/job_posting.php';
-$listItems = [];
-foreach ($jobs as $index => $j) {
-    $item = jobPostingSchema($j, base_url());
-    $listItems[] = [
-        '@type'    => 'ListItem',
-        'position' => $index + 1,
-        'item'     => $item,
-    ];
-}
+$locationLabel = $location_label ?? (preg_match('/state|fct|abuja/i', $state->name) ? $state->name : $state->name . ' State');
+$breadcrumbLabel = in_array($state->slug, ['remote', 'nigeria-nationwide'], true)
+    ? $state->name
+    : (str_ends_with(strtolower($locationLabel), 'jobs') ? $locationLabel : $locationLabel . ' Jobs');
+
+$itemListName = ($state->slug === 'remote')
+    ? 'Remote Jobs in Nigeria'
+    : (($state->slug === 'nigeria-nationwide') ? 'Nationwide Jobs in Nigeria' : 'Jobs in ' . $locationLabel);
 ?>
 <script type="application/ld+json">
-<?= json_encode([
-    '@context'      => 'https://schema.org',
-    '@type'         => 'ItemList',
-    'name'          => $title ?? 'Location Job Listings',
-    'description'   => $meta_description ?? 'Browse job listings by location',
-    'url'           => current_url(),
-    'numberOfItems' => (int) $total_jobs,
-    'itemListElement' => $listItems,
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "<?= base_url() ?>" },
+        { "@type": "ListItem", "position": 2, "name": "All Jobs", "item": "<?= base_url('jobs') ?>" },
+        { "@type": "ListItem", "position": 3, "name": "<?= esc($breadcrumbLabel) ?>", "item": "<?= esc($canonical_url ?? current_url()) ?>" }
+      ]
+    }<?php if (!empty($jobs) && count($jobs) > 0): ?>,
+    {
+      "@type": "ItemList",
+      "name": "<?= esc($itemListName) ?>",
+      "numberOfItems": <?= (int) $total_jobs ?>,
+      "itemListElement": [
+        <?php foreach ($jobs as $idx => $j):
+          $jobUrl = base_url('jobs/' . (($j->slug ?? '') ?: $j->id));
+        ?><?= $idx > 0 ? ',' : '' ?>{
+          "@type": "ListItem",
+          "position": <?= $idx + 1 ?>,
+          "url": "<?= esc($jobUrl) ?>"
+        }<?php endforeach; ?>
+      ]
+    }<?php endif; ?>
+  ]
+}
 </script>
 <?= $this->endSection() ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="<?= base_url('css/location-hub.css') ?>?v=<?= filemtime(FCPATH . 'css/location-hub.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
+<?php
+$locationName = $state->name;
+$locationLabel = $location_label ?? (preg_match('/state|fct|abuja/i', $locationName) ? $locationName : $locationName . ' State');
 
-<!-- ============================================================
-     HERO SECTION
-============================================================ -->
-<section class="location-hero py-5" style="background: linear-gradient(135deg, #002855 0%, var(--brand) 50%, #001a3b 100%); position: relative; overflow: hidden;">
-    <!-- Decorative blobs -->
-    <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(245, 166, 35, 0.1);pointer-events:none;"></div>
-    <div style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;background:rgba(0, 93, 168, 0.1);pointer-events:none;"></div>
+// Formulate H1 heading with <em> highlight (matching mockup)
+$heading = trim($seo_h1 ?? ($state->seo_h1 ?? '')) ?: 'Jobs in ' . $locationLabel . ', Nigeria — Verified Vacancies';
+$heading = str_replace(' — Find Verified Vacancies', ' — Verified Vacancies', $heading);
+$heading = preg_replace('/\s*\|\s*JobberRecruit$/i', '', $heading);
 
-    <div class="container position-relative" style="z-index:2;">
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb mb-0" style="background:transparent;">
-                <li class="breadcrumb-item"><a href="<?= base_url() ?>" class="text-decoration-none" style="color: #8ac4ff;"><i class="bi bi-house me-1"></i>Home</a></li>
-                <li class="breadcrumb-item"><a href="<?= base_url('jobs') ?>" class="text-decoration-none" style="color: #8ac4ff;">All Jobs</a></li>
-                <li class="breadcrumb-item active text-white-50"><?= esc($state->name) ?> Jobs</li>
-            </ol>
-        </nav>
+$highlightLabel = stripos($heading, $locationLabel) !== false ? $locationLabel : $locationName;
+$headingParts = preg_split('/(' . preg_quote($highlightLabel, '/') . ')/iu', $heading, 2, PREG_SPLIT_DELIM_CAPTURE);
 
-        <div class="row align-items-center gy-4">
-            <div class="col-lg-8">
-                <!-- Location badge -->
-                <div class="mb-3">
-                    <span class="badge px-3 py-2 fs-13 fw-medium" style="background: rgba(245, 166, 35, 0.15); color: var(--accent); border: 1px solid rgba(245, 166, 35, 0.3);">
-                        <i class="bi bi-geo-alt-fill me-1"></i><?= esc($state->region ?? 'Nigeria') ?>
-                    </span>
-                    <?php if (!empty($state->capital)): ?>
-                    <span class="badge px-3 py-2 fs-13 fw-medium ms-2" style="background: rgba(0, 93, 168, 0.15); color: #8ac4ff; border: 1px solid rgba(0, 93, 168, 0.3);">
-                        <i class="bi bi-building me-1"></i>Capital: <?= esc($state->capital) ?>
-                    </span>
-                    <?php endif; ?>
-                </div>
+// Multi-paragraph description split
+$descriptionParagraphs = preg_split('/\R\s*\R/', trim($state->description ?? '') ?: $meta_description);
+if (count($descriptionParagraphs) === 1) {
+    $sentences = preg_split('/(?<=[.!?])\s+(?=[A-Z])/', $descriptionParagraphs[0]);
+    if (count($sentences) > 2) {
+        $descriptionParagraphs = [
+            implode(' ', array_slice($sentences, 0, 2)),
+            implode(' ', array_slice($sentences, 2)),
+        ];
+    }
+}
 
-                <h1 class="display-5 fw-bold text-white lh-sm mb-3">
-                    <?= esc($state->seo_h1 ?? ('Jobs in ' . $state->name . ', Nigeria')) ?>
-                </h1>
+$heroDescription = $meta_description;
+if (strcasecmp($locationName, 'Lagos') === 0 || strcasecmp($locationName, 'Lagos State') === 0) {
+    $heroDescription = 'Browse verified jobs in Lagos State. Find roles in fintech, banking, FMCG, oil & gas and more. Filter by salary, experience, and location.';
+}
 
-                <p class="lead mb-4" style="color:rgba(255,255,255,0.75); max-width:680px;">
-                    <?= esc($meta_description) ?>
-                </p>
-
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <div class="d-flex align-items-center gap-2 text-white">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:rgba(245, 166, 35, 0.15);border:1px solid rgba(245, 166, 35, 0.3);">
-                            <i class="bi bi-briefcase fs-5" style="color:var(--accent);"></i>
-                        </div>
-                        <div>
-                            <div class="fw-bold fs-5"><?= number_format($total_jobs) ?></div>
-                            <div class="text-white-50 small">Open Roles</div>
-                        </div>
-                    </div>
-                    <a href="<?= base_url('jobs?state_id=' . $state->id) ?>" class="btn btn-lg rounded-pill px-4 text-white border-0" style="background: linear-gradient(135deg, var(--accent), #d48b11);">
-                        <i class="bi bi-search me-2"></i>Browse All Jobs
-                    </a>
-                    <?php if (!empty($auth)): ?>
-                    <a href="<?= base_url('job-alerts?state=' . $state->id) ?>" class="btn btn-outline-light rounded-pill px-4">
-                        <i class="bi bi-bell me-2"></i>Set Job Alert
-                    </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Stat cards column -->
-            <div class="col-lg-4">
-                <div class="glass-card p-4 text-white" style="background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.1) !important;">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-map fs-4 me-2" style="color:var(--accent);"></i>
-                        <span class="fw-bold">About <?= esc($state->name) ?></span>
-                    </div>
-                    <div class="row g-3 text-center">
-                        <div class="col-6">
-                            <div class="fw-bold fs-4" style="color:var(--accent);"><?= number_format($total_jobs) ?>+</div>
-                            <div class="text-white-50 small">Live Jobs</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="fw-bold fs-4" style="color:#8ac4ff;"><?= esc($state->capital ?? '—') ?></div>
-                            <div class="text-white-50 small">Capital City</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ============================================================
-     SEO DESCRIPTION SECTION
-============================================================ -->
-<?php if (!empty($state->description)): ?>
-<section class="py-4" style="background: #f8fafc;">
+if ($state->slug === 'remote') {
+    $browseUrl = base_url('jobs?location=remote');
+    $alertUrl = base_url('job-alerts?work_arrangement=remote');
+    $aboutMarketTitle = 'About remote work in Nigeria';
+} elseif ($state->slug === 'nigeria-nationwide') {
+    $browseUrl = base_url('jobs');
+    $alertUrl = base_url('job-alerts');
+    $aboutMarketTitle = 'About nationwide jobs in Nigeria';
+} else {
+    $browseUrl = base_url('jobs?state_id=' . (int) $state->id);
+    $alertUrl = base_url('job-alerts?state=' . (int) $state->id);
+    $aboutMarketTitle = 'About the job market in ' . $locationName;
+}
+$loggedIn = $auth->loggedIn();
+$savedJobIds = array_map('intval', $savedJobIds ?? []);
+?>
+<main id="main-content">
+  <section class="land-hero" aria-label="<?= esc($isRemote ? 'Remote jobs' : 'Jobs in ' . $locationLabel) ?>">
+    <span class="land-hero-grid" aria-hidden="true"></span>
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="glass-card p-4 p-md-5 border-start border-4" style="border-left-color: var(--brand) !important;">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="flex-shrink-0">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(0, 93, 168, 0.1);border:2px solid rgba(0, 93, 168, 0.3);">
-                                <i class="bi bi-info-circle fs-5" style="color:var(--brand);"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h2 class="fw-bold fs-5 mb-2 text-main">About the Job Market in <?= esc($state->name) ?></h2>
-                            <p class="text-muted mb-0 lh-lg"><?= esc($state->description) ?></p>
-                        </div>
-                    </div>
-                </div>
+      <div class="land-hero-inner">
+        <div class="land-hero-main">
+          <nav class="land-breadcrumb" aria-label="Breadcrumb">
+            <a href="<?= base_url() ?>">Home</a>
+            <svg aria-hidden="true" style="transform:rotate(-90deg)"><use href="#i-chev-down"/></svg>
+            <a href="<?= base_url('jobs') ?>">All Jobs</a>
+            <svg aria-hidden="true" style="transform:rotate(-90deg)"><use href="#i-chev-down"/></svg>
+            <span style="opacity:.7"><?= esc($breadcrumbLabel) ?></span>
+          </nav>
+          <span class="land-tag">
+            <svg aria-hidden="true"><use href="#i-pin"/></svg>
+            <?= esc(($state->region ?? '') ?: 'Nigeria') ?><?= !empty($state->capital) ? ' · Capital: ' . esc($state->capital) : '' ?>
+          </span>
+          <h1><?= esc($headingParts[0] ?? 'Jobs in ') ?><?php if (isset($headingParts[1])): ?><em><?= esc($headingParts[1]) ?></em><?= esc($headingParts[2] ?? '') ?><?php endif; ?></h1>
+          <p class="land-hero-sub"><?= esc($heroDescription) ?></p>
+          <div class="land-hero-actions">
+            <div class="land-open-count">
+              <span class="lc-ic"><svg aria-hidden="true"><use href="#i-bag"/></svg></span>
+              <span><span class="lc-n"><?= number_format($total_jobs) ?></span><br><span class="lc-l">Open roles</span></span>
             </div>
+            <a href="<?= esc($browseUrl) ?>" class="btn btn-white btn-lg"><svg aria-hidden="true"><use href="#i-search"/></svg> Browse all jobs</a>
+            <a href="<?= esc($alertUrl) ?>" class="land-hero-alert"><svg aria-hidden="true"><use href="#i-bell"/></svg> Set job alert</a>
+          </div>
         </div>
+        <div class="land-stat">
+          <div class="land-stat-title"><svg aria-hidden="true"><use href="#i-chart"/></svg> About <?= esc($locationName) ?></div>
+          <div class="land-stat-row">
+            <div class="land-stat-item"><div class="ls-n"><?= number_format($total_jobs) ?><?= $total_jobs > 0 ? '+' : '' ?></div><div class="ls-l">Live jobs</div></div>
+            <?php if (!empty($state->capital)): ?>
+            <div class="land-stat-item"><div class="ls-n alt"><?= esc($state->capital) ?></div><div class="ls-l">Capital city</div></div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
     </div>
-</section>
-<?php endif; ?>
+  </section>
 
-<!-- ============================================================
-     LATEST JOBS GRID
-============================================================ -->
-<section class="py-5">
+  <section class="seo-block" aria-label="<?= esc($aboutMarketTitle) ?>">
     <div class="container">
-        <div class="section-header mb-5">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h2 class="display-6 fw-bold mb-2 text-gradient">Latest Jobs in <?= esc($state->name) ?></h2>
-                    <p class="text-muted mb-0">
-                        Showing <?= count($jobs) ?> of <?= number_format($total_jobs) ?> open vacancies
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <a href="<?= base_url('jobs?state_id=' . $state->id) ?>" class="btn btn-outline-primary rounded-pill">
-                        View All <?= number_format($total_jobs) ?> Jobs <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                </div>
-            </div>
+      <div class="seo-card">
+        <span class="seo-ic"><svg aria-hidden="true"><use href="#i-doc"/></svg></span>
+        <div class="seo-body">
+          <h2><?= esc($aboutMarketTitle) ?></h2>
+          <?php foreach ($descriptionParagraphs as $paragraph): ?>
+            <p><?= esc($paragraph) ?></p>
+          <?php endforeach; ?>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <?php if (!empty($jobs)): ?>
-        <div class="row g-4">
-            <?php foreach ($jobs as $job): ?>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="glass-card p-4 h-100 position-relative hover-lift">
-                    <!-- Promoted ribbon -->
-                    <?php if (!empty($job->is_featured)): ?>
-                    <div class="featured-ribbon">
-                        <span><i class="bi bi-star-fill me-1"></i>Featured</span>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Company logo + name -->
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <?php if (empty($job->is_anonymous)): ?>
-                        <img src=\"<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>\" alt="<?= esc($job->employer_name) ?>"
-                             class="rounded" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--border);">
-                        <?php else: ?>
-                        <div class="rounded d-flex align-items-center justify-content-center"
-                             style="width:48px;height:48px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);">
-                            <i class="bi bi-building text-primary fs-4"></i>
-                        </div>
-                        <?php endif; ?>
-                        <div class="overflow-hidden">
-                            <div class="fw-semibold text-main text-truncate">
-                                <?= !empty($job->is_anonymous) ? 'Confidential' : esc($job->employer_name ?? 'Employer') ?>
-                            </div>
-                            <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i><?= esc($job->location ?? $state->name) ?></div>
-                        </div>
-                    </div>
-
-                    <!-- Job title -->
-                    <h5 class="fw-bold mb-2">
-                        <a href="<?= esc(format_job_url($job), 'url') ?>" <?= ($job->application_method ?? '') === 'external' ? 'target="_blank" rel="noopener"' : '' ?> class="text-decoration-none text-main hover-primary">
-                            <?= esc($job->title) ?>
-                        </a>
-                    </h5>
-
-                    <!-- Tags -->
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <?php if (!empty($job->job_type)): ?>
-                        <span class="badge bg-primary-transparent text-primary"><?= esc($job->job_type) ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($job->industry_name)): ?>
-                        <span class="badge bg-success-transparent text-success"><?= esc($job->industry_name) ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($job->experience_level)): ?>
-                        <span class="badge bg-info-transparent text-info"><?= esc($job->experience_level) ?></span>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Salary + deadline -->
-                    <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color:var(--border) !important;">
-                        <div class="text-success fw-medium small">
-                            <?php if (!empty($job->salary)): ?>
-                                <?php if (is_numeric($job->salary)): ?>
-                                    ₦<?= number_format((float)$job->salary) ?><?= (!empty($job->max_salary) && is_numeric($job->max_salary)) ? '–₦' . number_format((float)$job->max_salary) : '' ?>
-                                <?php else: ?>
-                                    <?= esc($job->salary) ?><?= !empty($job->max_salary) ? '–' . esc($job->max_salary) : '' ?>
-                                <?php endif; ?>
-                                <?= !empty($job->salary_period) ? '<span class="text-muted">/' . esc($job->salary_period) . '</span>' : '' ?>
-                            <?php else: ?>
-                                <span class="text-muted">Salary: Negotiable</span>
-                            <?php endif; ?>
-                        </div>
-                        <a href="<?= base_url('jobs/' . ($job->slug ?? $job->id)) ?>" class="btn btn-sm btn-primary rounded-pill px-3">
-                            Apply <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <?php endforeach; ?>
+  <section class="land-jobs" aria-labelledby="land-jobs-h">
+    <div class="container">
+      <div class="land-jobs-head">
+        <div>
+          <?php if ($state->slug === 'remote'): ?>
+          <h2 id="land-jobs-h">Latest <span>remote jobs</span> in Nigeria</h2>
+          <?php elseif ($state->slug === 'nigeria-nationwide'): ?>
+          <h2 id="land-jobs-h">Latest <span>nationwide jobs</span> in Nigeria</h2>
+          <?php else: ?>
+          <h2 id="land-jobs-h">Latest jobs in <span><?= esc($locationName) ?></span></h2>
+          <?php endif; ?>
+          <p class="land-jobs-count">Showing <?= count($jobs) ?> of <?= number_format($total_jobs) ?> open vacancies</p>
         </div>
-
-        <!-- Load more CTA -->
-        <?php if ($total_jobs > 12): ?>
-        <div class="text-center mt-5">
-            <a href="<?= base_url('jobs?state_id=' . $state->id) ?>" class="btn btn-outline-primary btn-lg rounded-pill px-5">
-                <i class="bi bi-grid me-2"></i>View All <?= number_format($total_jobs) ?> Jobs in <?= esc($state->name) ?>
-            </a>
-        </div>
+        <?php if ($total_jobs > 0): ?>
+        <a href="<?= esc($browseUrl) ?>" class="land-viewall">View all <?= number_format($total_jobs) ?> jobs <svg aria-hidden="true" style="transform:rotate(-90deg)"><use href="#i-chev-down"/></svg></a>
         <?php endif; ?>
+      </div>
 
+      <?php if (!empty($jobs)): ?>
+      <div class="jobs-grid" style="margin-top:24px">
+        <?php foreach ($jobs as $job): helper('public_job'); $job = public_job($job);
+          $anonymous = !empty($job->is_anonymous) || !empty($job->is_confidential) || !empty($job->anonymous);
+          $company = $anonymous ? 'Confidential Employer' : ($job->employer_name ?? 'Employer');
+          $logo = $anonymous ? '' : resolve_image_url($job->company_logo ?? '', 'company', $company);
+          $jobUrl = base_url('jobs/' . (($job->slug ?? '') ?: $job->id));
+          $saved = in_array((int) $job->id, $savedJobIds, true);
+          $initials = $anonymous ? 'CE' : mb_strtoupper(implode('', array_map(static fn ($word) => mb_substr($word, 0, 1), array_slice(preg_split('/\s+/', trim($company)), 0, 2))));
+
+          // Salary formatting matching mockup
+          $salary = $job->salary_details ?? $job->salary ?? $job->min_salary ?? null;
+          if (!empty($job->salary_details)) {
+              $salaryDisplay = $job->salary_details;
+          } elseif (!empty($salary) && is_numeric($salary)) {
+              $salaryDisplay = '₦' . number_format((float) $salary);
+              if (!empty($job->max_salary) && is_numeric($job->max_salary)) {
+                  $salaryDisplay .= ' – ₦' . number_format((float) $job->max_salary);
+              }
+              if (!empty($job->salary_period)) {
+                  $salaryDisplay .= ' / ' . $job->salary_period;
+              }
+          } elseif (!empty($salary)) {
+              $salaryDisplay = $salary;
+          } else {
+              $salaryDisplay = 'Negotiable';
+          }
+
+          // Experience formatting
+          $experience = trim($job->experience_level ?? '');
+          $experience = ['entry' => 'Entry Level', 'mid' => 'Mid Level', 'senior' => 'Senior Level', 'executive' => 'Executive'][$experience] ?? $experience;
+          $expDisplay = !empty($experience) ? preg_replace('/(\d)\s*-\s*(\d)/', '$1–$2', str_replace(['years', 'year'], 'yrs', $experience)) : '';
+
+          // Employment type formatting
+          $jobTypeDisplay = ucwords(str_replace(['_', '-'], ' ', $job->employment_type ?? $job->job_type ?? 'Full-time'));
+          if (strtolower($jobTypeDisplay) === 'full time') $jobTypeDisplay = 'Full-time';
+          if (strtolower($jobTypeDisplay) === 'part time') $jobTypeDisplay = 'Part-time';
+        ?>
+        <article class="job-card <?= !empty($job->is_featured) ? 'job-card--featured' : '' ?>" aria-label="<?= esc($job->title) ?>">
+          <?php if (!empty($job->is_featured)): ?>
+            <span class="badge-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
+          <?php endif; ?>
+          <div class="job-card-top">
+            <div>
+              <h3 class="job-title" title="<?= esc($job->title) ?>">
+                <a href="<?= esc($jobUrl) ?>"><?= esc($job->title) ?></a>
+              </h3>
+              <div class="job-company">
+                <span class="job-company-name"><?= esc($company) ?></span>
+                <?php if (!$anonymous && !empty($job->is_verified)): ?>
+                  <button type="button" class="verified-check" aria-label="Verified employer — tap for details" aria-expanded="false">
+                    <svg aria-hidden="true"><use href="#i-verified-disc"/></svg>
+                    <span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span>
+                  </button>
+                <?php endif; ?>
+              </div>
+              <?php if (!$anonymous && !empty($job->employer_tagline)): ?><div class="job-tagline" style="margin-top:2px;color:var(--muted);font-size:.75rem;line-height:1.35;"><?= esc($job->employer_tagline) ?></div><?php endif; ?>
+            </div>
+            <div class="job-logo<?= $anonymous ? ' is-confidential' : '' ?>" aria-hidden="true">
+              <?php if ($anonymous): ?>
+                <svg aria-hidden="true" width="20" height="20" style="color:var(--muted);"><use href="#i-lock"/></svg>
+              <?php elseif (!empty($logo)): ?>
+                <img src="<?= esc($logo) ?>" alt="<?= esc($company) ?> logo" loading="lazy">
+              <?php else: ?>
+                <?= esc($initials) ?>
+              <?php endif; ?>
+            </div>
+          </div>
+          <div class="job-meta">
+            <span><svg aria-hidden="true"><use href="#i-pin"/></svg> <?= esc($job->state_name ?? $locationName) ?></span>
+            <span><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= esc($jobTypeDisplay) ?></span>
+            <?php if (!empty($expDisplay)): ?>
+              <span><svg aria-hidden="true"><use href="#i-chart"/></svg> <?= esc($expDisplay) ?></span>
+            <?php endif; ?>
+          </div>
+          <div class="job-salary-row">
+            <span class="job-salary"><?= esc($salaryDisplay) ?></span>
+          </div>
+          <div class="job-actions">
+            <a href="<?= esc($jobUrl) ?>" class="btn btn-primary">Quick apply</a>
+            <?php if ($loggedIn): ?>
+              <form class="job-save-form" action="<?= base_url('jobs/toggle-save/' . (int) $job->id) ?>" method="post">
+                <?= csrf_field() ?>
+                <button type="submit" class="save-btn" data-job-id="<?= (int) $job->id ?>" data-saved="<?= $saved ? 'true' : 'false' ?>" aria-pressed="<?= $saved ? 'true' : 'false' ?>" aria-label="<?= $saved ? 'Job saved — click to remove' : 'Save job' ?>">
+                  <svg aria-hidden="true"><use href="<?= $saved ? '#i-bookmark-fill' : '#i-bookmark' ?>"/></svg> <?= $saved ? 'Saved' : 'Save' ?>
+                </button>
+              </form>
+            <?php else: ?>
+              <a class="save-btn" href="<?= esc(base_url('login?redirect=' . rawurlencode(current_url() . '?save=' . (int) $job->id))) ?>" aria-label="Save job">
+                <svg aria-hidden="true"><use href="#i-bookmark"/></svg> Save
+              </a>
+            <?php endif; ?>
+          </div>
+        </article>
+        <?php endforeach; ?>
+      </div>
+      <?php else: ?>
+      <div class="land-empty">
+        <span class="land-empty-ic"><svg aria-hidden="true"><use href="#i-bag"/></svg></span>
+        <?php if ($isRemote): ?>
+        <h3>No live remote vacancies right now</h3>
+        <p>Set a free job alert to hear when new remote opportunities are posted, or browse all jobs.</p>
         <?php else: ?>
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <i class="bi bi-briefcase" style="font-size:4rem;color:var(--border);"></i>
-            </div>
-            <h4 class="fw-bold text-main mb-2">No Open Jobs Yet in <?= esc($state->name) ?></h4>
-            <p class="text-muted mb-4">Be the first to know when new vacancies are posted.</p>
-            <a href="<?= base_url('jobs') ?>" class="btn btn-primary rounded-pill px-4">Browse All Nigeria Jobs</a>
-        </div>
+        <h3>No live vacancies in <?= esc($locationName) ?> right now</h3>
+        <p>New roles are added daily. Set a free job alert and we'll email you the moment a <?= esc($locationName) ?> job is posted — or browse nearby states below.</p>
         <?php endif; ?>
+        <div class="land-empty-actions">
+          <a href="<?= esc($alertUrl) ?>" class="btn btn-primary"><svg aria-hidden="true"><use href="#i-bell"/></svg> Set a job alert</a>
+          <a href="<?= base_url('jobs') ?>" class="btn btn-outline">Browse all jobs</a>
+        </div>
+      </div>
+      <?php endif; ?>
+      <p class="job-save-feedback sr-only" role="status" aria-live="polite"></p>
     </div>
-</section>
+  </section>
 
-<!-- ============================================================
-     BROWSE OTHER LOCATIONS
-============================================================ -->
-<section class="py-5" style="background: #f8fafc;">
+  <aside class="container" aria-label="Advertisement" style="padding-top:8px;padding-bottom:8px">
+    <div class="ad-unit">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-3464186884176173"
+           data-ad-slot="6229476516"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+  </aside>
+
+  <section class="crosslink" aria-labelledby="cross-h">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold text-gradient mb-2">Browse Jobs by State</h2>
-            <p class="text-muted">Find opportunities across all 36 states and FCT</p>
-        </div>
-        <div class="row g-3">
-            <?php foreach ($all_states as $s):
-                $sSlug = !empty($s->slug) ? $s->slug : strtolower(str_replace(' ', '-', $s->name)) . '-state';
-                $isActive = $s->id === $state->id;
-            ?>
-            <div class="col-6 col-md-4 col-lg-3 col-xl-2">
-                <a href="<?= base_url('jobs-in-' . esc($sSlug)) ?>"
-                   class="d-block text-decoration-none rounded-3 py-2 px-3 text-center fw-medium small transition-all
-                          <?= $isActive ? 'text-white' : 'glass-card text-main hover-lift' ?>"
-                   style="<?= $isActive ? 'background: linear-gradient(135deg, var(--brand), #004a87); border:none;' : '' ?>">
-                    <i class="bi bi-geo-alt<?= $isActive ? '' : '-fill' ?> me-1 <?= $isActive ? '' : '' ?>" <?= $isActive ? '' : 'style="color:var(--brand);"' ?>></i>
-                    <?= esc($s->name) ?>
-                </a>
-            </div>
-            <?php endforeach; ?>
-        </div>
+      <div class="crosslink-head">
+        <h2 id="cross-h">Browse jobs by <span>state</span></h2>
+        <p>Find opportunities across all 36 states, the FCT, nationwide, and remote roles</p>
+      </div>
+      <div class="crosslink-grid">
+        <?php foreach ($all_states as $s):
+          $stateSlug = ($s->slug ?? '') ?: strtolower(str_replace(' ', '-', $s->name)) . '-state';
+          if (in_array($stateSlug, ['remote', 'nigeria-nationwide', 'nationwide'], true)) continue;
+          $current = (int) $s->id === (int) ($state->id ?? 0) && ($state->slug ?? '') === $stateSlug;
+          $linkUrl = base_url('jobs-in-' . $stateSlug);
+        ?>
+          <a href="<?= esc($linkUrl) ?>" class="<?= $current ? 'is-current' : '' ?>" <?= $current ? 'aria-current="page"' : '' ?>>
+            <svg aria-hidden="true"><use href="#i-pin"/></svg> <?= esc($s->name) ?>
+          </a>
+        <?php endforeach; ?>
+        <a href="<?= base_url('jobs/remote') ?>" class="<?= (($state->slug ?? '') === 'remote' || uri_string() === 'jobs/remote') ? 'is-current' : '' ?>" <?= (($state->slug ?? '') === 'remote' || uri_string() === 'jobs/remote') ? 'aria-current="page"' : '' ?>>
+          <svg aria-hidden="true"><use href="#i-globe"/></svg> Remote Jobs
+        </a>
+        <a href="<?= base_url('jobs/nigeria-nationwide') ?>" class="<?= (($state->slug ?? '') === 'nigeria-nationwide' || uri_string() === 'jobs/nigeria-nationwide') ? 'is-current' : '' ?>" <?= (($state->slug ?? '') === 'nigeria-nationwide' || uri_string() === 'jobs/nigeria-nationwide') ? 'aria-current="page"' : '' ?>>
+          <svg aria-hidden="true"><use href="#i-pin"/></svg> Nationwide Jobs
+        </a>
+      </div>
     </div>
-</section>
+  </section>
+</main>
+<?= $this->endSection() ?>
 
-<style>
-.featured-ribbon {
-    position: absolute;
-    top: 0;
-    right: 0;
-    overflow: hidden;
-    width: 90px;
-    height: 90px;
-    pointer-events: none;
-}
-.featured-ribbon span {
-    position: absolute;
-    top: 18px;
-    right: -20px;
-    display: block;
-    width: 110px;
-    padding: 4px 0;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    text-align: center;
-    transform: rotate(45deg);
-    letter-spacing: 0.5px;
-}
-.hover-primary:hover { color: var(--primary) !important; }
-.transition-all { transition: all 0.2s ease; }
-</style>
+<?= $this->section('scripts') ?>
+<script>
+(() => {
+  try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (_) {}
 
+  // Verified employer tooltip (click/tap to toggle; hover handled by CSS; click-outside & Escape close)
+  document.querySelectorAll('.verified-check').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const wasOpen = btn.classList.contains('open');
+      document.querySelectorAll('.verified-check.open').forEach(o => {
+        o.classList.remove('open');
+        o.setAttribute('aria-expanded', 'false');
+      });
+      if (!wasOpen) {
+        btn.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.verified-check.open').forEach(o => {
+      o.classList.remove('open');
+      o.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.verified-check.open').forEach(o => {
+        o.classList.remove('open');
+        o.setAttribute('aria-expanded', 'false');
+      });
+    }
+  });
+
+  // Save Job handling with optimistic UI and CSRF token propagation
+  const forms = [...document.querySelectorAll('.job-save-form')];
+  forms.forEach(form => {
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = form.querySelector('.save-btn');
+      if (!button) return;
+      const feedback = document.querySelector('.job-save-feedback');
+      const wasSaved = button.dataset.saved === 'true';
+      const nextSaved = !wasSaved;
+
+      // Optimistic update
+      button.dataset.saved = String(nextSaved);
+      button.setAttribute('aria-pressed', String(nextSaved));
+      button.setAttribute('aria-label', nextSaved ? 'Job saved — click to remove' : 'Save job');
+      button.innerHTML = '<svg aria-hidden="true"><use href="#i-bookmark' + (nextSaved ? '-fill' : '') + '"/></svg> ' + (nextSaved ? 'Saved' : 'Save');
+      button.disabled = true;
+
+      const body = new FormData(form);
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await response.json();
+        if (data.csrfHash) {
+          forms.forEach(f => {
+            const csrfInput = f.querySelector('input[type="hidden"]');
+            if (csrfInput) csrfInput.value = data.csrfHash;
+          });
+        }
+        if (!response.ok || !data.success) {
+          throw new Error('Save failed');
+        }
+        if (feedback) {
+          feedback.textContent = nextSaved ? 'Job saved.' : 'Job removed from saved jobs.';
+        }
+      } catch (err) {
+        // Revert on error
+        button.dataset.saved = String(wasSaved);
+        button.setAttribute('aria-pressed', String(wasSaved));
+        button.setAttribute('aria-label', wasSaved ? 'Job saved — click to remove' : 'Save job');
+        button.innerHTML = '<svg aria-hidden="true"><use href="#i-bookmark' + (wasSaved ? '-fill' : '') + '"/></svg> ' + (wasSaved ? 'Saved' : 'Save');
+        if (feedback) feedback.textContent = 'Could not save this job. Please try again.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+
+  // Auto-resume save if returning from login with ?save=<job_id>
+  (function resumePendingSave() {
+    if (!window.JR_USER || !window.JR_USER.loggedIn) return;
+    const pending = new URLSearchParams(window.location.search).get('save');
+    if (!pending) return;
+    const form = document.querySelector('.job-save-form button[data-job-id="' + pending + '"]')?.closest('form');
+    if (form) {
+      const btn = form.querySelector('.save-btn');
+      if (btn && btn.dataset.saved !== 'true') {
+        form.requestSubmit();
+      }
+    }
+  })();
+})();
+</script>
 <?= $this->endSection() ?>

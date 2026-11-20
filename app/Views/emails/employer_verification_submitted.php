@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="<?= esc($logoUrl ?? base_url('images/logo.png')) ?>" alt="JobberRecruit Logo">
+            <img src="<?= esc($logoUrl ?? base_url('images/logo-white.png')) ?>" alt="JobberRecruit Logo">
             <h1>Verification Documents Received</h1>
         </div>
         <div class="content">

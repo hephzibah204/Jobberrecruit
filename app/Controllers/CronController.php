@@ -20,63 +20,8 @@ class CronController extends BaseController
             return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
-        $queueModel = new JobQueueModel();
-        $limit = 50; // Process 50 jobs per run
-        
-        $jobs = $queueModel->getPending($limit);
-        
-        if (empty($jobs)) {
-            return $this->response->setJSON(['status' => 'success', 'message' => 'No pending jobs in the queue.']);
-        }
-
-        $processed = 0;
-        $failed = 0;
-
-        foreach ($jobs as $job) {
-            $queueModel->update($job->id, ['status' => 'processing']);
-            
-            $payload = json_decode($job->payload, true);
-            $type = $payload['type'];
-            $data = $payload['data'];
-
-            $success = false;
-            $error = null;
-
-            try {
-                if ($type === 'newsletter_email') {
-                    $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
-                } elseif ($type === 'transactional_email') {
-                    $success = $this->sendTransactionalEmail($data);
-                } else {
-                    $error = "Unknown job type: {$type}";
-                }
-            } catch (\Exception $e) {
-                $error = $e->getMessage();
-            }
-
-            if ($success) {
-                $queueModel->update($job->id, ['status' => 'completed']);
-                $processed++;
-            } else {
-                $attempts = $job->attempts + 1;
-                $status = ($attempts >= 3) ? 'failed' : 'pending';
-                
-                $queueModel->update($job->id, [
-                    'status' => $status,
-                    'attempts' => $attempts,
-                    'error' => $error ?? 'Unknown error',
-                    'available_at' => date('Y-m-d H:i:s', time() + (60 * $attempts)) // Exponential backoff
-                ]);
-                $failed++;
-            }
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success', 
-            'message' => 'Queue processing finished.',
-            'jobs_processed' => $processed,
-            'jobs_failed' => $failed
-        ]);
+        return $this->response->setJSON(array_merge(['status' => 'success'],
+            (new \App\Services\EmailQueueWorker())->process(50)));
     }
 
     public function processEmailQueue()
@@ -84,78 +29,9 @@ class CronController extends BaseController
         if (!$this->validateCronToken()) {
             return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
-
-        $queueModel = new JobQueueModel();
-        // Smart rate limiting: pull 100 emails per batch to avoid overwhelming the SMTP server in a 1-minute cron
-        $limit = 100;
-        
-        $jobs = $queueModel->where('status', 'pending')
-                           ->where('type', 'campaign_email')
-                           ->groupStart()
-                               ->where('available_at <=', date('Y-m-d H:i:s'))
-                               ->orWhere('available_at', null)
-                           ->groupEnd()
-                           ->orderBy('id', 'ASC')
-                           ->findAll($limit);
-                           
-        if (empty($jobs)) {
-            return $this->response->setJSON(['status' => 'success', 'message' => 'No pending campaign emails.']);
-        }
-
-        $processed = 0;
-        $failed = 0;
-
-        foreach ($jobs as $job) {
-            $queueModel->update($job->id, ['status' => 'processing']);
-            
-            $payload = json_decode($job->payload, true);
-            $data = $payload['data'];
-            
-            $success = false;
-            $error = null;
-
-            try {
-                $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
-                
-                if ($success && isset($data['log_id'])) {
-                    $emailLogModel = new \App\Models\EmailLogModel();
-                    $emailLogModel->update($data['log_id'], ['delivered_at' => date('Y-m-d H:i:s')]);
-                }
-            } catch (\Exception $e) {
-                $error = $e->getMessage();
-            }
-
-            if ($success) {
-                $queueModel->update($job->id, ['status' => 'completed']);
-                $processed++;
-            } else {
-                $attempts = $job->attempts + 1;
-                // Soft bounce retry logic
-                $status = ($attempts >= 3) ? 'failed' : 'pending';
-                
-                $queueModel->update($job->id, [
-                    'status' => $status,
-                    'attempts' => $attempts,
-                    'error' => $error ?? 'SMTP Delivery Failed',
-                    'available_at' => date('Y-m-d H:i:s', time() + (300 * pow(2, $attempts))) // Exponential backoff (5m, 10m)
-                ]);
-                
-                if ($status === 'failed' && isset($data['log_id'])) {
-                    $emailLogModel = new \App\Models\EmailLogModel();
-                    $emailLogModel->update($data['log_id'], ['bounce_reason' => $error ?? 'Hard bounce after 3 attempts']);
-                }
-                
-                $failed++;
-            }
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success', 
-            'jobs_processed' => $processed,
-            'jobs_failed' => $failed
-        ]);
+        return $this->response->setJSON(array_merge(['status' => 'success'],
+            (new \App\Services\EmailQueueWorker())->process(100, ['campaign_email', 'newsletter_email'])));
     }
-
 
     /**
      * Archive accounts that haven't updated their profile in 3 months
@@ -180,12 +56,16 @@ class CronController extends BaseController
             ->where('updated_at <', $threeMonthsAgo)
             ->update(['status' => 'inactive', 'status_message' => 'Account archived due to 3 months of inactivity.']);
 
+        $employerCount = $db->affectedRows();
+
         // 2. Update Candidates
         $candidateCount = $db->table('users')
-            ->where('user_type', 'candidate')
+            ->whereIn('user_type', ['job_seeker', 'candidate'])
             ->where('status', 'active')
             ->where('updated_at <', $threeMonthsAgo)
             ->update(['status' => 'inactive', 'status_message' => 'Account archived due to 3 months of inactivity.']);
+
+        $candidateCount = $db->affectedRows();
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -212,72 +92,16 @@ class CronController extends BaseController
 
         // 1. Process Pending Queue Items (Newsletters, Transactional, etc. - 15 items per batch)
         try {
-            $queueModel = new JobQueueModel();
-            $pendingJobs = $queueModel->where('status', 'pending')->findAll(15);
-            $processed = 0;
-            foreach ($pendingJobs as $job) {
-                $queueModel->update($job->id, ['status' => 'processing']);
-                $payload = json_decode($job->payload, true);
-                $type = $payload['type'] ?? 'newsletter_email';
-                $data = $payload['data'] ?? [];
-
-                $sent = false;
-                if ($type === 'transactional_email' || (!empty($data['to']) && !empty($data['message']))) {
-                    $sent = $this->sendTransactionalEmail($data);
-                } elseif (!empty($data['email'])) {
-                    $sent = $this->sendEmail($data['email'], $data['subject'] ?? 'Notification', $data['content'] ?? '');
-                }
-
-                if ($sent) {
-                    $queueModel->update($job->id, ['status' => 'completed']);
-                    $processed++;
-                } else {
-                    $queueModel->update($job->id, ['status' => 'failed']);
-                }
-            }
-            $results['queue_processed'] = $processed;
+            $queueResult = (new \App\Services\EmailQueueWorker())->process(15);
+            $results['queue_processed'] = $queueResult['jobs_processed'];
+            $results['queue_failed'] = $queueResult['jobs_failed'];
         } catch (\Throwable $e) {
             $results['queue_error'] = $e->getMessage();
         }
 
         // 2. Run Webinar Reminders (24h & 1h)
         try {
-            $webinarModel = new \App\Models\WebinarModel();
-            $regModel     = new \App\Models\WebinarRegistrationModel();
-            $userModel    = new \App\Models\UserModel();
-            $emailNotif   = new \App\Services\EmailNotificationService();
-
-            $now = time();
-            $webinars = $webinarModel->where('status !=', 'cancelled')
-                ->where('scheduled_at >=', date('Y-m-d H:i:s', $now))
-                ->findAll();
-
-            $wSent = 0;
-            foreach ($webinars as $w) {
-                $wObj = (object) $w;
-                $diffHours = (strtotime($wObj->scheduled_at) - $now) / 3600;
-                if ($diffHours <= 25 && $diffHours >= 23) {
-                    $regs = $regModel->where('webinar_id', $wObj->id)->where('reminder_sent_24h', 0)->findAll();
-                    foreach ($regs as $r) {
-                        $user = $userModel->find($r['user_id']);
-                        if ($user) {
-                            $emailNotif->sendWebinarReminderNotification($user, $wObj, '24h');
-                            $regModel->update($r['id'], ['reminder_sent_24h' => 1]);
-                            $wSent++;
-                        }
-                    }
-                } elseif ($diffHours <= 1.5 && $diffHours >= 0.1) {
-                    $regs = $regModel->where('webinar_id', $wObj->id)->where('reminder_sent_1h', 0)->findAll();
-                    foreach ($regs as $r) {
-                        $user = $userModel->find($r['user_id']);
-                        if ($user) {
-                            $emailNotif->sendWebinarReminderNotification($user, $wObj, '1h');
-                            $regModel->update($r['id'], ['reminder_sent_1h' => 1]);
-                            $wSent++;
-                        }
-                    }
-                }
-            }
+            $wSent = (new \App\Services\WebinarReminderService())->run();
             $results['webinar_reminders_sent'] = $wSent;
         } catch (\Throwable $e) {
             $results['webinar_reminders_error'] = $e->getMessage();
@@ -457,4 +281,110 @@ class CronController extends BaseController
             return false;
         }
     }
+
+    /**
+     * Populate slugs for jobs, categories, industries, and locations via browser/web request
+     * /cron/populate-slugs?token=jobber_cron_secret_123
+     * Optional &force=1 to re-generate even if already populated
+     */
+    public function populateSlugs()
+    {
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized request. Pass valid ?token=']);
+        }
+
+        @set_time_limit(300);
+        $force = (bool)$this->request->getGet('force');
+
+        $results = \App\Services\SeoSlugGenerator::populateAll($force);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Populated slugs for jobs, categories, industries, and locations.',
+            'mode' => $force ? 'force_regeneration' : 'populate_missing',
+            'results' => $results,
+        ]);
+    }
+
+    /**
+     * Verify SEO implementation via browser/web request
+     * /cron/verify-seo?token=jobber_cron_secret_123
+     */
+    public function verifySeo()
+    {
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized request. Pass valid ?token=']);
+        }
+
+        $jobModel = new \App\Models\JobModel();
+        $totalJobs = $jobModel->countAllResults();
+        $slugsCount = $jobModel->where('slug IS NOT NULL')->where('slug !=', '')->countAllResults();
+
+        $sampleJobs = $jobModel->where('admin_status', 'approved')->findAll(5);
+        $samples = [];
+        foreach ($sampleJobs as $sample) {
+            $samples[] = [
+                'id' => $sample->id,
+                'title' => $sample->title,
+                'slug' => $sample->slug,
+                'url' => base_url('jobs/' . $sample->slug),
+            ];
+        }
+
+        $db = \Config\Database::connect();
+        $totalCats  = $db->table('job_categories')->countAllResults();
+        $catSlugs   = $db->table('job_categories')->where('slug IS NOT NULL')->where('slug !=', '')->countAllResults();
+        $totalInds  = $db->table('industries')->countAllResults();
+        $indSlugs   = $db->table('industries')->where('slug IS NOT NULL')->where('slug !=', '')->countAllResults();
+        $totalStates = $db->table('states')->countAllResults();
+        $stateSlugs = $db->table('states')->where('slug IS NOT NULL')->where('slug !=', '')->countAllResults();
+        $seededH1    = $db->table('states')->where('seo_h1 IS NOT NULL')->where('seo_h1 !=', '')->countAllResults();
+        $nationwide  = $db->table('states')->where('slug', 'nigeria-nationwide')->get()->getRow();
+        $remote      = $db->table('states')->where('slug', 'remote')->get()->getRow();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'slugs_audit' => [
+                'jobs' => [
+                    'total' => $totalJobs,
+                    'populated' => $slugsCount,
+                    'complete' => ($totalJobs > 0 && $totalJobs === $slugsCount),
+                ],
+                'categories' => [
+                    'total' => $totalCats,
+                    'populated' => $catSlugs,
+                    'complete' => ($totalCats > 0 && $totalCats === $catSlugs),
+                ],
+                'industries' => [
+                    'total' => $totalInds,
+                    'populated' => $indSlugs,
+                    'complete' => ($totalInds > 0 && $totalInds === $indSlugs),
+                ],
+                'locations' => [
+                    'total' => $totalStates,
+                    'populated' => $stateSlugs,
+                    'complete' => ($totalStates > 0 && $totalStates === $stateSlugs),
+                ],
+            ],
+            'sample_jobs' => $samples,
+            'location_hubs' => [
+                'total_hubs' => $totalStates,
+                'hubs_with_seo' => $seededH1,
+                'all_seeded' => ($totalStates === 39 && $seededH1 === 39),
+                'nationwide_hub' => $nationwide ? [
+                    'id' => $nationwide->id,
+                    'slug' => $nationwide->slug,
+                    'url' => base_url('jobs/' . $nationwide->slug),
+                    'h1' => $nationwide->seo_h1,
+                ] : null,
+                'remote_hub' => $remote ? [
+                    'id' => $remote->id,
+                    'slug' => $remote->slug,
+                    'url' => base_url('jobs/' . $remote->slug),
+                    'h1' => $remote->seo_h1,
+                ] : null,
+            ],
+        ]);
+    }
 }
+

@@ -166,7 +166,7 @@
                                     </span>
                                 </h6>
                                 <p class="text-muted fs-12 mb-0">
-                                    Configure whether AI tools (AI Chatbot, Resume Builder, Career Tools Suite, Mock Interviews) require a Paid Candidate Subscription or are Free to all registered candidates.
+                                    Configure whether AI tools (AI Chatbot, Resume Builder, Career Tools Suite, Mock Interviews) require a Paid Candidate Subscription or are Free to all registered candidates. Switch ON = Paid Subscription Required; switch OFF = Free for Candidates. The badge shows the mode currently in effect.
                                 </p>
                             </div>
                             <div class="form-check form-switch fs-20 flex-shrink-0 ms-2">

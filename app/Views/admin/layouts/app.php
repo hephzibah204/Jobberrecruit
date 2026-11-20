@@ -212,7 +212,6 @@
     })();
     </script>
 
-    <?= $this->include('partials/chatbot'); ?>
     <script src="<?= base_url('assets/js/autosave.js') ?>"></script>
     <?= $this->renderSection('scripts') ?>
 

@@ -463,7 +463,7 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
         </div>
         <div class="hchip">
           <span class="hchip-lbl"><svg aria-hidden="true"><use href="#i-flame"/></svg> Coaching Streak</span>
-          <div class="hchip-val"><?= (int)$coaching_streak ?> weeks <small>· longest yet</small></div>
+          <div class="hchip-val"><?= (int)$coaching_streak ?> <small>day streak</small></div>
         </div>
       </div>
     </div>
@@ -607,8 +607,7 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
           <div class="gap-block" style="grid-column:1/-1">
             <h4><svg aria-hidden="true"><use href="#i-trend-up"/></svg> Market Demand</h4>
             <div class="demand">
-              <div class="top"><span>Openings vs Candidates</span><b><?= (int)($gaps['demand'] ?? 74) ?>%</b></div>
-              <div class="m-track"><div class="m-fill" style="width:<?= (int)($gaps['demand'] ?? 74) ?>%;background:linear-gradient(90deg,var(--brand-dark),var(--brand))"></div></div>
+              <p style="font-size:.78rem;color:var(--muted);margin:0">Live market demand data for your role is not available yet, so no figure is shown here.</p>
             </div>
           </div>
         </div>
@@ -620,11 +619,19 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
       <div class="card-head"><span class="card-title" id="conf-title"><svg aria-hidden="true"><use href="#i-shield"/></svg> AI Confidence</span></div>
       <div class="card-body">
         <div class="conf-meter">
+          <?php if (!empty($aiConfidenceHasData)): ?>
           <div class="conf-ring">
-            <svg viewBox="0 0 70 70" aria-hidden="true"><circle class="track" cx="35" cy="35" r="30"/><circle class="prog" id="conf-prog" cx="35" cy="35" r="30" data-target="82"/></svg>
-            <span class="num" id="conf-num">82%</span>
+            <svg viewBox="0 0 70 70" aria-hidden="true"><circle class="track" cx="35" cy="35" r="30"/><circle class="prog" id="conf-prog" cx="35" cy="35" r="30" data-target="<?= (int)($aiConfidence ?? 0) ?>"/></svg>
+            <span class="num" id="conf-num"><?= (int)($aiConfidence ?? 0) ?>%</span>
           </div>
-          <p>Based on the consistency of your sessions, resume completeness, and aptitude performance. Higher confidence = your profile is more attractive to recruiters.</p>
+          <p>Based on how much real data your coach has about you — your profile completeness, completed practice sessions and aptitude results. The more you complete, the more grounded this estimate becomes.</p>
+          <?php else: ?>
+          <div class="conf-ring">
+            <svg viewBox="0 0 70 70" aria-hidden="true"><circle class="track" cx="35" cy="35" r="30"/><circle class="prog" id="conf-prog" cx="35" cy="35" r="30" data-target="0"/></svg>
+            <span class="num" id="conf-num">—</span>
+          </div>
+          <p>Not enough data yet. Complete your profile or take a practice session so your coach can ground its guidance in your real activity instead of guessing.</p>
+          <?php endif; ?>
         </div>
       </div>
     </section>
@@ -686,22 +693,8 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
     <section class="card" aria-labelledby="courses-title">
       <div class="card-head"><span class="card-title" id="courses-title"><svg aria-hidden="true"><use href="#i-book"/></svg> Recommended Courses</span></div>
       <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
-        <div class="course" style="display:flex;flex-direction:row;align-items:center;gap:14px;padding:14px 16px">
-          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand-deep),var(--brand));display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff"><svg aria-hidden="true"><use href="#i-chart"/></svg></div>
-          <div style="flex:1;min-width:0">
-            <b style="font-size:.82rem;font-weight:700;color:var(--brand-deep)">Product Analytics Mastery</b>
-            <p style="font-size:.68rem;color:var(--muted);margin-top:2px">8 modules · 4.5 hours</p>
-          </div>
-          <a href="<?= base_url('training') ?>" class="btn btn-sm btn-outline" style="flex-shrink:0">Start</a>
-        </div>
-        <div class="course" style="display:flex;flex-direction:row;align-items:center;gap:14px;padding:14px 16px">
-          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent-dark),var(--accent));display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff"><svg aria-hidden="true"><use href="#i-shield"/></svg></div>
-          <div style="flex:1;min-width:0">
-            <b style="font-size:.82rem;font-weight:700;color:var(--brand-deep)">Agile & Scrum Fundamentals</b>
-            <p style="font-size:.68rem;color:var(--muted);margin-top:2px">6 modules · 3.2 hours</p>
-          </div>
-          <a href="<?= base_url('training') ?>" class="btn btn-sm btn-outline" style="flex-shrink:0">Start</a>
-        </div>
+        <p>Explore the current course catalogue and choose training relevant to your goals.</p>
+
         <a href="<?= base_url('training') ?>" class="card-link" style="justify-content:center;margin-top:4px">Browse all courses <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
       </div>
     </section>
@@ -738,10 +731,9 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
       <div class="card-head"><span class="card-title" id="ach-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Your Journey</span></div>
       <div class="card-body">
         <div class="ach-timeline">
-          <div class="at-item"><span class="at-dot"></span><div><b>Profile completed to 82%</b><p>Added skills, bio, and career preferences.</p></div></div>
-          <div class="at-item"><span class="at-dot"></span><div><b>First interview simulation completed</b><p>Scored 72% — behavioural section needs work.</p></div></div>
-          <div class="at-item"><span class="at-dot"></span><div><b>Resume strengthened</b><p>AI-optimised summary added to your CV.</p></div></div>
-          <div class="at-item"><span class="at-dot"></span><div><b>4-week coaching streak</b><p>Longest streak yet — keep it going!</p></div></div>
+          <div class="at-item"><span class="at-dot"></span><div><b>Profile completion: <?= (int)$profile_completion ?>%</b><p>Based on your saved profile.</p></div></div>
+          <div class="at-item"><span class="at-dot"></span><div><b><?= (int)($sessionsCount ?? 0) ?> completed interviews</b><?php if (($sessionsCount ?? 0) > 0 && ($avgPracticeScore ?? null) !== null): ?><p>Average practice score: <?= (int)$avgPracticeScore ?>% across your completed sessions.</p><?php else: ?><p>No practice average yet — complete your first mock interview to earn one.</p><?php endif; ?></div></div>
+          <div class="at-item"><span class="at-dot"></span><div><b><?= (int)$coaching_streak ?> day coaching streak</b><p>Based on your recorded activity.</p></div></div>
         </div>
       </div>
     </section>
@@ -811,10 +803,29 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
   },1800);
 
   /* ── coach chip quick replies ── */
+  <?php
+    // Canned coach answers are built from the same scores shown in the
+    // meters above, so a reply can never quote a figure the page itself
+    // does not show.
+    $_sortedScores = $scores ?? [];
+    usort($_sortedScores, static fn ($a, $b) => ((int) ($a['value'] ?? 0)) <=> ((int) ($b['value'] ?? 0)));
+    $_weakest = $_sortedScores[0] ?? null;
+    $_second  = $_sortedScores[1] ?? null;
+    $_focusReply = $_weakest
+        ? 'Your lowest score is <b>' . esc($_weakest['label']) . ' at ' . (int) $_weakest['value'] . '/100</b> (' . esc($_weakest['source']) . '). That is where your next effort pays off fastest — your plan below starts there.'
+        : 'Complete your profile so your coach can score your readiness and point you at the right next step.';
+    $_progressReply = 'Your career health is <b>' . (int) $career_health . '/100</b> and your profile is <b>' . (int) $profile_completion . '%</b> complete. '
+        . ((($sessionsCount ?? 0) > 0 && ($avgPracticeScore ?? null) !== null)
+            ? 'Across your <b>' . (int) $sessionsCount . '</b> completed practice interviews, your average score is <b>' . (int) $avgPracticeScore . '%</b>.'
+            : 'You have not completed a practice interview yet, so there is no practice average to report.');
+    $_blockingReply = ($_weakest && $_second)
+        ? 'Two scores are holding you back: <b>' . esc($_weakest['label']) . ' (' . (int) $_weakest['value'] . '/100)</b> and <b>' . esc($_second['label']) . ' (' . (int) $_second['value'] . '/100)</b>. They are computed from your actual profile and activity — see the meters above.'
+        : 'Complete missing profile sections and review your resume against the requirements of the roles you want.';
+  ?>
   var coachReplies={
-    focus:'Based on your scores, <b>Online Presence</b> (45/100) and <b>Market Position</b> (58/100) are your weakest areas. I recommend updating your LinkedIn this week and applying to 3 roles that match your skills.',
-    progress:'Your career health is at <b><?= (int)$career_health ?>/100</b>. You\'ve improved +11% in interview readiness this month. Your strongest area is Resume Strength at 82%. Keep the momentum!',
-    blocking:'Your <b>Online Presence</b> score (45/100) may be limiting recruiter visibility. Add a professional headline, complete your work history, and get 2+ recommendations to move the needle.'
+    focus: <?= json_encode($_focusReply) ?>,
+    progress: <?= json_encode($_progressReply) ?>,
+    blocking: <?= json_encode($_blockingReply) ?>
   };
   document.querySelectorAll('.coach-chip').forEach(function(chip){
     chip.addEventListener('click',function(){

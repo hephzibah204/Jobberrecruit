@@ -1,5 +1,12 @@
 <?= $this->extend('admin/layouts/app') ?>
 <?= $this->section('section') ?>
+<?php
+$employerStatusUrl = static fn ($status) => base_url('admin/employers') . '?' . http_build_query([
+    'status' => $status,
+    'q' => $search ?? '',
+    'industries' => $selectedIndustries ?? [],
+]);
+?>
 
 <div class="container-fluid page-container main-body-container">
 
@@ -19,14 +26,14 @@
         <div class="card-body">
             <ul class="nav nav-tabs nav-tabs-header">
                 <li class="nav-item">
-                    <a href="<?= base_url('admin/employers?status=all') ?>"
+                    <a href="<?= esc($employerStatusUrl('all'), 'attr') ?>"
                         class="nav-link <?= $currentStatus == 'all' ? 'active' : '' ?>">
                         All Employers
                         <span class="badge bg-dark ms-1"><?= $verificationStats['total'] ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('admin/employers?status=pending') ?>"
+                    <a href="<?= esc($employerStatusUrl('pending'), 'attr') ?>"
                         class="nav-link <?= $currentStatus == 'pending' ? 'active' : '' ?>">
                         <i class="ti ti-hourglass-high text-warning"></i>
                         Pending Verification
@@ -34,7 +41,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('admin/employers?status=unverified') ?>"
+                    <a href="<?= esc($employerStatusUrl('unverified'), 'attr') ?>"
                         class="nav-link <?= $currentStatus == 'unverified' ? 'active' : '' ?>">
                         <i class="ti ti-file-off text-muted"></i>
                         Unverified (No Docs)
@@ -42,7 +49,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('admin/employers?status=verified') ?>"
+                    <a href="<?= esc($employerStatusUrl('verified'), 'attr') ?>"
                         class="nav-link <?= $currentStatus == 'verified' ? 'active' : '' ?>">
                         <i class="ti ti-checkbox text-success"></i>
                         Verified
@@ -50,7 +57,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('admin/employers?status=rejected') ?>"
+                    <a href="<?= esc($employerStatusUrl('rejected'), 'attr') ?>"
                         class="nav-link <?= $currentStatus == 'rejected' ? 'active' : '' ?>">
                         <i class="ti ti-x text-danger"></i>
                         Rejected
@@ -58,7 +65,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('admin/employers?status=document_required') ?>"
+                    <a href="<?= esc($employerStatusUrl('document_required'), 'attr') ?>"
                         class="nav-link <?= $currentStatus == 'document_required' ? 'active' : '' ?>">
                         <i class="ti ti-file-text text-info"></i>
                         Documents Required
@@ -80,6 +87,7 @@
                             <div class="form-check mb-2">
                                 <input class="form-check-input industry-filter"
                                     type="checkbox"
+                                    <?= in_array((int) $industry->id, $selectedIndustries ?? [], true) ? 'checked' : '' ?>
                                     value="<?= esc($industry->id) ?>">
                                 <label class="form-check-label">
                                     <?= esc($industry->name) ?>
@@ -97,11 +105,20 @@
         <!-- MAIN CONTENT -->
         <div class="col-xxl-9">
             <div class="card custom-card mb-3">
-                <div class="card-body d-flex justify-content-between align-items-center">
+                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <h5 class="mb-0">
-                        <?= number_format($total) ?>
+                        <span id="employer-result-count" aria-live="polite"><?= number_format($total) ?></span>
                         <span class="fw-normal fs-14">Employers found</span>
                     </h5>
+                    <form id="employer-search-form" method="get" action="<?= base_url('admin/employers') ?>" class="d-flex flex-wrap gap-2 align-items-end">
+                        <input type="hidden" name="status" value="<?= esc($currentStatus, 'attr') ?>">
+                        <div>
+                            <label for="employer-search" class="form-label mb-1">Search employers</label>
+                            <input id="employer-search" name="q" type="search" maxlength="200" class="form-control" value="<?= esc($search ?? '', 'attr') ?>" placeholder="Company, email, phone, or ID">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <button type="button" id="employer-search-clear" class="btn btn-light">Clear</button>
+                    </form>
                 </div>
             </div>
 
@@ -198,7 +215,8 @@
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                     },
                     body: JSON.stringify({
                         document_id: documentId
@@ -226,7 +244,8 @@
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                     },
                     body: JSON.stringify({
                         document_id: documentId
@@ -274,28 +293,55 @@
             });
     };
 
-    // Apply industry filter
+    let employerRequest;
+    document.getElementById('employer-search-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        applyIndustryFilter();
+    });
+    document.getElementById('employer-search-clear').addEventListener('click', function() {
+        document.getElementById('employer-search').value = '';
+        applyIndustryFilter();
+    });
+
+    // Apply search and filters together, before server-side pagination.
     function applyIndustryFilter(page = 1) {
+        employerRequest?.abort();
+        employerRequest = new AbortController();
         const params = new URLSearchParams();
         params.append('page', page);
         params.append('status', '<?= $currentStatus ?>');
+        params.set('q', document.getElementById('employer-search').value.trim());
 
         document.querySelectorAll('.industry-filter:checked').forEach(el => {
             params.append('industries[]', el.value);
         });
 
         fetch("<?= base_url('admin/employers/filter') ?>?" + params.toString(), {
+                signal: employerRequest.signal,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => res.text())
+            .then(res => {
+                if (!res.ok) throw new Error('Unable to load employers');
+                return res.text();
+            })
             .then(html => {
                 document.getElementById('employers-table-wrapper').innerHTML = html;
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
+                const count = document.querySelector('[data-employer-total]')?.dataset.employerTotal;
+                if (count !== undefined) document.getElementById('employer-result-count').textContent = Number(count).toLocaleString();
+                history.replaceState({}, '', "<?= base_url('admin/employers') ?>?" + params.toString());
+                document.querySelectorAll('.nav-tabs-header a').forEach(link => {
+                    const url = new URL(link.href);
+                    url.searchParams.set('q', params.get('q'));
+                    url.searchParams.delete('page');
+                    url.searchParams.delete('industries[]');
+                    params.getAll('industries[]').forEach(id => url.searchParams.append('industries[]', id));
+                    link.href = url.toString();
                 });
+            })
+            .catch(error => {
+                if (error.name !== 'AbortError') toastr.error('Could not load employers. Please try again.');
             });
     }
 
@@ -381,22 +427,12 @@
 
     // Pagination with AJAX
     document.addEventListener('click', function(e) {
-        const link = e.target.closest('.pagination a');
+        const link = e.target.closest('#employers-table-wrapper .pagination a');
         if (!link) return;
 
         e.preventDefault();
 
-        fetch(link.href, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('employers-table-wrapper').innerHTML = html;
-                history.pushState({}, '', link.href);
-            })
-            .catch(err => console.error(err));
+        applyIndustryFilter(new URL(link.href).searchParams.get('page') || 1);
     });
 
     // Delete Employer

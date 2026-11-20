@@ -22,11 +22,13 @@
 <div class="notice notice--info" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
   <div style="display: flex; gap: 8px; align-items: center;">
     <svg aria-hidden="true"><use href="#i-wallet"/></svg>
-    <span><strong>Available Job Credits:</strong> <?= number_format($creditBalance ?? 0, 0) ?></span>
+    <span><strong>Job Posting Access:</strong> <?= !empty($hasUnlimitedAccess) ? 'Unlimited job postings' : number_format($creditBalance ?? 0, 0) . ' credits' ?></span>
   </div>
+  <?php if (empty($hasUnlimitedAccess)): ?>
   <a href="<?= base_url('employer/bundles') ?>" class="emp-btn emp-btn-primary emp-btn-sm" style="min-height: auto; padding: 6px 12px;">
     Buy Credits
   </a>
+  <?php endif; ?>
 </div>
 
 <div class="job-detail-grid">
@@ -192,7 +194,7 @@
                 $jobPill = 'pill--pending';
             }
             ?>
-            <span class="pill <?= $jobPill ?>"><?= esc(ucfirst($job->status)) ?></span>
+            <span class="pill <?= $jobPill ?>"><?= esc(ucwords(str_replace('_', ' ', $job->status))) ?></span>
           </span>
         </div>
         <div class="detail-item">

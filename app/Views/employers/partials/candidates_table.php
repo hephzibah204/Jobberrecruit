@@ -1,4 +1,4 @@
-<div class="tri" style="grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));">
+<div class="tri" style="grid-template-columns: repeat(auto-fill, minmax(min(285px, 100%), 1fr));">
     <?php if (!empty($candidates)): ?>
         <?php foreach ($candidates as $c): ?>
             <?php
@@ -11,7 +11,7 @@
                     $initials = strtoupper(substr($c->full_name, 0, 2));
                 }
             ?>
-            <div class="card">
+            <div class="card" style="min-width:0; overflow-wrap:anywhere;">
                 <div class="card-body" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span class="app-ava" style="width: 44px; height: 44px; font-size: 0.86rem; border-radius: 12px; flex-shrink: 0;">
@@ -51,7 +51,7 @@
                         <?php endif; ?>
                     </div>
 
-                    <div style="margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                         <div>
                             <small style="font-size: 0.68rem; color: var(--muted); display: block;">Desired Salary</small>
                             <b style="font-family: 'Sora', sans-serif; font-size: 0.84rem; color: var(--brand-deep);">₦<?= number_format((float)($c->desired_salary ?? 0)) ?></b>

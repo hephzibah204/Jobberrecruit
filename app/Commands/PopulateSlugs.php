@@ -10,26 +10,41 @@ class PopulateSlugs extends BaseCommand
 {
     protected $group       = 'SEO';
     protected $name        = 'seo:populate-slugs';
-    protected $description = 'Populates missing slugs for all jobs in the database.';
+    protected $description = 'Populates slugs for jobs, categories, industries, and location hubs in the database.';
+    protected $options     = [
+        '--force' => 'Force regeneration of all slugs across all entities even if already populated.',
+    ];
 
     public function run(array $params)
     {
-        $jobModel = new JobModel();
-        $jobs = $jobModel->findAll();
+        $force = array_key_exists('force', $params) || CLI::getOption('force') !== null;
 
-        CLI::write("Processing " . count($jobs) . " jobs...", 'yellow');
-
-        foreach ($jobs as $job) {
-            // Trigger the beforeInsert/beforeUpdate hook by saving
-            // We just need to update any field, or even just save the entity as is
-            // since the hook will generate the slug if missing or updated.
-            
-            // To be safe and ensure the guide rules are applied, we'll force it.
-            $jobModel->update($job->id, ['title' => $job->title]);
-            
-            CLI::write("Processed Job ID {$job->id}: " . CLI::color($job->title, 'green'));
+        CLI::write("========================================", 'cyan');
+        CLI::write("   POPULATING SEO SLUGS ACROSS DB       ", 'yellow');
+        CLI::write("   (Jobs, Categories, Industries, States)", 'yellow');
+        CLI::write("========================================", 'cyan');
+        if ($force) {
+            CLI::write(" Mode: FORCE REGENERATION\n", 'magenta');
+        } else {
+            CLI::write(" Mode: POPULATE MISSING\n", 'white');
         }
 
-        CLI::write("All slugs populated successfully!", 'cyan');
+        $results = \App\Services\SeoSlugGenerator::populateAll($force);
+
+        CLI::write("[1] Locations (States):", 'white');
+        CLI::write("    Total: {$results['locations']['total']} | Updated: {$results['locations']['updated']}", 'green');
+
+        CLI::write("\n[2] Categories (job_categories):", 'white');
+        CLI::write("    Total: {$results['categories']['total']} | Updated: {$results['categories']['updated']}", 'green');
+
+        CLI::write("\n[3] Industries (industries):", 'white');
+        CLI::write("    Total: {$results['industries']['total']} | Updated: {$results['industries']['updated']}", 'green');
+
+        CLI::write("\n[4] Jobs (jobs):", 'white');
+        CLI::write("    Total: {$results['jobs']['total']} | Updated: {$results['jobs']['updated']}", 'green');
+
+        CLI::write("\n========================================", 'cyan');
+        CLI::write("  ALL SLUGS POPULATED SUCCESSFULLY!     ", 'yellow');
+        CLI::write("========================================\n", 'cyan');
     }
 }

@@ -43,9 +43,20 @@ class AuthController extends BaseController
     public function login()
     {
         if ($this->request->getMethod() !== 'POST') {
+            $jobModel = model(\App\Models\JobModel::class);
+            $employerModel = model(\App\Models\EmployerModel::class);
+            $jobSeekerModel = model(\App\Models\JobSeekerModel::class);
+
+            $liveJobsCount = $jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults();
+            $employerCount = $employerModel->countAllResults();
+            $candidateCount = $jobSeekerModel->countAllResults();
+
             return view('auth/login', [
-                'title' => 'Login',
-                'auth'  => $this->auth,
+                'title'          => 'Login',
+                'auth'           => $this->auth,
+                'liveJobsCount'  => $liveJobsCount,
+                'employerCount'  => $employerCount,
+                'candidateCount' => $candidateCount,
             ]);
         }
 
@@ -70,14 +81,12 @@ class AuthController extends BaseController
             ]);
         }
 
-        // 3️⃣ reCAPTCHA (skipped in development)
-        if (ENVIRONMENT !== 'development') {
-            if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'))) {
-                return $this->response->setJSON([
-                    'status'  => 'error',
-                    'message' => 'reCAPTCHA verification failed.',
-                ]);
-            }
+        // CAPTCHA is verified server-side in every environment.
+        if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'), 'login')) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'reCAPTCHA verification failed.',
+            ]);
         }
 
         // 4️⃣ Manual credential validation via Shield identities (NO SESSION)
@@ -113,17 +122,13 @@ class AuthController extends BaseController
         }
 
         // Skip verification gates locally so development can proceed without mail setup.
-        if (ENVIRONMENT !== 'development' && !($user->email_verified_at)) {
+        if (empty($user->email_verified_at)) {
             log_message('info', 'Verified: ' . json_encode($user->email_verified_at));
-
-            $verificationModel = model(EmailVerificationModel::class);
-            $verificationModel->where('user_id', $user->id)->delete();
-
-            $this->createAndSendVerification(
-                $user->id,
-                $user->email,
-                $user->username ?? null
-            );
+            $this->session->set('pending_email_verification', [
+                'user_id' => (int) $user->id,
+                'expires_at' => time() + 3600,
+            ]);
+            $this->createAndSendVerification($user->id, $user->email, $user->username ?? null);
 
             return $this->response->setJSON([
                 'status'       => 'error',
@@ -159,25 +164,9 @@ class AuthController extends BaseController
     /* -------------------------------------------------------------------------
      | 2) reCAPTCHA helper
      --------------------------------------------------------------------------*/
-    private function verifyRecaptcha(?string $token): bool
+    private function verifyRecaptcha(?string $token, string $action = 'login'): bool
     {
-        if (empty($token)) {
-            return false;
-        }
-
-        $secretKey = env('recaptcha_secret_key');
-
-        try {
-            $response = file_get_contents(
-                "https://www.google.com/recaptcha/api/siteverify?secret={$secretKey}&response={$token}"
-            );
-            $result = json_decode($response, true);
-        } catch (\Throwable $e) {
-            log_message('error', 'reCAPTCHA request failed: ' . $e->getMessage());
-            return false;
-        }
-
-        return (isset($result['success']) && $result['success'] === true && ($result['score'] ?? 0) >= 0.5);
+        return (new \App\Services\CaptchaVerifier())->verify($token, $action);
     }
 
     /* -------------------------------------------------------------------------
@@ -186,8 +175,20 @@ class AuthController extends BaseController
     public function register()
     {
         if ($this->request->getMethod() === 'POST') {
+            $email = strtolower(trim((string) $this->request->getPost('email')));
+            if (trim((string) $this->request->getPost('website_url')) !== '') {
+                return $this->response->setStatusCode(400)->setJSON(['status' => 'error', 'message' => 'Registration could not be completed.']);
+            }
+            if (!(new \App\Services\AuthAbuseGuard())->allow('register', $this->request->getIPAddress(), $email)) {
+                return $this->response->setStatusCode(429)->setJSON(['status' => 'error', 'message' => 'Too many registration attempts. Please try again later.']);
+            }
+            if (!(new \App\Services\CaptchaVerifier())->verify($this->request->getPost('g-recaptcha-response'), 'register')) {
+                return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Security verification failed. Please refresh and try again.']);
+            }
+            if ((new \App\Services\EmailSuppressionService())->isSuppressed($email)) {
+                return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'This email address cannot receive account emails. Please contact support.']);
+            }
             // Let's check if email exists in auth_identities first to provide a clearer message (instead of generic validation error)
-            $email = $this->request->getPost('email');
             $existingIdentity = $this->db->table('auth_identities')->where('secret', $email)->get()->getRow();
             if ($existingIdentity) {
                 return $this->response->setJSON([
@@ -214,16 +215,6 @@ class AuthController extends BaseController
                     'message' => 'Please fix the validation errors',
                     'errors'  => $this->validator->getErrors()
                 ]);
-            }
-
-            // reCAPTCHA (skipped in development)
-            if (ENVIRONMENT !== 'development') {
-                if (!$this->verifyRecaptcha($this->request->getPost('g-recaptcha-response'))) {
-                    return $this->response->setJSON([
-                        'status' => 'error',
-                        'message' => 'Failed reCAPTCHA verification. Please try again.'
-                    ]);
-                }
             }
 
             $users = $this->getUserProvider();
@@ -314,31 +305,13 @@ class AuthController extends BaseController
                 ]);
             }
 
-             // Auto-login after registration (optional, can be removed if you want to force email verification first)
-             $credentials = [
-                'email'    => $email,
-                'password' => $this->request->getPost('password'),
-            ];
-
-            $rememberMe = true; // Optional: set to true to remember the user
-
-            $loginAttempt = $this->auth->attempt($credentials, $rememberMe);
-
-            $user = $this->auth->user();
-
-            if (ENVIRONMENT === 'development') {
-                $redirect = $userType === 'employer' ? base_url('employer') : base_url('candidate');
-
-                return $this->response->setJSON([
-                    'status'       => 'success',
-                    'message'      => 'Account created and signed in for development.',
-                    'user_id'      => $user->id,
-                    'redirect_url' => $redirect,
-                ]);
-            }
-
-            // Send verification email and do NOT auto-login outside development.
-            $emailSent = $this->createAndSendVerification($user->id, $email, $this->request->getPost('full_name'));
+            $user = $users->findById($userId);
+            session()->regenerate(true);
+            $this->session->set('pending_email_verification', [
+                'user_id' => (int) $userId,
+                'expires_at' => time() + 3600,
+            ]);
+            $emailSent = $this->createAndSendVerification($userId, $email, $this->request->getPost('full_name'));
 
             return $this->response->setJSON([
                 'status'       => $emailSent ? 'success' : 'warning',
@@ -350,9 +323,20 @@ class AuthController extends BaseController
             ]);
         }
 
+        $jobModel = model(\App\Models\JobModel::class);
+        $employerModel = model(\App\Models\EmployerModel::class);
+        $jobSeekerModel = model(\App\Models\JobSeekerModel::class);
+
+        $liveJobsCount = $jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults();
+        $employerCount = $employerModel->countAllResults();
+        $candidateCount = $jobSeekerModel->countAllResults();
+
         return view('auth/register', [
-            'title' => 'Create Account',
-            'auth'  => $this->auth,
+            'title'          => 'Create Account',
+            'auth'           => $this->auth,
+            'liveJobsCount'  => $liveJobsCount,
+            'employerCount'  => $employerCount,
+            'candidateCount' => $candidateCount,
         ]);
     }
 
@@ -667,19 +651,12 @@ class AuthController extends BaseController
             return ['status' => 'error', 'message' => 'Registration failed due to database transaction failure.'];
         }
 
-        if (ENVIRONMENT === 'development') {
-            $user = $this->users->findById($userId);
-            if ($user) {
-                $this->auth->login($user);
-            }
-
-            session()->remove('social_pending');
-
-            return [
-                'status'       => 'success',
-                'redirect_url' => $userType === 'employer' ? base_url('employer') : base_url('candidate'),
-            ];
-        }
+        // Social signups use the same email verification and resend flow in every environment.
+        $this->session->set('pending_email_verification', [
+            'user_id' => (int) $userId,
+            'expires_at' => time() + 3600,
+        ]);
+        session()->remove('social_pending');
 
         // Send verification email
         $this->createAndSendVerification($userId, $tmp['email'], $tmp['full_name'] ?? null);
@@ -780,26 +757,49 @@ class AuthController extends BaseController
      */
     public function verifyEmailToken($token)
     {
+        $db = db_connect();
+        $db->transBegin();
         $model = model(EmailVerificationModel::class);
-        $record = $model->where('token', $token)->first();
+        $record = $model->where('token', $token)
+            ->where('expires_at >=', date('Y-m-d H:i:s'))
+            ->first();
 
-        if (!$record || strtotime($record->expires_at) < time()) {
+        if (!$record) {
+            $db->transRollback();
+            return redirect()->to('/login')->with('error', 'Invalid or expired verification link.');
+        }
+
+        $userId = (int) $record->user_id;
+        $user = $this->users->findById($userId);
+        if (!$user) {
+            $db->transRollback();
+            return redirect()->to('/login')->with('error', 'This account is no longer available.');
+        }
+
+        // Consume the one-time token conditionally so concurrent requests cannot
+        // verify or reward the same account more than once.
+        $db->table('email_verifications')->where('id', $record->id)
+            ->where('token', $token)->where('expires_at >=', date('Y-m-d H:i:s'))->delete();
+        if ($db->affectedRows() !== 1) {
+            $db->transRollback();
             return redirect()->to('/login')->with('error', 'Invalid or expired verification link.');
         }
 
         // Mark email as verified
-        $userId = $record->user_id;
-        $this->users->update($userId, [
+        $updated = $this->users->update($userId, [
             'email_verified_at' => date('Y-m-d H:i:s'),
             'status'            => 'active',
             'status_message'    => 'Welcome to JobberRecruit'
         ]);
-
-        // Remove the token
-        $model->delete($record->id);
+        if (!$updated || !$db->transStatus()) {
+            $db->transRollback();
+            return redirect()->to('/login')->with('error', 'Email verification could not be completed. Please request a new link.');
+        }
+        $db->transCommit();
 
         // Auto-login user (Option B)
-        $user = $this->users->find($userId);
+        $user = $this->users->findById($userId);
+        $this->session->remove('pending_email_verification');
         if ($user) {
             // Use Shield auth to log user in
             try {
@@ -837,34 +837,47 @@ class AuthController extends BaseController
      */
     public function resendVerification()
     {
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->response->setStatusCode(405)->setJSON(['status' => 'error', 'message' => 'Method not allowed.']);
+        }
+
+        if (!(new \App\Services\CaptchaVerifier())->verify($this->request->getPost('g-recaptcha-response'), 'resend_verification')) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Security verification failed. Please refresh and try again.']);
+        }
+
         $user = $this->auth->user();
+        $pending = $this->session->get('pending_email_verification');
+        if (!$user && is_array($pending) && (int) ($pending['expires_at'] ?? 0) >= time()) {
+            $user = $this->users->findById((int) ($pending['user_id'] ?? 0));
+        }
 
-        if (!$user) {
-            return $this->response->setJSON([
+        if (!$user || !empty($user->email_verified_at)) {
+            return $this->response->setStatusCode(400)->setJSON([
                 'status' => 'error',
-                'message' => 'You must be logged in to resend verification email.'
+                'message' => 'This verification request has expired. Sign in or create an account to continue.'
             ]);
         }
 
-        if (!empty($user->email_verified_at)) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Your email is already verified.'
-            ]);
+        if (!(new \App\Services\AuthAbuseGuard())->allow('resend_verification', $this->request->getIPAddress(), (string) $user->email)) {
+            return $this->response->setStatusCode(429)->setJSON(['status' => 'error', 'message' => 'Too many resend attempts. Please try again later.']);
         }
 
-        // Throttle: check last token creation time and prevent frequent resend (simple approach)
         $model = model(EmailVerificationModel::class);
         $existing = $model->where('user_id', $user->id)->orderBy('created_at', 'DESC')->first();
         if ($existing && (strtotime($existing->created_at) > time() - 60)) {
-            return $this->response->setJSON([
+            return $this->response->setStatusCode(429)->setJSON([
                 'status' => 'error',
                 'message' => 'You must wait before requesting another verification email.'
             ]);
         }
 
-        $model->where('user_id', $user->id)->delete();
-        $this->createAndSendVerification($user->id, $user->email, $user->username ?? null);
+        if ((new \App\Services\EmailSuppressionService())->isSuppressed((string) $user->email)) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'This email address cannot receive account emails. Please contact support.']);
+        }
+        $sent = $this->createAndSendVerification($user->id, $user->email, $user->username ?? null);
+        if (!$sent) {
+            return $this->response->setStatusCode(502)->setJSON(['status' => 'error', 'message' => 'The email could not be sent. Please try again later.']);
+        }
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -889,13 +902,17 @@ class AuthController extends BaseController
             }
 
             $data = $this->request->getVar();
-            $email = $data['email'];
+            $email = strtolower(trim((string) $data['email']));
+            $genericResetMessage = 'If this email is registered, instructions will be sent.';
+            if (!(new \App\Services\AuthAbuseGuard())->allow('password_reset', $this->request->getIPAddress(), $email)) {
+                return $this->response->setJSON(['status' => 'success', 'message' => $genericResetMessage]);
+            }
             $identity = $this->db->table('auth_identities')->where('secret', $email)->get()->getRow();
 
             if (!$identity) {
                 return $this->response->setJSON([
                     'status'  => 'success',
-                    'message' => 'If this email is registered, instructions will be sent.'
+                    'message' => $genericResetMessage
                 ]);
             }
 
@@ -905,7 +922,7 @@ class AuthController extends BaseController
                 // Always return success to avoid leaking presence
                 return $this->response->setJSON([
                     'status'  => 'success',
-                    'message' => 'If this email is registered, instructions will be sent.'
+                    'message' => $genericResetMessage
                 ]);
             }
 
@@ -938,7 +955,7 @@ class AuthController extends BaseController
 
             return $this->response->setJSON([
                 'status'      => 'success',
-                'message'     => 'Password reset link has been sent to your email.',
+                'message'     => $genericResetMessage,
             ]);
         }
 
@@ -963,11 +980,17 @@ class AuthController extends BaseController
 
             $password = $this->request->getPost('password');
 
-            // Validate reset token
+            // Claim the one-time token in a transaction before changing the password.
+            // The conditional delete prevents two concurrent requests from using it twice.
+            $db = db_connect();
+            $db->transBegin();
             $resetModel = model(PasswordResetModel::class);
-            $reset = $resetModel->where('token', $token)->first();
+            $reset = $resetModel->where('token', $token)
+                ->where('expires_at >=', date('Y-m-d H:i:s'))
+                ->first();
 
-            if (! $reset || strtotime($reset->expires_at) < time()) {
+            if (!$reset) {
+                $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => 'error',
                     'message' => 'Invalid or expired reset token.',
@@ -979,9 +1002,20 @@ class AuthController extends BaseController
             $user  = $users->findById($reset->user_id);
 
             if (! $user) {
+                $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => 'error',
                     'message' => 'User not found.',
+                ]);
+            }
+
+            $db->table('password_resets')->where('id', $reset->id)
+                ->where('token', $token)->where('expires_at >=', date('Y-m-d H:i:s'))->delete();
+            if ($db->affectedRows() !== 1) {
+                $db->transRollback();
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Invalid or expired reset token.',
                 ]);
             }
 
@@ -990,10 +1024,14 @@ class AuthController extends BaseController
             $user->password_hash = $passwords->hash($password);
 
             // Save user
-            $users->save($user);
-
-            // Delete reset token
-            $resetModel->delete($reset->id);
+            if (!$users->save($user) || !$db->transStatus()) {
+                $db->transRollback();
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Password could not be updated. Please try again.',
+                ]);
+            }
+            $db->transCommit();
 
             return $this->response->setJSON([
                 'status'  => 'success',
@@ -1026,6 +1064,10 @@ class AuthController extends BaseController
      */
     protected function createAndSendVerification(int $userId, string $email, ?string $fullname = null): bool
     {
+        $existing = model(EmailVerificationModel::class)->where('user_id', $userId)->orderBy('created_at', 'DESC')->first();
+        if ($existing && strtotime($existing->created_at) > time() - 60) {
+            return false;
+        }
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', strtotime('+1 day'));
 

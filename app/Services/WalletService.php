@@ -13,11 +13,11 @@ class WalletService
     protected WalletTransactionModel $txModel;
     protected BaseConnection $db;
 
-    public function __construct()
+    public function __construct(?BaseConnection $db = null)
     {
-        $this->walletModel = model(WalletModel::class);
-        $this->txModel     = model(WalletTransactionModel::class);
-        $this->db          = db_connect();
+        $this->db = $db ?? db_connect();
+        $this->walletModel = new WalletModel($this->db);
+        $this->txModel = new WalletTransactionModel($this->db);
     }
 
     public function getOrCreateWallet(int $userId)
@@ -70,6 +70,13 @@ class WalletService
         try {
             $wallet = $this->getOrCreateWallet($userId);
             $lockedWallet = $this->lockWalletForUpdate((int) $wallet->id);
+
+            if ($this->txModel->where('reference', $reference)->countAllResults() > 0) {
+                if ($inOwnTrans) {
+                    $this->db->transCommit();
+                }
+                return;
+            }
 
             $before = (float) $lockedWallet->balance;
             $after  = $before + $amount;
@@ -127,6 +134,13 @@ class WalletService
             $wallet = $this->getOrCreateWallet($userId);
             $lockedWallet = $this->lockWalletForUpdate((int) $wallet->id);
 
+            if ($this->txModel->where('reference', $reference)->countAllResults() > 0) {
+                if ($inOwnTrans) {
+                    $this->db->transCommit();
+                }
+                return;
+            }
+
             if ($lockedWallet->is_locked || $lockedWallet->balance < $amount) {
                 throw new \RuntimeException('Insufficient wallet balance');
             }
@@ -164,8 +178,10 @@ class WalletService
 
     private function lockWalletForUpdate(int $walletId): object
     {
+        $table = $this->db->protectIdentifiers($this->db->prefixTable('wallets'));
+        $lock = $this->db->DBDriver === 'SQLite3' ? '' : ' FOR UPDATE';
         $wallet = $this->db->query(
-            'SELECT * FROM wallets WHERE id = ? FOR UPDATE',
+            "SELECT * FROM {$table} WHERE id = ?{$lock}",
             [$walletId]
         )->getRow();
 

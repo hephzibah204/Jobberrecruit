@@ -24,6 +24,16 @@ class ConversationModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
+    public function hasEstablishedConversation(int $employerId, int $seekerId): bool
+    {
+        // An empty thread can be created by a deep link; it must not grant contact access.
+        return $this->db->table('conversations c')
+            ->join('messages m', 'm.conversation_id = c.id')
+            ->where('c.employer_id', $employerId)
+            ->where('c.job_seeker_id', $seekerId)
+            ->countAllResults() > 0;
+    }
+
     public function getConversationsForEmployer(int $employerId): array
     {
         $conversations = $this->select('conversations.*, job_seekers.full_name as seeker_name, job_seekers.profile_picture as profile_photo, jobs.title as job_title')

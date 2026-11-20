@@ -322,7 +322,7 @@
                                     <h5 class="fw-semibold mb-0"><?= number_format($maleCandidates) ?></h5>
                                 </div>
                                 <div>
-                                    <span class="text-success"><i class="ti ti-arrow-narrow-up me-1"></i><?= $candidateYoYByGender['male']['growth'] ?>%</span>
+                                    <?php $mg = $candidateYoYByGender['male'] ?? ['growth' => 0, 'previous' => 0]; if ((int) ($mg['previous'] ?? 0) < 5): ?><span class="text-muted">—</span><?php elseif (($mg['growth'] ?? 0) >= 0): ?><span class="text-success"><i class="ti ti-arrow-narrow-up me-1"></i><?= $mg['growth'] ?>%</span><?php else: ?><span class="text-danger"><i class="ti ti-arrow-narrow-down me-1"></i><?= abs($mg['growth']) ?>%</span><?php endif; ?>
                                     <span class="d-block fs-13 text-muted">This Year</span>
                                 </div>
                             </div>
@@ -342,7 +342,7 @@
                                     <h5 class="fw-semibold mb-0"><?= number_format($femaleCandidates) ?></h5>
                                 </div>
                                 <div>
-                                    <span class="text-danger"><i class="ti ti-arrow-narrow-down me-1"></i><?= $candidateYoYByGender['female']['growth'] ?>%</span>
+                                    <?php $fg = $candidateYoYByGender['female'] ?? ['growth' => 0, 'previous' => 0]; if ((int) ($fg['previous'] ?? 0) < 5): ?><span class="text-muted">—</span><?php elseif (($fg['growth'] ?? 0) >= 0): ?><span class="text-success"><i class="ti ti-arrow-narrow-up me-1"></i><?= $fg['growth'] ?>%</span><?php else: ?><span class="text-danger"><i class="ti ti-arrow-narrow-down me-1"></i><?= abs($fg['growth']) ?>%</span><?php endif; ?>
                                     <span class="d-block fs-13 text-muted">This Year</span>
                                 </div>
                             </div>
@@ -787,7 +787,7 @@
         },
 
 
-        colors: ["var(--primary-color)", "rgb(253, 175, 34)"],
+        colors: ["var(--primary-color)", "rgb(253, 175, 34)", "rgb(148, 163, 184)"],
     };
     const chart1 = new ApexCharts(document.querySelector("#candidates-overview"), options1);
     if (chart1) chart1.render();

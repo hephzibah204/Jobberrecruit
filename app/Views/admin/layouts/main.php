@@ -213,7 +213,6 @@
     })();
     </script>
 
-    <?= $this->include('partials/chatbot'); ?>
     <?= $this->renderSection('scripts') ?>
 
     <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>

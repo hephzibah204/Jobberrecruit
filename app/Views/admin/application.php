@@ -77,6 +77,26 @@
                         </span>
                     </p>
 
+                    <?php if (session()->getFlashdata('success')): ?>
+                        <div class="alert alert-success py-2"><?= esc(session()->getFlashdata('success')) ?></div>
+                    <?php endif; ?>
+                    <?php if (session()->getFlashdata('error')): ?>
+                        <div class="alert alert-danger py-2"><?= esc(session()->getFlashdata('error')) ?></div>
+                    <?php endif; ?>
+
+                    <form method="post" action="<?= base_url('admin/applications/update-status/' . $application->id) ?>">
+                        <?= csrf_field() ?>
+                        <label class="form-label fw-semibold" for="admin-app-status">Update status</label>
+                        <div class="d-flex gap-2">
+                            <select id="admin-app-status" name="status" class="form-select">
+                                <?php foreach (['pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn'] as $statusOption): ?>
+                                    <option value="<?= $statusOption ?>" <?= ($application->status ?? '') === $statusOption ? 'selected' : '' ?>><?= ucfirst($statusOption) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+
                     <?php if ($application->cv_path): ?>
                         <a download href="<?= base_url($application->cv_path) ?>"
                             target="_blank"

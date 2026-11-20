@@ -26,14 +26,14 @@ final class ResumeRestoreAutosaveIntegrationTest extends CIUnitTestCase
 
     public function testRestoreFailsWithoutAutosaveId(): void
     {
-        $result = $this->call('post', 'candidate/resumes/1/restore-autosave', []);
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/1/restore-autosave', []);
         $status = $result->getStatusCode() ?: 400;
         $this->assertEquals(400, $status);
     }
 
     public function testRestoreFailsForMissingAutosave(): void
     {
-        $result = $this->call('post', 'candidate/resumes/1/restore-autosave', [
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/1/restore-autosave', [
             'autosave_id' => 99999,
         ]);
         $status = $result->getStatusCode() ?: 404;
@@ -56,7 +56,7 @@ final class ResumeRestoreAutosaveIntegrationTest extends CIUnitTestCase
             'skills' => 'PHP, Testing',
         ];
 
-        $saveResult = $this->call('post', 'candidate/resumes/autosave', ['snapshot' => json_encode($snapshot)]);
+        $saveResult = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/autosave', ['snapshot' => json_encode($snapshot)]);
         $saveStatus = $saveResult->getStatusCode() ?: 200;
         $this->assertTrue(in_array($saveStatus, [200, 201]), 'Save status: ' . $saveStatus . ' | Body: ' . $saveResult->getBody());
         $bodyRawSave = (string)$saveResult->getBody();
@@ -68,7 +68,7 @@ final class ResumeRestoreAutosaveIntegrationTest extends CIUnitTestCase
 
         $autosaveId = $saveBody['autosave_id'];
 
-        $restoreResult = $this->call('post', 'candidate/resumes/1/restore-autosave', [
+        $restoreResult = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/1/restore-autosave', [
             'autosave_id' => $autosaveId,
         ]);
         $restoreStatus = $restoreResult->getStatusCode() ?: 200;

@@ -146,7 +146,7 @@
         <?php foreach ($employers as $emp): ?>
           <?php
             $initials = strtoupper(substr($emp->company_name ?? 'C', 0, 2));
-            $logoUrl = (!empty($emp->logo) && file_exists(FCPATH . $emp->logo)) ? base_url($emp->logo) : null;
+            $logoUrl = !empty($emp->logo) ? resolve_image_url($emp->logo, 'company', $emp->company_name ?? 'Company') : null;
           ?>
           <div class="col-md-6 col-lg-4">
             <div class="emp-card shadow-sm">
@@ -164,6 +164,7 @@
                         <i class="ti ti-circle-check-filled text-primary ms-1" title="Verified Employer"></i>
                       <?php endif; ?>
                     </h5>
+                    <?php if (!empty($emp->tagline)): ?><div class="text-muted small mb-1"><?= esc($emp->tagline) ?></div><?php endif; ?>
                     <span class="text-muted small"><i class="ti ti-map-pin me-1"></i><?= esc($emp->location ?? 'Nigeria') ?></span>
                   </div>
                 </div>

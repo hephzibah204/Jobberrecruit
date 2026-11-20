@@ -21,6 +21,7 @@ class JobModel extends Model
         'job_type',
         'state_id',
         'location_type',
+        'show_salary',
         'salary_type',
         'salary_period',
         'salary',
@@ -70,26 +71,45 @@ class JobModel extends Model
         $title = $data['data']['title'];
         $location = 'nigeria';
 
-        if (isset($data['data']['state_id'])) {
+        $stateId = $data['data']['state_id'] ?? null;
+        if (!$stateId && !empty($data['id'])) {
+            $existingJob = $this->find(is_array($data['id']) ? $data['id'][0] : $data['id']);
+            $stateId = $existingJob->state_id ?? null;
+        }
+
+        if ($stateId) {
             $stateModel = model('StateModel');
-            $state = $stateModel->find($data['data']['state_id']);
+            $state = $stateModel->find($stateId);
             if ($state) {
-                $location = $state->name;
+                $stateNameLower = strtolower(trim($state->name));
+                if ($stateNameLower === 'rivers') {
+                    $location = 'port-harcourt';
+                } elseif (in_array($stateNameLower, ['fct', 'federal capital territory'])) {
+                    $location = 'abuja';
+                } else {
+                    $location = strtolower(trim($state->name));
+                }
             }
         }
 
-        // Convert to lowercase
-        $slug = strtolower($title . '-' . $location);
-
-        // Strip filler words: at, in, the, for, of, a
+        // Pre-clean title and strip filler words
+        $t = ' ' . strtolower($title) . ' ';
         $fillerWords = [' at ', ' in ', ' the ', ' for ', ' of ', ' a ', ' and ', ' & '];
-        $slug = str_replace($fillerWords, ' ', $slug);
+        $t = str_replace($fillerWords, ' ', $t);
 
-        // Strip special characters: & / \ . , ( ) ' "
-        $slug = str_replace(['&', '/', '\\', '.', ',', '(', ')', "'", '"'], '', $slug);
+        // Strip special characters: & / \ . , ( ) ' " | – — : # ? !
+        $t = str_replace(['&', '/', '\\', '.', ',', '(', ')', "'", '"', '|', '–', '—', ':', '#', '?', '!'], '', $t);
 
         // Replace spaces with hyphens
-        $slug = str_replace(' ', '-', $slug);
+        $t = preg_replace('/\s+/', '-', trim($t));
+        $locClean = preg_replace('/\s+/', '-', strtolower(trim($location)));
+
+        // Avoid duplicating location if title already ends with the city/state name
+        if (!str_ends_with($t, '-' . $locClean) && $t !== $locClean) {
+            $slug = $t . '-' . $locClean;
+        } else {
+            $slug = $t;
+        }
 
         // Clean up: remove non-alphanumeric characters except hyphens
         $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
@@ -107,11 +127,9 @@ class JobModel extends Model
         // Ensure uniqueness
         $originalSlug = $slug;
         $count = 1;
+        $currentId = is_array($data['id'] ?? null) ? ($data['id'][0] ?? 0) : ($data['id'] ?? 0);
         
-        // We need a loop to find a unique slug
-        // Note: $this->where() might fail if called from within a hook in some CI4 versions,
-        // but typically it works.
-        while ($this->db->table($this->table)->where('slug', $slug)->where('id !=', $data['id'] ?? 0)->countAllResults() > 0) {
+        while ($this->db->table($this->table)->where('slug', $slug)->where('id !=', $currentId)->countAllResults() > 0) {
             $suffix = '-' . (++$count);
             $slug = substr($originalSlug, 0, 75 - strlen($suffix)) . $suffix;
         }

@@ -20,6 +20,9 @@ class InterviewTranscription extends Controller
             ]);
         }
 
+        if ($file->getSize() > 10 * 1024 * 1024 || !in_array($file->getMimeType(), ['audio/webm','video/webm','audio/ogg','application/ogg','audio/wav','audio/x-wav','audio/mpeg','audio/mp4','video/mp4','audio/x-m4a'], true)) {
+            return $this->response->setStatusCode(422)->setJSON(['error'=>'Upload supported audio of 10 MB or less.']);
+        }
         // Get the file contents and encode it as base64
         $fileData = file_get_contents($file->getTempName());
         $base64Data = base64_encode($fileData);

@@ -13,7 +13,7 @@ class TestModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'category_id', 'title', 'slug', 'description', 'duration_mins', 
+        'employer_id', 'category_id', 'title', 'slug', 'description', 'duration_mins',
         'num_questions', 'pass_threshold', 'difficulty', 'is_active'
     ];
 

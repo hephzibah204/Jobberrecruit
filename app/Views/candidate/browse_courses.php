@@ -278,7 +278,7 @@
 
                 <div class="bc-card-body">
                     <h2 class="bc-course-title" title="<?= esc($c->title) ?>"><?= esc($c->title) ?></h2>
-                    <p class="bc-course-desc"><?= esc($c->description) ?></p>
+                    <p class="bc-course-desc"><?= esc(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES, 'UTF-8')) ?></p>
 
                     <div class="bc-course-meta">
                         <span class="bc-meta-item">
@@ -297,7 +297,7 @@
                                 <?= $isPaid ? '₦' . number_format((float)$c->price, 2) : 'Free' ?>
                             </span>
                             <span style="font-size:.72rem;font-weight:700;color:#5b6577;">
-                                <?= esc($c->content_source ?? 'Online') ?>
+                                <?= 'Online course' ?>
                             </span>
                         </div>
 

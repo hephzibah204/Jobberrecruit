@@ -1,7 +1,12 @@
+/* Hallmark · restyle · jobberrecruit-admin-brand · theme: technical-precision */
 /* ── JobberRecruit Admin Brand Stylesheet Overlay ── */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Sora', 'Inter', var(--font-sans);
+  --ring: rgba(13, 96, 158, 0.4);
+  --ring-offset: 2px;
   /* Ynex Template Core Variable Overrides */
   --primary-color: rgb(13, 96, 158); /* #0D609E */
   --primary: #0D609E;
@@ -24,16 +29,38 @@
 }
 
 /* ── Typography & Global Elements ── */
+html {
+  overflow-x: clip;
+}
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-family: var(--font-sans) !important;
   color: var(--jr-text) !important;
   background-color: var(--jr-bg) !important;
+  overflow-x: clip;
 }
 
 h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
-  font-family: 'Sora', 'Inter', system-ui, sans-serif !important;
+  font-family: var(--font-display) !important;
   color: var(--jr-navy) !important;
   font-weight: 600 !important;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: var(--ring-offset);
+}
+.btn:active, button.btn:active {
+  transform: translateY(1px) scale(0.99);
 }
 
 /* ── Sidebar Redesign (Double Menu Navy & Gold Theme) ── */
@@ -76,10 +103,10 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
 .side-menu__item {
   color: rgba(255, 255, 255, 0.75) !important;
   font-weight: 500 !important;
-  padding: 11px 20px !important;
-  border-radius: 0 !important;
-  border-left: 3px solid transparent !important;
-  transition: all 0.2s ease !important;
+  padding: 10px 18px !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
 .side-menu__item:hover {
@@ -95,9 +122,9 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
 /* Active sidebar item state */
 .slide.active > .side-menu__item,
 .side-menu__item.active {
-  background: rgba(13, 96, 158, 0.15) !important;
+  background: rgba(13, 96, 158, 0.2) !important;
   color: #fff !important;
-  border-left: 3px solid var(--jr-gold-bright) !important;
+  border: 1px solid rgba(255, 181, 88, 0.4) !important;
   font-weight: 600 !important;
 }
 
@@ -267,7 +294,7 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title, .card-title {
   font-weight: 500 !important;
   border-radius: 6px !important;
   padding: 8px 16px !important;
-  transition: all 0.2s ease !important;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
 }
 
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {

@@ -127,7 +127,7 @@ class AdminController extends BaseController
                 }
 
                 // 5) Log in admin
-                $this->auth->login($user, true);
+                $this->auth->remember(true)->login($user);
 
                 $redirect = session()->get('admin_redirect') ?? base_url('admin/dashboard');
                 session()->remove('admin_redirect');
@@ -184,10 +184,10 @@ class AdminController extends BaseController
         $femaleCount = 0;
 
         foreach ($genderStats as $row) {
-            if (strtolower($row->gender) === 'male') {
+            if (strtolower((string) ($row->gender ?? '')) === 'male') {
                 $maleCount = (int) $row->total;
             }
-            if (strtolower($row->gender) === 'female') {
+            if (strtolower((string) ($row->gender ?? '')) === 'female') {
                 $femaleCount = (int) $row->total;
             }
         }
@@ -313,17 +313,13 @@ class AdminController extends BaseController
             'totalCandidates'   => $this->jobSeekerModel->countAllResults(),
             'totalJobs'         => $this->jobModel->countAllResults(),
             'totalApplications' => $this->jobApplicationModel->countAllResults(),
-            'activeSubscribers' => $this->subscriptionModel
-                ->select('user_subscriptions.*, plans.name, plans.slug')
-                ->join('plans', 'plans.id = user_subscriptions.plan_id')
-                ->where('user_subscriptions.is_active', 1)
-                ->countAllResults(),
+            'activeSubscribers' => (int) $db->table('newsletter_subscribers')->where('is_active', 1)->countAllResults(),
             'topEmployers'  => $this->employerModel->getTopEmployers(5),
             'maleCandidates' => $maleCount,
             'femaleCandidates' => $femaleCount,
             'candidateChart' => [
-                'labels' => ['Male', 'Female'],
-                'series' => [$maleCount, $femaleCount],
+                'labels' => ['Male', 'Female', 'Not specified'],
+                'series' => [$maleCount, $femaleCount, max(0, (int) $this->jobSeekerModel->countAllResults() - $maleCount - $femaleCount)],
             ],
             'candidateYoYByGender' => $genderGrowth,
             'topJobPositions' => $this->jobModel->getTopJobPositions(5),
@@ -741,6 +737,10 @@ class AdminController extends BaseController
     public function employers()
     {
         $employerModel = model(\App\Models\EmployerModel::class);
+        $search = $this->request->getGet('q');
+        $search = is_string($search) ? mb_substr(trim($search), 0, 200) : '';
+        $industries = $this->request->getGet('industries');
+        $industries = is_array($industries) ? array_values(array_filter(array_map('intval', array_filter($industries, 'is_scalar')), static fn ($id) => $id > 0)) : [];
         $verificationStatus = $this->request->getGet('status') ?? 'all';
         $docSubmittedSql = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
 
@@ -756,7 +756,7 @@ class AdminController extends BaseController
                 'COUNT(DISTINCT employer_documents.id) AS submitted_docs_count'
             ])
             ->join('users', 'users.id = employers.user_id', 'left')
-            ->join('auth_identities', 'auth_identities.user_id = employers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = employers.user_id AND auth_identities.type = "email_password"', 'left')
             ->join('states', 'states.id = employers.state_id', 'left')
             ->join('employer_industries', 'employer_industries.employer_id = employers.id', 'left')
             ->join('industries', 'industries.id = employer_industries.industry_id', 'left')
@@ -776,7 +776,11 @@ class AdminController extends BaseController
             $builder->where('employers.verification_status', $verificationStatus);
         }
 
-        $employers = $builder->paginate(20);
+        $builder->applyAdminSearch($search);
+        if ($industries) {
+            $builder->whereIn('employer_industries.industry_id', $industries);
+        }
+        $employers = $builder->orderBy('employers.id', 'DESC')->paginate(20);
 
         if ($this->request->isAJAX()) {
             return view('admin/partials/employers_results', [
@@ -797,7 +801,9 @@ class AdminController extends BaseController
             'total'             => $employerModel->pager->getTotal(),
             'industryCounts'    => $this->industryCounts(),
             'verificationStats' => $verificationStats,
-            'currentStatus'     => $verificationStatus
+            'currentStatus'     => $verificationStatus,
+            'search'            => $search,
+            'selectedIndustries' => $industries
         ];
 
         return view('admin/employers', $data);
@@ -821,7 +827,8 @@ class AdminController extends BaseController
     {
         $employerModel = model(\App\Models\EmployerModel::class);
 
-        $industries = $this->request->getGet('industries') ?? [];
+        $industries = $this->request->getGet('industries');
+        $industries = is_array($industries) ? array_values(array_filter(array_map('intval', array_filter($industries, 'is_scalar')), static fn ($id) => $id > 0)) : [];
         $verificationStatus = $this->request->getGet('status') ?? 'all';
         $page = $this->request->getGet('page') ?? 1;
         $docSubmittedSql = '(EXISTS (SELECT 1 FROM employer_documents WHERE employer_documents.employer_id = employers.id) OR (employers.verification_doc IS NOT NULL AND employers.verification_doc != "") OR (employers.verification_documents IS NOT NULL AND employers.verification_documents != "" AND employers.verification_documents != "[]"))';
@@ -836,7 +843,7 @@ class AdminController extends BaseController
                 'COUNT(DISTINCT employer_documents.id) AS submitted_docs_count'
             ])
             ->join('users', 'users.id = employers.user_id', 'left')
-            ->join('auth_identities', 'auth_identities.user_id = employers.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = employers.user_id AND auth_identities.type = "email_password"', 'left')
             ->join('states', 'states.id = employers.state_id', 'left')
             ->join('employer_industries', 'employer_industries.employer_id = employers.id', 'left')
             ->join('industries', 'industries.id = employer_industries.industry_id', 'left')
@@ -861,7 +868,8 @@ class AdminController extends BaseController
             $builder->whereIn('employer_industries.industry_id', $industries);
         }
 
-        $employers = $builder->paginate(20, 'default', $page);
+        $builder->applyAdminSearch($this->request->getGet('q'));
+        $employers = $builder->orderBy('employers.id', 'DESC')->paginate(20, 'default', max(1, (int) $page));
 
         return view('admin/partials/employers_results', [
             'employers' => $employers,
@@ -876,18 +884,19 @@ class AdminController extends BaseController
             $employerModel = model(EmployerModel::class);
             $notes = $this->request->getPost('notes');
 
+            $previousEmployer = $employerModel->find($employerId);
+            $alreadyVerified = $previousEmployer && $previousEmployer->verification_status === 'verified' && !empty($previousEmployer->is_verified);
+
             if ($employerModel->verifyEmployer($employerId, $this->admin->id, $notes)) {
                 // Send approval email
                 try {
                     $employer = $employerModel->find($employerId);
-                    if ($employer) {
+                    if ($employer && !$alreadyVerified) {
                         $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
                         $user = $userModel->find($employer->user_id);
                         
-                        if ($user) {
-                            $emailService = new \App\Services\EmailNotificationService();
-                            $emailService->sendEmployerVerificationApprovedEmail($employer, $user, $notes ?? '');
-                        }
+                        $emailService = new \App\Services\EmailNotificationService();
+                        $emailService->sendEmployerVerificationApprovedEmail($employer, $user, $notes ?? '');
                     }
                 } catch (\Throwable $e) {
                     log_message('error', 'Failed to send verification approval email: ' . $e->getMessage());
@@ -967,37 +976,38 @@ class AdminController extends BaseController
             }
 
             // Update document status
-            $documentModel->update($documentId, [
+            $documentUpdated = $documentModel->update($documentId, [
                 'status' => 'approved',
                 'verified_at' => date('Y-m-d H:i:s'),
                 'verified_by' => $this->admin->id
             ]);
+            if (!$documentUpdated) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Failed to verify document']);
+            }
 
             // Check if employer has all documents approved
             $employerModel = model(EmployerModel::class);
             $pendingDocs = $documentModel
                 ->where('employer_id', $document['employer_id'])
-                ->where('status', 'pending')
+                ->where('status !=', 'approved')
                 ->countAllResults();
 
             // If no pending documents, mark employer as verified
-            if ($pendingDocs == 0) {
-                $employerModel->update($document['employer_id'], [
-                    'verification_status' => 'verified',
-                    'is_verified' => 1,
-                    'verified_at' => date('Y-m-d H:i:s'),
-                    'verified_by' => $this->admin->id
-                ]);
+            $previousEmployer = $employerModel->find($document['employer_id']);
+            $alreadyVerified = $previousEmployer && $previousEmployer->verification_status === 'verified' && !empty($previousEmployer->is_verified);
+            if ($pendingDocs == 0 && !$alreadyVerified && $employerModel->verifyEmployer(
+                (int) $document['employer_id'],
+                (int) $this->admin->id,
+                'All submitted verification documents approved.'
+            )) {
 
                 try {
                     $employer = $employerModel->find($document['employer_id']);
                     if ($employer) {
                         $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
                         $user = $userModel->find($employer->user_id);
-                        if ($user) {
-                            $emailService = new \App\Services\EmailNotificationService();
-                            $emailService->sendEmployerVerificationApprovedEmail($employer, $user, 'All submitted verification documents approved.');
-                        }
+                        $emailService = new \App\Services\EmailNotificationService();
+                        $emailService->sendEmployerVerificationApprovedEmail($employer, $user, 'All submitted verification documents approved.');
                     }
                 } catch (\Throwable $e) {
                     log_message('error', 'Failed sending document verification approved email: ' . $e->getMessage());
@@ -1121,6 +1131,27 @@ class AdminController extends BaseController
         // Check unlimited access
         $hasUnlimitedAccess = $this->hasUnlimitedAccess($employer->id);
 
+        $accountDb = db_connect();
+        $accountUserId = (int) $employer->user_id;
+        $accountNow = date('Y-m-d H:i:s');
+        $accountWallet = $accountDb->table('wallets')->where('user_id', $accountUserId)->get()->getRow();
+        $accountCredits = $accountDb->table('job_credit_wallets')->selectSum('credits', 'total')
+            ->where('user_id', $accountUserId)->where('credits >', 0)
+            ->groupStart()->where('expires_at', null)->orWhere('expires_at >', $accountNow)->groupEnd()->get()->getRow();
+        $accountSubscription = $accountDb->table('user_subscriptions')->select('user_subscriptions.*, plans.name AS plan_name')
+            ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
+            ->where('user_subscriptions.user_id', $accountUserId)->where('user_subscriptions.is_active', 1)
+            ->where('user_subscriptions.ends_at >', $accountNow)->orderBy('user_subscriptions.ends_at', 'DESC')->get()->getRow();
+        $accountManagement = [
+            'balance' => (float) ($accountWallet->balance ?? 0),
+            'credits' => (int) ($accountCredits->total ?? 0),
+            'subscription' => $accountSubscription,
+            'plans' => $accountDb->table('plans')->where('is_active', 1)->whereIn('plan_type', ['starter', 'subscription', 'employer'])->orderBy('name')->get()->getResult(),
+            'bundles' => $accountDb->table('plan_bundles')->where('is_active', 1)->orderBy('job_credits')->get()->getResult(),
+            'history' => $accountDb->table('job_credit_transactions')->where('user_id', $accountUserId)
+                ->like('reference', 'admin_account_', 'after')->orderBy('id', 'DESC')->limit(10)->get()->getResult(),
+        ];
+
         return view('admin/employer', [
             'title'      => $employer->company_name,
             'user'       => $this->auth->user(),
@@ -1130,7 +1161,46 @@ class AdminController extends BaseController
             'jobs'       => $jobs,
             'cacDocument' => $cacDocument,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
+            'accountManagement' => $accountManagement,
         ]);
+    }
+
+    public function updateEmployerAccount($employerId)
+    {
+        $destination = base_url('admin/employers/view/' . (int) $employerId);
+        try {
+            $notified = (new \App\Services\AdminEmployerAccountService())->apply(
+                (int) $employerId,
+                (int) $this->admin->id,
+                $this->request->getPost()
+            );
+            return redirect()->to($destination)->with($notified ? 'success' : 'error', $notified
+                ? 'Employer account updated. Email notifications have been submitted.'
+                : 'Employer account updated, but email notifications could not be submitted. Check the email logs.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->to($destination)->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            log_message('error', 'Admin employer account update failed: ' . $e->getMessage());
+            return redirect()->to($destination)->with('error', 'The account could not be updated. No changes were saved.');
+        }
+    }
+
+    public function resendEmployerVerificationEmail($employerId)
+    {
+        $destination = base_url('admin/employers/view/' . (int) $employerId);
+        $employer = model(EmployerModel::class)->find((int) $employerId);
+        if (!$employer || empty($employer->is_verified)) {
+            return redirect()->to($destination)->with('error', 'Verify this employer before sending a verification email.');
+        }
+        try {
+            $user = model(\CodeIgniter\Shield\Models\UserModel::class)->find($employer->user_id);
+            $sent = (new \App\Services\EmailNotificationService())->sendEmployerVerificationApprovedEmail($employer, $user, '', false);
+            return redirect()->to($destination)->with($sent ? 'success' : 'error', $sent
+                ? 'Verification emails submitted for delivery.' : 'Verification email could not be submitted. Check the email logs.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Verification email resend failed: ' . $e->getMessage());
+            return redirect()->to($destination)->with('error', 'Verification email could not be submitted. Check the email logs.');
+        }
     }
 
     /**
@@ -1265,6 +1335,35 @@ class AdminController extends BaseController
             'application' => $application,
             'answers'     => $answers,
         ]);
+    }
+
+    /**
+     * Update a job application's status from the admin detail page.
+     * Mirrors the employer's status set, plus 'withdrawn'.
+     */
+    public function saveApplicationStatus(int $id)
+    {
+        $status = (string) $this->request->getPost('status');
+        $allowed = ['pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn'];
+
+        if (! in_array($status, $allowed, true)) {
+            return redirect()->back()->with('error', 'Invalid application status.');
+        }
+
+        $application = $this->jobApplicationModel->find($id);
+
+        if (! $application) {
+            return redirect()->to('admin/applications')->with('error', 'Application not found.');
+        }
+
+        $data = ['status' => $status];
+        if ($status !== 'pending' && empty($application->reviewed_at)) {
+            $data['reviewed_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->jobApplicationModel->update($id, $data);
+
+        return redirect()->back()->with('success', 'Application status updated to ' . ucfirst($status) . '.');
     }
 
     public function locations()
@@ -1921,14 +2020,44 @@ class AdminController extends BaseController
             }
         }
 
-        $jobs = $builder->orderBy('jobs.created_at', 'DESC')->paginate(20);
+        // Manual pagination: paginate() miscounts this grouped/joined query
+        // (pages overlapped and only part of the jobs ever surfaced), so the
+        // total is counted on the jobs table alone and the page is sliced
+        // with an explicit limit on a stable sort.
+        $perPage = 20;
+        $page = max(1, (int) ($this->request->getGet('page') ?? 1));
+
+        $countModel = new JobModel();
+        if ($status) {
+            if ($status === 'pending_approval' || $status === 'pending') {
+                $countModel->where('admin_status', 'pending');
+            } elseif ($status === 'rejected') {
+                $countModel->where('admin_status', 'rejected');
+            } elseif ($status === 'open' || $status === 'active') {
+                $countModel->where('status', 'open')->where('admin_status', 'approved');
+            } elseif ($status === 'closed') {
+                $countModel->where('status', 'closed');
+            } elseif ($status === 'deleted') {
+                $countModel->where('status', 'deleted');
+            } else {
+                $countModel->where('status', $status);
+            }
+        }
+        $total = $countModel->countAllResults();
+
+        $jobs = $builder->orderBy('jobs.created_at', 'DESC')
+            ->orderBy('jobs.id', 'DESC')
+            ->findAll($perPage, ($page - 1) * $perPage);
+
+        $pager = service('pager');
+        $pager->store('default', $page, $perPage, $total);
 
         return view('admin/jobs', [
             'title'          => 'Jobs',
             'user'           => $this->auth->user(),
             'admin'          => $this->admin,
             'jobs'           => $jobs,
-            'pager'          => $this->jobModel->pager,
+            'pager'          => $pager,
             'stats'          => $stats,
             'selectedStatus' => $status ?? '',
         ]);
@@ -2094,11 +2223,44 @@ class AdminController extends BaseController
                 ->where('DATE(jobs.created_at) <=', $toDate);
         }
 
-        $jobs = $builder->paginate(20, 'default', $page);
+        // Manual pagination, same as jobs(): paginate() miscounts this
+        // grouped/joined query, and this method previously had no ORDER BY
+        // at all, so page boundaries shifted between requests.
+        $perPage = 20;
+        $page = max(1, (int) $page);
+
+        $countModel = new JobModel();
+        if ($status) {
+            if ($status === 'pending_approval' || $status === 'pending') {
+                $countModel->where('admin_status', 'pending');
+            } elseif ($status === 'rejected') {
+                $countModel->where('admin_status', 'rejected');
+            } elseif ($status === 'open' || $status === 'active') {
+                $countModel->where('status', 'open')->where('admin_status', 'approved');
+            } elseif ($status === 'closed') {
+                $countModel->where('status', 'closed');
+            } elseif ($status === 'deleted') {
+                $countModel->where('status', 'deleted');
+            } else {
+                $countModel->where('status', $status);
+            }
+        }
+        if ($fromDate && $toDate) {
+            $countModel->where('DATE(created_at) >=', $fromDate)
+                ->where('DATE(created_at) <=', $toDate);
+        }
+        $total = $countModel->countAllResults();
+
+        $jobs = $builder->orderBy('jobs.created_at', 'DESC')
+            ->orderBy('jobs.id', 'DESC')
+            ->findAll($perPage, ($page - 1) * $perPage);
+
+        $pager = service('pager');
+        $pager->store('default', $page, $perPage, $total);
 
         return view('admin/partials/jobs_results', [
             'jobs'  => $jobs,
-            'pager' => $this->jobModel->pager,
+            'pager' => $pager,
         ]);
     }
 
@@ -2284,6 +2446,15 @@ class AdminController extends BaseController
             log_message('error', 'Immediate job alert dispatch failed for job #' . $jobId . ': ' . $e->getMessage());
         }
 
+        // Invalidate homepage and listing caches
+        try {
+            $cache = \Config\Services::cache();
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('featured_jobs');
+            $cache->delete('recent_jobs');
+        } catch (\Throwable $e) {}
+
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Job approved successfully'
@@ -2334,6 +2505,15 @@ class AdminController extends BaseController
 
             $approvedCount++;
         }
+
+        // Invalidate homepage and listing caches
+        try {
+            $cache = \Config\Services::cache();
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('featured_jobs');
+            $cache->delete('recent_jobs');
+        } catch (\Throwable $e) {}
 
         return $this->response->setJSON([
             'success' => true,
@@ -2926,7 +3106,7 @@ class AdminController extends BaseController
         $candidateModel = model(JobSeekerModel::class);
         $bundleModel = model(PlanBundleModel::class);
 
-        $employerPlans = $planModel->where('plan_type', 'employer')->orderBy('base_price', 'ASC')->findAll();
+        $employerPlans = $planModel->whereIn('plan_type', ['employer', 'subscription'])->orderBy('base_price', 'ASC')->findAll();
         
         // Auto-seed default candidate search plans if empty
         if (empty($employerPlans)) {
@@ -2941,14 +3121,14 @@ class AdminController extends BaseController
                     $planModel->insert($dsp);
                 } catch (\Throwable $e) {}
             }
-            $employerPlans = $planModel->where('plan_type', 'employer')->orderBy('base_price', 'ASC')->findAll();
+            $employerPlans = $planModel->whereIn('plan_type', ['employer', 'subscription'])->orderBy('base_price', 'ASC')->findAll();
         }
         $candidatePlans = $planModel->where('plan_type', 'candidate')->orderBy('base_price', 'ASC')->findAll();
         $bundles = $bundleModel->orderBy('job_credits', 'ASC')->findAll();
 
         $subscriptions = $subscriptionModel
             ->asObject()
-            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.id AS employer_id, employers.company_name, employers.user_id AS emp_user_id, job_seekers.id AS candidate_id, job_seekers.full_name AS candidate_name, job_seekers.user_id AS cand_user_id, users.username, users.first_name, users.last_name, users.user_type, auth_identities.secret AS user_email')
+            ->select('user_subscriptions.*, plans.name AS plan_name, plans.plan_type, employers.id AS employer_id, employers.company_name, employers.user_id AS emp_user_id, job_seekers.id AS candidate_id, job_seekers.full_name AS candidate_name, job_seekers.user_id AS cand_user_id, users.username, users.user_type, auth_identities.secret AS user_email')
             ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
             ->join('employers', 'employers.user_id = user_subscriptions.user_id', 'left')
             ->join('job_seekers', 'job_seekers.user_id = user_subscriptions.user_id', 'left')
@@ -3745,7 +3925,7 @@ class AdminController extends BaseController
         if ($geminiKey) {
             try {
                 $client = \Config\Services::curlrequest();
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . $geminiKey;
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" . $geminiKey;
                 $payload = [
                     'contents' => [
                         [
@@ -3894,7 +4074,7 @@ class AdminController extends BaseController
         $data = ['male' => 0, 'female' => 0];
 
         foreach ($rows as $row) {
-            $key = strtolower($row->gender);
+            $key = strtolower((string) ($row->gender ?? ''));
             if (isset($data[$key])) {
                 $data[$key] = (int) $row->total;
             }

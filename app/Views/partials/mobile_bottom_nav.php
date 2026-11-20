@@ -1,5 +1,7 @@
 <!-- Mobile Bottom Navigation App Bar (Hidden on Desktop) -->
 <style>
+:root { --mobile-nav-clearance: calc(66px + env(safe-area-inset-bottom, 0px)); }
+
 /* Hide on tablet and desktop (>=768px) */
 @media (min-width: 768px) {
   html body .mobile-bottom-nav { display: none !important; }
@@ -14,14 +16,48 @@
   display: flex !important;
   justify-content: space-around;
   align-items: center;
-  height: 66px;
-  min-height: 66px;
+  height: calc(66px + env(safe-area-inset-bottom, 0px));
+  min-height: calc(66px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
   padding-top: 6px;
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -3px 18px rgba(10, 47, 87, 0.08);
   z-index: 1040;
   border-top: 1px solid #e2e8f0;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Keep the final page content and controls reachable above this fixed bar. */
+@media (max-width: 767.98px) {
+  html body { padding-bottom: var(--mobile-nav-clearance); }
+
+  /* Keep page-level sticky actions above the shared app navigation. */
+  .mobile-cta,
+  .mobile-apply-bar,
+  .ch-sticky-cta,
+  .sticky-cta { bottom: var(--mobile-nav-clearance) !important; }
+
+  /* Leave enough scroll room for both fixed bars at the end of the page. */
+  html body:has(.mobile-cta),
+  html body:has(.mobile-apply-bar),
+  html body:has(.ch-sticky-cta),
+  html body:has(.sticky-cta) {
+    padding-bottom: calc(var(--mobile-nav-clearance) + 84px) !important;
+  }
+
+  /* On shell pages the footer absorbs the bottom cushion, so the page ends
+     cleanly at the navigation bar instead of trailing a blank band. */
+  .dash-foot {
+    margin-bottom: calc(-1 * var(--mobile-nav-clearance));
+    padding-bottom: calc(16px + var(--mobile-nav-clearance));
+  }
+  body:has(.mobile-cta) .dash-foot,
+  body:has(.mobile-apply-bar) .dash-foot,
+  body:has(.ch-sticky-cta) .dash-foot,
+  body:has(.sticky-cta) .dash-foot {
+    margin-bottom: calc(-1 * (var(--mobile-nav-clearance) + 84px));
+    padding-bottom: calc(16px + var(--mobile-nav-clearance) + 84px);
+  }
 }
 
 .mobile-bottom-nav .nav-item {

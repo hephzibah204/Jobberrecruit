@@ -165,18 +165,19 @@ foreach ($jobs as $index => $j) {
 
                     <!-- Company logo + name -->
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <?php if (empty($job->is_anonymous)): ?>
+                        <?php $isAnon = !empty($job->is_anonymous) || !empty($job->is_confidential) || !empty($job->anonymous); ?>
+                        <?php if (empty($isAnon)): ?>
                         <img src=\"<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>\" alt="<?= esc($job->employer_name) ?>"
                              class="rounded" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--border);">
                         <?php else: ?>
                         <div class="rounded d-flex align-items-center justify-content-center"
                              style="width:48px;height:48px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);">
-                            <i class="bi bi-building text-primary fs-4"></i>
+                            <i class="bi bi-lock text-muted fs-4"></i>
                         </div>
                         <?php endif; ?>
                         <div class="overflow-hidden">
                             <div class="fw-semibold text-main text-truncate">
-                                <?= !empty($job->is_anonymous) ? 'Confidential' : esc($job->employer_name ?? 'Employer') ?>
+                                <?= !empty($isAnon) ? 'Confidential Employer' : esc($job->employer_name ?? 'Employer') ?>
                             </div>
                             <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i><?= esc($job->location ?? 'Nigeria') ?></div>
                         </div>

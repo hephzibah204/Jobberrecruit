@@ -176,6 +176,9 @@ svg { flex-shrink: 0; }
         <?php if (!empty($resume->linkedin)): ?>
           <span class="cv-contact-item"><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->linkedin)) ?></span>
         <?php endif; ?>
+        <?php if (!empty($resume->portfolio)): ?>
+          <span class="cv-contact-item"><?= esc(preg_replace('/^https?:\/\/(www\.)?/', '', $resume->portfolio)) ?></span>
+        <?php endif; ?>
       </div>
     </header>
 

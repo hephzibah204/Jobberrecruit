@@ -1,16 +1,28 @@
+<?php $jobsReferenceNavigation = uri_string() === 'jobs'; ?>
 <header class="navbar" role="banner">
       <style>
       @media (max-width: 860px) {
+        .nav-links, .nav-actions .btn-outline { display: none !important; }
         .nav-inner { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        .nav-actions { margin-left: auto !important; display: flex; align-items: center; justify-content: flex-end; }
+        .nav-actions { margin-left: auto !important; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
         .hamburger { margin-left: auto !important; display: block; }
       }
       @media (max-width: 580px) {
-        .nav-actions .btn:not(.btn-dashboard) { display: none !important; }
+        .nav-actions .btn-outline { display: none !important; }
+        .nav-actions .btn-primary { display: inline-flex !important; font-size: 0.76rem; padding: 7px 11px; white-space: nowrap; }
         .nav-actions .btn-dashboard { display: inline-flex !important; font-size: 13px; padding: 6px 12px; margin-right: 8px; }
-        .nav-logo img { height: 44px !important; }
-        .nav-actions { margin-left: auto !important; justify-content: flex-end !important; }
-        .hamburger { margin-left: auto !important; margin-right: 0 !important; }
+        .nav-logo img { max-width: 130px; height: auto !important; max-height: 48px; }
+        .nav-actions { margin-left: auto !important; justify-content: flex-end !important; gap: 6px; }
+        .hamburger { margin-left: 0 !important; margin-right: 0 !important; padding: 6px; }
+      }
+      @media (max-width: 360px) {
+        .nav-logo img { max-width: 105px; max-height: 40px; }
+        .nav-actions .btn-primary { font-size: 0.70rem; padding: 6px 8px; }
+        .btn-text-full { display: none !important; }
+        .btn-text-short { display: inline !important; }
+      }
+      @media (min-width: 361px) {
+        .btn-text-short { display: none !important; }
       }
       </style>
       <div class="container">
@@ -20,8 +32,10 @@
           </a>
           <ul class="nav-links" role="list">
             <li><a href="<?= base_url('jobs') ?>" <?= (uri_string() === 'jobs') ? 'aria-current="page"' : '' ?>>Find jobs</a></li>
+            <?php if (!$jobsReferenceNavigation): ?>
             <li><a href="<?= base_url('candidates') ?>" <?= (uri_string() === 'candidates') ? 'aria-current="page"' : '' ?>>Candidate hub</a></li>
             <li><a href="<?= base_url('blog') ?>" <?= (uri_string() === 'blog') ? 'aria-current="page"' : '' ?>>Blog</a></li>
+            <?php endif; ?>
             <li class="nav-dropdown">
               <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Training <svg class="nav-caret" aria-hidden="true"><use href="#i-chev-down"/></svg></button>
               <div class="nav-dropdown-menu" role="menu">
@@ -37,12 +51,13 @@
                 <a href="<?= base_url('job-ads') ?>" role="menuitem">Job ad pricing</a>
               </div>
             </li>
+            <?php if ($jobsReferenceNavigation): ?><li><a href="<?= base_url('career-advice') ?>">Career advice</a></li><?php endif; ?>
             <li><a href="<?= base_url('employer/post-job') ?>">Post a job</a></li>
           </ul>
             <div class="nav-actions">
             <?php if (!auth()->user()) : ?>
               <a href="<?= base_url('login') ?>" class="btn btn-outline">Log in</a>
-              <a href="<?= base_url('register') ?>" class="btn btn-primary">Get started free</a>
+              <a href="<?= base_url('register') ?>" class="btn btn-primary"><span class="btn-text-full">Get Started For Free</span><span class="btn-text-short">Get Started</span></a>
             <?php else : ?>
               <?php if (auth()->user()->user_type == 'employer'): ?>
                 <a href="<?= base_url('employer/dashboard') ?>" class="btn btn-primary btn-dashboard">Dashboard</a>
@@ -60,10 +75,13 @@
         </nav>
         <nav id="mob-nav" class="mobile-nav" role="navigation" aria-label="Mobile navigation">
           <a href="<?= base_url('jobs') ?>">Find jobs</a>
+          <?php if (!$jobsReferenceNavigation): ?>
           <a href="<?= base_url('candidates') ?>">Candidate hub</a>
           <a href="<?= base_url('blog') ?>">Blog</a>
+          <?php endif; ?>
           <div class="mob-group"><p class="mob-group-label">Training</p><a href="<?= base_url('training') ?>">Courses</a><a href="<?= base_url('webinars') ?>">Webinars</a><a href="<?= base_url('cv-review') ?>">CV Review</a></div>
           <div class="mob-group"><p class="mob-group-label">Recruitment</p><a href="<?= base_url('recruitment') ?>">Recruitment services</a><a href="<?= base_url('job-ads') ?>">Job ad pricing</a></div>
+          <?php if ($jobsReferenceNavigation): ?><a href="<?= base_url('career-advice') ?>">Career advice</a><?php endif; ?>
           <a href="<?= base_url('employer/post-job') ?>">Post a job</a>
           <?php if (!auth()->user()) : ?>
             <a href="<?= base_url('login') ?>">Get Started</a>

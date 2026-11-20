@@ -10,6 +10,11 @@
     #print-root .wm { display: flex !important; }
 }
 
+.cv-doc, .doc { position: relative !important; }
+.wm { position: absolute !important; right: 8px !important; top: 50% !important; transform: translateY(-50%) !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 7px !important; opacity: .5 !important; pointer-events: none !important; user-select: none !important; z-index: 10 !important; width: auto !important; height: auto !important; }
+.wm .wm-ic, svg.wm-ic { width: 12px !important; height: 16px !important; min-width: 12px !important; min-height: 16px !important; max-width: 12px !important; max-height: 16px !important; flex-shrink: 0 !important; fill: #F08F1C !important; display: block !important; }
+.wm .wm-tx { writing-mode: vertical-rl !important; font-family: 'Inter', sans-serif !important; font-size: .56rem !important; font-weight: 600 !important; letter-spacing: .16em !important; color: #9aa4b5 !important; line-height: 1 !important; white-space: nowrap !important; }
+.wm-tile { background-image: repeating-linear-gradient(-30deg, transparent 0 78px, rgba(8,97,169,.028) 78px 79px) !important; }
 .cv-doc { background: var(--white, #fff); border-radius: 12px; box-shadow: 0 14px 40px rgba(10,47,87,.16); overflow: hidden; font-family: 'Inter', Arial, sans-serif; font-size: 13.5px; line-height: 1.65; color: #1a1f2e; border-top: 5px solid var(--accent, #ED9020); text-align: left; }
 .cv-header { background: var(--white, #fff); padding: 34px 42px 24px; border-bottom: 1px solid var(--border, #e2e8f2); }
 .cv-header-top { overflow: hidden; margin-bottom: 18px; }
@@ -46,6 +51,21 @@
 .cv-cert-item:last-child { margin-bottom: 0; }
 .cv-cert-name { font-size: 13.5px; font-weight: 700; color: var(--text, #141926); margin-bottom: 2px; }
 
+/* Mobile and desktop accordion hardening */
+.ed-head { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 8px !important; padding: 12px 14px !important; cursor: pointer; user-select: none; width: 100% !important; box-sizing: border-box !important; min-width: 0 !important; }
+.ed-head:hover { background: var(--bg); }
+.ed-grip { color: var(--muted); display: inline-flex !important; align-items: center !important; justify-content: center !important; cursor: grab; flex-shrink: 0 !important; width: 18px !important; height: 18px !important; min-width: 18px !important; max-width: 18px !important; }
+.ed-grip svg { width: 16px !important; height: 16px !important; min-width: 16px !important; max-width: 16px !important; display: block !important; flex-shrink: 0 !important; }
+.ed-title { flex: 1 1 auto !important; min-width: 0 !important; font-size: .88rem; font-weight: 700; color: var(--brand-deep); display: inline-flex !important; align-items: center !important; flex-wrap: wrap !important; gap: 6px 8px !important; word-break: normal !important; overflow-wrap: break-word !important; white-space: normal !important; line-height: 1.35; }
+.ed-title svg { width: 15px !important; height: 15px !important; min-width: 15px !important; max-width: 15px !important; color: var(--brand); flex-shrink: 0 !important; display: block !important; }
+.ed-title .ed-tag { font-size: .6rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--brand-light); color: var(--brand); letter-spacing: .04em; white-space: nowrap !important; flex-shrink: 0 !important; display: inline-block !important; }
+.pill-new { font-size: .58rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: var(--accent-light); color: #92400e; border-radius: 20px; padding: 3px 9px; white-space: nowrap !important; flex-shrink: 0 !important; display: inline-block !important; }
+.ed-head .ic-btn { flex-shrink: 0 !important; width: 28px !important; height: 28px !important; min-width: 28px !important; min-height: 28px !important; max-width: 28px !important; max-height: 28px !important; padding: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
+.ed-head .ic-btn svg { width: 13px !important; height: 13px !important; min-width: 13px !important; max-width: 13px !important; flex-shrink: 0 !important; display: block !important; }
+.ed-chev, .ed-chevron { color: var(--muted); flex-shrink: 0 !important; width: 22px !important; height: 22px !important; min-width: 22px !important; min-height: 22px !important; max-width: 22px !important; max-height: 22px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; margin-left: auto !important; transition: transform .2s ease !important; }
+.ed-chev svg, .ed-chevron svg { width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important; max-width: 16px !important; max-height: 16px !important; flex-shrink: 0 !important; display: block !important; }
+.ed-sec.open .ed-chev, .ed-sec.open .ed-chevron { transform: rotate(180deg) !important; }
+.ed-sec.open .ed-chev svg, .ed-sec.open .ed-chevron svg { transform: rotate(0) !important; }
 </style>
 <?= $this->endSection() ?>
 
@@ -89,23 +109,23 @@
   <span class="pagepill" id="pagepill" aria-live="polite"><svg aria-hidden="true"><use href="#i-doc"/></svg> <b id="pagepill-n">1 page</b></span>
   <div class="rb-bar-right">
     <select id="template-select-top" class="select" aria-label="Template" onchange="selectTemplate(this.value)">
-      <option value="t-exec" <?= ($resume->template_id ?? '') === 't-exec' ? 'selected' : '' ?>>Executive</option>
-      <option value="t-pro" <?= ($resume->template_id ?? '') === 't-pro' ? 'selected' : '' ?>>Professional</option>
-      <option value="t-modern" <?= ($resume->template_id ?? '') === 't-modern' || empty($resume->template_id) ? 'selected' : '' ?>>Modern</option>
-      <option value="t-serif" <?= ($resume->template_id ?? '') === 't-serif' ? 'selected' : '' ?>>Elegant Serif</option>
-      <option value="t-tech" <?= ($resume->template_id ?? '') === 't-tech' ? 'selected' : '' ?>>Tech / Startup</option>
-      <option value="t-classic" <?= ($resume->template_id ?? '') === 't-classic' ? 'selected' : '' ?>>Classic</option>
-      <option value="t-minimal" <?= ($resume->template_id ?? '') === 't-minimal' ? 'selected' : '' ?>>Minimal</option>
+      <option value="t-exec" <?= ($resume->template_id ?? '') === 'executive' ? 'selected' : '' ?>>Executive</option>
+      <option value="t-pro" <?= ($resume->template_id ?? '') === 'pro' ? 'selected' : '' ?>>Professional</option>
+      <option value="t-modern" <?= ($resume->template_id ?? '') === 'modern' || empty($resume->template_id) ? 'selected' : '' ?>>Modern</option>
+      <option value="t-serif" <?= ($resume->template_id ?? '') === 'serif' ? 'selected' : '' ?>>Elegant Serif</option>
+      <option value="t-tech" <?= ($resume->template_id ?? '') === 'tech' ? 'selected' : '' ?>>Tech / Startup</option>
+      <option value="t-classic" <?= ($resume->template_id ?? '') === 'classic' ? 'selected' : '' ?>>Classic</option>
+      <option value="t-minimal" <?= ($resume->template_id ?? '') === 'minimalist' ? 'selected' : '' ?>>Minimal</option>
     </select>
-    <button type="button" class="btn btn-outline btn-sm me-1" id="btn-import-profile-top" onclick="importFromProfile()"><svg aria-hidden="true"><use href="#i-user"/></svg> Auto-fill from Profile</button>
+    <button type="button" class="btn btn-outline btn-sm me-1" id="btn-import-profile-top"><svg aria-hidden="true"><use href="#i-user"/></svg> Auto-fill from Profile</button>
     <button type="button" class="btn btn-outline btn-sm me-1" id="btn-cover-top"><svg aria-hidden="true"><use href="#i-mail"/></svg> Cover Letter</button>
     <button type="button" class="btn btn-outline btn-sm me-1" id="btn-delete-resume" title="Delete this resume" data-id="<?= esc($resume->id ?? '') ?>" style="color:#ef4444;border-color:rgba(239,68,68,0.3);"><svg aria-hidden="true" style="color:#ef4444;"><use href="#i-trash"/></svg> Delete</button>
     <div class="export-dropdown" style="position:relative;display:inline-flex;">
       <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>" class="btn btn-accent btn-sm download-pdf-btn" style="border-top-right-radius:0;border-bottom-right-radius:0;"><svg aria-hidden="true"><use href="#i-download"/></svg> PDF</a>
       <button type="button" class="btn btn-accent btn-sm dropdown-toggle" style="border-left:1px solid rgba(255,255,255,0.3);padding:8px 8px;border-top-left-radius:0;border-bottom-left-radius:0;" onclick="var m=document.getElementById('export-menu');m.style.display=(m.style.display==='none'||!m.style.display)?'block':'none';" aria-label="Export options">▾</button>
       <div class="export-menu" id="export-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 25px rgba(10,47,87,.15);min-width:200px;z-index:1000;overflow:hidden;">
-        <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> PDF Document (.pdf)</a>
-        <a href="<?= site_url('candidate/resumes/download-docx/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> Word Document (.docx)</a>
+        <a href="<?= site_url('candidate/resumes/download/' . ($resume->id ?? '')) ?>" class="export-opt download-pdf-btn" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> PDF Document (.pdf)</a>
+        <a href="<?= site_url('candidate/resumes/download-docx/' . ($resume->id ?? '')) ?>" class="export-opt download-docx-btn" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> Word Document (.docx)</a>
         <a href="<?= site_url('candidate/resumes/download-txt/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;border-bottom:1px solid var(--border);text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> Plain Text / ATS (.txt)</a>
         <a href="<?= site_url('candidate/resumes/download-json/' . ($resume->id ?? '')) ?>" class="export-opt" style="display:flex;align-items:center;gap:8px;padding:10px 14px;color:var(--text);font-size:.82rem;font-weight:600;text-decoration:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-doc"/></svg> JSON Resume (.json)</a>
       </div>
@@ -599,12 +619,13 @@
 
             <form id="resume-form" onsubmit="return false;">
                 <input type="hidden" name="id" value="<?= $resume->id ?? '' ?>">
+                <input type="hidden" id="template_id" name="template_id" value="<?= esc($resume->template_id ?? 'classic') ?>">
                 <?= csrf_field() ?>
                 
                 <!-- job tailoring -->
                 <div class="ed-sec open" id="sec-jd">
-                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-zap"/></svg> Tailor to a Job</span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                    <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title"><svg style="width:15px;height:15px;color:var(--brand);flex-shrink:0" aria-hidden="true"><use href="#i-zap"/></svg> <span>Tailor to a Job</span></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
                         <label class="lbl" for="job-pick">Pick a JobberRecruit listing</label>
@@ -636,8 +657,8 @@
                 <!-- import existing CV -->
                 <div class="ed-sec open" id="sec-import">
                     <div class="ed-head" onclick="toggleEdSec(this)">
-                        <span class="ed-title" style="display:inline-flex;gap:9px;align-items:center"><span class="imp-badge" aria-hidden="true"><svg><use href="#i-download"/></svg></span> Import Existing CV <span class="pill-new">New</span></span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                        <span class="ed-title"><span class="imp-badge" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" style="width:14px;height:14px;display:block;"><use href="#i-download"/></svg></span> <span>Import Existing CV</span> <span class="pill-new">New</span></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
                         <p class="hint" style="font-size:.74rem;color:var(--muted);margin-top:12px">Already have a CV? Import it — we keep your original safe so you can always come back to it, and use it to fill this resume's sections.</p>
@@ -661,26 +682,26 @@
                 </div>
 
                 <!-- Step: Basic Information -->
-                <div class="ed-sec" id="sec-info" data-step="info">
+                <div class="ed-sec open" id="sec-info" data-step="info">
                     <div class="ed-head" onclick="toggleEdSec(this)" role="button" tabindex="0" aria-expanded="true">
                         <span class="ed-grip" title="Drag to reorder" aria-hidden="true"><svg><use href="#i-menu"/></svg></span>
                         <span class="ed-title">Personal Information <span class="ed-tag">Required</span></span>
                         <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Personal Information up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
                         <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Personal Information down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
                         <label class="lbl">Resume Title (Internal) <span class="text-danger">*</span></label>
                         <input type="text" name="title" class="input" value="<?= esc($resume->title ?? 'My Professional Resume') ?>" placeholder="e.g. Senior Software Engineer Resume" style="margin-bottom:12px;">
 
                         <label class="lbl" for="f-name">Full name</label>
-                        <input type="text" name="full_name" id="f-name" class="input" value="<?= esc($resume->full_name ?? $candidate->full_name ?? auth()->user()->username ?? '') ?>" placeholder="Your Full Name">
+                        <input type="text" name="full_name" id="f-name" class="input" value="<?= esc($resume->full_name ?? $candidate->full_name ?? '') ?>" placeholder="Your Full Name">
 
                         <div class="xp-entry" style="border:none;padding:0;margin-top:0">
                             <div class="row2">
                                 <div>
                                     <label class="lbl" for="f-email">Email</label>
-                                    <input type="email" name="email" id="f-email" class="input" value="<?= esc($resume->email ?? auth()->user()->email ?? '') ?>" placeholder="Your Email Address">
+                                    <input type="email" name="email" id="f-email" class="input" value="<?= esc($resume->email ?? $candidate->email ?? '') ?>" placeholder="Your Email Address">
                                 </div>
                                 <div>
                                     <label class="lbl" for="f-phone">Phone</label>
@@ -724,7 +745,7 @@
                         <span class="ed-title">Work Experience</span>
                         <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Work Experience up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
                         <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Work Experience down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body" id="experience-container">
                         <!-- Loop through and render existing experiences -->
@@ -782,7 +803,7 @@
                         <span class="ed-title">Education</span>
                         <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Education up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
                         <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Education down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body" id="education-container">
                         <!-- Loop through and render existing education -->
@@ -851,7 +872,7 @@
                         <span class="ed-title">Skills & Certs</span>
                         <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Skills & Certs up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
                         <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Skills & Certs down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
 
@@ -885,7 +906,7 @@
                         <span class="ed-title">Professional Summary</span>
                         <span class="ic-btn" data-mv="-1" role="button" tabindex="0" aria-label="Move Professional Summary up" style="width:30px;height:30px"><svg style="transform:rotate(90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
                         <span class="ic-btn" data-mv="1" role="button" tabindex="0" aria-label="Move Professional Summary down" style="width:30px;height:30px"><svg style="transform:rotate(-90deg)" aria-hidden="true"><use href="#i-arrow-l"/></svg></span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span>
                     </div>
                     <div class="ed-body">
                         <label class="lbl" for="resume-summary">Summary</label>
@@ -898,23 +919,23 @@
                 </div><!-- /ed-sec summary -->
 
                 <!-- writing review (auto) -->
-                <div class="ed-sec open" id="sec-review">
+                <div class="ed-sec" id="sec-review">
                     <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-eye"/></svg> Writing Review</span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body"><div id="issues"></div></div>
                 </div>
 
                 <!-- recruiter view -->
                 <div class="ed-sec" id="sec-recruiter">
                     <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-users"/></svg> Recruiter View</span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body" id="recruiter-body"></div>
                 </div>
 
                 <!-- more AI outputs -->
                 <div class="ed-sec" id="sec-outputs">
                     <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-zap"/></svg> More AI Outputs</span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body">
                         <div class="out-btns">
                             <button class="btn-ai" data-out="headline">Professional Headline</button>
@@ -945,7 +966,7 @@
                 <!-- career tools -->
                 <div class="ed-sec" id="sec-career">
                     <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-award"/></svg> Career Tools</span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body">
                         <label class="lbl" for="industry-pick">Tailor tone to industry</label>
                         <select class="select" id="industry-pick" aria-label="Target industry">
@@ -971,7 +992,7 @@
                 <!-- version history -->
                 <div class="ed-sec" id="sec-history">
                     <div class="ed-head" onclick="toggleEdSec(this)"><span class="ed-title" style="display:inline-flex;gap:8px;align-items:center"><svg style="width:15px;height:15px;color:var(--brand)" aria-hidden="true"><use href="#i-clock"/></svg> Version History</span>
-                        <span class="ed-chev" aria-hidden="true"><svg><use href="#i-chev-d"/></svg></span></div>
+                        <span class="ed-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" style="width:16px;height:16px;max-width:16px;max-height:16px;display:block;flex-shrink:0;" aria-hidden="true"><use href="#i-chev-d"/></svg></span></div>
                     <div class="ed-body"><div id="hist-list"><p class="hint" style="font-size:.74rem;color:var(--muted);margin-top:10px">Snapshots are captured automatically as you edit.</p></div></div>
                 </div>
 
@@ -1079,7 +1100,7 @@
         <div class="card border border-primary bg-primary-transparent p-3 mb-3">
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
             <div class="d-flex align-items-center gap-2">
-              <span class="badge bg-primary fs-13 px-3 py-2" id="tailorMatchScoreBadge">85% Keyword Match</span>
+              <span class="badge bg-secondary fs-13 px-3 py-2" id="tailorMatchScoreBadge">Match score unavailable</span>
               <span class="fw-semibold fs-14 text-dark">Target Job Alignment Analysis</span>
             </div>
           </div>
@@ -1217,6 +1238,36 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script>
+    // Accordion fallback (standalone block, no dependencies): the section
+    // heads rely on the inline onclick="toggleEdSec(this)" defined in the
+    // main script below. If that script fails to load/parse for any reason,
+    // every editor section stays collapsed and its fields are unreachable.
+    // This fallback records each section's state on capture and, after the
+    // click has bubbled, toggles it ONLY if the inline handler did not —
+    // so it can never double-toggle when the main script is healthy.
+    (function () {
+        var pending = null;
+        document.addEventListener('click', function (e) {
+            var head = e.target && e.target.closest ? e.target.closest('.ed-head') : null;
+            if (!head || (e.target.closest && e.target.closest('.ic-btn, a, button, input, select, textarea, label'))) {
+                pending = null;
+                return;
+            }
+            var sec = head.closest('.ed-sec');
+            pending = sec ? { sec: sec, head: head, wasOpen: sec.classList.contains('open') } : null;
+        }, true);
+        document.addEventListener('click', function () {
+            if (!pending) return;
+            var p = pending;
+            pending = null;
+            if (p.sec.classList.contains('open') === p.wasOpen) {
+                p.sec.classList.toggle('open');
+                p.head.setAttribute('aria-expanded', p.sec.classList.contains('open') ? 'true' : 'false');
+            }
+        }, false);
+    })();
+</script>
 <script>
     // ═══ MOCKUP: Accordion toggle ═══
     function toggleEdSec(head) {
@@ -1546,8 +1597,8 @@
                 let isCurr = $(this).find('.exp-current-check').is(':checked');
                 let datesStr = '';
                 if (startD) {
-                    let startFmt = formatDateShort(startD);
-                    let endFmt = isCurr ? 'Present' : (endD ? formatDateShort(endD) : 'Present');
+                    let startFmt = formatMonthYear(startD);
+                    let endFmt = isCurr ? 'Present' : (endD ? formatMonthYear(endD) : 'Present');
                     datesStr = startFmt + ' — ' + endFmt;
                 }
                 let pos = $(this).find('input[name="exp_position[]"]').val() || '';
@@ -1851,7 +1902,7 @@
                 tpl = tplMap[tpl] || ('t-' + tpl);
             }
             
-            var cfg = {
+            var cfgMap = {
                 't-classic': {'brand': '#0861A9', 'brand_dark': '#064A85', 'brand_deep': '#0A2F57', 'brand_light': '#E6F0F8', 'accent': '#ED9020', 'accent_dark': '#C8770E', 'font': "'Sora', 'Inter'"},
                 't-creative': {'brand': '#D946EF', 'brand_dark': '#C026D3', 'brand_deep': '#A21CAF', 'brand_light': '#FDF4FF', 'accent': '#F59E0B', 'accent_dark': '#D97706', 'font': "'Sora', 'Inter'"},
                 't-exec': {'brand': '#0F172A', 'brand_dark': '#020617', 'brand_deep': '#000000', 'brand_light': '#F8FAFC', 'accent': '#10B981', 'accent_dark': '#059669', 'font': "'Inter', sans-serif"},
@@ -1860,7 +1911,11 @@
                 't-pro': {'brand': '#111827', 'brand_dark': '#030712', 'brand_deep': '#000000', 'brand_light': '#F9FAFB', 'accent': '#3B82F6', 'accent_dark': '#2563EB', 'font': "'Inter', sans-serif"},
                 't-serif': {'brand': '#1E3A8A', 'brand_dark': '#1E3A8A', 'brand_deep': '#172554', 'brand_light': '#EFF6FF', 'accent': '#D97706', 'accent_dark': '#B45309', 'font': "'Merriweather', 'Georgia', serif"},
                 't-tech': {'brand': '#059669', 'brand_dark': '#047857', 'brand_deep': '#064E3B', 'brand_light': '#ECFDF5', 'accent': '#3B82F6', 'accent_dark': '#2563EB', 'font': "'Inter', sans-serif"}
-            }[tpl] || cfg['t-modern'];
+            };
+            // NOTE: this previously read `}[tpl] || cfg['t-modern']` — cfg was
+            // referenced inside its own initializer, so any template key not
+            // present in the map threw a TypeError and killed the preview.
+            var cfg = cfgMap[tpl] || cfgMap['t-modern'];
 
             var styleHtml = '<style>:root { ' +
                 '--brand: ' + cfg.brand + '; --brand-dark: ' + cfg.brand_dark + '; --brand-deep: ' + cfg.brand_deep + '; ' +
@@ -1871,7 +1926,7 @@
             $('head').append('<div id="cv-dynamic-style">' + styleHtml + '</div>');
 
             var $doc = $('#doc');
-            $doc.removeClass().addClass('cv-doc wm-tile');
+            $doc.removeClass().addClass('doc cv-doc wm-tile');
             
             var html = '';
             
@@ -1959,9 +2014,9 @@
             html += '</div>';
             
             // Watermark anti-crop element
-            html += '<div class="wm" aria-hidden="true">' +
-                '<svg class="wm-ic" viewBox="0 0 925.5 1269.15"><use href="#jr-mark"/></svg>' +
-                '<span class="wm-tx">www.JobberRecruit.com</span>' +
+            html += '<div class="wm" aria-hidden="true" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;opacity:0.5;pointer-events:none;user-select:none;z-index:10;width:auto;height:auto;">' +
+                '<svg class="wm-ic" width="12" height="16" viewBox="0 0 925.5 1269.15" style="width:12px!important;height:16px!important;min-width:12px!important;min-height:16px!important;max-width:12px!important;max-height:16px!important;flex-shrink:0!important;display:block!important;fill:#F08F1C!important;"><use href="#jr-mark"/></svg>' +
+                '<span class="wm-tx" style="writing-mode:vertical-rl;font-family:Inter,sans-serif;font-size:0.56rem;font-weight:600;letter-spacing:0.16em;color:#9aa4b5;line-height:1;white-space:nowrap;">www.JobberRecruit.com</span>' +
                 '</div>';
             
             $doc.html(html);
@@ -2384,12 +2439,15 @@
                             try { snap = JSON.parse(snap); } catch(e) {}
                         }
 
-                        if (snap.title !== undefined) $('input[name="title"]').val(snap.title).trigger('input');
-                        if (snap.full_name !== undefined && snap.full_name) $('input[name="full_name"]').val(snap.full_name).trigger('input');
+                        // Tailor proposals are advisory only: do NOT write them into the form here (that autosaved the tailored title before the user chose Apply and corrupted the diff's "Current" column). Apply handlers write on demand from window.pendingTailoredResume.
                         window.pendingTailoredResume = snap;
 
                         // Build side-by-side advisory comparison inside #aiTailorModal
-                        $('#tailorMatchScoreBadge').text((res.match_score || 88) + '% Keyword Match');
+                        var hasMatchScore = res.match_score !== null && res.match_score !== undefined && Number.isFinite(Number(res.match_score));
+                        $('#tailorMatchScoreBadge')
+                            .toggleClass('bg-primary', hasMatchScore)
+                            .toggleClass('bg-secondary', !hasMatchScore)
+                            .text(hasMatchScore ? Math.max(0, Math.min(100, Number(res.match_score))) + '% Keyword Match' : 'Match score unavailable');
                         if (res.match_overview) {
                             $('#tailorOverviewText').text(res.match_overview);
                         }
@@ -3095,36 +3153,7 @@
                     // If this save was kicked off by a restore+save, create a snapshot autosave for history
                     if (window.restoreSavePending) {
                         try {
-                            // Convert to structured snapshot similar to doAutosave
-                            const snapshot = { experiences: [], education: [] };
-                            snapshot.id = $('input[name="id"]').val() || null;
-                            snapshot.title = $('input[name="title"]').val() || '';
-                            snapshot.summary = $('#resume-summary').val() || '';
-                            snapshot.template_id = $('#template_id').val() || 'classic';
-                            snapshot.skills = $('input[name="skills"]').val() || '';
-                            snapshot.linkedin = $('input[name="linkedin"]').val() || '';
-                            snapshot.certs = $('textarea[name="certs"]').val() || '';
-                            snapshot.languages = $('input[name="languages"]').val() || '';
-
-                            $('.experience-item').each(function() {
-                                snapshot.experiences.push({
-                                    company: $(this).find('input[name="exp_company[]"]').val() || '',
-                                    position: $(this).find('input[name="exp_position[]"]').val() || '',
-                                    description: $(this).find('textarea[name="exp_description[]"]').val() || '',
-                                    start_date: $(this).find('input[name="exp_start_date[]"]').val() || '',
-                                    end_date: $(this).find('input[name="exp_end_date[]"]').val() || '',
-                                    is_current: $(this).find('.exp-current-check').is(':checked') ? 1 : 0
-                                });
-                            });
-
-                            $('.education-item').each(function() {
-                                snapshot.education.push({
-                                    institution: $(this).find('input[name="edu_school[]"]').val() || '',
-                                    degree: $(this).find('select[name="edu_degree[]"]').val() || '',
-                                    field_of_study: $(this).find('input[name="edu_field[]"]').val() || '',
-                                    graduation_year: $(this).find('input[name="edu_year[]"]').val() || ''
-                                });
-                            });
+                            const snapshot = collectAutosaveSnapshot();
 
                             $.ajax({
                                 url: '<?= site_url("candidate/resumes/autosave") ?>',
@@ -3153,19 +3182,17 @@
         const AUTOSAVE_INTERVAL = 30000; // 30s
         const FIELD_DEBOUNCE = 500; // 500ms
 
-        function scheduleAutosave() {
-            if (autosaveTimer) clearTimeout(autosaveTimer);
-            autosaveTimer = setTimeout(doAutosave, AUTOSAVE_INTERVAL);
-        }
-
-        function doAutosave() {
-            const form = $('#resume-form');
-            // Build structured snapshot JSON from current form state
+        function collectAutosaveSnapshot() {
             const snapshot = {
                 id: $('input[name="id"]').val() || null,
                 title: $('input[name="title"]').val() || '',
                 summary: $('#resume-summary').val() || '',
                 template_id: $('#template_id').val() || 'classic',
+                full_name: $('input[name="full_name"]').val() || '',
+                email: $('input[name="email"]').val() || '',
+                phone: $('input[name="phone"]').val() || '',
+                location: $('input[name="location"]').val() || '',
+                portfolio: $('input[name="portfolio"]').val() || '',
                 experiences: [],
                 education: [],
                 skills: $('input[name="skills"]').val() || '',
@@ -3194,6 +3221,18 @@
                 });
             });
 
+            return snapshot;
+        }
+
+        function scheduleAutosave() {
+            if (autosaveTimer) clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(doAutosave, AUTOSAVE_INTERVAL);
+        }
+
+        function doAutosave() {
+            const snapshot = collectAutosaveSnapshot();
+            $('#autosave-t').text('Saving…');
+
             $.ajax({
                 url: '<?= site_url("candidate/resumes/autosave") ?>',
                 type: 'POST',
@@ -3213,6 +3252,13 @@
                     if (header.length) {
                         header.append('<span id="autosave-indicator" class="text-muted ms-3" style="font-size:12px;">Autosaved at ' + ts + '</span>');
                     }
+                    $('#autosave-t').text('Saved');
+                    $('#autosave').removeAttr('title');
+                },
+                error: function() {
+                    $('#autosave-t').text('Save failed');
+                    $('#autosave').attr('title', 'Your latest resume changes were not saved. Keep this page open and try again.');
+                    scheduleAutosave();
                 }
             });
         }
@@ -3238,11 +3284,15 @@
 
         // Also autosave on page unload
         $(window).on('beforeunload', function() {
-            // synchronous navigator sendBeacon unavailable for form data; attempt quick ajax
-            navigator.sendBeacon && navigator.sendBeacon('<?= site_url("candidate/resumes/autosave") ?>', new URLSearchParams({
+            // Keep the unload snapshot in the same structured format used by revision restore.
+            if (navigator.sendBeacon) {
+                const body = new URLSearchParams({
                 id: $('input[name="id"]').val() || '',
-                payload: $('#resume-form').serialize() || ''
-            }));
+                snapshot: JSON.stringify(collectAutosaveSnapshot()),
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                });
+                navigator.sendBeacon('<?= site_url("candidate/resumes/autosave") ?>', body);
+            }
         });
 
         // Utility escapeHtml is defined earlier; ensure it's available for template building
@@ -3317,8 +3367,13 @@
                         if (snap.title !== undefined) $('input[name="title"]').val(snap.title);
                         if (snap.summary !== undefined) $('#resume-summary').val(snap.summary);
                         if (snap.template_id !== undefined) $('#template_id').val(snap.template_id);
+                        if (snap.full_name !== undefined) $('input[name="full_name"]').val(snap.full_name);
+                        if (snap.email !== undefined) $('input[name="email"]').val(snap.email);
+                        if (snap.phone !== undefined) $('input[name="phone"]').val(snap.phone);
+                        if (snap.location !== undefined) $('input[name="location"]').val(snap.location);
                         if (snap.skills !== undefined) $('input[name="skills"]').val(snap.skills);
                         if (snap.linkedin !== undefined) $('input[name="linkedin"]').val(snap.linkedin);
+                        if (snap.portfolio !== undefined) $('input[name="portfolio"]').val(snap.portfolio);
                         if (snap.certs !== undefined) $('textarea[name="certs"]').val(snap.certs);
                         if (snap.languages !== undefined) $('input[name="languages"]').val(snap.languages);
 
@@ -3453,7 +3508,15 @@
                         if (snap.title !== undefined) $('input[name="title"]').val(snap.title);
                         if (snap.summary !== undefined) $('#resume-summary').val(snap.summary);
                         if (snap.template_id !== undefined) $('#template_id').val(snap.template_id);
+                        if (snap.full_name !== undefined) $('input[name="full_name"]').val(snap.full_name);
+                        if (snap.email !== undefined) $('input[name="email"]').val(snap.email);
+                        if (snap.phone !== undefined) $('input[name="phone"]').val(snap.phone);
+                        if (snap.location !== undefined) $('input[name="location"]').val(snap.location);
                         if (snap.skills !== undefined) $('input[name="skills"]').val(snap.skills);
+                        if (snap.linkedin !== undefined) $('input[name="linkedin"]').val(snap.linkedin);
+                        if (snap.portfolio !== undefined) $('input[name="portfolio"]').val(snap.portfolio);
+                        if (snap.certs !== undefined) $('textarea[name="certs"]').val(snap.certs);
+                        if (snap.languages !== undefined) $('input[name="languages"]').val(snap.languages);
 
                         // Rebuild experiences and education same as restore
                         const $expContainer = $('#experience-container');
@@ -3604,26 +3667,28 @@
         }
 
         // PDF Download Click Handler
-        $(document).on('click', '.download-pdf-btn', function() {
+        $(document).on('click', '.download-pdf-btn', function(e) {
+            e.preventDefault();
             const btn = $(this);
             const originalHtml = btn.html();
             btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Preparing PDF...');
             
             saveResumeBeforeDownload(function(id) {
                 btn.prop('disabled', false).html(originalHtml);
-                window.location.href = '<?= site_url("candidate/resumes/download/") ?>' + id;
+                window.location.href = '<?= site_url("candidate/resumes/download") ?>/' + id;
             });
         });
 
         // DOCX Download Click Handler
-        $(document).on('click', '.download-docx-btn', function() {
+        $(document).on('click', '.download-docx-btn', function(e) {
+            e.preventDefault();
             const btn = $(this);
             const originalHtml = btn.html();
             btn.prop('disabled', true).html('<span class="spinner spinner-sm"></span> Preparing Word...');
             
             saveResumeBeforeDownload(function(id) {
                 btn.prop('disabled', false).html(originalHtml);
-                window.location.href = '<?= site_url("candidate/resumes/download-docx/") ?>' + id;
+                window.location.href = '<?= site_url("candidate/resumes/download-docx") ?>/' + id;
             });
         });
 
@@ -4265,6 +4330,19 @@
                     renderLivePreview();
                     refreshAts();
                     if (typeof toastr !== 'undefined') toastr.success('CV auto-filled with your profile info!');
+
+                    // Persist the auto-filled values. Setting .val() alone
+                    // fires no input/change events, so neither the debounced
+                    // autosave nor any save was ever triggered and the ATS
+                    // gain vanished on reload. Route through the normal Save
+                    // action, which also stores the new resume id after an
+                    // insert so later saves update instead of duplicating.
+                    var $saveBtn = $('#save-resume-btn');
+                    if ($saveBtn.length) {
+                        $saveBtn.trigger('click');
+                    } else {
+                        $('#resume-form input, #resume-form textarea, #resume-form select').trigger('change');
+                    }
                 } else {
                     if (typeof toastr !== 'undefined') toastr.warning(res.message || 'Could not fetch profile info.');
                 }

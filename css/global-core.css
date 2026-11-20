@@ -1,9 +1,14 @@
+/* Hallmark · restyle · jobberrecruit-global-core · theme: technical-precision */
 /* =========================================
    GLOBAL CORE DESIGN SYSTEM (Consolidated)
    ========================================= */
 
 /* --- Source: variables.css --- */
 :root {
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Sora', 'Inter', var(--font-sans);
+    --ring: rgba(13, 96, 158, 0.4);
+    --ring-offset: 2px;
     /*
       ═══════════════════════════════════════════════════════════════
       BRAND COLORS (do NOT copy hex values from reference/mockup
@@ -92,12 +97,18 @@
 /* ==== Base Colors (BRAND COLOURS ONLY — inherited from variables.css) ==== */
 
 /* ==== Global ==== */
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+}
 body {
-  font-family: "Inter", "Poppins", sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--bg-white);
   margin: 0;
   padding: 0;
   color: var(--text-dark);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -107,7 +118,10 @@ a {
 
 h1, h2, h3, h4, h5, h6 {
   color: var(--text-dark);
+  font-family: var(--font-display);
   font-weight: 600 !important;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 p {
@@ -142,7 +156,7 @@ p {
 .top-nav .nav-link {
     color: var(--text-dark);
     font-weight: 500;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     padding: 6px 14px;
     position: relative;
     transition: color 0.3s ease;
@@ -155,27 +169,28 @@ p {
 .top-nav .nav-link::after {
     content: '';
     position: absolute;
-    width: 0;
     height: 2px;
     bottom: 0;
-    left: 50%;
+    left: 14px;
+    right: 14px;
     background-color: var(--accent-gold);
-    transition: width 0.3s ease, left 0.3s ease;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.25s ease;
 }
 
 .top-nav .nav-link:hover::after {
-    width: 100%;
-    left: 0;
+    transform: scaleX(1);
 }
 
 .top-nav .contact-info {
     color: var(--text-muted);
     font-weight: 500;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
 }
 
 .top-nav .dropdown-toggle {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     font-weight: 500;
     color: var(--text-dark);
 }
@@ -191,7 +206,7 @@ p {
 .top-nav .dropdown-item {
     font-size: 13px;
     padding: 8px 16px;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     transition: background-color 0.2s ease;
 }
 
@@ -211,7 +226,7 @@ p {
 .main-header {
     background-color: var(--bg-white);
     border-bottom: 1px solid var(--border-light);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
 }
 
 .sticky-navbar {
@@ -234,7 +249,7 @@ p {
 }
 
 .navbar-brand.brand-logo img:hover {
-    transform: scale(1.03);
+    opacity: 0.92;
 }
 
 /* Navbar Navigation Styles */
@@ -255,12 +270,14 @@ p {
 .navbar-nav .nav-link::after {
     content: '';
     position: absolute;
-    width: 0;
     height: 2px;
     bottom: 0;
-    left: 50%;
+    left: 14px;
+    right: 14px;
     background-color: var(--accent-gold);
-    transition: width 0.3s ease, left 0.3s ease;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.25s ease;
 }
 
 .navbar-nav .nav-link:hover::after,
@@ -338,12 +355,12 @@ p {
 
 /* ==== Buttons ==== */
 .btn {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     font-size: 14px;
     font-weight: 600;
     padding: 10px 20px;
     border-radius: 6px;
-    transition: all 0.3s ease;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -401,14 +418,13 @@ p {
   max-height: 70px;
   object-fit: contain;
   opacity: 0.7;
-  transition: all 0.3s ease;
+  transition: opacity 0.25s ease, filter 0.25s ease;
   filter: grayscale(100%);
 }
 
 .partner-logo:hover {
   opacity: 1;
   filter: grayscale(0%);
-  transform: scale(1.05);
 }
 
 
@@ -421,15 +437,16 @@ p {
 .testimonial-card {
   background: var(--bg-white);
   border-radius: 12px;
+  border: 1px solid var(--border-light, #e2e8f0);
   box-shadow: 0 4px 14px rgba(0,0,0,0.05);
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .testimonial-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  border-color: var(--brand);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
 }
 
 .testimonial-text {
@@ -462,7 +479,7 @@ p {
   height: 10px !important;
   background: #d1d5db !important;
   border-radius: 50%;
-  transition: all 0.3s;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .owl-dot.active span {
@@ -481,7 +498,7 @@ p {
   height: 38px;
   border-radius: 8px !important;
   box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .owl-nav button:hover {
@@ -512,7 +529,7 @@ p {
     bottom: 0;
     width: 100%;
     color: #d1d5db;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     font-size: 14px;
 }
 
@@ -533,7 +550,7 @@ p {
 }
 
 .footer .footer-brand img:hover {
-    transform: scale(1.03);
+    opacity: 0.92;
 }
 
 .footer a {
@@ -567,17 +584,18 @@ p {
 .footer-links li a::after {
     content: '';
     position: absolute;
-    width: 0;
     height: 1px;
     bottom: 0;
-    left: 50%;
+    left: 0;
+    right: 0;
     background-color: var(--accent-gold);
-    transition: width 0.3s ease, left 0.3s ease;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
 }
 
 .footer-links li a:hover::after {
-    width: 100%;
-    left: 0;
+    transform: scaleX(1);
 }
 
 .footer-divider {
@@ -744,14 +762,13 @@ p {
 }
 
 .blog-article blockquote {
-    border-left: 4px solid #4299e1;
-    padding-left: 1.5rem;
+    border: 1px solid var(--border-light, #e2e8f0);
+    border-radius: 0.5rem;
     margin: 2rem 0;
     font-style: italic;
     color: #4a5568;
     background-color: #f8f9fa;
     padding: 1.5rem;
-    border-radius: 0 0.5rem 0.5rem 0;
 }
 
 .blog-article img {
@@ -839,9 +856,8 @@ p {
 
 .reading-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #4299e1, #667eea);
+    background: var(--brand);
     width: 0%;
-    transition: width 0.3s ease;
 }
 
 /* Blog Hero Improvements */
@@ -871,36 +887,30 @@ p {
 
 /* Share Buttons with Counters */
 .share-btn {
-    transition: all 0.3s ease;
+    transition: box-shadow 0.2s ease;
     border-radius: 50px !important;
     padding: 0.5rem 1.5rem !important;
 }
 
 .share-btn:hover {
-    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Related Posts */
 .related-post-card {
-    transition: all 0.3s ease;
-    border: none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid var(--border-light, #e2e8f0);
     overflow: hidden;
 }
 
 .related-post-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+    border-color: var(--brand);
 }
 
 .related-post-card img {
     height: 200px;
     object-fit: cover;
-    transition: transform 0.5s ease;
-}
-
-.related-post-card:hover img {
-    transform: scale(1.05);
 }
 
 /* Table of Contents */
@@ -930,12 +940,12 @@ p {
 .toc-item {
     padding: 0.5rem 0;
     border-left: 2px solid transparent;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .toc-item:hover {
     border-left-color: #4299e1;
-    padding-left: 1rem;
+    transform: translateX(4px);
 }
 
 .toc-item a {
@@ -1181,7 +1191,7 @@ a:hover {
   border-radius: var(--radius-md);
   border: 1.5px solid transparent;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   min-height: 44px;
   text-decoration: none;
 }
@@ -1241,8 +1251,8 @@ a:hover {
 }
 
 .btn-accent:hover:not(:disabled) {
-  background: var(--accent-dark);
-  border-color: var(--accent-dark);
+  background: #b45309;
+  border-color: #b45309;
   color: var(--white);
 }
 
@@ -1714,7 +1724,7 @@ a:hover {
 /* --- Source: Extracted from templates/base.php (Universal Core Components) --- */
 
     
-      .navbar { position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.92); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid var(--border,#e2e8f2); box-shadow: 0 1px 6px rgba(5,38,78,.06); padding-top: env(safe-area-inset-top, 0); }
+      .navbar { position: sticky; top: 0; z-index: 1000; background: var(--bg-white); border-bottom: 1px solid var(--border,#e2e8f2); box-shadow: 0 1px 4px rgba(5,38,78,.06); padding-top: env(safe-area-inset-top, 0); }
       .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 70px; gap: 16px; }
       .nav-logo { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
       .nav-logo img { height: 60px; width: auto; display: block; }
@@ -1722,11 +1732,11 @@ a:hover {
       .nav-links a { font-size: .85rem; font-weight: 500; color: var(--text-dark,#141926); transition: color .18s ease; text-decoration:none; }
       .nav-links a:hover { color: var(--brand,var(--brand)); }
       .nav-dropdown { position: relative; }
-      .nav-dropdown-toggle { display: inline-flex; align-items: center; gap: 4px; font-family: 'Inter',sans-serif; font-size: .85rem; font-weight: 500; color: var(--text-dark,#141926); background: none; border: none; cursor: pointer; padding: 0; transition: color .18s ease; }
+      .nav-dropdown-toggle { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-sans); font-size: .85rem; font-weight: 500; color: var(--text-dark,#141926); background: none; border: none; cursor: pointer; padding: 0; transition: color .18s ease; }
       .nav-dropdown-toggle:hover, .nav-dropdown-toggle[aria-expanded="true"] { color: var(--brand,var(--brand)); }
       .nav-caret { width: 13px; height: 13px; transition: transform .18s ease; }
       .nav-dropdown-toggle[aria-expanded="true"] .nav-caret { transform: rotate(180deg); }
-      .nav-dropdown-menu { position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%) translateY(6px); min-width: 210px; background: #fff; border: 1px solid var(--border,#e2e8f2); border-radius: 12px; box-shadow: 0 14px 40px rgba(5,38,78,.16); padding: 8px; display: flex; flex-direction: column; gap: 2px; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s ease, transform .16s ease; z-index: 60; }
+      .nav-dropdown-menu { position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%) translateY(6px); min-width: 210px; background: var(--bg-white); border: none; border-radius: 12px; box-shadow: 0 10px 24px rgba(5,38,78,.12); padding: 8px; display: flex; flex-direction: column; gap: 2px; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s ease, transform .16s ease; z-index: 60; }
       .nav-dropdown-menu::before { content: ''; position: absolute; bottom: 100%; left: 0; right: 0; height: 12px; }
       .nav-dropdown:hover .nav-dropdown-menu, .nav-dropdown-toggle[aria-expanded="true"] + .nav-dropdown-menu { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
       .nav-dropdown-menu a { display: block; padding: 9px 12px; border-radius: 8px; font-size: .85rem; font-weight: 500; color: var(--text-dark,#141926); white-space: nowrap; transition: background .18s ease; text-decoration:none; }
@@ -1754,7 +1764,7 @@ a:hover {
       .footer-socials a { width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,.09); color: #fff; display: flex; align-items: center; justify-content: center; transition: .18s ease; text-decoration: none; }
       .footer-socials a svg { width: 17px; height: 17px; }
       .footer-socials a:hover { background-color: #0D609E !important; }
-      .footer-col h3 { font-family: 'Sora','Inter',sans-serif; font-size: .78rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 15px; }
+      .footer-col h3 { font-family: 'Sora',var(--font-sans); font-size: .78rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 15px; }
       .footer-col ul { list-style: none; margin:0; padding:0; display: flex; flex-direction: column; gap: 10px; }
       .footer-col ul a { font-size: .82rem; color: rgba(255,255,255,.68); transition: .18s ease; min-height: 26px; display: inline-flex; align-items: center; text-decoration:none; }
       .footer-col ul a:hover { color: #fff; }
@@ -1769,18 +1779,16 @@ a:hover {
       @media (max-width: 860px) { .nav-links, .nav-actions .btn-outline { display: none; } .hamburger { display: block; } .footer-grid { grid-template-columns: 1fr 1fr; } }
       /* On phones the navbar CTA is redundant (it lives in the hamburger menu),
          and the wide logo + CTA overflow narrow viewports — hide it here. */
-      @media (max-width: 480px) { .nav-actions .btn { display: none; } .nav-logo img { max-height: 32px; width: auto; } }
+      @media (max-width: 480px) { .nav-actions .btn-outline { display: none; } .nav-actions .btn-primary { display: inline-flex; font-size: 0.76rem; padding: 7px 11px; white-space: nowrap; } .nav-logo img { max-height: 40px; width: auto; } }
       @media (max-width: 580px) { .footer-grid { grid-template-columns: 1fr; gap: 24px; } .footer-bottom { flex-direction: column; text-align: center; } .footer-links { justify-content: center; } }
       @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
     
 
 /* --- Universal Core Components: Dashboard Header Glassmorphism --- */
 .header, .app-header {
-    background: rgba(255,255,255,0.92) !important;
-    backdrop-filter: saturate(180%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(12px) !important;
+    background: var(--bg-white) !important;
     border-bottom: 1px solid var(--border, #e2e8f2) !important;
-    box-shadow: 0 1px 6px rgba(5,38,78,0.06) !important;
+    box-shadow: 0 1px 4px rgba(5,38,78,0.06) !important;
 }
 
 /* Dark mode / Midnight Aura overrides */
@@ -1800,7 +1808,7 @@ body[data-theme="dark"] .app-header,
 
 /* 7.1 Layout & Navigation */
 .app-sidebar {
-    transition: width 0.3s ease;
+    transition: transform 0.25s ease;
 }
 body.sidebar-collapsed .app-sidebar {
     width: 80px;
@@ -1817,10 +1825,9 @@ body.sidebar-collapsed .app-sidebar .slide-right {
     position: sticky;
     top: 0;
     z-index: 1020;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--bg-white);
     border-bottom: 1px solid var(--border-color, #dee2e6);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     padding: 10px 20px;
     display: flex;
     align-items: center;
@@ -2039,12 +2046,12 @@ body {
 .settings-sidebar .sidebar-menu > ul > li > a {
     color: rgba(255, 255, 255, 0.72) !important;
     font-weight: 500 !important;
-    transition: all 0.2s ease-in-out !important;
+    transition: color 0.15s ease, background-color 0.15s ease !important;
 }
 .sidebar .sidebar-menu > ul > li > a i,
 .sidebar .sidebar-menu > ul > li > a svg {
     color: rgba(255, 255, 255, 0.6) !important;
-    transition: all 0.2s ease-in-out !important;
+    transition: color 0.15s ease !important;
 }
 
 /* Sidebar Links (Hover State) */
@@ -2063,8 +2070,8 @@ body {
 .settings-sidebar .sidebar-menu > ul > li.active > a {
     background: rgba(255, 255, 255, 0.12) !important;
     color: #ffffff !important;
-    border-left: 3px solid #ED9020 !important; /* Brighter active orange border */
-    border-radius: 0 4px 4px 0 !important;
+    border: 1px solid rgba(240, 143, 26, 0.45) !important;
+    border-radius: 6px !important;
     font-weight: 600 !important;
 }
 .sidebar .sidebar-menu > ul > li.active > a i,
@@ -2094,9 +2101,13 @@ body {
 }
 
 /* Global custom cursor fallback */
-html, body, a, button, select, input, textarea, [role="button"] {
-    cursor: url('/images/favicon_cursor.png'), auto !important;
+/* The hotspot is the centre of the cursor's visible lens. */
+@media (hover: hover) and (pointer: fine) {
+    html, body { cursor: url('/images/favicon_cursor.png') 13 17, auto; }
 }
+a[href], button, select, summary, label[for], [role="button"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"] { cursor: pointer !important; }
+input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"] { cursor: text !important; }
+button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"] { cursor: not-allowed !important; }
 
 
 /* iOS Safari auto-zooms the whole page when a focused input's font-size is
@@ -2119,10 +2130,10 @@ html, body, a, button, select, input, textarea, [role="button"] {
 }
 
 /* ====================================================================
-   Global mobile hardening � cross-page fixes for small viewports.
+   Global mobile hardening — cross-page fixes for small viewports.
    ==================================================================== */
 
-html, body { overflow-x: hidden; }
+html, body { overflow-x: hidden; overflow-x: clip; }
 img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
 
 /* Sticky elements get the safe-area padding so they don't sit under the

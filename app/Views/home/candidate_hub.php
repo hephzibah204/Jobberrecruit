@@ -304,11 +304,11 @@
         <div class="field"><svg aria-hidden="true"><use href="#chi-search"/></svg><input type="search" id="ch-q" placeholder="Job title, skill or company" aria-label="Search jobs"></div>
         <button type="submit" class="btn btn-accent">Search jobs</button>
       </form>
-      <div class="ch-pop">Popular: <a href="<?= base_url('jobs?q=software+developer') ?>">Software Developer</a> <a href="<?= base_url('jobs?q=accountant') ?>">Accountant</a> <a href="<?= base_url('jobs?q=remote') ?>">Remote</a> <a href="<?= base_url('jobs?q=sales') ?>">Sales</a></div>
+      <div class="ch-pop">Try searching: <a href="<?= base_url('jobs?q=software+developer') ?>">Software Developer</a> <a href="<?= base_url('jobs?q=accountant') ?>">Accountant</a> <a href="<?= base_url('jobs?q=remote') ?>">Remote</a> <a href="<?= base_url('jobs?q=sales') ?>">Sales</a></div>
       <div class="ch-statrow">
-        <div class="ch-stat"><div class="ch-stat-n"><?= number_format($liveJobsCount ?? 0) ?><span>+</span></div><div class="ch-stat-l">Live jobs</div></div>
-        <div class="ch-stat"><div class="ch-stat-n"><?= number_format($employerCount ?? 0) ?><span>+</span></div><div class="ch-stat-l">Hiring companies</div></div>
-        <div class="ch-stat"><div class="ch-stat-n">6</div><div class="ch-stat-l">Free career tools</div></div>
+        <div class="ch-stat"><div class="ch-stat-n"><?= number_format($liveJobsCount ?? 0) ?></div><div class="ch-stat-l">Live jobs</div></div>
+        <div class="ch-stat"><div class="ch-stat-n"><?= number_format($employerCount ?? 0) ?></div><div class="ch-stat-l">Verified companies</div></div>
+        <div class="ch-stat"><div class="ch-stat-n">6</div><div class="ch-stat-l">Career tools</div></div>
       </div>
     </div>
   </div>
@@ -349,11 +349,7 @@
       <div class="ch-pillar-media">
         <div class="ch-mock">
           <div class="ch-mock-top"><span class="ch-mock-dot" style="background:#ef4444"></span><span class="ch-mock-dot" style="background:#f59e0b"></span><span class="ch-mock-dot" style="background:#22c55e"></span></div>
-          <div class="ch-mock-body">
-            <div class="ch-jobrow"><span class="ch-joblogo" style="background:#0861A9">PB</span><span class="ch-jobinfo"><h4>Frontend Developer</h4><p>Paybridge · Lagos · Hybrid</p></span><span class="ch-jobmeta">New</span></div>
-            <div class="ch-jobrow"><span class="ch-joblogo" style="background:#16a34a">GT</span><span class="ch-jobinfo"><h4>Data Analyst</h4><p>GreenTrust · Remote</p></span><span class="ch-jobmeta">Featured</span></div>
-            <div class="ch-jobrow"><span class="ch-joblogo" style="background:#C8770E">KM</span><span class="ch-jobinfo"><h4>Marketing Manager</h4><p>KamiMedia · Abuja</p></span><span class="ch-jobmeta">Urgent</span></div>
-          </div>
+          <div class="ch-mock-body"><h3>Start your job search</h3><p>Search by job title, skill or company. Review each vacancy and its requirements before applying.</p></div>
         </div>
       </div>
     </div>
@@ -363,16 +359,7 @@
       <div class="ch-pillar-media">
         <div class="ch-mock">
           <div class="ch-mock-top"><span class="ch-mock-dot" style="background:#ef4444"></span><span class="ch-mock-dot" style="background:#f59e0b"></span><span class="ch-mock-dot" style="background:#22c55e"></span></div>
-          <div class="ch-mock-body">
-            <div class="ch-pm-ring">
-              <div class="ch-pm-circ"><span>75%</span></div>
-              <div class="ch-pm-tx"><h4>CV strength</h4><p>Almost there — add 2 more sections</p></div>
-            </div>
-            <div class="ch-pm-task done"><svg aria-hidden="true"><use href="#chi-check-circle"/></svg>Contact details added</div>
-            <div class="ch-pm-task done"><svg aria-hidden="true"><use href="#chi-check-circle"/></svg>Work experience added</div>
-            <div class="ch-pm-task todo"><svg aria-hidden="true"><use href="#chi-check-circle"/></svg>Add a professional summary</div>
-            <div class="ch-pm-task todo"><svg aria-hidden="true"><use href="#chi-check-circle"/></svg>Add key skills</div>
-          </div>
+          <div class="ch-mock-body"><h3>Build a complete CV</h3><p>Add your contact details, work experience, professional summary and key skills.</p></div>
         </div>
       </div>
       <div>
@@ -408,11 +395,7 @@
       <div class="ch-pillar-media">
         <div class="ch-mock">
           <div class="ch-mock-top"><span class="ch-mock-dot" style="background:#ef4444"></span><span class="ch-mock-dot" style="background:#f59e0b"></span><span class="ch-mock-dot" style="background:#22c55e"></span></div>
-          <div class="ch-mock-body">
-            <div class="ch-trk-step"><span class="ch-trk-ic ch-trk-done"><svg aria-hidden="true"><use href="#chi-check"/></svg></span><span class="ch-trk-tx"><h4>Frontend Developer · Paybridge</h4><p>Applied 2 days ago</p></span><span class="ch-trk-badge ch-tb-active">In review</span></div>
-            <div class="ch-trk-step"><span class="ch-trk-ic ch-trk-done"><svg aria-hidden="true"><use href="#chi-check"/></svg></span><span class="ch-trk-tx"><h4>Data Analyst · GreenTrust</h4><p>Applied 5 days ago</p></span><span class="ch-trk-badge ch-tb-done">Shortlisted</span></div>
-            <div class="ch-trk-step"><span class="ch-trk-ic ch-trk-active"><svg aria-hidden="true"><use href="#chi-bell"/></svg></span><span class="ch-trk-tx"><h4>UX Designer · Kanto</h4><p>Interview Thu, 10am</p></span><span class="ch-trk-badge ch-tb-active">Interview</span></div>
-          </div>
+          <div class="ch-mock-body"><h3>Manage your applications</h3><p>Sign in to your candidate dashboard to see your own applications and their statuses.</p></div>
         </div>
       </div>
     </div>
@@ -422,11 +405,7 @@
       <div class="ch-pillar-media">
         <div class="ch-mock">
           <div class="ch-mock-top"><span class="ch-mock-dot" style="background:#ef4444"></span><span class="ch-mock-dot" style="background:#f59e0b"></span><span class="ch-mock-dot" style="background:#22c55e"></span></div>
-          <div class="ch-mock-body">
-            <div class="ch-jobrow"><span class="ch-joblogo" style="background:#7c3aed"><svg aria-hidden="true" style="width:20px;height:20px;color:#fff"><use href="#chi-mic"/></svg></span><span class="ch-jobinfo"><h4>Acing Your Interview</h4><p>Live webinar · Sat 11am</p></span><span class="ch-jobmeta">Free</span></div>
-            <div class="ch-jobrow"><span class="ch-joblogo" style="background:#0891b2"><svg aria-hidden="true" style="width:20px;height:20px;color:#fff"><use href="#chi-doc"/></svg></span><span class="ch-jobinfo"><h4>CV Writing Masterclass</h4><p>On-demand course</p></span><span class="ch-jobmeta">New</span></div>
-            <div class="ch-jobrow"><span class="ch-joblogo" style="background:#16a34a"><svg aria-hidden="true" style="width:20px;height:20px;color:#fff"><use href="#chi-cap"/></svg></span><span class="ch-jobinfo"><h4>Breaking Into Tech</h4><p>Guide · 16 min read</p></span><span class="ch-jobmeta">Popular</span></div>
-          </div>
+          <div class="ch-mock-body"><h3>Explore career resources</h3><p>Browse the webinar page for available sessions and schedules, or read published career advice on our blog.</p></div>
         </div>
       </div>
       <div>
@@ -452,9 +431,9 @@
 <section class="ch-sec ch-tint" id="ch-tools" aria-labelledby="ch-tools-h">
   <div class="container">
     <div class="ch-sec-head">
-      <div class="ch-sec-label"><svg aria-hidden="true"><use href="#chi-spark"/></svg>Free career tools</div>
+      <div class="ch-sec-label"><svg aria-hidden="true"><use href="#chi-spark"/></svg>Career resources</div>
       <h2 id="ch-tools-h">Everything you need to <span>stand out</span></h2>
-      <p>Six free tools designed to help you get noticed, prepare, and land the offer.</p>
+      <p>Six career resources designed to help you get noticed, prepare, and land the offer.</p>
     </div>
     <div class="ch-tools-grid">
       <a class="ch-tool-card" href="<?= base_url('candidate/resumes/build') ?>"><div class="ch-tool-ic ch-t1"><svg aria-hidden="true"><use href="#chi-doc"/></svg></div><h3>AI Resume Builder</h3><p>Create an ATS-friendly CV in minutes with smart suggestions and instant scoring.</p><span class="ch-tool-link">Build my CV <svg aria-hidden="true" style="width:14px;height:14px"><use href="#chi-rocket"/></svg></span></a>
@@ -487,34 +466,6 @@
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section class="ch-sec ch-white" aria-labelledby="ch-tm-h">
-  <div class="container">
-    <div class="ch-sec-head">
-      <div class="ch-sec-label"><svg aria-hidden="true"><use href="#chi-star"/></svg>Real candidates, real results</div>
-      <h2 id="ch-tm-h">Job seekers who <span>got hired</span></h2>
-      <p>Thousands of Nigerians have found their next role through JobberRecruit.</p>
-    </div>
-    <div class="ch-tm-grid">
-      <div class="ch-tm-card">
-        <div class="ch-tm-stars" aria-label="5 out of 5 stars"><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg></div>
-        <p>&ldquo;The AI resume builder helped me fix my CV, and I started getting interview calls within a week. Landed a frontend role in under a month.&rdquo;</p>
-        <div class="ch-tm-who"><span class="ch-tm-av" style="background:#0861A9">CN</span><div><strong>Chioma N.</strong><span>Frontend Developer, Lagos</span></div></div>
-      </div>
-      <div class="ch-tm-card">
-        <div class="ch-tm-stars" aria-label="5 out of 5 stars"><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg></div>
-        <p>&ldquo;I practised with the mock interview tool before my final round. Walked in confident and got the offer. The salary calculator helped me negotiate too.&rdquo;</p>
-        <div class="ch-tm-who"><span class="ch-tm-av" style="background:#16a34a">EO</span><div><strong>Emeka O.</strong><span>Data Analyst, Remote</span></div></div>
-      </div>
-      <div class="ch-tm-card">
-        <div class="ch-tm-stars" aria-label="5 out of 5 stars"><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg><svg aria-hidden="true"><use href="#chi-star"/></svg></div>
-        <p>&ldquo;Being able to track all my applications in one place kept me sane during my job search. No more guessing where I stood with each company.&rdquo;</p>
-        <div class="ch-tm-who"><span class="ch-tm-av" style="background:#C8770E">AB</span><div><strong>Aisha B.</strong><span>Marketing Manager, Abuja</span></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- HOW TO START -->
 <section class="ch-sec ch-tint" aria-labelledby="ch-start-h">
   <div class="container">
@@ -523,7 +474,7 @@
       <h2 id="ch-start-h">Start in <span>three simple steps</span></h2>
     </div>
     <div class="ch-start-grid">
-      <div class="ch-start-card"><div class="ch-start-num">1</div><h3>Create your free account</h3><p>Sign up in under two minutes and build your candidate profile.</p></div>
+      <div class="ch-start-card"><div class="ch-start-num">1</div><h3>Create your free account</h3><p>Sign up and build your candidate profile.</p></div>
       <div class="ch-start-card"><div class="ch-start-num">2</div><h3>Build your CV &amp; apply</h3><p>Use the AI tools to polish your CV, then apply to matched jobs.</p></div>
       <div class="ch-start-card"><div class="ch-start-num">3</div><h3>Track &amp; land the offer</h3><p>Follow your applications, prep with webinars, and get hired.</p></div>
     </div>
@@ -535,7 +486,7 @@
   <div class="container">
     <div class="ch-sec-head">
       <div class="ch-sec-label"><svg aria-hidden="true"><use href="#chi-doc"/></svg>Career advice</div>
-      <h2 id="ch-adv-h">Most-read <span>career guides</span></h2>
+      <h2 id="ch-adv-h">Latest <span>career guides</span></h2>
       <p>Practical, Nigeria-specific advice to help you at every stage.</p>
     </div>
     <div class="ch-adv-grid">

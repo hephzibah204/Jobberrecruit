@@ -1,0 +1,79 @@
+# Disable directory browsing
+Options -Indexes
+
+# ----------------------------------------------------------------------
+# Deny access to sensitive files by name
+# ----------------------------------------------------------------------
+<FilesMatch "^(\.env|env|\.gitignore|\.gitattributes|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|spark|preload\.php)$">
+	Require all denied
+</FilesMatch>
+
+# Deny access to sensitive files by extension
+<FilesMatch "\.(sql|md|py|bak|log|zip|skill|lock)$">
+	Require all denied
+</FilesMatch>
+
+# ----------------------------------------------------------------------
+# Rewrite engine
+# ----------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+	Options +FollowSymlinks
+	RewriteEngine On
+
+	# Block framework internals and non-public directories
+	RewriteRule ^(app|writable|writable_old|tests|vendor|database|scratch|Doc|node_modules|chrome-profile)(/|$) - [F,L]
+
+	# Block dotfiles and dot-directories (.env, .git, .claude, ...)
+	RewriteRule (^|/)\.(?!well-known) - [F,L]
+
+	# Allow the front controller
+	RewriteRule ^index\.php$ - [L]
+
+	# Allow PWA offline page and site-verification files
+	RewriteRule ^(offline\.html|google[a-z0-9]+\.html)$ - [L]
+
+	# Block direct access to any other .php or .html file
+	RewriteCond %{THE_REQUEST} \s/[^?\s]*\.(php|html)[\s?] [NC]
+	RewriteRule .* https://jobberrecruit.com [R=301,L]
+
+	# Rewrite "www.example.com -> example.com" (keep HTTPS)
+	RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+	RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+	# Force HTTPS
+	RewriteCond %{HTTPS} !=on
+	RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1) [NC]
+	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+	# Redirect Trailing Slashes...
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteCond %{REQUEST_URI} (.+)/$
+	RewriteRule ^ %1 [L,R=301]
+
+	# Force-route specific app paths to index.php regardless of physical directories
+	RewriteRule ^(training|training/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(cv-review|cv-review/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(aptitude|aptitude/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(webinars|webinars/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(career-advice|career-advice/.*)$ index.php/$1 [L,NC,QSA]
+	RewriteRule ^(job-ads|employer|employers|recruitment|about-us|contact-us|blog|faq|candidate|candidates|career)(/.*)?$ index.php/$1$2 [L,NC,QSA]
+
+	# General catch-all: if not a real file or directory, route to index.php
+	RewriteCond %{REQUEST_FILENAME} !-f
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteRule ^([\s\S]*)$ index.php/$1 [L,NC,QSA]
+
+	# Ensure Authorization header is passed along
+	RewriteCond %{HTTP:Authorization} .
+	RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+	# If we don't have mod_rewrite installed, all 404's
+	# can be sent to index.php, and everything works as normal.
+	ErrorDocument 404 index.php
+</IfModule>
+
+# Disable server signature start
+ServerSignature Off
+# Disable server signature end

@@ -19,6 +19,8 @@ $routes->get('cron/process-queue', 'CronController::processQueue');
 $routes->get('cron/process-email-queue', 'CronController::processEmailQueue');
 $routes->get('cron/send-job-alerts', 'CronController::sendJobAlerts');
 $routes->get('cron/send-weekly-digest', 'CronController::sendWeeklyDigest');
+$routes->get('cron/populate-slugs', 'CronController::populateSlugs');
+$routes->get('cron/verify-seo', 'CronController::verifySeo');
 
 
 $routes->get('llms.txt', function() {
@@ -38,11 +40,27 @@ $routes->get('llms-full.txt', function() {
 });
 
 $routes->get('/', 'Home::home');
+// Keep links from older homepage designs and external bookmarks working.
+$routes->addRedirect('ai-tools/resume-builder', 'candidate/resumes/build', 301);
+$routes->addRedirect('ai-tools/mock-interview', 'candidate/career-tools/mock-interview', 301);
+$routes->addRedirect('training/cv-revamp', 'cv-review', 301);
+$routes->addRedirect('referral', '/#referral', 301);
 $routes->get('candidate/subscription/pricing', 'CandidateSubscriptionController::pricing');
 $routes->get('candidate/pricing', 'CandidateSubscriptionController::pricing');
 $routes->get('home/ajaxRecentJobs', 'Home::ajaxRecentJobs');
 $routes->get('home/ajaxCategories', 'Home::ajaxCategories');
 $routes->get('jobs', 'Home::jobs');
+$routes->get('job', 'Home::jobs');
+// Redirect legacy/alternate location paths to canonical URLs
+$routes->addRedirect('jobs-in-remote', 'jobs/remote', 301);
+$routes->addRedirect('jobs-in-nigeria-nationwide', 'jobs/nigeria-nationwide', 301);
+$routes->addRedirect('jobs-in-nationwide', 'jobs/nigeria-nationwide', 301);
+$routes->addRedirect('remote-jobs', 'jobs/remote', 301);
+$routes->addRedirect('nationwide-jobs', 'jobs/nigeria-nationwide', 301);
+$routes->addRedirect('nigeria-nationwide', 'jobs/nigeria-nationwide', 301);
+$routes->addRedirect('nigeria-nationwide-jobs', 'jobs/nigeria-nationwide', 301);
+$routes->addRedirect('jobs/nationwide', 'jobs/nigeria-nationwide', 301);
+$routes->addRedirect('jobs/work-from-home', 'jobs/remote', 301);
 $routes->get('jobs-in-(:segment)', 'Home::location_hub/$1');
 
 // E-Learning & CV Review — must be before (:segment)-jobs wildcard to avoid collision
@@ -83,7 +101,38 @@ $routes->get('aptitude/invite/(:segment)', 'AptitudeController::acceptInvitation
 $routes->get('webinars', 'NewsletterController::webinars');
 
 $routes->get('(:segment)-jobs', 'Home::industry_hub/$1');
+// Canonical category hub routes from Category_SEO_Copy.docx
+$categorySlugs = [
+    'accounting-finance-banking',
+    'administration-office-support',
+    'agriculture-agribusiness',
+    'construction-real-estate',
+    'customer-service-call-center',
+    'education-training',
+    'energy-oil-gas',
+    'engineering-technical',
+    'graduate-trainee-nysc-internships',
+    'healthcare-pharmaceuticals',
+    'hospitality-travel-tourism',
+    'human-resources-recruitment',
+    'information-technology-software',
+    'legal-compliance',
+    'logistics-supply-chain-procurement',
+    'manufacturing-production',
+    'marketing-advertising-communications',
+    'media-creative-design',
+    'ngo-non-profit',
+    'procurement-supply-chain',
+    'sales-business-development',
+    'science-research',
+    'security-safety',
+];
+foreach ($categorySlugs as $cSlug) {
+    $routes->get($cSlug, 'Home::industry_hub/' . $cSlug);
+}
 $routes->get('jobs/featured', 'Home::featuredJobs');
+$routes->get('jobs/remote', 'Home::location_hub/remote');
+$routes->get('jobs/nigeria-nationwide', 'Home::location_hub/nigeria-nationwide');
 $routes->get('jobs/(:any)', 'Home::view_job/$1');
 $routes->get('job/view/(:any)', 'Home::view_job/$1');
 $routes->get('job/start-application/(:num)', 'Home::startApplication/$1');
@@ -123,7 +172,7 @@ $routes->get('login', 'AuthController::login');
 $routes->post('login', 'AuthController::login', ['filter' => 'throttle:10,60']);
 
 // Registration
-$routes->get('register', 'AuthController::register');
+$routes->get('register', 'AuthController::register', ['as' => 'register']);
 $routes->post('register', 'AuthController::register', ['filter' => 'throttle:5,60']);
 
 // Forgot & Reset Password
@@ -162,7 +211,8 @@ $routes->get('auth/verify-email', 'AuthController::verifyEmailPage');
 $routes->get('auth/verify-email/(:segment)', 'AuthController::verifyEmailToken/$1');
 
 // Resend verification email
-$routes->get('auth/resend-verification', 'AuthController::resendVerification');
+$routes->post('auth/resend-verification', 'AuthController::resendVerification', ['filter' => 'throttle:3,60']);
+$routes->post('webhooks/mailtrap', 'MailtrapWebhookController::receive');
 
 
 
@@ -321,6 +371,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'JobSeekerController::dashboard');
     $routes->get('applications', 'JobSeekerController::applications');
     $routes->get('applications/view/(:num)', 'JobSeekerController::viewApplication/$1');
+    $routes->post('applications/withdraw/(:num)', 'JobSeekerController::withdrawApplication/$1');
 
     $routes->get('notifications', 'JobSeekerController::notifications');
     $routes->get('saved-jobs', 'JobSeekerController::savedJobs');
@@ -403,6 +454,7 @@ $routes->group('candidate', ['filter' => 'auth'], function ($routes) {
         $routes->get('', 'CareerToolsController::index');
         $routes->get('mock-interview', 'CareerToolsController::mockInterview');
         $routes->get('mock-interview/start', 'CareerToolsController::startInterviewSession');
+        $routes->get('mock-interview/session/(:num)', 'CareerToolsController::getSessionDetails/$1');
         $routes->get('salary-negotiation', 'CareerToolsController::salaryNegotiation');
         $routes->get('career-advice', 'CareerToolsController::careerAdvice');
         $routes->post('send-message', 'CareerToolsController::sendMessage');
@@ -457,7 +509,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('users/delete', 'AdminUserController::deleteUser');
     $routes->post('users/bulk-delete', 'AdminUserController::bulkDelete');
     $routes->post('users/reset-account', 'AdminUserController::resetAccount');
-    $routes->get('settings', 'AdminController::index');
+    $routes->get('settings', 'AdminController::features');
     $routes->get('features', 'AdminController::features');
     $routes->post('features/save', 'AdminController::saveFeatures');
 
@@ -506,6 +558,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     // Applications
     $routes->get('applications', 'AdminController::applications');
     $routes->get('applications/view/(:num)', 'AdminController::viewApplication/$1');
+    $routes->post('applications/update-status/(:num)', 'AdminController::saveApplicationStatus/$1');
     // Candidates
     $routes->get('candidates', 'AdminController::candidates');
     $routes->get('candidates/filter', 'AdminController::filterCandidates');
@@ -518,9 +571,14 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('employers', 'AdminController::employers');
     $routes->get('employers/filter', 'AdminController::filterEmployers');
     $routes->get('employers/view/(:num)', 'AdminController::viewEmployer/$1');
+    $routes->post('employers/account/(:num)', 'AdminController::updateEmployerAccount/$1');
+    $routes->post('employers/verification-email/(:num)', 'AdminController::resendEmployerVerificationEmail/$1');
     $routes->get('employers/documents/(:num)', 'AdminController::viewEmployerDocuments/$1');
     $routes->post('documents/verify/(:num)', 'AdminController::verifyDocument/$1');
     $routes->post('documents/reject/(:num)', 'AdminController::rejectDocument/$1');
+    // Compatibility for employer detail pages opened before the URL correction.
+    $routes->post('employers/documents/verify/(:num)', 'AdminController::verifyDocument/$1');
+    $routes->post('employers/documents/reject/(:num)', 'AdminController::rejectDocument/$1');
     $routes->post('employers/verify/(:num)', 'AdminController::verifyEmployer/$1');
     $routes->post('employers/reject/(:num)', 'AdminController::rejectEmployer/$1');
     $routes->post('employers/delete/(:num)', 'AdminController::deleteEmployer/$1');
@@ -577,7 +635,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
 
 $routes->get('sitemap.xml', 'SitemapController::index', ['as' => 'sitemap']);
 $routes->post('webhooks/paystack', 'WebhookController::paystack');
-service('auth')->routes($routes);
+service('auth')->routes($routes, ['except' => ['register']]);
 
 // Chatbot Routes
 $routes->post('chatbot/send', 'ChatbotController::sendMessage');
@@ -590,17 +648,19 @@ if (ENVIRONMENT === 'development') {
 }
 
 // Newsletter & Webinar Routes
-$routes->post('newsletter/subscribe', 'NewsletterController::subscribe');
+$routes->post('newsletter/subscribe', 'NewsletterController::subscribe', ['filter' => 'throttle:3,3600']);
 $routes->post('webinars/register/(:num)', 'NewsletterController::registerWebinar/$1');
 
 // Job Reporting Routes
 $routes->post('jobs/report', 'JobReportController::submit');
 
-// AI Interview Studio Routes
-$routes->post('api/interview/questions', 'InterviewQuestions::generate');
-$routes->post('api/interview/reply',     'InterviewReply::respond');
-$routes->post('api/interview/tts',       'InterviewVoice::speak');
-$routes->post('api/interview/transcribe', 'InterviewTranscription::process');
+// AI Interview Studio Routes (auth-required + rate limited)
+$routes->group('api/interview', ['filter' => ['auth', 'throttle:60,60']], function ($routes) {
+    $routes->post('questions',  'InterviewQuestions::generate');
+    $routes->post('reply',      'InterviewReply::respond');
+    $routes->post('tts',        'InterviewVoice::speak');
+    $routes->post('transcribe', 'InterviewTranscription::process');
+});
 
 // Aptitude API Routes (auth-required group)
 $routes->group('api/aptitude', ['filter' => 'auth'], function ($routes) {
@@ -684,18 +744,3 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('cv-reviews/save-notes/(:num)', 'AdminController::cvReviewSaveNotes/$1');
     $routes->post('cv-reviews/deliver/(:num)', 'AdminController::cvReviewDeliver/$1');
 });
-
-// Temporary auto-login route for testing
-$routes->get('temp-login', function() {
-    $auth = service('auth');
-    $userModel = model(\CodeIgniter\Shield\Models\UserModel::class);
-    $user = $userModel->find(1);
-    if ($user) {
-        $auth->login($user);
-        return redirect()->to('candidate/dashboard');
-    }
-    return "User ID 1 not found";
-});
-
-
-$routes->get('employer/test-insert', 'TestInsert::index');

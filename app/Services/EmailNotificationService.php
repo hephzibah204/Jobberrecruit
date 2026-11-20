@@ -19,40 +19,45 @@ class EmailNotificationService
 
     protected function sendEmail(string $to, string $subject, string $view, array $data): bool
     {
-        // Extract template key from view path (e.g., 'emails/application_status' => 'application_status')
-        $templateKey = str_replace(['emails/', '.php'], '', $view);
-        if ($view === 'emails/application_status' && isset($data['statusLabel']) && $data['statusLabel'] === 'Aptitude Test Invitation') {
-            $templateKey = 'aptitude_test_invitation';
-        }
-
-        $templateService = new EmailTemplateService();
-        $rendered = $templateService->render($templateKey, $data);
-
-        $this->email->clear();
-        $this->email->setTo($to);
-
-        $fromEmail = env('email.fromEmail') ?: (env('email.from_email') ?: (config('Email')->fromEmail ?? 'no-reply@jobberrecruit.com'));
-        $fromName  = $data['from_name'] ?? ($data['companyName'] ?? (env('email.fromName') ?: config('Email')->fromName ?? 'JobberRecruit'));
-
-        $this->email->setFrom($fromEmail, $fromName);
-        $finalSubject = !empty($rendered['subject']) ? $rendered['subject'] : $subject;
-        $this->email->setSubject($finalSubject);
-
-        $html = !empty($rendered['html']) ? $rendered['html'] : (is_file(APPPATH . "Views/{$view}.php") ? view($view, $data) : '');
-
-        $this->email->setMessage($html);
-        if (!empty($rendered['text'])) {
-            $this->email->setAltMessage($rendered['text']);
-        }
-        $this->email->setMailType('html');
-
         try {
+            if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                log_message('error', 'Transactional email has no valid recipient for ' . $view);
+                return false;
+            }
+            $data['subject'] = $subject;
+            // Extract template key from view path (e.g., 'emails/application_status' => 'application_status')
+            $templateKey = str_replace(['emails/', '.php'], '', $view);
+            if ($view === 'emails/application_status' && isset($data['statusLabel']) && $data['statusLabel'] === 'Aptitude Test Invitation') {
+                $templateKey = 'aptitude_test_invitation';
+            }
+
+            $templateService = new EmailTemplateService();
+            $rendered = $templateService->render($templateKey, $data);
+
+            $this->email->clear();
+            $this->email->setTo($to);
+
+            $fromEmail = env('email.fromEmail') ?: (env('email.from_email') ?: (config('Email')->fromEmail ?? 'no-reply@jobberrecruit.com'));
+            $fromName  = $data['from_name'] ?? ($data['companyName'] ?? (env('email.fromName') ?: config('Email')->fromName ?? 'JobberRecruit'));
+
+            $this->email->setFrom($fromEmail, $fromName);
+            $finalSubject = !empty($rendered['subject']) ? $rendered['subject'] : $subject;
+            $this->email->setSubject($finalSubject);
+
+            $html = !empty($rendered['html']) ? $rendered['html'] : (is_file(APPPATH . "Views/{$view}.php") ? view($view, $data) : '');
+
+            $this->email->setMessage($html);
+            if (!empty($rendered['text'])) {
+                $this->email->setAltMessage($rendered['text']);
+            }
+            $this->email->setMailType('html');
+
             $result = $this->email->send();
             if (!$result) {
                 log_message('error', 'Email send failed: ' . $this->email->printDebugger(['headers']));
             }
             return $result;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             log_message('error', 'Email send exception: ' . $e->getMessage());
             return false;
         }
@@ -110,13 +115,13 @@ class EmailNotificationService
 
         $webinarTitle = is_object($webinar) ? $webinar->title : ($webinar['title'] ?? 'Upcoming Webinar');
         $webinarId = is_object($webinar) ? $webinar->id : ($webinar['id'] ?? 0);
-        $presenter = is_object($webinar) ? ($webinar->presenter ?? '') : ($webinar['presenter'] ?? '');
+        $presenter = is_object($webinar) ? ($webinar->speaker_name ?? $webinar->presenter ?? '') : ($webinar['speaker_name'] ?? $webinar['presenter'] ?? '');
         $accessType = is_object($webinar) ? ($webinar->access_type ?? 'free') : ($webinar['access_type'] ?? 'free');
         
         $scheduledAtRaw = is_object($webinar) ? ($webinar->scheduled_at ?? '') : ($webinar['scheduled_at'] ?? '');
         $scheduledAt = !empty($scheduledAtRaw) ? date('F j, Y \a\t g:i A', strtotime($scheduledAtRaw)) : 'Scheduled Soon';
 
-        $joinUrl = base_url('webinars');
+        $joinUrl = base_url('training/webinars/registered?id=' . (int) $webinarId);
 
         $data = [
             'userName'     => htmlspecialchars($userName),
@@ -161,7 +166,7 @@ class EmailNotificationService
         $userName = is_object($user) ? ($user->username ?? $user->first_name ?? 'Member') : ($user['username'] ?? $user['first_name'] ?? 'Member');
 
         $webinarTitle = is_object($webinar) ? $webinar->title : ($webinar['title'] ?? 'Upcoming Webinar');
-        $presenter = is_object($webinar) ? ($webinar->presenter ?? '') : ($webinar['presenter'] ?? '');
+        $presenter = is_object($webinar) ? ($webinar->speaker_name ?? $webinar->presenter ?? '') : ($webinar['speaker_name'] ?? $webinar['presenter'] ?? '');
         
         $scheduledAtRaw = is_object($webinar) ? ($webinar->scheduled_at ?? '') : ($webinar['scheduled_at'] ?? '');
         $scheduledAt = !empty($scheduledAtRaw) ? date('F j, Y \a\t g:i A', strtotime($scheduledAtRaw)) : 'Starting Soon';
@@ -174,7 +179,7 @@ class EmailNotificationService
             'presenter'      => htmlspecialchars($presenter),
             'scheduledAt'    => $scheduledAt,
             'timeFrameLabel' => $timeFrameLabel,
-            'joinUrl'        => base_url('webinars'),
+            'joinUrl'        => base_url('training/webinars/registered?id=' . (int) (is_object($webinar) ? $webinar->id : ($webinar['id'] ?? 0))),
             'subject'        => "Reminder: Webinar '{$webinarTitle}' starts {$timeFrameLabel}",
             'companyName'    => 'Jobber Recruit'
         ];
@@ -580,7 +585,7 @@ class EmailNotificationService
         $data = [
             'company_name' => $companyName,
             'submitted_at' => date('F j, Y, g:i A'),
-            'logoUrl'      => base_url('images/logo.png')
+            'logoUrl'      => base_url('images/logo-white.png')
         ];
 
         return $this->sendEmail(
@@ -608,7 +613,7 @@ class EmailNotificationService
 
         return $this->sendEmail(
             $employerEmail,
-            "Assessment Completed: {$candidateName} scored {$scorePct}%",
+            "Assessment Completed: {$candidateName} scored " . rtrim(rtrim(number_format($scorePct, 2, '.', ''), '0'), '.') . "%",
             'emails/assessment_link_completed',
             $data
         );
@@ -645,6 +650,53 @@ class EmailNotificationService
         return $adminEmail;
     }
 
+    public function sendAdministrativeEvent(string $title, string $message, array $details = []): bool
+    {
+        $recipients = [];
+        try {
+            $recipients = preg_split('/[,;\s]+/', $this->getAdminEmail(), -1, PREG_SPLIT_NO_EMPTY);
+            foreach (model(\App\Models\UserModel::class)->where('user_type', 'admin')->findAll() as $admin) {
+                if (!empty($admin->email)) $recipients[] = $admin->email;
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Admin email recipient lookup failed: ' . $e->getMessage());
+        }
+        $sent = false;
+        foreach (array_unique($recipients) as $recipient) {
+            $result = $this->sendEmail($recipient, $title, 'emails/account_event', [
+                'event_title' => $title, 'event_message' => $message, 'event_details' => $details,
+                'action_url' => base_url('admin/employers'),
+            ]);
+            $sent = $result || $sent;
+        }
+        return $sent;
+    }
+
+    public function sendEmployerAccountEvent($employer, $user, string $title, string $message, array $details = []): bool
+    {
+        $recipient = $user->email ?? '';
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) $recipient = $employer->contact_email ?? '';
+        $sent = $this->sendEmail($recipient, $title, 'emails/account_event', [
+            'event_title' => $title, 'event_message' => $message, 'event_details' => $details,
+            'action_url' => base_url('employer/dashboard'),
+        ]);
+        $this->sendAdministrativeEvent($title . ' — ' . ($employer->company_name ?? 'Employer'), $message, $details);
+        return $sent;
+    }
+
+    public function notifyEmployerAccount(int $userId, string $title, string $message, array $details = []): bool
+    {
+        try {
+            $employer = model(EmployerModel::class)->where('user_id', $userId)->first();
+            if (!$employer) return false;
+            $user = model(\CodeIgniter\Shield\Models\UserModel::class)->find($userId);
+            return $this->sendEmployerAccountEvent($employer, $user, $title, $message, $details);
+        } catch (\Throwable $e) {
+            log_message('error', 'Employer account event email failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Send Admin Alert for Pending Employer Verification
      */
@@ -671,9 +723,33 @@ class EmailNotificationService
     /**
      * Send Employer Verification Approved Email
      */
-    public function sendEmployerVerificationApprovedEmail($employer, $user, string $notes = ''): bool
+    public function sendEmployerVerificationApprovedEmail($employer, $user, string $notes = '', bool $createNotice = true): bool
     {
+        // Persist the in-app notice independently of mail delivery.
+        $employerId = (int) (is_object($employer) ? $employer->id : ($employer['id'] ?? 0));
+        if ($createNotice) {
+            try {
+                $created = model(JobNotificationModel::class)->createNotification(
+                    $employerId,
+                    JobNotificationModel::TYPE_ACCOUNT_UPDATED,
+                    'Employer account verified',
+                    'Your employer account has been verified. Your verification badge is now active.',
+                    null,
+                    null,
+                    base_url('employer/profile')
+                );
+                if (!$created) {
+                    log_message('error', 'Failed to create employer verification notification for employer ' . $employerId);
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Employer verification notification error: ' . $e->getMessage());
+            }
+        }
+
         $email = is_object($user) ? $user->email : ($user['email'] ?? '');
+        if (empty($email)) {
+            $email = is_object($employer) ? ($employer->contact_email ?? '') : ($employer['contact_email'] ?? '');
+        }
         $companyName = is_object($employer) ? $employer->company_name : ($employer['company_name'] ?? 'Employer');
         $contactName = is_object($employer) ? ($employer->contact_person ?? $user->username ?? 'Team') : ($employer['contact_person'] ?? 'Team');
 
@@ -684,12 +760,16 @@ class EmailNotificationService
             'notes'             => $notes
         ];
 
-        return $this->sendEmail(
+        $sent = $this->sendEmail(
             $email,
             "Congratulations! Your Employer Account Has Been Verified - {$companyName}",
             'emails/verification_approved',
             $data
         );
+        $this->sendAdministrativeEvent('Employer verification approved — ' . $companyName,
+            'The employer account has been verified and its verification badge is active.',
+            ['Company' => $companyName, 'Verified on' => $data['verification_date']]);
+        return $sent;
     }
 
     /**
@@ -698,6 +778,9 @@ class EmailNotificationService
     public function sendEmployerVerificationRejectedEmail($employer, $user, string $reason = ''): bool
     {
         $email = is_object($user) ? $user->email : ($user['email'] ?? '');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $email = is_object($employer) ? ($employer->contact_email ?? '') : ($employer['contact_email'] ?? '');
+        }
         $companyName = is_object($employer) ? $employer->company_name : ($employer['company_name'] ?? 'Employer');
         $contactName = is_object($employer) ? ($employer->contact_person ?? $user->username ?? 'Team') : ($employer['contact_person'] ?? 'Team');
 
@@ -708,12 +791,15 @@ class EmailNotificationService
             'rejection_reason' => !empty($reason) ? $reason : 'The uploaded documentation did not meet our verification guidelines.'
         ];
 
-        return $this->sendEmail(
+        $sent = $this->sendEmail(
             $email,
             "Verification Update Required - {$companyName}",
             'emails/verification_rejected',
             $data
         );
+        $this->sendAdministrativeEvent('Employer verification rejected — ' . $companyName,
+            'The employer verification was rejected.', ['Company' => $companyName, 'Reason' => $data['rejection_reason']]);
+        return $sent;
     }
 
     /**
@@ -785,7 +871,7 @@ class EmailNotificationService
             'passed'           => $passed,
             'result_url'       => $resultUrl,
             'completed_at'     => date('F j, Y, g:i A'),
-            'logoUrl'          => base_url('images/logo.png')
+            'logoUrl'          => base_url('images/logo-white.png')
         ];
 
         return $this->sendEmail(
@@ -815,7 +901,7 @@ class EmailNotificationService
             'accessUrl'      => $invoiceData['access_url'] ?? base_url('login'),
             'buttonText'     => $invoiceData['button_text'] ?? 'Go to Dashboard',
             'supportEmail'   => 'support@jobberrecruit.com',
-            'logoUrl'        => base_url('images/logo.png')
+            'logoUrl'        => base_url('images/logo-white.png')
         ];
 
         $subject = "Official Invoice & Receipt: {$data['itemName']} (#{$data['reference']})";

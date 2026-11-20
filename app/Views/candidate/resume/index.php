@@ -185,6 +185,51 @@
   color: var(--danger, #dc2626) !important;
   background: #fee2e2 !important;
 }
+
+/* ── Resume list: empty state + mobile single-CTA redesign (r18) ── */
+.rz-empty {
+  grid-column: 1 / -1;
+  border: 1.5px dashed var(--border, #e2e8f2);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 44px 24px;
+  background: #fff;
+}
+.rz-empty .rz-ic {
+  width: 52px; height: 52px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--brand-light, #E6F0F8);
+  color: var(--brand, #0861A9);
+  border-radius: 14px;
+}
+.rz-empty b { font-family: 'Sora', sans-serif; color: var(--brand-deep, #0A2F57); font-size: 1.05rem; }
+.rz-empty p { font-size: .82rem; color: var(--muted, #5b6577); max-width: 340px; margin: 0; }
+.rz-empty .rz-empty-btn { margin-top: 6px; }
+
+@media (max-width: 1024px) {
+  /* One CTA on mobile: the sticky bar (header button + empty-state button hidden) */
+  .page-head .page-actions { display: none; }
+  .rz-empty .rz-empty-btn { display: none; }
+  /* Lift the sticky bar clear of the fixed bottom nav (66px + safe area) */
+  .mobile-cta { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-cta .btn { flex: 1; }
+  /* Keep page end clear of the lifted bar */
+  .content { padding-bottom: 84px; }
+  .rz-empty { padding: 40px 20px; min-height: 240px; }
+  /* Compact notice on mobile */
+  .notice { padding: 8px 12px; font-size: .78rem; gap: 8px; }
+  .notice svg { margin-top: 1px; }
+}
+@media (max-width: 640px) {
+  /* Add-tile becomes a slim row under the list */
+  .rz-new { flex-direction: row; min-height: 0; justify-content: flex-start; text-align: left; padding: 14px 16px; gap: 12px; }
+  .rz-new .rz-ic { width: 40px; height: 40px; }
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -330,7 +375,6 @@
           </div>
         </article>
       <?php endforeach; ?>
-    <?php endif; ?>
 
     <!-- Dashed "New Resume" card -->
     <a href="<?= site_url('candidate/resumes/build') ?>"
@@ -345,6 +389,23 @@
         <p style="font-size:.74rem;color:var(--muted,#5b6577);margin-top:3px">Pre-filled from your profile in one click.</p>
       </div>
     </a>
+
+    <?php else: ?>
+
+    <!-- Empty state (no resumes yet) -->
+    <div class="rz-empty card">
+      <span class="rz-ic" aria-hidden="true">
+        <svg style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;"><use href="#i-plus"/></svg>
+      </span>
+      <b>No resumes yet</b>
+      <p>Create your first resume from your profile — pre-filled in one click, then tailor it to any job.</p>
+      <a href="<?= site_url('candidate/resumes/build') ?>" class="btn btn-accent rz-empty-btn">
+        <svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;"><use href="#i-plus"/></svg>
+        New Resume
+      </a>
+    </div>
+
+    <?php endif; ?>
 
   </div><!-- /rz-grid -->
 

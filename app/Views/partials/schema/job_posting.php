@@ -13,6 +13,8 @@
 if (! function_exists('jobPostingSchema')) {
     function jobPostingSchema($job, $baseUrl)
     {
+        helper('public_job');
+        $job = public_job($job);
         // --- Employment type mapping ---
         $typeMap = [
             'full_time'  => 'FULL_TIME',
@@ -57,9 +59,25 @@ if (! function_exists('jobPostingSchema')) {
         $locality = ! empty($job->location) ? $job->location : 'Nigeria';
 
         // --- Salary ---
-        // salary columns are VARCHAR and may contain formatting ("₦150,000") — strip to digits
-        $salaryMin = (float) preg_replace('/[^\d.]/', '', (string) ($job->salary ?? ''));
-        $salaryMax = (float) preg_replace('/[^\d.]/', '', (string) ($job->salary_max ?? ''));
+        // salary columns are VARCHAR and may contain formatting ("₦150,000", "₦750,000 - ₦1,200,000", etc.)
+        $rawSalary = (string) ($job->salary ?? '');
+        $rawSalaryMax = (string) ($job->salary_max ?? '');
+
+        $salaryMin = 0.0;
+        $salaryMax = 0.0;
+
+        preg_match_all('/[\d,]+(?:\.\d+)?/', $rawSalary, $salaryMatches);
+        $extractedNumbers = !empty($salaryMatches[0]) ? $salaryMatches[0] : [];
+
+        if (count($extractedNumbers) >= 2) {
+            $salaryMin = (float) str_replace(',', '', $extractedNumbers[0]);
+            $salaryMax = (float) str_replace(',', '', $extractedNumbers[1]);
+        } elseif (count($extractedNumbers) === 1) {
+            $salaryMin = (float) str_replace(',', '', $extractedNumbers[0]);
+            if (!empty($rawSalaryMax)) {
+                $salaryMax = (float) preg_replace('/[^\d.]/', '', $rawSalaryMax);
+            }
+        }
 
         // Google only accepts HOUR / DAY / WEEK / MONTH / YEAR for unitText
         $periodMap = [
@@ -73,15 +91,22 @@ if (! function_exists('jobPostingSchema')) {
         $salaryData = null;
         if ($salaryMin > 0) {
             $salaryPeriod = $periodMap[strtolower(trim((string) ($job->salary_period ?? '')))] ?? 'MONTH';
+            $val = [
+                '@type'    => 'QuantitativeValue',
+                'unitText' => $salaryPeriod,
+            ];
+
+            if ($salaryMax > $salaryMin) {
+                $val['minValue'] = $salaryMin;
+                $val['maxValue'] = $salaryMax;
+            } else {
+                $val['value'] = $salaryMin;
+            }
+
             $salaryData = [
                 '@type'    => 'MonetaryAmount',
                 'currency' => 'NGN',
-                'value'    => [
-                    '@type'    => 'QuantitativeValue',
-                    'minValue' => $salaryMin,
-                    'maxValue' => max($salaryMin, $salaryMax),
-                    'unitText' => $salaryPeriod,
-                ],
+                'value'    => $val,
             ];
         }
 
@@ -113,13 +138,14 @@ if (! function_exists('jobPostingSchema')) {
             'directApply' => true,
         ];
 
-        // Google: jobLocationType + applicantLocationRequirements only for remote jobs
+        // Applicant location requirements (Nigeria) per Google JobPosting guidelines
+        $schema['applicantLocationRequirements'] = [
+            '@type' => 'Country',
+            'name'  => 'Nigeria',
+        ];
+
         if ($isRemote) {
             $schema['jobLocationType'] = 'TELECOMMUTE';
-            $schema['applicantLocationRequirements'] = [
-                '@type' => 'Country',
-                'name'  => 'Nigeria',
-            ];
         }
 
         if ($salaryData !== null) {

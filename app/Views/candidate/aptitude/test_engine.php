@@ -2,6 +2,8 @@
 
 <?= $this->section('styles') ?>
 <style>
+/* Hallmark · restyle · jobberrecruit-test-engine · theme: technical-precision */
+/* critique: timed aptitude test engine; zero AI slop, zero horizontal scroll, high-contrast options */
 /* ══ RESET ══ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -33,7 +35,7 @@ body {
   color: var(--text);
   font-size: 15px;
   line-height: 1.7;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 }
@@ -81,26 +83,34 @@ body { background: var(--bg); }
   position: sticky; top: 0; z-index: 50;
   background: #fff; border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 6px rgba(10,47,87,.05);
+  width: 100%; max-width: 100vw; box-sizing: border-box;
 }
 .tst-bar-in {
   max-width: 880px; margin: 0 auto; padding: 12px 24px;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; box-sizing: border-box;
 }
 .tst-brand {
   display: flex; align-items: center; gap: 10px;
   font-family: 'Sora', sans-serif; font-weight: 800;
   color: var(--brand-deep); font-size: 1rem;
+  min-width: 0;
 }
 .tst-brand .dot {
   width: 30px; height: 30px; border-radius: 8px;
   background: linear-gradient(135deg, var(--brand), var(--brand-deep));
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 .tst-brand .dot svg { width: 17px; height: 17px; color: #fff; }
+.tst-brand .full {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .tst-mode-pill {
   font-size: .66rem; font-weight: 700; letter-spacing: .05em;
   text-transform: uppercase; padding: 4px 10px; border-radius: 20px;
   background: #fff7ed; color: var(--accent-dark); border: 1px solid #fed7aa;
+  flex-shrink: 0; white-space: nowrap;
 }
 .tst-mode-pill.practice { background: var(--brand-light); color: var(--brand); border-color: #cfe0f0; }
 .tst-timer {
@@ -108,6 +118,7 @@ body { background: var(--bg); }
   font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.05rem;
   color: var(--brand-deep); background: var(--bg); border: 1px solid var(--border);
   border-radius: 10px; padding: 8px 14px; min-width: 104px; justify-content: center;
+  flex-shrink: 0; white-space: nowrap;
 }
 .tst-timer svg { width: 17px; height: 17px; color: var(--brand); }
 .tst-timer.warn  { color: #b45309; background: #fef3c7; border-color: #fcd34d; }
@@ -115,7 +126,7 @@ body { background: var(--bg); }
 @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.6 } }
 
 /* ── Progress bar ── */
-.tst-progress { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+.tst-progress { max-width: 880px; margin: 0 auto; padding: 0 24px; width: 100%; box-sizing: border-box; }
 .tst-progress-track { height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; }
 .tst-progress-fill  { height: 100%; background: linear-gradient(90deg, var(--brand), var(--accent)); border-radius: 4px; transition: width .3s; }
 
@@ -124,6 +135,9 @@ body { background: var(--bg); }
   max-width: 760px; margin: 0 auto; padding: 36px 24px 120px;
   -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
   -webkit-touch-callout: none;
+  width: 100%; box-sizing: border-box;
+  overflow-x: clip;
+  word-break: break-word; overflow-wrap: anywhere;
 }
 
 /* ── Anti-cheat warning banner ── */
@@ -138,7 +152,7 @@ body { background: var(--bg); }
 .tst-warn-banner svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* ── Identity watermark ── */
-.tst-watermark { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; opacity: .06; }
+.tst-watermark { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; opacity: .06; max-width: 100vw; max-height: 100vh; clip-path: inset(0); }
 .tst-watermark .row {
   display: flex; gap: 80px; white-space: nowrap; transform: rotate(-24deg);
   font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem;
@@ -234,16 +248,22 @@ body.tst-blurred .tst-blur-notice { display: flex; }
 .tst-qcard {
   background: #fff; border: 1px solid var(--border); border-radius: 18px;
   padding: 32px; box-shadow: 0 4px 18px rgba(10,47,87,.06);
+  max-width: 100%; box-sizing: border-box;
+  word-break: break-word; overflow-wrap: anywhere;
 }
 .tst-qbody {
   font-size: 1.25rem; font-weight: 600; color: var(--brand-deep);
   line-height: 1.45; margin-bottom: 26px;
+  max-width: 100%; box-sizing: border-box;
+  word-break: break-word; overflow-wrap: anywhere; hyphens: auto;
 }
-.tst-options { display: flex; flex-direction: column; gap: 12px; }
+.tst-options { display: flex; flex-direction: column; gap: 12px; max-width: 100%; box-sizing: border-box; }
 .tst-opt {
-  display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px;
   border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer;
   transition: .14s; background: #fff; min-height: 44px;
+  max-width: 100%; box-sizing: border-box;
+  word-break: break-word; overflow-wrap: anywhere;
 }
 .tst-opt:hover { border-color: var(--brand); background: var(--brand-light); }
 .tst-opt.selected { border-color: var(--brand); background: var(--brand-light); box-shadow: 0 0 0 3px rgba(8,97,169,.1); }
@@ -252,12 +272,18 @@ body.tst-blurred .tst-blur-notice { display: flex; }
   border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
   font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem;
   color: var(--muted); transition: .14s;
+  margin-top: 1px;
 }
 .tst-opt.selected .tst-opt-key { background: var(--brand); color: #fff; border-color: var(--brand); }
-.tst-opt-text { font-size: 1rem; color: var(--text); font-weight: 500; }
+.tst-opt-text {
+  font-size: 1rem; color: var(--text); font-weight: 500;
+  min-width: 0; flex: 1;
+  word-break: break-word; overflow-wrap: anywhere; hyphens: auto;
+  line-height: 1.45;
+}
 
 /* ── Question overview dots ── */
-.tst-dots { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 24px; justify-content: center; }
+.tst-dots { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 24px; justify-content: center; max-width: 100%; box-sizing: border-box; }
 .tst-dot {
   width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--border);
   background: #fff; font-size: .8rem; font-weight: 700; color: var(--muted);
@@ -273,8 +299,12 @@ body.tst-blurred .tst-blur-notice { display: flex; }
   background: #fff; border-top: 1px solid var(--border);
   padding: 14px 24px; padding-bottom: calc(14px + env(safe-area-inset-bottom));
   z-index: 40;
+  max-width: 100vw; box-sizing: border-box;
 }
-.tst-nav-in { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.tst-nav-in {
+  max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  max-width: 100%; box-sizing: border-box; width: 100%;
+}
 .tst-nav .btn { min-height: 48px; padding: 12px 26px; }
 .tst-flag {
   display: inline-flex; align-items: center; gap: 7px;
@@ -308,18 +338,77 @@ body.tst-blurred .tst-blur-notice { display: flex; }
 
 /* ══ RESPONSIVE ══ */
 @media (max-width: 680px) {
-  .tst-qcard { padding: 22px; }
-  .tst-qbody { font-size: 1.1rem; }
-  .tst-wrap  { padding: 24px 16px 110px; }
-  .tst-bar-in { padding: 10px 16px; }
+  .tst-qcard { padding: 20px 16px; border-radius: 14px; }
+  .tst-qbody { font-size: 1.08rem; margin-bottom: 20px; line-height: 1.42; }
+  .tst-opt { padding: 13px 14px; gap: 11px; }
+  .tst-opt-key { width: 28px; height: 28px; font-size: .82rem; border-radius: 6px; }
+  .tst-opt-text { font-size: .94rem; }
+  .tst-wrap  { padding: 20px 14px 105px; width: 100%; }
+  .tst-bar-in { padding: 10px 14px; gap: 8px; }
+  .tst-progress { padding: 0 14px; }
   .tst-brand span.full { display: none; }
+  .tst-timer { min-width: auto; padding: 6px 10px; font-size: .95rem; }
+  .tst-mode-pill { padding: 3px 8px; font-size: .62rem; }
+
+  .tst-nav {
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .tst-nav-in { gap: 8px; }
+  .tst-nav .btn { min-height: 42px; padding: 8px 14px; font-size: .84rem; flex: 1; justify-content: center; white-space: nowrap; }
+  .tst-flag { font-size: .78rem; gap: 5px; padding: 6px; flex-shrink: 0; }
+
+  .tst-gate { padding: 16px; }
+  .tst-gate-card { padding: 22px 18px; border-radius: 14px; max-width: 100%; word-break: break-word; overflow-wrap: anywhere; }
+  .tst-gate h1 { font-size: 1.25rem; }
+  .tst-gate .meta, .tst-gate-rules li, .tst-honour label { font-size: .86rem; word-break: break-word; overflow-wrap: anywhere; }
+
+  .tst-modal { padding: 16px; }
+  .tst-modal-card { padding: 22px 18px; border-radius: 14px; max-width: 100%; word-break: break-word; overflow-wrap: anywhere; }
+  .tst-modal h3 { font-size: 1.15rem; }
+  .tst-modal p { font-size: .86rem; word-break: break-word; overflow-wrap: anywhere; }
+  .tst-modal-actions { gap: 8px; }
+  .tst-modal-actions .btn { min-height: 42px; padding: 8px 12px; font-size: .84rem; }
+
   input, select, textarea { font-size: 16px !important; }
+}
+
+@media (max-width: 420px) {
+  .tst-wrap { padding: 16px 10px 100px; }
+  .tst-qcard { padding: 16px 12px; border-radius: 12px; }
+  .tst-qbody { font-size: 1rem; margin-bottom: 16px; }
+  .tst-opt { padding: 11px 12px; gap: 9px; }
+  .tst-opt-key { width: 26px; height: 26px; font-size: .78rem; }
+  .tst-opt-text { font-size: .88rem; line-height: 1.4; }
+  .tst-bar-in { padding: 8px 10px; }
+  .tst-nav { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+  .tst-nav-in { gap: 6px; }
+  .tst-nav .btn { padding: 8px 10px; font-size: .8rem; }
+  .tst-dot { width: 30px; height: 30px; font-size: .75rem; }
 }
 @media (pointer: coarse) {
   .tst-dot { width: 44px; height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+h1, h2, h3, .q-title, .test-title { text-wrap: balance; overflow-wrap: break-word; }
+.timer-display, .q-count { font-variant-numeric: tabular-nums; }
+
+/* Hallmark · Gate 26b Tactile micro-depression */
+.btn:active, .opt-card:active, .nav-btn:active {
+  transform: translateY(1px);
+}
+
+/* Hallmark · Gate 27 Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 </style>
 <?= $this->endSection() ?>

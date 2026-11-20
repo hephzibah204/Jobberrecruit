@@ -41,9 +41,9 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class InterviewReply extends Controller
 {
-    private const MODEL = 'gemini-3.5-flash-lite';
+    private const MODEL = 'gemini-3.8-flash';
 
-    private const TIMEOUT_SECONDS = 15;
+    private const TIMEOUT_SECONDS = 11;
 
     private const PERSONA_VOICE = [
         'corporate-hr'      => 'a warm, professional Nigerian HR business partner. Encouraging but still probing.',
@@ -77,6 +77,9 @@ class InterviewReply extends Controller
         $history   = is_array($in['history'] ?? null) ? $in['history'] : [];
         $alreadyFollowedUp = !empty($in['askedFollowUpAlready']);
 
+        $clientHour   = isset($in['clientHour']) ? (int)$in['clientHour'] : (int)date('G');
+        $timeGreeting = (string)($in['clientTimeGreeting'] ?? ($clientHour < 12 ? 'Good morning' : ($clientHour < 17 ? 'Good afternoon' : 'Good evening')));
+
         $apiKey = env('GEMINI_API_KEY');
         if (empty($apiKey)) {
             log_message('error', 'Reply: GEMINI_API_KEY not set in .env');
@@ -84,7 +87,8 @@ class InterviewReply extends Controller
         }
 
         $prompt = $this->buildPrompt(
-            $question, $answer, $history, $persona, $job, $field, $itype, $alreadyFollowedUp
+            $question, $answer, $history, $persona, $job, $field, $itype, $alreadyFollowedUp,
+            $timeGreeting, $clientHour
         );
 
         $body = [
@@ -93,13 +97,14 @@ class InterviewReply extends Controller
             ]],
             'generationConfig' => [
                 'temperature'        => 0.8,
-                'maxOutputTokens'    => 500,
+                'maxOutputTokens'    => 800,
                 'response_mime_type' => 'application/json',
             ],
         ];
 
+        $model = env('GEMINI_MODEL_FAST') ?: (env('GEMINI_MODEL') ?: self::MODEL);
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-             . self::MODEL . ':generateContent';
+             . $model . ':generateContent';
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -111,7 +116,7 @@ class InterviewReply extends Controller
                 'x-goog-api-key: ' . $apiKey,
             ],
             CURLOPT_TIMEOUT        => self::TIMEOUT_SECONDS,
-            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_CONNECTTIMEOUT => 4,
         ]);
 
         $raw      = curl_exec($ch);
@@ -159,6 +164,12 @@ class InterviewReply extends Controller
             $followUp = null;
         }
 
+        // Normalize any greeting to match the candidate's actual time of day
+        $ack = preg_replace('/^(Good morning|Good afternoon|Good evening|Good day)[,.]?\s*/i', $timeGreeting . ', ', $ack);
+        if ($followUp !== null) {
+            $followUp = preg_replace('/^(Good morning|Good afternoon|Good evening|Good day)[,.]?\s*/i', $timeGreeting . ', ', $followUp);
+        }
+
         return $this->response->setJSON([
             'acknowledgement' => $ack,
             'followUp'        => $followUp,
@@ -173,12 +184,70 @@ class InterviewReply extends Controller
             $text = $matches[0];
         }
         $parsed = json_decode($text, true);
-        return is_array($parsed) ? $parsed : null;
+        if (is_array($parsed)) {
+            return $parsed;
+        }
+
+        // Salvage pass: the model sometimes returns JSON that fails a
+        // strict decode (truncation, a stray unescaped character in a
+        // later field). The acknowledgement is the first field and is
+        // the part that proves the reply was tailored — recover it (and
+        // the follow-up when intact) instead of discarding the whole
+        // reply and falling back to a canned follow-up. (Live failure
+        // 2026-11-19 19:08 WAT: valid-looking JSON logged as
+        // "unparseable", candidate got a pattern-matched follow-up.)
+        $salvaged = [];
+        if (preg_match('/"acknowledgement"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/s', $text, $m)) {
+            $ack = json_decode('"' . $m[1] . '"');
+            if (is_string($ack) && trim($ack) !== '') {
+                $salvaged['acknowledgement'] = $ack;
+            }
+        }
+        if (preg_match('/"followUp"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/s', $text, $m)) {
+            $fu = json_decode('"' . $m[1] . '"');
+            if (is_string($fu) && trim($fu) !== '') {
+                $salvaged['followUp'] = $fu;
+            }
+        } elseif (preg_match('/"followUp"\s*:\s*null/', $text)) {
+            $salvaged['followUp'] = null;
+        }
+        if (preg_match('/"onTopic"\s*:\s*(true|false)/', $text, $m)) {
+            $salvaged['onTopic'] = ($m[1] === 'true');
+        }
+
+        // Truncation pass: the acknowledgement string itself was cut off
+        // mid-sentence (no closing quote — the strict pattern above
+        // cannot match). Recover the fragment, trimmed back to the last
+        // complete word, rather than discarding a genuinely tailored
+        // reply. (Live failure 2026-11-19 19:25 WAT: the model's ack
+        // naming Ikotun and the ₦4.2 million recovery arrived truncated
+        // and the candidate got a generic fallback.)
+        if (empty($salvaged['acknowledgement'])
+            && preg_match('/"acknowledgement"\s*:\s*"(.+)$/s', $text, $m)) {
+            $frag = trim($m[1]);
+            $frag = preg_replace('/"\s*,\s*"(followUp|onTopic)".*$/s', '', $frag);
+            if (mb_strlen($frag) >= 30) {
+                $cut = mb_strrpos(mb_substr($frag, 0, 300), ' ');
+                if ($cut !== false && $cut >= 30) {
+                    $frag = rtrim(mb_substr($frag, 0, $cut), " \t\n\r,;:");
+                    if ($frag !== '' && !preg_match('/[.!?]$/', $frag)) {
+                        $frag .= '.';
+                    }
+                    $salvaged['acknowledgement'] = $frag;
+                    if (!array_key_exists('followUp', $salvaged)) {
+                        $salvaged['followUp'] = null;
+                    }
+                }
+            }
+        }
+
+        return !empty($salvaged['acknowledgement']) ? $salvaged : null;
     }
 
     private function buildPrompt(
         string $question, string $answer, array $history, string $persona,
-        string $job, string $field, string $itype, bool $alreadyFollowedUp
+        string $job, string $field, string $itype, bool $alreadyFollowedUp,
+        string $timeGreeting = 'Good day', int $clientHour = 12
     ): string {
         $personaDesc = self::PERSONA_VOICE[$persona] ?? self::PERSONA_VOICE['corporate-hr'];
 
@@ -246,6 +315,7 @@ RULES — these matter more than sounding impressive:
    - NEVER reference 401(k), IRS, Social Security, HMRC, NHS, GCSEs, "college" in the American sense, US/UK employment law, or any other US/UK-specific institution or system.
    - Write in Nigerian professional English — natural and clear, not Americanised slang, not stiff British formality.
    - Do not decorate every sentence with local references. The rule is: when context appears, it must be Nigerian context.
+   - TIME OF DAY: The candidate's local time is {$timeGreeting} ({$clientHour}:00). NEVER say "Good morning" in the afternoon, evening, or night! If any greeting is used, use "{$timeGreeting}".
 
 OUTPUT — strict JSON only, no markdown fences, no commentary:
 {

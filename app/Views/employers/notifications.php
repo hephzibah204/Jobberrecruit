@@ -1,4 +1,4 @@
-﻿<?php $page_title = 'Notification Centre'; ?>
+<?php $page_title = 'Notification Centre'; ?>
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('styles') ?>

@@ -70,9 +70,11 @@ class JobNotificationModel extends Model
     const TYPE_MATCHING_CANDIDATE = 'matching_candidate';
 
     // Account / system
-    const TYPE_ACCOUNT_UPDATED = 'account_updated';
-    const TYPE_ACCOUNT_WARNING  = 'account_warning';
-    const TYPE_SYSTEM           = 'system';
+    const TYPE_ACCOUNT_UPDATED   = 'account_updated';
+    const TYPE_ACCOUNT_WARNING   = 'account_warning';
+    const TYPE_SYSTEM            = 'system';
+    const TYPE_EMPLOYER_VERIFIED = 'employer_verified';
+    const TYPE_EMPLOYER_REJECTED = 'employer_rejected';
 
     // Category groups
     const CATEGORY_JOBS         = ['job_posted','job_pending','job_approved','job_rejected','job_expiring','job_expired','job_reposted','job_closed'];
@@ -80,7 +82,7 @@ class JobNotificationModel extends Model
     const CATEGORY_CANDIDATES   = ['matching_candidate','ai_match_recommendation','aptitude_test_submitted','aptitude_test_result','candidate_assessment_result'];
     const CATEGORY_PAYMENTS     = ['subscription_expiring','subscription_expired','subscription_renewed','payment_confirmed','payment_failed'];
     const CATEGORY_MESSAGES     = ['new_message'];
-    const CATEGORY_SYSTEM       = ['account_updated','account_warning','system'];
+    const CATEGORY_SYSTEM       = ['account_updated','account_warning','system','employer_verified','employer_rejected'];
 
     public function getUnreadCount(int $employerId): int
     {
@@ -194,6 +196,8 @@ class JobNotificationModel extends Model
             'account_updated' => ['label' => 'Account Updated', 'icon' => 'i-settings', 'color' => 'secondary', 'category' => 'system'],
             'account_warning' => ['label' => 'Account Warning', 'icon' => 'i-bell',     'color' => 'warning',   'category' => 'system'],
             'system'          => ['label' => 'System Notice',   'icon' => 'i-bell',     'color' => 'secondary', 'category' => 'system'],
+            'employer_verified' => ['label' => 'Account Verified', 'icon' => 'i-check-c', 'color' => 'success',   'category' => 'system'],
+            'employer_rejected' => ['label' => 'Verification Rejected', 'icon' => 'i-x', 'color' => 'danger', 'category' => 'system'],
         ];
 
         return $map[$type] ?? ['label' => 'Notification', 'icon' => 'i-bell', 'color' => 'secondary', 'category' => 'system'];

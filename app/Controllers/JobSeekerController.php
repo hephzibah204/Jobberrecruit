@@ -41,11 +41,21 @@ class JobSeekerController extends BaseController
 
     public function dashboard()
     {
+        $user = $this->auth->user();
+        if (! $user) {
+            return redirect()->to('login');
+        }
+        if (($user->user_type ?? null) !== 'job_seeker') {
+            $destination = ($user->user_type ?? null) === 'employer'
+                ? 'employer/dashboard'
+                : (($user->user_type ?? null) === 'admin' ? 'admin/dashboard' : 'jobs');
+            return redirect()->to($destination);
+        }
+
         $candidateModel     = model(JobSeekerModel::class);
         $jobClickModel      = model(JobClickModel::class);
         $applicationModel   = model('App\Models\JobApplicationModel');
         $savedJobModel      = model('App\Models\SavedJobModel');
-        $jobModel           = model('App\Models\JobModel');
 
         // Log current date and time
         $date = date('Y-m-d H:i:s');
@@ -56,18 +66,8 @@ class JobSeekerController extends BaseController
             ->first();
 
         if (!$candidate) {
-            return redirect()->to('candidate/profile');
-        }
-
-        // Required fields check
-        if (
-            empty($candidate->full_name) ||
-            empty($candidate->phone) ||
-            empty($candidate->job_title) ||
-            empty($candidate->skills) ||
-            empty($candidate->resume)
-        ) {
-            return redirect()->to('candidate/profile');
+            // New accounts can use onboarding before creating a profile record.
+            $candidate = new JobSeeker(['id' => 0, 'user_id' => $user->id, 'full_name' => '']);
         }
 
         // ====== Dashboard Statistics ======
@@ -97,14 +97,32 @@ class JobSeekerController extends BaseController
             $candidate->industry_id = $industryIds[0];
         }
 
-        // Recommended Jobs — prefer the candidate's industries, fall back to latest openings.
-        $jobQuery = $jobModel->orderBy('created_at', 'DESC');
-        if (! empty($industryIds)) {
-            $jobQuery->whereIn('industry_id', $industryIds);
-        }
-        $recommendedJobs = $jobQuery->limit(6)->findAll();
-        if (empty($recommendedJobs)) {
-            $recommendedJobs = $jobModel->orderBy('created_at', 'DESC')->limit(6)->findAll();
+        // Recommend only currently open, approved jobs with a live application window.
+        // Incomplete profiles can still use the dashboard and its completion checklist.
+        $loadRecommendedJobs = static function (bool $filterByIndustry, array $industryIds): array {
+            $query = (new JobModel())
+                ->select('jobs.*, states.name as location, employers.company_name as employer_name, employers.logo as company_logo')
+                ->join('states', 'states.id = jobs.state_id', 'left')
+                ->join('employers', 'employers.id = jobs.employer_id', 'left')
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
+                ->groupStart()
+                    ->where('jobs.application_deadline', null)
+                    ->orWhere('jobs.application_deadline', '')
+                    ->orWhere('jobs.application_deadline', '0000-00-00')
+                    ->orWhere('jobs.application_deadline >=', date('Y-m-d'))
+                ->groupEnd();
+
+            if ($filterByIndustry && $industryIds !== []) {
+                $query->whereIn('jobs.industry_id', $industryIds);
+            }
+
+            return $query->orderBy('jobs.created_at', 'DESC')->findAll(6);
+        };
+
+        $recommendedJobs = $loadRecommendedJobs(! empty($industryIds), $industryIds);
+        if (empty($recommendedJobs) && ! empty($industryIds)) {
+            $recommendedJobs = $loadRecommendedJobs(false, []);
         }
 
         // Attach a real, computed match score to each recommendation.
@@ -238,6 +256,7 @@ class JobSeekerController extends BaseController
                 ]);
             }
 
+
             // Validation Rules: only full_name is strictly required to identify the candidate
             $rules = [
                 'full_name'  => 'required|min_length[2]',
@@ -253,6 +272,19 @@ class JobSeekerController extends BaseController
                     'csrf_token' => csrf_token(),
                     'csrf_hash'  => csrf_hash(),
                 ]);
+            }
+
+            helper('profile_dates');
+            $dateErrors = profile_date_errors($this->request->getPost());
+            if ($dateErrors) {
+                // Log which field failed: the page's JS does not surface the
+                // per-field errors, so a rejected save (e.g. a certification
+                // that then "vanishes") was undiagnosable from the outside.
+                log_message('error', 'edit_profile date validation failed for candidate ' . $candidate->id . ': ' . json_encode($dateErrors));
+                return $this->response->setJSON([
+                    'status' => 'error', 'errors' => $dateErrors,
+                    'csrf_token' => csrf_token(), 'csrf_hash' => csrf_hash(),
+                ])->setStatusCode(422);
             }
 
             $portfolio = trim((string) $this->request->getPost('portfolio'));
@@ -361,8 +393,9 @@ class JobSeekerController extends BaseController
              */
             $db = \Config\Database::connect();
             $db->transStart();
+            try {
 
-            $candidateModel->update($candidate->id, $data);
+            if (!$candidateModel->update($candidate->id, $data)) throw new \RuntimeException('Profile validation failed.');
 
             /**
              * UPDATE INDUSTRIES
@@ -380,9 +413,12 @@ class JobSeekerController extends BaseController
             /**
              * SYNC WORK EXPERIENCE (delete + reinsert posted rows)
              */
-            $normMonth = static fn ($v) => $v ? (preg_match('/^\d{4}-\d{2}$/', $v) ? $v . '-01' : $v) : null;
+            $normMonth = static function ($v) {
+                $m = normalize_profile_month($v);
+                return $m ? $m . '-01' : null;
+            };
             $expModel  = model(\App\Models\JobSeekerExperienceModel::class);
-            $expModel->where('job_seeker_id', $candidate->id)->delete();
+            if (!$expModel->where('job_seeker_id', $candidate->id)->delete()) throw new \RuntimeException('Experience replacement failed.');
             $expTitles  = (array) ($this->request->getPost('exp_job_title') ?? []);
             $expCompany = (array) ($this->request->getPost('exp_company') ?? []);
             $expLoc     = (array) ($this->request->getPost('exp_location') ?? []);
@@ -394,7 +430,7 @@ class JobSeekerController extends BaseController
                 $t = trim((string) $t);
                 if ($t === '') continue;
                 $isCurrent = in_array($expCurrent[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
-                $expModel->insert([
+                $savedExperience = $expModel->insert([
                     'job_seeker_id' => $candidate->id,
                     'job_title'     => $t,
                     'company'       => trim((string) ($expCompany[$i] ?? '')) ?: null,
@@ -405,6 +441,10 @@ class JobSeekerController extends BaseController
                     'description'   => trim((string) ($expDesc[$i] ?? '')) ?: null,
                     'sort_order'    => $i,
                 ]);
+                if (!$savedExperience) {
+
+                    throw new \RuntimeException('Experience validation failed.');
+                }
             }
 
             /**
@@ -421,7 +461,7 @@ class JobSeekerController extends BaseController
              foreach ($eduDegree as $i => $d) {
                  $d = trim((string) $d);
                  if ($d === '') continue;
-                 $eduModel->insert([
+                 $savedEducation = $eduModel->insert([
                      'job_seeker_id'  => $candidate->id,
                      'degree'         => $d,
                      'field_of_study' => trim((string) ($eduField[$i] ?? '')) ?: null,
@@ -431,14 +471,25 @@ class JobSeekerController extends BaseController
                      'grade'          => trim((string) ($eduGrade[$i] ?? '')) ?: null,
                      'sort_order'     => $i,
                  ]);
+                 if (!$savedEducation) {
+
+                     throw new \RuntimeException('Education validation failed.');
+                 }
              }
 
             /**
              * SYNC CERTIFICATIONS (delete + reinsert posted rows)
              */
             $certModel = model(\App\Models\JobSeekerCertificationModel::class);
-            try {
-                $certModel->where('job_seeker_id', $candidate->id)->delete();
+            // Only replace stored certifications when the request actually
+            // carried the certification fields. The sync is delete+reinsert,
+            // so a submission without cert fields (e.g. a form variant that
+            // did not render the section) would otherwise silently erase
+            // every stored certification while reporting success.
+            if ($this->request->getPost('cert_name') === null) {
+                log_message('warning', 'edit_profile: certification fields absent from request for candidate ' . $candidate->id . '; existing certifications left untouched.');
+            } else try {
+                if ($certModel->where('job_seeker_id', $candidate->id)->delete() === false) throw new \RuntimeException('Unable to replace certifications.');
                 $certNames    = (array) ($this->request->getPost('cert_name') ?? []);
                 $certOrgs     = (array) ($this->request->getPost('cert_org') ?? []);
                 $certIds      = (array) ($this->request->getPost('cert_id') ?? []);
@@ -453,7 +504,7 @@ class JobSeekerController extends BaseController
                     $cn = trim((string) $cn);
                     if ($cn === '') continue;
                     $noExp = in_array($certNoExps[$i] ?? 0, ['1', 1, 'on', 'true', true], true) ? 1 : 0;
-                    $certModel->insert([
+                    $savedCertificate = $certModel->insert([
                         'job_seeker_id'        => $candidate->id,
                         'name'                 => $cn,
                         'issuing_organization' => trim((string) ($certOrgs[$i] ?? '')) ?: null,
@@ -466,9 +517,13 @@ class JobSeekerController extends BaseController
                         'expiry_year'          => $noExp ? null : (trim((string) ($certExYears[$i] ?? '')) ?: null),
                         'sort_order'           => $i,
                     ]);
+                    if ($savedCertificate === false) throw new \RuntimeException('Unable to save certificate: ' . json_encode($certModel->errors()));
                 }
             } catch (\Throwable $e) {
+
+                $db->transRollback();
                 log_message('error', 'Error syncing certifications: ' . $e->getMessage());
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Could not save your certifications. Please try again.'])->setStatusCode(422);
             }
 
             // Sync profile_completion column in DB
@@ -487,6 +542,15 @@ class JobSeekerController extends BaseController
                 return $this->response->setJSON([
                     'status' => 'error',
                     'message' => 'Failed to update profile. Database transaction error.'
+                ]);
+            }
+
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                log_message('error', 'Profile save failed: ' . $e->getMessage());
+                return $this->response->setStatusCode(422)->setJSON([
+                    'status' => 'error', 'message' => 'Your profile could not be saved. Please check the entries and try again.',
+                    'csrf_token' => csrf_token(), 'csrf_hash' => csrf_hash(),
                 ]);
             }
 
@@ -631,7 +695,17 @@ class JobSeekerController extends BaseController
         }
 
         // Use the posted value or JSON payload when present, otherwise flip the current state.
-        $json = $this->request->getJSON(true);
+        // Only parse a JSON body for JSON requests: getJSON() throws on the
+        // settings page's form-data posts, which killed the toggle before any
+        // write happened (log: "Failed to parse JSON string", 2026-11-19).
+        $json = [];
+        if (str_contains(strtolower((string) $this->request->getHeaderLine('Content-Type')), 'application/json')) {
+            try {
+                $json = $this->request->getJSON(true) ?: [];
+            } catch (\Throwable $e) {
+                $json = [];
+            }
+        }
         $raw = $this->request->getPost('is_visible');
         if ($raw === null && isset($json['is_visible'])) {
             $raw = $json['is_visible'];
@@ -643,7 +717,26 @@ class JobSeekerController extends BaseController
             $newValue = in_array($raw, ['1', 1, 'true', true, 'on'], true) ? 1 : 0;
         }
 
-        $candidateModel->update($candidate->id, ['is_visible' => $newValue]);
+        $updated = $candidateModel->update($candidate->id, ['is_visible' => $newValue]);
+
+        // Verify what actually persisted and report the STORED value. The
+        // previous version returned the intended value unconditionally, so a
+        // silent write failure looked like success in the UI while the
+        // database kept the old flag (toggle "dead" after reload).
+        $stored      = $candidateModel->find($candidate->id);
+        $storedValue = $stored ? (int) !empty($stored->is_visible) : null;
+        if ($updated === false || $storedValue !== $newValue) {
+            log_message('error', 'toggleVisibility: visibility write did not persist for candidate '
+                . $candidate->id . ' (errors: ' . json_encode($candidateModel->errors()) . ')');
+            return $this->response->setJSON([
+                'success'    => false,
+                'is_visible' => $storedValue ?? (int) !empty($candidate->is_visible),
+                'message'    => 'Could not update your visibility. Please try again.',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
+            ]);
+        }
+        $newValue = $storedValue;
 
         return $this->response->setJSON([
             'success'    => true,
@@ -801,7 +894,7 @@ class JobSeekerController extends BaseController
 
         // Fetch all applications made by this candidate
         $applications = $applicationModel
-            ->select('job_applications.*, jobs.title as job_title, employers.company_name, jobs.id as job_id')
+            ->select('job_applications.*, jobs.title as job_title, employers.company_name, jobs.id as job_id, jobs.slug')
             ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->where('job_applications.job_seeker_id', $candidate->id)
@@ -816,6 +909,39 @@ class JobSeekerController extends BaseController
         ];
 
         return view('candidate/applications', $data);
+    }
+
+    public function withdrawApplication($id)
+    {
+        $user = $this->auth->user();
+
+        $candidateModel = model(JobSeekerModel::class);
+        $applicationModel = model(JobApplicationModel::class);
+
+        $candidate = $candidateModel
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$candidate) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Please complete your profile first.']);
+        }
+
+        $application = $applicationModel
+            ->where('id', $id)
+            ->where('job_seeker_id', $candidate->id)
+            ->first();
+
+        if (!$application) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Application not found.']);
+        }
+
+        if (in_array(strtolower($application->status ?? ''), ['withdrawn', 'hired'], true)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'This application can no longer be withdrawn.']);
+        }
+
+        $applicationModel->update($application->id, ['status' => 'withdrawn']);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Application withdrawn.']);
     }
 
     public function viewApplication($id)
@@ -984,17 +1110,33 @@ class JobSeekerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Candidate not found.']);
         }
 
+        if (!$this->validateData($this->request->getPost(), [
+            'id' => 'permit_empty|is_natural_no_zero',
+            'keyword' => 'permit_empty|max_length[200]',
+            'location_id' => 'permit_empty|is_natural_no_zero|is_not_unique[states.id]',
+            'frequency' => 'required|in_list[instant,daily,weekly]',
+            'delivery_time' => 'required|regex_match[/^([01][0-9]|2[0-3]):[0-5][0-9]$/]',
+            'channel' => 'required|in_list[email,inapp,both]',
+        ])) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => implode(' ', $this->validator->getErrors())]);
+        }
+        $alertId = (int) $this->request->getPost('id');
+        if ($alertId && !$alertModel->where('job_seeker_id', $candidate->id)->find($alertId)) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Alert not found.']);
+        }
+
         $data = [
             'job_seeker_id' => $candidate->id,
             'keyword'       => $this->request->getPost('keyword'),
-            'location_id'   => $this->request->getPost('location_id'),
+            'location_id'   => $this->request->getPost('location_id') ?: null,
             'frequency'     => $this->request->getPost('frequency') ?: 'daily',
             'delivery_time' => $this->request->getPost('delivery_time') ?: '08:00',
             'channel'       => $this->request->getPost('channel') ?? 'email',
         ];
 
+        if ($alertId) $data['id'] = $alertId;
         if ($alertModel->save($data)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Alert created successfully.']);
+            return $this->response->setJSON(['success' => true, 'message' => $alertId ? 'Alert updated successfully.' : 'Alert created successfully.']);
         }
 
         return $this->response->setJSON(['success' => false, 'message' => 'Unable to save alert.']);
@@ -1273,6 +1415,37 @@ class JobSeekerController extends BaseController
         $transactions = [];
         $db = \Config\Database::connect();
 
+        // References backed by an actual payment record or wallet debit.
+        // An enrollment row on its own describes access, not spend: when no
+        // payment/wallet record exists for its reference, it must not count
+        // toward Total Spent (the wallet ledger is the source of truth).
+        $paidReferences = [];
+        if ($db->tableExists('payments')) {
+            $paidRows = $db->table('payments')->select('reference')
+                ->where('user_id', $user->id)
+                ->whereIn('status', ['success', 'successful', 'completed', 'paid'])
+                ->get()->getResult();
+            foreach ($paidRows as $row) {
+                if (!empty($row->reference)) {
+                    $paidReferences[$row->reference] = true;
+                }
+            }
+        }
+        $walletReferences = [];
+        if ($db->tableExists('wallets') && $db->tableExists('wallet_transactions')) {
+            $walletRow = $db->table('wallets')->select('id')->where('user_id', $user->id)->get()->getRow();
+            if ($walletRow) {
+                $wtRows = $db->table('wallet_transactions')->select('reference')
+                    ->where('wallet_id', $walletRow->id)
+                    ->get()->getResult();
+                foreach ($wtRows as $row) {
+                    if (!empty($row->reference)) {
+                        $walletReferences[$row->reference] = true;
+                    }
+                }
+            }
+        }
+
         // 1. Get course enrollments with payments
         if ($db->tableExists('course_enrollments') && $db->tableExists('courses')) {
             $enrollments = model(\App\Models\CourseEnrollmentModel::class)
@@ -1284,7 +1457,10 @@ class JobSeekerController extends BaseController
 
             foreach ($enrollments as $enr) {
                 $enrObj = (object)$enr;
+                $enrRef = (string) ($enrObj->payment_reference ?? '');
                 $transactions[] = [
+                    '_priority'   => 1,
+                    'backed'      => $enrRef !== '' && (isset($paidReferences[$enrRef]) || isset($walletReferences[$enrRef])),
                     'type'        => 'course',
                     'description' => 'Course: ' . ($enrObj->course_name ?? 'Unknown'),
                     'reference'   => $enrObj->payment_reference ?? 'FREE-' . ($enrObj->id ?? ''),
@@ -1293,7 +1469,7 @@ class JobSeekerController extends BaseController
                     'date'        => $enrObj->created_at ?? '',
                     'created_at'  => $enrObj->created_at ?? '',
                     'icon'        => 'ti ti-book',
-                    'receipt_url' => '',
+                    'receipt_url' => base_url('candidate/receipt/' . urlencode($enrObj->payment_reference ?? ('ENR-' . ($enrObj->id ?? '')))),
                 ];
             }
         }
@@ -1308,13 +1484,18 @@ class JobSeekerController extends BaseController
             foreach ($payments as $pay) {
                 $payObj = (object)$pay;
                 $metadata = is_string($payObj->metadata) ? json_decode($payObj->metadata, true) : (array)($payObj->metadata ?? []);
-                $desc = 'Subscription Payment';
+                $desc = match ($metadata['type'] ?? '') {
+                    'course' => 'Course Payment', 'wallet_funding' => 'Wallet Funding',
+                    'cv_review' => 'CV Review', default => 'Subscription Payment',
+                };
                 if (!empty($metadata['plan_id']) && $db->tableExists('plans')) {
                     $plan = model(\App\Models\PlanModel::class)->find($metadata['plan_id']);
                     $desc = 'Subscription: ' . ($plan->name ?? 'Plan #' . $metadata['plan_id']);
                 }
                 $transactions[] = [
-                    'type'        => 'subscription',
+                    '_priority'   => 3,
+                    'backed'      => true,
+                    'type'        => $metadata['type'] ?? 'subscription',
                     'description' => $desc,
                     'reference'   => $payObj->reference ?? '',
                     'amount'      => (float) ($payObj->amount ?? 0),
@@ -1322,7 +1503,7 @@ class JobSeekerController extends BaseController
                     'date'        => $payObj->paid_at ?? $payObj->created_at ?? '',
                     'created_at'  => $payObj->paid_at ?? $payObj->created_at ?? '',
                     'icon'        => 'ti ti-credit-card',
-                    'receipt_url' => '',
+                    'receipt_url' => base_url('candidate/receipt/' . urlencode($payObj->reference ?? ('PAY-' . ($payObj->id ?? '')))),
                 ];
             }
         }
@@ -1340,6 +1521,8 @@ class JobSeekerController extends BaseController
                 foreach ($walletTxns as $wt) {
                     $wtObj = (object)$wt;
                     $transactions[] = [
+                        '_priority'   => 2,
+                        'backed'      => true,
                         'type'        => $wtObj->type ?? 'wallet',
                         'description' => $wtObj->description ?? 'Wallet Transaction',
                         'reference'   => $wtObj->reference ?? 'WTX-' . ($wtObj->id ?? ''),
@@ -1348,11 +1531,21 @@ class JobSeekerController extends BaseController
                         'date'        => $wtObj->created_at ?? '',
                         'created_at'  => $wtObj->created_at ?? '',
                         'icon'        => 'ti ti-wallet',
-                        'receipt_url' => '',
+                        'receipt_url' => base_url('candidate/receipt/' . urlencode($wtObj->reference ?? ('WTX-' . ($wtObj->id ?? '')))),
                     ];
                 }
             }
         }
+
+        // Payment, entitlement and wallet rows can describe the same purchase.
+        $byReference = [];
+        foreach ($transactions as $index => $transaction) {
+            $key = trim((string) $transaction['reference']) ?: 'row-' . $index;
+            if (!isset($byReference[$key]) || ($transaction['_priority'] ?? 0) > ($byReference[$key]['_priority'] ?? 0)) {
+                $byReference[$key] = $transaction;
+            }
+        }
+        $transactions = array_values($byReference);
 
         // Sort by date desc
         usort($transactions, function ($a, $b) {
@@ -1366,12 +1559,14 @@ class JobSeekerController extends BaseController
             $statusLow = strtolower($t['status'] ?? '');
             $typeLow   = strtolower($t['type'] ?? '');
             $isSuccess = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']);
-            
+
             if ($isSuccess) {
                 $successCount++;
-                // If it is a debit (spent), increment totalSpent. 
+                // If it is a debit (spent), increment totalSpent.
                 // Wallet credits (e.g. credit/reward) are not "spent".
-                if ($typeLow !== 'credit' && !str_contains(strtolower($t['description']), 'reward')) {
+                // Unbacked enrollment rows (no payment record, no wallet
+                // debit) are access grants, not spend — never count them.
+                if (($t['backed'] ?? true) && !in_array($typeLow, ['credit', 'wallet_funding'], true) && !str_contains(strtolower($t['description']), 'reward')) {
                     $totalSpent += $t['amount'];
                 }
             }
@@ -1411,4 +1606,168 @@ class JobSeekerController extends BaseController
             log_message('error', 'Profile reward error for user ' . $userId . ': ' . $e->getMessage());
         }
     }
+
+    /**
+     * Display printable / downloadable transaction receipt for candidate
+     */
+    public function receipt($reference = null)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        if (empty($reference)) {
+            return redirect()->to('candidate/transactions')->with('error', 'Transaction reference is missing.');
+        }
+
+        $db = \Config\Database::connect();
+        $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+        $customerName = $candidate->full_name ?? ($user->username ?? 'Candidate');
+
+        $txData = null;
+
+        // 1. Check course_enrollments
+        if ($db->tableExists('course_enrollments')) {
+            $builder = $db->table('course_enrollments')
+                ->select('course_enrollments.*, courses.title as course_title')
+                ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
+                ->where('course_enrollments.user_id', $user->id);
+
+            if (str_starts_with($reference, 'ENR-')) {
+                $rawId = preg_match('/^ENR-([1-9][0-9]*)$/D', $reference, $match) ? (int)$match[1] : 0;
+                $builder->where('course_enrollments.id', $rawId);
+            } else {
+                $builder->groupStart()
+                    ->where('course_enrollments.payment_reference', $reference)
+                    ->orWhere('course_enrollments.id', is_numeric($reference) ? (int)$reference : 0)
+                    ->groupEnd();
+            }
+
+            $enr = $builder->get()->getRow();
+            if ($enr) {
+                $order = !empty($enr->payment_reference) && $db->tableExists('payments')
+                    ? $db->table('payments')->where('user_id', $user->id)->where('reference', $enr->payment_reference)->get()->getRow()
+                    : null;
+
+                // Derive the channel ONLY from an actual payment record: the
+                // payments row for this reference, or a wallet ledger debit
+                // carrying the same reference. An enrollment can carry a
+                // payment reference without any payment ever being recorded —
+                // never guess "Paystack / Card" for those.
+                $paymentMethod = null;
+                if ($order && !empty($order->payment_method)) {
+                    $paymentMethod = $order->payment_method === 'wallet'
+                        ? 'JobberRecruit Wallet'
+                        : ucfirst((string) $order->payment_method);
+                } elseif (!empty($enr->payment_reference) && $db->tableExists('wallets') && $db->tableExists('wallet_transactions')) {
+                    $walletDebit = $db->table('wallet_transactions')
+                        ->join('wallets', 'wallets.id = wallet_transactions.wallet_id')
+                        ->where('wallets.user_id', $user->id)
+                        ->where('wallet_transactions.reference', $enr->payment_reference)
+                        ->get()->getRow();
+                    if ($walletDebit) {
+                        $paymentMethod = 'JobberRecruit Wallet';
+                    }
+                }
+                if ($paymentMethod === null) {
+                    $paymentMethod = !empty($enr->payment_reference) ? 'Not recorded' : 'Free / Scholarship';
+                }
+
+                $txData = [
+                    'reference'      => $enr->payment_reference ?: ('ENR-' . $enr->id),
+                    'date'           => $enr->created_at ?? date('Y-m-d H:i:s'),
+                    'amount'         => (float) ($order->amount ?? $enr->amount ?? 0),
+                    'type'           => 'Course Enrollment',
+                    'status'         => 'completed',
+                    'payment_method' => $paymentMethod,
+                    'description'    => 'Course: ' . ($enr->course_title ?? 'E-learning Training'),
+                    'item_details'   => 'Interactive course lifetime enrollment & certificate access',
+                    'customer_name'  => $customerName,
+                    'customer_email' => $user->email ?? '',
+                    'customer_phone' => $candidate->phone ?? '',
+                ];
+            }
+        }
+
+        // 2. Check wallet_transactions
+        if (!$txData && $db->tableExists('wallets') && $db->tableExists('wallet_transactions')) {
+            $wallet = model(\App\Models\WalletModel::class)->where('user_id', $user->id)->first();
+            if ($wallet) {
+                $walletObj = (object)$wallet;
+                $builder = $db->table('wallet_transactions')->where('wallet_id', $walletObj->id);
+
+                if (str_starts_with($reference, 'WTX-')) {
+                    $rawId = preg_match('/^WTX-([1-9][0-9]*)$/D', $reference, $match) ? (int)$match[1] : 0;
+                    $builder->where('id', $rawId);
+                } else {
+                    $builder->groupStart()
+                        ->where('reference', $reference)
+                        ->orWhere('id', is_numeric($reference) ? (int)$reference : 0)
+                        ->groupEnd();
+                }
+
+                $wTx = $builder->get()->getRow();
+                if ($wTx) {
+                    $txData = [
+                        'reference'      => $wTx->reference ?: ('WTX-' . $wTx->id),
+                        'date'           => $wTx->created_at ?? date('Y-m-d H:i:s'),
+                        'amount'         => (float) ($wTx->amount ?? 0),
+                        'type'           => $wTx->type === 'credit' ? 'Wallet Credit' : 'Wallet Debit',
+                        'status'         => $wTx->status ?? 'completed',
+                        'payment_method' => $wTx->type === 'credit' ? 'Paystack / Bonus' : 'JobberRecruit Wallet',
+                        'description'    => $wTx->description ?? 'Candidate Wallet Transaction',
+                        'item_details'   => $wTx->type === 'credit' ? 'Balance credited to candidate wallet' : 'Wallet payment processed',
+                        'customer_name'  => $customerName,
+                        'customer_email' => $user->email ?? '',
+                        'customer_phone' => $candidate->phone ?? '',
+                    ];
+                }
+            }
+        }
+
+        // 3. Check payments table
+        if (!$txData && $db->tableExists('payments')) {
+            $builder = $db->table('payments')->where('user_id', $user->id);
+            if (str_starts_with($reference, 'PAY-')) {
+                $rawId = preg_match('/^PAY-([1-9][0-9]*)$/D', $reference, $match) ? (int)$match[1] : 0;
+                $builder->where('id', $rawId);
+            } else {
+                $builder->groupStart()
+                    ->where('reference', $reference)
+                    ->orWhere('id', is_numeric($reference) ? (int)$reference : 0)
+                    ->groupEnd();
+            }
+
+            $pay = $builder->get()->getRow();
+            if ($pay) {
+                $txData = [
+                    'reference'      => $pay->reference ?: ('PAY-' . $pay->id),
+                    'date'           => $pay->paid_at ?? ($pay->created_at ?? date('Y-m-d H:i:s')),
+                    'amount'         => (float) ($pay->amount_paid ?? ($pay->amount ?? 0)),
+                    'type'           => 'Subscription Payment',
+                    'status'         => $pay->status ?? 'completed',
+                    'payment_method' => !empty($pay->payment_method)
+                        ? ($pay->payment_method === 'wallet' ? 'JobberRecruit Wallet' : ucfirst((string) $pay->payment_method))
+                        : 'Not recorded',
+                    'description'    => 'Subscription Payment',
+                    'item_details'   => 'Candidate service purchase verified on JobberRecruit',
+                    'customer_name'  => $customerName,
+                    'customer_email' => $user->email ?? '',
+                    'customer_phone' => $candidate->phone ?? '',
+                ];
+            }
+        }
+
+        if (!$txData) {
+            return redirect()->to('candidate/transactions')->with('error', 'Transaction receipt could not be found.');
+        }
+
+        return view('receipt', [
+            'receipt' => $txData,
+            'backUrl' => base_url('candidate/transactions'),
+            'user'    => $user,
+        ]);
+    }
+
 }

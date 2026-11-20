@@ -151,6 +151,8 @@
                 </div>
             </div>
 
+            <?= view('admin/partials/employer_account', ['employer' => $employer, 'account' => $accountManagement]) ?>
+
             <!-- Jobs -->
             <div class="card custom-card">
                 <div class="card-header d-flex justify-content-between">
@@ -204,11 +206,11 @@
                             <span class="badge bg-success fs-14 p-2">
                                 <i class="ti ti-check-circle me-1"></i> Verified Company
                             </span>
-                        <?php elseif ($cacDocument && $cacDocument->status == 'pending'): ?>
+                        <?php elseif (($cacDocument['status'] ?? null) === 'pending'): ?>
                             <span class="badge bg-warning fs-14 p-2">
                                 <i class="ti ti-clock me-1"></i> Pending Verification
                             </span>
-                        <?php elseif ($cacDocument && $cacDocument->status == 'rejected'): ?>
+                        <?php elseif (($cacDocument['status'] ?? null) === 'rejected'): ?>
                             <span class="badge bg-danger fs-14 p-2">
                                 <i class="ti ti-x-circle me-1"></i> Verification Failed
                             </span>
@@ -228,6 +230,12 @@
                     <?php if ($employer->verified_by): ?>
                         <p class="mb-1"><strong>Verified By:</strong></p>
                         <p class="text-muted">Admin ID: <?= $employer->verified_by ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($employer->is_verified)): ?>
+                        <form method="post" action="<?= base_url('admin/employers/verification-email/' . (int) $employer->id) ?>" class="mt-3">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Resend verification email</button>
+                        </form>
                     <?php endif; ?>
                 </div>
             </div>
@@ -311,11 +319,12 @@
     // Verify CAC Document
     function verifyDocument(documentId) {
         if (confirm('Approve this CAC certificate?')) {
-            fetch('<?= base_url("admin/employers/documents/verify") ?>/' + documentId, {
+            fetch('<?= base_url("admin/documents/verify") ?>/' + documentId, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                     },
                     body: JSON.stringify({
                         document_id: documentId
@@ -337,11 +346,12 @@
     function rejectDocument(documentId) {
         let reason = prompt('Please provide a reason for rejection:');
         if (reason) {
-            fetch('<?= base_url("admin/employers/documents/reject") ?>/' + documentId, {
+            fetch('<?= base_url("admin/documents/reject") ?>/' + documentId, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                     },
                     body: JSON.stringify({
                         document_id: documentId,
@@ -366,7 +376,8 @@
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                 },
                 body: JSON.stringify({
                     employer_id: employerId,
@@ -393,7 +404,8 @@
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                 },
                 body: JSON.stringify({
                     employer_id: employerId,
@@ -417,7 +429,8 @@
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                     }
                 })
                 .then(r => r.json())

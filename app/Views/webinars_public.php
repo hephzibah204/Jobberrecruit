@@ -7,16 +7,7 @@
 {"@type":"ListItem","position":2,"name":"Training","item":"https://jobberrecruit.com/training"},
 {"@type":"ListItem","position":3,"name":"Webinars","item":"https://jobberrecruit.com/training/webinars"}]}
 </script>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"ItemList","itemListElement":[
-{"@type":"ListItem","position":1,"item":{"@type":"Event","name":"Acing the Nigerian Corporate Interview in 2026","description":"A practical masterclass on succeeding in technical and behavioural interviews at top Nigerian companies.","startDate":"2026-06-25T10:00:00+01:00","endDate":"2026-06-25T11:30:00+01:00","eventAttendanceMode":"https://schema.org/OnlineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"VirtualLocation","url":"https://jobberrecruit.com/training/webinars/acing-interview"},"image":"https://jobberrecruit.com/assets/og/webinars.png","performer":{"@type":"Person","name":"Dr. Amaka Obi"},"organizer":{"@type":"Organization","name":"JobberRecruit","url":"https://jobberrecruit.com"},"offers":{"@type":"Offer","price":"0","priceCurrency":"NGN","availability":"https://schema.org/InStock","url":"https://jobberrecruit.com/training/webinars/acing-interview","validFrom":"2026-06-01T00:00:00+01:00"}}},
-{"@type":"ListItem","position":2,"item":{"@type":"Event","name":"ATS-Proof CV Writing: Get Past the Screening Bots","description":"Learn to write a CV that passes applicant tracking systems used by Nigerian employers.","startDate":"2026-06-27T14:00:00+01:00","endDate":"2026-06-27T15:00:00+01:00","eventAttendanceMode":"https://schema.org/OnlineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"VirtualLocation","url":"https://jobberrecruit.com/training/webinars/ats-cv"},"image":"https://jobberrecruit.com/assets/og/webinars.png","performer":{"@type":"Person","name":"Tunde Adeyemi"},"organizer":{"@type":"Organization","name":"JobberRecruit","url":"https://jobberrecruit.com"},"offers":{"@type":"Offer","price":"0","priceCurrency":"NGN","availability":"https://schema.org/InStock","url":"https://jobberrecruit.com/training/webinars/ats-cv"}}},
-{"@type":"ListItem","position":3,"item":{"@type":"Event","name":"Know Your Worth: Salary Negotiation for Mid-Career Professionals","description":"Scripts and strategies to negotiate a higher salary and better benefits in the Nigerian market.","startDate":"2026-07-02T11:00:00+01:00","endDate":"2026-07-02T13:00:00+01:00","eventAttendanceMode":"https://schema.org/OnlineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"VirtualLocation","url":"https://jobberrecruit.com/training/webinars/salary-negotiation"},"image":"https://jobberrecruit.com/assets/og/webinars.png","performer":{"@type":"Person","name":"Chioma Nwachukwu"},"organizer":{"@type":"Organization","name":"JobberRecruit","url":"https://jobberrecruit.com"},"offers":{"@type":"Offer","price":"2500","priceCurrency":"NGN","availability":"https://schema.org/InStock","url":"https://jobberrecruit.com/training/webinars/salary-negotiation"}}},
-{"@type":"ListItem","position":4,"item":{"@type":"Event","name":"Breaking into Tech: Your Roadmap to a Six-Figure Role in 2026","description":"A roadmap covering data structures, system design and how to land a high-paying tech role.","startDate":"2026-07-05T09:00:00+01:00","endDate":"2026-07-05T10:30:00+01:00","eventAttendanceMode":"https://schema.org/OnlineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"VirtualLocation","url":"https://jobberrecruit.com/training/webinars/breaking-into-tech"},"image":"https://jobberrecruit.com/assets/og/webinars.png","performer":{"@type":"Person","name":"Emeka Okafor"},"organizer":{"@type":"Organization","name":"JobberRecruit","url":"https://jobberrecruit.com"},"offers":{"@type":"Offer","price":"0","priceCurrency":"NGN","availability":"https://schema.org/InStock","url":"https://jobberrecruit.com/training/webinars/breaking-into-tech"}}},
-{"@type":"ListItem","position":5,"item":{"@type":"Event","name":"LinkedIn Strategies That Actually Work for African Professionals","description":"Build a LinkedIn profile and content strategy that attracts recruiters across Africa.","startDate":"2026-07-08T15:00:00+01:00","endDate":"2026-07-08T16:15:00+01:00","eventAttendanceMode":"https://schema.org/OnlineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"VirtualLocation","url":"https://jobberrecruit.com/training/webinars/linkedin-strategy"},"image":"https://jobberrecruit.com/assets/og/webinars.png","performer":{"@type":"Person","name":"Fatima Al-Hassan"},"organizer":{"@type":"Organization","name":"JobberRecruit","url":"https://jobberrecruit.com"},"offers":{"@type":"Offer","price":"0","priceCurrency":"NGN","availability":"https://schema.org/InStock","url":"https://jobberrecruit.com/training/webinars/linkedin-strategy"}}},
-{"@type":"ListItem","position":6,"item":{"@type":"Event","name":"Negotiating Remote & Hybrid Work Arrangements With Confidence","description":"How to negotiate remote and hybrid work terms with Nigerian and international employers.","startDate":"2026-07-12T12:00:00+01:00","endDate":"2026-07-12T13:00:00+01:00","eventAttendanceMode":"https://schema.org/OnlineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"VirtualLocation","url":"https://jobberrecruit.com/training/webinars/remote-work"},"image":"https://jobberrecruit.com/assets/og/webinars.png","performer":{"@type":"Person","name":"James Adeleke"},"organizer":{"@type":"Organization","name":"JobberRecruit","url":"https://jobberrecruit.com"},"offers":{"@type":"Offer","price":"1500","priceCurrency":"NGN","availability":"https://schema.org/InStock","url":"https://jobberrecruit.com/training/webinars/remote-work"}}}
-]}
-</script>
+
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"Are JobberRecruit webinars really free?","acceptedAnswer":{"@type":"Answer","text":"Most of our webinars are completely free to attend. A small number of in-depth premium workshops carry a low fee, always clearly marked on the webinar card before you register."}},
@@ -351,10 +342,14 @@ $gradients = ['t-blue', 't-orange', 't-green', 't-purple', 't-teal', 't-amber'];
 $categories = ['Interview Prep', 'CV & Resume', 'Salary & Negotiation', 'Tech Skills', 'LinkedIn & Brand', 'Remote Work'];
 $catSlugs = ['interview', 'cv', 'salary', 'tech', 'linkedin', 'remote'];
 
+helper('webinar');
 // Find featured webinar (first upcoming)
 $featured = !empty($webinars) ? $webinars[0] : null;
 ?>
 <main id="main">
+<?php if ($webinarNotice = session()->getFlashdata('error')): ?>
+  <div class="container" role="alert" style="padding-top:16px"><?= esc($webinarNotice) ?></div>
+<?php endif; ?>
 <!-- HERO -->
 <section class="hero" aria-label="Career Webinars">
   <span class="hero-grid" aria-hidden="true"></span>
@@ -363,7 +358,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       <nav class="pg-bc" aria-label="Breadcrumb">
         <a href="/">Home</a><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg><a href="<?= base_url('training') ?>"/>Training</a><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg><span aria-current="page">Webinars</span>
       </nav>
-      <div class="hero-tag"><span class="live-dot"></span>Live sessions every week</div>
+      <div class="hero-tag"><span class="live-dot"></span>Career webinars and workshops</div>
       <h1>Free Career <em>Webinars</em> in Nigeria</h1>
       <p class="hero-sub">Level up with free and premium live training on interviews, CV writing, salary negotiation, and in-demand tech skills &mdash; taught by Nigeria&rsquo;s top career experts.</p>
       <div class="hero-chips">
@@ -372,11 +367,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         <a href="<?= base_url('training/webinars?topic=salary') ?>"/ class="hero-chip"><svg aria-hidden="true"><use href="#ic-coin"/></svg>Salary Negotiation</a>
         <a href="<?= base_url('training/webinars?topic=tech') ?>"/ class="hero-chip"><svg aria-hidden="true"><use href="#ic-chip"/></svg>Tech Skills</a>
       </div>
-      <div class="hero-stats">
-        <div><div class="stat-val">2,<span>400</span>+</div><div class="stat-lbl">professionals trained</div></div>
-        <div><div class="stat-val"><span>48</span></div><div class="stat-lbl">sessions hosted</div></div>
-        <div><div class="stat-val">4.<span>9</span>&#9733;</div><div class="stat-lbl">average rating</div></div>
-      </div>
+      
     </div>
     <?php if ($featured): 
       $initials = getInitials($featured->speaker_name);
@@ -422,23 +413,14 @@ $featured = !empty($webinars) ? $webinars[0] : null;
 
 <!-- FILTER -->
 <div class="filter-wrap"><div class="container">
-  <div class="live-proof" role="status">
-    <span class="lp-dot" aria-hidden="true"></span>
-    <span><strong>27 people</strong> registered in the last hour &middot; <strong>1,090 seats</strong> filling up across 6 upcoming sessions</span>
-    <span class="lp-avatars" aria-hidden="true">
-      <span class="lp-av" style="background:#0D609E">OK</span>
-      <span class="lp-av" style="background:#16a34a">BI</span>
-      <span class="lp-av" style="background:#7c3aed">CA</span>
-      <span class="lp-av" style="background:#ED9020">TA</span>
-    </span>
-  </div>
+  
 
   <div class="view-tabs" role="tablist" aria-label="Webinar view">
     <button class="view-tab active" role="tab" aria-selected="true" onclick="setView('upcoming',this)"><svg aria-hidden="true"><use href="#ic-cal"/></svg>Upcoming</button>
     <button class="view-tab" role="tab" aria-selected="false" onclick="setView('ondemand',this)"><svg aria-hidden="true"><use href="#ic-clk"/></svg>On-demand</button>
   </div>
 
-  <div class="filter-top"><h2 id="sessions-h">Upcoming sessions</h2><span class="count" id="wcount">Showing 6 webinars</span></div>
+  <div class="filter-top"><h2 id="sessions-h">Upcoming sessions</h2><span class="count" id="wcount">Showing <?= count($webinars ?? []) ?> webinars</span></div>
 
   <div class="search-sort">
     <div class="search-box">
@@ -472,16 +454,17 @@ $featured = !empty($webinars) ? $webinars[0] : null;
     <?php
       $gi = $i % count($gradients);
       $gClass = $gradients[$gi];
-      $ci = $i % count($categories);
-      $cat = $categories[$ci];
-      $cSlug = $catSlugs[$ci];
+      $topicIds = webinar_topics($webinar->title . ' ' . strip_tags($webinar->description ?? ''));
+      $cSlug = implode(' ', $topicIds);
+      $topicIndex = array_search($topicIds[0], $catSlugs, true);
+      $cat = $topicIndex === false ? 'Career Development' : $categories[$topicIndex];
       $initials = getInitials($webinar->speaker_name);
       $provider = getMeetingProvider($webinar->meeting_link);
       $dateFormatted = date('D j M', strtotime($webinar->scheduled_at));
       $timeFormatted = date('h:i A', strtotime($webinar->scheduled_at));
       $wTimestamp = strtotime($webinar->scheduled_at);
     ?>
-    <article class="wb-card" data-cat="<?= $cSlug ?>" data-date="<?= date('Y-m-d', $wTimestamp) ?>" data-pop="<?= (int)($webinar->registrants_count ?? 0) ?>" data-price="<?= (float)($webinar->price ?? 0) ?>" data-title="<?= strtolower(esc($webinar->title)) ?>">
+    <article class="wb-card" data-start="<?= date('c', $wTimestamp) ?>" data-cat="<?= $cSlug ?>" data-date="<?= date('Y-m-d', $wTimestamp) ?>" data-pop="<?= (int)($webinar->registrants_count ?? 0) ?>" data-price="<?= (float)($webinar->price ?? 0) ?>" data-search="<?= esc($webinar->title . ' ' . $webinar->speaker_name . ' ' . strip_tags($webinar->description ?? ''), 'attr') ?>">
       <div class="wb-thumb <?= $gClass ?>" <?= !empty($webinar->flyer_image) ? 'style="background:url(\''.base_url($webinar->flyer_image).'\') center/cover no-repeat;"' : '' ?>>
         <?php if (empty($webinar->flyer_image)): ?>
           <svg class="wb-thumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -502,12 +485,9 @@ $featured = !empty($webinars) ? $webinars[0] : null;
           <span class="wb-mi"><svg aria-hidden="true"><use href="#ic-cal"/></svg><?= $dateFormatted ?> &middot; <?= $timeFormatted ?></span>
         </div>
       </div>
-      <div class="wb-seats">
-        <div class="wb-seat-bar"><div class="wb-seat-fill" style="width:<?= min(100, max(5, (int)($webinar->registrants_count ?? 0))) ?>%"></div></div>
-        <div class="wb-seat-label"><span><strong><?= number_format((int)($webinar->registrants_count ?? 0)) ?></strong> registered</span><span><?= max(0, 100 - (int)($webinar->registrants_count ?? 0)) ?> seats left</span></div>
-      </div>
+      
       <div class="wb-foot-2">
-        <button class="wb-cal" type="button" onclick="addToCal('https://calendar.google.com/calendar/render?action=TEMPLATE&text=<?= urlencode(esc($webinar->title)) ?>&dates=<?= date('Ymd\THis\Z', $wTimestamp) ?>/<?= date('Ymd\THis\Z', $wTimestamp + 3600) ?>&details=JobberRecruit+Career+Webinar&location=Online')"><svg aria-hidden="true"><use href="#ic-cal"/></svg>Add to calendar</button>
+        <button class="wb-cal" type="button" onclick="addToCal('<?= esc(webinar_calendar_url($webinar), 'attr') ?>')"><svg aria-hidden="true"><use href="#ic-cal"/></svg>Add to calendar</button>
       </div>
       <div class="wb-foot">
         <span class="wb-prov <?= esc($provider['class']) ?>">&#x25CF; <?= esc($provider['name']) ?></span>
@@ -519,13 +499,12 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       </div>
     </article>
   <?php endforeach; ?>
-<?php else: ?>
-  <div class="empty-state" id="empty-state" style="display:block">
+<?php endif; ?>
+  <div class="empty-state" id="empty-state" style="display:<?= empty($webinars) ? 'block' : 'none' ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
     <h3>No webinars currently available</h3>
     <p>Check back later for upcoming sessions.</p>
   </div>
-<?php endif; ?>
 </div></div></section>
 
 
@@ -540,27 +519,12 @@ $featured = !empty($webinars) ? $webinars[0] : null;
     </div>
     <div class="why-grid">
       <div class="why-card"><div class="why-icon"><svg aria-hidden="true"><use href="#ic-shld"/></svg></div><div class="why-title">Verified expert speakers</div><div class="why-desc">Every speaker is a practising hiring manager or HR lead from companies you recognise &mdash; no generic career coaches.</div></div>
-      <div class="why-card"><div class="why-icon"><svg aria-hidden="true"><use href="#ic-mic"/></svg></div><div class="why-title">Live Q&amp;A every session</div><div class="why-desc">Ask questions directly during the live session. No pre-recorded videos &mdash; every webinar is 100% live and interactive.</div></div>
+      <div class="why-card"><div class="why-icon"><svg aria-hidden="true"><use href="#ic-mic"/></svg></div><div class="why-title">Live Q&amp;A every session</div><div class="why-desc">Ask questions directly during the live session. No pre-recorded videos &mdash; check each webinar for its session format.</div></div>
       <div class="why-card"><div class="why-icon"><svg aria-hidden="true"><use href="#ic-cap"/></svg></div><div class="why-title">Certificate on premium sessions</div><div class="why-desc">Attend any premium (paid) webinar and earn a verified JobberRecruit certificate &mdash; add it to your LinkedIn profile and CV to stand out to employers.</div></div>
       <div class="why-card"><div class="why-icon"><svg aria-hidden="true"><use href="#ic-coin"/></svg></div><div class="why-title">Mostly free to attend</div><div class="why-desc">Most sessions are completely free. Premium workshops are priced lower than any alternative currently available in Nigeria.</div></div>
     </div>
   </div>
 </section>
-
-
-<!-- TESTIMONIALS -->
-<section class="testi-section" aria-labelledby="tst-h">
-  <div class="container">
-    <div class="section-label"><svg aria-hidden="true"><use href="#ic-str"/></svg>What attendees say</div>
-    <h2 class="section-title" id="tst-h">Real results from <span>real professionals</span></h2>
-    <div class="testi-grid">
-      <div class="testi-card"><div class="testi-stars"><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg></div><p class="testi-q">I attended the interview prep webinar on Thursday and received a job offer the following Monday. The frameworks Dr. Amaka shared were spot-on for Nigerian corporate culture.</p><div class="testi-author"><div class="testi-av" style="background:var(--brand)">OK</div><div><div class="testi-name">Oluwaseun Kehinde</div><div class="testi-role">Marketing Manager &middot; Lagos</div></div></div></div>
-      <div class="testi-card"><div class="testi-stars"><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg></div><p class="testi-q">The CV webinar helped me completely rewrite my resume. Within two weeks I had three interview calls from companies that had previously ignored me for months.</p><div class="testi-author"><div class="testi-av" style="background:#16a34a">BI</div><div><div class="testi-name">Blessing Ihejirika</div><div class="testi-role">Finance Analyst &middot; Abuja</div></div></div></div>
-      <div class="testi-card"><div class="testi-stars"><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg><svg aria-hidden="true"><use href="#ic-str"/></svg></div><p class="testi-q">Emeka&rsquo;s tech career webinar was the push I needed. I switched from banking into software and doubled my salary within 8 months. Best &#x20A6;0 I ever spent.</p><div class="testi-author"><div class="testi-av" style="background:#7c3aed">CA</div><div><div class="testi-name">Chukwuemeka Adaeze</div><div class="testi-role">Software Engineer &middot; Remote</div></div></div></div>
-    </div>
-  </div>
-</section>
-
 
 
 <!-- NEWSLETTER -->
@@ -578,8 +542,8 @@ $featured = !empty($webinars) ? $webinars[0] : null;
   </div>
   <div class="nl-form-wrap">
     <form class="nl-form" onsubmit="handleSub(event)">
-      <div class="nl-field"><svg aria-hidden="true"><use href="#ic-usr"/></svg><input type="text" placeholder="Your full name" required></div>
-      <div class="nl-field"><svg aria-hidden="true"><use href="#ic-mail"/></svg><input type="email" placeholder="Enter your email address" required></div>
+      <div class="nl-field"><svg aria-hidden="true"><use href="#ic-usr"/></svg><input type="text" name="name" placeholder="Your full name" required></div>
+      <div class="nl-field"><svg aria-hidden="true"><use href="#ic-mail"/></svg><input type="email" name="email" placeholder="Enter your email address" required></div>
       <button type="submit" class="btn btn-primary">Subscribe to Career Webinar Newsletter</button>
       <p class="nl-note">By subscribing you agree to our <a href="<?= base_url('privacy-policy') ?>"/>Privacy policy</a>. Unsubscribe any time.</p>
     </form>
@@ -631,177 +595,11 @@ $featured = !empty($webinars) ? $webinars[0] : null;
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const btns = document.querySelectorAll('.btn-register');
-  btns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const webinarId = this.getAttribute('data-id');
-      const originalHtml = this.innerHTML;
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-      
-      fetch('<?= base_url('webinars/register/') ?>' + webinarId, {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-        }
-      })
-      .then(response => {
-        if (response.status === 401) {
-          window.location.href = '<?= base_url('login') ?>';
-          return null;
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (!data) return;
-
-        // Paid Webinar - Open Paystack Modal
-        if (data.requires_payment) {
-          if (window.PaystackPop && data.public_key) {
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Opening payment...';
-            const handler = PaystackPop.setup({
-              key: data.public_key,
-              email: data.user_email,
-              amount: Math.round(Number(data.amount) * 100),
-              currency: 'NGN',
-              ref: data.reference,
-              metadata: {
-                custom_fields: [
-                  { display_name: "Webinar", variable_name: "webinar_title", value: data.webinar_title || "Webinar" },
-                  { display_name: "Webinar ID", variable_name: "webinar_id", value: String(webinarId) }
-                ]
-              },
-              callback: function(response) {
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying payment...';
-                
-                const formBody = new URLSearchParams();
-                formBody.append('reference', response.reference);
-                
-                fetch('<?= base_url('webinars/register/') ?>' + webinarId, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-                  },
-                  body: formBody.toString()
-                })
-                .then(res => res.json())
-                .then(resData => {
-                  if (resData.status === 201 || resData.status === 200 || !resData.error) {
-                    window.location.href = resData.redirect || ('<?= base_url('training/webinars/registered') ?>?id=' + webinarId);
-                  } else {
-                    alert(resData.messages ? resData.messages.error : (resData.message || 'Payment verification failed'));
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                  }
-                })
-                .catch(err => {
-                  window.location.href = '<?= base_url('training/webinars/registered') ?>?id=' + webinarId;
-                });
-              },
-              onClose: function() {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-              }
-            });
-            handler.openIframe();
-          } else if (data.authorization_url) {
-            window.location.href = data.authorization_url;
-          } else {
-            alert('Paystack key is not configured. Please contact support.');
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-          }
-          return;
-        }
-
-        // Free Webinar or already registered
-        if (data.status === 201 || data.status === 200 || !data.error) {
-          window.location.href = data.redirect || ('<?= base_url('training/webinars/registered') ?>?id=' + webinarId);
-        } else {
-          alert(data.messages ? data.messages.error : (data.message || 'An error occurred'));
-          btn.disabled = false;
-          btn.innerHTML = originalHtml;
-        }
-      })
-      .catch(error => {
-        alert('An error occurred. Please try again.');
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-      });
-    });
-  });
-
-  // Featured Countdown Timer
-  const cdEl = document.querySelector('.countdown');
-  if (cdEl && cdEl.dataset.time) {
-    const target = new Date(cdEl.dataset.time);
-    function tickFeat() {
-      const diff = target - new Date();
-      if (diff <= 0) return;
-      const d = Math.floor(diff / 864e5);
-      const h = Math.floor((diff % 864e5) / 36e5);
-      const m = Math.floor((diff % 36e5) / 6e4);
-      const s = Math.floor((diff % 6e4) / 1e3);
-      const cdD = document.getElementById('cd-d'); if (cdD) cdD.textContent = String(d).padStart(2, '0');
-      const cdH = document.getElementById('cd-h'); if (cdH) cdH.textContent = String(h).padStart(2, '0');
-      const cdM = document.getElementById('cd-m'); if (cdM) cdM.textContent = String(m).padStart(2, '0');
-      const cdS = document.getElementById('cd-s'); if (cdS) cdS.textContent = String(s).padStart(2, '0');
-    }
-    tickFeat();
-    setInterval(tickFeat, 1000);
-  }
-});
-
-function addToCal(url) {
-  window.open(url, '_blank');
-}
-
-function handleSub(e) {
-  e.preventDefault();
-  const form = e.target;
-  const btn = form.querySelector('button[type="submit"]');
-  const email = form.querySelector('input[type="email"]').value;
-  const name = form.querySelector('input[type="text"]').value;
-  const originalHtml = btn.innerHTML;
-  
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-  
-  const formData = new FormData();
-  formData.append('email', email);
-  formData.append('name', name);
-  
-  fetch('<?= base_url('newsletter/subscribe') ?>', {
-    method: 'POST',
-    body: formData,
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest',
-      '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.status === 201 || data.status === 200 || !data.error) {
-      alert(data.message || 'Successfully subscribed!');
-      form.reset();
-    } else {
-      alert(data.messages ? data.messages.error : (data.message || 'An error occurred'));
-    }
-  })
-  .catch(error => {
-    alert('An error occurred. Please try again.');
-  })
-  .finally(() => {
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-  });
-}
+window.webinarPage = <?= json_encode([
+    'registerUrl'=>base_url('webinars/register/'), 'loginUrl'=>base_url('login'),
+    'subscribeUrl'=>base_url('newsletter/subscribe'), 'csrfHeader'=>csrf_header(), 'csrfToken'=>csrf_hash(),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
+<script src="<?= base_url('js/webinars.js') ?>?v=20261103"></script>
 <?= $this->endSection() ?>
-

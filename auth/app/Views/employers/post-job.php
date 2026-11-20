@@ -398,10 +398,10 @@ $hasBenefit = function($value) use ($job, $isEdit) {
             <label for="accommodation">Accommodation</label>
             <select id="accommodation" name="accommodation">
               <option value="">Not applicable</option>
-              <option value="Provided (fully covered by employer)" <?= $val('accommodation') == 'Provided (fully covered by employer)' ? 'selected' : '' ?>>Provided (fully covered by employer)</option>
+              <option value="Provided (fully covered by employer)" <?= ($val('accommodation') == 'Provided (fully covered by employer)' || $val('accommodation') == 'available') ? 'selected' : '' ?>>Provided (fully covered by employer)</option>
               <option value="Provided (cost shared with employee)" <?= $val('accommodation') == 'Provided (cost shared with employee)' ? 'selected' : '' ?>>Provided (cost shared with employee)</option>
               <option value="Housing allowance provided instead" <?= $val('accommodation') == 'Housing allowance provided instead' ? 'selected' : '' ?>>Housing allowance provided instead</option>
-              <option value="Not provided" <?= $val('accommodation') == 'Not provided' ? 'selected' : '' ?>>Not provided</option>
+              <option value="Not provided" <?= ($val('accommodation') == 'Not provided' || $val('accommodation') == 'not_available') ? 'selected' : '' ?>>Not provided</option>
             </select>
           </div>
 

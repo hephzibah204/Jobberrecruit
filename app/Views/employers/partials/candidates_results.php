@@ -1,18 +1,22 @@
 <?php
-$db = \Config\Database::connect();
-$user = auth()->user();
-$employer = model(\App\Models\EmployerModel::class)->where('user_id', $user->id)->first();
+$db = function_exists('db_connect') ? db_connect() : (class_exists('Config\Database') ? \Config\Database::connect() : null);
+$user = $user ?? (function_exists('auth') && auth()->loggedIn() ? auth()->user() : null);
+if (!isset($employer) && $user && function_exists('model')) {
+    $employer = model(\App\Models\EmployerModel::class)->where('user_id', $user->id)->first();
+}
 
-$unlockedIds = [];
-if ($employer) {
-    $unlockedIds = array_column(
-        $db->table('candidate_unlocks')
-           ->select('job_seeker_id')
-           ->where('employer_id', $employer->id)
-           ->get()
-           ->getResultArray(),
-        'job_seeker_id'
-    );
+if (!isset($unlockedIds)) {
+    $unlockedIds = [];
+    if (!empty($employer->id) && $db) {
+        $unlockedIds = array_column(
+            $db->table('candidate_unlocks')
+               ->select('job_seeker_id')
+               ->where('employer_id', $employer->id)
+               ->get()
+               ->getResultArray(),
+            'job_seeker_id'
+        );
+    }
 }
 
 if (!isset($savedIds) && ($employer || $user)) {
@@ -34,8 +38,7 @@ if (!isset($savedIds) && ($employer || $user)) {
     }
 }
 
-$creditService = new \App\Services\CreditService();
-$hasUnlimitedAccess = $user ? $creditService->hasUnlimitedAccess($user->id) : false;
+
 ?>
 
 <?php if (!empty($candidates)): ?>
@@ -47,7 +50,7 @@ $hasUnlimitedAccess = $user ? $creditService->hasUnlimitedAccess($user->id) : fa
             ? strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1))
             : strtoupper(substr($c->full_name ?? 'C', 0, 2));
         
-        $isUnlocked = in_array($c->id, $unlockedIds ?? []) || ($hasUnlimitedAccess ?? false);
+        $isUnlocked = in_array((int)$c->id, $unlockedIds ?? [], true) || in_array((string)$c->id, $unlockedIds ?? []);
         $isSaved = in_array($c->id, $savedIds ?? []);
 
         // 1. MyJobMag Activity Badge calculation

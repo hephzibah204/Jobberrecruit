@@ -6,154 +6,32 @@ use App\Models\JobQueueModel;
 
 class CronController extends BaseController
 {
-    public function processQueue()
+    protected function validateCronToken(): bool
     {
-        // Simple security check (optional, but good practice to prevent abuse)
-        // You can pass a token e.g., /cron/process-queue?token=YOUR_SECRET_TOKEN
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123'); // Set this in your .env
-        
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
-        }
+        $token = $this->request->getGet('token') ?? ($_GET['token'] ?? null);
+        $expectedToken = env('cron_token') ?: env('CRON_TOKEN', 'jobber_cron_secret_123');
 
-        $queueModel = new JobQueueModel();
-        $limit = 50; // Process 50 jobs per run
-        
-        $jobs = $queueModel->getPending($limit);
-        
-        if (empty($jobs)) {
-            return $this->response->setJSON(['status' => 'success', 'message' => 'No pending jobs in the queue.']);
-        }
-
-        $processed = 0;
-        $failed = 0;
-
-        foreach ($jobs as $job) {
-            $queueModel->update($job->id, ['status' => 'processing']);
-            
-            $payload = json_decode($job->payload, true);
-            $type = $payload['type'];
-            $data = $payload['data'];
-
-            $success = false;
-            $error = null;
-
-            try {
-                if ($type === 'newsletter_email') {
-                    $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
-                } elseif ($type === 'transactional_email') {
-                    $success = $this->sendTransactionalEmail($data);
-                } else {
-                    $error = "Unknown job type: {$type}";
-                }
-            } catch (\Exception $e) {
-                $error = $e->getMessage();
-            }
-
-            if ($success) {
-                $queueModel->update($job->id, ['status' => 'completed']);
-                $processed++;
-            } else {
-                $attempts = $job->attempts + 1;
-                $status = ($attempts >= 3) ? 'failed' : 'pending';
-                
-                $queueModel->update($job->id, [
-                    'status' => $status,
-                    'attempts' => $attempts,
-                    'error' => $error ?? 'Unknown error',
-                    'available_at' => date('Y-m-d H:i:s', time() + (60 * $attempts)) // Exponential backoff
-                ]);
-                $failed++;
-            }
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success', 
-            'message' => 'Queue processing finished.',
-            'jobs_processed' => $processed,
-            'jobs_failed' => $failed
-        ]);
-    public function processEmailQueue()
-    {
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-        
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
-        }
-
-        $queueModel = new JobQueueModel();
-        // Smart rate limiting: pull 100 emails per batch to avoid overwhelming the SMTP server in a 1-minute cron
-        $limit = 100;
-        
-        $jobs = $queueModel->where('status', 'pending')
-                           ->where('type', 'campaign_email')
-                           ->groupStart()
-                               ->where('available_at <=', date('Y-m-d H:i:s'))
-                               ->orWhere('available_at', null)
-                           ->groupEnd()
-                           ->orderBy('id', 'ASC')
-                           ->findAll($limit);
-                           
-        if (empty($jobs)) {
-            return $this->response->setJSON(['status' => 'success', 'message' => 'No pending campaign emails.']);
-        }
-
-        $processed = 0;
-        $failed = 0;
-
-        foreach ($jobs as $job) {
-            $queueModel->update($job->id, ['status' => 'processing']);
-            
-            $payload = json_decode($job->payload, true);
-            $data = $payload['data'];
-            
-            $success = false;
-            $error = null;
-
-            try {
-                $success = $this->sendEmail($data['email'], $data['subject'], $data['content']);
-                
-                if ($success && isset($data['log_id'])) {
-                    $emailLogModel = new \App\Models\EmailLogModel();
-                    $emailLogModel->update($data['log_id'], ['delivered_at' => date('Y-m-d H:i:s')]);
-                }
-            } catch (\Exception $e) {
-                $error = $e->getMessage();
-            }
-
-            if ($success) {
-                $queueModel->update($job->id, ['status' => 'completed']);
-                $processed++;
-            } else {
-                $attempts = $job->attempts + 1;
-                // Soft bounce retry logic
-                $status = ($attempts >= 3) ? 'failed' : 'pending';
-                
-                $queueModel->update($job->id, [
-                    'status' => $status,
-                    'attempts' => $attempts,
-                    'error' => $error ?? 'SMTP Delivery Failed',
-                    'available_at' => date('Y-m-d H:i:s', time() + (300 * pow(2, $attempts))) // Exponential backoff (5m, 10m)
-                ]);
-                
-                if ($status === 'failed' && isset($data['log_id'])) {
-                    $emailLogModel = new \App\Models\EmailLogModel();
-                    $emailLogModel->update($data['log_id'], ['bounce_reason' => $error ?? 'Hard bounce after 3 attempts']);
-                }
-                
-                $failed++;
-            }
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success', 
-            'jobs_processed' => $processed,
-            'jobs_failed' => $failed
-        ]);
+        return !empty($token) && hash_equals(trim((string)$expectedToken), trim((string)$token));
     }
 
+    public function processQueue()
+    {
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        }
+
+        return $this->response->setJSON(array_merge(['status' => 'success'],
+            (new \App\Services\EmailQueueWorker())->process(50)));
+    }
+
+    public function processEmailQueue()
+    {
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
+        }
+        return $this->response->setJSON(array_merge(['status' => 'success'],
+            (new \App\Services\EmailQueueWorker())->process(100, ['campaign_email', 'newsletter_email'])));
+    }
 
     /**
      * Archive accounts that haven't updated their profile in 3 months
@@ -161,11 +39,8 @@ class CronController extends BaseController
      */
     public function archiveInactiveAccounts()
     {
-        $token = $this->request->getGet('token');
-        $expectedToken = env('cron_token', 'jobber_cron_secret_123');
-        
-        if ($token !== $expectedToken) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized.']);
+        if (!$this->validateCronToken()) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized cron request.']);
         }
 
         $db = \Config\Database::connect();
@@ -181,12 +56,16 @@ class CronController extends BaseController
             ->where('updated_at <', $threeMonthsAgo)
             ->update(['status' => 'inactive', 'status_message' => 'Account archived due to 3 months of inactivity.']);
 
+        $employerCount = $db->affectedRows();
+
         // 2. Update Candidates
         $candidateCount = $db->table('users')
-            ->where('user_type', 'candidate')
+            ->whereIn('user_type', ['job_seeker', 'candidate'])
             ->where('status', 'active')
             ->where('updated_at <', $threeMonthsAgo)
             ->update(['status' => 'inactive', 'status_message' => 'Account archived due to 3 months of inactivity.']);
+
+        $candidateCount = $db->affectedRows();
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -207,9 +86,8 @@ class CronController extends BaseController
         $email->setTo($to);
         $email->setSubject($subject);
         $email->setMessage($content);
-        
-        // Ensure email is sent as HTML
         $email->setMailType('html');
+        $email->SMTPTimeout = 5;
 
         if ($email->send()) {
             return true;
@@ -226,10 +104,13 @@ class CronController extends BaseController
         $email = \Config\Services::email(false);
         \Config\Services::$bypassQueue = false;
 
-        $email->setFrom($config->fromEmail, $config->fromName);
+        $fromEmail = !empty($data['from_email']) ? $data['from_email'] : $config->fromEmail;
+        $fromName  = !empty($data['from_name']) ? $data['from_name'] : $config->fromName;
+        $email->setFrom($fromEmail, $fromName);
         $email->setTo($data['to']);
         $email->setSubject($data['subject']);
         $email->setMessage($data['message']);
+        $email->SMTPTimeout = 5;
 
         if (!empty($data['alt_message'])) {
             $email->setAltMessage($data['alt_message']);

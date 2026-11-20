@@ -9,6 +9,10 @@ class DebugController extends BaseController
 {
     public function index()
     {
+        if (ENVIRONMENT !== 'development') {
+            return redirect()->to('/');
+        }
+
         $industryModel = new IndustryModel();
         $count = $industryModel->countAllResults();
         

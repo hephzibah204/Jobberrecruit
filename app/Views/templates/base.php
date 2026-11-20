@@ -1,4 +1,7 @@
-<?php $auth ??= service('auth'); ?>
+<?php
+$auth ??= service('auth');
+$referenceHomepage = trim($this->renderSection('homepage_design')) === 'reference';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,7 +12,7 @@
     <meta charset="UTF-8">
 
     <!-- Mobile & Browser -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,7 +42,7 @@
     <?php endif; ?>
 
     <!-- SEO Meta Description -->
-    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.'); ?>">
+    <meta name="description" content="<?= esc($meta_description ?? 'Find verified jobs across Nigeria on JobberRecruit. Browse thousands of opportunities in Lagos, Abuja, Port Harcourt and more. Employers can post jobs and hire top Nigerian talent today.'); ?>">
 
     <!-- Keywords -->
     <meta name="keywords" content="<?= $keywords ?? 'jobs in Nigeria, African job portal, find jobs, hire talent, recruitment platform, jobber recruit, employment portal'; ?>">
@@ -48,10 +51,11 @@
     <meta name="robots" content="<?= (isset($noindex) && $noindex) ? 'noindex, nofollow' : 'index, follow' ?>">
 
     <!-- Canonical URL & Hreflang Tags -->
-    <link rel="canonical" href="<?= current_url(); ?>">
-    <link rel="alternate" hreflang="en-NG" href="<?= current_url(); ?>">
-    <link rel="alternate" hreflang="en" href="<?= current_url(); ?>">
-    <link rel="alternate" hreflang="x-default" href="<?= current_url(); ?>">
+    <?php $resolvedCanonical = $canonical_url ?? $canonicalUrl ?? current_url(); ?>
+    <link rel="canonical" href="<?= esc($resolvedCanonical); ?>">
+    <link rel="alternate" hreflang="en-NG" href="<?= esc($resolvedCanonical); ?>">
+    <link rel="alternate" hreflang="en" href="<?= esc($resolvedCanonical); ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= esc($resolvedCanonical); ?>">
 
     <!-- Favicons -->
     <link rel="shortcut icon" href="<?= base_url('images/favicon.png'); ?>" type="image/png">
@@ -112,6 +116,8 @@
     <!-- Page-Specific Schema (Jobs, Blog, etc.) -->
     <?= $this->renderSection('schema'); ?>
 
+    <!-- The reference homepage supplies its own complete design system. -->
+    <?php if (!$referenceHomepage): ?>
     <!-- Styles -->
     <link href="<?= base_url('css/bootstrap.min.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('css/toastr.min.css'); ?>" rel="stylesheet">
@@ -128,6 +134,10 @@
     <?php endif; ?>
     <link href="<?= base_url('css/bootstrap-icons.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css'); ?>" rel="stylesheet">
+    <?php endif; ?>
+    <?php if ($referenceHomepage): ?>
+    <link href="<?= base_url('css/toastr.min.css'); ?>" rel="stylesheet">
+    <?php endif; ?>
     <!-- Sora (headings) + Inter (body) — matching reference design -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -135,34 +145,47 @@
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
+    <?php if (!$referenceHomepage): ?>
     <!-- JobberRecruit Design System -->
     <link rel="stylesheet" href="<?= base_url('css/jobber-recruit.css') ?>?v=<?= time() ?>">
 
     <!-- Section 8 — Native Mobile App Feel -->
     <link rel="stylesheet" href="<?= base_url('css/mobile-app.css') ?>?v=<?= time() ?>">
 
+    <?php endif; ?>
     <!-- Page Custom Styles -->
     <?= $this->renderSection('styles'); ?>
 
     <style>
-        html, body, a, button, select, input, [role="button"] {
-            cursor: url('/images/favicon_cursor.png'), auto !important;
-        }
+        /* The hotspot is the centre of the cursor's visible lens. */
+@media (hover: hover) and (pointer: fine) {
+    html, body { cursor: url('/images/favicon_cursor.png') 13 17, auto; }
+}
+a[href], button, select, summary, label[for], [role="button"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"] { cursor: pointer !important; }
+input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"] { cursor: text !important; }
+button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"] { cursor: not-allowed !important; }
     </style>
 </head>
 
 
-<body>
+<body<?= $referenceHomepage ? ' class="homepage-reference"' : '' ?>>
+    <script>
+      window.JR_USER = {
+        loggedIn: <?= auth()->loggedIn() ? 'true' : 'false' ?>,
+        csrfName: '<?= csrf_token() ?>',
+        csrfHash: '<?= csrf_hash() ?>'
+      };
+    </script>
     <!-- Essential SVG sprite for nav icons (chev-down, etc.) -->
     <?= $this->include('partials/svg_sprites') ?>
 
 <a href="#main-content" class="skip-link" style="position:absolute;top:-50px;left:16px;background:var(--brand);color:#fff;padding:8px 16px;border-radius:0 0 6px 6px;font-weight:600;z-index:9999;transition:top .2s">Skip to main content</a>
 <style>.skip-link:focus{top:0!important;outline:3px solid #ED9020;outline-offset:2px}</style>
     <!-- Skip-link target for accessibility (homepage has id="main-content", other pages use fallback) -->
-    <div id="main-content" hidden></div>
+    <?php if (!$referenceHomepage): ?><div id="main-content" hidden></div><?php endif; ?>
 
     <!-- Sticky Navbar (reference design) -->
-    <?= $this->include('templates/partials/header') ?>
+    <?= $this->include((str_starts_with(uri_string(), 'jobs-in-') || str_ends_with(uri_string(), '-jobs')) ? 'templates/partials/location_header' : 'templates/partials/header') ?>
 
     <!-- Offline Banner -->
     <div id="network-status" class="alert alert-danger text-center fw-semibold d-none" style="position: fixed; top: 0; left: 0; right: 0; opacity: 0.8; z-index: 9999;">
@@ -175,10 +198,12 @@
     </div>
 
     <!-- Footer (reference design) -->
-    <?= $this->include('templates/partials/footer') ?>
+    <?= $this->include((str_starts_with(uri_string(), 'jobs-in-') || str_ends_with(uri_string(), '-jobs')) ? 'templates/partials/location_footer' : 'templates/partials/footer') ?>
     
     <!-- Mobile Bottom App Navigation -->
+    <?php if (!$referenceHomepage): ?>
     <?= $this->include('partials/mobile_bottom_nav') ?>
+    <?php endif; ?>
 
 
     <script src="<?= base_url('js/jquery-3.7.1.min.js'); ?>"></script>
@@ -469,12 +494,10 @@
     </script>
     <?= $this->renderSection('scripts'); ?>
     <!-- Mobile Bottom App Navigation -->
-    <?= $this->include('partials/mobile_bottom_nav') ?>
+    <?php if (!$referenceHomepage): ?>
     <script src="<?= base_url('assets/js/mobile-app.js?v=1.0'); ?>"></script>
-
-    <?php if (auth()->loggedIn()): ?>
-    <?= $this->include('partials/chatbot'); ?>
     <?php endif; ?>
+
     <script src="<?= base_url('js/inline-validation.js'); ?>" type="text/javascript"></script>
     <script src="<?= base_url('js/interactive-ui.js'); ?>" type="text/javascript"></script>
 </body>

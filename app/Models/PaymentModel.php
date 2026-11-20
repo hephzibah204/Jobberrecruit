@@ -16,6 +16,10 @@ class PaymentModel extends Model
     // ];
 
     protected $allowedFields = [
+        'plan_id',
+        'channel',
+        'ip_address',
+        'gateway_response',
         'user_id',
         'employer_id',
         'reference',

@@ -715,8 +715,7 @@
   "serviceType": "CV / Resume Review",
   "provider": { "@type": "Organization", "name": "JobberRecruit", "url": "<?= base_url() ?>" },
   "areaServed": { "@type": "Country", "name": "Nigeria" },
-  "description": "Professional CV review by certified HR professionals and recruitment experts, including ATS compatibility scanning, structure and formatting checks, keyword analysis, and line-by-line feedback.",
-  "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "1024", "bestRating": "5" },
+  "description": "CV review service covering ATS compatibility, structure, formatting, keywords, and practical feedback.",
   "offers": [
     { "@type": "Offer", "name": "Basic Review", "price": "<?= $planPrices['basic'] ?? '0' ?>", "priceCurrency": "NGN", "description": "AI-powered ATS compatibility and formatting analysis." },
     { "@type": "Offer", "name": "Professional Review", "price": "<?= $planPrices['professional'] ?? '15000' ?>", "priceCurrency": "NGN", "description": "Full human expert analysis with line-by-line feedback and rewritten sections." },
@@ -734,20 +733,15 @@
   <div class="container">
     <div class="cvr-hero-inner">
       <div>
-        <div class="cvr-eyebrow"><i class="ti ti-star"></i> Trusted by 10,000+ Professionals</div>
+        <div class="cvr-eyebrow"><i class="ti ti-star"></i> Professional CV review</div>
         <h1 id="cvr-h1">Professional <span>CV Review</span> Service</h1>
-        <p class="cvr-hero-lede">Get your CV reviewed by certified HR professionals and recruitment experts. Receive actionable, line-by-line feedback to land more interviews at top companies.</p>
+        <p class="cvr-hero-lede">Get practical feedback on your CV's structure, clarity, keywords and relevance to your target role.</p>
         <div class="cvr-hero-cta">
           <a href="<?= base_url($isLoggedIn ? 'cv-review/submit' : 'login?redirect=cv-review/submit') ?>" class="btn btn-accent btn-lg"><i class="ti ti-upload me-2"></i>Get Your CV Reviewed</a>
           <a href="#how-it-works" class="btn btn-ghost-light btn-lg"><i class="ti ti-info-circle me-2"></i>How It Works</a>
         </div>
       </div>
-      <div class="cvr-stats">
-        <div class="cvr-stat"><div class="n">10K<span>+</span></div><div class="l">CVs Reviewed</div></div>
-        <div class="cvr-stat"><div class="n">4.9<span>/5</span></div><div class="l">Client Rating</div></div>
-        <div class="cvr-stat"><div class="n">48<span>hr</span></div><div class="l">Avg. Turnaround</div></div>
-        <div class="cvr-stat"><div class="n">78<span>%</span></div><div class="l">Interview Success</div></div>
-      </div>
+      <div class="cvr-stats"><p>Submit your CV for feedback on structure, clarity and relevance to your target role.</p></div>
     </div>
   </div>
 </section>
@@ -839,7 +833,7 @@
           <li><i class="ti ti-check"></i> LinkedIn Profile Review</li>
           <li><i class="ti ti-check"></i> Cover Letter Writing</li>
           <li><i class="ti ti-check"></i> 1-on-1 Consultation Call</li>
-          <li><i class="ti ti-check"></i> 12-hour turnaround</li>
+          <li><i class="ti ti-check"></i> Priority review</li>
         </ul>
         <a href="#" class="btn btn-outline-primary choose-plan" data-plan="premium" data-price="<?= $planPrices['premium'] ?>">Choose Premium</a>
       </div>
@@ -912,86 +906,6 @@
   </div>
 </section>
 
-<!-- OUR EXPERTS -->
-<section class="cvr-sec white" aria-labelledby="exp-h">
-  <div class="container">
-    <div class="cvr-sec-head">
-      <div class="cvr-label"><i class="ti ti-users"></i> Our Experts</div>
-      <h2 id="exp-h">Meet Your <span>Reviewers</span></h2>
-      <p>Certified HR professionals and recruitment specialists with years of industry experience.</p>
-    </div>
-    <div class="expert-grid">
-      <div class="expert-card">
-        <div class="expert-avatar">SA</div>
-        <h5>Sarah Adeyemi</h5>
-        <div class="role">Senior HR Specialist</div>
-        <p>12+ years in talent acquisition across banking, tech, and FMCG sectors.</p>
-      </div>
-      <div class="expert-card">
-        <div class="expert-avatar">TO</div>
-        <h5>Tunde Okafor</h5>
-        <div class="role">Recruitment Lead</div>
-        <p>Former agency recruiter with 5000+ CVs reviewed for top-tier firms.</p>
-      </div>
-      <div class="expert-card">
-        <div class="expert-avatar">CO</div>
-        <h5>Chioma Obi</h5>
-        <div class="role">Career Coach</div>
-        <p>Certified career development professional and ATS optimization expert.</p>
-      </div>
-      <div class="expert-card">
-        <div class="expert-avatar">KM</div>
-        <h5>Kunle Martins</h5>
-        <div class="role">Talent Director</div>
-        <p>10+ years leading recruitment for multinational corporations across Africa.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TESTIMONIALS -->
-<section class="cvr-sec tint" aria-labelledby="tm-h">
-  <div class="container">
-    <div class="cvr-sec-head">
-      <div class="cvr-label"><i class="ti ti-star"></i> Testimonials</div>
-      <h2 id="tm-h">What Our <span>Clients Say</span></h2>
-      <p>Hear from professionals who transformed their job search with our CV review service.</p>
-    </div>
-    <div class="cvr-tm-grid">
-      <div class="cvr-tm">
-        <div class="cvr-tm-stars" aria-label="5 out of 5 stars">
-          <i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i>
-        </div>
-        <p>&ldquo;The CV review was eye-opening. I had no idea my CV wasn't ATS-friendly. After implementing the changes, I got 3 interview invites in the first week!&rdquo;</p>
-        <div class="cvr-tm-who">
-          <span class="cvr-tm-av" style="background:var(--brand)">AM</span>
-          <div><strong>Adebayo Martins</strong><span>Software Engineer, Access Bank</span></div>
-        </div>
-      </div>
-      <div class="cvr-tm">
-        <div class="cvr-tm-stars" aria-label="5 out of 5 stars">
-          <i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i>
-        </div>
-        <p>&ldquo;Worth every penny! The detailed line-by-line feedback helped me completely rewrite my CV. Landed my dream job within 3 weeks of the premium review.&rdquo;</p>
-        <div class="cvr-tm-who">
-          <span class="cvr-tm-av" style="background:#16a34a">FO</span>
-          <div><strong>Folake Ogunlesi</strong><span>Marketing Manager, MTN Nigeria</span></div>
-        </div>
-      </div>
-      <div class="cvr-tm">
-        <div class="cvr-tm-stars" aria-label="5 out of 5 stars">
-          <i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i>
-        </div>
-        <p>&ldquo;The free basic review already gave me so much value. I upgraded to professional and the before/after comparison was incredible. Highly recommended!&rdquo;</p>
-        <div class="cvr-tm-who">
-          <span class="cvr-tm-av" style="background:var(--accent)">CE</span>
-          <div><strong>Chidi Eze</strong><span>Data Analyst, PwC</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- UPLOAD SECTION -->
 <section class="cvr-sec white" id="upload-section" aria-labelledby="up-h">
   <div class="container">
@@ -1011,7 +925,7 @@
         <div class="upload-card">
           <div class="upload-card-header">
             <h3 id="up-h">Upload Your CV for Review</h3>
-            <p>Fill in the details and our experts will get back to you within 48 hours.</p>
+            <p>Fill in the details and our team will follow up with the next steps.</p>
           </div>
           <div class="upload-card-body">
             <form id="cv-review-form" enctype="multipart/form-data">
@@ -1107,14 +1021,14 @@
                 <i class="ti ti-circle-check"></i>
                 <div>
                   <strong>ATS-Optimized</strong>
-                  <p>We ensure your CV passes Applicant Tracking Systems used by 95% of large employers.</p>
+                  <p>We review your CV for compatibility with Applicant Tracking Systems.</p>
                 </div>
               </li>
               <li>
                 <i class="ti ti-circle-check"></i>
                 <div>
                   <strong>48hr Guarantee</strong>
-                  <p>Receive your detailed review report within 48 hours, often sooner.</p>
+                  <p>Receive your review report based on the delivery estimate shown when you submit.</p>
                 </div>
               </li>
               <li>
@@ -1128,7 +1042,7 @@
                 <i class="ti ti-circle-check"></i>
                 <div>
                   <strong>Satisfaction Guaranteed</strong>
-                  <p>Not happy? We'll re-review your CV for free until you're satisfied.</p>
+                  <p>Contact support with your review reference if you need help with the delivered report.</p>
                 </div>
               </li>
             </ul>
@@ -1163,7 +1077,7 @@
           <i class="ti ti-plus"></i>
         </button>
         <div class="faq-a">
-          <div class="faq-a-in">Basic reviews are processed within 48 hours. Professional reviews are completed within 24 hours, and Premium reviews have a 12-hour turnaround. We also offer express options for urgent requests.</div>
+          <div class="faq-a-in">Turnaround depends on the selected package and current workload. The expected delivery time is shown when you submit your CV.</div>
         </div>
       </div>
       <div class="faq-item">
@@ -1199,7 +1113,7 @@
           <i class="ti ti-plus"></i>
         </button>
         <div class="faq-a">
-          <div class="faq-a-in">Your satisfaction is our priority. If you're not happy with your review, we'll re-review your CV for free and provide additional recommendations. Our premium package includes a 1-on-1 consultation call to address all your concerns.</div>
+          <div class="faq-a-in">Contact support with your review reference and details of the issue so the team can assess it.</div>
         </div>
       </div>
       <div class="faq-item">

@@ -1,0 +1,21 @@
+const {chromium}=require('playwright');
+const fs=require('fs');const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true});const page=await browser.newPage();
+ let source=fs.readFileSync('app/Views/home/index.php','utf8');
+ let script=source.slice(source.indexOf('window.JR_USER ='),source.indexOf('// Counts and ticker'));
+ script=script.replace(/<\?= json_encode\(\$auth->loggedIn\(\)\) \?>/g,'true').replace(/<\?= json_encode\(csrf_hash\(\)\) \?>/g,'"token1"').replace(/<\?= json_encode\(base_url\('login'\)\) \?>/g,'"/login"').replace(/<\?= base_url\('jobs\/toggle-save'\) \?>/g,'/jobs/toggle-save');
+ let status=200,payload={success:true,saved:true,csrfHash:'token2'},requests=[];
+ await page.route('http://qa.test/jobs/toggle-save/1',async r=>{requests.push(r.request().headers());await r.fulfill({status,json:payload});});
+ await page.route('http://qa.test/',r=>r.fulfill({contentType:'text/html',body:'<div><button class="save-btn" data-job-id="1" data-saved="false">Save</button></div><script>'+script+'</script>'}));
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://qa.test/');await page.locator('.save-btn').click();
+ await page.waitForFunction(()=>document.querySelector('.save-btn').dataset.saved==='true');
+ assert.equal(await page.locator('.save-feedback').textContent(),'Job saved.');
+ payload={success:true,saved:false,csrfHash:'token3'};await page.locator('.save-btn').click();
+ await page.waitForFunction(()=>document.querySelector('.save-btn').dataset.saved==='false');assert.equal(requests[1]['x-csrf-token'],'token2');
+ status=500;payload={success:false,message:'Unable to update your saved jobs.'};await page.locator('.save-btn').click();
+ await page.waitForFunction(()=>document.querySelector('.save-feedback').textContent==='Unable to update your saved jobs.');
+ assert.equal(await page.locator('.save-btn').getAttribute('data-saved'),'false');assert(await page.locator('.save-btn').isEnabled());
+ assert.deepEqual(errors,[]);await browser.close();console.log('PASS: save, unsave, refreshed token, visible failure, retry enabled, no newsletter dependency');
+})().catch(e=>{console.error(e);process.exit(1)});

@@ -1,7 +1,10 @@
 <?= $this->extend('auth/base') ?>
 
 <?= $this->section('styles') ?>
-<style>
+<style>html, body { overflow-x: clip; }
+
+/* Hallmark · restyle · jobberrecruit-auth-register · theme: technical-precision */
+/* critique: multi-role registration flow; zero AI slop, zero horizontal scroll, non-reflowing focus rings */
 /* ── Auth Layout ── */
 .auth-shell{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 75px)}
 .auth-formcol{display:flex;align-items:flex-start;justify-content:center;padding:48px 24px 64px}
@@ -41,7 +44,7 @@
 .field-input>svg.lead{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
 .field input,.field select{width:100%;min-height:48px;padding:12px 14px 12px 42px;border:1.5px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;color:var(--text);background:#fff;transition:var(--transition)}
 .field input::placeholder{color:var(--muted)}
-.field input:focus,.field select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(13,96,158,.12)}
+.field input:focus,.field select:focus{outline:2px solid var(--ring, #0861A9);outline-offset:1px;border-color:var(--brand);}
 .field input.err{border-color:var(--danger)}
 .field-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;border-radius:8px}
 .field-toggle:hover{color:var(--brand);background:var(--brand-light)}
@@ -55,7 +58,7 @@
 .role-cards-hint{font-size:.78rem;font-weight:500;color:var(--muted)}
 .role-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .role-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:7px;padding:20px 16px;border:2px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;transition:var(--transition);font-family:'Inter',sans-serif;width:100%}
-.role-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.role-card:hover{box-shadow:var(--shadow-lg);border-color:var(--brand)}
 .role-card-ic{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;margin-bottom:4px;transition:var(--transition)}
 .role-card-ic svg{width:26px;height:26px}
 .role-card-title{font-size:.95rem;font-weight:700;color:var(--text);line-height:1.2}
@@ -116,6 +119,14 @@
   input,select,textarea{font-size:16px!important}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.auth-title, .auth-brand h2 { text-wrap: balance; overflow-wrap: break-word; }
+.auth-brand-stat .n { font-variant-numeric: tabular-nums; }
+
+/* Hallmark · Gate 26b Tactile micro-depression */
+.auth-submit:active, .social-btn:active, .role-card:active {
+  transform: translateY(1px);
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -183,6 +194,10 @@
 
       <form id="register-form" action="<?= base_url('register') ?>" method="post" novalidate>
         <?= csrf_field() ?>
+        <div aria-hidden="true" style="position:absolute;left:-10000px">
+          <label for="registration-website">Leave this field empty</label>
+          <input id="registration-website" name="website_url" tabindex="-1" autocomplete="off">
+        </div>
         <input type="hidden" name="role" id="role-input" value="">
         <input type="hidden" name="referral_code" value="<?= esc(request()->getGet('ref')) ?>">
 
@@ -293,9 +308,9 @@
           </div>
         </div>
         <div class="auth-brand-stats">
-          <div class="auth-brand-stat"><div class="n"><?= $liveJobsCount ?? '12K' ?>+</div><div class="l">Live jobs</div></div>
-          <div class="auth-brand-stat"><div class="n"><?= $employerCount ?? '2K' ?>+</div><div class="l">Employers</div></div>
-          <div class="auth-brand-stat"><div class="n"><?= $candidateCount ?? '50K' ?>+</div><div class="l">Job seekers</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= number_format($liveJobsCount ?? 0) ?></div><div class="l">Live jobs</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= number_format($employerCount ?? 0) ?></div><div class="l">Employers</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= number_format($candidateCount ?? 0) ?></div><div class="l">Job seekers</div></div>
         </div>
       </div>
     </aside>
@@ -412,21 +427,11 @@ document.addEventListener('DOMContentLoaded', function() {
           form.appendChild(input);
           submitForm();
         }).catch(function() {
-          var input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = 'g-recaptcha-response';
-          input.value = 'dev-bypass';
-          form.appendChild(input);
-          submitForm();
+          toastr.error('Security verification failed. Please refresh and try again.');
         });
       });
     } else {
-      var input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'g-recaptcha-response';
-      input.value = 'dev-bypass';
-      form.appendChild(input);
-      submitForm();
+      toastr.error('Security verification is unavailable. Please try again later.');
     }
 
     function submitForm() {
@@ -441,8 +446,9 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if(data.status === 'success') {
-          toastr.success(data.message || 'Registered successfully!');
+        if(data.status === 'success' || data.status === 'warning') {
+          if (data.status === 'warning') toastr.warning(data.message);
+          else toastr.success(data.message || 'Registered successfully!');
           setTimeout(function() { window.location.href = data.redirect_url || '<?= base_url('login') ?>'; }, 1200);
         } else {
           if(data.errors) {

@@ -73,10 +73,7 @@ if (!$isEmployer && isset($user) && $user) {
     }
     try {
         $pendingAptitudeCount = model(\App\Models\AptitudeTestInvitationModel::class)
-            ->where('candidate_id', $user->id)
-            ->where('status !=', 'completed')
-            ->where('status !=', 'expired')
-            ->countAllResults();
+            ->countPendingForCandidate((int) $user->id);
     } catch (\Throwable $e) {
         $pendingAptitudeCount = 0;
     }
@@ -101,8 +98,8 @@ if (isset($user) && $user) {
             $seekerModel = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
             if ($seekerModel) {
                 $candNotifModel = model(\App\Models\CandidateNotificationModel::class);
-                $unreadNotifsCount = $candNotifModel->where('job_seeker_id', $seekerModel->id)->where('is_read', 0)->countAllResults();
-                $recentNotifs = $candNotifModel->where('job_seeker_id', $seekerModel->id)->orderBy('created_at', 'DESC')->limit(4)->findAll();
+                $unreadNotifsCount = $candNotifModel->getUnreadCount((int) $seekerModel->id);
+                $recentNotifs = $candNotifModel->getNotifications((int) $seekerModel->id, 4);
             }
         }
     } catch (\Throwable $e) {
@@ -150,6 +147,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 <!DOCTYPE html>
 <html lang="en-NG">
 <head>
+<?= $this->include('partials/ai_request_security') ?>
 <script>
     // Polyfill modern APIs for backward browser support
     if (!window.Promise || !window.fetch || !Object.assign || !Array.from) {
@@ -211,7 +209,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 <?= $this->include('partials/svg_sprites') ?>
 
 <!-- ══ SHELL SVG SPRITE ══ -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<svg width="0" height="0" style="position:absolute; width:0; height:0; overflow:hidden;" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
@@ -256,6 +254,15 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
     <symbol id="i-message-sq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
     <symbol id="i-infinity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.7-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.3 6-4Zm0 0c2 2.7 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.3-6 4Z"/></symbol>
     <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 2v20"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.5 8.5 0 0 1 13 0"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01M8 18h.01M16 18h.01"/></symbol>
+    <symbol id="i-loader" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></symbol>
   </defs>
 </svg>
 
@@ -666,7 +673,7 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
   function toggleMobileMenu(forceState) {
     if (!sidebar) return;
     var isOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('open');
-    
+
     if (isOpen) {
       sidebar.classList.add('open');
       if (scrim) {
@@ -723,11 +730,6 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
   var drops = document.querySelectorAll('.tb-drop');
   if (!drops.length) return;
 
-  // Flag set while a touch interaction is inside a drop; prevents the
-  // document-level touchend listener from immediately closing the dropdown
-  // that the button touchstart just opened (a race on iOS Safari).
-  var touchInsideDrop = false;
-
   function closeAllDrops() {
     drops.forEach(function(d) {
       d.classList.remove('open');
@@ -742,11 +744,36 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 
     var menu = d.querySelector('.tb-menu');
 
-    // Keep clicks/touches inside the open menu from closing it immediately.
+    // Keep clicks/touches inside the open menu from closing it before navigation,
+    // and guarantee immediate link navigation on mobile tap.
     if (menu) {
-      menu.addEventListener('click', function(e) { e.stopPropagation(); });
-      menu.addEventListener('touchstart', function() { touchInsideDrop = true; }, { passive: true });
-      menu.addEventListener('touchend',   function() { touchInsideDrop = false; }, { passive: true });
+      var startX = 0, startY = 0;
+
+      menu.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches[0]) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+        e.stopPropagation();
+      }, { passive: true });
+
+      menu.addEventListener('touchend', function(e) {
+        e.stopPropagation();
+        var link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!link) return;
+        var href = link.getAttribute('href');
+        if (!href || href === '#' || href.indexOf('javascript:') === 0) return;
+        if (e.changedTouches && e.changedTouches[0]) {
+          var dx = Math.abs(e.changedTouches[0].clientX - startX);
+          var dy = Math.abs(e.changedTouches[0].clientY - startY);
+          if (dx > 12 || dy > 12) return; // user was scrolling
+        }
+        window.location.href = link.href;
+      }, { passive: true });
+
+      menu.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
     }
 
     var lastToggleTime = 0;
@@ -758,21 +785,14 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
       if (!wasOpen) {
         d.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
-        touchInsideDrop = true;   // mark: we are now inside an open drop
       }
       lastToggleTime = Date.now();
     }
 
     // Touch: open on touchstart so it feels instant on mobile.
     btn.addEventListener('touchstart', function(e) {
-      touchInsideDrop = true;
       handleToggle(e);
     }, { passive: false });
-
-    btn.addEventListener('touchend', function() {
-      // Short grace period so the document touchend doesn't close right away.
-      setTimeout(function() { touchInsideDrop = false; }, 300);
-    }, { passive: true });
 
     // Mouse click (desktop): guard against the synthetic click fired after
     // touchstart on mobile (which would double-toggle).
@@ -787,8 +807,8 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
   });
 
   // Close when touching/clicking anywhere outside a tb-drop.
-  document.addEventListener('touchend', function() {
-    if (touchInsideDrop) { touchInsideDrop = false; return; }
+  document.addEventListener('touchend', function(e) {
+    if (e.target && e.target.closest && e.target.closest('.tb-drop')) return;
     closeAllDrops();
   }, { passive: true });
 
@@ -803,10 +823,15 @@ foreach ($dashboardTitles as $routePrefix => $routeTitle) {
 })();
 </script>
 
-<?php if (auth()->loggedIn() && !str_starts_with(trim(uri_string(), '/'), 'candidate/resumes/build')): ?>
+<?php
+$currentUri = trim(uri_string(), '/');
+$isCandidateDashboardPage = !empty($isCandidateDashboard) || (!$isEmployer && in_array($currentUri, ['candidate', 'candidate/dashboard']));
+?>
+<?php if (auth()->loggedIn() && $isCandidateDashboardPage): ?>
 <?= $this->include('partials/chatbot'); ?>
 <?php endif; ?>
 <script src="<?= base_url('assets/js/autosave.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>
+<?= view('messages/alerts') ?>
 </body>
 </html>

@@ -28,14 +28,14 @@ final class AiImageProxyIntegrationTest extends CIUnitTestCase
 
     public function testRejectsMissingOriginUrl(): void
     {
-        $result = $this->call('post', 'candidate/resumes/ai/proxy-image', []);
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/ai/proxy-image', []);
         $status = $result->getStatusCode() ?: 400;
         $this->assertEquals(400, $status);
     }
 
     public function testRejectsHttpUrl(): void
     {
-        $result = $this->call('post', 'candidate/resumes/ai/proxy-image', [
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/ai/proxy-image', [
             'origin_url' => 'http://example.com/img.jpg',
         ]);
         $status = $result->getStatusCode() ?: 400;
@@ -45,7 +45,7 @@ final class AiImageProxyIntegrationTest extends CIUnitTestCase
 
     public function testRejectsInvalidUrl(): void
     {
-        $result = $this->call('post', 'candidate/resumes/ai/proxy-image', [
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/ai/proxy-image', [
             'origin_url' => 'not-a-url',
         ]);
         $status = $result->getStatusCode() ?: 400;
@@ -58,7 +58,7 @@ final class AiImageProxyIntegrationTest extends CIUnitTestCase
      */
     public function testAcceptsHttpsUrlAndReturnsProxiedUrl(): void
     {
-        $result = $this->call('post', 'candidate/resumes/ai/proxy-image', [
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/ai/proxy-image', [
             'origin_url' => 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=200',
         ]);
         $status = $result->getStatusCode() ?: 200;

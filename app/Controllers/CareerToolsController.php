@@ -187,11 +187,51 @@ class CareerToolsController extends BaseController
             return $this->respond(['audio' => null], 503);
         }
 
-        return $this->respond(['audio' => $audioB64, 'mime' => 'audio/wav']);
+        return $this->respond(['audio' => $audioB64, 'mime' => 'audio/mpeg']);
+    }
+
+    /**
+     * The completion_key column only exists once the AddAiCompletionKeys
+     * migration has run against the live database. Test schemas (SQLite)
+     * are built from every migration, so the column is always present
+     * locally — but a production MySQL database that has not run that
+     * migration does not have it, and an unguarded WHERE/insert touching
+     * the column throws a raw "Unknown column 'completion_key'" error.
+     * Degrade gracefully: without the column we skip the idempotency
+     * check/storage instead of failing the save.
+     */
+    protected function hasCompletionKey(string $table): bool
+    {
+        try {
+            return \Config\Database::connect()->fieldExists('completion_key', $table);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     public function evaluateInterview()
     {
+        helper('ai_session');
+        $gamification = config('Gamification') ?? new \Config\Gamification();
+        $xpAwarded = $gamification->xpPerMockInterview;
+        $key = (string) $this->request->getPost('completion_key');
+        if (!preg_match('/^[a-f0-9]{64}$/D', $key)) {
+            log_message('error', 'Mock interview save rejected: malformed completion_key (length ' . strlen($key) . ').');
+            return $this->failValidationErrors('Refresh the session before saving.');
+        }
+        $useKey = $this->hasCompletionKey('mock_interview_sessions');
+        $prior = null;
+        if ($useKey) {
+            try {
+                $prior = $this->mockInterviewSessionModel->where('user_id', auth()->id())->where('completion_key', $key)->first();
+            } catch (\Throwable $e) {
+                // Never let a dedupe lookup failure (e.g. schema drift)
+                // surface a raw database error or block the save.
+                log_message('error', 'Mock interview completion-key lookup failed: ' . $e->getMessage());
+                $prior = null;
+            }
+        }
+        if ($prior) return $this->respond(array_merge(json_decode($prior['evaluation_json'], true) ?: [], ['saved_session'=>['id'=>$prior['id']], 'xp_awarded'=>$xpAwarded]));
         $history = json_decode($this->request->getPost('history') ?? '[]', true);
         $jobTitle = (string) ($this->request->getPost('jobTitle') ?? '');
         $applicationId = (int) ($this->request->getPost('applicationId') ?? 0);
@@ -201,7 +241,7 @@ class CareerToolsController extends BaseController
         $webcamEnabled = (bool) $this->request->getPost('webcamEnabled');
         $durationSeconds = (int) ($this->request->getPost('durationSeconds') ?? 0);
 
-        if (! is_array($history) || $history === []) {
+        if (!ai_history_valid($history)) {
             return $this->failValidationErrors('Interview history is required.');
         }
 
@@ -232,6 +272,7 @@ class CareerToolsController extends BaseController
             $options = array_merge($options, $this->buildApplicationInterviewContext($applicationId));
         }
 
+        if ($applicationId > 0 && !$this->buildApplicationInterviewContext($applicationId)) return $this->failForbidden('Application not found.');
         $evaluation = $this->aiService->getMockInterviewEvaluation($history, $options, $name);
 
         $sessionData = [
@@ -248,8 +289,16 @@ class CareerToolsController extends BaseController
             'transcript_json'  => json_encode($history, JSON_UNESCAPED_UNICODE),
             'evaluation_json'  => json_encode($evaluation, JSON_UNESCAPED_UNICODE),
         ];
+        // Only write the idempotency key when the column actually exists
+        // (see hasCompletionKey) — including it against a database that
+        // lacks the column makes the insert itself fail.
+        if ($useKey) {
+            $sessionData['completion_key'] = $key;
+        }
 
-        $this->mockInterviewSessionModel->insert($sessionData);
+        try { $saved = $this->mockInterviewSessionModel->insert($sessionData); }
+        catch (\Throwable $e) { return $this->fail('Could not save this session. Retry to confirm whether it was saved.', 409); }
+        if (!$saved) return $this->fail('Could not save the interview. Please retry.', 500);
         $sessionId = (int) $this->mockInterviewSessionModel->getInsertID();
 
         $evaluation['saved_session'] = [
@@ -265,7 +314,29 @@ class CareerToolsController extends BaseController
             'created_at' => date('Y-m-d H:i:s'),
         ];
 
+        $evaluation['xp_awarded'] = $xpAwarded;
         return $this->respond($evaluation);
+    }
+
+    /**
+     * Retrieve full saved details for a past mock interview session (for candidate review modal)
+     */
+    public function getSessionDetails(int $id)
+    {
+        $userId = (int) auth()->id();
+        $session = $this->mockInterviewSessionModel
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$session) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Session not found.']);
+        }
+
+        $session['evaluation'] = json_decode((string) ($session['evaluation_json'] ?? ''), true) ?: [];
+        $session['transcript'] = json_decode((string) ($session['transcript_json'] ?? ''), true) ?: [];
+
+        return $this->response->setJSON(['session' => $session]);
     }
 
     /**
@@ -429,7 +500,8 @@ class CareerToolsController extends BaseController
         ];
         
         if ($candidateObj) {
-            $candidate['firstName'] = explode(' ', trim($candidateObj->full_name))[0];
+            $fullName = trim((string) ($candidateObj->full_name ?? ''));
+            $candidate['firstName'] = $fullName !== '' ? explode(' ', $fullName)[0] : '';
             $candidate['targetPosition'] = $candidateObj->job_title ?? '';
         }
 
@@ -486,10 +558,42 @@ class CareerToolsController extends BaseController
     public function saveNegotiationSession()
     {
         if (!$this->request->isAJAX()) {
+            log_message('error', 'Salary negotiation save hit without AJAX header (request did not reach the save logic).');
             return $this->response->setStatusCode(403);
         }
 
+        helper('ai_session');
+        $errors = ai_negotiation_errors($this->request->getPost());
+        if ($errors) {
+            // Log the rejection reason: the page only shows a generic toast,
+            // so a silent validation failure is otherwise undiagnosable
+            // (salary history stayed empty with zero log lines, 2026-11-19).
+            log_message('error', 'Salary negotiation save rejected: ' . implode(' ', $errors)
+                . ' | rounds_completed=' . var_export($this->request->getPost('rounds_completed'), true)
+                . ' base=' . var_export($this->request->getPost('base_salary_offered'), true)
+                . ' target=' . var_export($this->request->getPost('target_salary'), true)
+                . ' final=' . var_export($this->request->getPost('final_salary'), true));
+            return $this->response->setStatusCode(422)->setJSON(['success'=>false,'message'=>implode(' ', $errors)]);
+        }
         $userId = (int) auth()->id();
+        $gamification = config('Gamification') ?? new \Config\Gamification();
+        $xpAwarded = $gamification->xpPerSalaryNegotiation;
+        $key = (string) $this->request->getPost('completion_key');
+        if (!preg_match('/^[a-f0-9]{64}$/D', $key)) {
+            log_message('error', 'Salary negotiation save rejected: malformed completion_key (length ' . strlen($key) . ').');
+            return $this->failValidationErrors('Refresh the session before saving.');
+        }
+        $useKey = $this->hasCompletionKey('salary_negotiation_sessions');
+        $prior = null;
+        if ($useKey) {
+            try {
+                $prior = model(\App\Models\SalaryNegotiationSessionModel::class)->where('user_id', $userId)->where('completion_key', $key)->first();
+            } catch (\Throwable $e) {
+                log_message('error', 'Salary negotiation completion-key lookup failed: ' . $e->getMessage());
+                $prior = null;
+            }
+        }
+        if ($prior) return $this->respond(['success'=>true,'id'=>$prior->id, 'xp_awarded'=>$xpAwarded]);
 
         $data = [
             'user_id'              => $userId,
@@ -507,15 +611,28 @@ class CareerToolsController extends BaseController
             'transcript_json'      => (string) $this->request->getPost('transcript_json'),
             'evaluation_json'      => (string) $this->request->getPost('evaluation_json'),
         ];
+        if ($useKey) {
+            $data['completion_key'] = $key;
+        }
 
         if (empty($data['job_title'])) {
             return $this->response->setJSON(['success' => false, 'message' => 'Missing session data']);
         }
 
         $negoModel = new \App\Models\SalaryNegotiationSessionModel();
-        $id = $negoModel->insert($data);
+        try { $id = $negoModel->insert($data); }
+        catch (\Throwable $e) {
+            // Log the insert failure: this catch previously returned a bare
+            // 409 with no trace, leaving the empty history undiagnosable.
+            log_message('error', 'Salary negotiation insert failed: ' . $e->getMessage()
+                . ' | model errors: ' . json_encode($negoModel->errors()));
+            return $this->fail('Could not confirm the saved session. Please retry.', 409);
+        }
+        if ($id === false) {
+            log_message('error', 'Salary negotiation insert returned false: ' . json_encode($negoModel->errors()));
+        }
 
-        return $this->response->setJSON(['success' => (bool) $id, 'id' => $id]);
+        return $this->response->setJSON(['success' => (bool) $id, 'id' => $id, 'xp_awarded' => $xpAwarded]);
     }
 
     /**
@@ -551,9 +668,15 @@ class CareerToolsController extends BaseController
 
         $sessionsCount = count($recentSessions);
         $avgInterviewScore = 0;
+        // Real average practice score (overall_score is stored 0-10, the
+        // hub displays it x10). Stays null when there are no completed
+        // sessions — an experience-based estimate must never be presented
+        // as a "practice average" the user never earned.
+        $avgPracticeScore = null;
         if ($sessionsCount > 0) {
             $scoresList = array_column($recentSessions, 'overall_score');
             $avgInterviewScore = (int) round((array_sum($scoresList) / $sessionsCount) * 10); // scale 0-100
+            $avgPracticeScore = $avgInterviewScore;
         }
 
         // 3. Fetch Aptitude Test Attempts
@@ -579,8 +702,8 @@ class CareerToolsController extends BaseController
         $hasBio = !empty(trim((string)$candidate?->bio));
         $hasSkills = !empty(trim((string)$candidate?->skills));
         $resumeScore = ($hasResume ? 30 : 0) + ($expCount > 0 ? 25 : ($hasBio ? 10 : 0)) + ($eduCount > 0 ? 25 : 10) + ($hasSkills ? 10 : 0) + ($hasBio ? 10 : 0);
-        $resumeScore = min(100, max(20, $resumeScore));
-        $resumeSource = $hasResume ? 'from your uploaded CV' : 'from profile summary';
+        $resumeScore = min(100, max(0, $resumeScore));
+        $resumeSource = 'Profile completeness estimate; uploaded CV content is not assessed';
 
         // 6b. Interview Readiness
         if ($sessionsCount > 0) {
@@ -617,7 +740,7 @@ class CareerToolsController extends BaseController
         $hasPortfolio = !empty($candidate?->portfolio);
         $hasPhoneLoc = !empty($candidate?->phone) && (!empty($candidate?->location) || !empty($candidate?->state_id));
         $presenceScore = ($hasPic ? 25 : 0) + ($hasLinkedin ? 30 : 0) + ($hasPortfolio ? 25 : 0) + ($hasPhoneLoc ? 20 : 0);
-        $presenceScore = min(100, max(25, $presenceScore));
+        $presenceScore = min(100, max(0, $presenceScore));
         $presenceSource = ($hasLinkedin || $hasPortfolio) ? "from portfolio & social links" : "add portfolio & LinkedIn links";
 
         // 6f. Soft Skills
@@ -633,10 +756,15 @@ class CareerToolsController extends BaseController
             $softSource = "estimated from work background";
         }
 
-        // 7. Overall Career Health
-        $careerHealth = (int) min(100, max(30, round(($resumeScore * 0.25) + ($interviewScore * 0.25) + ($techScore * 0.20) + ($marketScore * 0.15) + ($presenceScore * 0.15))));
+        // 7. Overall Career Health (no artificial floor — a sparse
+        // profile must score low, not be lifted to a passing grade)
+        $careerHealth = (int) min(100, max(0, round(($resumeScore * 0.25) + ($interviewScore * 0.25) + ($techScore * 0.20) + ($marketScore * 0.15) + ($presenceScore * 0.15))));
 
-        // Market Readiness string
+        // Market Readiness string. "Interview Ready" / "High Market Fit"
+        // are claims about measured performance, so they require at least
+        // one real signal (a completed mock interview or aptitude test).
+        // With zero measured activity the label is capped at "In Motion"
+        // no matter what the profile-based estimates add up to.
         if ($careerHealth >= 80) {
             $marketReadiness = 'High Market Fit';
         } elseif ($careerHealth >= 65) {
@@ -646,11 +774,27 @@ class CareerToolsController extends BaseController
         } else {
             $marketReadiness = 'Building Foundation';
         }
+        if ($sessionsCount === 0 && $testAttemptsCount === 0
+            && in_array($marketReadiness, ['High Market Fit', 'Interview Ready'], true)) {
+            $marketReadiness = 'In Motion';
+        }
+
+        // AI Confidence = how much real data the coach actually has about
+        // this user (replaces a previously hardcoded 82% in the view):
+        // half from profile completeness, the rest from completed practice
+        // sessions and aptitude attempts, capped at 5 each.
+        $aiConfidence = (int) round(
+            ($profileCompletion * 0.5)
+            + ((min($sessionsCount, 5) / 5) * 25)
+            + ((min($testAttemptsCount, 5) / 5) * 25)
+        );
+        $aiConfidenceHasData = $profileCompletion > 0 || $sessionsCount > 0 || $testAttemptsCount > 0;
 
         // 8. Streak & XP
         $streak = $this->calculateStreak($userId);
         $xp = $this->calculateXp($userId);
-        $level = (int) floor($xp / 500) + 1;
+        $gamification = config('Gamification') ?? new \Config\Gamification();
+        $level = $gamification->calculateLevel($xp);
 
         // 9. Today's Career Plan & Progress
         $todayStart = date('Y-m-d 00:00:00');
@@ -673,7 +817,7 @@ class CareerToolsController extends BaseController
 
         // 10. Six Scores Meter Array
         $scoresArray = [
-            ['label' => 'Resume Strength',    'value' => $resumeScore,    'source' => $resumeSource,    'tone' => $resumeScore >= 75 ? 'good' : ($resumeScore < 50 ? 'warn' : '')],
+            ['label' => 'Resume Readiness',    'value' => $resumeScore,    'source' => $resumeSource,    'tone' => $resumeScore >= 75 ? 'good' : ($resumeScore < 50 ? 'warn' : '')],
             ['label' => 'Interview Readiness','value' => $interviewScore, 'source' => $interviewSource, 'tone' => $interviewScore >= 75 ? 'good' : ($interviewScore < 50 ? 'warn' : '')],
             ['label' => 'Technical Skills',   'value' => $techScore,      'source' => $techSource,      'tone' => $techScore >= 75 ? 'good' : ($techScore < 50 ? 'warn' : '')],
             ['label' => 'Market Position',    'value' => $marketScore,    'source' => $marketSource,    'tone' => $marketScore >= 75 ? 'good' : ($marketScore < 50 ? 'warn' : '')],
@@ -684,7 +828,10 @@ class CareerToolsController extends BaseController
         // AI Advice Prompt
         $profileSummary = "Name: {$name}, Current Title: {$jobTitle}, Experience: {$experienceYears} years, Skills: {$skills}, Profile Completion: {$profileCompletion}%, Resume: " . ($hasResume ? 'Uploaded' : 'Missing') . ", Work History Entries: {$expCount}, Education Entries: {$eduCount}, Applications: {$appsCount}";
 
-        $advice = $this->aiService->getCareerAdvice($profileSummary);
+        $advice = session()->getFlashdata('generated_career_advice');
+        if (!is_string($advice) || trim($advice) === '') {
+            $advice = $this->aiService->getCareerAdvice($profileSummary);
+        }
         $advice = $this->cleanMarkdown($advice);
 
         return view('candidate/career-tools/career-advice', [
@@ -696,6 +843,9 @@ class CareerToolsController extends BaseController
             'experienceYears'    => $experienceYears,
             'sessionsCount'      => $sessionsCount,
             'avgScore'           => $interviewScore,
+            'avgPracticeScore'   => $avgPracticeScore,
+            'aiConfidence'       => $aiConfidence,
+            'aiConfidenceHasData' => $aiConfidenceHasData,
             'streak'             => $streak,
             'xp'                 => $xp,
             'level'              => $level,
@@ -711,9 +861,7 @@ class CareerToolsController extends BaseController
     }
 
     /**
-     * AJAX: confirms the AI service can produce advice before the page reloads and
-     * regenerates it fresh — careerAdvice() always calls the AI on every load, so this
-     * endpoint's only job is to surface a real error instead of a silent one on reload.
+     * Generate advice once and pass that exact result to the next page load.
      */
     public function generateAdvice()
     {
@@ -730,7 +878,10 @@ class CareerToolsController extends BaseController
             . ", Bio: " . ($candidate?->bio ?? 'Not specified');
 
         try {
-            $this->aiService->getCareerAdvice($profileSummary);
+            // A unique request marker bypasses the normal reusable advice cache.
+            $advice = $this->aiService->getCareerAdvice($profileSummary . ', Advice request: ' . bin2hex(random_bytes(16)));
+            if (!is_string($advice) || trim($advice) === '') throw new \RuntimeException('Empty advice');
+            session()->setFlashdata('generated_career_advice', $advice);
             return $this->response->setJSON(['success' => true]);
         } catch (\Throwable $e) {
             log_message('error', 'Career advice generation failed: ' . $e->getMessage());
@@ -804,14 +955,16 @@ class CareerToolsController extends BaseController
 
     protected function calculateXp(int $userId): int
     {
-        // 200 XP per interview session
+        /** @var \Config\Gamification $gamification */
+        $gamification = config('Gamification') ?? new \Config\Gamification();
+
+        // 1. Mock interview sessions
         $sessionsCount = $this->mockInterviewSessionModel
             ->where('user_id', $userId)
             ->countAllResults();
 
+        // 2. Candidate job applications (job_applications is keyed by job_seeker_id, not user_id)
         $candidateId = (int) ($this->candidateModel->where('user_id', $userId)->first()->id ?? 0);
-
-        // 100 XP per job application (job_applications is keyed by job_seeker_id, not user_id)
         $appsCount = 0;
         if ($candidateId > 0) {
             $jobApplicationModel = new \App\Models\JobApplicationModel();
@@ -820,13 +973,22 @@ class CareerToolsController extends BaseController
                 ->countAllResults();
         }
 
-        // 150 XP per aptitude test attempt (test_attempts.candidate_id actually stores the auth user id, see AptitudeController)
+        // 3. Aptitude test attempts (test_attempts.candidate_id stores the auth user id)
         $testAttemptModel = new \App\Models\TestAttemptModel();
         $attemptsCount = $testAttemptModel
             ->where('candidate_id', $userId)
             ->countAllResults();
 
-        return ($sessionsCount * 200) + ($appsCount * 100) + ($attemptsCount * 150);
+        // 4. Salary negotiation practice sessions
+        $negoModel = new \App\Models\SalaryNegotiationSessionModel();
+        $negoCount = $negoModel
+            ->where('user_id', $userId)
+            ->countAllResults();
+
+        return ($sessionsCount * $gamification->xpPerMockInterview)
+            + ($appsCount * $gamification->xpPerJobApplication)
+            + ($attemptsCount * $gamification->xpPerAptitudeTest)
+            + ($negoCount * $gamification->xpPerSalaryNegotiation);
     }
 
     protected function checkTodayGoal(int $userId): int

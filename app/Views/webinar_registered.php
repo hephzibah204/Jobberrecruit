@@ -143,7 +143,7 @@ svg{flex-shrink:0}
 $webinarTitle = !empty($webinar->title) ? $webinar->title : 'Free Career Webinar';
 $speakerName = !empty($webinar->speaker_name) ? $webinar->speaker_name : 'Industry Guest Speaker';
 $speakerRole = 'Industry Guest Speaker · JobberRecruit';
-$scheduledTime = !empty($webinar->scheduled_at) ? strtotime($webinar->scheduled_at) : (time() + 86400 * 3);
+$scheduledTime = strtotime($webinar->scheduled_at);
 $dateFormatted = date('l, j F Y', $scheduledTime);
 $timeFormatted = date('h:i A', $scheduledTime) . ' WAT';
 
@@ -251,7 +251,7 @@ $googleCalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
       <!-- countdown -->
       <div style="margin-bottom:20px">
         <div class="cd-strip">
-          <div class="cd-strip-label">Webinar Starts In</div>
+          <div class="cd-strip-label" id="webinar-countdown-label"><?= !empty($webinarInProgress) ? 'Session has started' : 'Webinar Starts In' ?></div>
           <div class="cd-strip-grid">
             <div class="cd-cell"><div class="cd-cell-n" id="cd-d">00</div><div class="cd-cell-l">Days</div></div>
             <div class="cd-cell"><div class="cd-cell-n" id="cd-h">00</div><div class="cd-cell-l">Hrs</div></div>
@@ -367,6 +367,9 @@ function updateCountdown() {
   var ids = ['cd-d', 'cd-h', 'cd-m', 'cd-s'];
   var diff = targetTime - new Date();
   if (diff <= 0) {
+    var label = document.getElementById('webinar-countdown-label');
+    if (label) label.textContent = 'Session has started';
+    if (diff <= -90 * 60 * 1000) { location.reload(); return; }
     ids.forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.textContent = '00';

@@ -281,7 +281,8 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
       <div class="card-head"><span class="card-title"><svg aria-hidden="true" width="15" height="15"><use href="#i-star"/></svg> Account Summary</span></div>
       <div class="card-body">
         <div class="plan-panel">
-          <?php if ($hasUnlimitedAccess ?? false): ?>
+            <?php $subPlanName = is_object($activeSubscription ?? null) ? ($activeSubscription->plan_name ?? '') : ($activeSubscription['plan_name'] ?? ''); ?>
+          <?php if (($hasUnlimitedAccess ?? false) && empty($subPlanName)): ?>
             <b>Unlimited Access Plan</b>
             <p>Enterprise account with unlimited job postings</p>
             <?php if (!empty($employer->unlimited_until)): ?>
@@ -315,6 +316,9 @@ if (($hasCACDocument ?? false) && ($cacDocument ?? false)) {
               <p>Job Credits: <?= number_format($creditBalance ?? 0) ?></p>
               <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-ghost-w emp-btn-sm" style="width:100%;margin-top:4px;">Get a Plan</a>
             <?php endif; ?>
+            <?php if ($hasUnlimitedAccess ?? false): ?>
+            <p style="font-size:.72rem;margin-top:8px;opacity:0.9;">Unlimited Access also active &mdash; unlimited job postings<?php if (!empty($employer->unlimited_until)): ?> until <?= date('M d, Y', strtotime($employer->unlimited_until)) ?><?php endif; ?></p>
+    <?php endif; ?>
           <?php endif; ?>
         </div>
       </div>

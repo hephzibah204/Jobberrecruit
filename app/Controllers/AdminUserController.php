@@ -25,7 +25,7 @@ class AdminUserController extends BaseController
         $totalUsersCount      = (int) $db->table('users')->countAllResults();
         $totalEmployersCount  = (int) $db->table('employers')->countAllResults();
         $totalCandidatesCount = (int) $db->table('job_seekers')->countAllResults();
-        $totalAdminsCount     = (int) $db->table('auth_groups_users')->whereIn('group', ['admin', 'superadmin'])->countAllResults();
+        $totalAdminsCount     = (int) $db->table('users')->whereIn('user_type', ['admin', 'superadmin'])->countAllResults();
 
         // 2. Build Unified Query with Role & Profile Resolution
         $builder = $userModel->select([

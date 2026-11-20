@@ -1,5 +1,12 @@
+/* Hallmark · restyle · jobberrecruit-classic-style · theme: technical-precision */
+/* critique: high-density multi-tenant recruitment platform core; zero AI slop, zero horizontal scroll, tactile precision */
 /* ==== Base Colors ==== */
 :root {
+  --font-sans: 'Inter', 'Poppins', sans-serif;
+  --font-display: 'Inter', sans-serif;
+  --ring: #0D609E;
+  --ring-offset: 2px;
+
   --primary-color: #0D609E;
   --secondary-color: #F0890E;
   --text-dark: #1E293B;
@@ -8,6 +15,7 @@
 }
 
 /* ==== Global ==== */
+html, body { overflow-x: clip; }
 body {
   font-family: "Inter", "Poppins", sans-serif;
   background-color: #fff;
@@ -24,7 +32,7 @@ a {
 h1, h2, h3, h4, h5, h6 {
   color: var(--primary-color);
   font-weight: 600 !important;
-}
+ text-wrap: balance; overflow-wrap: break-word; }
 
 p {
   color: var(--text-dark);
@@ -67,18 +75,10 @@ p {
 .top-nav .nav-link::after {
     content: '';
     position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 50%;
-    background-color: var(--accent-gold);
-    transition: width 0.3s ease, left 0.3s ease;
+    width: 100%; left: 0; transform: scaleX(0); transform-origin: center; transition: transform 0.25s ease;
 }
 
-.top-nav .nav-link:hover::after {
-    width: 100%;
-    left: 0;
-}
+.top-nav .nav-link:hover::after { transform: scaleX(1); }
 
 .top-nav .contact-info {
     color: var(--text-muted);
@@ -145,9 +145,7 @@ p {
     transition: transform 0.3s ease;
 }
 
-.navbar-brand.brand-logo img:hover {
-    transform: scale(1.03);
-}
+
 
 /* Navbar Navigation Styles */
 .navbar-nav .nav-link {
@@ -167,19 +165,11 @@ p {
 .navbar-nav .nav-link::after {
     content: '';
     position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 50%;
-    background-color: var(--accent-gold);
-    transition: width 0.3s ease, left 0.3s ease;
+    width: 100%; left: 0; transform: scaleX(0); transform-origin: center; transition: transform 0.25s ease;
 }
 
 .navbar-nav .nav-link:hover::after,
-.navbar-nav .nav-link.active::after {
-    width: 100%;
-    left: 0;
-}
+.navbar-nav .nav-link.active::after { transform: scaleX(1); }
 
 .navbar-nav .dropdown-toggle::after {
     border-top-color: var(--text-dark);
@@ -254,7 +244,7 @@ p {
     font-weight: 600;
     padding: 10px 20px;
     border-radius: 6px;
-    transition: all 0.3s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -391,7 +381,7 @@ p {
 
 /* Stats Box */
 .stats-box {
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   background: #fff;
   border-radius: 10px;
   padding: 1.2rem;
@@ -401,7 +391,7 @@ p {
 }
 
 .stats-box:hover {
-  transform: translateY(-5px);
+  
   box-shadow: rgba(60, 101, 245, 0.2) 0 4px 12px;
 }
 
@@ -511,7 +501,7 @@ p {
   width: 210px;
   text-align: center;
   position: relative;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .work-step:hover {
@@ -529,7 +519,7 @@ p {
   margin: 0 auto;
   font-size: 1.5rem;
   color: var(--primary-color, #0d6efd);
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .icon-circle.active,
@@ -611,7 +601,7 @@ p {
   background-color: #f9fafb;
   border-radius: 12px;
   padding: 1.5rem 1rem;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
   border: 1px solid #f1f5f9;
 }
@@ -619,7 +609,7 @@ p {
 .category-card:hover {
   background-color: #fff;
   box-shadow: 0 8px 20px rgba(60, 101, 245, 0.08);
-  transform: translateY(-3px);
+  
 }
 
 .category-card.active {
@@ -644,7 +634,7 @@ p {
   margin: 0 auto;
   font-size: 1.6rem;
   color: var(--primary-color);
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .category-card:hover .icon-wrapper {
@@ -693,13 +683,13 @@ p {
   border-radius: 12px;
   background-color: #fff;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px;
 }
 
 .job-card:hover {
   box-shadow: rgba(60, 101, 245, 0.1) 0 6px 20px;
-  transform: translateY(-3px);
+  
 }
 
 .job-card.active {
@@ -787,12 +777,12 @@ p {
   border: 1px solid #ebebeb;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: all 0.2s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .company-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transform: translateY(-3px);
+  
 }
 
 .company-logo {
@@ -836,7 +826,7 @@ p {
   max-height: 70px;
   object-fit: contain;
   opacity: 0.7;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   filter: grayscale(100%);
 }
 
@@ -859,11 +849,11 @@ p {
   box-shadow: 0 4px 14px rgba(0,0,0,0.05);
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .testimonial-card:hover {
-  transform: translateY(-4px);
+  
   box-shadow: 0 6px 18px rgba(0,0,0,0.1);
 }
 
@@ -916,7 +906,7 @@ p {
   height: 38px;
   border-radius: 8px !important;
   box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .owl-nav button:hover {
@@ -951,14 +941,14 @@ p {
   height: 100%;
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .become-card:hover {
-  transform: translateY(-5px);
+  
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
@@ -990,7 +980,7 @@ p {
   height: auto;
   border-radius: 10px;
   transform: translateY(15px);
-  transition: all 0.3s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .become-card:hover .card-image {
@@ -1073,9 +1063,7 @@ p {
     transition: transform 0.3s ease;
 }
 
-.footer .footer-brand img:hover {
-    transform: scale(1.03);
-}
+
 
 .footer a {
     color: #bfdbfe;
@@ -1108,18 +1096,10 @@ p {
 .footer-links li a::after {
     content: '';
     position: absolute;
-    width: 0;
-    height: 1px;
-    bottom: 0;
-    left: 50%;
-    background-color: var(--accent-gold);
-    transition: width 0.3s ease, left 0.3s ease;
+    width: 100%; transform: scaleX(0); transform-origin: left; transition: transform 0.2s ease;
 }
 
-.footer-links li a:hover::after {
-    width: 100%;
-    left: 0;
-}
+.footer-links li a:hover::after { transform: scaleX(1); }
 
 .footer-divider {
     border-color: rgba(255, 255, 255, 0.1);
@@ -1258,14 +1238,14 @@ p {
 }
 
 .blog-article blockquote {
-    border-left: 4px solid #4299e1;
-    padding-left: 1.5rem;
+    border: 1px solid #e2e8f0;
+    border-top: 3px solid var(--primary-color, #0D609E);
+    padding: 1.5rem;
     margin: 2rem 0;
     font-style: italic;
     color: #4a5568;
     background-color: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 0 0.5rem 0.5rem 0;
+    border-radius: 0.5rem;
 }
 
 .blog-article img {
@@ -1353,9 +1333,11 @@ p {
 
 .reading-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #4299e1, #667eea);
-    width: 0%;
-    transition: width 0.3s ease;
+    background: var(--primary-color, #0D609E);
+    width: 100%;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 0.15s ease;
 }
 
 /* Blog Hero Improvements */
@@ -1373,7 +1355,7 @@ p {
 
 /* Author Card Improvements */
 .author-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color, #0D609E) 0%, #064A85 100%);
     color: white;
     border: none;
 }
@@ -1385,25 +1367,25 @@ p {
 
 /* Share Buttons with Counters */
 .share-btn {
-    transition: all 0.3s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     border-radius: 50px !important;
     padding: 0.5rem 1.5rem !important;
 }
 
 .share-btn:hover {
-    transform: translateY(-2px);
+    
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Related Posts */
 .related-post-card {
-    transition: all 0.3s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     border: none;
     overflow: hidden;
 }
 
 .related-post-card:hover {
-    transform: translateY(-5px);
+    
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -1413,9 +1395,7 @@ p {
     transition: transform 0.5s ease;
 }
 
-.related-post-card:hover img {
-    transform: scale(1.05);
-}
+
 
 /* Table of Contents */
 .toc-card {
@@ -1444,7 +1424,7 @@ p {
 .toc-item {
     padding: 0.5rem 0;
     border-left: 2px solid transparent;
-    transition: all 0.3s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .toc-item:hover {
@@ -1503,4 +1483,18 @@ p {
         font-size: 10pt;
         color: #666;
     }
+}
+/* Hallmark · Gate 26b Tactile micro-depression */
+.btn:active, .flat-btn:active, .category-card:active, .share-btn:active {
+  transform: translateY(1px);
+}
+
+/* Hallmark · Gate 27 Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

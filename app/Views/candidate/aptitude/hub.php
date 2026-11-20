@@ -378,9 +378,9 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
       <h1 id="apt-title">Aptitude Test <span>Hub</span></h1>
       <p class="hero-sub">Practice the exact test formats Nigerian employers use to screen candidates — then take a verified official assessment when you're ready.</p>
       <div class="hero-stats">
-        <div class="hstat"><i><svg aria-hidden="true"><use href="#apt-check-c"/></svg> Tests taken</i><b><span class="countup" data-to="<?= (int) $summary['testsTaken'] ?>">0</span></b></div>
-        <div class="hstat"><i><svg aria-hidden="true"><use href="#apt-chart"/></svg> Average score</i><b><span class="countup" data-to="<?= (int) $summary['avgScore'] ?>">0</span>%</b></div>
-        <div class="hstat"><i><svg aria-hidden="true"><use href="#apt-flame"/></svg> Practice streak</i><b><span class="countup" data-to="<?= (int) $summary['streak'] ?>">0</span> <small>days</small></b></div>
+        <div class="hstat"><i><svg aria-hidden="true"><use href="#apt-check-c"/></svg> Tests taken</i><b><span class="countup" data-to="<?= (int) $summary['testsTaken'] ?>"><?= (int) $summary['testsTaken'] ?></span></b></div>
+        <div class="hstat"><i><svg aria-hidden="true"><use href="#apt-chart"/></svg> Average score</i><b><span class="countup" data-to="<?= (int) $summary['avgScore'] ?>"><?= (int) $summary['avgScore'] ?></span>%</b></div>
+        <div class="hstat"><i><svg aria-hidden="true"><use href="#apt-flame"/></svg> Practice streak</i><b><span class="countup" data-to="<?= (int) $summary['streak'] ?>"><?= (int) $summary['streak'] ?></span> <small>days</small></b></div>
       </div>
     </div>
     <div class="entry-col">
@@ -465,8 +465,8 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
           <div class="inv-top">
             <div class="inv-emp">
               <div class="inv-logo">
-                <?php if (!empty($inv->company_logo) && file_exists(FCPATH . $inv->company_logo)): ?>
-                  <img src="<?= base_url($inv->company_logo) ?>" alt="<?= esc($inv->company_name) ?>">
+                <?php if (!empty($inv->company_logo)): ?>
+                  <img src="<?= esc(resolve_image_url($inv->company_logo, 'company', $inv->company_name ?? 'Company')) ?>" alt="<?= esc($inv->company_name ?? 'Company') ?>">
                 <?php else: ?>
                   <?= strtoupper(substr($inv->company_name ?: 'JR', 0, 2)) ?>
                 <?php endif; ?>
@@ -673,7 +673,7 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
             <circle class="track" cx="75" cy="75" r="65"/>
             <circle class="prog" id="ring-prog" cx="75" cy="75" r="65" data-offset="<?= round($ringOffset, 1) ?>"/>
           </svg>
-          <span class="num"><span class="countup" data-to="<?= (int) $summary['avgScore'] ?>">0</span>%<i>Overall avg</i></span>
+          <span class="num"><span class="countup" data-to="<?= (int) $summary['avgScore'] ?>"><?= (int) $summary['avgScore'] ?></span>%<i>Overall avg</i></span>
         </div>
         <p class="ring-note">Averaged across every scored attempt — practice and official count equally here.</p>
       </div>
@@ -787,7 +787,7 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
     <div class="card-body">
       <div class="streak-big">
         <span class="flame" aria-hidden="true"><svg><use href="#apt-flame"/></svg></span>
-        <div><b><span class="countup" data-to="<?= (int) $summary['streak'] ?>">0</span> day<?= $summary['streak'] === 1 ? '' : 's' ?></b><i>Best streak: <?= (int) ($summary['bestStreak'] ?? $summary['streak']) ?> days</i></div>
+        <div><b><span class="countup" data-to="<?= (int) $summary['streak'] ?>"><?= (int) $summary['streak'] ?></span> day<?= $summary['streak'] === 1 ? '' : 's' ?></b><i>Best streak: <?= (int) ($summary['bestStreak'] ?? $summary['streak']) ?> days</i></div>
       </div>
       <div class="week-dots" id="week-dots" aria-label="This week's practice days"></div>
       <p style="font-size:.76rem;color:var(--muted);margin-top:14px;line-height:1.55">One practice test or daily challenge keeps the streak alive. Today's not done yet — the Daily Challenge takes 8 minutes.</p>
@@ -860,9 +860,7 @@ html.anim-ready .apt-page>*:nth-child(n+5){animation-delay:.2s}
   /* count-up numbers */
   document.querySelectorAll('.apt-page .countup').forEach(function(el){
     var to = parseInt(el.dataset.to,10)||0;
-    if(reduced){el.textContent=to;return;}
-    var t0=null,dur=900;
-    (function step(ts){if(!t0)t0=ts;var p=Math.min(1,(ts-t0)/dur);el.textContent=Math.round(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(step);})(performance.now());
+    el.textContent=to;
   });
 
   /* ring + bars animation */

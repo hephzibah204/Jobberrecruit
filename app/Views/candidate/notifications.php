@@ -71,10 +71,10 @@
                             <div style="width: 36px; height: 36px; border-radius: 50%; background: #e0e7ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">
                                 🔔
                             </div>
-                            <div style="flex: 1;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b;"><?= esc($notif['title']) ?></h4>
-                                    <span style="font-size: 0.78rem; color: #94a3b8;"><?= date('M j, Y g:i A', strtotime($notif['created_at'])) ?></span>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px;">
+                                    <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b; min-width: 0;"><?= esc($notif['title']) ?></h4>
+                                    <span style="font-size: 0.78rem; color: #94a3b8; white-space: nowrap; flex-shrink: 0;"><?= date('M j, Y g:i A', strtotime($notif['created_at'])) ?></span>
                                 </div>
                                 <p style="margin: 0; font-size: 0.88rem; color: #475569; line-height: 1.5;"><?= nl2br(esc($notif['message'])) ?></p>
                             </div>
@@ -95,15 +95,16 @@
         <section class="card" aria-label="Create job alert">
             <div class="card-head"><span class="card-title"><svg aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-plus"/></svg> Create Job Alert</span></div>
             <div class="card-body">
-                <form id="alert-form" style="display:flex; flex-direction:column; gap:14px;">
+                <form id="alert-form" method="post" action="<?= site_url('candidate/alerts/save') ?>" style="display:flex; flex-direction:column; gap:14px;">
                     <?= csrf_field() ?>
+                    <input type="hidden" name="id" id="ja-id" value="">
                     <div class="form-field">
                         <label class="lbl" for="ja-kw">Keyword</label>
                         <input type="text" id="ja-kw" name="keyword" class="input" placeholder="e.g. Accountant, remote" value="<?= esc($presetKeyword ?? '') ?>">
                     </div>
                     <div class="form-field">
                         <label class="lbl" for="ja-loc">Location</label>
-                        <select id="ja-loc" name="location_id" class="select" required>
+                        <select id="ja-loc" name="location_id" class="select">
                             <option value="">Any location</option>
                             <?php foreach ($states as $state): ?>
                                 <option value="<?= $state->id ?>" <?= ($presetLocationId ?? '') == $state->id ? 'selected' : '' ?>><?= esc($state->name) ?></option>
@@ -130,9 +131,10 @@
                             <option value="both">Email + in-app</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">
+                    <button type="submit" id="ja-submit" class="btn btn-primary btn-block">
                         <svg aria-hidden="true" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-bell"/></svg> Create Alert
                     </button>
+                    <button type="button" id="ja-cancel" class="btn btn-outline" hidden>Cancel editing</button>
                 </form>
             </div>
         </section>
@@ -190,6 +192,7 @@
                                             <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-pause"/></svg> Pause
                                         </button>
                                     <?php endif; ?>
+                                    <button type="button" class="btn btn-outline btn-sm edit-alert" data-alert="<?= esc(json_encode(['id' => $alert->id, 'keyword' => $alert->keyword, 'location_id' => $alert->location_id, 'frequency' => $alert->frequency, 'delivery_time' => substr((string) $alert->delivery_time, 0, 5), 'channel' => $alert->channel]), 'attr') ?>">Edit</button>
                                     <button class="btn btn-outline btn-sm delete-alert" data-id="<?= $alert->id ?>">
                                         <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-trash"/></svg> Delete
                                     </button>
@@ -214,6 +217,20 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    $('.edit-alert').on('click', function() {
+        var alert = JSON.parse(this.dataset.alert);
+        Object.keys(alert).forEach(function(key) { $('#alert-form [name="' + key + '"]').val(alert[key] == null ? '' : alert[key]); });
+        $('#ja-submit').text('Save changes');
+        $('#ja-cancel').prop('hidden', false);
+        document.getElementById('alert-form').scrollIntoView({behavior:'smooth', block:'center'});
+        $('#ja-kw').trigger('focus');
+    });
+    $('#ja-cancel').on('click', function() {
+        document.getElementById('alert-form').reset();
+        $('#ja-id').val('');
+        $('#ja-submit').text('Create Alert');
+        $(this).prop('hidden', true);
+    });
     $('#alert-form').on('submit', function(e) {
         e.preventDefault();
 
@@ -223,14 +240,14 @@
             data: $(this).serialize(),
             success: function(response) {
                 if (response.success) {
-                    toastr.success("Job alert created successfully");
+                    toastr.success(response.message || "Job alert saved");
                     setTimeout(() => location.reload(), 800);
                 } else {
                     toastr.error(response.message);
                 }
             },
             error: function() {
-                toastr.error("Network error");
+                toastr.error("Unable to save the alert. Check the fields and try again.");
             }
         });
     });
@@ -238,8 +255,26 @@
     // Delete alert
     $('.delete-alert').on('click', function() {
         let id = $(this).data('id');
+        let $btn = $(this);
 
-        if (!confirm("Delete this alert?")) return;
+        // Two-step in-page confirmation. The previous version gated the
+        // action on the native confirm() dialog; where that dialog is
+        // auto-dismissed (embedded/automated browsers) the handler returned
+        // silently and Delete appeared completely dead — unlike Pause,
+        // Resume and Edit on this page, which have no such gate and work.
+        if (!$btn.data('armed')) {
+            $btn.data('armed', true);
+            $btn.data('original-html', $btn.html());
+            $btn.html('Click again to confirm');
+            setTimeout(function() {
+                if ($btn.data('armed')) {
+                    $btn.removeData('armed');
+                    $btn.html($btn.data('original-html') || 'Delete');
+                }
+            }, 4000);
+            return;
+        }
+        $btn.removeData('armed');
 
         $.post("<?= site_url('candidate/alerts/delete') ?>/" + id, {
             <?= csrf_token() ?>: "<?= csrf_hash() ?>"

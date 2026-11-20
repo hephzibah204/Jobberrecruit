@@ -62,7 +62,7 @@
                             <div class="card-body p-4">
                                 <div class="d-flex gap-3 mb-3">
                                     <?php if (!empty($job->company_logo)): ?>
-                                        <img src="<?= base_url('uploads/' . $job->company_logo) ?>"
+                                        <img src="<?= esc(resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company')) ?>"
                                              alt="<?= esc($job->employer_name ?? '') ?>"
                                              class="rounded" width="48" height="48" style="object-fit:contain;background:#f8f9fa;padding:4px">
                                     <?php else: ?>

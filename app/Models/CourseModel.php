@@ -26,6 +26,7 @@ class CourseModel extends Model
         'content_file',
         'is_featured',
         'is_active',
+        'test_questions',
     ];
 
     protected $useTimestamps = true;

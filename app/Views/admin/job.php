@@ -228,7 +228,7 @@
                                     </li>
                                 <?php endif; ?>
                                 <li class="mb-2"><strong>Deadline:</strong>
-                                    <?= $job->application_deadline ? date('M d, Y', strtotime($job->application_deadline)) : '—' ?>
+                                    <?= (!empty($job->application_deadline) && $job->application_deadline !== '0000-00-00' && strtotime($job->application_deadline) > 0) ? date('M d, Y', strtotime($job->application_deadline)) : '—' ?>
                                 </li>
                             </ul>
                         </div>

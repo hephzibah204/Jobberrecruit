@@ -135,16 +135,12 @@ class Mailer
         $fromName  = env('email.fromName') ?: ($config->fromName ?? $siteName);
         $finalSubject = !empty($rendered['subject']) ? $rendered['subject'] : $subject;
 
-        \Config\Services::$bypassQueue = true;
-        $result = $this->setTo($to)
+        return $this->setTo($to)
             ->setFrom($fromEmail, $fromName)
             ->setSubject($finalSubject)
             ->setMessage($html)
             ->setAltMessage($text)
             ->send();
-        \Config\Services::$bypassQueue = false;
-
-        return $result;
     }
 
     public function sendResetPassword(string $to, string $subject, array $data): bool
@@ -178,16 +174,12 @@ class Mailer
         $fromName  = env('email.fromName') ?: ($config->fromName ?? $siteName);
         $finalSubject = !empty($rendered['subject']) ? $rendered['subject'] : $subject;
 
-        \Config\Services::$bypassQueue = true;
-        $result = $this->setTo($to)
+        return $this->setTo($to)
             ->setFrom($fromEmail, $fromName)
             ->setSubject($finalSubject)
             ->setMessage($html)
             ->setAltMessage($text)
             ->send();
-        \Config\Services::$bypassQueue = false;
-
-        return $result;
     }
 
     /**

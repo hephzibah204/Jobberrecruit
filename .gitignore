@@ -85,7 +85,7 @@ user_guide_src/cilexer/pycilexer.egg-info/*
 tests/coverage*
 
 # Don't save phpunit under version control.
-phpunit
+# phpunit -- REMOVED 2026-11-20: bare pattern hid all of vendor/phpunit from the repo
 
 #-------------------------
 # Composer
@@ -130,3 +130,9 @@ _modules/*
 
 /results/
 /phpunit*.xml
+
+# Added 2026-11-20: backups and deploy archives stay out of the repo
+*.bak-*
+ftp_upload/*.zip
+scratch/*.zip
+/jobberrecruit-update-*.zip

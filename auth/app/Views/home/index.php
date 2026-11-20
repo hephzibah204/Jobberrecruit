@@ -216,6 +216,8 @@ main, .section, .container, .jobs-header, .jobs-grid { background-color: transpa
 .job-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .job-card-top > div:first-child { min-width: 0; }
 .job-logo { width: 44px; height: 44px; border-radius: 9px; background: var(--brand-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Sora',sans-serif; font-weight: 700; font-size: .9rem; color: var(--brand); flex-shrink: 0; }
+.job-logo.is-confidential { background: var(--brand-light); color: var(--muted); }
+.job-logo svg { width: 20px; height: 20px; flex-shrink: 0; }
 .job-logo img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
 .job-title { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text); }
 .job-company { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
@@ -478,7 +480,10 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
           <div class="search-field"><svg aria-hidden="true"><use href="#i-pin"/></svg>
             <select id="loc" name="state_id">
               <option value="">All locations</option>
+              <option value="remote">Remote Jobs</option>
+              <option value="nationwide">Nationwide Jobs</option>
               <?php foreach ($states as $s): ?>
+                <?php if (in_array(strtolower($s->name), ['remote', 'nationwide'], true)) continue; ?>
                 <option value="<?= $s->id ?>"><?= esc($s->name) ?></option>
               <?php endforeach; ?>
             </select>
@@ -496,7 +501,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         </form>
         <div class="trending" aria-label="Trending searches">
           <strong>TRENDING:</strong>
-          <a href="<?= base_url('jobs?work_arrangement=remote') ?>">Remote</a>
+          <a href="<?= base_url('jobs/remote') ?>">Remote</a>
           <a href="<?= base_url('jobs?q=software+developer') ?>">Software Developer</a>
           <a href="<?= base_url('jobs?q=marketing') ?>">Marketing</a>
           <a href="<?= base_url('jobs?q=data+analyst') ?>">Data Analyst</a>
@@ -566,7 +571,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         <h2 class="section-title" id="jobs-h">Recent jobs in <span>Nigeria</span></h2>
         <div class="jobs-header-cta">
           <span class="jobs-total">Showing <strong><?= min(count($jobs), 8) ?></strong> of <strong class="live-count" data-count="<?= $activeJobsCount ?? 0 ?>"><?= number_format($activeJobsCount ?? 0) ?></strong>+ live jobs</span>
-          <a href="<?= base_url('jobs') ?>" class="btn-m btn-m-outline">All featured jobs →</a>
+          <a href="<?= base_url('job') ?>" class="btn-m btn-m-outline">View all jobs →</a>
         </div>
       </div>
       <p class="section-sub">Top companies are actively hiring. Don't miss your window.</p>
@@ -575,8 +580,10 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
         <?php if (!empty($jobs)): ?>
           <?php foreach (array_slice($jobs, 0, 8) as $job): 
               $isFeatured = !empty($job->is_featured);
-              $coName = !empty($job->anonymous) ? 'Confidential Employer' : ($job->employer_name ?? 'Company');
-              $coLogo = !empty($job->anonymous) ? base_url('images/favicon.png') : resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company');
+              $isConfidential = !empty($job->is_confidential) || !empty($job->anonymous) || !empty($job->is_anonymous);
+              $coName = $isConfidential ? 'Confidential Employer' : ($job->employer_name ?? 'Company');
+              $coLogo = $isConfidential ? '' : resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company');
+              $isVerified = !$isConfidential && (!empty($job->is_verified) || !empty($job->show_trust_badge) || !empty($job->employer_is_verified) || (($job->employer_verification_status ?? '') === 'verified'));
               $timeAgo = time_ago($job->created_at);
           ?>
             <article class="job-card <?= $isFeatured ? 'job-card--featured' : '' ?>" aria-label="<?= esc($job->title) ?> – Jobs in Nigeria">
@@ -588,7 +595,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                   <h3 class="job-title" title="<?= esc($job->title) ?>"><?= esc($job->title) ?></h3>
                   <div class="job-company">
                     <span class="job-company-name"><?= esc($coName) ?></span>
-                    <?php if (!empty($job->show_trust_badge)): ?>
+                    <?php if ($isVerified): ?>
                       <button type="button" class="verified-check" aria-label="Verified employer — tap for details">
                         <svg aria-hidden="true"><use href="#i-verified-disc"/></svg>
                         <span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span>
@@ -596,9 +603,11 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
                     <?php endif; ?>
                   </div>
                 </div>
-                <div class="job-logo" aria-hidden="true">
-                  <?php if (!empty($coLogo)): ?>
-                    <img src="<?= $coLogo ?>" alt="">
+                <div class="job-logo<?= $isConfidential ? ' is-confidential' : '' ?>" aria-hidden="true">
+                  <?php if ($isConfidential): ?>
+                    <svg aria-hidden="true" width="20" height="20" style="color:var(--muted);"><use href="#i-lock"/></svg>
+                  <?php elseif (!empty($coLogo)): ?>
+                    <img src="<?= $coLogo ?>" alt="<?= esc($coName) ?> logo" loading="lazy">
                   <?php else: ?>
                     <?= esc(substr($coName, 0, 2)) ?>
                   <?php endif; ?>
@@ -708,6 +717,16 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
               <div class="loc-count"><span class="live-count" data-count="<?= $loc->job_count ?? 0 ?>"><?= number_format($loc->job_count ?? 0) ?></span> jobs</div>
             </a>
           <?php endforeach; ?>
+          <a href="<?= base_url('jobs/remote') ?>" class="loc-card">
+            <div class="loc-ic"><svg aria-hidden="true"><use href="#i-globe"/></svg></div>
+            <h3 class="loc-name">Remote</h3>
+            <div class="loc-count"><span class="live-count" data-count="<?= $remoteJobsCount ?? 0 ?>"><?= number_format($remoteJobsCount ?? 0) ?></span> jobs</div>
+          </a>
+          <a href="<?= base_url('jobs/nigeria-nationwide') ?>" class="loc-card">
+            <div class="loc-ic"><svg aria-hidden="true"><use href="#i-pin"/></svg></div>
+            <h3 class="loc-name">Nationwide</h3>
+            <div class="loc-count"><span class="live-count" data-count="<?= $nationwideJobsCount ?? 0 ?>"><?= number_format($nationwideJobsCount ?? 0) ?></span> jobs</div>
+          </a>
           <a href="<?= base_url('jobs') ?>" class="loc-card featured">
             <div class="loc-ic"><svg aria-hidden="true"><use href="#i-pin"/></svg></div>
             <h3 class="loc-name">All 36 states</h3>

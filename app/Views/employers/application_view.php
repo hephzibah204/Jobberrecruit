@@ -139,7 +139,7 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
           </span>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; padding: 14px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 14px; padding: 14px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
           <div>
             <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">
               Candidate's Location
@@ -445,7 +445,7 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
             <svg style="width:16px;height:16px;vertical-align:-2px;margin-right:4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg> Professional References
           </span>
         </div>
-        <div class="card-body" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px;">
+        <div class="card-body" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap:14px;">
           <?php foreach ($references as $ref): ?>
             <div style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; background:var(--bg);">
               <div style="font-weight:700; font-size:0.9rem; color:var(--brand-deep);"><?= esc($ref->name) ?></div>
@@ -598,6 +598,72 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
       <button class="emp-btn emp-btn-outline" id="del-note-cancel">Cancel</button>
       <button class="emp-btn emp-btn-danger" id="del-note-confirm"><svg aria-hidden="true"><use href="#i-trash"/></svg> Delete Note</button>
     </div>
+  </div>
+</div>
+
+<!-- Aptitude Test Invitation Modal -->
+<div class="modal" id="aptitude-invite-modal" role="dialog" aria-modal="true" aria-labelledby="apt-invite-title" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+  <div style="background:#fff; border-radius:var(--radius-lg, 12px); width:100%; max-width:500px; max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.2); margin:auto;">
+    <div style="padding:18px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa;">
+      <h3 id="apt-invite-title" style="font-size:1.05rem; font-weight:700; color:#0d6efd; margin:0; display:flex; align-items:center; gap:8px;">
+        <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Invite Candidate to Aptitude Test
+      </h3>
+      <button class="close-modal-btn" type="button" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:#6c757d;">&times;</button>
+    </div>
+    <form id="aptitude-invite-form" style="padding:20px; overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch; box-sizing:border-box;">
+      <input type="hidden" name="application_id" id="invite-app-id" value="">
+      
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Select Aptitude Assessment <span style="color:red">*</span></label>
+        <select class="select" name="test_id" id="invite-test-id" required style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;">
+          <option value="">-- Loading tests... --</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Completion Deadline</label>
+        <select class="select" name="days_to_complete" id="invite-days" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;">
+          <option value="3">3 Days</option>
+          <option value="5">5 Days</option>
+          <option value="7" selected>7 Days (Standard)</option>
+          <option value="14">14 Days</option>
+          <option value="30">30 Days</option>
+        </select>
+      </div>
+
+      <div id="ai-custom-options" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #e9ecef;">
+        <h4 style="font-size: 0.95rem; margin-top: 0; margin-bottom: 12px; color: #495057;">✨ AI Test Settings</h4>
+        
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Number of Questions</label>
+          <input type="number" name="num_questions" id="invite-num-questions" class="input" min="3" max="50" value="5" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Duration (Minutes)</label>
+          <input type="number" name="duration_mins" id="invite-duration" class="input" min="5" max="120" value="15" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+
+        <div style="margin-bottom:0;">
+          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Difficulty Level</label>
+          <select name="difficulty" id="invite-difficulty" class="select" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Instructions / Message to Candidate (Optional)</label>
+        <textarea class="textarea" name="message" id="invite-message" rows="3" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;" placeholder="e.g. Please complete this assessment before your upcoming interview..."></textarea>
+      </div>
+
+      <div style="padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm close-modal-btn" style="padding:8px 16px;">Cancel</button>
+        <button type="submit" class="emp-btn emp-btn-primary emp-btn-sm" id="submit-invite-btn" style="background:#0d6efd; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:600; cursor:pointer;">Send Test Invitation</button>
+      </div>
+    </form>
   </div>
 </div>
 <?= $this->endSection() ?>
@@ -928,44 +994,43 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
   const aptModal = document.getElementById('aptitude-invite-modal');
   const aptForm = document.getElementById('aptitude-invite-form');
   const openAptBtns = document.querySelectorAll('.open-apt-invite-btn');
+  const testSelect = document.getElementById('invite-test-id');
+  const aiOptions = document.getElementById('ai-custom-options');
+
+  if (testSelect) {
+    testSelect.addEventListener('change', function() {
+      if (aiOptions) {
+        aiOptions.style.display = (this.value === 'ai_custom') ? 'block' : 'none';
+      }
+    });
+  }
 
   function openAptModal(appId) {
     if (!aptModal) return;
     document.getElementById('invite-app-id').value = appId;
     
-    // Load available tests via API
-    const testSelect = document.getElementById('invite-test-id');
-    testSelect.innerHTML = '<option value="">Loading tests...</option>';
+    if (testSelect) {
+      testSelect.innerHTML = '<option value="">Loading assessments...</option>';
 
-    fetch('<?= site_url("employer/aptitude-tests/list") ?>')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.tests.length) {
-          testSelect.innerHTML = '<option value="ai_custom" selected>✨ AI Custom Test (Generated by Gemini AI for this Job)</option>' +
-            '<optgroup label="Preset Standard Tests">' +
-            data.tests.map(t => `<option value="${t.id}">${t.title} (${t.num_questions} questions · ${t.duration_mins} mins)</option>`).join('') +
-            '</optgroup>';
-        } else {
-          testSelect.innerHTML = '<option value="ai_custom" selected>✨ AI Custom Test (Generated by Gemini AI for this Job)</option>';
-        }
-      })
-      .catch(() => {
-        testSelect.innerHTML = '<option value="">Error loading tests</option>';
-      });
-
-    // Toggle AI options visibility
-    testSelect.addEventListener('change', function() {
-      const aiOptions = document.getElementById('ai-custom-options');
-      if (this.value === 'ai_custom') {
-        aiOptions.style.display = 'block';
-      } else {
-        aiOptions.style.display = 'none';
-      }
-    });
-
-    setTimeout(() => {
-      testSelect.dispatchEvent(new Event('change'));
-    }, 500);
+      fetch('<?= site_url("employer/aptitude-tests/list") ?>')
+        .then(res => res.json())
+        .then(data => {
+          let html = '<option value="">-- Choose an Aptitude Assessment --</option>';
+          html += '<optgroup label="✨ AI Custom Assessment">';
+          html += '<option value="ai_custom">✨ AI Custom Test (Tailored by Gemini for this Job Role)</option>';
+          html += '</optgroup>';
+          if (data.success && data.tests && data.tests.length) {
+            html += '<optgroup label="Preset Standard Tests">';
+            html += data.tests.map(t => `<option value="${t.id}">${t.title} (${t.num_questions} questions · ${t.duration_mins} mins)</option>`).join('');
+            html += '</optgroup>';
+          }
+          testSelect.innerHTML = html;
+          if (aiOptions) aiOptions.style.display = 'none';
+        })
+        .catch(() => {
+          testSelect.innerHTML = '<option value="">Error loading tests</option>';
+        });
+    }
 
     aptModal.classList.add('show');
     aptModal.style.display = 'flex';
@@ -992,8 +1057,15 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
     aptForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-invite-btn');
+      const isAi = (testSelect && testSelect.value === 'ai_custom');
+
+      if (testSelect && !testSelect.value) {
+        showToast('Please select an aptitude assessment to send.');
+        return;
+      }
+
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Sending Invitation...';
+      submitBtn.innerText = isAi ? '✨ Generating AI Assessment & Sending...' : 'Sending Invitation...';
 
       const formData = new FormData(this);
       const csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '<?= csrf_hash() ?>';
@@ -1008,86 +1080,25 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
         submitBtn.disabled = false;
         submitBtn.innerText = 'Send Test Invitation';
         if (response.success) {
-          showToast(response.message || 'Invitation sent successfully!');
+          if (response.invitation_url && navigator.clipboard) {
+            navigator.clipboard.writeText(response.invitation_url);
+            showToast('Assessment Link copied to clipboard!');
+          } else {
+            showToast(response.message || 'Invitation sent successfully!');
+          }
           closeAptModal();
-          setTimeout(() => location.reload(), 1200);
+          setTimeout(() => location.reload(), 1500);
         } else {
-          toastr.error(response.message || 'Failed to send invitation');
+          showToast(response.message || 'Failed to send invitation');
         }
       })
       .catch(() => {
         submitBtn.disabled = false;
         submitBtn.innerText = 'Send Test Invitation';
-        toastr.error('Connection error sending invitation');
+        showToast('Connection error sending invitation. Please try again.');
       });
     });
   }
 })();
 </script>
-
-<!-- Aptitude Test Invitation Modal -->
-<div class="modal" id="aptitude-invite-modal" role="dialog" aria-modal="true" aria-labelledby="apt-invite-title" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; border-radius:var(--radius-lg, 12px); width:92%; max-width:500px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-    <div style="padding:18px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa;">
-      <h3 id="apt-invite-title" style="font-size:1.05rem; font-weight:700; color:#0d6efd; margin:0; display:flex; align-items:center; gap:8px;">
-        <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Invite Candidate to Aptitude Test
-      </h3>
-      <button class="close-modal-btn" type="button" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:#6c757d;">&times;</button>
-    </div>
-    <form id="aptitude-invite-form" style="padding:20px;">
-      <input type="hidden" name="application_id" id="invite-app-id" value="">
-      
-      <div style="margin-bottom:15px;">
-        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Select Aptitude Assessment <span style="color:red">*</span></label>
-        <select class="select" name="test_id" id="invite-test-id" required style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;">
-          <option value="">-- Loading tests... --</option>
-        </select>
-      </div>
-
-      <div style="margin-bottom:15px;">
-        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Completion Deadline</label>
-        <select class="select" name="days_to_complete" id="invite-days" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;">
-          <option value="3">3 Days</option>
-          <option value="5">5 Days</option>
-          <option value="7" selected>7 Days (Standard)</option>
-          <option value="14">14 Days</option>
-          <option value="30">30 Days</option>
-        </select>
-      </div>
-
-      <div id="ai-custom-options" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #e9ecef;">
-        <h4 style="font-size: 0.95rem; margin-top: 0; margin-bottom: 12px; color: #495057;">✨ AI Test Settings</h4>
-        
-        <div style="margin-bottom:12px;">
-          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Number of Questions</label>
-          <input type="number" name="num_questions" id="invite-num-questions" class="input" min="3" max="50" value="5" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
-        </div>
-
-        <div style="margin-bottom:12px;">
-          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Duration (Minutes)</label>
-          <input type="number" name="duration_mins" id="invite-duration" class="input" min="5" max="120" value="15" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
-        </div>
-
-        <div style="margin-bottom:0;">
-          <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.85rem;">Difficulty Level</label>
-          <select name="difficulty" id="invite-difficulty" class="select" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #ccc;">
-            <option value="beginner">Beginner</option>
-            <option value="intermediate" selected>Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="margin-bottom:15px;">
-        <label style="font-weight:600; margin-bottom:6px; display:block; font-size:0.9rem;">Instructions / Message to Candidate (Optional)</label>
-        <textarea class="textarea" name="message" id="invite-message" rows="3" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;" placeholder="e.g. Please complete this assessment before your upcoming interview..."></textarea>
-      </div>
-
-      <div style="padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
-        <button type="button" class="emp-btn emp-btn-outline emp-btn-sm close-modal-btn" style="padding:8px 16px;">Cancel</button>
-        <button type="submit" class="emp-btn emp-btn-primary emp-btn-sm" id="submit-invite-btn" style="background:#0d6efd; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:600; cursor:pointer;">Send Test Invitation</button>
-      </div>
-    </form>
-  </div>
-</div>
-<?php $this->endSection() ?>
+<?= $this->endSection() ?>

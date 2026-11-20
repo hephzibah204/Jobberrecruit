@@ -34,10 +34,12 @@ class InvoiceService
         if (!$subscription) {
             throw new \Exception('Subscription not found');
         }
+        $subscription = (object) $subscription;
 
         $plan = $planModel->find($subscription->plan_id);
         $employer = $this->employerModel->where('user_id', $userId)->first();
         $payment = $this->paymentModel->find($paymentId);
+        $recipient = $this->recipient((int) $userId, $employer);
 
         $newPlanPrice = !empty($prorationData['new_plan_price']) ? (float)$prorationData['new_plan_price'] : $amount;
         $prorationDiscount = !empty($prorationData['proration_discount']) ? (float)$prorationData['proration_discount'] : 0.0;
@@ -47,11 +49,13 @@ class InvoiceService
             'date' => date('F d, Y'),
             'due_date' => date('F d, Y', strtotime('+7 days')),
             'company_name' => $employer->company_name,
-            'company_email' => $employer->contact_email ?? $employer->company_email,
+            'company_email' => $recipient,
             'company_phone' => $employer->contact_phone,
             'company_address' => $employer->company_address,
             'item_name' => "{$plan->name} Subscription",
-            'item_description' => "{$months} Month(s) - Unlimited job postings + Premium Features",
+            'item_description' => "{$months} Month(s) - " . ((new CreditService())->planProvidesUnlimitedPosting($plan)
+                ? 'Unlimited job postings + Premium Features'
+                : ((int) $plan->monthly_job_credits * $months) . ' credits + Plan Features'),
             'quantity' => $months,
             'unit_price' => number_format($newPlanPrice / $months, 2),
             'subtotal' => number_format($newPlanPrice, 2),
@@ -64,13 +68,19 @@ class InvoiceService
             'payment_reference' => $payment['reference'],
             'payment_date' => date('F d, Y H:i', strtotime($payment['paid_at'])),
             'plan_features' => $this->formatPlanFeatures($plan),
-            'valid_until' => date('F d, Y', strtotime($subscription['ends_at']))
+            'valid_until' => date('F d, Y', strtotime($subscription->ends_at))
         ];
 
         $subject = "Invoice for {$plan->name} Subscription - " . $invoiceData['invoice_number'];
         $htmlContent = $this->generateInvoiceHTML($invoiceData, 'subscription');
 
-        return $this->sendEmail($employer->contact_email ?? $employer->company_email, $subject, $htmlContent);
+        $sent = $this->sendEmail($recipient, $subject, $htmlContent);
+        (new EmailNotificationService())->sendAdministrativeEvent(
+            'Employer subscription payment received',
+            $employer->company_name . ' paid for ' . $plan->name . '.',
+            ['Amount (NGN)' => number_format($amount, 2), 'Reference' => $payment['reference'], 'Expires' => $subscription->ends_at]
+        );
+        return $sent;
     }
 
     /**
@@ -83,13 +93,14 @@ class InvoiceService
         $bundle = $bundleModel->find($bundleId);
         $employer = $this->employerModel->where('user_id', $userId)->first();
         $payment = $this->paymentModel->find($paymentId);
+        $recipient = $this->recipient((int) $userId, $employer);
 
         $invoiceData = [
             'invoice_number' => 'INV-' . date('Ymd') . '-' . str_pad($paymentId, 5, '0', STR_PAD_LEFT),
             'date' => date('F d, Y'),
             'due_date' => date('F d, Y', strtotime('+7 days')),
             'company_name' => $employer->company_name,
-            'company_email' => $employer->contact_email ?? $employer->company_email,
+            'company_email' => $recipient,
             'company_phone' => $employer->contact_phone,
             'company_address' => $employer->company_address,
             'item_name' => $bundle->name,
@@ -108,7 +119,13 @@ class InvoiceService
         $subject = "Invoice for {$bundle->name} - " . $invoiceData['invoice_number'];
         $htmlContent = $this->generateInvoiceHTML($invoiceData, 'bundle');
 
-        return $this->sendEmail($employer->contact_email ?? $employer->company_email, $subject, $htmlContent);
+        $sent = $this->sendEmail($recipient, $subject, $htmlContent);
+        (new EmailNotificationService())->sendAdministrativeEvent(
+            'Employer bundle payment received',
+            $employer->company_name . ' purchased ' . $bundle->name . '.',
+            ['Amount (NGN)' => number_format($amount, 2), 'Reference' => $payment['reference'], 'Job credits' => $credits]
+        );
+        return $sent;
     }
 
     /**
@@ -385,13 +402,14 @@ class InvoiceService
      */
     private function sendEmail($to, $subject, $htmlContent)
     {
+        $this->email->clear();
         $this->email->setTo($to);
         $this->email->setSubject($subject);
         $this->email->setMessage($htmlContent);
         $this->email->setMailType('html');
 
         // Set from address
-        $this->email->setFrom(env('email.from_email') ?? 'noreply@jobberrecruit.com', env('email.from_name') ?? 'Jobber Recruit');
+        $this->email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
 
         // Attach invoice as PDF (optional - you can use a PDF library like Dompdf)
         // $pdfContent = $this->generatePDF($htmlContent);
@@ -403,5 +421,14 @@ class InvoiceService
         }
 
         return true;
+    }
+
+    private function recipient(int $userId, $employer): string
+    {
+        $user = model(\CodeIgniter\Shield\Models\UserModel::class)->find($userId);
+        foreach ([$user->email ?? '', $employer->contact_email ?? '', $employer->company_email ?? ''] as $email) {
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) return $email;
+        }
+        throw new \RuntimeException('No valid email address is available for the employer receipt.');
     }
 }

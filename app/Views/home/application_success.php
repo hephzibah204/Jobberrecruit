@@ -71,8 +71,9 @@
                                         <div class="p-3 bg-white border rounded-3 shadow-sm h-100">
                                             <h6 class="fw-semibold mb-1"><?= esc($j->title) ?></h6>
                                             <p class="text-muted small mb-1">
-                                                <i class="bi bi-building me-1"></i><?= esc($j->company_name) ?>
+                                                <i class="bi bi-building me-1"></i><?= !empty($j->is_anonymous) ? 'Confidential Employer' : esc($j->company_name) ?>
                                             </p>
+                                            <?php if (empty($j->is_anonymous) && !empty($j->employer_tagline)): ?><p class="text-muted small mb-2"><?= esc($j->employer_tagline) ?></p><?php endif; ?>
                                             <span class="badge bg-success-subtle text-success">
                                                 <?= ucfirst($j->job_type) ?>
                                             </span>

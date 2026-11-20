@@ -55,7 +55,7 @@
               <span class="badge badge-blue">eBook (PDF)</span>
             <?php else: ?>
               <span class="level-tag level-<?= esc($course->level ?? 'beginner') ?>"><?= ucfirst(esc($course->level ?? 'beginner')) ?></span>
-              <span class="badge badge-blue"><?= ucfirst(esc($course->content_source ?? 'none')) ?></span>
+              <span class="badge badge-blue"><?= 'Online course' ?></span>
             <?php endif; ?>
             <span class="badge badge-blue"><?= (float) ($course->price ?? 0) > 0 ? 'Paid' : 'Free' ?></span>
           </div>
@@ -170,7 +170,7 @@
                       <svg class="lesson-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                     </summary>
                     <div class="lesson-body">
-                      <p class="lesson-desc"><?= esc($module->description) ?></p>
+                      <p class="lesson-desc"><?= esc(strip_tags((string) $module->description)) ?></p>
                       <?php if ($enrollment): ?>
                         <div class="lesson-unlocked-row" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#f5f7fb;border:1px solid #e2e8f2;border-radius:10px;padding:13px 16px;">
                           <span style="font-size:.84rem;color:#5b6577;">You have access to this module. Go to classroom to view lectures and materials.</span>
@@ -748,7 +748,26 @@
   .course-facts { grid-template-columns: 1fr; }
   .card { padding: 20px 16px; }
   .cur-preview { flex-direction: column; gap: 12px; }
-  .lesson summary { gap: 8px; padding: 12px; }
+  /* Give lesson names their own flexible column. Keeping every badge on the
+     same flex row can reduce the title to a one-character-wide column. */
+  .lesson summary {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) 18px;
+    grid-template-areas: "number title chevron" ". type lock";
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+  }
+  .lesson-num { grid-area: number; }
+  .lesson-title {
+    grid-area: title;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .lesson-type { grid-area: type; justify-self: start; white-space: nowrap; }
+  .lesson-lock { grid-area: lock; justify-self: start; white-space: nowrap; }
+  .lesson-chev { grid-area: chevron; justify-self: end; }
   .enrol-body { padding: 16px; }
 }
 </style>

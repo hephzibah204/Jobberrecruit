@@ -1,7 +1,10 @@
 <?= $this->extend('auth/base') ?>
 
 <?= $this->section('styles') ?>
-<style>
+<style>html, body { overflow-x: clip; }
+
+/* Hallmark · restyle · jobberrecruit-auth-login · theme: technical-precision */
+/* critique: focused authentication form; zero AI slop, zero horizontal scroll, non-reflowing focus rings */
 /* ── Auth Layout ── */
 .auth-shell{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 75px)}
 .auth-formcol{display:flex;align-items:flex-start;justify-content:center;padding:48px 24px 64px}
@@ -41,7 +44,7 @@
 .field-input>svg.lead{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
 .field input{width:100%;min-height:48px;padding:12px 14px 12px 42px;border:1.5px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;color:var(--text);background:#fff;transition:var(--transition)}
 .field input::placeholder{color:#9aa6b6}
-.field input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(8,97,169,.12)}
+.field input:focus{outline:2px solid var(--ring, #0861A9);outline-offset:1px;border-color:var(--brand);}
 .field input.err{border-color:var(--danger)}
 .field-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;border-radius:8px}
 .field-toggle:hover{color:var(--brand);background:var(--brand-light)}
@@ -74,6 +77,14 @@
   input,select,textarea{font-size:16px!important}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.auth-title, .auth-brand h2 { text-wrap: balance; overflow-wrap: break-word; }
+.auth-brand-stat .n { font-variant-numeric: tabular-nums; }
+
+/* Hallmark · Gate 26b Tactile micro-depression */
+.auth-submit:active, .social-btn:active {
+  transform: translateY(1px);
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -179,9 +190,9 @@
           </div>
         </div>
         <div class="auth-brand-stats">
-          <div class="auth-brand-stat"><div class="n"><?= $liveJobsCount ?? '12K' ?>+</div><div class="l">Live jobs</div></div>
-          <div class="auth-brand-stat"><div class="n"><?= $employerCount ?? '2K' ?>+</div><div class="l">Employers</div></div>
-          <div class="auth-brand-stat"><div class="n"><?= $candidateCount ?? '50K' ?>+</div><div class="l">Job seekers</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= number_format($liveJobsCount ?? 0) ?></div><div class="l">Live jobs</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= number_format($employerCount ?? 0) ?></div><div class="l">Employers</div></div>
+          <div class="auth-brand-stat"><div class="n"><?= number_format($candidateCount ?? 0) ?></div><div class="l">Job seekers</div></div>
         </div>
       </div>
     </aside>
@@ -243,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(function(data) {
       if (data.status === 'success') {
         showSuccess(data.message || 'Login successful!');
-        window.location.href = data.redirect_url;
+        window.location.href = data.redirect_url || '<?= base_url('dashboard') ?>';
       } else {
         showError(data.message || 'Login failed. Please try again.');
         btn.disabled = false;

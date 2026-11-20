@@ -57,4 +57,32 @@ final class CreditServiceUnlimitedPlanTest extends CIUnitTestCase
 
         $this->assertFalse($this->service()->planProvidesUnlimitedPosting($plan));
     }
+
+    public function testBusinessProWithMissingLegacyFeatureFlagIsUnlimited(): void
+    {
+        $this->assertTrue($this->service()->planProvidesUnlimitedPosting([
+            'plan_type' => 'subscription', 'code' => 'business_pro', 'name' => 'Business Pro',
+            'features' => '{}', 'monthly_job_credits' => 0,
+        ]));
+    }
+
+    public function testCandidateBusinessProNeverGrantsEmployerPosting(): void
+    {
+        $this->assertFalse($this->service()->planProvidesUnlimitedPosting([
+            'plan_type' => 'candidate', 'code' => 'business_pro', 'name' => 'Business Pro',
+        ]));
+    }
+
+    public function testPlanComparisonDisplaysUnlimitedInsteadOfZeroCredits(): void
+    {
+        $plan = new \App\Entities\PlanEntity([
+            'plan_type' => 'subscription', 'code' => 'business_pro', 'name' => 'Business Pro',
+            'features' => ['featured' => true], 'monthly_job_credits' => 0,
+            'base_price' => 18000, 'billing_type' => 'recurring',
+        ]);
+        $html = view('employers/partials/plan_comparison', ['plans' => [$plan]]);
+        $this->assertStringContainsString('Unlimited', $html);
+        $this->assertStringContainsString('18,000', $html);
+        $this->assertDoesNotMatchRegularExpression('/<td[^>]*>\s*0\s*<\/td>/', $html);
+    }
 }

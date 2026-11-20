@@ -23,7 +23,7 @@
                     <td style="padding: 12px 16px;"><strong>Monthly Job Credits</strong></td>
                     <?php foreach ($plans as $plan): ?>
                         <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--brand-deep);">
-                            <?= $plan->monthly_job_credits ?>
+                            <?= (new \App\Services\CreditService())->planProvidesUnlimitedPosting($plan) ? 'Unlimited' : (int) $plan->monthly_job_credits ?>
                         </td>
                     <?php endforeach; ?>
                 </tr>
@@ -54,7 +54,7 @@
                         <?php foreach ($plans as $plan): ?>
                             <?php
                             $features = $plan->features;
-                            $enabled  = $features->$key ?? false;
+                            $enabled  = is_array($features) ? ($features[$key] ?? false) : ($features->$key ?? false);
                             ?>
                             <td style="padding: 12px 16px; text-align: center;">
                                 <?php if ($enabled): ?>
@@ -82,10 +82,10 @@
                     <td style="padding: 12px 16px;"><strong>Price</strong></td>
                     <?php foreach ($plans as $plan): ?>
                         <td style="padding: 12px 16px; text-align: center; font-weight: 700; color: var(--brand-deep);">
-                            <?php if ((float)$plan->price === 0.0): ?>
+                            <?php if ((float)$plan->base_price === 0.0): ?>
                                 <span class="pill pill--success" style="font-size: 0.64rem; padding: 3px 8px;">Free</span>
                             <?php else: ?>
-                                ₦<?= number_format($plan->price) ?>/mo
+                                ₦<?= number_format($plan->base_price) ?>/mo
                             <?php endif; ?>
                         </td>
                     <?php endforeach; ?>

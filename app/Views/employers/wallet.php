@@ -120,9 +120,16 @@ if (!empty($transactions)) {
                 </span>
               </td>
               <td>
-                <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" aria-label="Receipt download not yet available" title="Receipt download coming soon" disabled>
-                  <svg aria-hidden="true"><use href="#i-download"/></svg>
-                </button>
+                <?php $ref = !empty($txn->reference) ? $txn->reference : (!empty($txn->id) ? 'WTX-' . $txn->id : ''); ?>
+                <?php if (!empty($ref)): ?>
+                  <a href="<?= base_url('employer/receipt/' . urlencode($ref)) ?>" class="emp-btn emp-btn-outline emp-btn-sm" target="_blank" title="View / Download Receipt" aria-label="View or download receipt">
+                    <svg aria-hidden="true"><use href="#i-download"/></svg> Receipt
+                  </a>
+                <?php else: ?>
+                  <button type="button" class="emp-btn emp-btn-outline emp-btn-sm" disabled style="opacity:.4;cursor:not-allowed;" title="No receipt reference">
+                    <svg aria-hidden="true"><use href="#i-download"/></svg>
+                  </button>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

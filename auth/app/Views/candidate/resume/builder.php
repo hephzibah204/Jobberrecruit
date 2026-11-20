@@ -1429,9 +1429,9 @@
             }
             
             // Watermark anti-crop element
-            html += '<div class="wm" aria-hidden="true">' +
-                '<svg class="wm-ic" viewBox="0 0 925.5 1269.15"><use href="#jr-mark"/></svg>' +
-                '<span class="wm-tx">www.JobberRecruit.com</span>' +
+            html += '<div class="wm" aria-hidden="true" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;opacity:0.5;pointer-events:none;user-select:none;z-index:10;width:auto;height:auto;">' +
+                '<svg class="wm-ic" width="12" height="16" viewBox="0 0 925.5 1269.15" style="width:12px!important;height:16px!important;min-width:12px!important;min-height:16px!important;max-width:12px!important;max-height:16px!important;flex-shrink:0!important;display:block!important;fill:#F08F1C!important;"><use href="#jr-mark"/></svg>' +
+                '<span class="wm-tx" style="writing-mode:vertical-rl;font-family:'Inter',sans-serif;font-size:0.56rem;font-weight:600;letter-spacing:0.16em;color:#9aa4b5;line-height:1;white-space:nowrap;">www.JobberRecruit.com</span>' +
                 '</div>';
                 
             $doc.html(html);

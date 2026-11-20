@@ -201,10 +201,10 @@
                                         <input type="checkbox" class="alert-toggle" data-id="<?= $alert->id ?>" <?= !empty($alert->is_active) ? 'checked' : '' ?>>
                                         <span class="sl"></span>
                                     </label>
-                                    <form method="POST" action="<?= base_url('candidate/alerts/delete/' . $alert->id) ?>" onsubmit="return confirm('Delete this alert?');">
+                                    <form method="POST" action="<?= base_url('candidate/alerts/delete/' . $alert->id) ?>">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="_method" value="DELETE">
-                                        <button class="ic-btn ic-btn--danger" type="submit" aria-label="Delete alert">
+                                        <button class="ic-btn ic-btn--danger" type="submit" aria-label="Delete alert" title="Delete alert" onclick="if(!this.dataset.armed){this.dataset.armed='1';this.title='Click again to confirm delete';this.style.outline='2px solid #dc2626';var b=this;setTimeout(function(){delete b.dataset.armed;b.style.outline='';b.title='Delete alert';},3000);return false;}">
                                             <svg aria-hidden="true"><use href="#i-trash"/></svg>
                                         </button>
                                     </form>

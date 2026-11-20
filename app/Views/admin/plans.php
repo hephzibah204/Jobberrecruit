@@ -30,7 +30,7 @@
         <li class="nav-item"><button class="nav-link active" id="employer-tab-btn" data-bs-toggle="tab" data-bs-target="#employerTab">Employer Plans (<?= count($employerPlans) ?>)</button></li>
         <li class="nav-item"><button class="nav-link" id="candidate-tab-btn" data-bs-toggle="tab" data-bs-target="#candidateTab">Candidate Plans (<?= count($candidatePlans) ?>)</button></li>
         <li class="nav-item"><button class="nav-link" id="bundle-tab-btn" data-bs-toggle="tab" data-bs-target="#bundleTab">Growth Bundles (<?= count($bundles) ?>)</button></li>
-        <li class="nav-item"><button class="nav-link" id="subs-tab-btn" data-bs-toggle="tab" data-bs-target="#subsTab">Active Subscriptions</button></li>
+        <li class="nav-item"><button class="nav-link" id="subs-tab-btn" data-bs-toggle="tab" data-bs-target="#subsTab">Subscriptions</button></li>
         <li class="nav-item"><button class="nav-link" id="unlimited-tab-btn" data-bs-toggle="tab" data-bs-target="#unlimitedTab">Unlimited Access</button></li>
     </ul>
 
@@ -51,7 +51,7 @@
                                         <td><strong><?= esc($pObj->name ?? '') ?></strong></td>
                                         <td><code><?= esc($pObj->code ?? '') ?></code></td>
                                         <td>₦<?= number_format((float)($pObj->base_price ?? 0)) ?></td>
-                                        <td><?= $pObj->monthly_job_credits ?? '—' ?></td>
+                                        <td><?= (new \App\Services\CreditService())->planProvidesUnlimitedPosting($pObj) ? 'Unlimited' : ($pObj->monthly_job_credits ?? '—') ?></td>
                                         <td><?= count(array_filter($features)) ?> enabled</td>
                                         <td><span class="badge bg-<?= !empty($pObj->is_active) ? 'success' : 'secondary' ?>"><?= !empty($pObj->is_active) ? 'Active' : 'Inactive' ?></span></td>
                                         <td class="text-center">

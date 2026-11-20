@@ -42,10 +42,7 @@ class Services extends BaseService
 
         $config = config('Email');
 
-        if (static::$bypassQueue) {
-            return new \CodeIgniter\Email\Email($config);
-        }
-
+        // Bypass only queueing; suppression and permanent-failure checks still apply.
         return new \App\Libraries\QueuedEmail($config);
     }
 

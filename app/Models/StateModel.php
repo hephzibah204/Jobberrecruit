@@ -49,9 +49,14 @@ class StateModel extends Model
 
     public function getActiveStates()
     {
-        return $this->where('is_active', 1)
+        return \App\Services\NigerianJobLocations::filter($this->where('is_active', 1)
             ->orderBy('name', 'ASC')
-            ->findAll();
+            ->findAll());
+    }
+
+    public function getJobLocations(): array
+    {
+        return \App\Services\NigerianJobLocations::filter($this->orderBy('name', 'ASC')->findAll());
     }
 
     public function getRegions()

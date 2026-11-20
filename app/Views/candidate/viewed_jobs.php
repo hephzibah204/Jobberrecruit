@@ -49,7 +49,7 @@
                                     </span>
                                 </td>
                                 <td style="padding:14px 8px;">
-                                    <a href="<?= site_url('job/view/' . $job->id) ?>" class="btn btn-primary btn-sm">
+                                    <a href="<?= esc(format_job_url($job), 'attr') ?>" class="btn btn-primary btn-sm">
                                         View Again
                                     </a>
                                 </td>

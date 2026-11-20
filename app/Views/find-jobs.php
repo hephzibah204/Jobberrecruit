@@ -154,11 +154,12 @@
                                                 <span><?= ucfirst($job->job_type) ?></span>
                                             </span>
                                             <div class="image-box">
-                                                <img src="<?= $job->company_logo ? base_url($job->company_logo) : base_url($website_logo) ?>" alt="jobberRecruit" class="img-fluid company-logo">
+                                                <img src="<?= esc(!empty($job->company_logo) ? resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company') : base_url($website_logo)) ?>" alt="<?= esc($job->employer_name ?? 'Company') ?>" class="img-fluid company-logo">
                                             </div>
                                             <div class="right-info">
                                                 <a class="name-job" href="<?= site_url('company/' . $job->employer_id) ?>"><?= esc($job->employer_name) ?></a>
                                                 <span class="location-small"><?= esc($job->location) ?: 'Remote' ?></span>
+                                                <?php if (empty($job->is_anonymous) && !empty($job->employer_tagline)): ?><span class="location-small d-block"><?= esc($job->employer_tagline) ?></span><?php endif; ?>
                                             </div>
                                         </div>
                                         <div class="card-block-info">
@@ -536,6 +537,8 @@
             });
         });
 
+        const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+
         function updateJobList() {
             const params = new URLSearchParams();
             const industryId = document.querySelector('[name="industry_id"]').value;
@@ -600,6 +603,7 @@
                                             <div class="right-info">
                                                 <a class="name-job" href="<?= site_url('company') ?>/${job.employer_id}">${job.employer_name}</a>
                                                 <span class="location-small">${job.location || 'Remote'}</span>
+                                                ${!job.is_anonymous && job.employer_tagline ? `<span class="location-small d-block">${escapeHtml(job.employer_tagline)}</span>` : ''}
                                             </div>
                                         </div>
                                         <div class="card-block-info">

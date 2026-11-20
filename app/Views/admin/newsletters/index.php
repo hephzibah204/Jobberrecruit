@@ -304,10 +304,11 @@
                                                 </td>
                                                 <td>
                                                     <?php
+                                                    $displayStatus = \App\Models\WebinarModel::displayStatus($webinar);
                                                     $badgeMap = ['upcoming' => 'info', 'ongoing' => 'primary', 'completed' => 'success', 'cancelled' => 'danger'];
-                                                    $badge = $badgeMap[$webinar->status] ?? 'secondary';
+                                                    $badge = $badgeMap[$displayStatus] ?? 'secondary';
                                                     ?>
-                                                    <span class="badge bg-<?= $badge ?>-transparent"><?= ucfirst($webinar->status) ?></span>
+                                                    <span class="badge bg-<?= $badge ?>-transparent"><?= ucfirst($displayStatus) ?></span>
                                                 </td>
                                                 <td>
                                                     <div class="d-flex gap-1">

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-NG">
 <head>
+<?= view('partials/ai_request_security') ?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0A2F57">
@@ -417,7 +418,7 @@ body.in-lobby .stage,body.in-lobby .dock,body.in-lobby .coach,body.in-lobby .coa
 }
 </style></head>
 <body>
-<div class="offline-bar" id="offline-bar" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#i-info"/></svg><span id="offline-txt">You\u2019re offline \u2014 answers are kept on this device and won\u2019t be lost, but they can\u2019t be saved to your account until you\u2019re back online.</span></div>
+<div class="offline-bar" id="offline-bar" role="status" aria-live="polite"><svg aria-hidden="true"><use href="#i-info"/></svg><span id="offline-txt">You are offline. Keep this page open to retain your answers, then retry saving when connected.</span></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
@@ -439,7 +440,12 @@ body.in-lobby .stage,body.in-lobby .dock,body.in-lobby .coach,body.in-lobby .coa
 <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/></symbol>
 <symbol id="i-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.4 5.6a9 9 0 0 1 0 12.8"/></symbol>
 <symbol id="i-vol-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4Z"/><path d="m22 9-6 6M16 9l6 6"/></symbol>
+<symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></symbol>
+<symbol id="i-arrow-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
 </defs></svg>
+
+<?= view('partials/svg_sprites') ?>
 
 <!-- session topbar -->
 <header class="sess-bar" role="banner">
@@ -649,7 +655,7 @@ $isVoiceMode = ($contextPreset['interview_mode'] ?? '') === 'voice'
     <button type="button" id="coach-close" aria-label="Hide coaching panel"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <div class="coach-body">
     <div class="crow" data-k="len"><i>Answer depth</i><b>—</b><span class="track"><span class="fill"></span></span></div>
-    <div class="crow" data-k="pace"><i>Speaking pace</i><b>—</b><span class="track"><span class="fill"></span></span></div>
+    <div class="crow" data-k="pace"><i title="Words per minute measured from when the question was shown, including thinking time">Response pace</i><b>—</b><span class="track"><span class="fill"></span></span></div>
     <div class="crow" data-k="star"><i>STAR structure</i><b>—</b><span class="track"><span class="fill"></span></span></div>
     <div class="crow" data-k="spec"><i>Specificity</i><b>—</b><span class="track"><span class="fill"></span></span></div>
     <div class="crow" data-k="conf"><i>Confident language</i><b>—</b><span class="track"><span class="fill"></span></span></div>
@@ -665,7 +671,7 @@ $isVoiceMode = ($contextPreset['interview_mode'] ?? '') === 'voice'
   <div class="modal">
     <span class="modal-ic" aria-hidden="true"><svg><use href="#i-alert"/></svg></span>
     <h2 id="exit-title">End this interview?</h2>
-    <p id="exit-desc">Your answers so far are saved, but this session will be marked incomplete and won't produce a full report.</p>
+    <p id="exit-desc">Leaving now will discard unsaved answers. Finish the session to save transcribed answers to your account.</p>
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" id="exit-stay">Keep Going</button>
       <a href="<?= site_url('candidate/career-tools/mock-interview') ?>" class="btn btn-danger-o" id="exit-leave">End Session</a>
@@ -701,6 +707,7 @@ var CFG={
   salaryBand:qp('salary',''),
   company:qp('company','any'),
   arrangement:qp('arrangement','onsite'),
+  language:qp('language','en'),
   candidateContext: '<?= isset($contextPreset["candidate_profile"]) ? esc($contextPreset["candidate_profile"], "js") : "" ?>'
 };
 
@@ -757,19 +764,46 @@ if(DEBUG){
 }
 
 /* ── personas (must match the Studio) ── */
+function getCandidateGreeting() {
+  var hr = new Date().getHours();
+  if (hr < 12) return 'Good morning';
+  if (hr < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function getPersonaOpener(personaKey) {
+  var greeting = getCandidateGreeting();
+  var greetingLower = greeting.toLowerCase();
+  var openers = {
+    'corporate-hr': greeting + ', I\u2019m Chioma from HR. Thank you for making time today \u2014 I\u2019ll walk you through a structured set of questions about your experience and fit for the role. Let\u2019s get started.',
+    'big4-partner': greeting + '. I\u2019m Bankole \u2014 I lead engagements at partner level, and I hold every candidate to the standard I hold my own team. Let\u2019s begin; I expect precision in your answers.',
+    'startup-founder': 'Hey, ' + greetingLower + ' \u2014 I\u2019m Tomiwa. I run the company, so this is just me, no HR script. I move fast and I like people who move fast too. Let\u2019s dive in.',
+    'technical-lead': 'Hi, ' + greetingLower + ' \u2014 I\u2019m Emeka. I\u2019ll be going deep on the technical side today. I care less about buzzwords and more about how you actually think through problems. Let\u2019s start.',
+    'gov-recruiter': greeting + '. I am Alhaji Musa Ibrahim, and I will conduct this interview in line with standard civil service procedure. Please answer each question fully, in the order presented.',
+    'banking-recruiter': greeting + ', I\u2019m Ngozi, and I recruit for banking and financial services roles. We move efficiently here, and we care about precision \u2014 especially with numbers. Let\u2019s begin.'
+  };
+  return openers[personaKey] || openers['corporate-hr'];
+}
+
+function fixQuestionGreeting(text) {
+  if (typeof text !== 'string') return text;
+  var greeting = getCandidateGreeting();
+  return text.replace(/^(Good morning|Good afternoon|Good evening|Good day)[,.]?\s*/i, greeting + ', ');
+}
+
 var PERSONAS={
   'corporate-hr':{name:'Chioma Nwachukwu',role:'HR Business Partner',
-    open:'Hello, I\u2019m Chioma from HR. Thank you for making time today \u2014 I\u2019ll walk you through a structured set of questions about your experience and fit for the role. Let\u2019s get started.'},
+    open:getPersonaOpener('corporate-hr')},
   'big4-partner':{name:'Mr. Bankole Adisa',role:'Partner, Professional Services',
-    open:'Good day. I\u2019m Bankole \u2014 I lead engagements at partner level, and I hold every candidate to the standard I hold my own team. Let\u2019s begin; I expect precision in your answers.'},
+    open:getPersonaOpener('big4-partner')},
   'startup-founder':{name:'Tomiwa',role:'Founder &amp; CEO',
-    open:'Hey, I\u2019m Tomiwa \u2014 I run the company, so this is just me, no HR script. I move fast and I like people who move fast too. Let\u2019s dive in.'},
+    open:getPersonaOpener('startup-founder')},
   'technical-lead':{name:'Emeka Okafor',role:'Engineering / Technical Lead',
-    open:'Hi, I\u2019m Emeka \u2014 I\u2019ll be going deep on the technical side today. I care less about buzzwords and more about how you actually think through problems. Let\u2019s start.'},
+    open:getPersonaOpener('technical-lead')},
   'gov-recruiter':{name:'Alhaji Musa Ibrahim',role:'Civil Service Interview Panel',
-    open:'Good day. I am Alhaji Musa Ibrahim, and I will conduct this interview in line with standard civil service procedure. Please answer each question fully, in the order presented.'},
+    open:getPersonaOpener('gov-recruiter')},
   'banking-recruiter':{name:'Ngozi Adebayo-Williams',role:'Talent Recruiter, Banking &amp; Financial Services',
-    open:'Hello, I\u2019m Ngozi, and I recruit for banking and financial services roles. We move efficiently here, and we care about precision \u2014 especially with numbers. Let\u2019s begin.'}
+    open:getPersonaOpener('banking-recruiter')}
 };
 var P=PERSONAS[CFG.persona]||PERSONAS['corporate-hr'];
 if(DEBUG){dlog('persona: '+P.name+' ('+P.role+')'+(PERSONAS[CFG.persona]?'':' \u2014 CFG.persona="'+CFG.persona+'" not recognised, fell back to default'),!!PERSONAS[CFG.persona]);}
@@ -1227,6 +1261,9 @@ function buildFallbackQuestions(){
    questions mid-interview, and never patch a partially-fallback QS with
    partial AI results. It's one or the other, decided once, here. */
 function fetchAIQuestions(onDone){
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var fetchTimer = controller ? setTimeout(function(){ try { controller.abort(); } catch(e){} }, 5000) : null;
+
   var payload={
     job:         CFG.job,
     field:       CFG.field,
@@ -1238,15 +1275,24 @@ function fetchAIQuestions(onDone){
     salaryBand:  CFG.salaryBand,
     company:     CFG.company,
     arrangement: CFG.arrangement,
-    candidateContext: CFG.candidateContext
+    clientHour:  new Date().getHours(),
+    clientTimeGreeting: getCandidateGreeting(),
+    candidateContext: (CFG.candidateContext || '') + (CFG.language==='en-uk' ? '\nUse international British English.' : '\nUse Nigerian professional English.')
   };
 
+  payload['<?= csrf_token() ?>'] = '<?= csrf_hash() ?>';
   fetch('<?= site_url("api/interview/questions") ?>',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
+    headers:{
+      'Content-Type':'application/json',
+      'X-Requested-With':'XMLHttpRequest',
+      '<?= csrf_header() ?>':'<?= csrf_hash() ?>'
+    },
+    body:JSON.stringify(payload),
+    signal: controller ? controller.signal : undefined
   })
   .then(function(r){
+    if(fetchTimer) clearTimeout(fetchTimer);
     if(!r.ok)throw new Error('HTTP '+r.status);
     return r.json();
   })
@@ -1262,6 +1308,7 @@ function fetchAIQuestions(onDone){
     onDone(clean);
   })
   .catch(function(err){
+    if(fetchTimer) clearTimeout(fetchTimer);
     if(typeof DEBUG!=='undefined'&&DEBUG&&typeof dlog==='function'){
       dlog('Gemini fetch failed: '+err.message+' — using curated bank',false);
     }
@@ -1279,27 +1326,32 @@ function logSource(){
   }
 }
 function resolveQuestions(onReady){
+  // Ensure local curated bank is prepared immediately
+  if(!QS || !QS.length){
+    QUESTION_SOURCE_USED='fallback';
+    QS=buildFallbackQuestions().map(fixQuestionGreeting);
+    logSource();
+  }
+  if(onReady) onReady();
+
   if(QUESTION_SOURCE==='gemini'){
     var settled=false;
     var timeout=setTimeout(function(){
       if(settled)return;settled=true;
-      QUESTION_SOURCE_USED='fallback';QS=buildFallbackQuestions();logSource();onReady();
-    },15000); /* wait up to 15s for Gemini AI questions before falling back */
+    },4000); /* wait up to 4s for Gemini AI questions before falling back */
     fetchAIQuestions(function(result){
       if(settled)return;settled=true;clearTimeout(timeout);
       if(result&&result.length){
-        QUESTION_SOURCE_USED='gemini';QS=result.slice(0,qTotal);
+        QUESTION_SOURCE_USED='gemini';
+        QS=result.slice(0,qTotal).map(fixQuestionGreeting);
+        if(typeof window.onGeminiUpgraded === 'function') window.onGeminiUpgraded();
       }else{
-        QUESTION_SOURCE_USED='fallback';QS=buildFallbackQuestions();
+        QUESTION_SOURCE_USED='fallback';
       }
       logSource();
-      onReady();
     });
-  }else{
-    QUESTION_SOURCE_USED='fallback';QS=buildFallbackQuestions();logSource();onReady();
   }
 }
-
 
 /* rule-based acknowledgement lines (demo — DEV: replace with AI engine;
    engine must react to real content, never invent praise) */
@@ -1362,7 +1414,8 @@ function tick(){
   if(remain===120){$('timer').classList.add('warn');toast('2 minutes left \u2014 wrap up your current answer')}
   if(remain<=0){clearInterval(timerInt);finish(true)}
 }
-timerInt=setInterval(tick,1000);
+// timerInt starts when entering room via beginSession()
+var timerInt=null;
 
 /* ── VOICE ENGINE (P2) ────────────────────────────────────────────────
    Architecture: sentence-queue player behind one interface — speak(text, onDone).
@@ -1386,141 +1439,177 @@ timerInt=setInterval(tick,1000);
                  supports <emphasis> and <break> for word emphasis + pausing)
    ALL provider calls MUST proxy through the JobberRecruit backend — never put
    API keys in this file. Suggested endpoint: POST /api/tts {text, persona}. ── */
-/* PROVIDER: 'browser' = free built-in TTS (robotic on most devices).
-   'gemini'  = real human-sounding voice via /api/interview/tts.
-   Flip to 'gemini' once InterviewVoice.php is deployed — the browser
-   engine stays as the automatic per-sentence fallback either way. */
-var VOICE={PROVIDER:'gemini',on:true,voice:null,unlocked:false,queue:[],playing:false,onDone:null,pendingText:null};
-var VPROF={
-  'corporate-hr':{g:'f',pitch:1.05,rate:0.98},
-  'big4-partner':{g:'m',pitch:0.88,rate:0.92},
-  'startup-founder':{g:'m',pitch:1.02,rate:1.12},
-  'technical-lead':{g:'m',pitch:0.95,rate:0.97},
-  'gov-recruiter':{g:'m',pitch:0.86,rate:0.88},
-  'banking-recruiter':{g:'f',pitch:1.0,rate:1.0}
+/* ── EDGE TTS NIGERIAN VOICE ENGINE (en-NG-EzinneNeural & en-NG-AbeoNeural) ── */
+var TTS_OK = typeof Audio !== "undefined" || ("speechSynthesis" in window);
+var VOICE = {
+  on: true,
+  unlocked: false,
+  playing: false,
+  currentAudio: null,
+  onDone: null,
+  pendingText: null
 };
-var TTS_OK=('speechSynthesis' in window);
-if(DEBUG){var r1=document.getElementById('dbg-tts-row');if(r1)r1.innerHTML='<b>TTS supported:</b> '+(TTS_OK?'yes':'no \u2014 interviewer will be silent, text still works');}
-function pickVoice(){
-  if(!TTS_OK)return;
-  var vs=window.speechSynthesis.getVoices();if(!vs.length)return;
-  var want=(VPROF[CFG.persona]||VPROF['corporate-hr']).g;
-  var female=['female','samantha','zira','victoria','karen','serena','tessa','moira','kate'];
-  var male=['male','daniel','david','george','oliver','james','fred'];
-  var names=want==='f'?female:male;
-  var en=vs.filter(function(v){return /^en/i.test(v.lang)});
-  var hit=en.find(function(v){var n=v.name.toLowerCase();return names.some(function(x){return n.indexOf(x)>-1})});
-  VOICE.voice=hit||en[0]||vs[0];
-  if(VOICE.voice)dlog('voice picked: '+VOICE.voice.name,true);
+
+function setTalking(on) {
+  var w = document.querySelector('.rwave');
+  if (w) w.classList.toggle('talking', on);
+  var cst = $('call-stage');
+  if (cst) cst.classList.toggle('talking', on);
+  aiSpeaking = on;
+  gateOrb();
 }
-if(TTS_OK){
-  pickVoice();
-  window.speechSynthesis.onvoiceschanged=pickVoice;
-  /* Safari frequently never fires onvoiceschanged and returns an empty list
-     on the first call — poll briefly as a fallback so the persona voice
-     still gets picked instead of silently falling back to the OS default. */
-  var voiceTries=0,voicePoll=setInterval(function(){
-    voiceTries++;
-    if(VOICE.voice||voiceTries>10){clearInterval(voicePoll);return}
-    pickVoice();
-  },300);
-}
-function setTalking(on){
-  var w=document.querySelector('.rwave');if(w)w.classList.toggle('talking',on);
-  var cst=$('call-stage');if(cst)cst.classList.toggle('talking',on);
-  aiSpeaking=on;gateOrb();
-}
-function splitSentences(t){
-  return String(t).replace(/<[^>]*>/g,'').replace(/[\uD800-\uDFFF]./g,'').trim()
-    .split(/(?<=[.!?])\s+/).filter(function(s){return s.trim()});
-}
-var PROVIDERS={
-  browser:function(sentence){
-    return new Promise(function(res){
-      if(!TTS_OK){res();return}
-      var u=new SpeechSynthesisUtterance(sentence);
-      var prof=VPROF[CFG.persona]||VPROF['corporate-hr'];
-      if(VOICE.voice)u.voice=VOICE.voice;
-      u.pitch=prof.pitch;u.rate=prof.rate;u.lang=(VOICE.voice&&VOICE.voice.lang)||'en-GB';
-      u.onend=res;u.onerror=res;
-      window.speechSynthesis.speak(u);
-    });
-  },
-  /* Real human-sounding voice via Gemini TTS. Falls back to the browser
-     engine per-sentence on ANY failure, so a dead API means a robotic
-     interviewer, never a silent one.
-  /* Gemini TTS voice provider — strictly uses Gemini Voice without browser speech synthesis fallback */
-  gemini:function(sentence){
-    return new Promise(function(res){
-      var settled=false;
-      function done(){if(!settled){settled=true;res()}}
-      var guard=setTimeout(function(){
-        if(DEBUG)dlog('TTS timed out, falling back to browser voice',false);
-        if(!settled) PROVIDERS.browser(sentence).then(done);
-      },10000);
-      fetch('<?= site_url("api/interview/tts") ?>',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({text:sentence,persona:CFG.persona})
-      })
-      .then(function(r){
-        if(!r.ok)throw new Error('HTTP '+r.status);
-        if(DEBUG)dlog('TTS '+(r.headers.get('X-TTS-Cache')==='hit'?'(cached)':'(generated)'),true);
-        return r.blob();
-      })
-      .then(function(blob){
-        if(settled)return;clearTimeout(guard);
-        if('speechSynthesis' in window) window.speechSynthesis.cancel();
-        var url=URL.createObjectURL(blob);
-        var a=new Audio(url);
-        a.onended=function(){URL.revokeObjectURL(url);done()};
-        a.onerror=function(){URL.revokeObjectURL(url);PROVIDERS.browser(sentence).then(done)};
-        a.play().catch(function(){
-          URL.revokeObjectURL(url);PROVIDERS.browser(sentence).then(done);
-        });
-      })
-      .catch(function(err){
-        if(settled)return;clearTimeout(guard);
-        if(DEBUG)dlog('TTS failed ('+err.message+')',false);
-        PROVIDERS.browser(sentence).then(done);
-      });
-    });
+
+function stopCurrentSpeech() {
+  if (VOICE.currentAudio) {
+    try {
+      VOICE.currentAudio.pause();
+      VOICE.currentAudio.currentTime = 0;
+    } catch(e) {}
+    VOICE.currentAudio = null;
   }
-};
-function runQueue(){
-  if(VOICE.playing)return;
-  var s=VOICE.queue.shift();
-  if(!s){setTalking(false);var cb=VOICE.onDone;VOICE.onDone=null;if(cb)cb();return}
-  VOICE.playing=true;setTalking(true);
-  var play=PROVIDERS[VOICE.PROVIDER]||PROVIDERS.gemini;
-  play(s).then(function(){
-    VOICE.playing=false;
-    setTimeout(runQueue,140); /* breath pause between sentences */
+  if ('speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch(e) {}
+  }
+  VOICE.playing = false;
+  setTalking(false);
+}
+
+function speak(text, onDone) {
+  if (!VOICE.on || CFG.imode === 'text') {
+    if (onDone) onDone();
+    return;
+  }
+
+  stopCurrentSpeech();
+
+  var cleanText = String(text || '').replace(/<[^>]*>/g, '').trim();
+  if (!cleanText) {
+    if (onDone) onDone();
+    return;
+  }
+
+  VOICE.playing = true;
+  setTalking(true);
+  VOICE.onDone = onDone || null;
+  VOICE.pendingText = text;
+
+  // Strictly cancel any browser speech synthesis so only Edge TTS speaks
+  if ('speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch(e) {}
+  }
+
+  fetch('<?= site_url("api/interview/tts") ?>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+    },
+    body: JSON.stringify({
+      text: cleanText,
+      persona: CFG.persona,
+      '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+    })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  })
+  .then(function(blob) {
+    if (!VOICE.on) {
+      VOICE.playing = false;
+      setTalking(false);
+      if (onDone) onDone();
+      return;
+    }
+
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch(e) {}
+    }
+
+    var url = URL.createObjectURL(blob);
+    var audio = new Audio(url);
+    VOICE.currentAudio = audio;
+
+    function finish() {
+      URL.revokeObjectURL(url);
+      VOICE.currentAudio = null;
+      VOICE.playing = false;
+      setTalking(false);
+      var cb = VOICE.onDone;
+      VOICE.onDone = null;
+      if (cb) cb();
+    }
+
+    audio.onended = finish;
+    audio.onerror = function() {
+      if (DEBUG) dlog('Edge TTS playback error', false);
+      finish();
+    };
+
+    audio.play().catch(function(err) {
+      if (DEBUG) dlog('Audio playback blocked: ' + err.message, false);
+      finish();
+    });
+  })
+  .catch(function(err) {
+    if (DEBUG) dlog('Edge TTS request error (' + err.message + ') — attempting browser speech synthesis', false);
+    if ('speechSynthesis' in window && cleanText) {
+      try {
+        var u = new SpeechSynthesisUtterance(cleanText);
+        u.lang = CFG.language === 'en-uk' ? 'en-GB' : 'en-US';
+        u.rate = 1.0;
+        u.onend = function() {
+          VOICE.playing = false;
+          setTalking(false);
+          var cb = VOICE.onDone;
+          VOICE.onDone = null;
+          if (cb) cb();
+        };
+        u.onerror = function() {
+          VOICE.playing = false;
+          setTalking(false);
+          var cb = VOICE.onDone;
+          VOICE.onDone = null;
+          if (cb) cb();
+        };
+        window.speechSynthesis.speak(u);
+        return;
+      } catch(e) {}
+    }
+    VOICE.playing = false;
+    setTalking(false);
+    var cb = VOICE.onDone;
+    VOICE.onDone = null;
+    if (cb) cb();
   });
 }
-function speak(text,onDone){
-  if(!VOICE.on || CFG.imode === 'text'){if(onDone)onDone();return}
-  try{
-    if('speechSynthesis' in window) window.speechSynthesis.cancel();
-    VOICE.queue=splitSentences(text);
-    VOICE.playing=false;VOICE.onDone=onDone||null;VOICE.pendingText=text;
-    runQueue();
-  }catch(e){setTalking(false);if(onDone)onDone()}
-}
+
 /* mobile unlock: autoplay policy blocks speech until the first gesture */
-document.addEventListener('pointerdown',function(){
-  if(VOICE.unlocked)return;VOICE.unlocked=true;
-  if(VOICE.pendingText&&!VOICE.playing&&VOICE.queue.length===0){
-    speak(VOICE.pendingText,VOICE.onDone);
+document.addEventListener('pointerdown', function() {
+  if (VOICE.unlocked) return;
+  VOICE.unlocked = true;
+  if ('speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch(e) {}
   }
-},{once:true});
+  if (VOICE.pendingText && !VOICE.playing) {
+    speak(VOICE.pendingText, VOICE.onDone);
+  }
+}, {once: true});
+
 /* voice toggle */
-var vbtn=$('voice-btn');
-vbtn.addEventListener('click',function(){
-  VOICE.on=!VOICE.on;
-  this.setAttribute('aria-pressed',VOICE.on?'true':'false');
-  $('voice-btn-ic').innerHTML='<use href="#'+(VOICE.on?'i-vol':'i-vol-off')+'"/>';
-  if(!VOICE.on){if('speechSynthesis' in window)window.speechSynthesis.cancel();VOICE.queue=[];VOICE.playing=false;setTalking(false);var cb=VOICE.onDone;VOICE.onDone=null;if(cb)cb()}
-  toast(VOICE.on?'Interviewer voice on':'Interviewer voice muted');
+var vbtn = $('voice-btn');
+vbtn.addEventListener('click', function() {
+  VOICE.on = !VOICE.on;
+  this.setAttribute('aria-pressed', VOICE.on ? 'true' : 'false');
+  $('voice-btn-ic').innerHTML = '<use href="#' + (VOICE.on ? 'i-vol' : 'i-vol-off') + '"/>';
+  if (!VOICE.on) {
+    stopCurrentSpeech();
+    var cb = VOICE.onDone;
+    VOICE.onDone = null;
+    if (cb) cb();
+  }
+  toast(VOICE.on ? 'Interviewer voice on' : 'Interviewer voice muted');
 });
 /* orb gate: in voice/video mode, recording waits until the question is fully read */
 var aiSpeaking=false;
@@ -1729,13 +1818,21 @@ function fetchAIReply(question,answer,alreadyFollowedUp,onDone){
     if(settled)return;settled=true;
     if(DEBUG)dlog('AI reply timed out - pattern-matched fallback',false);
     onDone(null);
-  },5000);
+  },12000); /* 12s client guard: must exceed the server 11s budget (InterviewReply TIMEOUT_SECONDS) - at 5s, slow-but-valid AI replies were abandoned and canned pattern-matched follow-ups shown instead */
   fetch('<?= site_url("api/interview/reply") ?>',{
-    method:'POST',headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'X-Requested-With':'XMLHttpRequest',
+      '<?= csrf_header() ?>':'<?= csrf_hash() ?>'
+    },
     body:JSON.stringify({
       question:question,answer:answer,history:history,
       persona:CFG.persona,job:CFG.job,field:CFG.field,itype:CFG.itype,
-      askedFollowUpAlready:!!alreadyFollowedUp
+      clientHour: new Date().getHours(),
+      clientTimeGreeting: getCandidateGreeting(),
+      askedFollowUpAlready:!!alreadyFollowedUp,
+      '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
     })
   })
   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
@@ -1745,6 +1842,8 @@ function fetchAIReply(question,answer,alreadyFollowedUp,onDone){
       if(DEBUG)dlog('AI reply malformed (no acknowledgement) - pattern-matched fallback',false);
       onDone(null);return;
     }
+    data.acknowledgement = fixQuestionGreeting(data.acknowledgement);
+    if(data.followUp) data.followUp = fixQuestionGreeting(data.followUp);
     if(DEBUG)dlog('AI reply: '+(data.onTopic===false?'OFF-TOPIC detected':'on topic')+(data.followUp?' + follow-up':' (no follow-up)'),true);
     onDone(data);
   })
@@ -1901,25 +2000,39 @@ function startMediaRecorder(){
   var stream=(CFG.imode==='video'&&CAM.stream)?CAM.stream:AUD.micStream;
   if(!stream)return;
   try{
-    MR=new MediaRecorder(stream);
+    var mime = 'audio/webm';
+    if(typeof MediaRecorder.isTypeSupported === 'function'){
+      if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mime = 'audio/webm;codecs=opus';
+      else if(MediaRecorder.isTypeSupported('audio/webm')) mime = 'audio/webm';
+      else if(MediaRecorder.isTypeSupported('audio/mp4')) mime = 'audio/mp4';
+      else mime = '';
+    }
+    MR = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
     MR.ondataavailable=function(e){if(e.data&&e.data.size>0)mrChunks.push(e.data)};
-    MR.onerror=function(){mrActive=false;if(DEBUG)dlog('MediaRecorder error — answer still captured via transcript',false)};
-    MR.start();
+    MR.onerror=function(){mrActive=false;if(DEBUG)dlog('MediaRecorder error',false)};
+    MR.start(250);
     mrActive=true;
-    if(DEBUG)dlog('MediaRecorder started ('+CFG.imode+')',true);
+    if(DEBUG)dlog('MediaRecorder started ('+CFG.imode+', mime='+MR.mimeType+')',true);
   }catch(e){
     MR=null;mrActive=false;
-    if(DEBUG)dlog('MediaRecorder unavailable ('+e.name+') — transcript still captured',false);
+    if(DEBUG)dlog('MediaRecorder unavailable ('+e.name+')',false);
   }
 }
 function stopMediaRecorder(onBlobReady){
   if(!MR){ if(onBlobReady)onBlobReady(null); return; }
-  MR.onstop = function() {
-    var blob = new Blob(mrChunks, {type: 'audio/webm'});
+  var rec = MR;
+  MR = null;
+  mrActive = false;
+  rec.onstop = function() {
+    var mime = rec.mimeType || 'audio/webm';
+    var blob = new Blob(mrChunks, {type: mime});
     if(onBlobReady) onBlobReady(blob);
   };
-  try{if(MR.state!=='inactive')MR.stop()}catch(e){ if(onBlobReady)onBlobReady(null); }
-  MR=null;mrActive=false;
+  try{
+    if(rec.state!=='inactive') rec.stop();
+  }catch(e){
+    if(onBlobReady) onBlobReady(null);
+  }
 }
 function releaseRecording(){
   /* (spec 12) drop the blob as soon as the answer is submitted — no
@@ -1974,46 +2087,54 @@ function resetRec(){
   if(dockCard.dataset.mode!=='text')sub.disabled=true;
   $('media-hint').textContent=CFG.imode==='video'?'Tap to record your video answer. Look at the camera, and re-record if you need to.':'Tap to record your spoken answer. You can re-record before submitting.';
 }
+function ensureAudioStream(cb){
+  if(CFG.imode==='video'&&CAM.stream){cb(CAM.stream);return;}
+  if(AUD.micStream&&AUD.micStream.active){cb(AUD.micStream);return;}
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+      AUD.micStream=s;
+      cb(s);
+    }).catch(function(err){
+      if(DEBUG)dlog('mic stream request failed: '+(err&&err.name),false);
+      cb(null);
+    });
+  }else{
+    cb(null);
+  }
+}
 $('rec-orb').addEventListener('click',function(){
   if(!recording){
-    recording=true;recSec=0;
-    this.classList.add('rec');
-    $('rec-orb-ic').innerHTML='<use href="#i-stop"/>';
-    $('wave-live').hidden=false;$('rec-time').hidden=false;$('rec-time').textContent='0:00';
-    $('rec-indicator').hidden=false;
-    if(CFG.imode==='video'){
-      var cs1=$('cam-stage');if(cs1)cs1.classList.add('rec');
-      var ct1=$('cam-timer');if(ct1)ct1.textContent='0:00';
-      $('media-hint').textContent='Recording \u2014 speak to the camera, not the screen. Tap again to finish.';
-    }
-    $('media-hint').textContent='Recording\u2026 tap the button again when you\u2019ve finished your answer.';
-    recInt=setInterval(function(){recSec++;var t=fmt(recSec);$('rec-time').textContent=t;
-      var ct=$('cam-timer');if(ct)ct.textContent=t},1000);
-    /* real amplitude waveform (P9): reuse the camera stream's mic in video
-       mode; request mic-only in voice mode. Falls back to CSS animation. */
-    if(CFG.imode==='video'&&CAM.stream){startWave(CAM.stream)}
-    else if(CFG.imode==='voice'&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-      if(AUD.micStream){startWave(AUD.micStream)}
-      else navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
-        AUD.micStream=s;if(recording)startWave(s);
-        if(DEBUG)dlog('mic waveform stream acquired',true);
-      }).catch(function(err){
-        /* cosmetic only \u2014 falls back to the CSS animation, never blocks
-           the interview \u2014 but still worth surfacing in debug mode rather
-           than failing with zero trace, same principle as camera/transcription */
-        if(DEBUG)dlog('mic waveform unavailable ('+(err&&err.name||'unknown')+'), using CSS fallback animation',false);
-      });
-    }
-    /* DEV: start MediaRecorder(CAM.stream || AUD.micStream) here; on stop,
-       POST the blob to /candidate/interview/session/{id}/answer */
-    startTranscription(); /* live speech-to-text feeding the real analysis engine */
-    startMediaRecorder(); /* (spec 11) real capture, so the recording state is honest */
-    /* (spec 31) label set AFTER the recorder actually starts — never claim
-       "Recording" when nothing is recording. If MediaRecorder is
-       unavailable the answer is still captured via live transcription, so
-       say that instead of implying a file is being saved. */
-    var recLabel=$('rec-indicator').querySelector('span');
-    if(recLabel)recLabel.textContent=mrActive?'Recording':(SR_OK?'Capturing answer':'Timing answer');
+    var orbBtn=this;
+    $('media-hint').textContent='Connecting microphone…';
+    orbBtn.disabled=true;
+    ensureAudioStream(function(stream){
+      orbBtn.disabled=false;
+      if(!stream&&!CAM.stream){
+        toast('Microphone access is required for spoken answers.');
+        $('media-hint').textContent='Microphone permission blocked. Please enable it in browser settings.';
+        return;
+      }
+      recording=true;recSec=0;
+      orbBtn.classList.add('rec');
+      $('rec-orb-ic').innerHTML='<use href="#i-stop"/>';
+      $('wave-live').hidden=false;$('rec-time').hidden=false;$('rec-time').textContent='0:00';
+      $('rec-indicator').hidden=false;
+      if(CFG.imode==='video'){
+        var cs1=$('cam-stage');if(cs1)cs1.classList.add('rec');
+        var ct1=$('cam-timer');if(ct1)ct1.textContent='0:00';
+      }
+      $('media-hint').textContent='Recording… tap the button again when you’ve finished your answer.';
+
+      clearInterval(recInt);
+      recInt=setInterval(function(){recSec++;var t=fmt(recSec);$('rec-time').textContent=t;
+        var ct=$('cam-timer');if(ct)ct.textContent=t},1000);
+
+      startWave(stream);
+      startMediaRecorder();
+
+      var recLabel=$('rec-indicator').querySelector('span');
+      if(recLabel)recLabel.textContent=mrActive?'Recording':(SR_OK?'Capturing answer':'Timing answer');
+    });
   }else{
     recording=false;clearInterval(recInt);
     stopWave();
@@ -2041,8 +2162,18 @@ $('rec-orb').addEventListener('click',function(){
         return;
       }
       var fd = new FormData();
-      fd.append('audio', blob, 'answer.webm');
-      fetch('<?= site_url("api/interview/transcribe") ?>', { method: 'POST', body: fd })
+      var mime = blob.type || 'audio/webm';
+      var ext = mime.indexOf('mp4') !== -1 ? 'm4a' : (mime.indexOf('ogg') !== -1 ? 'ogg' : 'webm');
+      fd.append('audio', blob, 'answer.' + ext);
+      fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+      fetch('<?= site_url("api/interview/transcribe") ?>', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+        },
+        body: fd
+      })
       .then(function(r){ return r.json(); })
       .then(function(data){
         if(data.transcript) {
@@ -2128,7 +2259,7 @@ function startTranscription(){
     SR.continuous=true;
     SR.interimResults=true;
     SR.maxAlternatives=3; /* requested more detailed transcription */
-    SR.lang='en-US';
+    SR.lang=CFG.language==='en-uk'?'en-GB':'en-NG';
     srFinal='';srInterim='';
     updateCaption();
     SR.onresult=function(e){
@@ -2313,6 +2444,92 @@ function stopWave(){
    summarisation and MEMORY becomes the literal conversation history sent
    back on every /api/interview/next call. */
 var MEMORY=[];
+var completionKey = '<?= bin2hex(random_bytes(32)) ?>';
+var completionSaved = false;
+async function saveInterviewCompletion() {
+  if (completionSaved) return;
+  var status=document.getElementById('interview-save-status');
+  if(!status){status=document.createElement('p');status.id='interview-save-status';status.setAttribute('role','status');document.getElementById('done-title').after(status);}
+  var history=[];
+  MEMORY.forEach(function(turn){history.push({sender:'model',message:turn.question});history.push({sender:'user',message:turn.answer});});
+  if(!history.length){status.textContent='No transcribed answers are available to save. Continue in text mode or enable transcription.';return;}
+  status.textContent='Saving and evaluating your interview…';
+  const body=new URLSearchParams({completion_key:completionKey,history:JSON.stringify(history),jobTitle:CFG.job,difficulty:CFG.diff,questionPack:CFG.field,interviewMode:CFG.imode,durationSeconds:String(elapsed),itype:CFG.itype,personality:CFG.persona});
+  const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),90000);
+  try {
+    body.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    const response=await fetch('<?= site_url('candidate/career-tools/evaluate-interview') ?>',{
+      method:'POST',
+      headers:{
+        'X-Requested-With':'XMLHttpRequest'
+      },
+      body:body,
+      signal:controller.signal
+    });
+    const data=await response.json();
+    if(!response.ok || !data.saved_session || !data.saved_session.id) throw new Error('Could not save this interview.');
+    completionSaved=true;
+    status.textContent='Interview evaluated by AI and saved to your history. +'+data.xp_awarded+' Career XP.';
+    if (typeof applyAiEvaluation === 'function') applyAiEvaluation(data);
+  } catch(error) {
+    status.textContent='Interview save not confirmed. '+(error.name==='AbortError'?'The request timed out.':error.message)+' ';
+    const retry=document.createElement('button');retry.type='button';retry.textContent='Retry saving';retry.onclick=saveInterviewCompletion;status.appendChild(retry);
+  } finally { clearTimeout(timer); }
+}
+
+function applyAiEvaluation(data){
+  if(!data)return;
+  if(data.overall_score){
+    var overall=Math.min(100,Math.max(10,Math.round(data.overall_score*10)));
+    var repOverall=$('rep-overall');if(repOverall)repOverall.textContent=overall;
+    var repRing=$('rep-ring-p');if(repRing)repRing.style.strokeDashoffset=Math.round(352*(1-overall/100));
+    var b=band(overall);
+    var repBand=$('rep-band');if(repBand)repBand.innerHTML='<span class="'+b[1]+'">Recruiter impression: '+b[0]+'</span>';
+  }
+  if(data.communication_score||data.confidence_score||data.relevance_score||data.star_average){
+    var subs=$('rep-subs');
+    if(subs){
+      subs.innerHTML='';
+      var subScores={
+        'Communication':Math.min(100,(data.communication_score||7)*10),
+        'Confidence':Math.min(100,(data.confidence_score||7)*10),
+        'Relevance':Math.min(100,(data.relevance_score||7)*10),
+        'Structure (STAR)':Math.min(100,(data.star_average||7)*10)
+      };
+      Object.keys(subScores).forEach(function(k){
+        var d=document.createElement('div');d.className='sub';
+        d.innerHTML='<i>'+k+' <small>'+subScores[k]+'</small></i><div class="track"><div class="fill" style="width:'+subScores[k]+'%"></div></div>';
+        subs.appendChild(d);
+      });
+    }
+  }
+  if(Array.isArray(data.strengths)&&data.strengths.length){
+    var repStr=$('rep-strengths');
+    if(repStr){
+      repStr.innerHTML=data.strengths.map(function(s){
+        return '<li><svg aria-hidden="true"><use href="#i-check-c"/></svg><span>'+esc(s)+'</span></li>';
+      }).join('');
+    }
+  }
+  if(Array.isArray(data.improvements)&&data.improvements.length){
+    var repFix=$('rep-fixes');
+    if(repFix){
+      repFix.innerHTML=data.improvements.map(function(f){
+        return '<li><svg aria-hidden="true"><use href="#i-zap"/></svg><span>'+esc(f)+'</span></li>';
+      }).join('');
+    }
+  }
+  if(data.star_summary||data.summary||(Array.isArray(data.next_steps)&&data.next_steps.length)){
+    var repAdv=$('rep-advice');
+    if(repAdv){
+      var adviceTxt='';
+      if(Array.isArray(data.next_steps)&&data.next_steps.length)adviceTxt=data.next_steps[0];
+      else if(data.summary)adviceTxt=data.summary;
+      else if(data.star_summary)adviceTxt=data.star_summary;
+      if(adviceTxt)repAdv.textContent=adviceTxt;
+    }
+  }
+}
 function extractKeyFact(text){
   var t=text.trim();
   var m=t.match(/(\u20A6[\d,]+(?:\.\d+)?|\d+(?:\.\d+)?%|\d+\s*(?:percent|people|person|team|months?|weeks?|years?|days?|hours?|million|thousand|naira))/i);
@@ -2486,14 +2703,13 @@ function finish(timedOut){
   if(timedOut){
     toast('Time\u2019s up \u2014 session complete');
   }else{
-    toast('\uD83C\uDFC6 Session complete \u2014 +120 Career XP');
+    toast('Practice complete. Saving your interview…');
     /* celebrate a genuine completion, not a timeout \u2014 running out of
        time isn't quite the same win as finishing on your own terms */
     setTimeout(celebrateSuccess,150);
   }
   window.scrollTo({top:0});
-  /* DEV: POST /candidate/interview/session/{id}/complete {stats:STATS};
-     server persists the report and awards XP. */
+  saveInterviewCompletion();
 }
 /* one-time confetti burst from the completion checkmark \u2014 self-cleaning,
    GPU-only animation (transform/opacity), and a no-op for anyone with
@@ -2657,65 +2873,110 @@ if(!TTS_OK){var lh=document.querySelector('.lobby-hint');if(lh)lh.hidden=true}
    QUESTION_SOURCE='gemini' is flipped on, this is what hides real network
    latency behind the lobby's natural "settling" moment instead of a janky
    loading state appearing mid-interview after the tap. */
+/* Initialize questions and UI immediately — candidates are NEVER blocked from entering */
 var enterBtn=$('lobby-enter');
-enterBtn.disabled=true;
-$('lobby-enter-ic').style.display='none';
-$('lobby-enter-txt').textContent='Preparing your questions\u2026';
+enterBtn.disabled=false;
+$('lobby-enter-ic').style.display='';
+$('lobby-enter-txt').textContent='Enter Interview Room';
 
-resolveQuestions(function(){
-  buildQuestionMap();
+function updateLobbySummary(){
+  if(!QS) return;
+  var qTotalTxt=QS.length+' question'+(QS.length===1?'':'s');
+  var fmtEl=$('lobby-fmt');
+  if(fmtEl) fmtEl.textContent=(TYPE_LBL[CFG.itype]||'Behavioral')+' \u00B7 '+(DIFF_LBL[CFG.diff]||'Medium')+' \u00B7 '+qTotalTxt;
+}
+
+// Build initial question list immediately
+if(!QS || !QS.length){
+  QUESTION_SOURCE_USED='fallback';
+  QS=buildFallbackQuestions().map(fixQuestionGreeting);
+  logSource();
+}
+buildQuestionMap();
+updateLobbySummary();
+setPill();
+
+// If Gemini upgrades questions in the background before candidate enters the room, refresh UI
+window.onGeminiUpgraded = function(){
+  if(sessionStarted) return;
+  if(qmap){
+    qmap.innerHTML = '';
+    buildQuestionMap();
+  }
+  updateLobbySummary();
+  setPill();
+};
+
+var sessionStarted = false;
+function beginSession(){
+  if(sessionStarted) return;
+  sessionStarted = true;
+
+  enterBtn.disabled = true;
+  $('lobby-enter-txt').textContent = 'Entering\u2026';
+
+  /* SYNCHRONOUS priming call, still inside the click's call stack — this
+     is what actually unlocks audio; anything after a setTimeout is too
+     late on strict browsers. A near-silent utterance is enough to unlock. */
+  try{
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+    var primeAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    primeAudio.play().catch(function(){});
+  }catch(e){}
+  VOICE.unlocked=true;
+  if (CFG.imode === 'voice' || CFG.imode === 'video') {
+      VOICE.on = true;
+      var vBtn = document.getElementById('voice-btn');
+      if (vBtn) vBtn.setAttribute('aria-pressed', 'true');
+      var vIc = document.getElementById('voice-btn-ic');
+      if (vIc) vIc.innerHTML = '<use href="#i-vol"/>';
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s) {
+              AUD.micStream = s;
+              if (DEBUG) dlog('microphone pre-warmed', true);
+          }).catch(function(err) {
+              if (DEBUG) dlog('microphone pre-warm skipped: ' + (err && err.name), false);
+          });
+      }
+  }
+
+  // Start interview countdown timer now that candidate has entered the session
+  clearInterval(timerInt);
+  timerInt = setInterval(tick, 1000);
+
+  var lobby=$('lobby');
+  if(lobby){
+    lobby.classList.add('leaving');
+    setTimeout(function(){try{lobby.remove()}catch(e){}},400);
+  }
+  document.body.classList.remove('in-lobby');
+
+  applyMode(CFG.imode);
+  setPill();
+  P.open = getPersonaOpener(CFG.persona);
   var qTotalTxt=QS.length+' question'+(QS.length===1?'':'s');
   var typeTxt=(TYPE_LBL[CFG.itype]||'behavioral').toLowerCase();
   var modeTxt=CFG.imode==='video'?'on video':CFG.imode==='voice'?'by voice':'by typing';
-  $('lobby-fmt').textContent=(TYPE_LBL[CFG.itype]||'Behavioral')+' \u00B7 '+(DIFF_LBL[CFG.diff]||'Medium')+' \u00B7 '+qTotalTxt;
-
-  enterBtn.disabled=false;
-  $('lobby-enter-ic').style.display='';
-  $('lobby-enter-txt').textContent='Enter Interview Room';
-
-  function beginSession(){
-    /* SYNCHRONOUS priming call, still inside the click's call stack \u2014 this
-       is what actually unlocks audio; anything after a setTimeout is too
-       late on strict browsers. A near-silent utterance is enough to unlock. */
-    try{
-      if('speechSynthesis' in window) window.speechSynthesis.cancel();
-      var primeAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-      primeAudio.play().catch(function(){});
-    }catch(e){}
-    VOICE.unlocked=true;
-    if (CFG.imode === 'voice' || CFG.imode === 'video') {
-        VOICE.on = true;
-        var vBtn = document.getElementById('voice-btn');
-        if (vBtn) vBtn.setAttribute('aria-pressed', 'true');
-        var vIc = document.getElementById('voice-btn-ic');
-        if (vIc) vIc.innerHTML = '<use href="#i-vol"/>';
-    }
-    var lobby=$('lobby');
-    lobby.classList.add('leaving');
-    document.body.classList.remove('in-lobby');
-    setTimeout(function(){lobby.remove()},400);
-
-    applyMode(CFG.imode);
-    setPill();
-    var introParts=[
-      P.open,
-      'We\u2019ll go through '+qTotalTxt+' \u2014 '+typeTxt+', at '+(DIFF_LBL[CFG.diff]||'medium').toLowerCase()+' difficulty \u2014 and you\u2019ll answer '+modeTxt+'. Take your time on each one; you can skip a question and it simply gets marked for practice, not held against you.',
-      'Alright \u2014 let\u2019s get started.'
-    ];
-    function introStep(i){
-      if(i>=introParts.length){askNext();return}
-      typing(function(){
-        aiBubble(esc(introParts[i]));
-        speak(introParts[i],function(){introStep(i+1)});
-      },i===0?900:600);
-    }
-    /* one settling beat after the tap before the AI's first word \u2014 this is
-       the "delay before beginning" pause, now backed by an unlocked engine
-       instead of racing a blocked one */
-    setTimeout(function(){introStep(0)},700);
+  var introParts=[
+    P.open,
+    'We\u2019ll go through '+qTotalTxt+' \u2014 '+typeTxt+', at '+(DIFF_LBL[CFG.diff]||'medium').toLowerCase()+' difficulty \u2014 and you\u2019ll answer '+modeTxt+'. Take your time on each one; you can skip a question and it simply gets marked for practice, not held against you.',
+    'Alright \u2014 let\u2019s get started.'
+  ];
+  function introStep(i){
+    if(i>=introParts.length){askNext();return}
+    typing(function(){
+      aiBubble(esc(introParts[i]));
+      speak(introParts[i],function(){introStep(i+1)});
+    },i===0?800:500);
   }
+  setTimeout(function(){introStep(0)},600);
+}
 
-  enterBtn.addEventListener('click',beginSession);
+enterBtn.addEventListener('click',beginSession);
+
+// Kick off background AI resolution without blocking the room entry
+resolveQuestions(function(){
+  updateLobbySummary();
 });
 document.body.classList.add('in-lobby');
 })();

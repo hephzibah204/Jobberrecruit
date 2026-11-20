@@ -14,76 +14,8 @@ class QueueProcessor extends BaseCommand
 
     public function run(array $params)
     {
-        $queueModel = new JobQueueModel();
-        $limit = $params[0] ?? 50; // Process 50 jobs per run by default
-
-        $jobs = $queueModel->getPending($limit);
-
-        if (empty($jobs)) {
-            CLI::write('No pending jobs in the queue.', 'yellow');
-            return;
-        }
-
-        CLI::write('Processing ' . count($jobs) . ' jobs...', 'cyan');
-
-        foreach ($jobs as $job) {
-            $this->processJob($job, $queueModel);
-        }
-
-        CLI::write('Queue processing finished.', 'green');
-    }
-
-    protected function processJob($job, $queueModel)
-    {
-        $queueModel->update($job->id, ['status' => 'processing']);
-        
-        $payload = json_decode($job->payload, true);
-        $type = $payload['type'];
-        $data = $payload['data'];
-
-        $success = false;
-        $error = null;
-
-        try {
-            switch ($type) {
-                case 'newsletter_email':
-                    $result = $this->sendEmail($data['email'], $data['subject'], $data['content']);
-                    $success = $result['success'];
-                    if (!$success) {
-                        $error = $result['error'] ?? 'Failed to send newsletter email';
-                    }
-                    break;
-                case 'transactional_email':
-                    $result = $this->sendTransactionalEmail($data);
-                    $success = $result['success'];
-                    if (!$success) {
-                        $error = $result['error'] ?? 'Failed to send transactional email';
-                    }
-                    break;
-                // Add more cases here as needed
-                default:
-                    $error = "Unknown job type: {$type}";
-            }
-        } catch (\Exception $e) {
-            $error = $e->getMessage();
-        }
-
-        if ($success) {
-            $queueModel->update($job->id, ['status' => 'completed']);
-            CLI::write("Job #{$job->id} ({$type}) completed.", 'green');
-        } else {
-            $attempts = $job->attempts + 1;
-            $status = ($attempts >= 3) ? 'failed' : 'pending';
-            
-            $queueModel->update($job->id, [
-                'status' => $status,
-                'attempts' => $attempts,
-                'error' => $error ?? 'Unknown error',
-                'available_at' => date('Y-m-d H:i:s', time() + (60 * $attempts)) // Exponential backoff
-            ]);
-            
-            CLI::write("Job #{$job->id} ({$type}) " . ($status === 'failed' ? 'failed' : 'retrying') . ": {$error}", 'red');
-        }
+        $result = (new \App\Services\EmailQueueWorker())->process(max(1, min(1000, (int) ($params[0] ?? 50))));
+        CLI::write('Queue finished: ' . $result['jobs_processed'] . ' sent, ' . $result['jobs_failed'] . ' failed.', 'green');
     }
 
     protected function sendEmail($to, $subject, $content): array

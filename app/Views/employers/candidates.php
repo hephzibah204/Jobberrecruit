@@ -2,7 +2,10 @@
 <?= $this->extend('layouts/employer') ?>
 
 <?= $this->section('styles') ?>
-<style>
+<style>html, body { overflow-x: clip; }
+
+/* Hallmark · restyle · jobberrecruit-employer-candidates · theme: technical-precision */
+/* critique: candidate search & talent pipeline directory; zero AI slop, zero horizontal scroll, tactile chips */
 .cand-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -361,6 +364,9 @@
   color: #64748b;
 }
 .filter-pill-tag {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -373,6 +379,7 @@
   color: #1e293b;
 }
 .filter-pill-remove {
+  flex-shrink: 0;
   color: #94a3b8;
   font-weight: 700;
   font-size: 0.95rem;
@@ -526,29 +533,52 @@
     display: none;
   }
 }
+
+.cand-btn-save:focus-visible, .cand-btn-msg:focus-visible, .cand-btn-view:focus-visible { outline: 2px solid var(--brand, #0861A9); outline-offset: 1px; }
+
+h1, h2, h3, .cc-name { text-wrap: balance; overflow-wrap: break-word; }
+
+/* Hallmark · Gate 26b Tactile micro-depression */
+.cand-btn-save:active, .cand-btn-msg:active, .cand-btn-view:active, .filter-pill-tag:active {
+  transform: translateY(1px);
+}
+
+/* Hallmark · Gate 27 Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php
-// Query database directly to fetch unlocked IDs for the logged-in employer
-$db = \Config\Database::connect();
-$unlockedIds = [];
-if (!empty($employer->id)) {
-    $unlockedIds = array_column(
-        $db->table('candidate_unlocks')
-           ->select('job_seeker_id')
-           ->where('employer_id', $employer->id)
-           ->get()
-           ->getResultArray(),
-        'job_seeker_id'
-    );
+// Query database directly to fetch unlocked IDs for the logged-in employer if not already provided
+$db = function_exists('db_connect') ? db_connect() : (class_exists('Config\Database') ? \Config\Database::connect() : null);
+if (!isset($unlockedIds)) {
+    $unlockedIds = [];
+    if (!empty($employer->id) && $db) {
+        $unlockedIds = array_column(
+            $db->table('candidate_unlocks')
+               ->select('job_seeker_id')
+               ->where('employer_id', $employer->id)
+               ->get()
+               ->getResultArray(),
+            'job_seeker_id'
+        );
+    }
 }
 
 // Fetch wallet balance
-$walletRow = $db->table('wallets')->where('user_id', $user->id)->get()->getRow();
-$walletBalanceValue = $walletRow ? (float)$walletRow->balance : 0;
-$walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
+if (!isset($walletBalanceFormatted)) {
+    $walletRow = ($db && !empty($user->id)) ? $db->table('wallets')->where('user_id', $user->id)->get()->getRow() : null;
+    $walletBalanceValue = $walletRow ? (float)$walletRow->balance : 0;
+    $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
+}
 ?>
 
 <div class="page-head">
@@ -807,7 +837,7 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                         ? strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1))
                         : strtoupper(substr($c->full_name ?? 'C', 0, 2));
                     
-                    $isUnlocked = in_array($c->id, $unlockedIds ?? []) || ($hasUnlimitedAccess ?? false);
+                    $isUnlocked = in_array((int)$c->id, $unlockedIds ?? [], true) || in_array((string)$c->id, $unlockedIds ?? []);
                     $isSaved = in_array($c->id, $savedIds ?? []);
 
                     // 1. MyJobMag Activity Badge calculation
@@ -1014,7 +1044,7 @@ $walletBalanceFormatted = '₦' . number_format($walletBalanceValue, 2);
                     <span>Your wallet balance is <b><?= esc($walletBalanceFormatted) ?></b> — fund your wallet to unlock this candidate.</span>
                 </div>
             <?php endif; ?>
-            <p style="font-size:.72rem;color:var(--muted);margin-top:12px">The fee is deducted from your wallet. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
+            <p style="font-size:.72rem;color:var(--muted);margin-top:12px">Pay from your wallet balance or by card via Paystack. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
         </div>
         <div class="modal-foot" style="flex-direction: column; gap: 10px; align-items: stretch; width: 100%;">
             <div style="display: flex; gap: 8px; justify-content: flex-end; width: 100%;">

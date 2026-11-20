@@ -205,6 +205,14 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                         $applicantsVal = is_object($job) ? ($job->applicants_count ?? $job->applicants ?? 0) : ($job['applicants_count'] ?? $job['applicants'] ?? 0);
 
                         $status = strtolower($statusVal);
+                        // jobs.status stores 'pending_approval'; normalize it into
+                        // the 'pending' bucket the pill/filter logic expects and
+                        // give it a readable label (it rendered raw as
+                        // "Pending_approval").
+                        if ($status === 'pending_approval') {
+                            $status = 'pending';
+                            $statusVal = 'Pending approval';
+                        }
                         // Normalize 'paused' to 'closed' for clear employer distinction
                         if ($status === 'paused') {
                             $status = 'closed';
@@ -247,7 +255,7 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                                 </div>
                             </td>
                             <td data-lbl="Status">
-                                <span class="pill <?= $pillClass ?>"><?= esc(ucfirst($statusVal)) ?></span>
+                                <span class="pill <?= $pillClass ?>"><?= esc(ucwords(str_replace('_', ' ', $statusVal))) ?></span>
                             </td>
                             <td data-lbl="Views">
                                 <span class="metric"><?= esc(number_format($viewsVal)) ?><i>views</i></span>
@@ -296,7 +304,7 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
                                             </button>
                                         </form>
                                     <?php else: ?>
-                                        <span class="ic-btn" style="opacity:0.3;cursor:not-allowed;" title="Job already closed">
+                                        <span class="ic-btn" style="opacity:0.3;cursor:not-allowed;" title="<?= $status === 'closed'? 'Job already closed': 'Only open jobs can be closed'?>">
                                             <svg aria-hidden="true" style="color:var(--muted);"><use href="#i-x"/></svg>
                                         </span>
                                     <?php endif; ?>
@@ -372,7 +380,7 @@ if (!isset($activeJobs) || !isset($totalClicks) || !isset($totalApplications)) {
         <span>Showing <b><?= count($jobs) ?></b> of <b><?= count($jobs) ?></b> jobs</span>
         <div class="pager-nav" id="pagination-controls">
             <a class="pager-btn" href="#" aria-disabled="true" aria-label="Previous page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-l"/></svg></a>
-            <a class="pager-btn on" href="#" aria-current="page">1</a>
+            <a class="pager-btn on" href="#" aria-current="page" style="color:#ffffff !important;">1</a>
             <a class="pager-btn" href="#" aria-disabled="true" aria-label="Next page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
         </div>
     </div>

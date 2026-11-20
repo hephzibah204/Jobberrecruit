@@ -24,7 +24,10 @@ class JobCreditWalletModel extends Model
     {
         return (int) $this->where('user_id', $userId)
             ->where('credits >', 0)
-            ->where('(expires_at IS NULL OR expires_at > NOW())')
+            ->groupStart()
+            ->where('expires_at', null)
+            ->orWhere('expires_at >', date('Y-m-d H:i:s'))
+            ->groupEnd()
             ->selectSum('credits')
             ->get()
             ->getRow()

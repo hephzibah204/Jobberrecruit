@@ -45,6 +45,69 @@ class WebhookController extends Controller
         $eventType = $event['event'];
         $data      = $event['data'] ?? [];
 
+        $meta = \App\Services\PaymentFulfillmentService::metadata($data);
+        if (in_array($eventType, ['charge.success', 'transaction.success'], true) && ($meta['type'] ?? '') === 'bundle') {
+            try {
+                (new \App\Services\BundleService())->fulfill($data);
+                return $this->response->setStatusCode(200)->setBody('OK');
+            } catch (\InvalidArgumentException $e) {
+                return $this->response->setStatusCode(400)->setBody('Bundle payment mismatch');
+            } catch (\Throwable $e) {
+                log_message('error', 'Bundle webhook fulfillment failed: ' . $e->getMessage());
+                return $this->response->setStatusCode(500)->setBody('Bundle activation failed');
+            }
+        }
+        if (in_array($eventType, ['charge.success', 'transaction.success'], true) && ($meta['type'] ?? '') === 'webinar') {
+            try {
+                (new \App\Services\WebinarPurchaseService())->fulfill($data);
+                return $this->response->setStatusCode(200)->setBody('OK');
+            } catch (\InvalidArgumentException $e) {
+                return $this->response->setStatusCode(400)->setBody('Webinar payment mismatch');
+            } catch (\Throwable $e) {
+                log_message('error', 'Webinar fulfillment failed: ' . $e->getMessage());
+                return $this->response->setStatusCode(500)->setBody('Webinar registration failed');
+            }
+        }
+        // Recurring Paystack charges can omit the original metadata. Resolve
+        // their exact gateway plan code against the same catalog as checkout.
+        if (in_array($eventType, ['charge.success', 'transaction.success'], true)
+            && empty($meta['type']) && !empty($data['plan']['plan_code'])) {
+            $catalogPlan = model(\App\Models\PlanModel::class)
+                ->where('paystack_plan_code', $data['plan']['plan_code'])->first();
+            $payer = !empty($data['customer']['email']) ? $this->findPayingUser($data['customer']['email']) : null;
+            if ($catalogPlan && $catalogPlan->plan_type !== 'candidate' && $payer) {
+                $meta = ['type' => 'subscription', 'user_id' => (int) $payer->id,
+                    'plan_id' => (int) $catalogPlan->id, 'months' => 1];
+                $data['metadata'] = $meta;
+            }
+        }
+        if (in_array($eventType, ['charge.success', 'transaction.success'], true)
+            && ($meta['type'] ?? '') === 'subscription') {
+            try {
+                (new \App\Services\EmployerSubscriptionPaymentService())->fulfill($data);
+                return $this->response->setStatusCode(200)->setBody('OK');
+            } catch (\InvalidArgumentException $e) {
+                log_message('error', 'Subscription webhook mismatch: ' . $e->getMessage());
+                return $this->response->setStatusCode(400)->setBody('Subscription payment mismatch');
+            } catch (\Throwable $e) {
+                log_message('error', 'Subscription webhook activation: ' . $e->getMessage());
+                return $this->response->setStatusCode(500)->setBody('Subscription activation failed');
+            }
+        }
+        if (in_array($eventType, ['charge.success', 'transaction.success'], true)
+            && in_array($meta['type'] ?? '', ['wallet_funding', 'cv_review', 'candidate_plan', 'course'], true)) {
+            try {
+                (new \App\Services\PaymentFulfillmentService())->fulfill($data);
+                return $this->response->setStatusCode(200)->setBody('OK');
+            } catch (\InvalidArgumentException $e) {
+                log_message('error', 'Webhook payment mismatch: ' . $e->getMessage());
+                return $this->response->setStatusCode(400)->setBody('Payment order mismatch');
+            } catch (\Throwable $e) {
+                log_message('error', 'Webhook fulfillment: ' . $e->getMessage());
+                return $this->response->setStatusCode(500)->setBody('Payment fulfillment failed');
+            }
+        }
+
         // --------------------------------------------------
         // MODELS
         // --------------------------------------------------
@@ -67,13 +130,13 @@ class WebhookController extends Controller
             $customerEmail    = $data['customer']['email'] ?? null;
 
             if ($subscriptionCode && $customerEmail) {
-                $user = $userModel->where('email', $customerEmail)->first();
+                $user = $this->findPayingUser($customerEmail);
 
                 if ($user) {
                     $subModel
                         ->where('user_id', $user->id)
                         ->where('is_active', 1)
-                        ->set(['subscription_code' => $subscriptionCode])
+                        ->set(['subscription_code' => $subscriptionCode, 'email_token' => $data['email_token'] ?? null])
                         ->update();
 
                     log_message('info', "Stored Paystack subscription code {$subscriptionCode} for user {$user->id}");
@@ -104,7 +167,7 @@ class WebhookController extends Controller
             }
 
             // Find user
-            $user = $customerEmail ? $userModel->where('email', $customerEmail)->first() : null;
+            $user = $customerEmail ? $this->findPayingUser($customerEmail) : null;
             if (! $user) {
                 log_message('warning', "Webhook charge.success: User not found for email {$customerEmail}");
                 return $this->response->setStatusCode(200);
@@ -116,6 +179,7 @@ class WebhookController extends Controller
             // 1. Check for Job Credit Bundle purchases
             $meta = $data['metadata'] ?? [];
             if (isset($meta['type']) && $meta['type'] === 'bundle' && !empty($meta['bundle_id'])) {
+                $bundleAlreadyCredited = model(\App\Models\JobCreditTransactionModel::class)->where('reference', $reference)->countAllResults() > 0;
                 $bundleService = new \App\Services\BundleService();
                 $bundleService->credit(
                     userId: (int) ($meta['user_id'] ?? $user->id),
@@ -136,6 +200,11 @@ class WebhookController extends Controller
                 }
 
                 log_message('info', "Webhook: bundle {$meta['bundle_id']} credited for user {$user->id}");
+                if (!$bundleAlreadyCredited) {
+                    (new \App\Services\EmailNotificationService())->notifyEmployerAccount((int) $user->id,
+                        'Job credit bundle purchased', 'Your payment was successful and your bundle credits have been added.',
+                        ['Amount (NGN)' => number_format($amount, 2), 'Reference' => $reference]);
+                }
                 return $this->response->setStatusCode(200);
             }
 
@@ -210,6 +279,7 @@ class WebhookController extends Controller
                 'ends_at'                 => $end,
                 'is_active'               => 1,
                 'subscription_code' => $data['subscription']['subscription_code'] ?? null,
+                'email_token' => $data['subscription']['email_token'] ?? null,
                 'authorization'           => isset($data['authorization']) ? json_encode($data['authorization']) : null,
                 'created_at'              => $start,
                 'updated_at'              => $start,
@@ -284,7 +354,7 @@ class WebhookController extends Controller
             $customerEmail = $data['customer']['email'] ?? null;
 
             if ($customerEmail) {
-                $user = $userModel->where('email', $customerEmail)->first();
+                $user = $this->findPayingUser($customerEmail);
                 if ($user) {
                     $subModel
                         ->where('user_id', $user->id)
@@ -292,8 +362,9 @@ class WebhookController extends Controller
                         ->set(['is_active' => 0])
                         ->update();
 
-                    // Optional: Send payment failed notification
-                    // $this->sendPaymentFailedEmail($user);
+                    (new \App\Services\EmailNotificationService())->notifyEmployerAccount((int) $user->id,
+                        'Subscription payment failed', 'Your subscription renewal payment failed. Please review your payment method.',
+                        ['Reference' => $data['reference'] ?? $data['invoice_code'] ?? 'Renewal']);
 
                     log_message('warning', "Subscription suspended for user {$user->id} – renewal failed");
                 }
@@ -317,15 +388,17 @@ class WebhookController extends Controller
 
                 if ($subscription) {
                     $subModel
-                        ->where('user_id', $subscription->user_id)
+                        ->where('id', $subscription['id'])
                         ->where('is_active', 1)
                         ->set(['is_active' => 0])
                         ->update();
 
-                    // Optional: Send cancellation confirmation
-                    // $this->sendSubscriptionCancelledEmail($subscription->user_id);
+                    if (!empty($subscription['is_active'])) {
+                        (new \App\Services\EmailNotificationService())->notifyEmployerAccount((int) $subscription['user_id'],
+                            'Subscription ended', 'Your subscription has been cancelled and is no longer active.');
+                    }
 
-                    log_message('info', "Subscription cancelled on Paystack – deactivated locally for user {$subscription->user_id}");
+                    log_message('info', "Subscription cancelled on Paystack – deactivated locally for user {$subscription['user_id']}");
                 }
             }
 
@@ -347,7 +420,7 @@ class WebhookController extends Controller
             $customerEmail    = $data['customer']['email'] ?? null;
 
             if ($subscriptionCode && $customerEmail) {
-                $user = $userModel->where('email', $customerEmail)->first();
+                $user = $this->findPayingUser($customerEmail);
 
                 if ($user) {
                     // Update the active subscription record
@@ -363,8 +436,8 @@ class WebhookController extends Controller
                     if ($updated) {
                         log_message('info', "Subscription marked as will_not_renew=1 for user {$user->id} (code: {$subscriptionCode})");
 
-                        // Send cancellation scheduled confirmation email
-                        $this->sendSubscriptionCancellationScheduledEmail($user);
+                        (new \App\Services\EmailNotificationService())->notifyEmployerAccount((int) $user->id,
+                            'Subscription cancellation scheduled', 'Automatic renewal has been disabled. Your current access continues until the expiry date.');
                     }
                 }
             }
@@ -375,15 +448,23 @@ class WebhookController extends Controller
         return $this->response->setStatusCode(200);
     }
 
+    private function findPayingUser(string $email)
+    {
+        $identity = db_connect()->table('auth_identities')->where('type', 'email_password')
+            ->where('LOWER(secret)', strtolower(trim($email)))->get()->getRow();
+        return $identity ? model(UserModel::class)->find($identity->user_id) : null;
+    }
+
     /**
      * Send subscription invoice/receipt email after successful charge
      */
     private function sendSubscriptionInvoiceEmail(array $data)
     {
         $emailService = \Config\Services::email();
+        $emailService->clear();
 
         $emailService->setTo($data['email']);
-        $emailService->setFrom('billing@jobberrecruit.com', 'JobberRecruit');
+        $emailService->setFrom(config('Email')->fromEmail, config('Email')->fromName);
         $emailService->setSubject('Your JobberRecruit Subscription Invoice - ' . $data['reference']);
 
         $viewData = [
@@ -408,6 +489,11 @@ class WebhookController extends Controller
         } else {
             log_message('info', 'Subscription invoice emailed to ' . $data['email'] . ' (Ref: ' . $data['reference'] . ')');
         }
+        (new \App\Services\EmailNotificationService())->sendAdministrativeEvent(
+            'Employer subscription payment received',
+            ($data['employer']->company_name ?? 'Employer') . ' paid for ' . $data['plan']->name . '.',
+            ['Amount (NGN)' => number_format($data['amountPaid'], 2), 'Reference' => $data['reference']]
+        );
     }
 
     /**

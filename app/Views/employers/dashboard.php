@@ -35,7 +35,7 @@ $widthShortlisted = $pipeShortlisted > 0 ? max(2, min(100, round(($pipeShortlist
 $widthHired = $pipeHired > 0 ? max(2, min(100, round(($pipeHired / $maxPipeline) * 100))) : 0;
 
 // Profile Completion dashoffset
-$profilePct = (int) ($profileCompletion ?? 75);
+$profilePct = (int) ($profileCompletion ?? 0);
 $dashOffset = 264 * (1 - ($profilePct / 100));
 
 // Profile Checklist dynamic resolver
@@ -554,7 +554,7 @@ $taskLogo = !empty($employer->logo);
 <!-- Dedicated WhatsApp Support Banner -->
 <section class="card" style="border: 1px solid #bbf7d0; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); margin-bottom: 24px; border-radius: var(--radius-lg); padding: 20px 24px;" aria-label="Official WhatsApp Support">
   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-    <div style="display: flex; align-items: center; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 16px; min-width: 0; max-width: 100%; overflow-wrap: anywhere;">
       <div style="width: 50px; height: 50px; border-radius: 50%; background: #25D366; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);">
         <svg style="width: 26px; height: 26px; fill: currentColor;" aria-hidden="true"><use href="#i-whatsapp"/></svg>
       </div>
@@ -565,7 +565,7 @@ $taskLogo = !empty($employer->logo);
         </p>
       </div>
     </div>
-    <a href="https://wa.me/2349014808902?text=Hello%20JobberRecruit%20Support%2C%20I%20am%20an%20employer%20and%20need%20assistance." target="_blank" rel="noopener noreferrer" class="emp-btn" style="background: #25D366; color: #ffffff !important; border: none; font-weight: 700; padding: 12px 22px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.45); white-space: nowrap;">
+    <a href="https://wa.me/2349014808902?text=Hello%20JobberRecruit%20Support%2C%20I%20am%20an%20employer%20and%20need%20assistance." target="_blank" rel="noopener noreferrer" class="emp-btn" style="background: #25D366; color: #ffffff !important; border: none; font-weight: 700; padding: 12px 22px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.45); white-space: normal; max-width: 100%; overflow-wrap: anywhere; text-align: center;">
       <svg style="width: 20px; height: 20px; fill: currentColor;" aria-hidden="true"><use href="#i-whatsapp"/></svg>
       Chat with Support (+234 901 480 8902)
     </a>

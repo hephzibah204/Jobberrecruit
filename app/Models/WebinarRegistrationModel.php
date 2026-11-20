@@ -11,7 +11,7 @@ class WebinarRegistrationModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'object';
     protected $protectFields    = true;
-    protected $allowedFields    = ['webinar_id', 'user_id'];
+    protected $allowedFields    = ['webinar_id', 'user_id', 'reminder_sent_24h', 'reminder_sent_1h'];
 
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';

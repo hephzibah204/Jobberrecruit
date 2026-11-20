@@ -1,6 +1,12 @@
 <?php 
 $page_title = esc($course->title) . ' – Classroom'; 
 $isCompleted = (($enrollment->status ?? '') === 'completed' || !empty($certificate));
+$testQuestions = \App\Services\CourseAssessmentService::questions($course);
+$assessmentAvailable = false;
+try {
+    \App\Services\CourseAssessmentService::validateBank($testQuestions);
+    $assessmentAvailable = true;
+} catch (\InvalidArgumentException $e) {}
 $totalModules = count($modules);
 $currentProgress = $isCompleted ? 100 : (int)($enrollment->progress ?? 0);
 $completedCount = $isCompleted ? $totalModules : ($totalModules > 0 ? (int)round(($currentProgress / 100) * $totalModules) : 0);
@@ -9,6 +15,8 @@ $completedCount = $isCompleted ? $totalModules : ($totalModules > 0 ? (int)round
 
 <?= $this->section('styles') ?>
 <style>
+/* Hallmark · restyle · jobberrecruit-classroom · theme: technical-precision */
+/* critique: candidate training classroom; zero AI slop, zero horizontal scroll, solid elevated cards */
 :root {
   color-scheme: light;
   --brand:#0861A9; --brand-dark:#064A85; --brand-deep:#0A2F57; --brand-light:#E6F0F8;
@@ -29,7 +37,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
 @keyframes gentle-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Classroom Grid Layout */
-.cls-wrap { display: flex; flex-direction: column; gap: clamp(16px, 2vw, 22px); animation: gentle-rise .34s ease both; }
+.cls-wrap { display: flex; flex-direction: column; gap: clamp(16px, 2vw, 22px); animation: gentle-rise .34s ease both; max-width: 100%; overflow-x: clip; }
 
 /* Hero Banner */
 .cls-hero {
@@ -63,7 +71,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
 
 /* Progress Ring */
 .ring { --p: 0; width: 118px; height: 118px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--accent) calc(var(--p) * 1%), rgba(255,255,255,.22) 0); flex-shrink: 0; position: relative; }
-.ring::before { content: ''; position: absolute; width: 92px; height: 92px; border-radius: 50%; background: rgba(10,47,87,.9); backdrop-filter: blur(2px); }
+.ring::before { content: ''; position: absolute; width: 92px; height: 92px; border-radius: 50%; background: #0A2F57; }
 .cls-hero.done .ring::before { background: rgba(10,47,87,.9); }
 .ring b { position: relative; font-family: 'Sora', sans-serif; font-size: 1.5rem; color: #fff; }
 .ring i { position: relative; font-style: normal; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; opacity: .85; color: #fff; }
@@ -78,7 +86,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
 /* Floating glass stats */
 .glass-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
 @media (max-width: 720px) { .glass-row { grid-template-columns: repeat(2, 1fr); } }
-.glass-card { background: rgba(255,255,255,.12); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.22); border-radius: 12px; padding: 13px 15px; text-align: left; }
+.glass-card { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.22); border-radius: 12px; padding: 13px 15px; text-align: left; }
 .glass-card .gc-ic { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,.18); display: grid; place-items: center; margin-bottom: 8px; }
 .glass-card .gc-ic svg { width: 15px; height: 15px; color: #fff; }
 .glass-card b { font-family: 'Sora', sans-serif; font-size: 1.1rem; color: #fff; display: block; line-height: 1; }
@@ -216,7 +224,12 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
 .ai-act { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: 11px 13px; color: #fff; font-size: .8rem; font-weight: 600; cursor: pointer; transition: var(--transition); text-align: left; border: none; }
 .ai-act:hover { background: rgba(255,255,255,.16); border-color: var(--accent); }
 .ai-act svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
-.ai-output { margin-top: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 14px; font-size: .84rem; line-height: 1.6; color: #dbe6f2; display: none; }
+.ai-output {
+  margin-top: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; padding: 14px; font-size: .84rem; line-height: 1.6; color: #dbe6f2;
+  display: none; max-width: 100%; box-sizing: border-box;
+  white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; hyphens: auto;
+}
 .ai-output.show { display: block; animation: gentle-rise .3s ease; }
 
 /* Right Column Cards */
@@ -327,18 +340,38 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
 .cs-tool:hover .cs-arrow { color: var(--brand); }
 
 /* Assessment Gate Panel */
-.assess-card { background: #fff; border: 1.5px solid var(--brand-deep); border-radius: 14px; padding: clamp(16px, 2.5vw, 26px); box-shadow: var(--shadow-lg); text-align: left; }
-.assess-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
+.assess-card {
+  background: #fff; border: 1.5px solid var(--brand-deep); border-radius: 14px;
+  padding: clamp(16px, 2.5vw, 26px); box-shadow: var(--shadow-lg); text-align: left;
+  max-width: 100%; box-sizing: border-box; word-break: break-word; overflow-wrap: anywhere;
+}
+.assess-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px;
+}
+.assess-head > div { min-width: 0; flex: 1; word-break: break-word; overflow-wrap: anywhere; }
 .assess-eyebrow { font-size: .7rem; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: .08em; display: inline-flex; align-items: center; gap: 6px; }
 .assess-eyebrow svg { width: 14px; height: 14px; }
-.assess-head h3 { font-family: 'Sora', sans-serif; font-size: 1.15rem; color: var(--brand-deep); margin: 6px 0 4px; }
-.assess-head p { font-size: .82rem; color: var(--muted); margin: 0; }
-.q-block { margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.assess-head h3 { font-family: 'Sora', sans-serif; font-size: 1.15rem; color: var(--brand-deep); margin: 6px 0 4px; word-break: break-word; overflow-wrap: anywhere; }
+.assess-head p { font-size: .82rem; color: var(--muted); margin: 0; word-break: break-word; overflow-wrap: anywhere; }
+.q-block {
+  margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
+  max-width: 100%; box-sizing: border-box; word-break: break-word; overflow-wrap: anywhere;
+}
 .q-block:last-of-type { border-bottom: none; }
-.q-text { font-size: .9rem; font-weight: 600; color: var(--brand-deep); margin-bottom: 12px; }
-.q-opt { display: flex; align-items: center; gap: 8px; font-size: .86rem; color: var(--text); padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 9px; margin-bottom: 8px; cursor: pointer; transition: var(--transition); }
+.q-text {
+  font-size: .9rem; font-weight: 600; color: var(--brand-deep); margin-bottom: 12px;
+  line-height: 1.45; word-break: break-word; overflow-wrap: anywhere; hyphens: auto;
+}
+.q-opt {
+  display: flex; align-items: flex-start; gap: 10px; font-size: .86rem; color: var(--text);
+  padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; margin-bottom: 8px;
+  cursor: pointer; transition: var(--transition); max-width: 100%; box-sizing: border-box;
+  word-break: break-word; overflow-wrap: anywhere; hyphens: auto; line-height: 1.4;
+}
 .q-opt:hover { border-color: var(--brand); background: var(--brand-light); }
-.q-opt input { margin: 0; width: 16px; height: 16px; cursor: pointer; }
+.q-opt input { margin: 2px 0 0; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+.q-opt span { min-width: 0; flex: 1; word-break: break-word; overflow-wrap: anywhere; }
 
 .assess-result { text-align: center; padding: 24px 16px; }
 .ar-ic { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 16px; }
@@ -357,6 +390,35 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
 }
 #confetti-root.burst .confetti-piece {
   animation: confetti-fall 1.5s ease-out forwards;
+}
+
+@media (max-width: 600px) {
+  .assess-card { padding: 16px 12px; border-radius: 12px; }
+  .assess-head h3 { font-size: 1.05rem; }
+  .q-text { font-size: .86rem; }
+  .q-opt { padding: 9px 10px; font-size: .82rem; gap: 8px; }
+  .ai-actions { grid-template-columns: repeat(2, 1fr); }
+  .ai-act { padding: 9px 10px; font-size: .74rem; }
+}
+@media (max-width: 360px) {
+  .ai-actions { grid-template-columns: 1fr; }
+}
+
+h1, h2, h3, .crs-hero-title, .cls-title { text-wrap: balance; overflow-wrap: break-word; }
+
+/* Hallmark · Gate 26b Tactile micro-depression */
+.btn:active, .les-tab:active, .cls-btn:active {
+  transform: translateY(1px);
+}
+
+/* Hallmark · Gate 27 Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 </style>
 <?= $this->endSection() ?>
@@ -630,22 +692,15 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
             <div>
               <span class="assess-eyebrow"><svg aria-hidden="true"><use href="#i-shield"/></svg> Final Assessment</span>
               <h3>Prove your knowledge to earn certification</h3>
-              <p>Answer the multi-choice questions below. You need at least <b>70%</b> to pass. You can retry as many times as needed.</p>
+              <p>Answer the multi-choice questions below. You need at least <b>70%</b> to pass. You have up to three attempts.</p>
             </div>
             <button class="btn btn-outline btn-sm" id="assess-close" aria-label="Close assessment"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
           </div>
 
           <div class="assess-body" id="assess-body">
             <?php 
-              $testQuestions = [];
-              if (!empty($course->test_questions)) {
-                  $decodedQ = json_decode($course->test_questions, true);
-                  if (is_array($decodedQ) && !empty($decodedQ)) {
-                      $testQuestions = $decodedQ;
-                      // Dynamic Question Rotation: Shuffle questions from bank for varied attempts
-                      shuffle($testQuestions);
-                  }
-              }
+              $testQuestions = \App\Services\CourseAssessmentService::questions($course);
+              $assessmentVersion = \App\Services\CourseAssessmentService::version($testQuestions);
             ?>
             <?php if (!empty($testQuestions)): ?>
               <?php foreach ($testQuestions as $idx => $q): ?>
@@ -653,41 +708,22 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
                   <p class="q-text"><b><?= ($idx + 1) ?>.</b> <?= esc($q['question']) ?></p>
                   <?php 
                     $opts = $q['options'] ?? [];
-                    $valMap = ['a', 'b', 'c', 'd'];
                   ?>
                   <?php foreach ($opts as $oIdx => $opt): ?>
                     <?php 
-                      $optVal = $valMap[$oIdx] ?? ($oIdx . '');
-                      $isCorrect = !empty($opt['is_correct']) ? '1' : '0';
+                      $optVal = (int) $oIdx;
                     ?>
                     <label class="q-opt">
-                      <input type="radio" name="q<?= ($idx + 1) ?>" value="<?= esc($optVal) ?>" data-correct="<?= $isCorrect ?>">
-                      <?= esc($opt['text']) ?>
+                      <input type="radio" name="q<?= ($idx + 1) ?>" value="<?= $optVal ?>" data-question="<?= (int) $idx ?>">
+                      <span><?= esc($opt['text']) ?></span>
                     </label>
                   <?php endforeach; ?>
                 </div>
               <?php endforeach; ?>
             <?php else: ?>
-              <div class="q-block">
-                <p class="q-text"><b>1.</b> What is the most critical metric indicating learning application?</p>
-                <label class="q-opt"><input type="radio" name="q1" value="a" data-correct="0"> Length of study hours</label>
-                <label class="q-opt"><input type="radio" name="q1" value="b" data-correct="1"> Practical conversion and verifiable skill outcomes</label>
-                <label class="q-opt"><input type="radio" name="q1" value="c" data-correct="0"> Number of total sessions started</label>
-              </div>
-              <div class="q-block">
-                <p class="q-text"><b>2.</b> How should you tailor career application portfolios?</p>
-                <label class="q-opt"><input type="radio" name="q2" value="a" data-correct="1"> Grounding arguments in target role demands and market metrics</label>
-                <label class="q-opt"><input type="radio" name="q2" value="b" data-correct="0"> Submitting uniform CV entries to all listings</label>
-                <label class="q-opt"><input type="radio" name="q2" value="c" data-correct="0"> Relying purely on visual layout styling overrides</label>
-              </div>
-              <div class="q-block">
-                <p class="q-text"><b>3.</b> What is the ideal way to address base salary caps?</p>
-                <label class="q-opt"><input type="radio" name="q3" value="a" data-correct="0"> Accept the cap silently without further questions</label>
-                <label class="q-opt"><input type="radio" name="q3" value="b" data-correct="1"> Leverage alternative benefits, review times, and performance bonuses</label>
-                <label class="q-opt"><input type="radio" name="q3" value="c" data-correct="0"> End the conversation immediately in protest</label>
-              </div>
+              <p>This course does not have a final assessment yet, so no certificate can be earned for it at this time. Your lesson progress is saved, and the assessment will appear here if the course administrator publishes one.</p>
             <?php endif; ?>
-            <button class="btn btn-primary btn-block" id="assess-submit"><svg aria-hidden="true"><use href="#i-check-c"/></svg> Submit Answers</button>
+            <button class="btn btn-primary btn-block" id="assess-submit" <?= !$testQuestions ? 'disabled' : '' ?>><svg aria-hidden="true"><use href="#i-check-c"/></svg> Submit Answers</button>
           </div>
 
           <!-- pass/fail displays -->
@@ -714,8 +750,8 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
           <h4><svg aria-hidden="true"><use href="#i-chart"/></svg> Learning telemetry</h4>
           <div class="stat-row"><span>Status</span><b style="color:var(--success)" id="stat-enrollment-status"><?= ucfirst(esc($enrollment->status)) ?></b></div>
           <div class="stat-row"><span>Lessons completed</span><b id="stat-lessons-count"><?= $completedCount ?> of <?= $totalModules ?></b></div>
-          <div class="stat-row"><span>Hours studied</span><b><?= esc($hoursStudied ?? '0.0') ?></b></div>
-          <div class="stat-row"><span>Average accuracy</span><b><?= esc($avgAccuracy ?? '85') ?>%</b></div>
+          <div class="stat-row"><span>Hours studied</span><b><?= esc($hoursStudied ?? 'Not tracked') ?></b></div>
+          <div class="stat-row"><span>Average accuracy</span><b><?= $avgAccuracy === null ? 'Not assessed' : esc($avgAccuracy) . '%' ?></b></div>
         </div>
 
         <div class="dash-card">
@@ -736,7 +772,8 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
           
           <div class="cert-locked" id="cert-locked" <?= $isCompleted ? 'hidden' : '' ?>>
             <p class="cl-note"><svg aria-hidden="true"><use href="#i-shield"/></svg> Complete the final assessment to unlock your verified certificate.</p>
-            <button class="btn btn-primary cert-dl" id="start-assessment"><svg aria-hidden="true"><use href="#i-award"/></svg> Take Final Assessment</button>
+            <?php if (!$assessmentAvailable): ?><p class="cl-note" role="status">Your lesson progress is saved. The course administrator must publish the final assessment before you can earn a certificate.</p><?php endif; ?>
+            <button class="btn btn-primary cert-dl" id="start-assessment" <?= !$assessmentAvailable ? 'disabled' : '' ?>><svg aria-hidden="true"><use href="#i-award"/></svg> Take Final Assessment</button>
           </div>
           
           <button class="btn cert-dl" id="dl-cert-2" <?= $enrollment->status === 'completed' ? '' : 'hidden' ?>><svg aria-hidden="true"><use href="#i-download"/></svg> Download Verified PDF</button>
@@ -1023,6 +1060,7 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         f.src = l.videoId + "?rel=0&modestbranding=1&playsinline=1";
         f.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture");
         f.setAttribute("allowfullscreen", "");
+        f.referrerPolicy = "strict-origin-when-cross-origin";
         f.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0;";
         playerContainer.insertBefore(f, playerContainer.firstChild);
         plExpand.hidden = false;
@@ -1213,33 +1251,28 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
     });
   }
 
+  var assessmentRequestKey = null;
   var submitAssessmentBtn = document.getElementById("assess-submit");
   if (submitAssessmentBtn) {
     submitAssessmentBtn.addEventListener("click", function(){
       var qBlocks = document.querySelectorAll("#assess-body .q-block");
-      var correct = 0;
-      var total = qBlocks.length;
-      if (total === 0) total = 3;
-
+      var answers = {};
+      var score = 0;
+      var complete = true;
       qBlocks.forEach(function(block){
         var selected = block.querySelector('input[type="radio"]:checked');
-        if (selected) {
-          if (selected.getAttribute("data-correct") === "1" || selected.value === "b" || selected.value === "a") {
-            if (selected.getAttribute("data-correct") === "1") {
-              correct++;
-            } else if (!selected.hasAttribute("data-correct") && (selected.value === "b" || selected.value === "a")) {
-              correct++;
-            }
-          }
-        }
+        if (!selected) { complete = false; return; }
+        answers[selected.dataset.question] = Number(selected.value);
       });
-
-      var score = Math.round((correct / total) * 100);
+      if (!complete || !qBlocks.length) { toast('Please answer every assessment question.'); return; }
       document.getElementById("assess-body").hidden = true;
-
+      submitAssessmentBtn.disabled = true;
+      if (!assessmentRequestKey) assessmentRequestKey = crypto.randomUUID();
       var payload = new URLSearchParams();
       payload.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
-      payload.append('score', score);
+      payload.append('answers', JSON.stringify(answers));
+      payload.append('assessment_version', '<?= $assessmentVersion ?>');
+      payload.append('request_key', assessmentRequestKey);
 
       function handlePass(data) {
         document.getElementById("pass-score").textContent = score + "%";
@@ -1342,21 +1375,21 @@ input, textarea { background: #fff!important; color: var(--text)!important; -web
         },
         body: payload.toString()
       })
-      .then(function(res){ return res.json(); })
+      .then(function(res){ return res.json().then(function(data){
+        if (!res.ok) throw new Error(data.messages && data.messages.error || data.message || 'Assessment could not be recorded.');
+        return data;
+      }); })
       .then(function(data){
-        if (score >= 70 || (data && data.success)) {
-          handlePass(data);
-        } else {
-          handleFail(data);
-        }
+        score = Number(data.score) || 0;
+        assessmentRequestKey = null;
+        if (data.success === true) handlePass(data);
+        else handleFail(data);
       })
-      .catch(function(){
-        if (score >= 70) {
-          handlePass(null);
-        } else {
-          handleFail(null);
-        }
-      });
+      .catch(function(error){
+        document.getElementById("assess-body").hidden = false;
+        toast(error.message || 'Connection failed. Please retry your submission.');
+      })
+      .finally(function(){ submitAssessmentBtn.disabled = false; });
     });
   }
 

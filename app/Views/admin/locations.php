@@ -210,8 +210,8 @@
                                 </td>
                                 
                                 <td>
-                                    <div class="fs-12"><?= date('M d, Y', strtotime($state->created_at)) ?></div>
-                                    <div class="fs-11 text-muted"><?= date('h:i A', strtotime($state->created_at)) ?></div>
+                                    <div class="fs-12"><?= (!empty($state->created_at) && strtotime($state->created_at) > 0) ? date('M d, Y', strtotime($state->created_at)) : '—' ?></div>
+                                    <div class="fs-11 text-muted"><?= (!empty($state->created_at) && strtotime($state->created_at) > 0) ? date('h:i A', strtotime($state->created_at)) : '' ?></div>
                                 </td>
                                 
                                 <td class="text-center">

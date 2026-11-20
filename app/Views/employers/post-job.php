@@ -13,6 +13,7 @@
 
 <?= $this->section('content') ?>
 <?php
+helper('job_description');
 $isEdit = isset($job) && !empty($job) && !isset($isRepost);
 $isRepost = isset($isRepost) && $isRepost === true;
 $val = function($field, $default = '') use ($job, $isEdit, $isRepost) {
@@ -110,6 +111,7 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
   ?>
   <form id="post-job-form" method="POST" action="<?= $formAction ?>" novalidate>
     <?= csrf_field() ?>
+    <?php if ($isRepost): ?><input type="hidden" name="repost_request_key" value="<?= bin2hex(random_bytes(32)) ?>"><?php endif; ?>
     
     <!-- ══ 1. JOB OVERVIEW ══ -->
     <details class="job-card" open style="margin-bottom:20px" aria-labelledby="h-overview">
@@ -263,7 +265,7 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
             <label style="display:block;margin-bottom:8px">Salary visibility</label>
             <label class="toggle-wrap" style="cursor:pointer">
               <span class="toggle">
-                <input type="checkbox" name="show_salary" id="show-salary" value="1" <?= $val('show_salary', 1) ? 'checked' : '' ?>>
+                <input type="hidden" name="show_salary_present" value="1"><input type="checkbox" name="show_salary" id="show-salary" value="1" <?= $val('show_salary', 1) ? 'checked' : '' ?>>
                 <span class="toggle-slider"></span>
               </span>
               <span>
@@ -295,7 +297,7 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
         <div class="form-field">
           <textarea id="job-desc" name="description" rows="12" required maxlength="5000"
             placeholder="About the role:&#10;We are looking for a [Job Title] to join our [team/department]...&#10;&#10;Responsibilities:&#10;• ...&#10;• ...&#10;&#10;Requirements:&#10;• ...&#10;&#10;What we offer:&#10;• ..."
-            oninput="updateCount('job-desc','desc-count',5000)"><?= esc($val('description')) ?></textarea>
+            oninput="updateCount('job-desc','desc-count',5000)"><?= esc(job_description_text($val('description'))) ?></textarea>
           <div class="char-count"><span id="desc-count">0</span> / 5,000 — more detail = better candidate quality</div>
         </div>
       </div>
@@ -412,10 +414,10 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
             <label for="accommodation">Accommodation</label>
             <select id="accommodation" name="accommodation">
               <option value="">Not applicable</option>
-              <option value="Provided (fully covered by employer)" <?= $val('accommodation') == 'Provided (fully covered by employer)' ? 'selected' : '' ?>>Provided (fully covered by employer)</option>
+              <option value="Provided (fully covered by employer)" <?= ($val('accommodation') == 'Provided (fully covered by employer)' || $val('accommodation') == 'available') ? 'selected' : '' ?>>Provided (fully covered by employer)</option>
               <option value="Provided (cost shared with employee)" <?= $val('accommodation') == 'Provided (cost shared with employee)' ? 'selected' : '' ?>>Provided (cost shared with employee)</option>
               <option value="Housing allowance provided instead" <?= $val('accommodation') == 'Housing allowance provided instead' ? 'selected' : '' ?>>Housing allowance provided instead</option>
-              <option value="Not provided" <?= $val('accommodation') == 'Not provided' ? 'selected' : '' ?>>Not provided</option>
+              <option value="Not provided" <?= ($val('accommodation') == 'Not provided' || $val('accommodation') == 'not_available') ? 'selected' : '' ?>>Not provided</option>
             </select>
           </div>
 
@@ -699,7 +701,7 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
               <p class="boost-body-desc">Pins your job to the top of search results and the homepage featured section for <strong>30 days</strong></p>
             </div>
             <label class="toggle" title="Feature this listing">
-              <input type="checkbox" name="featured_listing" id="featured-listing" value="1" data-has-plan="<?= $hasPlanDataVal ?>" onchange="handleFeaturedToggle(this)" <?= $val('featured_listing') ? 'checked' : '' ?>>
+              <input type="checkbox" name="featured_listing" id="featured-listing" value="1" data-has-plan="<?= $hasPlanDataVal ?>" onchange="handleFeaturedToggle(this)" <?= ($val('featured_listing') || $hasPlanAccess) ? 'checked' : '' ?>>
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -1350,7 +1352,7 @@ var ALL_CATEGORIES = [
   <?php foreach ($categories as $cat): ?>
     {
       id: "<?= is_object($cat) ? $cat->id : $cat['id'] ?>",
-      name: "<?= esc(is_object($cat) ? $cat->name : $cat['name']) ?>",
+      name: <?= json_encode(is_object($cat) ? $cat->name : $cat['name'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>,
       industry_id: "<?= is_object($cat) ? ($cat->industry_id ?? '') : ($cat['industry_id'] ?? '') ?>"
     },
   <?php endforeach; ?>
@@ -1402,6 +1404,29 @@ function updateJobCategories(industryId) {
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
+  const savedQuestions = <?= json_encode($questions ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+  savedQuestions.forEach(function(q, index) {
+    if (index > 0) addQuestion();
+    const rows = document.querySelectorAll('.question-item');
+    const row = rows[rows.length - 1];
+    if (!row) return;
+    const text = row.querySelector('input[name$="[text]"]');
+    if (text) text.value = q.question_text || '';
+    const type = row.querySelector('select[name$="[type]"]');
+    if (type) {
+      const value = q.question_type || 'text';
+      type.value = Array.from(type.options).some(o => o.value === value) ? value : ({text:'Short text',yes_no:'Yes / No',multiple_choice:'Multiple choice'}[value] || value);
+      toggleMCOptions(type);
+    }
+    const required = row.querySelector('select[name$="[is_required]"]');
+    if (required) required.value = String(q.is_required == null ? 1 : q.is_required);
+    const options = Array.isArray(q.options) ? q.options : String(q.options || '').split(',');
+    const add = row.querySelector('.mc-options-wrap button[onclick*="addMCOption"]');
+    while (add && row.querySelectorAll('.mc-option-row input').length < Math.min(options.length, 6)) addMCOption(add);
+    row.querySelectorAll('.mc-option-row input').forEach((input,i) => input.value = options[i] || '');
+  });
+
+  updateCount('job-desc', 'desc-count', 5000);
   var checked = document.querySelector('input[name="application_method"]:checked');
   if (checked) toggleMethodDetail(checked.value);
   

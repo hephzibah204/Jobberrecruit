@@ -17,7 +17,7 @@ $pageCount   = $pager->getPageCount();
 
     <!-- Page Numbers -->
     <?php foreach ($pager->links() as $link): ?>
-        <a href="<?= $link['uri'] ?>" class="pager-btn <?= $link['active'] ? 'on' : '' ?>">
+        <a href="<?= $link['uri'] ?>" class="pager-btn <?= $link['active'] ? 'on' : '' ?>" <?= $link['active'] ? 'style="color:#ffffff !important;"' : '' ?>>
             <?= esc($link['title']) ?>
         </a>
     <?php endforeach; ?>

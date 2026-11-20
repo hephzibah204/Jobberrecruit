@@ -345,7 +345,7 @@
 <!-- Payment Loader -->
 <div id="payment-loader" class="payment-loader">
     <div style="border: 4px solid var(--border); border-top: 4px solid var(--brand); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
-    <img src="<?= base_url('auth/img/logo.png') ?>" class="loader-logo" alt="JobberRecruit">
+    <img src="<?= base_url('images/logo.png') ?>" onerror="this.onerror=null;this.src='<?= base_url('images/logo.png') ?>';" class="loader-logo" alt="JobberRecruit" style="max-height: 40px; object-fit: contain;">
     <p class="mt-3 fw-semibold" style="margin-top: 15px; font-weight: 600; color: var(--brand-deep);">Processing payment…</p>
 </div>
 
@@ -353,7 +353,7 @@
 
 <?= $this->section('mobile_cta') ?>
 <button class="emp-btn emp-btn-outline" onclick="document.querySelector('.plans').scrollIntoView({behavior:'smooth'})">View Bundles</button>
-<?php if (isset($currentPlan) && $currentPlan && $currentPlan->plan_type === 'subscription'): ?>
+<?php if (!empty($hasUnlimitedAccess) || !empty($activeSubDetails['has_active'])): ?>
     <button class="emp-btn emp-btn-accent" disabled>Active Subscription</button>
 <?php else: ?>
     <button class="emp-btn emp-btn-accent" onclick="showPurchaseModal('subscription')">
@@ -751,7 +751,7 @@
                 } else {
                     if (breakdown) breakdown.style.display = 'none';
                     if (subBtn) {
-                        subBtn.innerHTML = '<svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now';
+                        subBtn.innerHTML = '<svg aria-hidden="true"><use href="#i-zap"/></svg> ' + (pData.has_active_sub ? 'Upgrade / Extend Subscription' : 'Subscribe Now');
                     }
                 }
             }

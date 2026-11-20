@@ -14,6 +14,7 @@ class SalaryNegotiationSessionModel extends Model
     protected $protectFields    = true;
 
     protected $allowedFields = [
+        'completion_key',
         'user_id',
         'job_title',
         'base_salary_offered',

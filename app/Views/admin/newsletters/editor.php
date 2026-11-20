@@ -15,6 +15,20 @@
         </div>
     </div>
 
+    <?php if (session()->getFlashdata('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="ti ti-circle-check me-2"></i> <?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="ti ti-circle-x me-2"></i> <?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
             <form action="<?= base_url('admin/newsletters/save') ?>" method="POST" id="newsletterForm">

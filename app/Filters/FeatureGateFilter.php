@@ -10,7 +10,7 @@ class FeatureGateFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $uri = service('uri')->getPath();
+        $uri = ltrim(service('uri')->getPath(), '/');
 
         // 1. Webinars check
         if (!get_site_setting('feature_webinars', true)) {
@@ -28,14 +28,16 @@ class FeatureGateFilter implements FilterInterface
 
         // 3. AI Resume Builder check
         if (!get_site_setting('feature_ai_resume', true)) {
-            if (strpos($uri, 'candidate/resumes') === 0 || strpos($uri, 'resume/generate') === 0 || strpos($uri, 'resume/improve') === 0) {
+            if (($uri === 'candidate/resume-builder' || strpos($uri, 'candidate/resumes') === 0) || strpos($uri, 'resume/generate') === 0 || strpos($uri, 'resume/improve') === 0) {
+                if (strtoupper($request->getMethod()) === 'POST') return service('response')->setStatusCode(403)->setJSON(['message'=>'AI Resume Builder is currently disabled.']);
                 return redirect()->to(base_url('candidate/dashboard'))->with('error', 'AI Resume Builder is currently disabled.');
             }
         }
 
         // 4. AI Career Tools check
         if (!get_site_setting('feature_ai_career_tools', true)) {
-            if (strpos($uri, 'candidate/career-tools') === 0) {
+            if (strpos($uri, 'candidate/career-tools') === 0 || strpos($uri, 'api/interview/') === 0 || $uri === 'candidate/coach/generate') {
+                if (strtoupper($request->getMethod()) === 'POST') return service('response')->setStatusCode(403)->setJSON(['message'=>'AI Career Tools are currently disabled.']);
                 return redirect()->to(base_url('candidate/dashboard'))->with('error', 'AI Career Tools are currently disabled.');
             }
         }
@@ -62,30 +64,60 @@ class FeatureGateFilter implements FilterInterface
         if (!$isFreeMode && $isAiPaidMode) {
             $isAiChatbotRoute      = $uri === 'chatbot/send' || strpos($uri, 'chatbot/') === 0 || $uri === 'api/chat';
             $isAiResumeRoute       = strpos($uri, 'candidate/resumes') === 0 || strpos($uri, 'resume/generate') === 0 || strpos($uri, 'resume/improve') === 0 || strpos($uri, 'resume/rewrite') === 0;
-            $isAiCareerToolsRoute  = strpos($uri, 'candidate/career-tools') === 0;
+            $isAiCareerToolsRoute  = strpos($uri, 'candidate/career-tools') === 0 || $uri === 'candidate/coach/generate';
             $isAiInterviewApiRoute = strpos($uri, 'api/interview') === 0;
 
             if ($isAiChatbotRoute || $isAiResumeRoute || $isAiCareerToolsRoute || $isAiInterviewApiRoute) {
                 $user = auth()->user();
-                if ($user && ($user->user_type === 'candidate' || $user->role === 'candidate')) {
-                    $subModel = model(\App\Models\UserSubscriptionModel::class);
-                    $hasActiveSub = $subModel->where('user_id', $user->id)
-                        ->where('is_active', 1)
-                        ->where('ends_at >=', date('Y-m-d H:i:s'))
-                        ->first();
+                if ($user && in_array($user->user_type, ['job_seeker', 'candidate'], true)) {
+                    $requiredFeature = $isAiResumeRoute ? 'ai_resume' : 'ai_career_tools';
+                    $featureLabel = $isAiResumeRoute ? 'AI Resume Builder' : 'AI Career Tools';
 
-                    if (!$hasActiveSub) {
+                    $subModel = model(\App\Models\UserSubscriptionModel::class);
+                    $activeSubs = $subModel->where('user_id', $user->id)
+                        ->where('is_active', 1)
+                        ->where('starts_at <=', date('Y-m-d H:i:s'))
+                        ->where('ends_at >', date('Y-m-d H:i:s'))
+                        ->findAll();
+
+                    $hasAccess = false;
+                    $currentPlanName = null;
+                    if ($activeSubs) {
+                        $planModel = model(\App\Models\PlanModel::class);
+                        foreach ($activeSubs as $sub) {
+                            $planId = is_object($sub) ? ($sub->plan_id ?? null) : ($sub['plan_id'] ?? null);
+                            if (!$planId) {
+                                continue;
+                            }
+                            $plan = $planModel->find((int) $planId);
+                            if (!$plan) {
+                                continue;
+                            }
+                            $currentPlanName = $currentPlanName ?? ($plan->name ?? null);
+                            $planFeatures = is_string($plan->features ?? null) ? json_decode($plan->features, true) : (array) ($plan->features ?? []);
+                            if (is_array($planFeatures) && !empty($planFeatures[$requiredFeature])) {
+                                $hasAccess = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    $denialMessage = $activeSubs
+                        ? 'Your current plan' . ($currentPlanName ? ' (' . $currentPlanName . ')' : '') . ' does not include ' . $featureLabel . '. Please upgrade your plan to access it.'
+                        : 'Access to AI tools (including the AI Assistant, Resume Builder & Career Tools) requires an active Premium Candidate Subscription. Please upgrade your plan to access them.';
+
+                    if (!$hasAccess) {
                         if ($request->isAJAX() || strpos($request->getHeaderLine('Accept'), 'application/json') !== false || strpos($uri, 'api/') === 0 || $isAiChatbotRoute) {
                             $response = service('response');
                             return $response->setStatusCode(403)->setJSON([
                                 'success'  => false,
-                                'message'  => 'Access to AI tools (including the AI Assistant, Resume Builder & Career Tools) requires an active Premium Candidate Subscription. Please upgrade your plan to access them.',
+                                'message'  => $denialMessage,
                                 'redirect' => base_url('candidate/subscription/pricing')
                             ]);
                         }
 
                         return redirect()->to(base_url('candidate/subscription/pricing'))
-                            ->with('warning', 'AI tools (including Chatbot, Resume Builder & Career Tools) require an active Premium Candidate Subscription. Please upgrade your plan to access them.');
+                            ->with('warning', $denialMessage);
                     }
                 }
             }

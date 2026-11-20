@@ -85,7 +85,8 @@
                         method: 'POST',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                         },
                         body: JSON.stringify({
                             document_id: documentId
@@ -109,7 +110,8 @@
                         method: 'POST',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
                         },
                         body: JSON.stringify({
                             document_id: documentId

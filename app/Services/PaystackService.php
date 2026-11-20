@@ -18,15 +18,7 @@ class PaystackService
     public function initialize($email, $amount, $callbackUrl, $metadata = [])
     {
         if (empty($this->secretKey)) {
-            $reference = $metadata['reference'] ?? ('mock_' . uniqid());
-            $redirectUrl = $callbackUrl . (strpos($callbackUrl, '?') === false ? '?' : '&') . 'reference=' . $reference;
-            return [
-                'status' => true,
-                'data' => [
-                    'authorization_url' => $redirectUrl,
-                    'reference' => $reference
-                ]
-            ];
+            return ['status' => false, 'message' => 'Payment service is not configured.'];
         }
 
         $url = $this->baseUrl . '/transaction/initialize';
@@ -35,8 +27,12 @@ class PaystackService
             'email' => $email,
             'amount' => $amount * 100, // Paystack amount is in kobo
             'callback_url' => $callbackUrl,
-            'metadata' => json_encode($metadata)
+            'metadata' => json_encode($metadata),
+            'currency' => 'NGN',
         ];
+        if (!empty($metadata['reference'])) {
+            $fields['reference'] = $metadata['reference'];
+        }
 
         return $this->makeRequest($url, $fields);
     }
@@ -47,28 +43,7 @@ class PaystackService
     public function verify($reference)
     {
         if (empty($this->secretKey)) {
-            $session = \Config\Services::session();
-            $pending = $session->get('pending_subscription');
-            $planId = $pending['plan_id'] ?? 1;
-
-            return [
-                'status' => true,
-                'data' => [
-                    'status' => 'success',
-                    'amount' => 500000,
-                    'channel' => 'card',
-                    'reference' => $reference,
-                    'metadata' => [
-                        'plan_id' => $planId,
-                        'user_id' => auth()->id(),
-                        'app_data' => [
-                            'type' => 'subscription',
-                            'plan_id' => $planId,
-                            'months' => 1
-                        ]
-                    ]
-                ]
-            ];
+            return ['status' => false, 'message' => 'Payment service is not configured.'];
         }
 
         $url = $this->baseUrl . '/transaction/verify/' . rawurlencode($reference);
@@ -102,6 +77,8 @@ class PaystackService
         }
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Authorization: Bearer " . $this->secretKey,
@@ -117,6 +94,7 @@ class PaystackService
             return ['status' => false, 'message' => 'Curl Error: ' . $err];
         }
 
-        return json_decode($response, true);
+        $decoded = json_decode($response, true);
+        return is_array($decoded) ? $decoded : ['status' => false, 'message' => 'Invalid payment service response.'];
     }
 }

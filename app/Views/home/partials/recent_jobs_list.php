@@ -1,6 +1,6 @@
-<?php if (!empty($jobs)): foreach (array_slice($jobs, 0, 6) as $job): ?>
+<?php if (!empty($jobs)): foreach (array_slice($jobs, 0, 6) as $job): helper('public_job'); $job = public_job($job); ?>
 <div class="col-lg-4 col-md-6">
-    <a href="<?= esc(format_job_url($job), 'url') ?>" <?= ($job->application_method ?? '') === 'external' ? 'target="_blank" rel="noopener"' : '' ?> class="rj-card touch-scale">
+    <a href="<?= esc(format_job_url($job), 'url') ?>" class="rj-card touch-scale">
         <div class="d-flex justify-content-end mb-3">
             <div style="width: 40px; height: 40px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee;">
                 <img src="<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>" alt="<?= esc($job->employer_name ?? 'Company') ?> Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
@@ -15,6 +15,7 @@
                 <i class="bi bi-check-circle-fill text-primary fs-6 ms-1" title="Verified Employer"></i>
             <?php endif; ?>
         </div>
+        <?php if (empty($job->anonymous) && empty($job->is_anonymous) && !empty($job->employer_tagline)): ?><div class="text-muted small" style="margin-top:-10px;margin-bottom:12px;"><?= esc($job->employer_tagline) ?></div><?php endif; ?>
         <div class="rj-card-meta d-flex gap-3 text-muted">
             <span><i class="bi bi-geo-alt"></i> <?= esc($job->location ?? 'Nigeria') ?></span>
             <span><i class="bi bi-briefcase"></i> <?= esc($job->employment_type ?? 'Full-time') ?></span>

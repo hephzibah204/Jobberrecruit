@@ -188,13 +188,29 @@ class EmployerModel extends Model
     {
         $data = [
             'verification_status' => 'verified',
+            'is_verified' => 1,
             'verified_at' => date('Y-m-d H:i:s'),
             'verified_by' => $adminId,
             'verification_notes' => $notes,
             'rejection_reason' => null
         ];
 
-        $this->update($employerId, $data);
+        if (!$this->find($employerId) || !$this->update($employerId, $data)) {
+            return false;
+        }
+
+        // Cascade verification to all active jobs
+        try {
+            $this->db->table('jobs')->where('employer_id', $employerId)->update(['is_verified' => 1]);
+            $cache = \Config\Services::cache();
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('top_companies_v2');
+            $cache->delete('top_companies_home_v3');
+            $cache->delete('featured_jobs');
+        } catch (\Throwable $e) {
+            log_message('error', 'Failed to cascade verification to jobs or clear cache: ' . $e->getMessage());
+        }
 
         // Log the verification
         $this->logVerification($employerId, $adminId, 'verified', $notes);
@@ -209,12 +225,26 @@ class EmployerModel extends Model
     {
         $data = [
             'verification_status' => 'rejected',
+            'is_verified' => 0,
             'rejection_reason' => $reason,
             'verified_by' => $adminId,
             'verified_at' => date('Y-m-d H:i:s')
         ];
 
         $this->update($employerId, $data);
+
+        // Demote verification on all employer jobs
+        try {
+            $this->db->table('jobs')->where('employer_id', $employerId)->update(['is_verified' => 0]);
+            $cache = \Config\Services::cache();
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('top_companies_v2');
+            $cache->delete('top_companies_home_v3');
+            $cache->delete('featured_jobs');
+        } catch (\Throwable $e) {
+            log_message('error', 'Failed to demote verification on jobs or clear cache: ' . $e->getMessage());
+        }
 
         // Log the rejection
         $this->logVerification($employerId, $adminId, 'rejected', $reason);

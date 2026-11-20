@@ -20,11 +20,12 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .cv-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden;transition:var(--transition)}
 .cv-card:hover{box-shadow:0 2px 10px rgba(10,47,87,.07)}
 .cv-card[open]{box-shadow:0 2px 12px rgba(10,47,87,.08)}
-.cv-card-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;list-style:none;min-height:52px}
+.cv-card-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;list-style:none;min-height:52px;flex-wrap:wrap}
 .cv-card-header::-webkit-details-marker{display:none}
-.cv-card-title{flex:1;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep);display:flex;align-items:center;gap:9px}
-.cv-card-title svg{width:16px;height:16px;color:var(--brand)}
-.cv-card-done{font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:20px}
+.cv-card-title{flex:1;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0}
+.cv-card-title svg{width:16px;height:16px;color:var(--brand);flex-shrink:0}
+.cv-card-title>span{flex-shrink:0;white-space:nowrap}
+.cv-card-done{font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .cv-card-done.complete{background:var(--success-light);color:var(--success)}
 .cv-card-done.incomplete{background:var(--accent-light);color:var(--accent-dark)}
 .cv-card-done.optional{background:var(--bg);color:var(--muted)}
@@ -86,8 +87,10 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .jr-auto-link{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:var(--brand);margin-top:10px}
 .bottom-actions{display:flex;justify-content:flex-end;gap:12px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.badge-pct{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--brand-light,#E6F0F8);color:var(--brand,#0861A9);margin-left:6px;display:inline-flex;align-items:center}
-.badge-priority{font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;margin-left:6px;display:inline-flex;align-items:center;gap:3px}
+.badge-pct{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--brand-light,#E6F0F8);color:var(--brand,#0861A9);margin-left:6px;display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0}
+.badge-priority{font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;margin-left:6px;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex-shrink:0}
+#resumePreview>div{max-width:100%}
+#resumePreviewText{overflow-wrap:anywhere;min-width:0}
 .cv-card--prominent{border:2px solid #0861A9!important;box-shadow:0 4px 16px rgba(8,97,169,.12)!important}
 .cv-card--prominent .cv-card-header{background:linear-gradient(90deg,#f0f7ff,#ffffff)}
 .completion-breakdown{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:14px}
@@ -111,16 +114,18 @@ $walletBalance = $wallet ? $wallet->balance : 0;
 $completion = $candidate->getProfileCompletion();
 $checklist  = $candidate->getProfileChecklist();
 
-// Section completion status
-$basicComplete  = !empty($candidate->full_name) && !empty($candidate->phone) && !empty($candidate->state_id);
-$careerComplete = !empty($candidate->job_title) && (!empty($candidateIndustryIds) || !empty($candidate->industry));
-$docsComplete   = !empty($candidate->resume);
-$summaryDone    = !empty($candidate->bio);
-$langsDone      = !empty($candidate->languages);
-$portfolioDone  = !empty($candidate->portfolio);
-$expDone        = !empty($experiences) || !empty($candidate->experience_years);
-$eduDone        = !empty($education) || !empty($candidate->education_level);
-$certDone       = !empty($certifications) || !empty($myCerts);
+// Section completion status synced directly with checklist breakdown
+$checklistByKey = array_column($checklist, null, 'key');
+$basicComplete  = !empty($checklistByKey['personal']['done']);
+$careerComplete = !empty($checklistByKey['preferences']['done']);
+$docsComplete   = !empty($checklistByKey['resume']['done']);
+$summaryDone    = !empty($checklistByKey['bio']['done']);
+$expDone        = !empty($checklistByKey['experience']['done']);
+$eduDone        = !empty($checklistByKey['education']['done']);
+$skillsDone     = !empty($checklistByKey['skills']['done']);
+$portfolioDone  = !empty($checklistByKey['portfolio']['done']);
+$certDone       = !empty($checklistByKey['certificate']['done']);
+$langsDone      = !empty($checklistByKey['language']['done']);
 ?>
 
 <div class="content">
@@ -323,10 +328,10 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                         </div>
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <svg aria-hidden="true"><use href="#i-check"/></svg> Save personal info
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save personal info</span>
                         </button>
-                        <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Saved when you click Update Profile at the bottom</span>
+                        <span class="autosave-note"><svg aria-hidden="true"><use href="#i-clock"/></svg> Changes save when you click any Save button or Update Profile</span>
                     </div>
                 </div>
             </details>
@@ -395,6 +400,11 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                             </select>
                         </div>
                     </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save job preferences</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
@@ -412,13 +422,13 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                             <label for="resumeInput" style="font-weight:600;">Upload / Manage Resume (CV Document)</label>
                             <input type="file" name="resume" id="resumeInput" accept=".pdf,.doc,.docx" class="input" style="margin-bottom:8px;">
                             <?php if (!empty($candidate->resume)): ?>
-                                <div style="display:flex;align-items:center;gap:12px;margin-top:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #d0e3ff;border-radius:8px;">
-                                    <svg aria-hidden="true" width="20" height="20" style="color:var(--brand);"><use href="#i-doc"/></svg>
-                                    <span style="font-size:.84rem;font-weight:500;color:var(--text);flex:1;"><?= esc(basename($candidate->resume)) ?></span>
-                                    <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline btn-sm">
+                                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #d0e3ff;border-radius:8px;">
+                                    <svg aria-hidden="true" width="20" height="20" style="color:var(--brand);flex-shrink:0;"><use href="#i-doc"/></svg>
+                                    <span style="font-size:.84rem;font-weight:500;color:var(--text);flex:1 1 180px;min-width:0;overflow-wrap:anywhere;"><?= esc(basename($candidate->resume)) ?></span>
+                                    <a href="<?= base_url($candidate->resume) ?>" target="_blank" class="btn btn-outline btn-sm" style="flex-shrink:0;">
                                         <svg aria-hidden="true"><use href="#i-eye"/></svg> View Current Resume
                                     </a>
-                                    <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#dc2626;cursor:pointer;margin:0;">
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#dc2626;cursor:pointer;margin:0;flex-shrink:0;">
                                         <input type="checkbox" name="remove_resume" value="1"> Remove Resume
                                     </label>
                                 </div>
@@ -430,6 +440,11 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save resume</span>
+                        </button>
                     </div>
                 </div>
             </details>
@@ -454,14 +469,19 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                             oninput="document.getElementById('summaryCount').textContent=this.value.length"><?= old('bio', $candidate->bio ?? '') ?></textarea>
                         <div class="char-count"><span id="summaryCount"><?= strlen($candidate->bio ?? '') ?></span> / 600</div>
                     </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save professional summary</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
             <!-- ══ 5. WORK EXPERIENCE (20%) ══ -->
-            <details class="cv-card <?= !empty($experiences) ? 'is-complete' : '' ?>" id="sec-experience">
+            <details class="cv-card <?= $expDone ? 'is-complete' : '' ?>" id="sec-experience">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-briefcase"/></svg> Work Experience <span class="badge-pct">20%</span></span>
-                    <span class="cv-card-done <?= !empty($experiences) ? 'complete' : 'incomplete' ?>"><?= !empty($experiences) ? count($experiences) . ' added' : 'Incomplete' ?></span>
+                    <span class="cv-card-done <?= $expDone ? 'complete' : 'incomplete' ?>"><?= $expDone ? (!empty($experiences) ? count($experiences) . ' added' : 'Complete') : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
@@ -473,8 +493,8 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                                 <div class="form-field"><label>Job title</label><input type="text" name="exp_job_title[]" class="input" value="<?= esc($xp->job_title, 'attr') ?>" placeholder="e.g. Accountant"></div>
                                 <div class="form-field"><label>Company</label><input type="text" name="exp_company[]" class="input" value="<?= esc($xp->company ?? '', 'attr') ?>" placeholder="e.g. Acme Ltd"></div>
                                 <div class="form-field"><label>Location</label><input type="text" name="exp_location[]" class="input" value="<?= esc($xp->location ?? '', 'attr') ?>" placeholder="e.g. Lagos"></div>
-                                <div class="form-field"><label>Start</label><input type="month" name="exp_start[]" class="input" value="<?= $xp->start_date ? esc(substr($xp->start_date, 0, 7), 'attr') : '' ?>"></div>
-                                <div class="form-field"><label>End</label><input type="month" name="exp_end[]" class="input" value="<?= $xp->end_date ? esc(substr($xp->end_date, 0, 7), 'attr') : '' ?>" <?= !empty($xp->is_current) ? 'disabled' : '' ?>></div>
+                                <div class="form-field"><label>Start</label><input type="month" name="exp_start[]" class="input" value="<?= $xp->start_date ? esc(substr($xp->start_date, 0, 7), 'attr') : '' ?>" placeholder="YYYY-MM (e.g. 2023-01)"></div>
+                                <div class="form-field"><label>End</label><input type="month" name="exp_end[]" class="input" value="<?= $xp->end_date ? esc(substr($xp->end_date, 0, 7), 'attr') : '' ?>" placeholder="YYYY-MM (e.g. 2024-05)"></div>
                             </div>
                             <label class="rep-current"><input type="checkbox" class="exp-current-toggle" <?= !empty($xp->is_current) ? 'checked' : '' ?>> I currently work here</label>
                             <input type="hidden" name="exp_is_current[]" value="<?= !empty($xp->is_current) ? '1' : '0' ?>">
@@ -483,15 +503,20 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm" id="add-exp"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add work experience</button>
+                    <div class="form-actions" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;">
+                        <button type="button" class="btn btn-outline btn-sm" id="add-exp"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add work experience</button>
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save work experience</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
             <!-- ══ 6. EDUCATION (12%) ══ -->
-            <details class="cv-card <?= !empty($education) ? 'is-complete' : '' ?>" id="sec-education">
+            <details class="cv-card <?= $eduDone ? 'is-complete' : '' ?>" id="sec-education">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-grad"/></svg> Education History <span class="badge-pct">12%</span></span>
-                    <span class="cv-card-done <?= !empty($education) ? 'complete' : 'incomplete' ?>"><?= !empty($education) ? count($education) . ' added' : 'Incomplete' ?></span>
+                    <span class="cv-card-done <?= $eduDone ? 'complete' : 'incomplete' ?>"><?= $eduDone ? (!empty($education) ? count($education) . ' added' : 'Complete') : 'Incomplete' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
@@ -529,7 +554,12 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm" id="add-edu"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add education</button>
+                    <div class="form-actions" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;">
+                        <button type="button" class="btn btn-outline btn-sm" id="add-edu"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add education</button>
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save education history</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
@@ -547,14 +577,19 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                         <textarea name="skills" class="input" rows="3" placeholder="e.g. PHP, UI/UX Design, Figma, React, Communication"><?= old('skills', $candidate->skills) ?></textarea>
                     </div>
                     <p style="font-size:.74rem;color:var(--muted);margin-top:8px;">Tip: Add 8–15 specific skills for the best match results.</p>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save skills</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
             <!-- ══ 8. LICENCES & CERTIFICATIONS (2%) ══ -->
-            <details class="cv-card <?= (!empty($certifications) || !empty($myCerts)) ? 'is-complete' : '' ?>" id="sec-certifications">
+            <details class="cv-card <?= $certDone ? 'is-complete' : '' ?>" id="sec-certifications">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-award"/></svg> Licences &amp; Certifications <span class="badge-pct">2%</span> <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(Optional)</span></span>
-                    <span class="cv-card-done optional">Optional</span>
+                    <span class="cv-card-done <?= $certDone ? 'complete' : 'optional' ?>"><?= $certDone ? (!empty($renderedCerts) ? count($renderedCerts) . ' added' : 'Complete') : 'Optional' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
@@ -617,13 +652,13 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                                 <div class="form-field cert-expiry-wrap" style="<?= !empty($certItem->does_not_expire) ? 'display:none;' : '' ?>">
                                     <label>Expiry Date</label>
                                     <div style="display:flex;gap:6px;">
-                                        <select name="cert_exp_month[]" class="select" <?= !empty($certItem->does_not_expire) ? 'disabled' : '' ?>>
+                                        <select name="cert_exp_month[]" class="select" >
                                             <option value="">Month</option>
                                             <?php foreach (['January','February','March','April','May','June','July','August','September','October','November','December'] as $m): ?>
                                                 <option value="<?= $m ?>" <?= ($certItem->expiry_month ?? '') == $m ? 'selected' : '' ?>><?= $m ?></option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <input type="text" name="cert_exp_year[]" class="input" maxlength="4" value="<?= esc($certItem->expiry_year ?? '', 'attr') ?>" placeholder="Year" <?= !empty($certItem->does_not_expire) ? 'disabled' : '' ?>>
+                                        <input type="text" name="cert_exp_year[]" class="input" maxlength="4" value="<?= esc($certItem->expiry_year ?? '', 'attr') ?>" placeholder="Year" >
                                     </div>
                                 </div>
                             </div>
@@ -631,7 +666,12 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn btn-outline btn-sm" id="add-cert"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another certification</button>
+                    <div class="form-actions" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;">
+                        <button type="button" class="btn btn-outline btn-sm" id="add-cert"><svg aria-hidden="true"><use href="#i-plus"/></svg> Add another certification</button>
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save certifications</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
@@ -639,7 +679,7 @@ $certDone       = !empty($certifications) || !empty($myCerts);
             <details class="cv-card <?= $portfolioDone ? 'is-complete' : '' ?>" id="sec-portfolio">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-globe"/></svg> Portfolio &amp; Work Samples <span class="badge-pct">3%</span> <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(Optional)</span></span>
-                    <span class="cv-card-done optional">Optional</span>
+                    <span class="cv-card-done <?= $portfolioDone ? 'complete' : 'optional' ?>"><?= $portfolioDone ? 'Complete' : 'Optional' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
@@ -650,6 +690,11 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                                value="<?= old('portfolio', $candidate->portfolio) ?>" placeholder="https://myportfolio.com">
                         <span style="font-size:.72rem;color:var(--muted);margin-top:4px;display:block;">Include https:// — we'll add it automatically if missing.</span>
                     </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save portfolio</span>
+                        </button>
+                    </div>
                 </div>
             </details>
 
@@ -657,7 +702,7 @@ $certDone       = !empty($certifications) || !empty($myCerts);
             <details class="cv-card <?= $langsDone ? 'is-complete' : '' ?>" id="sec-languages">
                 <summary class="cv-card-header">
                     <span class="cv-card-title"><svg aria-hidden="true"><use href="#i-chat"/></svg> Languages <span class="badge-pct">1%</span> <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:6px;">(Optional)</span></span>
-                    <span class="cv-card-done optional">Optional</span>
+                    <span class="cv-card-done <?= $langsDone ? 'complete' : 'optional' ?>"><?= $langsDone ? 'Complete' : 'Optional' ?></span>
                     <svg class="cv-chev" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
                 </summary>
                 <div class="cv-card-body">
@@ -665,6 +710,11 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                     <div class="form-field">
                         <label>Languages (comma-separated)</label>
                         <input type="text" name="languages" class="input" value="<?= old('languages', $candidate->languages) ?>" placeholder="e.g. English, Yoruba, French">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm save-section-btn">
+                            <svg aria-hidden="true"><use href="#i-check"/></svg> <span>Save languages</span>
+                        </button>
                     </div>
                 </div>
             </details>
@@ -676,8 +726,8 @@ $certDone       = !empty($certifications) || !empty($myCerts);
                         <div class="form-field"><label>Job title</label><input type="text" name="exp_job_title[]" class="input" placeholder="e.g. Accountant"></div>
                         <div class="form-field"><label>Company</label><input type="text" name="exp_company[]" class="input" placeholder="e.g. Acme Ltd"></div>
                         <div class="form-field"><label>Location</label><input type="text" name="exp_location[]" class="input" placeholder="e.g. Lagos"></div>
-                        <div class="form-field"><label>Start</label><input type="month" name="exp_start[]" class="input"></div>
-                        <div class="form-field"><label>End</label><input type="month" name="exp_end[]" class="input"></div>
+                        <div class="form-field"><label>Start</label><input type="month" name="exp_start[]" class="input" placeholder="YYYY-MM (e.g. 2023-01)"></div>
+                        <div class="form-field"><label>End</label><input type="month" name="exp_end[]" class="input" placeholder="YYYY-MM (e.g. 2024-05)"></div>
                     </div>
                     <label class="rep-current"><input type="checkbox" class="exp-current-toggle"> I currently work here</label>
                     <input type="hidden" name="exp_is_current[]" value="0">
@@ -754,6 +804,17 @@ $certDone       = !empty($certifications) || !empty($myCerts);
 <script>
 requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 $(document).ready(function () {
+    function openProfileSectionFromHash() {
+        var id;
+        try { id = decodeURIComponent(window.location.hash.slice(1)); } catch (e) { return; }
+        var section = document.getElementById(id);
+        if (!section || !section.matches('details.cv-card')) return;
+        section.open = true;
+        section.scrollIntoView({block:'start'});
+    }
+    openProfileSectionFromHash();
+    window.addEventListener('hashchange', openProfileSectionFromHash);
+
 
     // ── Select2 for industries ──
     if ($.fn.select2) {
@@ -800,17 +861,44 @@ $(document).ready(function () {
         const btn = $(this);
         btn.prop('disabled', true).html('<svg aria-hidden="true"><use href="#i-refresh"/></svg> Generating…');
 
-        const skills = $('textarea[name="skills"]').val();
-        const jobTitle = $('input[name="job_title"]').val();
-        const experience = $('input[name="experience_years"]').val();
+        const currentSummary = $('#summaryTextarea').val().trim();
+        const skills = $('textarea[name="skills"]').val().trim();
+        const jobTitle = $('input[name="job_title"]').val().trim();
+
+        const experiences = [];
+        document.querySelectorAll('#exp-list .rep-row').forEach(function(row) {
+            const value = name => (row.querySelector('[name="' + name + '[]"]') || {}).value || '';
+            const pos = value('exp_job_title').trim();
+            const comp = value('exp_company').trim();
+            const desc = value('exp_description').trim();
+            if (pos || comp || desc) {
+                experiences.push({position: pos, company: comp, description: desc});
+            }
+        });
+        if (!experiences.length && jobTitle) {
+            experiences.push({position: jobTitle, company: '', description: ''});
+        }
+
+        const education = [];
+        document.querySelectorAll('#edu-list .rep-row').forEach(function(row) {
+            const value = name => (row.querySelector('[name="' + name + '[]"]') || {}).value || '';
+            const deg = value('edu_degree').trim();
+            const fld = value('edu_field').trim();
+            const sch = value('edu_school').trim();
+            if (deg || fld || sch) {
+                education.push({degree: deg, field: fld, school: sch});
+            }
+        });
 
         $.ajax({
             url: '<?= base_url('candidate/resumes/ai/generate-summary') ?>',
             method: 'POST',
             data: {
                 <?= csrf_token() ?>: '<?= csrf_hash() ?>',
-                skills: [skills],
-                experiences: [{ position: jobTitle, company: '', description: '' }]
+                current_summary: currentSummary,
+                skills: skills,
+                experiences: experiences,
+                education: education
             },
             success: function (res) {
                 if (res.summary) {
@@ -819,8 +907,9 @@ $(document).ready(function () {
                     toastr.success('AI summary generated!');
                 }
             },
-            error: function () {
-                toastr.warning('AI generation failed — please try again.');
+            error: function (xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'AI generation failed — please try again.';
+                toastr.warning(msg);
             },
             complete: function () {
                 btn.prop('disabled', false).html('<svg aria-hidden="true"><use href="#i-zap"/></svg> AI generate');
@@ -878,13 +967,56 @@ $(document).ready(function () {
         });
     });
 
+    // ── Track which submit button was clicked ──
+    var activeSubmitBtn = $('#submitBtn');
+    $(document).on('click', '#editCandidateForm button[type="submit"]', function () {
+        activeSubmitBtn = $(this);
+    });
+
+    // ── Helper to normalize month inputs before submit ──
+    function normalizeMonthInput(val) {
+        val = (val || '').trim();
+        if (!val) return '';
+        var m;
+        if ((m = val.match(/^(\d{4})-(\d{1,2})$/))) {
+            return m[1] + '-' + (m[2].length === 1 ? '0' + m[2] : m[2]);
+        }
+        if ((m = val.match(/^(\d{1,2})[\/\-](\d{4})$/))) {
+            return m[2] + '-' + (m[1].length === 1 ? '0' + m[1] : m[1]);
+        }
+        if ((m = val.match(/^(\d{4})[\/\-](\d{1,2})$/))) {
+            return m[1] + '-' + (m[2].length === 1 ? '0' + m[2] : m[2]);
+        }
+        if (val.match(/^\d{4}$/)) {
+            return val + '-01';
+        }
+        return val;
+    }
+
     // ── AJAX Form Submit ──
     $('#editCandidateForm').on('submit', function (e) {
         e.preventDefault();
 
-        const btn  = $('#submitBtn');
-        const text = btn.find('.btn-text');
-        const spin = btn.find('.spinner');
+        // Normalize inputs
+        $('input[name="exp_start[]"]').each(function () {
+            var v = $(this).val();
+            var n = normalizeMonthInput(v);
+            if (n && n !== v) $(this).val(n);
+        });
+        $('input[name="exp_end[]"]').each(function () {
+            var row = $(this).closest('.rep-row');
+            var isCurrent = row.find('.exp-current-toggle').is(':checked');
+            if (isCurrent) {
+                $(this).val('');
+            } else {
+                var v = $(this).val();
+                var n = normalizeMonthInput(v);
+                if (n && n !== v) $(this).val(n);
+            }
+        });
+        $('input[name="edu_start_year[]"], input[name="edu_end_year[]"]').each(function () {
+            $(this).val(($(this).val() || '').trim());
+        });
 
         // Portfolio URL normalization before submit
         const portfolioInput = $('#portfolioInput');
@@ -893,9 +1025,10 @@ $(document).ready(function () {
             portfolioInput.val('https://' + portfolioVal);
         }
 
-        btn.prop('disabled', true);
-        text.addClass('d-none');
-        spin.removeClass('d-none');
+        const allSubmitBtns = $('#editCandidateForm button[type="submit"]');
+        allSubmitBtns.prop('disabled', true);
+        const originalBtnHtml = activeSubmitBtn.html();
+        activeSubmitBtn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Saving...');
 
         const formData = new FormData(this);
 
@@ -906,9 +1039,8 @@ $(document).ready(function () {
             processData: false,
             contentType: false,
             success: function (res) {
-                btn.prop('disabled', false);
-                text.removeClass('d-none');
-                spin.addClass('d-none');
+                allSubmitBtns.prop('disabled', false);
+                activeSubmitBtn.html(originalBtnHtml);
 
                 if (res.csrf_token && res.csrf_hash) {
                     $('input[name="' + res.csrf_token + '"]').val(res.csrf_hash);
@@ -917,27 +1049,53 @@ $(document).ready(function () {
                 if (res.status === 'error') {
                     if (res.errors) {
                         toastr.error(Object.values(res.errors).join('<br>'));
+                        highlightErrors(res.errors);
                     } else {
                         toastr.error(res.message || 'An error occurred.');
                     }
                 } else {
                     toastr.success(res.message || 'Profile updated successfully.');
-                    setTimeout(() => { window.location.href = '<?= base_url('candidate/profile') ?>'; }, 1200);
+                    setTimeout(() => { window.location.href = '<?= base_url('candidate/profile') ?>'; }, 1000);
                 }
             },
             error: function (xhr) {
-                btn.prop('disabled', false);
-                text.removeClass('d-none');
-                spin.addClass('d-none');
+                allSubmitBtns.prop('disabled', false);
+                activeSubmitBtn.html(originalBtnHtml);
 
                 let msg = 'Something went wrong.';
                 if (xhr.responseJSON && xhr.responseJSON.errors) {
                     msg = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+                    highlightErrors(xhr.responseJSON.errors);
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
                 }
                 toastr.error(msg);
             }
         });
     });
+
+    function highlightErrors(errors) {
+        if (!errors || typeof errors !== 'object') return;
+        var firstField = null;
+        Object.keys(errors).forEach(function (key) {
+            var el = $('[name="' + key + '"]');
+            if (!el.length) {
+                var baseKey = key.replace('[]', '');
+                el = $('[name^="' + baseKey + '"]');
+            }
+            if (el.length && !firstField) {
+                firstField = el.first();
+            }
+        });
+        if (firstField && firstField.length) {
+            var details = firstField.closest('details.cv-card');
+            if (details.length) {
+                details.prop('open', true);
+            }
+            firstField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstField.focus();
+        }
+    }
 
     // ── Repeatable Work Experience / Education / Certification rows ──
     function wireRepRow(row) {
@@ -948,7 +1106,20 @@ $(document).ready(function () {
             var expEndInput = row.querySelector('input[name="exp_end[]"]');
             var syncExp = function () {
                 if (expHidden) expHidden.value = expToggle.checked ? '1' : '0';
-                if (expEndInput) { expEndInput.disabled = expToggle.checked; if (expToggle.checked) expEndInput.value = ''; }
+                if (expEndInput) {
+                    if (expToggle.checked) {
+                        expEndInput.value = '';
+                        expEndInput.readOnly = true;
+                        expEndInput.style.backgroundColor = '#f8fafc';
+                        expEndInput.style.color = '#94a3b8';
+                        expEndInput.placeholder = 'Present';
+                    } else {
+                        expEndInput.readOnly = false;
+                        expEndInput.style.backgroundColor = '';
+                        expEndInput.style.color = '';
+                        expEndInput.placeholder = 'YYYY-MM (e.g. 2024-05)';
+                    }
+                }
             };
             expToggle.addEventListener('change', syncExp);
             syncExp();
@@ -966,8 +1137,10 @@ $(document).ready(function () {
                 if (certExpiryWrap) {
                     certExpiryWrap.style.display = certToggle.checked ? 'none' : '';
                 }
-                if (certExpirySelect) certExpirySelect.disabled = certToggle.checked;
-                if (certExpiryYear) certExpiryYear.disabled = certToggle.checked;
+                if (certToggle.checked) {
+                    if (certExpirySelect) certExpirySelect.value = '';
+                    if (certExpiryYear) certExpiryYear.value = '';
+                }
             };
             certToggle.addEventListener('change', syncCert);
             syncCert();

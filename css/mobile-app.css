@@ -1,3 +1,4 @@
+/* Hallmark · restyle · jobberrecruit-mobile-app · theme: technical-precision */
 /* ==========================================================================
    Section 8 — Native Mobile App Feel
    Stack: Bootstrap 5 + jQuery + Tabler/Flaticon icons (Jobhunt theme)
@@ -6,6 +7,11 @@
    desktop treatment is never affected.
    ========================================================================== */
 
+
+:focus-visible {
+  outline: 2px solid var(--ring, rgba(13, 96, 158, 0.4));
+  outline-offset: 2px;
+}
 :root {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
@@ -17,7 +23,7 @@
 }
 
 /* Page-level hardening so 360px phones don't horizontal-scroll. */
-html, body { overflow-x: hidden; }
+html, body { overflow-x: clip; }
 img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
 
 /* iOS Safari: stop inputs from triggering the 16px-zoom-to-tap. */
@@ -71,9 +77,16 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
   }
 }
 
-/* Long strings should wrap, not push the page wider. */
-p, li, a, button, span, h1, h2, h3, h4, h5, h6 {
+/* Long strings should wrap, not push the page wider. Block text keeps
+   overflow-wrap:anywhere; inline elements (spans, links, buttons) use
+   break-word only — "anywhere" collapses their min-content to ~1 char,
+   which lets flex rows crush pills/labels into one-character columns. */
+p, li, h1, h2, h3, h4, h5, h6 {
   overflow-wrap: anywhere;
+  word-break: break-word;
+}
+a, button, span {
+  overflow-wrap: break-word;
   word-break: break-word;
 }
 
@@ -478,7 +491,7 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -509,7 +522,7 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
     border-radius: 16px;
     padding: 15px;
     z-index: 1050;
-    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.35s ease; transform: translateY(200%);
     color: var(--text-primary, #1e293b);
 }
 
@@ -522,6 +535,7 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
 
 .pwa-install-banner.active {
     bottom: calc(var(--safe-bottom, 0px) + 85px);
+    transform: translateY(0);
 }
 
 @media (min-width: 768px) {
@@ -546,7 +560,7 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
     background: var(--surface-2, #f1f5f9);
     border: 1px solid var(--border-color, #e5e7eb);
     border-radius: 50%;
-    color: var(--text-secondary, #64748b);
+    color: var(--text-secondary, #475569);
     font-size: 18px;
     line-height: 1;
     cursor: pointer;
@@ -600,7 +614,7 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
 @media (max-width: 767.98px) {
   /* Prevent horizontal scrolling & content overflow */
   html, body {
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     width: 100% !important;
   }
 
@@ -650,7 +664,7 @@ a, button, .btn, [role="button"], .card-grid-2, .card-list-4,
 html, body {
   width: 100% !important;
   max-width: 100vw !important;
-  overflow-x: hidden !important;
+  overflow-x: clip !important;
   position: relative;
 }
 
@@ -660,7 +674,7 @@ html, body {
   .container-fluid,
   .row {
     max-width: 100vw !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     box-sizing: border-box !important;
   }
 

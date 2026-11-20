@@ -31,12 +31,12 @@
             <h3>For candidates</h3>
             <ul>
               <li><a href="<?= base_url('jobs') ?>">Browse jobs</a></li>
-              <li><a href="<?= base_url('ai-tools/resume-builder') ?>">AI resume builder</a></li>
-              <li><a href="<?= base_url('ai-tools/mock-interview') ?>">AI mock interview</a></li>
+              <li><a href="<?= base_url('candidate/resume-builder') ?>">AI resume builder</a></li>
+              <li><a href="<?= base_url('candidate/career-tools/mock-interview') ?>">AI mock interview</a></li>
               <li><a href="<?= base_url('job-alerts') ?>">Job alerts</a></li>
               <li><a href="<?= base_url('training') ?>">Training &amp; certificates</a></li>
               <li><a href="<?= base_url('career-advice') ?>">Career advice</a></li>
-              <li><a href="<?= base_url('referral') ?>">Referral rewards</a></li>
+              <li><a href="<?= base_url() ?>#referral">Referral rewards</a></li>
             </ul>
           </div>
           <div class="footer-col">

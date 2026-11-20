@@ -240,12 +240,6 @@
         btn.disabled = true;
         btn.innerHTML = 'Saving...';
 
-        if (data.avatar) {
-            document.getElementById('existing_avatar').value = data.avatar;
-            document.querySelector('#avatarPreview img').src = data.avatar;
-            document.getElementById('avatarPreview').classList.remove('d-none');
-        }
-
         fetch("<?= base_url('admin/testimonials/save') ?>", {
                 method: 'POST',
                 headers: {
@@ -275,7 +269,8 @@
         fetch(`<?= base_url('admin/testimonials/delete') ?>/${id}`, {
                 method: 'POST',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
                 }
             })
             .then(res => res.json())

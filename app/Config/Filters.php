@@ -39,6 +39,7 @@ class Filters extends BaseFilters
         'auth'          => UserAuthFilter::class,
         'guest'         => GuestFilter::class,
         'adminAuth' => \App\Filters\AdminFilter::class,
+        'aiSafety' => \App\Filters\AiToolsSafetyFilter::class,
         'featureGate'   => \App\Filters\FeatureGateFilter::class,
         'throttle'      => \App\Filters\ThrottleFilter::class,
     ];
@@ -79,15 +80,13 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            'aiSafety',
             'featureGate',
             'csrf' => [
                 'except' => [
                     'pricing/webhook',    // Paystack webhook — signed externally, no CSRF token
                     'webhooks/paystack',  // Paystack webhook — signed externally, no CSRF token
-                    'candidate/resumes/ai/*', // Exclude AI assistant endpoints to prevent CSRF timeout during long resume drafting
-                    'candidate/resumes/autosave', // Exclude for testing mock requests
-                    'candidate/resumes/*/restore-autosave', // Exclude for testing mock requests
-                    'candidate/career-tools/*', // Exclude interactive AI simulation sessions (salary negotiation, mock interviews)
+                    'webhooks/mailtrap', // Mailtrap authenticates the raw body with HMAC.
                     'training/complete/*', // Exclude to prevent token expiration during long learning assessments
                     'api/*', // Allow Gemini AI Interview API calls
                 ],

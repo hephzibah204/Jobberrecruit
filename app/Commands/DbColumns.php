@@ -1,0 +1,1 @@
+<?php namespace App\Commands; use CodeIgniter\CLI\BaseCommand; use CodeIgniter\CLI\CLI; class DbColumns extends BaseCommand { protected $group = "App"; protected $name = "app:dbcols"; public function run(array $params) { $db = \Config\Database::connect(); $query = $db->query("SHOW COLUMNS FROM jobs"); foreach ($query->getResultArray() as $row) { echo $row["Field"] . "\n"; } } }

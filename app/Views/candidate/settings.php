@@ -347,7 +347,7 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
             </h3>
             <p class="set-sub">Choose which emails and alerts you'd like to receive.</p>
 
-            <form id="set-notif-form" novalidate>
+            <form id="set-notif-form" method="post" action="<?= base_url('candidate/settings/notifications') ?>" novalidate>
                 <?= csrf_field() ?>
 
                 <!-- Job alerts -->
@@ -802,6 +802,8 @@ requestAnimationFrame(function(){document.documentElement.classList.add('anim-re
                 confirmBtn.disabled    = false;
                 confirmBtn.textContent = 'Delete permanently';
             });
+        });
+    }
     /* ── 7. PROFILE VISIBILITY TOGGLE ──────────────────────────── */
     var visToggle = document.getElementById('settings-visibility-toggle');
     var visStatus = document.getElementById('settings-vis-status');
@@ -826,6 +828,8 @@ requestAnimationFrame(function(){document.documentElement.classList.add('anim-re
                 visToggle.disabled = false;
                 if (res && res.success) {
                     if (typeof toastr !== 'undefined') toastr.success(res.message);
+                    // Reflect the value the server actually stored, not just the requested state.
+                    visToggle.checked = !!res.is_visible;
                     if (res.is_visible) {
                         if (visStatus) visStatus.textContent = 'Visible to employers';
                         if (visSub) visSub.textContent = 'Verified employers can discover your profile, review your resume, and invite you to interview.';

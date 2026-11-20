@@ -55,10 +55,11 @@ class Email extends BaseConfig
     {
         parent::__construct();
 
-        $mailtrapToken = env('MAILTRAP_API_TOKEN') 
-            ?: (env('MAILTRAP_API_KEY') 
-            ?: (env('MAILTRAP_TOKEN') 
-            ?: (env('mailtrap_api_key') ?: 'f61d16194a672c3c36fe382d5ebd2f76')));
+        $mailtrapToken = (string) (env('MAILTRAP_API_TOKEN')
+            ?: env('MAILTRAP_API_KEY')
+            ?: env('MAILTRAP_TOKEN')
+            ?: env('mailtrap_api_key')
+            ?: '');
 
         $this->fromEmail  = env('email.from_email') ?: (env('email.fromEmail') ?: (env('FROM_EMAIL') ?: 'info@jobberrecruit.com'));
         $this->fromName   = env('email.from_name') ?: (env('email.fromName') ?: (env('site_name') ?: 'JobberRecruit'));

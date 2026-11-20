@@ -1,3 +1,14 @@
+<?php
+// Chatbot should ONLY appear on the candidate dashboard
+$user = $user ?? (function_exists('auth') && auth()->loggedIn() ? auth()->user() : null);
+$isEmployer = ($user?->user_type === 'employer');
+$currentUri = trim(uri_string(), '/');
+$isCandidateDashboard = !empty($isCandidateDashboard) || (!$isEmployer && in_array($currentUri, ['candidate', 'candidate/dashboard']));
+
+if (!$isCandidateDashboard) {
+    return;
+}
+?>
 <!-- Chatbot Floating Toggle -->
 <div id="chatbot-toggle" class="chatbot-toggle shadow-lg">
     <i class="ti ti-message-chatbot fs-24 text-white"></i>

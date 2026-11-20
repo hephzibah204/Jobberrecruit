@@ -142,12 +142,12 @@ class Home extends BaseController
         }
 
         // Fetch recent jobs (limit to 18)
-        $jobsCacheKey = 'recent_jobs';
+        $jobsCacheKey = 'recent_jobs_v2';
         $jobs = $cache->get($jobsCacheKey);
 
         if (!$jobs) {
             $jobs = $jobModel
-                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified')
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.is_verified as employer_is_verified, employers.verification_status as employer_verification_status')
                 ->where('status', 'open')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
@@ -192,16 +192,25 @@ class Home extends BaseController
                 $planFeatures = planFeatures(json_decode($featuresJson, true));
             }
 
-            // TRUST BADGE
-            $job->show_trust_badge =
-                !empty($planFeatures['trust_badge']) && ($job->is_verified == 1);
+            // Use the employer's explicit verification status, not a job-level flag.
+            $verificationStatus = strtolower(trim((string) ($job->employer_verification_status ?? '')));
+            $employerVerified = $verificationStatus === 'verified'
+                || (in_array($verificationStatus, ['', 'unverified'], true) && (int) ($job->employer_is_verified ?? $job->is_verified ?? 0) === 1);
 
-            $job->anonymous = !empty($planFeatures['anonymous']) && ($job->is_anonymous);
+            $isConfidential = (!empty($planFeatures['anonymous']) && !empty($job->is_anonymous)) || !empty($job->anonymous) || !empty($job->is_anonymous);
 
-            // ANONYMOUS POSTING
-            if (!empty($planFeatures['anonymous']) && ($job->is_anonymous)) {
+            if ($isConfidential) {
+                $job->anonymous = 1;
+                $job->is_anonymous = 1;
+                $job->is_confidential = true;
                 $job->employer_name = 'Confidential Employer';
                 $job->company_logo  = base_url('images/favicon.png');
+                $job->is_verified = 0;
+                $job->show_trust_badge = false;
+            } else {
+                $job->is_confidential = false;
+                $job->is_verified = $employerVerified ? 1 : 0;
+                $job->show_trust_badge = $employerVerified || !empty($planFeatures['trust_badge']);
             }
         }
 
@@ -222,12 +231,12 @@ class Home extends BaseController
         }
 
         // Fetch Top Companies
-        $topCompaniesCacheKey = 'top_companies';
+        $topCompaniesCacheKey = 'top_companies_v2';
         $top_companies = $cache->get($topCompaniesCacheKey);
 
         if (!$top_companies) {
             $top_companies = $jobModel
-                ->select('employers.id, employers.company_name, employers.user_id as employer_user_id, employers.logo, employers.state_id, COUNT(jobs.id) as job_count, states.name as location, employers.is_verified')
+                ->select('employers.id, employers.company_name, employers.user_id as employer_user_id, employers.logo, employers.state_id, COUNT(jobs.id) as job_count, states.name as location, employers.is_verified, employers.verification_status')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 ->join('states', 'states.id = employers.state_id', 'left')
                 ->where('is_anonymous', '0')
@@ -273,8 +282,11 @@ class Home extends BaseController
                 $company->formatted_count = number_format($company->job_count) . ' Open Position' . ($company->job_count != 1 ? 's' : '');
                 
                 // TRUST BADGE
-                $company->show_trust_badge =
-                    !empty($planFeatures['trust_badge']) && ($company->is_verified == 1);
+                $companyVerificationStatus = strtolower(trim((string) ($company->verification_status ?? '')));
+                $companyVerified = $companyVerificationStatus === 'verified'
+                    || (in_array($companyVerificationStatus, ['', 'unverified'], true) && (int) ($company->is_verified ?? 0) === 1);
+                $company->is_verified = $companyVerified ? 1 : 0;
+                $company->show_trust_badge = $companyVerified || !empty($planFeatures['trust_badge']);
             }
 
             $cache->save($topCompaniesCacheKey, $top_companies, 60);
@@ -845,6 +857,15 @@ class Home extends BaseController
         }
 
         return view('home/jobs', $data);
+    }
+
+    public function unsave_job($jobId)
+    {
+        if (!$this->auth->loggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Please login.']);
+        }
+        $success = model(\App\Models\SavedJobModel::class)->removeJob((int) $this->auth->id(), (int) $jobId);
+        return $this->response->setJSON(['success' => $success, 'csrfHash' => csrf_hash()]);
     }
 
     public function toggleSave($jobId)

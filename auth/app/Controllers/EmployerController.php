@@ -585,7 +585,7 @@ class EmployerController extends BaseController
     //             'experience_level'    => 'required',
     //             'application_method'  => 'required|in_list[form,whatsapp,email,external]',
     //             'application_access'  => 'required|in_list[guest,authenticated,general]',
-    //             'accommodation'       => 'required|in_list[available,not_available]',
+    //             'accommodation'       => 'permit_empty',
     //             'contact_email'       => 'required|valid_email',
     //         ];
 
@@ -1845,7 +1845,7 @@ class EmployerController extends BaseController
             'experience_level' => 'required',
             'application_method' => 'required|in_list[form,whatsapp,email,external]',
             'application_access' => 'required|in_list[guest,authenticated,general]',
-            'accommodation' => 'required|in_list[available,not_available]',
+            'accommodation' => 'permit_empty',
             'contact_email' => 'required|valid_email',
         ];
 

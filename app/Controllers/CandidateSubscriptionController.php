@@ -41,12 +41,17 @@ class CandidateSubscriptionController extends BaseController
                 ->join('plans', 'plans.id = user_subscriptions.plan_id', 'left')
                 ->where('user_subscriptions.user_id', auth()->id())
                 ->where('user_subscriptions.is_active', 1)
+                ->where('user_subscriptions.starts_at <=', date('Y-m-d H:i:s'))
+                ->where('user_subscriptions.ends_at >', date('Y-m-d H:i:s'))
+                ->where('plans.plan_type', 'candidate')
+                ->orderBy('user_subscriptions.ends_at', 'DESC')
                 ->first();
 
             $wallet = (new \App\Services\WalletService())->getOrCreateWallet(auth()->id());
             $walletBalance = (float) ($wallet->balance ?? 0.0);
         }
 
+        $currentPlan = $currentPlan ? (object) $currentPlan : null;
         $isFreeMode = is_site_free_mode();
 
         return view('candidate/pricing', [
@@ -75,171 +80,40 @@ class CandidateSubscriptionController extends BaseController
             return redirect()->back()->with('error', 'Invalid plan');
         }
 
-        if ((float) $plan->base_price <= 0) {
-            return $this->activateFreePlan($plan);
-        }
-
-        // Handle Wallet Payment
-        if ($paymentMethod === 'wallet') {
-            $userId = auth()->id();
-            $walletService = new \App\Services\WalletService();
-            $wallet = $walletService->getOrCreateWallet($userId);
-
-            if ((float) $wallet->balance < (float) $plan->base_price) {
-                return redirect()->back()->with('error', 'Insufficient wallet balance (₦' . number_format($wallet->balance, 2) . '). Please top up your wallet or pay via Paystack.');
+        if (!$plan->is_active) return redirect()->back()->with('error', 'This plan is unavailable.');
+        try {
+            $fulfillment = new \App\Services\PaymentFulfillmentService();
+            if ($paymentMethod === 'wallet' || (float) $plan->base_price == 0) {
+                $fulfillment->buyWithWallet((int) auth()->id(), 'candidate_plan', $planId, $this->request->getPost('checkout_key') ?: null);
+                return redirect()->to('candidate/dashboard')->with('success', 'Subscription activated successfully.');
             }
-
-            $reference = 'cand_sub_w_' . uniqid();
-            $walletService->debit(
-                userId: $userId,
-                amount: (float) $plan->base_price,
-                source: 'wallet_checkout',
-                reference: $reference,
-                sourceId: $planId,
-                description: 'Paid with wallet for plan: ' . $plan->name
-            );
-
-            // Record Payment
-            $paymentModel = model(\App\Models\PaymentModel::class);
-            $paymentModel->insert([
-                'user_id'        => $userId,
-                'plan_id'        => $planId,
-                'reference'      => $reference,
-                'amount'         => $plan->base_price,
-                'status'         => 'paid',
-                'payment_method' => 'wallet',
-                'paid_at'        => date('Y-m-d H:i:s'),
-                'created_at'     => date('Y-m-d H:i:s'),
-                'updated_at'     => date('Y-m-d H:i:s'),
-            ]);
-
-            $this->activatePlan($planId, $reference, $plan->base_price);
-            return redirect()->to('candidate/dashboard')->with('success', 'Subscription plan activated successfully using your wallet balance!');
+            $reference = $fulfillment->createPending((int) auth()->id(), 'candidate_plan', (float) $plan->base_price, ['plan_id' => $planId]);
+            $response = (new PaystackService())->initialize(auth()->user()->email, $plan->base_price,
+                base_url('candidate/subscription/verify'), ['type' => 'candidate_plan', 'plan_id' => $planId,
+                    'user_id' => auth()->id(), 'reference' => $reference]);
+            if ($response['status'] ?? false) return redirect()->to($response['data']['authorization_url']);
+        } catch (\Throwable $e) {
+            log_message('error', 'Candidate checkout: ' . $e->getMessage());
         }
-
-        $paystack = new PaystackService();
-        $email = auth()->user()->email;
-        $callbackUrl = base_url('candidate/subscription/verify');
-        $reference = 'cand_sub_' . uniqid();
-
-        $response = $paystack->initialize($email, $plan->base_price, $callbackUrl, [
-            'plan_id' => $planId,
-            'user_id' => auth()->id(),
-            'reference' => $reference,
-        ]);
-
-        if ($response['status']) {
-            $this->session->set('pending_subscription', [
-                'plan_id' => $planId,
-                'reference' => $reference,
-            ]);
-            return redirect()->to($response['data']['authorization_url']);
-        }
-
-        return redirect()->back()->with('error', 'Payment initialization failed');
+        return redirect()->back()->with('error', 'Payment could not be completed. Check your balance or try again.');
     }
 
-    /**
-     * Verify Paystack payment for candidate subscription
-     */
     public function verify()
     {
-        $reference = $this->request->getGet('reference');
-        if (!$reference) {
-            return redirect()->to('candidate/subscription/pricing')->with('error', 'Invalid payment reference');
-        }
-
-        $paystack = new PaystackService();
-        $response = $paystack->verify($reference);
-
-        if ($response['status'] && $response['data']['status'] === 'success') {
-            $pending = $this->session->get('pending_subscription');
-            $planId = $pending['plan_id'] ?? $this->request->getGet('plan_id');
-
-            if ($planId) {
-                $this->activatePlan($planId, $reference, $response['data']['amount'] / 100);
-                $this->session->remove('pending_subscription');
-                return redirect()->to('candidate/dashboard')->with('success', 'Subscription activated successfully!');
+        $reference = (string) $this->request->getGet('reference');
+        try {
+            $response = (new PaystackService())->verify($reference);
+            if (!($response['status'] ?? false)) throw new \InvalidArgumentException('Payment verification failed.');
+            // Order-anchored fulfillment (see ElearningController::verify):
+            // the session may not survive the Paystack round-trip.
+            (new \App\Services\PaymentFulfillmentService())->fulfill($response['data'], null, 'candidate_plan');
+            if (!auth()->loggedIn()) {
+                return redirect()->to('login')->with('success', 'Payment verified and subscription activated. Sign in to continue.');
             }
+            return redirect()->to('candidate/dashboard')->with('success', 'Subscription activated successfully.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Candidate verification: ' . $e->getMessage());
+            return redirect()->to('candidate/subscription/pricing')->with('error', 'Payment could not be matched to your subscription order.');
         }
-
-        return redirect()->to('candidate/subscription/pricing')->with('error', 'Payment verification failed');
-    }
-
-    /**
-     * Activate a plan for the current user
-     */
-    protected function activatePlan(int $planId, string $reference, float $amount)
-    {
-        $plan = $this->planModel->find($planId);
-        if (!$plan) return;
-
-        $userId = auth()->id();
-        $now = date('Y-m-d H:i:s');
-        $duration = (int) ($plan->pricing_tiers ? json_decode($plan->pricing_tiers, true)[1]['duration'] ?? 30 : 30);
-        $endDate = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
-
-        $db = \Config\Database::connect();
-        $db->transStart();
-
-        // Deactivate existing subscription
-        $this->subModel->where('user_id', $userId)->where('is_active', 1)->set(['is_active' => 0, 'updated_at' => $now])->update();
-
-        // Record payment
-        $this->paymentModel->insert([
-            'user_id'    => $userId,
-            'plan_id'    => $planId,
-            'reference'  => $reference,
-            'amount'     => $amount,
-            'amount_paid'=> $amount,
-            'currency'   => 'NGN',
-            'status'     => 'paid',
-            'channel'    => 'card',
-            'paid_at'    => $now,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        // Create subscription
-        $this->subModel->insert([
-            'user_id'    => $userId,
-            'plan_id'    => $planId,
-            'starts_at'  => $now,
-            'ends_at'    => $endDate,
-            'is_active'  => 1,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $db->transComplete();
-
-        if ($db->transStatus() === false) {
-            log_message('error', "CandidateSubscription: activatePlan failed for user {$userId}, plan {$planId}, ref {$reference}");
-        }
-    }
-
-    /**
-     * Activate free plan
-     */
-    protected function activateFreePlan($plan)
-    {
-        $userId = auth()->id();
-        $now = date('Y-m-d H:i:s');
-        $duration = 30;
-        $endDate = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
-
-        $this->subModel->where('user_id', $userId)->where('is_active', 1)->set(['is_active' => 0, 'updated_at' => $now])->update();
-
-        $this->subModel->insert([
-            'user_id' => $userId,
-            'plan_id' => $plan->id,
-            'starts_at' => $now,
-            'ends_at' => $endDate,
-            'is_active' => 1,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        return redirect()->to('candidate/dashboard')->with('success', 'Free plan activated!');
     }
 }

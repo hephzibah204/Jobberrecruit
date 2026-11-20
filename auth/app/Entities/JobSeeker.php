@@ -257,8 +257,8 @@ class JobSeeker extends Entity
                 $expCount = model(\App\Models\JobSeekerExperienceModel::class)->where('job_seeker_id', $this->id)->countAllResults();
             } catch (\Throwable $e) {}
         }
-        $expPoints = $expCount > 0 ? 20 : (!empty($this->experience_years) ? 10 : 0);
-        $expDone = $expCount > 0 || !empty($this->experience_years);
+        $expPoints = $expCount > 0 ? 20 : 0;
+        $expDone = $expCount > 0;
 
         // 6. Education (12%) - Core required section
         $eduCount = !empty($this->educations) && is_countable($this->educations) ? count($this->educations) : 0;
@@ -267,8 +267,8 @@ class JobSeeker extends Entity
                 $eduCount = model(\App\Models\JobSeekerEducationModel::class)->where('job_seeker_id', $this->id)->countAllResults();
             } catch (\Throwable $e) {}
         }
-        $eduPoints = $eduCount > 0 ? 12 : (!empty($this->education_level) ? 6 : 0);
-        $eduDone = $eduCount > 0 || !empty($this->education_level);
+        $eduPoints = $eduCount > 0 ? 12 : 0;
+        $eduDone = $eduCount > 0;
 
         // 7. Skills (10%)
         $hasSkills = !empty(trim((string)$this->skills));

@@ -16,13 +16,7 @@
         '@type' => 'Country',
         'name'  => 'Nigeria',
     ],
-    'description' => 'Professional CV review by certified HR professionals and recruitment experts, including ATS compatibility scanning, structure and formatting checks, keyword analysis, and line-by-line feedback.',
-    'aggregateRating' => [
-        '@type' => 'AggregateRating',
-        'ratingValue' => '4.9',
-        'reviewCount' => '1024',
-        'bestRating' => '5',
-    ],
+    'description' => 'CV review service covering ATS compatibility, structure, formatting, keywords, and practical feedback.',
     'offers' => [
         [
             '@type' => 'Offer',
@@ -52,7 +46,7 @@
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.jobberrecruit.com/"},{"@type":"ListItem","position":2,"name":"Training","item":"https://www.jobberrecruit.com/training"},{"@type":"ListItem","position":3,"name":"CV Review","item":"https://www.jobberrecruit.com/cv-review"}]}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How long does a CV review take?","acceptedAnswer":{"@type":"Answer","text":"Basic reviews are completed within 48 hours, Professional reviews within 24 hours, and Premium reviews within 12 hours. Express options are available for urgent requests."}},{"@type":"Question","name":"What file formats do you accept?","acceptedAnswer":{"@type":"Answer","text":"We accept PDF, DOC, and DOCX files up to 5MB. For best results we recommend uploading a PDF version of your CV."}},{"@type":"Question","name":"What is the difference between the review tiers?","acceptedAnswer":{"@type":"Answer","text":"Basic is an AI-powered analysis covering ATS compatibility, structure, and keywords. Professional adds a full human expert review with line-by-line feedback and rewritten sections. Premium adds a 1-on-1 consultation call and a tailored cover letter."}},{"@type":"Question","name":"Will my CV be kept confidential?","acceptedAnswer":{"@type":"Answer","text":"Yes. All uploaded documents are encrypted in transit and at rest, accessible only to your assigned reviewer, and never shared with third parties. You can request deletion at any time."}},{"@type":"Question","name":"What if I am not satisfied with the review?","acceptedAnswer":{"@type":"Answer","text":"Your satisfaction is our priority. If you are not happy with your review we will re-review your CV for free, and Premium includes a consultation call to address your concerns."}},{"@type":"Question","name":"Do you review CVs for specific industries?","acceptedAnswer":{"@type":"Answer","text":"Yes. Our experts cover technology, finance, healthcare, education, marketing, sales, government, and consulting. Select your target industry when you upload and we match you with the most relevant reviewer."}}]}
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How long does a CV review take?","acceptedAnswer":{"@type":"Answer","text":"Turnaround depends on the selected review package and current workload. The expected delivery time is shown when you submit your CV."}},{"@type":"Question","name":"What file formats do you accept?","acceptedAnswer":{"@type":"Answer","text":"We accept PDF, DOC, and DOCX files up to 5MB. For best results we recommend uploading a PDF version of your CV."}},{"@type":"Question","name":"What is the difference between the review tiers?","acceptedAnswer":{"@type":"Answer","text":"Basic covers automated checks for ATS compatibility, structure, and keywords. Professional adds a human expert review with detailed feedback. Premium includes the services listed on the package card at the time of purchase."}},{"@type":"Question","name":"Will my CV be kept confidential?","acceptedAnswer":{"@type":"Answer","text":"Uploaded documents are handled according to the JobberRecruit privacy policy. You can contact support to request deletion of your documents."}},{"@type":"Question","name":"What if I am not satisfied with the review?","acceptedAnswer":{"@type":"Answer","text":"Contact support with your review reference and details of the issue so the team can assess it."}},{"@type":"Question","name":"Do you review CVs for specific industries?","acceptedAnswer":{"@type":"Answer","text":"You can select your target industry when submitting your CV so the review can consider the role and sector you are targeting."}}]}
 </script>
 <?= $this->endSection() ?>
 
@@ -914,20 +908,15 @@ svg { flex-shrink: 0; }
   <div class="container">
     <div class="cvr-hero-inner">
       <div>
-        <div class="cvr-eyebrow"><svg aria-hidden="true"><use href="#i-star"/></svg>Trusted by 10,000+ professionals</div>
-        <h1 id="cvr-h1">Professional <span>CV Review</span> by certified experts</h1>
-        <p class="cvr-hero-lede">Get your CV reviewed by certified HR professionals and recruitment experts. Receive actionable, line-by-line feedback that helps you land more interviews at top companies.</p>
+        <div class="cvr-eyebrow"><svg aria-hidden="true"><use href="#i-star"/></svg>Professional CV review</div>
+        <h1 id="cvr-h1">Professional <span>CV Review</span></h1>
+        <p class="cvr-hero-lede">Get practical feedback on your CV's structure, clarity, keywords and relevance to your target role.</p>
         <div class="cvr-hero-cta">
           <a href="#pricing" class="btn btn-accent btn-lg">Get your CV reviewed</a>
           <a href="#how" class="btn btn-ghost-light btn-lg">How it works</a>
         </div>
       </div>
-      <div class="cvr-stats">
-        <div class="cvr-stat"><div class="n">10K<span>+</span></div><div class="l">CVs reviewed</div></div>
-        <div class="cvr-stat"><div class="n">4.9<span>/5</span></div><div class="l">Client rating</div></div>
-        <div class="cvr-stat"><div class="n">48<span>hr</span></div><div class="l">Avg. turnaround</div></div>
-        <div class="cvr-stat"><div class="n">78<span>%</span></div><div class="l">Interview success</div></div>
-      </div>
+      <div class="cvr-stats"><p>Submit your CV for feedback on structure, clarity and relevance to your target role.</p></div>
     </div>
   </div>
 </section>
@@ -1026,7 +1015,7 @@ svg { flex-shrink: 0; }
           <li><svg aria-hidden="true"><use href="#i-check"/></svg> Tailored cover letter</li>
           <li><svg aria-hidden="true"><use href="#i-check"/></svg> LinkedIn profile tips</li>
           <li><svg aria-hidden="true"><use href="#i-check"/></svg> 12-hour priority turnaround</li>
-          <li><svg aria-hidden="true"><use href="#i-check"/></svg> Free re-review</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg> Follow-up support</li>
         </ul>
         <a href="<?= base_url($isLoggedIn ? 'cv-review/submit?plan=premium' : 'login?redirect=cv-review/submit?plan=premium') ?>"/ class="btn btn-outline">Choose Premium</a>
       </div>
@@ -1053,21 +1042,18 @@ svg { flex-shrink: 0; }
         <div class="card p-4 border-0 shadow-lg rounded-4 text-start bg-white" style="max-width: 440px; margin: 0 auto;">
           <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
             <div>
-              <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill mb-1">ATS Score: 88 / 100</span>
-              <h6 class="fw-bold mb-0 text-dark">JobberRecruit Audit Report</h6>
+              <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-1 rounded-pill mb-1">Sample report</span>
+              <h6 class="fw-bold mb-0 text-dark">JobberRecruit CV Review</h6>
             </div>
             <div class="bg-primary-subtle text-primary rounded-circle p-2 text-center" style="width:42px;height:42px;display:grid;place-items:center;">
               <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
           </div>
           <div class="mb-3">
-            <small class="text-muted fw-semibold">IMPACT ANALYSIS</small>
-            <div class="progress mt-1 mb-2" style="height: 8px;">
-              <div class="progress-bar bg-success" style="width: 88%"></div>
-            </div>
-            <div class="d-flex justify-content-between small text-secondary">
-              <span>Keyword Match: 92%</span>
-              <span>Formatting: 85%</span>
+            <small class="text-muted fw-semibold">REVIEW AREAS</small>
+            <div class="d-flex justify-content-between small text-secondary mt-2">
+              <span>Keywords and relevance</span>
+              <span>Structure and formatting</span>
             </div>
           </div>
           <div class="bg-light p-3 rounded-3 border mb-2">
@@ -1099,34 +1085,6 @@ svg { flex-shrink: 0; }
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section class="cvr-sec white" aria-labelledby="tm-h">
-  <div class="container">
-    <div class="cvr-sec-head">
-      <div class="cvr-label"><svg aria-hidden="true"><use href="#i-star"/></svg>Testimonials</div>
-      <h2 id="tm-h">What our <span>clients say</span></h2>
-      <p>Hear from professionals who transformed their job search with our CV review service.</p>
-    </div>
-    <div class="cvr-tm-grid">
-      <div class="cvr-tm">
-        <div class="cvr-tm-stars" aria-label="5 out of 5 stars"><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg></div>
-        <p>&ldquo;The CV review was eye-opening. I had no idea my CV wasn't ATS-friendly. After implementing the changes, I got 3 interview invites in the first week!&rdquo;</p>
-        <div class="cvr-tm-who"><span class="cvr-tm-av" style="background:#0D609E">AM</span><div><strong>Adebayo Martins</strong><span>Software Engineer, Access Bank</span></div></div>
-      </div>
-      <div class="cvr-tm">
-        <div class="cvr-tm-stars" aria-label="5 out of 5 stars"><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg></div>
-        <p>&ldquo;Worth every penny! The detailed line-by-line feedback helped me completely rewrite my CV. Landed my dream job within 3 weeks of the premium review.&rdquo;</p>
-        <div class="cvr-tm-who"><span class="cvr-tm-av" style="background:#16a34a">FO</span><div><strong>Folake Ogunlesi</strong><span>Marketing Manager, MTN Nigeria</span></div></div>
-      </div>
-      <div class="cvr-tm">
-        <div class="cvr-tm-stars" aria-label="5 out of 5 stars"><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg><svg aria-hidden="true"><use href="#i-star"/></svg></div>
-        <p>&ldquo;The free basic review already gave me so much value. I upgraded to professional and the before/after comparison was incredible. Highly recommended!&rdquo;</p>
-        <div class="cvr-tm-who"><span class="cvr-tm-av" style="background:#C8770E">CE</span><div><strong>Chidi Eze</strong><span>Data Analyst, PwC</span></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- SIGN IN REQUIRED -->
 <?php if (!$isLoggedIn): ?>
 <section class="cvr-sec tint" aria-labelledby="si-h">
@@ -1153,11 +1111,11 @@ svg { flex-shrink: 0; }
       <p>Everything you need to know about our CV review service.</p>
     </div>
     <div class="cvr-faq">
-      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">How long does a CV review take? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Basic reviews are completed within 48 hours, Professional within 24 hours, and Premium within 12 hours. Express options are available for urgent requests.</div></div></div>
+      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">How long does a CV review take? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Turnaround depends on the selected review package and current workload. The expected delivery time is shown when you submit your CV.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What file formats do you accept? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">We accept PDF, DOC, and DOCX files up to 5MB. For best results we recommend uploading a PDF version of your CV.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What's the difference between the review tiers? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Basic is an AI-powered analysis covering ATS compatibility, structure, and keywords. Professional adds a full human expert review with line-by-line feedback and rewritten sections. Premium adds a 1-on-1 consultation call and a tailored cover letter.</div></div></div>
-      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Will my CV be kept confidential? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Yes. All uploaded documents are encrypted in transit and at rest, accessible only to your assigned reviewer, and never shared with third parties. You can request deletion of your documents at any time.</div></div></div>
-      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What if I'm not satisfied with the review? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Your satisfaction is our priority. If you're not happy with your review, we'll re-review your CV for free, and the Premium package includes a consultation call to address all your concerns.</div></div></div>
+      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Will my CV be kept confidential? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Uploaded documents are handled according to the JobberRecruit privacy policy. Contact support if you want to request deletion of your documents.</div></div></div>
+      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What if I have a problem with my review? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Contact support with your review reference and details of the issue so the team can assess it.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Do you review CVs for specific industries? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Yes. Our team covers technology, finance, healthcare, education, marketing, sales, government, and consulting. When you upload your CV, select your target industry so we match you with the most relevant reviewer.</div></div></div>
     </div>
   </div>

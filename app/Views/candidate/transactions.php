@@ -81,12 +81,19 @@ $totalCredited  = 0;
 $totalCount     = count($transactions ?? []);
 $successCount   = 0;
 foreach ($transactions ?? [] as $t) {
-    if (strtolower($t->type ?? '') === 'credit' || str_contains(strtolower($t->description ?? ''), 'reward')) {
+    $t = (object) $t;
+    if (!in_array(strtolower($t->status ?? ''), ['success', 'successful', 'completed', 'credited', 'paid'], true)) continue;
+    if (in_array(strtolower($t->type ?? ''), ['credit', 'wallet_funding'], true) || str_contains(strtolower($t->description ?? ''), 'reward')) {
         $totalCredited += (float)($t->amount ?? 0);
     } else {
-        $totalSpent += (float)($t->amount ?? 0);
+        // An enrollment whose reference has no payment record or wallet
+        // debit behind it is access, not spend: the controller flags it
+        // 'backed' => false and it must never inflate Total Spent.
+        if (($t->backed ?? true) !== false) {
+            $totalSpent += (float)($t->amount ?? 0);
+        }
     }
-    if (in_array(strtolower($t->status ?? ''), ['success', 'successful', 'completed', 'credited'])) {
+    if (in_array(strtolower($t->status ?? ''), ['success', 'successful', 'completed', 'credited', 'paid'])) {
         $successCount++;
     }
 }
@@ -108,7 +115,7 @@ foreach ($transactions ?? [] as $t) {
     <!-- Wallet summary banner -->
     <?php
     $walletModel = new \App\Models\WalletModel();
-    $wallet = $walletModel->where('user_id', session()->get('user_id'))->first();
+    $wallet = $walletModel->where('user_id', auth()->id())->first();
     $walletBalance = $wallet ? $wallet->balance : 0;
     ?>
     <div class="wallet-card" role="region" aria-label="Wallet balance">
@@ -192,10 +199,17 @@ foreach ($transactions ?? [] as $t) {
                         $txnDesc = $txn->description ?? 'Transaction';
                         $txnDate = $txn->created_at ?? $txn->date ?? '';
                         $txnAmount = $txn->amount ?? 0;
-                        $isCredit = in_array(strtolower($txnType), ['credit', 'reward']) || str_contains(strtolower($txnDesc), 'reward');
+                        $isCredit = in_array(strtolower($txnType), ['credit', 'reward', 'wallet_funding']) || str_contains(strtolower($txnDesc), 'reward');
                         $statusLow = strtolower($txn->status ?? '');
                         $pillClass = in_array($statusLow, ['success', 'successful', 'completed', 'credited', 'paid']) ? 'pill--success' : ($statusLow === 'failed' ? 'pill--rejected' : 'pill--pending');
                         $statusLabel = ($statusLow === 'paid' || $statusLow === 'success' || $statusLow === 'successful') ? 'Success' : ucfirst($txn->status ?? 'Pending');
+                        // An enrollment with no matching payment or wallet record
+                        // ('backed' => false) is access without a recorded payment:
+                        // it must never render as a paid "Success" row.
+                        if (($txn->backed ?? true) === false) {
+                            $pillClass = 'pill--pending';
+                            $statusLabel = 'Not recorded';
+                        }
                     ?>
                     <tr data-type="<?= esc($txnType) ?>">
                         <td data-lbl="Reference">

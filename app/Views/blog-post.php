@@ -89,6 +89,7 @@
   text-transform: uppercase; padding: 5px 12px; border-radius: 20px; margin-bottom: 16px;
 }
 .art-hero h1 {
+  color: #fff;
   font-size: clamp(1.8rem, 3.6vw, 2.7rem);
   font-weight: 800; line-height: 1.15; letter-spacing: -.02em; margin-bottom: 16px;
 }

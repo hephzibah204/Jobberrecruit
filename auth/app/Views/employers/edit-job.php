@@ -225,11 +225,13 @@
       <div class="job-card-body">
         <div class="form-grid">
           <div class="form-field">
-            <label for="accommodation">Accommodation <span class="required-star">*</span></label>
-            <select id="accommodation" name="accommodation" required>
-              <option value="">Select Accommodation</option>
-              <option value="available" <?= old('accommodation', $job->accommodation) === 'available' ? 'selected' : '' ?>>Available</option>
-              <option value="not_available" <?= old('accommodation', $job->accommodation) === 'not_available' ? 'selected' : '' ?>>Not Available</option>
+            <label for="accommodation">Accommodation</label>
+            <select id="accommodation" name="accommodation">
+              <option value="">-- Select accommodation option --</option>
+              <option value="Provided (fully covered by employer)" <?= (old('accommodation', $job->accommodation) === 'Provided (fully covered by employer)' || old('accommodation', $job->accommodation) === 'available') ? 'selected' : '' ?>>Provided (fully covered by employer)</option>
+              <option value="Provided (cost shared with employee)" <?= old('accommodation', $job->accommodation) === 'Provided (cost shared with employee)' ? 'selected' : '' ?>>Provided (cost shared with employee)</option>
+              <option value="Housing allowance provided instead" <?= old('accommodation', $job->accommodation) === 'Housing allowance provided instead' ? 'selected' : '' ?>>Housing allowance provided instead</option>
+              <option value="Not provided" <?= (old('accommodation', $job->accommodation) === 'Not provided' || old('accommodation', $job->accommodation) === 'not_available') ? 'selected' : '' ?>>Not provided</option>
             </select>
           </div>
         </div>

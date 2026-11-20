@@ -94,117 +94,16 @@ class JobSeeker extends Entity
         }
     }
 
-    /**
-     * Calculate profile completion percentage based on exact allocation:
-     * - Personal Information: 15%
-     * - Job Preference: 15%
-     * - Professional Summary: 10%
-     * - Work Experience: 20%
-     * - Education: 12%
-     * - Skills: 10%
-     * - Resume: 12%
-     * - Portfolio: 3%
-     * - Certificate: 2%
-     * - Language: 1%
-     * Total = 100%
-     */
+    /** Use the same 100-point weights displayed in the profile checklist. */
     public function getProfileCompletion(): int
     {
-        if (empty($this->id)) {
-            return 0;
+        $earned = 0;
+        $possible = 0;
+        foreach ($this->getProfileChecklist() as $section) {
+            $earned += $section['points'];
+            $possible += $section['max_points'];
         }
-
-        $points = 0;
-
-        // 1. Personal Information (15%) - 5 criteria (3% each)
-        $personalFilled = 0;
-        if (!empty($this->full_name)) $personalFilled++;
-        if (!empty($this->phone)) $personalFilled++;
-        if (!empty($this->dob)) $personalFilled++;
-        if (!empty($this->gender)) $personalFilled++;
-        if (!empty($this->state_id) || !empty($this->location)) $personalFilled++;
-        $points += (int) round(($personalFilled / 5) * 15);
-
-        // 2. Job Preference (15%) - 4 criteria (~3.75% each)
-        $prefFilled = 0;
-        if (!empty($this->job_title)) $prefFilled++;
-        if (!empty($this->employment_type)) $prefFilled++;
-        if (!empty($this->desired_salary) || !empty($this->salary_type) || !empty($this->availability)) $prefFilled++;
-        $hasIndustries = false;
-        try {
-            $hasIndustries = model(\App\Models\JobSeekerIndustryModel::class)->where('job_seeker_id', $this->id)->countAllResults() > 0;
-        } catch (\Throwable $e) {}
-        if ($hasIndustries || !empty($this->industry)) {
-            $prefFilled++;
-        }
-        $points += (int) round(($prefFilled / 4) * 15);
-
-        // 3. Professional Summary (10%)
-        if (!empty(trim((string)$this->bio))) {
-            $points += 10;
-        }
-
-        // 4. Work Experience (20%) - Strictly requires actual structured entries
-        $expCount = !empty($this->experiences) && is_countable($this->experiences) ? count($this->experiences) : 0;
-        if ($expCount === 0) {
-            try {
-                $expCount = model(\App\Models\JobSeekerExperienceModel::class)->where('job_seeker_id', $this->id)->countAllResults();
-            } catch (\Throwable $e) {}
-        }
-        if ($expCount > 0) {
-            $points += 20;
-        } elseif (!empty($this->experience_years)) {
-            $points += 10;
-        }
-
-        // 5. Education (12%) - Strictly requires actual structured entries
-        $eduCount = !empty($this->educations) && is_countable($this->educations) ? count($this->educations) : 0;
-        if ($eduCount === 0) {
-            try {
-                $eduCount = model(\App\Models\JobSeekerEducationModel::class)->where('job_seeker_id', $this->id)->countAllResults();
-            } catch (\Throwable $e) {}
-        }
-        if ($eduCount > 0) {
-            $points += 12;
-        } elseif (!empty($this->education_level)) {
-            $points += 6;
-        }
-
-        // 6. Skills (10%)
-        if (!empty(trim((string)$this->skills))) {
-            $points += 10;
-        }
-
-        // 7. Resume (12%) - Core prominent requirement
-        if (!empty(trim((string)$this->resume))) {
-            $points += 12;
-        }
-
-        // 8. Portfolio (3%) - Optional bonus
-        if (!empty(trim((string)$this->portfolio))) {
-            $points += 3;
-        }
-
-        // 9. Certificate (2%) - External certs or completed JobberRecruit course certificates (Optional bonus)
-        $certCount = !empty($this->certifications) && is_countable($this->certifications) ? count($this->certifications) : 0;
-        if ($certCount === 0) {
-            try {
-                $certCount = model(\App\Models\JobSeekerCertificationModel::class)->where('job_seeker_id', $this->id)->countAllResults();
-                if ($certCount == 0 && !empty($this->user_id)) {
-                    $certCount = model(\App\Models\CourseCertificateModel::class)->where('user_id', $this->user_id)->countAllResults();
-                }
-            } catch (\Throwable $e) {}
-        }
-        if ($certCount > 0) {
-            $points += 2;
-        }
-
-        // 10. Language (1%) - Optional bonus
-        if (!empty(trim((string)$this->languages))) {
-            $points += 1;
-        }
-
-        return min(100, $points);
+        return $possible > 0 ? min(100, (int) round(100 * $earned / $possible)) : 0;
     }
 
     /**
@@ -213,10 +112,6 @@ class JobSeeker extends Entity
      */
     public function getProfileChecklist(): array
     {
-        if (empty($this->id)) {
-            return [];
-        }
-
         // 1. Personal Information (15%)
         $personalFilled = 0;
         if (!empty($this->full_name)) $personalFilled++;
@@ -225,7 +120,7 @@ class JobSeeker extends Entity
         if (!empty($this->gender)) $personalFilled++;
         if (!empty($this->state_id) || !empty($this->location)) $personalFilled++;
         $personalPoints = (int) round(($personalFilled / 5) * 15);
-        $personalDone = $personalFilled >= 4;
+        $personalDone = $personalFilled === 5;
 
         // 2. Job Preference (15%)
         $prefFilled = 0;
@@ -240,7 +135,7 @@ class JobSeeker extends Entity
             $prefFilled++;
         }
         $prefPoints = (int) round(($prefFilled / 4) * 15);
-        $prefDone = $prefFilled >= 3;
+        $prefDone = $prefFilled === 4;
 
         // 3. Resume (12%) - PROMINENT in profile-completion structure
         $hasResume = !empty(trim((string)$this->resume));
@@ -258,7 +153,7 @@ class JobSeeker extends Entity
             } catch (\Throwable $e) {}
         }
         $expDone = $expCount > 0;
-        $expPoints = $expDone ? 20 : (!empty($this->experience_years) ? 10 : 0);
+        $expPoints = $expDone ? 20 : 0;
 
         // 6. Education (12%) - Core required section
         $eduCount = !empty($this->educations) && is_countable($this->educations) ? count($this->educations) : 0;
@@ -268,7 +163,7 @@ class JobSeeker extends Entity
             } catch (\Throwable $e) {}
         }
         $eduDone = $eduCount > 0;
-        $eduPoints = $eduDone ? 12 : (!empty($this->education_level) ? 6 : 0);
+        $eduPoints = $eduDone ? 12 : 0;
 
         // 7. Skills (10%)
         $hasSkills = !empty(trim((string)$this->skills));

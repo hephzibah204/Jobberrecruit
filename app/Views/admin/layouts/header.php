@@ -206,9 +206,6 @@
                                 <li>
                                     <a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/features') ?>"><i class="ti ti-adjustments me-2 fs-18"></i>Feature Management</a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/settings') ?>"><i class="ti ti-settings me-2 fs-18"></i>Site Settings</a>
-                                </li>
                             </ul>
                         </li>
                         <li><a class="dropdown-item d-flex align-items-center" href="<?= base_url('admin/logout'); ?>"><i class="ti ti-logout me-2 fs-18"></i>Log Out</a></li>

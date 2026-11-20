@@ -174,18 +174,19 @@ foreach ($jobs as $index => $j) {
 
                     <!-- Company logo + name -->
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <?php if (empty($job->is_anonymous)): ?>
+                        <?php $isAnon = !empty($job->is_anonymous) || !empty($job->is_confidential) || !empty($job->anonymous); ?>
+                        <?php if (empty($isAnon)): ?>
                         <img src=\"<?= resolve_image_url($job->company_logo ?? '', 'company', $job->employer_name ?? 'Company') ?>\" alt="<?= esc($job->employer_name) ?>"
                              class="rounded" style="width:48px;height:48px;object-fit:contain;border:1px solid var(--border);">
                         <?php else: ?>
                         <div class="rounded d-flex align-items-center justify-content-center"
                              style="width:48px;height:48px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);">
-                            <i class="bi bi-building text-primary fs-4"></i>
+                            <i class="bi bi-lock text-muted fs-4"></i>
                         </div>
                         <?php endif; ?>
                         <div class="overflow-hidden">
                             <div class="fw-semibold text-main text-truncate">
-                                <?= !empty($job->is_anonymous) ? 'Confidential' : esc($job->employer_name ?? 'Employer') ?>
+                                <?= !empty($isAnon) ? 'Confidential Employer' : esc($job->employer_name ?? 'Employer') ?>
                             </div>
                             <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i><?= esc($job->location ?? $state->name) ?></div>
                         </div>
@@ -268,7 +269,8 @@ foreach ($jobs as $index => $j) {
         <div class="row g-3">
             <?php foreach ($all_states as $s):
                 $sSlug = !empty($s->slug) ? $s->slug : strtolower(str_replace(' ', '-', $s->name)) . '-state';
-                $isActive = $s->id === $state->id;
+                if (in_array($sSlug, ['remote', 'nigeria-nationwide', 'nationwide'], true)) continue;
+                $isActive = $s->id === ($state->id ?? 0) && ($state->slug ?? '') === $sSlug;
             ?>
             <div class="col-6 col-md-4 col-lg-3 col-xl-2">
                 <a href="<?= base_url('jobs-in-' . esc($sSlug)) ?>"
@@ -280,6 +282,24 @@ foreach ($jobs as $index => $j) {
                 </a>
             </div>
             <?php endforeach; ?>
+            <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                <a href="<?= base_url('jobs/remote') ?>"
+                   class="d-block text-decoration-none rounded-3 py-2 px-3 text-center fw-medium small transition-all
+                          <?= (($state->slug ?? '') === 'remote' || uri_string() === 'jobs/remote') ? 'text-white' : 'glass-card text-main hover-lift' ?>"
+                   style="<?= (($state->slug ?? '') === 'remote' || uri_string() === 'jobs/remote') ? 'background: linear-gradient(135deg, var(--brand), #004a87); border:none;' : '' ?>">
+                    <i class="bi bi-globe me-1" <?= (($state->slug ?? '') === 'remote' || uri_string() === 'jobs/remote') ? '' : 'style="color:var(--brand);"' ?>></i>
+                    Remote Jobs
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                <a href="<?= base_url('jobs/nigeria-nationwide') ?>"
+                   class="d-block text-decoration-none rounded-3 py-2 px-3 text-center fw-medium small transition-all
+                          <?= (($state->slug ?? '') === 'nigeria-nationwide' || uri_string() === 'jobs/nigeria-nationwide') ? 'text-white' : 'glass-card text-main hover-lift' ?>"
+                   style="<?= (($state->slug ?? '') === 'nigeria-nationwide' || uri_string() === 'jobs/nigeria-nationwide') ? 'background: linear-gradient(135deg, var(--brand), #004a87); border:none;' : '' ?>">
+                    <i class="bi bi-geo-alt me-1" <?= (($state->slug ?? '') === 'nigeria-nationwide' || uri_string() === 'jobs/nigeria-nationwide') ? '' : 'style="color:var(--brand);"' ?>></i>
+                    Nationwide Jobs
+                </a>
+            </div>
         </div>
     </div>
 </section>

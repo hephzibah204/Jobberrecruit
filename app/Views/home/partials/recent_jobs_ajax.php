@@ -1,7 +1,7 @@
 <div class="row g-4">
-<?php if (!empty($jobs)): foreach (array_slice($jobs, 0, 6) as $job): ?>
+<?php if (!empty($jobs)): foreach (array_slice($jobs, 0, 6) as $job): helper('public_job'); $job = public_job($job); ?>
     <div class="col-lg-6">
-        <a href="<?= base_url('job/view/' . $job->id) ?>" class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden text-decoration-none hover-scale d-block" style="background: var(--bg-white);">
+        <a href="<?= esc(format_job_url($job), 'attr') ?>" class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden text-decoration-none hover-scale d-block" style="background: var(--bg-white);">
             <div class="card-body p-4 d-flex flex-column h-100">
                 <div class="d-flex justify-content-between mb-3 align-items-start">
                     <div class="d-flex align-items-center gap-3">
@@ -15,6 +15,7 @@
                                 <?php endif; ?>
                             </h5>
                             <div class="text-muted small"><?= esc($job->employer_name ?? 'Company') ?></div>
+                            <?php if (empty($job->anonymous) && empty($job->is_anonymous) && !empty($job->employer_tagline)): ?><div class="text-muted small mt-1"><?= esc($job->employer_tagline) ?></div><?php endif; ?>
                         </div>
                     </div>
                     <?php if(!empty($job->employment_type)): ?>

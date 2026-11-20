@@ -126,9 +126,16 @@ if (!empty($transactions)) {
                 <span class="pill <?= $statusClass ?>"><?= esc(ucfirst($txn['status'] ?? 'pending')) ?></span>
               </td>
               <td>
-                <button type="button" class="ic-btn" title="Receipt download coming soon" aria-label="Receipt download not yet available" disabled>
-                  <svg aria-hidden="true"><use href="#i-download"/></svg>
-                </button>
+                <?php $ref = !empty($txn['reference']) ? $txn['reference'] : (!empty($txn['id']) ? 'WTX-' . $txn['id'] : ''); ?>
+                <?php if (!empty($ref)): ?>
+                  <a href="<?= base_url('employer/receipt/' . urlencode($ref)) ?>" class="ic-btn" target="_blank" title="View / Download Receipt" aria-label="View or download receipt for transaction <?= esc($ref) ?>">
+                    <svg aria-hidden="true"><use href="#i-download"/></svg>
+                  </a>
+                <?php else: ?>
+                  <button type="button" class="ic-btn" disabled style="opacity:.4;cursor:not-allowed;" title="No receipt reference">
+                    <svg aria-hidden="true"><use href="#i-download"/></svg>
+                  </button>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

@@ -11,20 +11,20 @@ class AiService
      * Automatically routes tasks to the best Gemini model for speed, cost, or reasoning depth.
      */
     protected array $taskModelMap = [
-        'chat'      => 'gemini-3.5-flash-lite', // Interactive chatbot widget & turns
-        'fast'      => 'gemini-3.5-flash-lite', // Fast short text generation, summaries & bullet points
-        'balanced'  => 'gemini-3.5-flash-lite', // Career advice, salary negotiation, cover letters
-        'reasoning' => 'gemini-3.5-flash-lite', // CV scoring/reviews, interview evaluations, aptitude test generation
-        'audio'     => 'gemini-3.1-flash',      // Multimodal audio transcription & speech processing
+        'chat'      => 'gemini-3.8-flash', // Interactive chatbot widget & turns
+        'fast'      => 'gemini-3.8-flash', // Fast short text generation, summaries & bullet points
+        'balanced'  => 'gemini-3.8-flash', // Career advice, salary negotiation, cover letters
+        'reasoning' => 'gemini-3.8-flash', // CV scoring/reviews, interview evaluations, aptitude test generation
+        'audio'     => 'gemini-3.8-flash',      // Multimodal audio transcription & speech processing
     ];
 
     protected ?string $apiKey = null;
-    protected string $model = 'gemini-3.5-flash-lite';
+    protected string $model = 'gemini-3.8-flash';
 
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY');
-        $this->model  = env('GEMINI_MODEL') ?: 'gemini-3.5-flash-lite';
+        $this->model  = env('GEMINI_MODEL') ?: 'gemini-3.8-flash';
     }
 
     /**
@@ -36,6 +36,10 @@ class AiService
         $envTaskKey = 'GEMINI_MODEL_' . strtoupper($task);
         if ($envTaskModel = env($envTaskKey)) {
             return $envTaskModel;
+        }
+
+        if ($task !== 'audio' && env('GEMINI_MODEL')) {
+            return $this->model;
         }
 
         return $this->taskModelMap[$task] ?? ($this->taskModelMap['fast']);
@@ -63,7 +67,7 @@ class AiService
     /**
      * Generate content using Gemini API with model routing and intelligent response caching
      */
-    public function generate($prompt, string $task = 'fast', int $customTtl = 0)
+    public function generate($prompt, string $task = 'fast', int $customTtl = 0, int $maxOutputTokens = 1500)
     {
         if (empty($this->apiKey)) {
             return $this->handleGenerateFallback($prompt, "AI Service is not configured. Please add GEMINI_API_KEY to your .env file.");
@@ -95,7 +99,7 @@ class AiService
                 ]
             ],
             'generationConfig' => [
-                'maxOutputTokens' => 1500,
+                'maxOutputTokens' => $maxOutputTokens,
             ],
         ];
 
@@ -166,39 +170,58 @@ class AiService
      */
     public function generateProfessionalSummary($experiences = [], $skills = [], $education = [])
     {
-        // Build a concise prompt that asks for a single polished summary wrapped in a predictable HTML fragment.
-        // We instruct the model to return either a single HTML fragment wrapped in <div class="premium-summary">...</div>
-        // OR plain text. The server will sanitize any HTML returned. Avoid markdown or multiple choices.
         $promptParts = [];
-        if (!empty($experiences)) {
-            $promptParts[] = 'Experiences: ' . implode('; ', $experiences);
+        if (!empty($experiences) && is_array($experiences)) {
+            $filteredExp = array_filter(array_map('trim', $experiences), fn($e) => $e !== '');
+            if (!empty($filteredExp)) {
+                $promptParts[] = 'Work Experience / Positions: ' . implode('; ', $filteredExp);
+            }
         }
-        if (!empty($education)) {
-            $promptParts[] = 'Education: ' . implode('; ', $education);
+        if (!empty($education) && is_array($education)) {
+            $filteredEdu = array_filter(array_map('trim', $education), fn($e) => $e !== '');
+            if (!empty($filteredEdu)) {
+                $promptParts[] = 'Education: ' . implode('; ', $filteredEdu);
+            }
         }
         if (!empty($skills)) {
             $skillsList = is_array($skills) ? $skills : array_map('trim', explode(',', (string)$skills));
-            $promptParts[] = 'Skills: ' . implode(', ', $skillsList);
+            $skillsList = array_values(array_filter(array_map('trim', $skillsList), fn($s) => $s !== ''));
+            if (!empty($skillsList)) {
+                $promptParts[] = 'Skills / Competencies: ' . implode(', ', $skillsList);
+            }
         }
 
         $context = implode("\n", $promptParts);
 
-        $prompt = "You are ResumeAI, a professional resume assistant. Return ONE polished professional resume summary of 2-3 sentences. " .
-                  "Return either (A) a single HTML fragment wrapped in <div class=\"premium-summary\"> ... </div> with no attributes on inner tags, or (B) plain text. " .
-                  "Do NOT provide multiple options, do NOT use markdown (no ** or *), and do not include scripts or style tags.\n\n";
+        $prompt = "You are ResumeAI, a professional executive resume writer and career strategist.\n\n" .
+                  "OBJECTIVE:\n" .
+                  "Write ONE clear, compelling, recruiter-focused professional resume summary (2 to 3 sentences, maximum 600 characters) strictly reflecting the candidate's verified background below.\n\n" .
+                  "MANDATORY GUIDELINES:\n" .
+                  "1. Truthful: Use ONLY facts explicitly provided in the candidate data block. Never invent years of experience, metrics, degrees, or unmentioned technologies.\n" .
+                  "2. Direct & Role-Focused: Lead immediately with their actual job title/profession (e.g., 'Senior Software Engineer with a focus on...'). Do NOT use awkward phrasing like 'based on experience in Senior Software Engineer'.\n" .
+                  "3. Strict Cliché Prohibition: Never use empty buzzwords such as 'Results-driven professional', 'Proven track record', 'dynamic professional', 'optimizing operational workflows', or 'cross-functional teams to accelerate project delivery'.\n" .
+                  "4. Context Isolation: The formatting guidelines and prompt labels are instructions for YOU, NOT candidate skills. Never output phrases like 'expertise in Requirements:', 'Skills include Requirements', or similar meta-text.\n" .
+                  "5. Output Format: Return plain text ONLY. No markdown bolding (** or *), no quotes, and no introductory remarks.\n\n";
 
         if (!empty($context)) {
-            $prompt .= $context . "\n\n";
+            $prompt .= "=== CANDIDATE PROFILE DATA ===\n" . $context . "\n=== END CANDIDATE DATA ===\n\n";
         }
 
-        $prompt .= "Requirements:\n" .
-                   "- Output must be concise and recruiter-focused (2-3 sentences).\n" .
-                   "- If returning HTML, prefer simple tags: <p>, <br>, <strong>, <em>, <ul>, <ol>, <li>, <div>, <span>.\n" .
-                   "- Wrap the fragment in exactly one <div class=\"premium-summary\"> ... </div> when returning HTML.\n" .
-                   "- If plain text is returned, do not include any markup.\n" .
-                   "Provide only the summary text or the HTML fragment as described, nothing else.";
+        $prompt .= "Provide only the polished 2-3 sentence summary text:";
 
-        return $this->generate($prompt);
+        $result = $this->generate($prompt);
+
+        // Post-processing sanity cleanup
+        if (!empty($result)) {
+            $result = preg_replace('/\b(?:with\s+)?expertise in Requirements:?\s*(?:and\s+)?/i', '', $result);
+            $result = preg_replace('/\bbased on experience in\b/i', 'with experience as a', $result);
+            $result = preg_replace('/^(?:Results-driven\s+)?professional\s*\.\s*/i', '', $result);
+            $result = preg_replace('/\s+([.,;:!?])/', '$1', $result);
+            $result = preg_replace('/([.,;:!?]){2,}/', '$1', $result);
+            $result = trim(preg_replace('/\s+/', ' ', $result));
+        }
+
+        return $result;
     }
 
     /**
@@ -312,7 +335,11 @@ class AiService
         $language = (string) ($options['language'] ?? '');
         $companyType = (string) ($options['company_type'] ?? '');
 
+        $clientHour = isset($options['client_hour']) ? (int) $options['client_hour'] : (int) date('G');
+        $timeGreeting = (string) ($options['client_time_greeting'] ?? ($clientHour < 12 ? 'Good morning' : ($clientHour < 17 ? 'Good afternoon' : 'Good evening')));
+
         $context = "[[MOCK_INTERVIEW_SESSION:{$questionPack}]] You are an experienced hiring manager conducting a mock interview for a '{$jobTitle}' position with '{$candidateName}'. ";
+        $context .= "Candidate local time of day: {$timeGreeting} (hour {$clientHour}:00). GREETING RULE: If greeting the candidate, you MUST match their time of day: '{$timeGreeting}'. Never say 'Good morning' in the afternoon, evening, or night! ";
         if ($companyName !== '') {
             $context .= "Company: {$companyName}. ";
         }
@@ -384,6 +411,13 @@ class AiService
 
             if ($reply === '') {
                 $reply = trim($feedback . ' ' . $nextQuestion);
+            }
+
+            if ($reply !== '') {
+                $reply = preg_replace('/^(Good morning|Good afternoon|Good evening|Good day)[,.]?\s*/i', $timeGreeting . ', ', $reply);
+            }
+            if ($nextQuestion !== '') {
+                $nextQuestion = preg_replace('/^(Good morning|Good afternoon|Good evening|Good day)[,.]?\s*/i', $timeGreeting . ', ', $nextQuestion);
             }
 
             return [
@@ -881,94 +915,57 @@ class AiService
     }
 
     /**
-     * Convert text to speech via Gemini's native TTS model. Returns a
-     * base64-encoded WAV string, or null if unavailable/failed (callers
-     * should fall back to browser speech synthesis).
+     * Convert text to speech with Microsoft Edge TTS Nigerian voices only
+     * (owner decision 2026-11-19: no Gemini TTS). Female personas use
+     * en-NG-EzinneNeural, male personas en-NG-AbeoNeural, via
+     * EdgeTtsService. Returns a base64-encoded MP3 string, or null when
+     * synthesis is unavailable (callers fall back to browser speech).
+     *
+     * $voiceName accepts an Edge voice name (en-NG-EzinneNeural /
+     * en-NG-AbeoNeural), an Edge persona key (corporate-hr, ...), or a
+     * legacy Gemini voice name (Kore = female, Puck = male), which is
+     * mapped to the matching Nigerian voice.
      */
-    public function textToSpeech(string $text, string $voiceName = 'Kore'): ?string
+    public function textToSpeech(string $text, string $voiceName = 'en-NG-EzinneNeural'): ?string
     {
         $text = trim($text);
-        if (empty($this->apiKey) || $text === '') {
+        if ($text === '') {
             return null;
         }
 
-        $ttsModel = env('GEMINI_TTS_MODEL') ?: 'gemini-3.1-flash-tts-preview';
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $ttsModel . ':generateContent?key=' . $this->apiKey;
+        $persona = $this->edgePersonaForVoice($voiceName);
 
-        $payload = [
-            'contents' => [[
-                'role'  => 'user',
-                'parts' => [['text' => $text]],
-            ]],
-            'generationConfig' => [
-                'responseModalities' => ['AUDIO'],
-                'speechConfig' => [
-                    'voiceConfig' => [
-                        'prebuiltVoiceConfig' => ['voiceName' => $voiceName],
-                    ],
-                ],
-            ],
-        ];
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
-
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        curl_close($ch);
-
-        if ($err || ! $response) {
-            log_message('error', 'Gemini TTS failed: ' . $err);
-            return null;
+        try {
+            $edgeTts = new EdgeTtsService();
+            $mp3Data = $edgeTts->synthesize($text, $persona);
+            if ($mp3Data !== null && strlen($mp3Data) > 200) {
+                return base64_encode($mp3Data);
+            }
+            log_message('error', 'AiService::textToSpeech EdgeTTS returned no audio (persona: ' . $persona . ')');
+        } catch (\Throwable $e) {
+            log_message('error', 'AiService::textToSpeech EdgeTTS failed: ' . $e->getMessage());
         }
 
-        $result = json_decode($response, true);
-        $inline = $result['candidates'][0]['content']['parts'][0]['inlineData'] ?? null;
-        $b64Pcm = $inline['data'] ?? null;
-        $mimeType = $inline['mimeType'] ?? 'audio/L16;rate=24000';
-
-        if (! $b64Pcm) {
-            log_message('error', 'Gemini TTS returned no audio: ' . ($result['error']['message'] ?? json_encode($result)));
-            return null;
-        }
-
-        $pcm = base64_decode($b64Pcm);
-        $sampleRate = 24000;
-        if (preg_match('/rate=(\d+)/', $mimeType, $m)) {
-            $sampleRate = (int) $m[1];
-        }
-
-        return base64_encode($this->pcmToWav($pcm, $sampleRate));
+        return null;
     }
 
     /**
-     * Wrap raw 16-bit PCM audio in a WAV container so browsers can play it
-     * directly via an <audio> element, no client-side decoding needed.
+     * Map a requested voice to an Edge TTS persona (Nigerian voices).
      */
-    protected function pcmToWav(string $pcm, int $sampleRate, int $channels = 1, int $bitsPerSample = 16): string
+    protected function edgePersonaForVoice(string $voiceName): string
     {
-        $byteRate = (int) ($sampleRate * $channels * $bitsPerSample / 8);
-        $blockAlign = (int) ($channels * $bitsPerSample / 8);
-        $dataSize = strlen($pcm);
+        $v = strtolower(trim($voiceName));
 
-        $header = 'RIFF' . pack('V', 36 + $dataSize) . 'WAVE'
-            . 'fmt ' . pack('V', 16)
-            . pack('v', 1)
-            . pack('v', $channels)
-            . pack('V', $sampleRate)
-            . pack('V', $byteRate)
-            . pack('v', $blockAlign)
-            . pack('v', $bitsPerSample)
-            . 'data' . pack('V', $dataSize);
-
-        return $header . $pcm;
+        $personas = ['corporate-hr', 'banking-recruiter', 'big4-partner', 'startup-founder', 'technical-lead', 'gov-recruiter'];
+        if (in_array($v, $personas, true)) {
+            return $v;
+        }
+        if (str_contains($v, 'abeo') || in_array($v, ['puck', 'charon', 'fenrir', 'orus', 'male'], true)) {
+            return 'technical-lead'; // en-NG-AbeoNeural (male)
+        }
+        return 'corporate-hr'; // en-NG-EzinneNeural (female)
     }
+
 
     /**
      * Sanitize HTML allowing only a strict set of tags and safe attributes.
@@ -1223,18 +1220,21 @@ class AiService
         }
 
         // 1c. Professional Summary Fallback (New Generation)
-        if (stripos($prompt, 'professional resume summary') !== false || (stripos($prompt, 'Experiences:') !== false && stripos($prompt, 'Skills:') !== false)) {
+        if (stripos($prompt, 'professional resume summary') !== false || stripos($prompt, 'ResumeAI') !== false || (stripos($prompt, 'Experiences:') !== false && stripos($prompt, 'Skills:') !== false)) {
             // Extract experiences and skills
-            $experiencesStr = 'your professional experience';
-            $skillsStr = 'core industry skills';
-            if (preg_match('/Experiences:\s*(.*)/i', $prompt, $matches)) {
-                $experiencesStr = trim(explode("\n", $matches[1])[0]);
+            $experiencesStr = '';
+            $skillsStr = '';
+            if (preg_match('/^(?:Experiences|Work Experience \/ Positions):[ \t]*([^\r\n]*)/m', $prompt, $matches)) {
+                $experiencesStr = trim($matches[1]);
             }
-            if (preg_match('/Skills:\s*(.*)/i', $prompt, $matches)) {
-                $skillsStr = trim(explode("\n", $matches[1])[0]);
+            if (preg_match('/^(?:Skills|Skills \/ Competencies):[ \t]*([^\r\n]*)/m', $prompt, $matches)) {
+                $skillsStr = trim($matches[1]);
             }
-
-            return "Results-driven professional with expertise in {$skillsStr}. Proven track record of delivering high-impact solutions, optimizing operational workflows, and driving efficiency based on experience in {$experiencesStr}. Skilled at collaborating with cross-functional teams to accelerate project delivery and achieve strategic goals.";
+            $summary = $experiencesStr !== '' ? 'Experienced ' . $experiencesStr . '.' : '';
+            if ($skillsStr !== '') {
+                $summary .= ($summary !== '' ? ' ' : '') . 'Key proficiencies include ' . $skillsStr . '.';
+            }
+            return $summary ?: 'Professional dedicated to delivering high quality technical solutions and measurable outcomes.';
         }
 
         // 2. Career Advice Fallback
@@ -1736,7 +1736,7 @@ class AiService
     public function generateCustomAptitudeQuestions(string $jobTitle, string $jobDescription = '', int $numQuestions = 5, string $difficulty = 'intermediate'): array
     {
         if (empty($this->apiKey)) {
-            return [];
+            return $this->getFallbackAptitudeQuestions($jobTitle, $jobDescription, $numQuestions, $difficulty);
         }
 
         $cacheEnabled = env('AI_CACHE_ENABLED', true);
@@ -1786,7 +1786,7 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
             'generationConfig' => [
                 'response_mime_type' => 'application/json',
                 'temperature' => 0.3,
-                'maxOutputTokens' => 2000,
+                'maxOutputTokens' => 8000,
             ],
         ];
 
@@ -1795,12 +1795,14 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 75);
 
         $response = curl_exec($ch);
         curl_close($ch);
 
-        if (!$response) return [];
+        if (!$response) {
+            return $this->getFallbackAptitudeQuestions($jobTitle, $jobDescription, $numQuestions, $difficulty);
+        }
 
         $json = json_decode($response, true);
         $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
@@ -1820,7 +1822,710 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
             return $decoded;
         }
 
-        return [];
+        return $this->getFallbackAptitudeQuestions($jobTitle, $jobDescription, $numQuestions, $difficulty);
+    }
+
+    /**
+     * Fallback tailored aptitude questions if external AI service is unreachable
+     */
+    public function getFallbackAptitudeQuestions(string $jobTitle, string $jobDescription = '', int $numQuestions = 5, string $difficulty = 'intermediate'): array
+    {
+        $jt = strtolower($jobTitle . ' ' . $jobDescription);
+
+        // General pool defined upfront so specialized pools can fall back or pad smoothly
+        $generalPool = [
+            [
+                'question' => "You have two high-priority assignments with conflicting deadlines due by 5:00 PM today for different department heads. What is the most professional initial action?",
+                'difficulty' => $difficulty,
+                'explanation' => "Transparent, proactive communication allows managers to align on true organizational priorities rather than leaving deliverables to chance.",
+                'options' => [
+                    ['text' => "Communicate proactively with both stakeholders to evaluate business urgency and agree on delivery order", 'is_correct' => 1],
+                    ['text' => "Silently ignore the more difficult project and hope it is forgotten", 'is_correct' => 0],
+                    ['text' => "Leave the office early to avoid confrontation", 'is_correct' => 0],
+                    ['text' => "Submit incomplete, untested drafts for both projects without notice", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "An upset client calls complaining that a service delivery was delayed due to public holidays in Nigeria. Which communication approach demonstrates professional customer service?",
+                'difficulty' => $difficulty,
+                'explanation' => "Acknowledging the client's frustration with empathy and providing concrete action steps resolves issues effectively.",
+                'options' => [
+                    ['text' => "Listen attentively, acknowledge the inconvenience with empathy, and provide an exact revised timeline with tracking updates", 'is_correct' => 1],
+                    ['text' => "Argue with the customer and blame logistics providers entirely", 'is_correct' => 0],
+                    ['text' => "Place the customer on indefinite hold until they hang up", 'is_correct' => 0],
+                    ['text' => "Tell the client that their expectations are unreasonable", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "A project requires analyzing ₦1,500,000 in promotional campaign spending across three branches: Lagos, Abuja, and Port Harcourt. If Lagos received 50% and Abuja received 30%, how much was allocated to Port Harcourt?",
+                'difficulty' => $difficulty,
+                'explanation' => "Lagos: 50% (₦750,000), Abuja: 30% (₦450,000). Total = 80%. Port Harcourt received the remaining 20% of ₦1,500,000 = ₦300,000.",
+                'options' => [
+                    ['text' => "₦300,000", 'is_correct' => 1],
+                    ['text' => "₦250,000", 'is_correct' => 0],
+                    ['text' => "₦400,000", 'is_correct' => 0],
+                    ['text' => "₦150,000", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "When presenting sensitive quarterly performance metrics to senior leadership, what is the best practice for data clarity?",
+                'difficulty' => $difficulty,
+                'explanation' => "Clear summaries highlighting key drivers, actionable findings, and visual charts allow leaders to make informed decisions quickly.",
+                'options' => [
+                    ['text' => "Present concise visual charts highlighting key performance indicators, core drivers, and actionable recommendations", 'is_correct' => 1],
+                    ['text' => "Read unformatted raw database exports line-by-line", 'is_correct' => 0],
+                    ['text' => "Omit underperforming figures to make results look better", 'is_correct' => 0],
+                    ['text' => "Avoid answering questions regarding data sources", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "In workplace ethics and confidentiality, how should an employee handle sensitive candidate resumes and personal contact details?",
+                'difficulty' => $difficulty,
+                'explanation' => "Under data protection standards (such as NDPR), personal and candidate data must be stored securely and processed solely for legitimate employment screening.",
+                'options' => [
+                    ['text' => "Store securely on authorized company systems and share exclusively on a strict need-to-know basis", 'is_correct' => 1],
+                    ['text' => "Forward candidate resumes to personal social media groups", 'is_correct' => 0],
+                    ['text' => "Leave printed CVs unattended in open public workspaces", 'is_correct' => 0],
+                    ['text' => "Sell applicant telephone numbers to third-party telemarketers", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "During a cross-functional strategy meeting, you disagree with a technical proposal put forward by a colleague. How should you voice your perspective?",
+                'difficulty' => $difficulty,
+                'explanation' => "Constructive dissent focuses objectively on project goals, evidence, and risk analysis without personal criticism.",
+                'options' => [
+                    ['text' => "Acknowledge the colleague's objective and present your data-backed alternative highlighting tradeoffs and solutions", 'is_correct' => 1],
+                    ['text' => "Interrupt aggressively and tell the meeting room that the proposal is incompetent", 'is_correct' => 0],
+                    ['text' => "Stay quiet in the meeting and complain behind their back to other teammates", 'is_correct' => 0],
+                    ['text' => "Walk out of the meeting abruptly", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "You discover a calculation error in a report that was already sent to senior leadership by your team. What is the most appropriate action?",
+                'difficulty' => $difficulty,
+                'explanation' => "Integrity and accountability require immediate correction with the updated data and an explanation of the variance.",
+                'options' => [
+                    ['text' => "Notify your manager immediately, provide the corrected figures, and issue a polite revision to stakeholders", 'is_correct' => 1],
+                    ['text' => "Hope that no one notices the error and delete your local copies of the spreadsheet", 'is_correct' => 0],
+                    ['text' => "Blame an intern or junior team member publicly", 'is_correct' => 0],
+                    ['text' => "Falsify subsequent month records to artificially offset the difference", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "Which framework is most effective for prioritizing multiple daily tasks based on urgency and importance?",
+                'difficulty' => $difficulty,
+                'explanation' => "The Eisenhower Matrix categorizes activities by urgent vs important to ensure strategic priorities receive dedicated attention.",
+                'options' => [
+                    ['text' => "The Eisenhower Matrix (Urgent vs Important quadrant categorization)", 'is_correct' => 1],
+                    ['text' => "First-In, Never-Out randomness", 'is_correct' => 0],
+                    ['text' => "Focusing exclusively on the easiest tasks while postponing critical deliverables", 'is_correct' => 0],
+                    ['text' => "Responding to incoming messages without planning", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "A vendor in Ikeja sends an aggressive email demanding immediate payment for an unverified invoice. What is the best professional response?",
+                'difficulty' => $difficulty,
+                'explanation' => "Professional correspondence maintains composure, references verified invoice verification procedures, and states a realistic review timeline.",
+                'options' => [
+                    ['text' => "Respond politely acknowledging receipt, reference standard procurement verification stages, and state an estimated timeline", 'is_correct' => 1],
+                    ['text' => "Reply with angry insults and threaten to cancel all contracts", 'is_correct' => 0],
+                    ['text' => "Approve payment immediately without checking receipt of goods", 'is_correct' => 0],
+                    ['text' => "Block the vendor's email address permanently", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "A colleague on your project team is consistently falling behind their milestones, affecting your deliverables. What step should you take first?",
+                'difficulty' => $difficulty,
+                'explanation' => "Direct, supportive peer inquiry often identifies bottlenecks early and allows joint problem-solving before escalation.",
+                'options' => [
+                    ['text' => "Schedule a brief one-on-one check-in to ask about roadblocks and collaborate on how to get the timeline back on track", 'is_correct' => 1],
+                    ['text' => "Complain to the Managing Director immediately without speaking to the colleague", 'is_correct' => 0],
+                    ['text' => "Stop working on your own part of the project in protest", 'is_correct' => 0],
+                    ['text' => "Post about the colleague's delays on public social media", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "In remote or hybrid work environments across Nigeria, what is the best practice for maintaining transparency and alignment?",
+                'difficulty' => $difficulty,
+                'explanation' => "Structured asynchronous updates, daily standups, and centralized task boards keep teams aligned regardless of location.",
+                'options' => [
+                    ['text' => "Regular daily standups, clear written documentation, and transparent task board updates", 'is_correct' => 1],
+                    ['text' => "Working in complete isolation without updating communication channels", 'is_correct' => 0],
+                    ['text' => "Calling colleagues unexpectedly at midnight for non-emergencies", 'is_correct' => 0],
+                    ['text' => "Refusing to document project decisions or meeting action items", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "What does emotional intelligence (EQ) in the workplace primarily entail?",
+                'difficulty' => $difficulty,
+                'explanation' => "EQ involves self-awareness, emotional regulation, empathy, and adept relationship management in diverse professional contexts.",
+                'options' => [
+                    ['text' => "The ability to perceive, understand, and constructively manage your emotions and empathize with colleagues", 'is_correct' => 1],
+                    ['text' => "The ability to memorize technical textbooks verbatim", 'is_correct' => 0],
+                    ['text' => "Suppression of all communication with coworkers", 'is_correct' => 0],
+                    ['text' => "Winning every workplace argument through aggression", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "When faced with an urgent decision where you only have 70% of the ideal data available, what is the recommended leadership approach?",
+                'difficulty' => $difficulty,
+                'explanation' => "Calculated decision-making evaluates core risks, defines rollback options, and executes iteratively rather than suffering analysis paralysis.",
+                'options' => [
+                    ['text' => "Assess key risks, choose a pragmatic path with defined fallback measures, and iterate as new data arrives", 'is_correct' => 1],
+                    ['text' => "Freeze all business operations indefinitely until 100% certainty is reached", 'is_correct' => 0],
+                    ['text' => "Flip a coin without analyzing any available data points", 'is_correct' => 0],
+                    ['text' => "Delegate the entire decision to someone else to avoid personal responsibility", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "A junior colleague makes an honest clerical mistake that results in a minor client inconvenience. How should a team lead address it?",
+                'difficulty' => $difficulty,
+                'explanation' => "Constructive coaching turns mistakes into learning opportunities while establishing preventive safeguards.",
+                'options' => [
+                    ['text' => "Review the mistake privately with them, explain the root cause, and implement a checklist to prevent recurrence", 'is_correct' => 1],
+                    ['text' => "Humiliate the junior colleague in front of the entire company", 'is_correct' => 0],
+                    ['text' => "Terminate their employment immediately without inquiry", 'is_correct' => 0],
+                    ['text' => "Pretend the mistake never happened and let the client remain confused", 'is_correct' => 0]
+                ]
+            ],
+            [
+                'question' => "If an employee witnesses suspicious financial transactions or regulatory non-compliance in their organization, what is the ethical procedure?",
+                'difficulty' => $difficulty,
+                'explanation' => "Established whistleblowing channels and internal audit/compliance protocols provide confidential, protected reporting avenues.",
+                'options' => [
+                    ['text' => "Report through established internal audit, compliance, or confidential whistleblowing channels with documentation", 'is_correct' => 1],
+                    ['text' => "Solicit bribes from the perpetrators to keep quiet", 'is_correct' => 0],
+                    ['text' => "Destroy evidence to avoid getting involved", 'is_correct' => 0],
+                    ['text' => "Ignore company policy and post sensitive company records to Reddit", 'is_correct' => 0]
+                ]
+            ]
+        ];
+
+        if (preg_match('/(software|developer|engineer|tech|code|frontend|backend|fullstack|php|python|javascript|it|web)/', $jt)) {
+            $pool = [
+                [
+                    'question' => "When optimizing a database-driven application handling thousands of concurrent users in Lagos, which practice most effectively prevents N+1 query performance bottlenecks?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Eager loading queries the related models in a single optimized query rather than running an additional query for each individual record.",
+                    'options' => [
+                        ['text' => "Eager loading related relational models upfront using JOINs or batched IN queries", 'is_correct' => 1],
+                        ['text' => "Running lazy-loaded relationships inside a nested foreach loop", 'is_correct' => 0],
+                        ['text' => "Removing all primary and foreign key constraints on relational tables", 'is_correct' => 0],
+                        ['text' => "Disabling caching headers on API endpoints", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which of the following HTTP status codes should a REST API return when a candidate submits an application with an invalid email format?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "422 Unprocessable Entity indicates semantic or input validation errors, whereas 400 Bad Request indicates malformed request syntax.",
+                    'options' => [
+                        ['text' => "422 Unprocessable Entity or 400 Bad Request", 'is_correct' => 1],
+                        ['text' => "500 Internal Server Error", 'is_correct' => 0],
+                        ['text' => "401 Unauthorized", 'is_correct' => 0],
+                        ['text' => "301 Moved Permanently", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In continuous integration and modern software delivery, what is the primary purpose of writing automated unit tests?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Unit tests isolate individual components or methods to ensure regressions are caught quickly before code is merged.",
+                    'options' => [
+                        ['text' => "To verify individual methods and functions work correctly in isolation and catch regressions early", 'is_correct' => 1],
+                        ['text' => "To replace manual User Acceptance Testing entirely", 'is_correct' => 0],
+                        ['text' => "To increase code execution duration and network load", 'is_correct' => 0],
+                        ['text' => "To test third-party payment gateway uptime", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "To prevent Cross-Site Scripting (XSS) attacks when outputting candidate-submitted text in a web view, which safeguard must be applied?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "HTML entity encoding (such as esc() or htmlspecialchars()) ensures user strings cannot be interpreted as executable HTML/JavaScript.",
+                    'options' => [
+                        ['text' => "Context-aware HTML escaping and entity encoding (e.g., esc() or htmlspecialchars())", 'is_correct' => 1],
+                        ['text' => "Encrypting the database connection string with AES-256", 'is_correct' => 0],
+                        ['text' => "Rendering raw HTML directly with unescaped echo tags", 'is_correct' => 0],
+                        ['text' => "Increasing session cookie expiration timeout to 30 days", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the recommended Git branching practice before introducing a major new feature to a production repository?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Creating an isolated feature branch preserves production stability on main and facilitates peer code review via pull requests.",
+                    'options' => [
+                        ['text' => "Create a dedicated feature branch from main/dev and submit a Pull Request after testing", 'is_correct' => 1],
+                        ['text' => "Commit untested code directly to the production main branch using --force", 'is_correct' => 0],
+                        ['text' => "Disable git hooks and delete git commit history", 'is_correct' => 0],
+                        ['text' => "Share personal SSH private keys with all team members", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which technique is the most effective defense against SQL Injection vulnerabilities in backend database queries?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Prepared statements and parameterized queries separate query structure from user data, preventing arbitrary command injection.",
+                    'options' => [
+                        ['text' => "Using prepared statements with parameterized query placeholders", 'is_correct' => 1],
+                        ['text' => "Concatenating user inputs directly into the SQL string", 'is_correct' => 0],
+                        ['text' => "Relying purely on JavaScript client-side input validation", 'is_correct' => 0],
+                        ['text' => "Storing database credentials in plain text in HTML forms", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In web application architecture, what is the primary role of an in-memory datastore like Redis?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Redis provides microsecond read/write performance suitable for session state, API caching, and fast message brokering.",
+                    'options' => [
+                        ['text' => "High-throughput caching, session management, and rate limiting in RAM", 'is_correct' => 1],
+                        ['text' => "Permanent relational table storage with ACID transaction rollback files", 'is_correct' => 0],
+                        ['text' => "Compiling CSS and JavaScript client bundles", 'is_correct' => 0],
+                        ['text' => "Running cron daemon jobs directly on the operating system", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "When an application needs to send automated onboarding emails without delaying the user's web page response, which pattern is recommended?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Asynchronous job queues decouple long-running operations (like SMTP or external API calls) from the synchronous HTTP request/response cycle.",
+                    'options' => [
+                        ['text' => "Pushing email jobs to an asynchronous background worker queue (e.g. RabbitMQ, Redis Queue)", 'is_correct' => 1],
+                        ['text' => "Executing synchronous SMTP socket connections in the HTTP request controller thread", 'is_correct' => 0],
+                        ['text' => "Asking the candidate to wait 60 seconds on the page while the email finishes sending", 'is_correct' => 0],
+                        ['text' => "Triggering email delivery via an infinite client-side JavaScript loop", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the primary benefit of containerizing a web application with Docker?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Docker packages application code with its exact runtime, OS libraries, and configurations, ensuring consistent execution across development and production.",
+                    'options' => [
+                        ['text' => "Guarantees environment consistency and dependency isolation between local dev and cloud production", 'is_correct' => 1],
+                        ['text' => "Automatically writes bug-free application logic without programming", 'is_correct' => 0],
+                        ['text' => "Eliminates the requirement for database backups", 'is_correct' => 0],
+                        ['text' => "Triples network bandwidth speed on mobile devices", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which HTTP method should be used according to REST conventions when updating only specific fields of a resource?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "PATCH is intended for partial modifications to an existing resource, while PUT replaces the entire resource representation.",
+                    'options' => [
+                        ['text' => "PATCH", 'is_correct' => 1],
+                        ['text' => "GET", 'is_correct' => 0],
+                        ['text' => "DELETE", 'is_correct' => 0],
+                        ['text' => "HEAD", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In database indexing, why should developers avoid creating indexes on columns that undergo frequent mass write updates?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Every INSERT, UPDATE, and DELETE requires updating all corresponding B-tree indexes, creating significant write latency.",
+                    'options' => [
+                        ['text' => "Each write operation incurs overhead as the database rebalances the B-tree index structures", 'is_correct' => 1],
+                        ['text' => "Indexes prevent read queries from accessing the column entirely", 'is_correct' => 0],
+                        ['text' => "Indexed columns automatically convert text to binary numbers", 'is_correct' => 0],
+                        ['text' => "Databases only support a maximum of one index per database instance", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the main function of Cross-Origin Resource Sharing (CORS) in web browsers?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "CORS is a browser security mechanism that restricts scripts on one origin from making unauthorized cross-origin requests to another domain.",
+                    'options' => [
+                        ['text' => "To control which external origins and domains are permitted to access API resources via browser HTTP requests", 'is_correct' => 1],
+                        ['text' => "To compress image files before sending them over mobile cellular networks", 'is_correct' => 0],
+                        ['text' => "To encrypt database passwords using private cryptographic keys", 'is_correct' => 0],
+                        ['text' => "To convert PHP classes into JavaScript functions automatically", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In JSON Web Token (JWT) architecture, what guarantees that the payload has not been tampered with in transit?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "The JWT signature is calculated using the header, payload, and a secret key; any modification invalidates the signature check.",
+                    'options' => [
+                        ['text' => "The cryptographic digital signature verified against the secret or public key", 'is_correct' => 1],
+                        ['text' => "Base64 encoding which provides military-grade encryption", 'is_correct' => 0],
+                        ['text' => "The client browser's local cache timestamp", 'is_correct' => 0],
+                        ['text' => "The DNS provider's nameserver records", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the primary role of a Continuous Integration (CI) pipeline in software development?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "CI pipelines automatically compile, lint, and run tests whenever new code is committed, identifying defects before merge.",
+                    'options' => [
+                        ['text' => "To automatically run test suites, code linters, and build checks whenever changes are pushed", 'is_correct' => 1],
+                        ['text' => "To automatically invoice clients for software development hours", 'is_correct' => 0],
+                        ['text' => "To generate marketing social media posts for new software releases", 'is_correct' => 0],
+                        ['text' => "To disable git branch merges indefinitely", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "When designing a decoupled microservices architecture, which protocol is best suited for resilient, asynchronous event broadcasting?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Message brokers and event streams (e.g. Kafka, RabbitMQ) provide decoupled publish/subscribe event broadcasting.",
+                    'options' => [
+                        ['text' => "A message broker utilizing a Publish/Subscribe pattern (e.g., Kafka, RabbitMQ)", 'is_correct' => 1],
+                        ['text' => "Direct synchronous HTTP POST calls in an unbuffered chain", 'is_correct' => 0],
+                        ['text' => "Sharing a single mutable SQLite file on a shared network drive", 'is_correct' => 0],
+                        ['text' => "Manual copy-pasting of JSON payloads between server consoles", 'is_correct' => 0]
+                    ]
+                ]
+            ];
+        } elseif (preg_match('/(sale|market|growth|business dev|account manager)/', $jt)) {
+            $pool = [
+                [
+                    'question' => "A corporate prospect in Victoria Island expresses hesitation over pricing for an annual enterprise contract. What is the most effective sales response?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Uncovering specific business requirements and quantifying ROI builds credibility and addresses value before negotiating price.",
+                    'options' => [
+                        ['text' => "Inquire into their primary operational challenges and demonstrate measurable ROI and efficiency gains", 'is_correct' => 1],
+                        ['text' => "Immediately offer a 60% price cut without understanding their business needs", 'is_correct' => 0],
+                        ['text' => "End communication and archive the lead immediately", 'is_correct' => 0],
+                        ['text' => "Criticize competitor pricing models aggressively", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which key metric best measures how effectively a sales pipeline converts newly generated marketing leads into paying customers?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Lead-to-Customer conversion rate measures the end-to-end efficiency of qualifying and closing leads.",
+                    'options' => [
+                        ['text' => "Lead-to-Customer Conversion Rate (%)", 'is_correct' => 1],
+                        ['text' => "Total number of unread marketing emails sent", 'is_correct' => 0],
+                        ['text' => "Average employee tenure in months", 'is_correct' => 0],
+                        ['text' => "Website hosting server uptime", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the primary objective of a Customer Relationship Management (CRM) platform in a high-growth business?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "CRMs centralize customer touchpoints, interaction history, deal stages, and revenue forecasting.",
+                    'options' => [
+                        ['text' => "To centralize client interaction history, pipeline velocity, and follow-up accountability", 'is_correct' => 1],
+                        ['text' => "To automate legal contract dispute litigation", 'is_correct' => 0],
+                        ['text' => "To replace human sales representatives completely", 'is_correct' => 0],
+                        ['text' => "To generate static PDF invoices manually", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In digital B2B marketing, which channel typically generates the highest qualification rate for corporate decision-makers in Nigeria?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "LinkedIn outreach and targeted thought leadership allow precise B2B targeting by job seniority, industry, and geography.",
+                    'options' => [
+                        ['text' => "Targeted LinkedIn B2B campaigns and personalized consultative outreach", 'is_correct' => 1],
+                        ['text' => "Unsolicited mass bulk SMS blast to unverified numbers", 'is_correct' => 0],
+                        ['text' => "Consumer entertainment meme pages", 'is_correct' => 0],
+                        ['text' => "Cold flyers distributed at motor parks", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What strategy most reliably reduces Customer Churn and increases Customer Lifetime Value (LTV)?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Proactive onboarding, responsive account management, and ongoing value reviews secure client retention.",
+                    'options' => [
+                        ['text' => "Structured client onboarding, regular business reviews, and proactive customer success support", 'is_correct' => 1],
+                        ['text' => "Ignoring existing customers once the initial contract is signed", 'is_correct' => 0],
+                        ['text' => "Charging unannounced surprise maintenance fees", 'is_correct' => 0],
+                        ['text' => "Removing customer support channels", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is considered a healthy Customer Lifetime Value (LTV) to Customer Acquisition Cost (CAC) ratio for sustainable business growth?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "An LTV:CAC ratio of 3:1 or higher indicates that revenue earned from a customer significantly exceeds the cost incurred to acquire them.",
+                    'options' => [
+                        ['text' => "3:1 or higher (LTV is at least triple the CAC)", 'is_correct' => 1],
+                        ['text' => "1:3 (spending triple the acquisition cost compared to revenue)", 'is_correct' => 0],
+                        ['text' => "1:1 (breaking exactly even with zero operational margin)", 'is_correct' => 0],
+                        ['text' => "0:5 (spending money with zero customer revenue)", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "When a prospective B2B client mentions they are already using a competitor's software, what is the best consultative response?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Acknowledging their current solution while asking open questions uncovers unmet needs or pain points without alienating the prospect.",
+                    'options' => [
+                        ['text' => "Acknowledge the competitor respectfully, then inquire what gaps, bottlenecks, or features they wish was handled better", 'is_correct' => 1],
+                        ['text' => "Tell them the competitor's software is completely worthless and defective", 'is_correct' => 0],
+                        ['text' => "Hang up immediately and delete the prospect's contact", 'is_correct' => 0],
+                        ['text' => "Promise custom features for free that your engineering team cannot build", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In an inbound digital marketing strategy, what role do lead magnets (e.g. whitepapers, salary guides) serve in the marketing funnel?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Lead magnets exchange high-value industry content for prospect contact information, converting anonymous visitors into qualified leads.",
+                    'options' => [
+                        ['text' => "Exchanging valuable industry insights for prospect contact details to initiate the nurturing sequence", 'is_correct' => 1],
+                        ['text' => "Replacing the need for sales representatives entirely", 'is_correct' => 0],
+                        ['text' => "Increasing corporate server storage bills unnecessarily", 'is_correct' => 0],
+                        ['text' => "Directly billing client credit cards automatically", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the primary indicator of product-market fit according to modern growth benchmarks?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "High organic user retention and repeat engagement demonstrate that customers find enduring value in the product.",
+                    'options' => [
+                        ['text' => "Strong organic customer retention, referral expansion, and high Net Promoter Scores", 'is_correct' => 1],
+                        ['text' => "A single spike in signups driven by one expensive advertisement", 'is_correct' => 0],
+                        ['text' => "Winning a visual website design contest", 'is_correct' => 0],
+                        ['text' => "Registering a registered trademark with the Corporate Affairs Commission (CAC)", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In enterprise sales with multiple procurement stakeholders, which persona is known as the 'Economic Buyer'?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "The Economic Buyer holds discretionary budget control and final authority to release funds for contract payment.",
+                    'options' => [
+                        ['text' => "The senior executive with discretionary budget authorization and final purchasing approval", 'is_correct' => 1],
+                        ['text' => "The end-user intern who tests the trial software features daily", 'is_correct' => 0],
+                        ['text' => "The external building security guard", 'is_correct' => 0],
+                        ['text' => "The customer service representative answering general phone queries", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which email outreach practice most effectively improves cold email open rates and engagement for B2B prospects?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Personalized subject lines and opening hooks referencing the prospect's company achieve dramatically higher open and reply rates.",
+                    'options' => [
+                        ['text' => "Relevant, personalized subject lines that address specific industry pain points and clear calls-to-action", 'is_correct' => 1],
+                        ['text' => "Writing subject lines in ALL CAPS with deceptive 'RE: Payment Overdue' tags", 'is_correct' => 0],
+                        ['text' => "Attaching 50MB uncompressed zip files to the first email", 'is_correct' => 0],
+                        ['text' => "BCCing 5,000 random email addresses simultaneously", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the primary distinction between Organic Search Optimization (SEO) and Pay-Per-Click Advertising (PPC)?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "SEO builds sustainable long-term authority and traffic, while PPC generates immediate visibility that ceases once ad spend stops.",
+                    'options' => [
+                        ['text' => "SEO yields sustainable long-term organic traffic through search authority, while PPC generates paid clicks that stop when budget ends", 'is_correct' => 1],
+                        ['text' => "SEO requires daily payment to Google for every impression", 'is_correct' => 0],
+                        ['text' => "PPC is illegal under Nigerian consumer protection standards", 'is_correct' => 0],
+                        ['text' => "SEO only functions on mobile phones", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In sales pipeline management, what does 'Pipeline Velocity' measure?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Pipeline velocity measures the speed and volume at which prospective deals travel through stages to generate closed revenue.",
+                    'options' => [
+                        ['text' => "The speed and dollar value at which qualified opportunities move through sales stages to close", 'is_correct' => 1],
+                        ['text' => "The average typing speed of the sales team members", 'is_correct' => 0],
+                        ['text' => "The physical transit time of couriers delivering paper contracts", 'is_correct' => 0],
+                        ['text' => "The latency of the company's fiber-optic internet connection", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "How should an Account Executive handle an enterprise lead whose budget cycle has just been frozen until Q3?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Nurturing the relationship with relevant insights and scheduling a formal check-in prior to the budget re-opening maintains deal momentum.",
+                    'options' => [
+                        ['text' => "Agree on a scheduled re-engagement date, continue sharing relevant market case studies, and remain top-of-mind", 'is_correct' => 1],
+                        ['text' => "Harass the executive with multiple phone calls every single morning", 'is_correct' => 0],
+                        ['text' => "Permanently delete the account and block the contact on LinkedIn", 'is_correct' => 0],
+                        ['text' => "Send an invoice anyway and threaten litigation", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which of the following describes an Account-Based Marketing (ABM) strategy?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "ABM treats high-value corporate accounts as individual markets, coordinating bespoke marketing campaigns and sales outreach.",
+                    'options' => [
+                        ['text' => "Tailoring bespoke marketing campaigns and customized outreach specifically to high-value target companies", 'is_correct' => 1],
+                        ['text' => "Purchasing random generic consumer billboard advertisements along major highways", 'is_correct' => 0],
+                        ['text' => "Sending identical mass newsletters to every consumer on an unsegmented list", 'is_correct' => 0],
+                        ['text' => "Exclusively marketing on physical radio stations", 'is_correct' => 0]
+                    ]
+                ]
+            ];
+        } elseif (preg_match('/(account|financ|audit|tax|bookkeep)/', $jt)) {
+            $pool = [
+                [
+                    'question' => "Under Nigerian tax regulations (FIRS), what is the standard rate of Value Added Tax (VAT) applied on non-exempt goods and services?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Under the Nigerian Finance Act, standard VAT is 7.5%.",
+                    'options' => [
+                        ['text' => "7.5%", 'is_correct' => 1],
+                        ['text' => "5.0%", 'is_correct' => 0],
+                        ['text' => "10.0%", 'is_correct' => 0],
+                        ['text' => "15.0%", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which fundamental accounting principle requires revenues and matching expenses to be recorded in the period they occur, rather than when cash is transferred?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "The Accrual Principle matches revenues and related expenses within the same accounting cycle.",
+                    'options' => [
+                        ['text' => "Accrual Principle", 'is_correct' => 1],
+                        ['text' => "Cash Basis Principle", 'is_correct' => 0],
+                        ['text' => "Prudence Principle only", 'is_correct' => 0],
+                        ['text' => "Historical Cost Principle", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "When performing a monthly bank reconciliation, a credit memo listed on the bank statement that has not been recorded in the company books should be:",
+                    'difficulty' => $difficulty,
+                    'explanation' => "A bank credit memo represents money added by the bank (e.g. direct collection or interest), which must be added to the cash ledger balance.",
+                    'options' => [
+                        ['text' => "Added to the cash book balance", 'is_correct' => 1],
+                        ['text' => "Deducted from the bank statement balance", 'is_correct' => 0],
+                        ['text' => "Ignored until the financial year-end audit", 'is_correct' => 0],
+                        ['text' => "Recorded as an accrued liability", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What constitutes the core equation represented on a corporate Balance Sheet?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Assets = Liabilities + Owner's Equity is the fundamental accounting equation.",
+                    'options' => [
+                        ['text' => "Assets = Liabilities + Equity", 'is_correct' => 1],
+                        ['text' => "Assets = Revenue - Operating Expenses", 'is_correct' => 0],
+                        ['text' => "Liabilities = Assets + Cash Flow", 'is_correct' => 0],
+                        ['text' => "Equity = Gross Margin - Taxation", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Under the Nigerian Pension Reform Act, what is the mandatory minimum employer contribution percentage towards an employee's Retirement Savings Account (RSA)?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "The Pension Reform Act mandates at least 10% employer contribution and 8% employee contribution.",
+                    'options' => [
+                        ['text' => "10% of monthly emoluments", 'is_correct' => 1],
+                        ['text' => "5% of basic salary", 'is_correct' => 0],
+                        ['text' => "8% of gross profit", 'is_correct' => 0],
+                        ['text' => "15% of annual bonus", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the primary function of Withholding Tax (WHT) in the Nigerian taxation system?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Withholding Tax serves as an advance payment of income tax deducted at source from contract payments and dividends.",
+                    'options' => [
+                        ['text' => "An advance deduction of income tax at source, creditable against final tax liabilities", 'is_correct' => 1],
+                        ['text' => "A penalty tax imposed exclusively on bankrupt enterprises", 'is_correct' => 0],
+                        ['text' => "An optional voluntary donation to state government authorities", 'is_correct' => 0],
+                        ['text' => "A custom duty paid exclusively on imported luxury aircraft", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Under the Straight-Line Depreciation method, what is the annual depreciation expense for company equipment purchased for ₦5,000,000 with a salvage value of ₦500,000 and a 5-year useful life?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Depreciation = (Cost - Salvage Value) / Useful Life = (₦5,000,000 - ₦500,000) / 5 = ₦4,500,000 / 5 = ₦900,000 per year.",
+                    'options' => [
+                        ['text' => "₦900,000 per year", 'is_correct' => 1],
+                        ['text' => "₦1,000,000 per year", 'is_correct' => 0],
+                        ['text' => "₦750,000 per year", 'is_correct' => 0],
+                        ['text' => "₦500,000 per year", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "How is the Working Capital ratio (Current Ratio) calculated on a corporate financial statement?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Current Ratio = Current Assets divided by Current Liabilities, indicating short-term solvency.",
+                    'options' => [
+                        ['text' => "Current Assets divided by Current Liabilities", 'is_correct' => 1],
+                        ['text' => "Total Revenue divided by Operating Expenses", 'is_correct' => 0],
+                        ['text' => "Net Profit divided by Total Shareholder Equity", 'is_correct' => 0],
+                        ['text' => "Long-term Debt divided by Cash and Bank Equivalents", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In financial auditing and internal controls, what is the core purpose of Segregation of Duties (SoD)?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Separating transaction authorization, custody of assets, and record-keeping reduces errors and prevents fraudulent misappropriation.",
+                    'options' => [
+                        ['text' => "To prevent fraud and error by ensuring no single employee has control over all phases of a transaction", 'is_correct' => 1],
+                        ['text' => "To double the paperwork required to complete simple office tasks", 'is_correct' => 0],
+                        ['text' => "To eliminate the need for accounting software", 'is_correct' => 0],
+                        ['text' => "To allow junior officers to override senior executive signatures", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "In an inflationary environment, which inventory valuation method produces lower reported Cost of Goods Sold (COGS) and higher gross profit?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "First-In, First-Out (FIFO) assigns older, cheaper acquisition costs to COGS, leaving higher-cost inventory on the balance sheet.",
+                    'options' => [
+                        ['text' => "FIFO (First-In, First-Out)", 'is_correct' => 1],
+                        ['text' => "LIFO (Last-In, First-Out)", 'is_correct' => 0],
+                        ['text' => "Weighted Average Costing", 'is_correct' => 0],
+                        ['text' => "Specific Unit Identification only", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Which of the following expenditures should be capitalized on the Balance Sheet as Capital Expenditure (CapEx) rather than expensed as OpEx?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Acquisition of productive assets that yield economic benefits over multiple years (e.g. factory equipment, building premises) are capitalized.",
+                    'options' => [
+                        ['text' => "Purchasing a new commercial generator and building extension to expand production capacity", 'is_correct' => 1],
+                        ['text' => "Monthly office electric power bill and generator diesel consumption", 'is_correct' => 0],
+                        ['text' => "Purchasing standard A4 printer paper for daily administrative correspondence", 'is_correct' => 0],
+                        ['text' => "Routine monthly janitorial cleaning supplies", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "Under Nigerian tax law (Finance Act), how are small companies with annual gross turnover under ₦25,000,000 treated for Companies Income Tax (CIT)?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Under the Nigerian Finance Act, small enterprises with turnover under ₦25 million are exempted from Companies Income Tax (0% CIT rate).",
+                    'options' => [
+                        ['text' => "They are subject to 0% Companies Income Tax (CIT exempt)", 'is_correct' => 1],
+                        ['text' => "They pay a flat rate of 30% of total revenue", 'is_correct' => 0],
+                        ['text' => "They must pay an advance surcharge of ₦5,000,000 upon incorporation", 'is_correct' => 0],
+                        ['text' => "They are prohibited from opening corporate bank accounts", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What are the three core sections that comprise the Statement of Cash Flows?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "A Cash Flow Statement categorizes cash inflows and outflows into Operating Activities, Investing Activities, and Financing Activities.",
+                    'options' => [
+                        ['text' => "Operating Activities, Investing Activities, and Financing Activities", 'is_correct' => 1],
+                        ['text' => "Sales Revenue, Gross Margin, and Net Profit", 'is_correct' => 0],
+                        ['text' => "Current Assets, Non-Current Assets, and Retained Earnings", 'is_correct' => 0],
+                        ['text' => "Domestic Transactions, Foreign Currency Swaps, and Cryptocurrencies", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "What is the meaning of 'Materiality' in external audit standards?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "An item or misstatement is material if its omission or misstatement could reasonably influence the economic decisions of financial statement users.",
+                    'options' => [
+                        ['text' => "The threshold at which financial misstatements could reasonably influence the economic decisions of users", 'is_correct' => 1],
+                        ['text' => "The physical weight of paper invoices kept in filing cabinets", 'is_correct' => 0],
+                        ['text' => "The total number of staff employed in the accounting department", 'is_correct' => 0],
+                        ['text' => "The brand name of the computer hardware used to generate spreadsheets", 'is_correct' => 0]
+                    ]
+                ],
+                [
+                    'question' => "How should purchased proprietary software licenses used across a 3-year term be accounted for?",
+                    'difficulty' => $difficulty,
+                    'explanation' => "Proprietary software licenses are recognized as intangible non-current assets and amortized systematically over their 3-year useful life.",
+                    'options' => [
+                        ['text' => "Capitalized as an intangible asset and amortized systematically over the 3-year period", 'is_correct' => 1],
+                        ['text' => "Expensed 100% on the final day of the third year", 'is_correct' => 0],
+                        ['text' => "Recorded as an equity reserve with zero expense recognition", 'is_correct' => 0],
+                        ['text' => "Ignored on all financial statements", 'is_correct' => 0]
+                    ]
+                ]
+            ];
+        } else {
+            $pool = $generalPool;
+        }
+
+        // Ensure pool satisfies requested count by supplementing with general questions if needed
+        if (count($pool) < $numQuestions && $pool !== $generalPool) {
+            foreach ($generalPool as $gq) {
+                if (count($pool) >= $numQuestions) break;
+                $already = false;
+                foreach ($pool as $existing) {
+                    if ($existing['question'] === $gq['question']) { $already = true; break; }
+                }
+                if (!$already) {
+                    $pool[] = $gq;
+                }
+            }
+        }
+
+        // Return the exact requested number of questions
+        $take = min(count($pool), max(1, $numQuestions));
+        return array_slice($pool, 0, $take);
     }
 
     /**
@@ -1886,7 +2591,7 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 75);
 
         $response = curl_exec($ch);
         curl_close($ch);
@@ -1954,16 +2659,16 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
     /**
      * Transcribe audio using Gemini 1.5 Flash multimodal capabilities
      */
-    public function transcribeAudio(string $base64Data, string $mimeType = 'audio/webm'): ?string
+    public function transcribeAudio(string $base64Data, string $mimeType = 'audio/webm', ?string $instruction = null): ?string
     {
         if (empty($this->apiKey)) {
             log_message('error', 'AiService::transcribeAudio - GEMINI_API_KEY is missing');
             return null;
         }
 
-        $url = $this->getApiUrl('audio') . '?key=' . $this->apiKey;
+        $url = $this->getApiUrl($mimeType === 'application/pdf' ? 'fast' : 'audio') . '?key=' . $this->apiKey;
 
-        $prompt = "You are an expert transcriptionist. Transcribe the provided audio accurately. Output ONLY the raw transcribed text with proper punctuation. Do not add any introductory, concluding, or explanatory text.";
+        $prompt = $instruction ?? "You are an expert transcriptionist. Transcribe the provided audio accurately. Output ONLY the raw transcribed text with proper punctuation. Do not add any introductory, concluding, or explanatory text.";
 
         $payload = [
             'contents' => [
@@ -2169,14 +2874,7 @@ Do not include any Markdown code block formatting or backticks, return raw JSON 
      */
     protected function formatStrengthenedSummaryFallback(string $existingSummary, string $prompt = ''): string
     {
-        $text = trim($existingSummary);
-        $textClean = preg_replace('/^(?:I\s+(?:am\s+(?:an?|experienced)|have\s+been|work\s+as)?\s*)/i', '', $text);
-        $textClean = rtrim(trim($textClean), '.');
-
-        if (preg_match('/^(?:experienced|skilled|certified|dedicated|passionate|seasoned)\s+/i', $textClean)) {
-            return "Accomplished and " . lcfirst($textClean) . ". Proven track record of delivering measurable outcomes, optimizing workflows, and collaborating effectively across teams to achieve strategic goals.";
-        }
-
-        return "Results-driven professional with proven expertise as a " . lcfirst($textClean) . ". Recognized for strategic problem-solving, high-impact execution, and strong cross-functional collaboration. Dedicated to driving operational excellence and delivering measurable value in dynamic organizational environments.";
+        // An unavailable AI provider must not add unsupported career claims.
+        return trim($existingSummary);
     }
 }

@@ -21,6 +21,38 @@ class MessageController extends BaseController
         $this->messageModel = model(MessageModel::class);
     }
 
+    public function alerts()
+    {
+        $user = auth()->user();
+        if (!$user || !in_array($user->user_type, ['employer', 'job_seeker'], true)) {
+            return $this->failUnauthorized();
+        }
+        $isEmployer = $user->user_type === 'employer';
+        $ownerId = $isEmployer ? $this->getEmployerId($user->id) : $this->getSeekerId($user->id);
+        $items = [];
+        $count = 0;
+        if ($ownerId) {
+            $builder = db_connect()->table('messages m')
+                ->join('conversations c', 'c.id = m.conversation_id')
+                ->where($isEmployer ? 'c.employer_id' : 'c.job_seeker_id', $ownerId)
+                ->where('m.sender_type', $isEmployer ? 'job_seeker' : 'employer')
+                ->where('m.is_read', 0);
+            $count = (clone $builder)->countAllResults();
+            $builder->join($isEmployer ? 'job_seekers sender' : 'employers sender',
+                $isEmployer ? 'sender.id = c.job_seeker_id' : 'sender.id = c.employer_id', 'left');
+            $items = $builder->select('m.id, m.conversation_id, m.message, m.created_at')
+                ->select($isEmployer ? 'sender.full_name AS sender_name' : 'sender.company_name AS sender_name')
+                ->orderBy('m.id', 'DESC')->limit(20)->get()->getResultArray();
+            foreach ($items as &$item) {
+                $item['url'] = base_url(($isEmployer ? 'employer' : 'candidate') . '/messages/conversation/' . $item['conversation_id']);
+            }
+            unset($item);
+        }
+        return $this->response->setHeader('Cache-Control', 'no-store')->setJSON([
+            'count' => $count, 'items' => $items,
+        ]);
+    }
+
     public function inbox()
     {
         $user = auth()->user();
@@ -137,7 +169,8 @@ class MessageController extends BaseController
                 ->where('job_applications.job_seeker_id', $recipientId)
                 ->countAllResults() > 0;
 
-            if (!$hasUnlocked && !$hasApplied) {
+            $hasConversation = $this->conversationModel->hasEstablishedConversation((int)$employer->id, $recipientId);
+            if (!$hasUnlocked && !$hasApplied && !$hasConversation) {
                 return $this->fail('You can only message candidates who applied to your jobs or whose profile you unlocked', 403);
             }
 
@@ -253,7 +286,8 @@ class MessageController extends BaseController
                 ->where('job_applications.job_seeker_id', $seekerId)
                 ->countAllResults() > 0;
 
-            if (!$isUnlocked && !$hasApplied) {
+            $hasConversation = $this->conversationModel->hasEstablishedConversation((int)$employer->id, (int)$seekerId);
+            if (!$isUnlocked && !$hasApplied && !$hasConversation) {
                 return $this->fail('This candidate profile is private and cannot be contacted directly.');
             }
         }

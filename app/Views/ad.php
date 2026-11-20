@@ -87,7 +87,7 @@
       "name": "What does the unlimited subscription include?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Subscriptions let you post unlimited premium jobs for one flat, prepaid fee — with 60-minute approval, featured placement, social distribution, advanced screening and a dedicated account officer. A fair-use limit of 30 active posts keeps quality high, and longer terms lower your effective monthly cost."
+        "text": "Subscriptions let you post unlimited premium jobs for one flat, prepaid fee — with Job review, featured placement, social distribution, advanced screening and a dedicated account officer. A fair-use limit of 30 active posts keeps quality high, and longer terms lower your effective monthly cost."
       }
     },
     {
@@ -182,7 +182,7 @@
             <div class="emp-trust-avatars" aria-hidden="true">
               <span style="background:#0861A9">MT</span><span style="background:#16a34a">UB</span><span style="background:#C8770E">TE</span><span style="background:#7c3aed">+</span>
             </div>
-            <span>Trusted by <strong style="color:#fff">160+ companies</strong> hiring across Nigeria</span>
+            <span>Connect with candidates across Nigeria</span>
           </div>
         </div>
 
@@ -204,12 +204,7 @@
 
     <!-- stat strip -->
     <div class="container">
-      <div class="emp-statstrip">
-        <div class="emp-stat"><div class="emp-stat-n">160<span>+</span></div><div class="emp-stat-l">Companies hiring</div></div>
-        <div class="emp-stat"><div class="emp-stat-n">60<span>min</span></div><div class="emp-stat-l">Avg. approval time</div></div>
-        <div class="emp-stat"><div class="emp-stat-n">95<span>%</span></div><div class="emp-stat-l">Satisfaction rate</div></div>
-        <div class="emp-stat"><div class="emp-stat-n">10<span>min</span></div><div class="emp-stat-l">To post a job</div></div>
-      </div>
+      
     </div>
   </section>
 
@@ -222,8 +217,8 @@
         <p>When you post on JobberRecruit, you unlock everything you need to attract, screen and hire the right people faster.</p>
       </div>
       <div class="feat-grid">
-        <div class="feat-card"><div class="feat-ic fi-1"><svg aria-hidden="true"><use href="#i-eye"/></svg></div><h3>3&times; visibility boost</h3><p>Your ad doesn&rsquo;t just sit there. We feature it on our homepage and push it through premium channels so the right people see it.</p></div>
-        <div class="feat-card"><div class="feat-ic fi-2"><svg aria-hidden="true"><use href="#i-rocket"/></svg></div><h3>60-minute approval</h3><p>Time is money. On weekdays, your job goes live within an hour of posting &mdash; no waiting days for review.</p></div>
+        <div class="feat-card"><div class="feat-ic fi-1"><svg aria-hidden="true"><use href="#i-eye"/></svg></div><h3>Promote your vacancy</h3><p>Your ad doesn&rsquo;t just sit there. We feature it on our homepage and push it through premium channels so the right people see it.</p></div>
+        <div class="feat-card"><div class="feat-ic fi-2"><svg aria-hidden="true"><use href="#i-rocket"/></svg></div><h3>Job review</h3><p>Your job is reviewed before publication. Track its status in your employer dashboard.</p></div>
         <div class="feat-card"><div class="feat-ic fi-3"><svg aria-hidden="true"><use href="#i-share-nodes"/></svg></div><h3>Smart distribution</h3><p>We actively distribute your ad to targeted professional communities and networks unavailable to standard users.</p></div>
         <div class="feat-card"><div class="feat-ic fi-4"><svg aria-hidden="true"><use href="#i-lock"/></svg></div><h3>Complete privacy</h3><p>Hiring to replace a current employee? Our anonymity feature lets you hide your company name and details completely.</p></div>
         <div class="feat-card"><div class="feat-ic fi-5"><svg aria-hidden="true"><use href="#i-filter"/></svg></div><h3>Advanced screening</h3><p>Stop reading irrelevant CVs. Use custom assessment questions to automatically rank candidates against your needs.</p></div>
@@ -244,8 +239,8 @@
         <p>A deep, active pool of pre-verified professionals across every major industry in Nigeria.</p>
       </div>
       <div class="reach">
-        <div class="reach-n">12,000<span>+</span></div>
-        <div class="reach-sub">active, verified candidates ready to be matched to your roles &mdash; growing every week.</div>
+        
+        <div class="reach-sub">Find candidates across these industries.</div>
         <div class="reach-chips">
           <span class="reach-chip"><svg aria-hidden="true"><use href="#i-chip"/></svg>IT &amp; Software</span>
           <span class="reach-chip"><svg aria-hidden="true"><use href="#i-bank"/></svg>Banking &amp; Finance</span>
@@ -302,10 +297,7 @@
             <div class="logo-box">Dangote</div>
             <div class="logo-box">Paystack</div>
           </div>
-          <div class="proof-stats">
-            <div class="proof-stat"><div class="proof-stat-n">160+</div><div class="proof-stat-l">Companies</div></div>
-            <div class="proof-stat"><div class="proof-stat-n">95%</div><div class="proof-stat-l">Satisfaction rate</div></div>
-          </div>
+          
         </div>
       </div>
     </div>
@@ -360,7 +352,7 @@
         <div class="pcard">
           <div class="pname">Standard</div>
           <div class="ptag">For steady, everyday hiring needs.</div>
-          <div class="pamt"><span class="cur">&#8358;</span><span class="num">5k</span><span class="per">/ job</span></div>
+          <div class="pamt"><span class="cur">&#8358;</span><span class="num">5,000</span><span class="per">/ job</span></div>
           <div class="psub">Billed per job post</div>
           <a href="<?= base_url('post-a-job?plan=standard') ?>" class="btn btn-outline">Choose Standard</a>
           <ul class="pfeats">
@@ -376,12 +368,12 @@
           <span class="pflag">Most popular</span>
           <div class="pname">Premium</div>
           <div class="ptag">Maximum reach and faster hires.</div>
-          <div class="pamt"><span class="cur">&#8358;</span><span class="num">15k</span><span class="per">/ job</span></div>
+          <div class="pamt"><span class="cur">&#8358;</span><span class="num">15,000</span><span class="per">/ job</span></div>
           <div class="psub">Billed per job post</div>
           <a href="<?= base_url('post-a-job?plan=premium') ?>" class="btn btn-primary">Choose Premium</a>
           <ul class="pfeats">
             <li class="pfeats-h">Everything in Standard, plus</li>
-            <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>60-minute approval</li>
+            <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>Job review</li>
             <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>Homepage &amp; featured placement</li>
             <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>Social &amp; community distribution</li>
             <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>Advanced screening &amp; ranking</li>
@@ -438,7 +430,7 @@
         <div class="subcard" data-term="monthly">
           <div class="subterm">Monthly</div>
           <div class="subterm-sub">Rolling, prepaid monthly</div>
-          <div class="subprice"><span class="cur">&#8358;</span><span class="num">40k</span><span class="per">/ month</span></div>
+          <div class="subprice"><span class="cur">&#8358;</span><span class="num">40,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;40,000</b> per month</div>
           <span class="sub-save none">Save</span>
           <a href="<?= base_url('post-a-job?plan=sub-monthly') ?>" class="btn btn-outline">Choose monthly</a>
@@ -448,7 +440,7 @@
         <div class="subcard" data-term="quarterly">
           <div class="subterm">Quarterly</div>
           <div class="subterm-sub">Every 3 months, prepaid</div>
-          <div class="subprice"><span class="cur">&#8358;</span><span class="num">34k</span><span class="per">/ month</span></div>
+          <div class="subprice"><span class="cur">&#8358;</span><span class="num">34,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;102,000</b> billed quarterly</div>
           <span class="sub-save">Save 15%</span>
           <a href="<?= base_url('post-a-job?plan=sub-quarterly') ?>" class="btn btn-outline">Choose quarterly</a>
@@ -458,7 +450,7 @@
         <div class="subcard" data-term="biannual">
           <div class="subterm">6 months</div>
           <div class="subterm-sub">Every 6 months, prepaid</div>
-          <div class="subprice"><span class="cur">&#8358;</span><span class="num">30k</span><span class="per">/ month</span></div>
+          <div class="subprice"><span class="cur">&#8358;</span><span class="num">30,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;180,000</b> billed half-yearly</div>
           <span class="sub-save">Save 25%</span>
           <a href="<?= base_url('post-a-job?plan=sub-biannual') ?>" class="btn btn-outline">Choose 6 months</a>
@@ -469,7 +461,7 @@
           <span class="subflag">Best value</span>
           <div class="subterm">Annual</div>
           <div class="subterm-sub">Yearly, prepaid</div>
-          <div class="subprice"><span class="cur">&#8358;</span><span class="num">26k</span><span class="per">/ month</span></div>
+          <div class="subprice"><span class="cur">&#8358;</span><span class="num">26,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;312,000</b> billed yearly</div>
           <span class="sub-save">Save 35%</span>
           <a href="<?= base_url('post-a-job?plan=sub-annual') ?>" class="btn btn-primary">Choose annual</a>
@@ -481,7 +473,7 @@
         <h3><svg aria-hidden="true"><use href="#i-check-circle"/></svg>Every subscription includes</h3>
         <ul class="sub-inc-grid">
           <li><svg aria-hidden="true"><use href="#i-check"/></svg>Unlimited premium job posts</li>
-          <li><svg aria-hidden="true"><use href="#i-check"/></svg>60-minute approval on every post</li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg>Job review on every post</li>
           <li><svg aria-hidden="true"><use href="#i-check"/></svg>Homepage &amp; featured placement</li>
           <li><svg aria-hidden="true"><use href="#i-check"/></svg>Social &amp; community distribution</li>
           <li><svg aria-hidden="true"><use href="#i-check"/></svg>Advanced screening &amp; ranking</li>
@@ -541,9 +533,9 @@
         <p>Optional boosts you can add to any plan at checkout or while your post is live.</p>
       </div>
       <div class="addon-grid">
-        <div class="addon"><div class="addon-top"><span class="addon-ic ai-1"><svg aria-hidden="true"><use href="#i-star"/></svg></span><span class="addon-price">&#8358;5k<span> / post</span></span></div><h3>Featured listing</h3><p>Pin your job to the top of search results and category pages for maximum visibility.</p></div>
-        <div class="addon"><div class="addon-top"><span class="addon-ic ai-2"><svg aria-hidden="true"><use href="#i-bell"/></svg></span><span class="addon-price">&#8358;3k<span> / post</span></span></div><h3>Urgent badge</h3><p>Add a bold &ldquo;Urgent&rdquo; tag so candidates know to apply fast &mdash; great for time-sensitive roles.</p></div>
-        <div class="addon"><div class="addon-top"><span class="addon-ic ai-3"><svg aria-hidden="true"><use href="#i-mega"/></svg></span><span class="addon-price">&#8358;7k<span> / post</span></span></div><h3>Social blast</h3><p>A dedicated feature across our Instagram, X, WhatsApp and Telegram channels.</p></div>
+        <div class="addon"><div class="addon-top"><span class="addon-ic ai-1"><svg aria-hidden="true"><use href="#i-star"/></svg></span><span class="addon-price">&#8358;5,000<span> / post</span></span></div><h3>Featured listing</h3><p>Pin your job to the top of search results and category pages for maximum visibility.</p></div>
+        <div class="addon"><div class="addon-top"><span class="addon-ic ai-2"><svg aria-hidden="true"><use href="#i-bell"/></svg></span><span class="addon-price">&#8358;3,000<span> / post</span></span></div><h3>Urgent badge</h3><p>Add a bold &ldquo;Urgent&rdquo; tag so candidates know to apply fast &mdash; great for time-sensitive roles.</p></div>
+        <div class="addon"><div class="addon-top"><span class="addon-ic ai-3"><svg aria-hidden="true"><use href="#i-mega"/></svg></span><span class="addon-price">&#8358;7,000<span> / post</span></span></div><h3>Social blast</h3><p>A dedicated feature across our Instagram, X, WhatsApp and Telegram channels.</p></div>
       </div>
     </div>
   </section>
@@ -618,7 +610,7 @@
         <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Are candidates on JobberRecruit verified? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Yes. Candidates go through profile verification, and our screening tools let you rank applicants against your own assessment questions so you only spend time on the best fits.</div></div></div>
         <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Can I post a job for free? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">You can create an employer account and post your first job free. Premium plans add featured placement, social distribution, advanced screening and a dedicated account officer.</div></div></div>
         <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Can I hide my company name when hiring? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Yes. Our anonymity feature lets you hide your company name and details &mdash; ideal when replacing a current employee or hiring confidentially.</div></div></div>
-        <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What does the unlimited subscription include? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Subscriptions let you post unlimited premium jobs for one flat, prepaid fee &mdash; with 60-minute approval, featured placement, social distribution, advanced screening and a dedicated account officer. A fair-use limit of 30 active posts keeps quality high, and longer terms lower your effective monthly cost.</div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What does the unlimited subscription include? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Subscriptions let you post unlimited premium jobs for one flat, prepaid fee &mdash; with Job review, featured placement, social distribution, advanced screening and a dedicated account officer. A fair-use limit of 30 active posts keeps quality high, and longer terms lower your effective monthly cost.</div></div></div>
         <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">How do I pay, and are there contracts? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">You fund your employer wallet through secure payment, then apply the balance to any plan, subscription or add-on. There are no long-term contracts &mdash; you only pay for what you post.</div></div></div>
       </div>
     </div>
@@ -629,7 +621,7 @@
     <div class="container">
       <div class="final-cta">
         <h2>Your next great hire is one post away</h2>
-        <p>Join 160+ companies hiring smarter on JobberRecruit. Post your first job in under 10 minutes.</p>
+        <p>Hire through JobberRecruit. Create your employer account and post a job.</p>
         <div class="final-cta-actions">
           <a href="<?= base_url('post-a-job') ?>" class="btn btn-accent btn-lg"><svg aria-hidden="true"><use href="#i-rocket"/></svg>Post your first job</a>
           <a href="#pricing" class="btn btn-white btn-lg">Compare plans</a>

@@ -162,7 +162,6 @@ $(document).ready(function() {
     $('#btn-test').on('click', function() {
         var result = $('#builder').queryBuilder('getRules');
         if (!$.isEmptyObject(result)) {
-            // Mock AJAX call for now
             $('#estimate_count').html('<i class="ti ti-loader fa-spin"></i>');
             
             $.post("<?= base_url('admin/newsletters/segments/test') ?>", { 
@@ -176,10 +175,8 @@ $(document).ready(function() {
                     $('#estimate_count').text('--');
                 }
             }).fail(function() {
-                // Fallback demo animation
-                setTimeout(() => {
-                    $('#estimate_count').text(Math.floor(Math.random() * 5000) + 100);
-                }, 800);
+                $('#estimate_count').text('--');
+                alert('Audience estimate is unavailable. Please try again.');
             });
         }
     });

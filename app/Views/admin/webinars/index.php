@@ -89,6 +89,7 @@
                                             $badgeClass = 'bg-info-transparent text-info';
                                         }
 
+                                        $webinar->display_status = \App\Models\WebinarModel::displayStatus($webinar);
                                         $regCount = (int)($webinar->registrations_count ?? $webinar->registrants_count ?? 0);
                                     ?>
                                     <tr>
@@ -159,13 +160,14 @@
                                                 </div>
                                                 <div>
                                                     <?php 
+                                                    $displayStatus = \App\Models\WebinarModel::displayStatus($webinar);
                                                     $statusClass = 'bg-info-transparent text-info';
-                                                    if ($webinar->status === 'completed') $statusClass = 'bg-success-transparent text-success';
-                                                    if ($webinar->status === 'ongoing') $statusClass = 'bg-warning-transparent text-warning';
-                                                    if ($webinar->status === 'cancelled') $statusClass = 'bg-danger-transparent text-danger';
+                                                    if ($displayStatus === 'completed') $statusClass = 'bg-success-transparent text-success';
+                                                    if ($displayStatus === 'ongoing') $statusClass = 'bg-warning-transparent text-warning';
+                                                    if ($displayStatus === 'cancelled') $statusClass = 'bg-danger-transparent text-danger';
                                                     ?>
                                                     <span class="badge <?= $statusClass ?> fs-11">
-                                                        <?= ucfirst($webinar->status) ?>
+                                                        <?= ucfirst($displayStatus) ?>
                                                     </span>
                                                 </div>
                                             </div>
@@ -490,7 +492,7 @@ function previewWebinar(webinar, regCount) {
     else if (link.toLowerCase().includes('teams.microsoft.com')) provider = 'MS Teams';
     document.getElementById('prev_provider_badge').innerText = provider;
 
-    var status = webinar.status || 'upcoming';
+    var status = webinar.display_status || webinar.status || 'upcoming';
     var statusBadge = document.getElementById('prev_status_badge');
     statusBadge.innerText = status.toUpperCase();
 

@@ -274,12 +274,12 @@ foreach ($blogs as $index => $blog) {
       </p>
       <div class="blog-stats" role="list" aria-label="Blog statistics">
         <div class="blog-stat" role="listitem">
-          <div class="blog-stat-num"><?= number_format($totalPosts) ?>+</div>
+          <div class="blog-stat-num"><?= number_format($totalPosts) ?></div>
           <div class="blog-stat-label">Articles published</div>
         </div>
         <div class="blog-stat" role="listitem">
-          <div class="blog-stat-num"><?= number_format(max(1, round($totalViews / 1000)) * 1000, 0) ?>+</div>
-          <div class="blog-stat-label">Monthly readers</div>
+          <div class="blog-stat-num"><?= $totalViews > 0 ? number_format($totalViews) : '100%' ?></div>
+          <div class="blog-stat-label"><?= $totalViews > 0 ? 'Total reads' : 'Free access' ?></div>
         </div>
         <div class="blog-stat" role="listitem">
           <div class="blog-stat-num">8</div>
@@ -289,7 +289,7 @@ foreach ($blogs as $index => $blog) {
       <p class="blog-trust">
         <svg aria-hidden="true"><use href="#i-verified-disc"/></svg> Written by certified HR experts &amp; career coaches
         <span class="blog-trust-dot" aria-hidden="true">•</span>
-        <svg aria-hidden="true"><use href="#i-users"/></svg> 5,000+ Nigerian professionals read us monthly
+        <svg aria-hidden="true"><use href="#i-users"/></svg> Free career guides for Nigerian professionals
       </p>
       <form class="blog-search-bar" action="<?= base_url('blog') ?>" method="get" role="search" aria-label="Search blog articles">
         <div class="blog-search-wrap">
@@ -398,7 +398,7 @@ foreach ($blogs as $index => $blog) {
                   <span><svg aria-hidden="true"><use href="#i-chart"/></svg> <?= number_format($blog->views ?? 0) ?> reads</span>
                 </div>
                 <h3 class="article-title"><?= esc($blog->title) ?></h3>
-                <p class="article-excerpt"><?= esc($blog->excerpt ?? '') ?></p>
+                <p class="article-excerpt"><?= esc(html_entity_decode((string) ($blog->excerpt ?? ''), ENT_QUOTES, 'UTF-8')) ?></p>
                 <div class="article-footer">
                   <div class="article-author">
                     <div class="article-avatar <?= $avatarClass ?>"><?= $authorInitials ?></div>

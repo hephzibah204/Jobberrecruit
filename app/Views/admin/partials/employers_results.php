@@ -1,4 +1,4 @@
-<div class="card custom-card">
+<div class="card custom-card" data-employer-total="<?= (int) $pager->getTotal() ?>">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -62,7 +62,7 @@
                                 </td>
                                 <td>
                                     <?php
-                                    $hasDocs = !empty($employer->submitted_docs_count) && (int)$employer->submitted_docs_count > 0;
+                                    $hasDocs = (!empty($employer->submitted_docs_count) && (int)$employer->submitted_docs_count > 0) || !empty($employer->verification_doc) || (!empty($employer->verification_documents) && $employer->verification_documents !== '[]');
                                     if ($employer->verification_status === 'verified') {
                                         $displayStatus = 'Verified';
                                         $color = 'success';
@@ -85,7 +85,7 @@
                                     </span>
                                     <?php if ($hasDocs && $employer->verification_status === 'pending'): ?>
                                         <div class="fs-11 text-success mt-1">
-                                            <i class="ti ti-file-check me-1"></i><?= (int)$employer->submitted_docs_count ?> Doc(s) Submitted
+                                            <i class="ti ti-file-check me-1"></i><?= (int)$employer->submitted_docs_count > 0 ? (int)$employer->submitted_docs_count . ' Doc(s) Submitted' : 'Doc(s) Submitted' ?>
                                         </div>
                                     <?php elseif ($employer->verification_status === 'pending'): ?>
                                         <div class="fs-11 text-muted mt-1">

@@ -372,9 +372,28 @@ svg { flex-shrink: 0; }
         <div class="mc-grid">
             <?php foreach ($enrollments as $enrollment): ?>
                 <?php
-                $isCompleted = $enrollment->status === 'completed';
-                $isPaid = (float) ($enrollment->amount ?? 0) > 0;
+                $isCompleted = $enrollment->status === 'completed'
+                    || in_array((int) $enrollment->course_id, $certifiedCourseIds ?? [], true);
+                // Paid-ness comes from the course price, not the enrollment's
+                // recorded amount: a paid course must never be labelled "Free"
+                // because an enrollment row carries amount 0.
+                $coursePrice = (float) ($enrollment->price ?? 0);
+                $amountPaid = (float) ($enrollment->amount ?? 0);
+                $isPaid = $coursePrice > 0 || $amountPaid > 0;
+                $displayAmount = $amountPaid > 0 ? $amountPaid : $coursePrice;
                 $progressPct = (int) ($enrollment->progress ?? 0);
+                // "Assessment Pending" is only honest when a valid final
+                // assessment actually exists for this course.
+                $hasAssessment = false;
+                if ($progressPct >= 100 && ! $isCompleted) {
+                    try {
+                        \App\Services\CourseAssessmentService::validateBank(
+                            \App\Services\CourseAssessmentService::questions($enrollment)
+                        );
+                        $hasAssessment = true;
+                    } catch (\InvalidArgumentException $e) {
+                    }
+                }
                 ?>
                 <div class="mc-card">
                     <!-- Cover Image & Status Badge -->
@@ -387,7 +406,7 @@ svg { flex-shrink: 0; }
                             <svg aria-hidden="true"><use href="#i-book"/></svg>
                         </div>
                         <span class="mc-badge-status <?= $isCompleted ? 'mc-badge-completed' : 'mc-badge-in_progress' ?>">
-                            <?= $isCompleted ? 'Completed' : 'In Progress' ?>
+                            <?= $isCompleted ? 'Completed' : ($progressPct >= 100 ? ($hasAssessment ? 'Assessment Pending' : 'Lessons Complete') : 'In Progress') ?>
                         </span>
                     </div>
 
@@ -424,7 +443,7 @@ svg { flex-shrink: 0; }
                             <div class="mc-price-row">
                                 <span class="mc-price-tag">
                                     <svg aria-hidden="true"><use href="#i-card"/></svg>
-                                    <?= $isPaid ? '₦' . number_format((float)$enrollment->amount, 2) : 'Free Access' ?>
+                                    <?= $isPaid ? '₦' . number_format($displayAmount, 2) : 'Free Access' ?>
                                 </span>
                                 <span class="<?= $isPaid ? 'mc-pill-paid' : 'mc-pill-free' ?>">
                                     <?= $isPaid ? 'Paid' : 'Free' ?>
@@ -445,25 +464,6 @@ svg { flex-shrink: 0; }
                 </div>
             <?php endforeach; ?>
 
-            <!-- Suggested Course Card -->
-            <div class="mc-card mc-card-suggested">
-                <div class="mc-suggested-header">
-                    <div class="mc-suggested-icon">
-                        <svg aria-hidden="true"><use href="#i-zap"/></svg>
-                    </div>
-                </div>
-                <div class="mc-card-body">
-                    <div style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ED9020;">Recommended for You</div>
-                    <h2 class="mc-course-title" style="min-height:auto;">Customer Service Excellence</h2>
-                    <p style="font-size:.82rem;color:#5b6577;line-height:1.5;margin:0 0 12px;">Adding certified skills to your profile boosts employer visibility by up to 3x in candidate searches.</p>
-                    
-                    <div class="mc-card-footer">
-                        <a href="<?= base_url('candidate/courses') ?>" class="mc-btn-cta mc-btn-cta-primary">
-                            Explore Suggested Course
-                        </a>
-                    </div>
-                </div>
-            </div>
         </div>
     <?php endif; ?>
 

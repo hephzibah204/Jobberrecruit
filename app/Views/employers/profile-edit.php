@@ -577,7 +577,7 @@ function updateCount(fieldId, countId, max) {
 
 /* ── Section ordering, weights and tips ── */
 var SECTION_ORDER = ['identity','contact','about','verify','social'];
-var sectionWeights = { identity:25, contact:20, about:20, verify:20, social:15 };
+var sectionWeights = <?= json_encode(\App\Services\EmployerProfileCompletion::WEIGHTS) ?>;
 var SECTION_TIPS = {
   identity: 'Add your logo & company name for +25% — shown on every listing',
   contact:  'Add contact details for +20% — candidates verify you are legitimate',
@@ -586,13 +586,7 @@ var SECTION_TIPS = {
   social:   'Add social profiles for +15% — builds trust with senior candidates'
 };
 
-var completedSections = {
-    identity: <?= (!empty($employer->company_name) && !empty($employerIndustryIds) && !empty($employer->company_size)) ? 'true' : 'false' ?>,
-    contact: <?= (!empty($employer->contact_name) && !empty($employer->contact_phone) && !empty($employer->contact_email) && !empty($employer->company_address) && !empty($employer->state_id)) ? 'true' : 'false' ?>,
-    about: <?= (!empty($employer->description)) ? 'true' : 'false' ?>,
-    verify: <?= (!empty($employer->rc_number) || !empty($employer->is_verified)) ? 'true' : 'false' ?>,
-    social: <?= (!empty($employer->linkedin) || !empty($employer->twitter) || !empty($employer->facebook) || !empty($employer->instagram)) ? 'true' : 'false' ?>
-};
+var completedSections = <?= json_encode(\App\Services\EmployerProfileCompletion::sections($employer, $employerIndustryIds ?? [])) ?>;
 
 /* ── Inject gain-tip badges on load ── */
 function injectGainTips() {
@@ -701,19 +695,7 @@ function pulseBar() {
               }
               return;
           }
-          completedSections[key] = true;
-          var card = btn.closest('.cv-card');
-          if (card) card.classList.add('is-complete');
-          if (card) {
-              var badge = card.querySelector('.cv-card-done');
-              if (badge) {
-                  badge.className = 'cv-card-done complete';
-                  badge.innerHTML = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Done';
-              }
-          }
-          var gainTip = document.getElementById('gain-tip-' + key);
-          if (gainTip) gainTip.style.display = 'none';
-
+          applyCompletion(response.completedSections);
           updateProgress(); pulseBar(); updateBarTip(); advanceToNext(key);
 
           btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Saved';
@@ -798,17 +780,7 @@ function pulseBar() {
               }
               return;
           }
-          SECTION_ORDER.forEach(function(k) {
-              completedSections[k] = true;
-              var card = document.querySelector('[aria-labelledby="h-' + k + '"]');
-              if (card) {
-                  card.classList.add('is-complete');
-                  var badge = card.querySelector('.cv-card-done');
-                  if (badge) { badge.className = 'cv-card-done complete'; badge.innerHTML = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Done'; }
-                  var tip = document.getElementById('gain-tip-' + k);
-                  if (tip) tip.style.display = 'none';
-              }
-          });
+          applyCompletion(response.completedSections);
           updateProgress(); pulseBar(); updateBarTip();
           if (typeof toastr !== 'undefined') {
               toastr.success(response.message || 'All sections saved.');
@@ -848,6 +820,23 @@ function pulseBar() {
 }
 
 /* ── Update progress bar ── */
+function applyCompletion(sections) {
+  if (!sections || typeof sections !== 'object') return;
+  SECTION_ORDER.forEach(function(k) {
+    completedSections[k] = sections[k] === true;
+    var card = document.querySelector('[aria-labelledby="h-' + k + '"]');
+    if (!card) return;
+    card.classList.toggle('is-complete', completedSections[k]);
+    var badge = card.querySelector('.cv-card-done');
+    if (badge) {
+      badge.className = 'cv-card-done' + (completedSections[k] ? ' complete' : '');
+      badge.textContent = completedSections[k] ? 'Done' : 'Incomplete';
+    }
+    var tip = document.getElementById('gain-tip-' + k);
+    if (tip) tip.style.display = completedSections[k] ? 'none' : '';
+  });
+}
+
 function updateProgress() {
   var total = 0;
   Object.keys(completedSections).forEach(function(k) { 

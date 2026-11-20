@@ -129,9 +129,9 @@
                 <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Advanced candidate search</span></li>
             </ul>
             <a href="<?= base_url('employer/pricing') ?>" class="emp-btn emp-btn-accent emp-btn-block">
-                <svg aria-hidden="true"><use href="#i-zap"/></svg> Subscribe Now
+                <svg aria-hidden="true"><use href="#i-zap"/></svg> <?= !empty($hasUnlimitedAccess) || !empty($user_plan) ? 'Manage Active Subscription' : 'Subscribe Now' ?>
             </a>
-            <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px">Renews automatically. Cancel anytime from this page.</p>
+            <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px">Access remains available for your paid subscription period.</p>
         </div>
     </section>  </section>
 </div>
@@ -184,7 +184,7 @@
 
 <div id="payment-loader" class="payment-loader">
     <div class="spinner-border text-primary mb-3" role="status"></div>
-    <img src="<?= base_url('auth/img/logo.png'); ?>" alt="Processing" class="loader-logo img-fluid">
+    <img src="<?= base_url('images/logo.png'); ?>" onerror="this.onerror=null;this.src='<?= base_url('images/logo.png'); ?>';" alt="Processing" class="loader-logo img-fluid" style="max-height: 40px; object-fit: contain;">
     <p class="mt-3 text-muted fw-semibold">Processing payment… please wait</p>
 </div>
 

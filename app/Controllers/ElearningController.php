@@ -391,7 +391,7 @@ class ElearningController extends BaseController
             }
         }
 
-        return redirect()->back()->with('success', $msg);
+        return redirect()->to('admin/elearning')->with('success', $msg);
     }
 
     /**
@@ -522,68 +522,21 @@ class ElearningController extends BaseController
         // Handle Paid Courses
         if ($course->price > 0) {
             $paymentMethod = $this->request->getVar('payment_method');
-            if ($paymentMethod === 'wallet') {
-                $walletService = new \App\Services\WalletService();
-                $wallet = $walletService->getOrCreateWallet($userId);
-
-                if ((float) $wallet->balance < (float) $course->price) {
-                    return redirect()->back()->with('error', 'Insufficient wallet balance (₦' . number_format($wallet->balance, 2) . '). Please top up your wallet or pay via Paystack.');
+            try {
+                $fulfillment = new \App\Services\PaymentFulfillmentService();
+                if ($paymentMethod === 'wallet') {
+                    $purchase = $fulfillment->buyWithWallet((int) $userId, 'course', (int) $id);
+                    return redirect()->to('training/payment-acknowledgement/' . $id . '?reference=' . urlencode($purchase['reference']) . '&method=wallet')
+                        ->with('success', 'Enrolled successfully using your wallet.');
                 }
-
-                $reference = 'course_w_' . uniqid();
-                $walletService->debit(
-                    userId: $userId,
-                    amount: (float) $course->price,
-                    source: 'wallet_checkout',
-                    reference: $reference,
-                    sourceId: (int) $id,
-                    description: 'Paid with wallet for course: ' . $course->title
-                );
-
-                // Insert into payment ledger
-                $paymentModel = model(\App\Models\PaymentModel::class);
-                $paymentModel->insert([
-                    'user_id'        => $userId,
-                    'reference'      => $reference,
-                    'amount'         => $course->price,
-                    'status'         => 'paid',
-                    'payment_method' => 'wallet',
-                    'paid_at'        => date('Y-m-d H:i:s'),
-                ]);
-
-                // Enroll user
-                $this->enrollmentModel->insert([
-                    'course_id'         => $id,
-                    'user_id'           => $userId,
-                    'status'            => 'enrolled',
-                    'payment_reference' => $reference,
-                    'amount'            => $course->price
-                ]);
-
-                try {
-                    $emailNotifService = new \App\Services\EmailNotificationService();
-                    $emailNotifService->sendCourseEnrollmentNotification(auth()->user(), $course);
-                } catch (\Throwable $e) {
-                    log_message('error', 'Paid course enrollment notification error: ' . $e->getMessage());
-                }
-
-                return redirect()->to('training/payment-acknowledgement/' . $id . '?reference=' . urlencode($reference) . '&method=wallet')->with('success', 'Enrolled successfully using your wallet balance!');
+                $reference = $fulfillment->createPending((int) $userId, 'course', (float) $course->price, ['course_id' => (int) $id]);
+                $response = (new \App\Services\PaystackService())->initialize(auth()->user()->email, $course->price,
+                    base_url('training/verify/' . $id), ['type' => 'course', 'course_id' => (int) $id, 'user_id' => $userId, 'reference' => $reference]);
+                if ($response['status'] ?? false) return redirect()->to($response['data']['authorization_url']);
+            } catch (\Throwable $e) {
+                log_message('error', 'Course checkout: ' . $e->getMessage());
             }
-
-            $paystack = new \App\Services\PaystackService();
-            $email = auth()->user()->email;
-            $callbackUrl = base_url("training/verify/{$id}");
-            
-            $response = $paystack->initialize($email, $course->price, $callbackUrl, [
-                'course_id' => $id,
-                'user_id' => $userId
-            ]);
-
-            if ($response['status']) {
-                return redirect()->to($response['data']['authorization_url']);
-            } else {
-                return redirect()->back()->with('error', 'Payment initialization failed: ' . $response['message']);
-            }
+            return redirect()->back()->with('error', 'Course payment could not be completed.');
         }
 
         // Free Course Enrollment
@@ -609,48 +562,23 @@ class ElearningController extends BaseController
      */
     public function verify($courseId)
     {
-        $reference = $this->request->getGet('reference');
-        if (!$reference) {
-            return redirect()->to('training')->with('error', 'Invalid payment reference');
-        }
-
-        $paystack = new \App\Services\PaystackService();
-        $response = $paystack->verify($reference);
-
-        if ($response['status'] && $response['data']['status'] === 'success') {
-            $userId = auth()->id();
-            
-            // Finalize Enrollment with idempotency
-            $existing = $this->enrollmentModel->where('course_id', $courseId)->where('user_id', $userId)->first();
-            if ($existing) {
-                $enrollId = is_object($existing) ? $existing->id : $existing['id'];
-                $this->enrollmentModel->update($enrollId, [
-                    'status' => 'enrolled',
-                    'payment_reference' => $reference,
-                    'amount' => $response['data']['amount'] / 100
-                ]);
-            } else {
-                $this->enrollmentModel->insert([
-                    'course_id' => $courseId,
-                    'user_id' => $userId,
-                    'status' => 'enrolled',
-                    'payment_reference' => $reference,
-                    'amount' => $response['data']['amount'] / 100
-                ]);
+        $reference = (string) $this->request->getGet('reference');
+        try {
+            $response = (new \App\Services\PaystackService())->verify($reference);
+            if (!($response['status'] ?? false)) throw new \InvalidArgumentException('Payment verification failed.');
+            // Fulfillment is anchored to the verified order (the service checks
+            // reference, metadata user and owner email), not to the browser
+            // session, which may not survive the Paystack round-trip.
+            (new \App\Services\PaymentFulfillmentService())->fulfill($response['data'], null, 'course', (int) $courseId);
+            if (!auth()->loggedIn()) {
+                return redirect()->to('login')->with('success', 'Payment verified and enrollment confirmed. Sign in to access your course.');
             }
-
-            $course = $this->courseModel->find($courseId);
-            try {
-                $emailNotifService = new \App\Services\EmailNotificationService();
-                $emailNotifService->sendCourseEnrollmentNotification(auth()->user(), $course);
-            } catch (\Throwable $e) {
-                log_message('error', 'Paid course enrollment notification error: ' . $e->getMessage());
-            }
-
-            return redirect()->to('training/payment-acknowledgement/' . $courseId . '?reference=' . urlencode($reference) . '&method=paystack')->with('success', 'Payment successful! Seat confirmed.');
+            return redirect()->to('training/payment-acknowledgement/' . $courseId . '?reference=' . urlencode($reference) . '&method=paystack')
+                ->with('success', 'Payment verified. Enrollment confirmed.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Course verification: ' . $e->getMessage());
+            return redirect()->to('training')->with('error', 'Payment could not be matched to your course order.');
         }
-
-        return redirect()->to('training')->with('error', 'Payment verification failed');
     }
 
     /**
@@ -677,8 +605,22 @@ class ElearningController extends BaseController
             return redirect()->to('training/course/' . $courseId)->with('error', 'No active enrollment found for this course.');
         }
 
-        $reference = $this->request->getGet('reference') ?? ($enrollment['payment_reference'] ?? ('JR-PAY-' . $courseId . '-' . $userId));
-        $method = $this->request->getGet('method') ?? 'Paystack / Wallet';
+        $reference = $enrollment->payment_reference ?: ('ENR-' . $enrollment->id);
+        $paymentModel = new \App\Models\PaymentModel();
+        $payment = $paymentModel->where('user_id', $userId)->where('reference', $reference)->first();
+        if (! $payment) {
+            // The checkout redirects carry the payment reference explicitly;
+            // use it when the enrollment row has no (or a stale) reference.
+            $requestReference = (string) $this->request->getGet('reference');
+            if ($requestReference !== '' && $requestReference !== $reference) {
+                $payment = $paymentModel->where('user_id', $userId)->where('reference', $requestReference)->first();
+                if ($payment) {
+                    $reference = $requestReference;
+                }
+            }
+        }
+        $method = ($payment['payment_method'] ?? '') === 'wallet' ? 'JobberRecruit Wallet'
+            : ($payment ? 'Paystack / Card' : 'Free / Scholarship');
 
         $candidate = model(\App\Models\JobSeekerModel::class)->where('user_id', $userId)->first();
         $user = auth()->user();
@@ -691,7 +633,7 @@ class ElearningController extends BaseController
             'method'      => $method,
             'candidate'   => $candidate,
             'user'        => $user,
-            'amountPaid'  => (float) ($enrollment['amount'] ?? $course->price),
+            'amountPaid'  => (float) ($payment['amount'] ?? $enrollment->amount ?? 0),
             'classroomUrl'=> base_url('candidate/my-courses/' . $courseId),
         ]);
     }
@@ -744,25 +686,48 @@ class ElearningController extends BaseController
             return null;
         }
 
+        $url = trim($url);
+
+        // A bare video ID stored without a URL.
+        if (preg_match('/^[A-Za-z0-9_-]{11}$/D', $url)) {
+            return 'https://www.youtube.com/embed/' . $url;
+        }
+
         $parsed = parse_url($url);
         if ($parsed === false) {
             return null;
         }
 
         $host = strtolower($parsed['host'] ?? '');
-        if (str_contains($host, 'youtu.be')) {
-            $videoId = trim($parsed['path'] ?? '', '/');
-            return $videoId !== '' ? 'https://www.youtube.com/embed/' . $videoId : null;
+        $isYoutube = str_contains($host, 'youtu.be')
+            || str_contains($host, 'youtube.com')
+            || str_contains($host, 'youtube-nocookie.com');
+        if (! $isYoutube) {
+            return null;
         }
 
-        if (str_contains($host, 'youtube.com')) {
+        $videoId = null;
+        if (str_contains($host, 'youtu.be')) {
+            $segments = array_values(array_filter(explode('/', trim($parsed['path'] ?? '', '/'))));
+            $videoId = $segments[0] ?? null;
+        } else {
             parse_str($parsed['query'] ?? '', $query);
-            if (! empty($query['v'])) {
-                return 'https://www.youtube.com/embed/' . $query['v'];
+            if (! empty($query['v']) && is_string($query['v'])) {
+                $videoId = $query['v'];
+            } else {
+                // /embed/{id}, /shorts/{id}, /live/{id}, /v/{id}
+                $segments = array_values(array_filter(explode('/', trim($parsed['path'] ?? '', '/'))));
+                if (count($segments) >= 2 && in_array($segments[0], ['embed', 'shorts', 'live', 'v'], true)) {
+                    $videoId = $segments[1];
+                }
             }
         }
 
-        return null;
+        if (! is_string($videoId) || ! preg_match('/^[A-Za-z0-9_-]{6,20}$/D', $videoId)) {
+            return null;
+        }
+
+        return 'https://www.youtube.com/embed/' . $videoId;
     }
 
     /**
@@ -775,15 +740,23 @@ class ElearningController extends BaseController
         }
 
         $enrollments = $this->enrollmentModel
-            ->select('course_enrollments.*, courses.title as course_title, courses.thumbnail, courses.instructor, courses.duration, courses.content_source, courses.price')
+            ->select('course_enrollments.*, courses.title as course_title, courses.thumbnail, courses.instructor, courses.duration, courses.content_source, courses.price, courses.test_questions')
             ->join('courses', 'courses.id = course_enrollments.course_id', 'left')
             ->where('course_enrollments.user_id', auth()->id())
             ->orderBy('course_enrollments.created_at', 'DESC')
             ->findAll();
 
+        // A course with an issued certificate counts as completed even if the
+        // enrollment row was never flipped, matching the classroom's logic.
+        $certifiedCourseIds = array_map(
+            static fn ($cert) => (int) (is_array($cert) ? ($cert['course_id'] ?? 0) : ($cert->course_id ?? 0)),
+            model(CourseCertificateModel::class)->where('user_id', auth()->id())->findAll()
+        );
+
         return view('candidate/my_courses', [
             'title' => 'My Courses',
             'enrollments' => $enrollments,
+            'certifiedCourseIds' => $certifiedCourseIds,
         ]);
     }
 
@@ -1031,8 +1004,8 @@ class ElearningController extends BaseController
         }
 
         // Telemetry stats
-        $hoursStudied = number_format(max(1.2, round((count($modules) * 0.6) + (($enrollment->progress ?? 0) * 0.03), 1)), 1);
-        $avgAccuracy = !empty($enrollment->test_score) ? (int)$enrollment->test_score : (($enrollment->status === 'completed') ? 100 : 85);
+        $hoursStudied = null; // No study-time tracking is currently recorded.
+        $avgAccuracy = isset($enrollment->test_score) ? (int) $enrollment->test_score : null;
 
         $careerIntelligence = [
             'career_readiness' => $careerReadiness,
@@ -1072,119 +1045,21 @@ class ElearningController extends BaseController
             return $this->failUnauthorized('Please login');
         }
 
-        $userId = auth()->id();
-        $course = $this->courseModel->find($courseId);
-
-        if (!$course) {
-            return $this->failNotFound('Course not found');
-        }
-
-        $enrollment = $this->enrollmentModel
-            ->where('course_id', $courseId)
-            ->where('user_id', $userId)
-            ->first();
-
-        if (!$enrollment) {
-            return $this->fail('You are not enrolled in this course');
-        }
-
-        // Ensure test_attempts column exists
-        $db = \Config\Database::connect();
-        if (!$db->fieldExists('test_attempts', 'course_enrollments')) {
-            $forge = \Config\Database::forge();
-            $forge->addColumn('course_enrollments', [
-                'test_attempts' => ['type' => 'INT', 'default' => 0]
-            ]);
-        }
-
-        $attempts = (int) ($enrollment->test_attempts ?? 0);
-
-        // Validate that candidate took the test and scored at least 70%
-        $scoreRaw = $this->request->getPost('score')
-            ?? $this->request->getVar('score')
-            ?? $this->request->getGet('score');
-
-        if ($scoreRaw === null) {
-            $json = $this->request->getJSON(true);
-            if (is_array($json) && isset($json['score'])) {
-                $scoreRaw = $json['score'];
-            }
-        }
-        if ($scoreRaw === null) {
-            $rawInput = $this->request->getRawInput();
-            if (is_array($rawInput) && isset($rawInput['score'])) {
-                $scoreRaw = $rawInput['score'];
-            }
-        }
-
-        $score = ($scoreRaw !== null && $scoreRaw !== '') ? (float) $scoreRaw : null;
-
-        // Increment attempt count
-        $attempts++;
-        $this->enrollmentModel->update($enrollment->id, ['test_attempts' => $attempts]);
-
-        if ($score === null || $score < 70) {
-            $remaining = max(0, 3 - $attempts);
-            return $this->respond([
-                'success' => false,
-                'score' => $score ?? 0,
-                'attempts' => $attempts,
-                'remaining_attempts' => $remaining,
-                'message' => 'You must score at least 70% to receive a certificate. You scored ' . ($score ?? 0) . '%. (' . $remaining . ' retake(s) remaining).'
-            ], 200);
-        }
-
-        $certModel = model(CourseCertificateModel::class);
-        $existing = $certModel->getCertificateForUser($userId, $courseId);
-        if ($existing) {
-            $this->enrollmentModel->update($enrollment->id, [
-                'status' => 'completed',
-                'completed_at' => $existing['issued_at'] ?? date('Y-m-d H:i:s'),
-                'progress' => 100,
-            ]);
-            return $this->respond([
-                'success' => true,
-                'score' => $score,
-                'certificate_code' => $existing['certificate_code'],
-                'certificate_id' => $existing['id'],
-                'message' => 'Course completed! Certificate verified.',
-            ], 200);
-        }
-
-        $updateData = [
-            'status' => 'completed',
-            'completed_at' => date('Y-m-d H:i:s'),
-            'progress' => 100,
-        ];
-        if ($this->enrollmentModel->db->fieldExists('test_score', 'course_enrollments')) {
-            $updateData['test_score'] = $score;
-        }
-        $this->enrollmentModel->update($enrollment->id, $updateData);
-
-        $certCode = $certModel->generateCertificateCode();
-        $certId = $certModel->insert([
-            'user_id' => $userId,
-            'course_id' => $courseId,
-            'enrollment_id' => $enrollment->id,
-            'certificate_code' => $certCode,
-            'issued_at' => date('Y-m-d H:i:s'),
-        ]);
-
+        $payload = str_contains($this->request->getHeaderLine('Content-Type'), 'application/json')
+            ? $this->request->getJSON(true) : $this->request->getPost();
+        $answers = $payload['answers'] ?? [];
+        if (is_string($answers)) $answers = json_decode($answers, true);
         try {
-            $emailNotifService = new \App\Services\EmailNotificationService();
-            $certUrl = base_url("training/certificate/download/{$certId}");
-            $emailNotifService->sendCourseCompletedNotification(auth()->user(), $course, $certUrl);
+            if (!is_array($answers)) throw new \InvalidArgumentException('Submit assessment answers, not a score.');
+            $result = (new \App\Services\CourseAssessmentService())->complete((int) auth()->id(), (int) $courseId,
+                $answers, (string) ($payload['assessment_version'] ?? ''), (string) ($payload['request_key'] ?? ''));
+            return $this->respond($result);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail($e->getMessage(), 422);
         } catch (\Throwable $e) {
-            log_message('error', 'Course completed notification error: ' . $e->getMessage());
+            log_message('error', 'Course grading: ' . $e->getMessage());
+            return $this->fail('Your assessment could not be recorded. Please retry.', 500);
         }
-
-        return $this->respond([
-            'success' => true,
-            'score' => $score,
-            'passed' => true,
-            'message' => 'Congratulations! Assessment passed and certificate issued.',
-            'certificate_id' => $certId,
-        ]);
     }
 
     /**
@@ -1490,7 +1365,14 @@ class ElearningController extends BaseController
         }
 
         $paidPlan = $this->request->getGet('plan');
-        $reviewId = $this->request->getGet('review_id');
+        $reviewId = (int) $this->request->getGet('review_id');
+        if ($reviewId) {
+            $review = model(CvReviewModel::class)->find($reviewId);
+            if (!$review || (int) $review->user_id !== (int) auth()->id()) {
+                return redirect()->to('cv-review')->with('error', 'Review not found.');
+            }
+            $paidPlan = $review->plan;
+        }
 
         return view('home/cv_review_submit', [
             'title'           => 'Submit Your CV for Review | JobberRecruit',
@@ -1527,61 +1409,51 @@ class ElearningController extends BaseController
         $amount = $amounts[$plan];
         $paymentMethod = $this->request->getPost('payment_method');
 
-        if ($paymentMethod === 'wallet') {
-            $userId = auth()->id();
-            $walletService = new \App\Services\WalletService();
-            $wallet = $walletService->getOrCreateWallet($userId);
-
-            if ((float) $wallet->balance < (float) $amount) {
-                return $this->fail('Insufficient wallet balance (₦' . number_format($wallet->balance, 2) . '). Please top up your wallet or pay via Paystack.');
+        try {
+            $fulfillment = new \App\Services\PaymentFulfillmentService();
+            if ($paymentMethod === 'wallet') {
+                return $this->walletCvCheckout($plan, (float) $amount);
             }
-
-            $reference = 'cv_w_' . uniqid();
-            $walletService->debit(
-                userId: $userId,
-                amount: (float) $amount,
-                source: 'wallet_checkout',
-                reference: $reference,
-                description: 'Paid with wallet for CV Review plan: ' . ucfirst($plan)
-            );
-
-            // Record payment
-            $paymentModel = model(\App\Models\PaymentModel::class);
-            $paymentModel->insert([
-                'user_id'        => $userId,
-                'reference'      => $reference,
-                'amount'         => $amount,
-                'status'         => 'paid',
-                'payment_method' => 'wallet',
-                'paid_at'        => date('Y-m-d H:i:s'),
-            ]);
-
-            return $this->respond([
-                'success'         => true,
-                'pay_with_wallet' => true,
-                'message'         => 'CV Review plan purchased successfully using your wallet balance!',
-                'redirect_url'    => base_url('candidate/career-tools'),
-            ]);
-        }
-
-        $paystack = new \App\Services\PaystackService();
-        $email = auth()->user()->email;
-        $callbackUrl = base_url('cv-review/verify');
-
-        $response = $paystack->initialize($email, $amount, $callbackUrl, [
-            'type'    => 'cv_review',
-            'plan'    => $plan,
-            'user_id' => auth()->id(),
-        ]);
-
-        if (!($response['status'] ?? false)) {
-            return $this->fail('Payment initialization failed: ' . ($response['message'] ?? 'Unknown error'));
+            $reference = $fulfillment->createPending((int) auth()->id(), 'cv_review', (float) $amount, ['plan' => $plan]);
+            $response = (new \App\Services\PaystackService())->initialize(auth()->user()->email, $amount,
+                base_url('cv-review/verify'), ['type' => 'cv_review', 'plan' => $plan,
+                    'user_id' => auth()->id(), 'reference' => $reference]);
+            if (!($response['status'] ?? false)) {
+                return $this->fail('Payment initialization failed: ' . ($response['message'] ?? 'Unknown error'));
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'CV checkout: ' . $e->getMessage());
+            return $this->fail('Could not complete checkout. Please try again.');
         }
 
         return $this->respond([
             'success'          => true,
             'authorization_url' => $response['data']['authorization_url'],
         ]);
+    }
+
+    private function walletCvCheckout(string $plan, float $amount)
+    {
+        try {
+            $reviewId = \App\Services\PurchaseTransaction::run((int) auth()->id(), function () use ($plan, $amount) {
+                $reference = 'cv_wallet_' . bin2hex(random_bytes(16));
+                if ($amount > 0) {
+                    (new \App\Services\WalletService())->debit((int) auth()->id(), $amount,
+                        'cv_review', $reference, null, 'CV review: ' . $plan);
+                }
+                if (!model(\App\Models\PaymentModel::class)->insert(['user_id' => auth()->id(), 'reference' => $reference,
+                    'amount' => $amount, 'status' => 'paid', 'payment_method' => 'wallet', 'paid_at' => date('Y-m-d H:i:s'),
+                    'metadata' => json_encode(['type' => 'cv_review', 'plan' => $plan])])) {
+                    throw new \RuntimeException('Could not record payment.');
+                }
+                return (new \App\Services\PaymentFulfillmentService())->createCvReview((int) auth()->id(), $plan, $amount, $reference);
+            });
+            return $this->respond(['success' => true, 'pay_with_wallet' => true,
+                'redirect_url' => base_url('cv-review/submit?review_id=' . $reviewId)]);
+        } catch (\Throwable $e) {
+            log_message('error', 'CV wallet checkout: ' . $e->getMessage());
+            return $this->fail('Could not complete wallet payment. Check your balance and try again.');
+        }
     }
 
     /**
@@ -1605,24 +1477,16 @@ class ElearningController extends BaseController
             return redirect()->to('cv-review')->with('error', 'Payment verification failed');
         }
 
-        $metadata = $result['data']['metadata'] ?? [];
-        $plan = $metadata['plan'] ?? 'professional';
-        $amount = ($result['data']['amount'] ?? 0) / 100;
-
-        $reviewMode = env('cv_review_mode', 'semi') === 'auto' ? 'auto' : 'semi';
-
-        $reviewModel = model(CvReviewModel::class);
-        $reviewModel->insert([
-            'user_id'           => auth()->id(),
-            'plan'              => $plan,
-            'amount'            => $amount,
-            'payment_reference' => $reference,
-            'payment_status'    => 'paid',
-            'status'            => 'pending',
-            'review_mode'       => $reviewMode,
-        ]);
-
-        $reviewId = $reviewModel->getInsertID();
+        try {
+            $purchase = (new \App\Services\PaymentFulfillmentService())->fulfill($result['data'], (int) auth()->id());
+            if ($purchase['type'] !== 'cv_review') {
+                throw new \InvalidArgumentException('Invalid purchase type.');
+            }
+            $reviewId = $purchase['review_id'];
+        } catch (\Throwable $e) {
+            log_message('error', 'CV payment verification: ' . $e->getMessage());
+            return redirect()->to('cv-review')->with('error', 'Payment could not be matched to your CV review order.');
+        }
 
         return redirect()->to('cv-review/submit?review_id=' . $reviewId)
             ->with('success', 'Payment successful! Please upload your CV below.');
@@ -1644,16 +1508,18 @@ class ElearningController extends BaseController
         $plan   = $this->request->getPost('plan') ?? 'basic';
         $reviewId = $this->request->getPost('review_id');
 
-        // Paid plans require a successful payment record
-        if (in_array($plan, ['professional', 'premium'], true)) {
-            if (!$reviewId) {
-                return $this->fail('Payment is required. Please select a plan and complete payment first.');
+        if (!in_array($plan, ['basic', 'professional', 'premium'], true)) {
+            return $this->fail('Invalid review plan.');
+        }
+        if ($reviewId) {
+            try {
+                $review = model(CvReviewModel::class)->findForUpload((int) $reviewId, (int) auth()->id());
+            } catch (\InvalidArgumentException $e) {
+                return $this->failForbidden($e->getMessage());
             }
-
-            $review = model(CvReviewModel::class)->find($reviewId);
-            if (!$review || $review['user_id'] != auth()->id() || $review['payment_status'] !== 'paid') {
-                return $this->fail('Valid payment record not found. Please complete payment first.');
-            }
+            $plan = $review->plan;
+        } elseif ($plan !== 'basic') {
+            return $this->fail('Payment is required. Please complete payment first.');
         }
 
         $cvFile = $this->request->getFile('cv_file');
@@ -1686,7 +1552,7 @@ class ElearningController extends BaseController
         $now = date('Y-m-d H:i:s');
 
         if ($reviewId) {
-            $reviewModel->update($reviewId, [
+            $reviewModel->where('user_id', auth()->id())->where('file_path', null)->update($reviewId, [
                 'file_path'        => 'uploads/cv_reviews/' . $newName,
                 'full_name'        => $this->request->getPost('full_name'),
                 'email'            => auth()->user()->email,
@@ -1696,6 +1562,9 @@ class ElearningController extends BaseController
                 'feedback_request' => $this->request->getPost('feedback_request'),
                 'status'           => 'pending',
             ]);
+            if (db_connect()->affectedRows() !== 1) {
+                return $this->fail('This review has already been submitted.');
+            }
             $currentReviewId = $reviewId;
         } else {
             $reviewMode = env('cv_review_mode', 'semi') === 'auto' ? 'auto' : 'semi';
@@ -2012,9 +1881,14 @@ class ElearningController extends BaseController
             ]);
         }
 
-        $this->courseModel->update($courseId, [
-            'test_questions' => json_encode($questions)
-        ]);
+        try {
+            (new \App\Services\CourseAssessmentService())->saveQuestions((int) $courseId, $questions);
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Course assessment save: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Assessment could not be saved. Please try again.']);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -2048,9 +1922,14 @@ class ElearningController extends BaseController
             ]);
         }
 
-        $this->courseModel->update($courseId, [
-            'test_questions' => json_encode($decoded)
-        ]);
+        try {
+            (new \App\Services\CourseAssessmentService())->saveQuestions((int) $courseId, $decoded);
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Course assessment save: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Assessment could not be saved. Please try again.']);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -2137,9 +2016,14 @@ class ElearningController extends BaseController
             ]);
         }
 
-        $this->courseModel->update($courseId, [
-            'test_questions' => json_encode($formattedQuestions)
-        ]);
+        try {
+            (new \App\Services\CourseAssessmentService())->saveQuestions((int) $courseId, $formattedQuestions);
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Course assessment save: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Assessment could not be saved. Please try again.']);
+        }
 
         return $this->response->setJSON([
             'success' => true,

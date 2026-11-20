@@ -41,6 +41,7 @@ class JobSeekerModel extends Model
         'notify_application_updates',
         'notify_messages',
         'notify_marketing',
+        'profile_completion',
     ];
 
     protected $useTimestamps = true;

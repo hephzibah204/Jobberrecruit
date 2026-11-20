@@ -81,7 +81,6 @@ function openIf(array $paths)
                     ['Feature Management',  'admin/features',               'ti-adjustments',       'exact'],
                     ['CV Reviews',          'admin/cv-reviews',             'ti-file-text',         'prefix'],
                     ['Reports',             'admin/reports',                'ti-flag',              'prefix'],
-                    ['Settings',            'admin/settings',               'ti-settings',          'exact'],
                 ],
             ];
             ?>

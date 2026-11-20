@@ -1,4 +1,4 @@
-﻿<?= $this->extend('admin/layouts/app') ?>
+<?= $this->extend('admin/layouts/app') ?>
 
 <?= $this->section('styles') ?>
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -71,7 +71,7 @@
                                                 <?= esc($blog->title) ?>
                                             </span>
                                             <span class="text-muted small mt-1 blog-excerpt">
-                                                <?= esc(character_limiter(strip_tags($blog->excerpt), 100)) ?>
+                                                <?= esc(character_limiter(strip_tags(html_entity_decode((string) $blog->excerpt, ENT_QUOTES, 'UTF-8')), 100)) ?>
                                             </span>
                                         </div>
                                     </td>
@@ -130,7 +130,7 @@
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Content-Type': 'application/json',
-                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
                 },
                 body: JSON.stringify({
                     '<?= csrf_token() ?>': '<?= csrf_hash() ?>'

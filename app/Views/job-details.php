@@ -177,6 +177,12 @@
                                         <div class="image"><a href="<?= site_url('jobs/' . $similar->id) ?>"><img src="<?= resolve_image_url($similar->company_logo ?? '', 'company', $similar->employer_name ?? 'Company') ?>" alt="JobberRecruit"></a></div>
                                         <div class="info-text">
                                             <h5 class="font-md font-bold color-brand-1"><a href="<?= site_url('jobs/view/' . $similar->id) ?>"><?= esc($similar->title) ?></a></h5>
+                                            <?php if (empty($similar->anonymous) && empty($similar->is_anonymous)): ?>
+                                                <div class="small text-muted"><?= esc($similar->employer_name ?? 'Employer') ?></div>
+                                                <?php if (!empty($similar->employer_tagline)): ?><div class="small text-muted mt-1"><?= esc($similar->employer_tagline) ?></div><?php endif; ?>
+                                            <?php else: ?>
+                                                <div class="small text-muted">Confidential Employer</div>
+                                            <?php endif; ?>
                                             <div class="mt-0"><span class="card-briefcase"><?= esc(ucfirst($similar->job_type)) ?></span><span class="card-time"><?= humanize_time($similar->created_at) ?></span></div>
                                             <div class="mt-5">
                                                 <div class="row">

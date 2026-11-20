@@ -444,6 +444,11 @@
                             Object.values(xhr.responseJSON.errors).forEach(err => {
                                 toastr.error(err);
                             });
+                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                            toastr.error(xhr.responseJSON.message);
+                        } else if (xhr.status === 403 || xhr.status === 419) {
+                            toastr.error('Your sign-in session expired. Refreshing the form...');
+                            setTimeout(() => { window.location.reload(); }, 1500);
                         } else {
                             toastr.error('An unexpected authentication error occurred.');
                         }

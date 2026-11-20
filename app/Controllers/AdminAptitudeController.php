@@ -202,7 +202,7 @@ class AdminAptitudeController extends BaseController
         $questions = $aiService->generateCustomAptitudeQuestions($title, $description, $numQuestions);
 
         if (empty($questions)) {
-            $questions = $aiService->getFallbackCourseTestQuestions($title, $numQuestions);
+            $questions = $aiService->getFallbackAptitudeQuestions($title, $description, $numQuestions);
         }
 
         return $this->response->setJSON(['success' => true, 'questions' => $questions]);

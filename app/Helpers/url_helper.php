@@ -10,21 +10,14 @@ if (!function_exists('format_job_url')) {
         $extUrl = trim((string)(is_array($job) ? ($job['external_url'] ?? $job['external_link'] ?? '') : ($job->external_url ?? $job->external_link ?? '')));
         $method = is_array($job) ? ($job['application_method'] ?? 'form') : ($job->application_method ?? 'form');
 
-        // CRITICAL FIX FOR EXISTING JOBS: 
-        // If slug starts with http:// or https://, return it directly without base_url()
+        $identifier = !empty($slug) ? $slug : (is_array($job) ? ($job['id'] ?? '') : ($job->id ?? ''));
+
+        // If the slug happens to be a full URL (legacy corrupted slug), fall back to ID
         if (preg_match('#^https?://#i', $slug)) {
-            return $slug;
+            $identifier = is_array($job) ? ($job['id'] ?? '') : ($job->id ?? '');
         }
 
-        // If external_url exists and is a valid URL
-        if (!empty($extUrl) && preg_match('#^https?://#i', $extUrl)) {
-            if ($method === 'external' || empty($slug)) {
-                return $extUrl;
-            }
-        }
-
-        // Standard internal job URL
-        $identifier = !empty($slug) ? $slug : (is_array($job) ? $job['id'] : $job->id);
+        // Always route to internal job details page first
         return base_url('jobs/' . $identifier);
     }
 }

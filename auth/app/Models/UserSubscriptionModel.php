@@ -15,6 +15,13 @@ class UserSubscriptionModel extends Model
         'starts_at',
         'ends_at',
         'is_active',
+        'expiry_reminder_3d_sent',
+        'expiry_reminder_1d_sent',
+        'expired_notice_sent',
+        'subscription_code',
+        'email_token',
+        'authorization',
+        'will_not_renew',
         'auto_renew'
     ];
 
@@ -22,6 +29,7 @@ class UserSubscriptionModel extends Model
     {
         return $this->where('user_id', $userId)
             ->where('is_active', 1)
+            ->where('starts_at <=', date('Y-m-d H:i:s'))
             ->where('ends_at >', date('Y-m-d H:i:s'))
             ->orderBy('ends_at', 'DESC')
             ->first();

@@ -139,13 +139,18 @@
     </div>
     <div class="stat" style="--st-bar:var(--brand-dark)">
         <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-eye"/></svg></span></div>
-        <div class="stat-num"><?= esc(number_format($totalClicks)) ?></div>
+        <div class="stat-num"><?= esc(number_format($job->views ?? $totalViews ?? 0)) ?></div>
         <div class="stat-lbl">Total Views</div>
+    </div>
+    <div class="stat" style="--st-bar:var(--info, #0284c7)">
+        <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-external-link"/></svg></span></div>
+        <div class="stat-num"><?= esc(number_format($totalClicks ?? 0)) ?></div>
+        <div class="stat-lbl">Apply Clicks</div>
     </div>
 </section>
 
 <!-- Trend Charts -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 20px; margin-bottom: 24px;">
     <div class="card">
         <div class="card-head">
             <h3 class="card-title"><svg aria-hidden="true"><use href="#i-chart"/></svg> Applications Trend (Last 7 Days)</h3>
@@ -158,7 +163,7 @@
     </div>
     <div class="card">
         <div class="card-head">
-            <h3 class="card-title"><svg aria-hidden="true"><use href="#i-eye"/></svg> Views Trend (Last 7 Days)</h3>
+            <h3 class="card-title"><svg aria-hidden="true"><use href="#i-external-link"/></svg> Apply Clicks Trend (Last 7 Days)</h3>
         </div>
         <div class="card-body">
             <div class="chart-container">
@@ -188,7 +193,7 @@
         <div class="tab-content">
             <!-- Job Details Tab -->
             <div class="tab-pane active" id="job-details" role="tabpanel">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 30px; margin-top: 10px;">
                     <div>
                         <div class="job-detail-label">Job Description</div>
                         <div class="job-detail-value" style="line-height: 1.6; color: var(--text);"><?= htmlspecialchars_decode(esc($job->description)) ?></div>
@@ -339,7 +344,7 @@
 
             <!-- Analytics Tab -->
             <div class="tab-pane" id="analytics" role="tabpanel">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 10px; margin-bottom: 24px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 16px; margin-top: 10px; margin-bottom: 24px;">
                     <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center;">
                         <h3 style="font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--brand-deep); margin: 0 0 4px 0;"><?= number_format($applicationStats['total']) ?></h3>
                         <small style="color: var(--muted); font-weight: 500;">Total Applications</small>
@@ -490,7 +495,7 @@
         data: {
             labels: <?= json_encode(array_column($dailyClicks, 'date')) ?>,
             datasets: [{
-                label: 'Views',
+                label: 'Apply Clicks',
                 data: <?= json_encode(array_column($dailyClicks, 'count')) ?>,
                 borderColor: '#16a34a',
                 backgroundColor: 'rgba(22, 163, 74, 0.1)',

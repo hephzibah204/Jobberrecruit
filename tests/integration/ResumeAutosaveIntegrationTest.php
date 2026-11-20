@@ -36,7 +36,7 @@ final class ResumeAutosaveIntegrationTest extends CIUnitTestCase
             'skills' => 'Testing',
         ];
 
-        $result = $this->call('post', 'candidate/resumes/autosave', ['snapshot' => json_encode($snapshot)]);
+        $result = $this->withHeaders([csrf_header() => csrf_hash()])->call('post', 'candidate/resumes/autosave', ['snapshot' => json_encode($snapshot)]);
         $statusCode = $result->getStatusCode() ?: 200;
         $this->assertTrue(in_array($statusCode, [200, 201]), 'Status: ' . $statusCode . ' | Body: ' . $result->getBody());
         $bodyRaw = (string)$result->getBody();

@@ -313,7 +313,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
           <i class="ti ti-chevron-right"></i>
           <span aria-current="page">Webinars</span>
         </nav>
-        <div class="w-hero-tag"><span class="w-live-dot"></span> Live sessions every week</div>
+        <div class="w-hero-tag"><span class="w-live-dot"></span> Career webinars and workshops</div>
         <h1>Free Career <em>Webinars</em> in Nigeria</h1>
         <p class="w-hero-sub">Level up with free and premium live training on interviews, CV writing, salary negotiation, and in-demand tech skills &mdash; taught by Nigeria&rsquo;s top career experts.</p>
         <div class="w-chips">
@@ -322,11 +322,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
           <a href="<?= base_url('training/webinars?topic=salary') ?>" class="w-chip"><i class="ti ti-currency-naira"></i> Salary Negotiation</a>
           <a href="<?= base_url('training/webinars?topic=tech') ?>" class="w-chip"><i class="ti ti-chip"></i> Tech Skills</a>
         </div>
-        <div class="w-hero-stats">
-          <div><div class="w-stat-val">2,<span>400</span>+</div><div class="w-stat-lbl">professionals trained</div></div>
-          <div><div class="w-stat-val"><span>48</span></div><div class="w-stat-lbl">sessions hosted</div></div>
-          <div><div class="w-stat-val">4.<span>9</span>&#9733;</div><div class="w-stat-lbl">average rating</div></div>
-        </div>
+        
       </div>
       <?php if ($featured): ?>
       <?php
@@ -336,6 +332,9 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         $fTime = date('h:i A', strtotime($featured->scheduled_at));
         $fDuration = '60 mins';
         $fTimestamp = strtotime($featured->scheduled_at);
+        $fPrice = (float) ($featured->price ?? 0);
+        $fIsFree = ($featured->access_type ?? 'free') !== 'paid';
+        $fPriceLabel = $fIsFree ? 'Free' : ($fPrice > 0 ? '&#8358;' . number_format($fPrice, 0) : 'Paid');
       ?>
       <div class="w-feat-card" role="region" aria-label="Next webinar">
         <div class="w-fc-thumb">
@@ -359,41 +358,17 @@ $featured = !empty($webinars) ? $webinars[0] : null;
             <div class="w-cd-box"><div class="w-cd-n cd-s">00</div><div class="w-cd-l">Sec</div></div>
           </div>
           <?php if (auth()->loggedIn()): ?>
-            <button class="w-fc-cta btn-register" data-id="<?= $featured->id ?>">Reserve your free seat &rarr;</button>
+            <button class="w-fc-cta btn-register" data-id="<?= $featured->id ?>">Register for this webinar &rarr;</button>
           <?php else: ?>
-            <a href="<?= base_url('login') ?>" class="w-fc-cta">Reserve your free seat &rarr;</a>
+            <a href="<?= base_url('login') ?>" class="w-fc-cta">Register for this webinar &rarr;</a>
           <?php endif; ?>
-          <div class="w-fc-note"><i class="ti ti-circle-check"></i> Free &middot; Register now</div>
+          <div class="w-fc-note"><i class="ti ti-circle-check"></i> <?= $fPriceLabel ?> &middot; Register now</div>
         </div>
       </div>
       <?php endif; ?>
     </div>
   </div>
 </section>
-
-<!-- STATS BAND -->
-<div class="w-stats-band">
-  <div class="container">
-    <div class="w-stats-inner">
-      <div class="w-sb-item">
-        <div class="w-sb-icon"><i class="ti ti-users"></i></div>
-        <div><div class="w-sb-val">2,400+</div><div class="w-sb-lbl">Professionals Trained</div></div>
-      </div>
-      <div class="w-sb-item">
-        <div class="w-sb-icon"><i class="ti ti-video"></i></div>
-        <div><div class="w-sb-val">48</div><div class="w-sb-lbl">Sessions Hosted</div></div>
-      </div>
-      <div class="w-sb-item">
-        <div class="w-sb-icon"><i class="ti ti-star"></i></div>
-        <div><div class="w-sb-val">4.9&#9733;</div><div class="w-sb-lbl">Average Rating</div></div>
-      </div>
-      <div class="w-sb-item">
-        <div class="w-sb-icon"><i class="ti ti-certificate"></i></div>
-        <div><div class="w-sb-val">100%</div><div class="w-sb-lbl">Live &amp; Interactive</div></div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- FILTER + GRID -->
 <div class="w-filter-wrap">
@@ -463,13 +438,16 @@ $featured = !empty($webinars) ? $webinars[0] : null;
           $timeFormatted = date('h:i A', strtotime($webinar->scheduled_at));
           $wTimestamp = strtotime($webinar->scheduled_at);
           $isUpcoming = $webinar->status === 'upcoming';
+          $webinarPrice = (float) ($webinar->price ?? 0);
+          $isFree = ($webinar->access_type ?? 'free') !== 'paid';
+          $priceLabel = $isFree ? 'FREE' : ($webinarPrice > 0 ? '&#8358;' . number_format($webinarPrice, 0) : 'PAID');
         ?>
-        <article class="wb-card" data-cat="<?= $cSlug ?>" data-date="<?= date('Y-m-d', strtotime($webinar->scheduled_at)) ?>" data-pop="0" data-price="0" data-title="<?= strtolower(esc($webinar->title)) ?>">
+        <article class="wb-card" data-cat="<?= $cSlug ?>" data-date="<?= date('Y-m-d', strtotime($webinar->scheduled_at)) ?>" data-pop="<?= (int) ($webinar->registrants_count ?? 0) ?>" data-price="<?= $webinarPrice ?>" data-title="<?= strtolower(esc($webinar->title)) ?>">
           <div class="wb-thumb <?= $gClass ?>">
             <i class="ti ti-users"></i>
             <div class="wb-thumb-av" style="background:var(--w-brand)"><?= $initials ?></div>
-            <span class="wb-badge wb-free">FREE</span>
-            <span class="wb-reg"><i class="ti ti-user"></i>0</span>
+            <span class="wb-badge <?= $isFree ? 'wb-free' : 'wb-prem' ?>"><?= $priceLabel ?></span>
+            
           </div>
           <div class="wb-body">
             <div class="wb-cat"><?= $cat ?></div>
@@ -483,9 +461,9 @@ $featured = !empty($webinars) ? $webinars[0] : null;
             <span class="wb-prov <?= $provider['class'] ?>"><i class="<?= $pIcon ?>"></i> <?= $provider['name'] ?></span>
             <?php if ($isUpcoming): ?>
               <?php if (auth()->loggedIn()): ?>
-                <button class="btn btn-primary btn-sm btn-register" data-id="<?= $webinar->id ?>">Register free &rarr;</button>
+                <button class="btn btn-primary btn-sm btn-register" data-id="<?= $webinar->id ?>">Register &rarr;</button>
               <?php else: ?>
-                <a href="<?= base_url('login') ?>" class="btn btn-primary btn-sm">Register free &rarr;</a>
+                <a href="<?= base_url('login') ?>" class="btn btn-primary btn-sm">Register &rarr;</a>
               <?php endif; ?>
             <?php else: ?>
               <span class="badge bg-secondary"><?= ucfirst($webinar->status) ?></span>
@@ -515,7 +493,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
     </div>
     <div class="w-why-grid">
       <div class="w-why-card"><div class="w-why-icon"><i class="ti ti-shield"></i></div><div class="w-why-title">Verified expert speakers</div><div class="w-why-desc">Every speaker is a practising hiring manager or HR lead from companies you recognise &mdash; no generic career coaches.</div></div>
-      <div class="w-why-card"><div class="w-why-icon"><i class="ti ti-microphone"></i></div><div class="w-why-title">Live Q&amp;A every session</div><div class="w-why-desc">Ask questions directly during the live session. No pre-recorded videos &mdash; every webinar is 100% live and interactive.</div></div>
+      <div class="w-why-card"><div class="w-why-icon"><i class="ti ti-microphone"></i></div><div class="w-why-title">Live Q&amp;A every session</div><div class="w-why-desc">Ask questions directly during the live session. No pre-recorded videos &mdash; check each webinar for its session format.</div></div>
       <div class="w-why-card"><div class="w-why-icon"><i class="ti ti-cap"></i></div><div class="w-why-title">Certificate on premium sessions</div><div class="w-why-desc">Attend any premium (paid) webinar and earn a verified JobberRecruit certificate &mdash; add it to your LinkedIn profile and CV to stand out to employers.</div></div>
       <div class="w-why-card"><div class="w-why-icon"><i class="ti ti-currency-naira"></i></div><div class="w-why-title">Mostly free to attend</div><div class="w-why-desc">Most sessions are completely free. Premium workshops are priced lower than any alternative currently available in Nigeria.</div></div>
     </div>
@@ -557,33 +535,6 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         <div class="w-spk-count"><?= $spk['count'] ?> session<?= $spk['count'] > 1 ? 's' : '' ?></div>
       </div>
       <?php endforeach; ?>
-    </div>
-  </div>
-</section>
-
-<!-- TESTIMONIALS -->
-<section class="w-testi-section" aria-labelledby="tst-h">
-  <div class="container">
-    <div class="text-center mb-5">
-      <div class="w-section-label" style="margin:0 auto 14px"><i class="ti ti-star"></i> What attendees say</div>
-      <h2 class="w-section-title" id="tst-h">Real results from <span>real professionals</span></h2>
-    </div>
-    <div class="w-testi-grid">
-      <div class="w-testi-card">
-        <div class="w-testi-stars"><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i></div>
-        <p class="w-testi-q">I attended the interview prep webinar and received a job offer the following Monday. The frameworks shared were spot-on for Nigerian corporate culture.</p>
-        <div class="w-testi-author"><div class="w-testi-av" style="background:var(--w-brand)">OK</div><div><div class="w-testi-name">Oluwaseun Kehinde</div><div class="w-testi-role">Marketing Manager &middot; Lagos</div></div></div>
-      </div>
-      <div class="w-testi-card">
-        <div class="w-testi-stars"><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i></div>
-        <p class="w-testi-q">The CV webinar helped me completely rewrite my resume. Within two weeks I had three interview calls from companies that had previously ignored me for months.</p>
-        <div class="w-testi-author"><div class="w-testi-av" style="background:#16a34a">BI</div><div><div class="w-testi-name">Blessing Ihejirika</div><div class="w-testi-role">Finance Analyst &middot; Abuja</div></div></div>
-      </div>
-      <div class="w-testi-card">
-        <div class="w-testi-stars"><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i></div>
-        <p class="w-testi-q">The tech career webinar was the push I needed. I switched from banking into software and doubled my salary within 8 months. Best investment I ever made.</p>
-        <div class="w-testi-author"><div class="w-testi-av" style="background:#7c3aed">CA</div><div><div class="w-testi-name">Chukwuemeka Adaeze</div><div class="w-testi-role">Software Engineer &middot; Remote</div></div></div>
-      </div>
     </div>
   </div>
 </section>

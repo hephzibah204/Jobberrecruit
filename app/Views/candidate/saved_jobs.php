@@ -105,7 +105,7 @@
                             <td style="font-size:.8rem;color:var(--muted);"><?= date('d M Y', strtotime($job->created_at)) ?></td>
                             <td>
                                 <div style="display:flex; gap:8px;">
-                                    <a href="<?= site_url('job/view/' . $job->id) ?>" class="btn btn-primary btn-sm">
+                                    <a href="<?= esc(format_job_url($job), 'attr') ?>" class="btn btn-primary btn-sm">
                                         <svg aria-hidden="true" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="#i-eye"/></svg> View
                                     </a>
                                     <button type="button" class="btn btn-outline btn-sm unsave-job" data-job-id="<?= $job->id ?>">
@@ -129,24 +129,47 @@
     document.querySelectorAll('.unsave-job').forEach(btn => {
         btn.addEventListener('click', function() {
             const jobId = this.dataset.jobId;
-            if (!confirm('Remove this job from saved list?')) return;
+            const button = this;
+
+            // Two-step in-page confirmation. The previous version gated the
+            // action on the native confirm() dialog; where that dialog is
+            // auto-dismissed (embedded/automated browsers) the handler
+            // returned silently and Unsave appeared completely dead.
+            if (!button.dataset.armed) {
+                button.dataset.armed = '1';
+                button.dataset.originalHtml = button.innerHTML;
+                button.innerHTML = 'Click again to confirm';
+                setTimeout(function() {
+                    if (button.dataset.armed) {
+                        delete button.dataset.armed;
+                        button.innerHTML = button.dataset.originalHtml || 'Unsave';
+                    }
+                }, 4000);
+                return;
+            }
+            delete button.dataset.armed;
+
+            const body = new URLSearchParams();
+            body.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
             fetch('<?= base_url('job/unsave') ?>/' + jobId, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
-                }
+                },
+                body: body
             })
             .then(r => r.json())
             .then(data => {
                 if (data.success !== false) {
-                    this.closest('tr').remove();
+                    button.closest('tr').remove();
+                    if (typeof toastr !== 'undefined') toastr.success('Job removed from your saved list.');
                 } else {
-                    toastr.error(data.message || 'Failed to unsave job.');
+                    if (typeof toastr !== 'undefined') toastr.error(data.message || 'Failed to unsave job.');
                 }
             })
-            .catch(() => toastr.error('Network error. Please try again.'));
+            .catch(() => { if (typeof toastr !== 'undefined') toastr.error('Network error. Please try again.'); });
         });
     });
 </script>

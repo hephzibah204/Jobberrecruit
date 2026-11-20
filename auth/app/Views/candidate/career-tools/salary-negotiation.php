@@ -27,6 +27,28 @@
 }
 
 /* ═══ EXTRACTED MOCKUP CSS MISSING IN PHP VIEW ═══ */
+/* card */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{display:inline-flex;align-items:center;gap:9px;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep)}
+.card-title svg{width:16px;height:16px;color:var(--brand);flex-shrink:0}
+.card-body{padding:18px 20px}
+.card-link{font-size:.76rem;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;padding:8px 10px;margin:-8px -10px;border-radius:8px}
+.card-link:hover{background:var(--brand-light);text-decoration:none}
+.card-link svg{width:13px;height:13px;flex-shrink:0}
+
+/* form controls */
+.input,.select{width:100%;min-height:44px;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Inter',sans-serif;font-size:15px;background:#fff;color:var(--text);transition:var(--transition);box-sizing:border-box}
+.input:focus,.select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(8,97,169,.12)}
+.select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b6577' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+label.lbl,.lbl{display:block;font-size:.76rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.lbl-opt{font-weight:500;color:#8fa0b8;font-size:.9em}
+.field-ic{position:relative;display:flex;align-items:center;width:100%}
+.field-ic>svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important;color:var(--muted);pointer-events:none;flex-shrink:0;z-index:2}
+.field-ic .input{padding-left:38px!important;width:100%}
+.hint{font-size:.72rem;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;line-height:1.4}
+.hint svg{width:13px!important;height:13px!important;max-width:13px!important;max-height:13px!important;color:var(--muted);flex-shrink:0}
+
 .content{flex:1;padding:clamp(18px,3vw,32px);padding-bottom:110px;display:flex;flex-direction:column;gap:clamp(16px,2.2vw,24px)}
 @media (min-width:1025px){.content{padding-bottom:clamp(18px,3vw,32px)}}
 .nego-hero{position:relative;overflow:hidden;border-radius:var(--radius-lg);color:#fff;padding:clamp(22px,3.2vw,34px);

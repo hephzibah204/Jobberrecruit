@@ -16,13 +16,16 @@ class CreditService
     protected $planModel;
     protected $employerModel;
 
-    public function __construct()
+    protected ?\CodeIgniter\Database\BaseConnection $db = null;
+
+    public function __construct(?\CodeIgniter\Database\BaseConnection $db = null)
     {
-        $this->walletModel       = model(JobCreditWalletModel::class);
-        $this->transactionModel  = model(JobCreditTransactionModel::class);
-        $this->subscriptionModel = model(UserSubscriptionModel::class);
-        $this->planModel         = model(PlanModel::class);
-        $this->employerModel     = model(EmployerModel::class);
+        $this->db = $db ?? db_connect();
+        $this->walletModel       = new JobCreditWalletModel($this->db);
+        $this->transactionModel  = new JobCreditTransactionModel($this->db);
+        $this->subscriptionModel = new UserSubscriptionModel($this->db);
+        $this->planModel         = new PlanModel($this->db);
+        $this->employerModel     = new EmployerModel($this->db);
     }
 
     /**
@@ -34,7 +37,10 @@ class CreditService
             ->select('SUM(credits) as total')
             ->where('user_id', $userId)
             ->where('credits >', 0)
-            ->where('(expires_at IS NULL OR expires_at > NOW())')
+            ->groupStart()
+            ->where('expires_at', null)
+            ->orWhere('expires_at >', date('Y-m-d H:i:s'))
+            ->groupEnd()
             ->get()
             ->getRow();
 
@@ -105,12 +111,20 @@ class CreditService
             return false;
         }
 
+        // Business Pro was sold as unlimited even on installations whose
+        // feature JSON predates the unlimited_jobs flag.
+        if (strtolower(trim((string) $value('code'))) === 'business_pro'
+            || strtolower(trim((string) $value('name'))) === 'business pro') {
+            return true;
+        }
+
         $features = $value('features') ?? [];
         if (is_string($features)) {
             $features = json_decode($features, true) ?: [];
         } elseif (is_object($features)) {
             $features = (array) $features;
         }
+        if (!is_array($features)) $features = [];
 
         foreach (['unlimited_job_postings', 'unlimited_posting', 'unlimited_jobs', 'unlimited'] as $feature) {
             if (!empty($features[$feature])) {
@@ -129,7 +143,9 @@ class CreditService
         $subscription = $this->subscriptionModel
             ->where('user_id', $userId)
             ->where('is_active', 1)
+            ->where('starts_at <=', date('Y-m-d H:i:s'))
             ->where('ends_at >', date('Y-m-d H:i:s'))
+            ->orderBy('ends_at', 'DESC')
             ->first();
 
         if (!$subscription) {
@@ -142,7 +158,7 @@ class CreditService
         }
 
         $plan = $this->planModel->find($planId);
-        return $plan ? (object)$plan : null;
+        return $plan ?: null;
     }
 
     /**
@@ -153,7 +169,9 @@ class CreditService
         $subscription = $this->subscriptionModel
             ->where('user_id', $userId)
             ->where('is_active', 1)
+            ->where('starts_at <=', date('Y-m-d H:i:s'))
             ->where('ends_at >', date('Y-m-d H:i:s'))
+            ->orderBy('ends_at', 'DESC')
             ->first();
 
         return $subscription ? (object)$subscription : null;
@@ -162,29 +180,24 @@ class CreditService
     /**
      * Add credits when buying bundle or starting subscription
      */
-    public function addCredits(int $userId, int $credits, string $source, $referenceId, ?string $expiresAt = null): bool
+    public function addCredits(int $userId, int $credits, string $source, $referenceId, ?string $expiresAt = null, ?string $transactionReference = null): bool
     {
-        if ($credits <= 0) {
-            throw new \InvalidArgumentException('Credit amount must be positive');
-        }
-        $this->walletModel->insert([
-            'user_id'       => $userId,
-            'credits'       => $credits,
-            'source'        => $source,           // 'bundle' or 'subscription'
-            'reference_id'  => $referenceId,
-            'expires_at'    => $expiresAt
-        ]);
-
-        $this->transactionModel->insert([
-            'user_id'     => $userId,
-            'type'        => 'credit_in',
-            'credits'     => $credits,
-            'reference'   => (string)$referenceId,
-            'description' => ucfirst($source) . " credits added: {$credits} credits",
-            'meta'        => json_encode(['source' => $source, 'credits' => $credits])
-        ]);
-
-        return true;
+        if ($credits <= 0) throw new \InvalidArgumentException('Credit amount must be positive');
+        return PurchaseTransaction::run($userId, function () use ($userId, $credits, $source, $referenceId, $expiresAt, $transactionReference) {
+            // Wallet linkage is an integer ID; gateway references belong in the ledger.
+            $walletReference = filter_var($referenceId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if (!$this->walletModel->insert([
+                'user_id' => $userId, 'credits' => $credits, 'source' => $source,
+                'reference_id' => $walletReference === false ? null : $walletReference,
+                'expires_at' => $expiresAt,
+            ]) || !$this->transactionModel->insert([
+                'user_id' => $userId, 'type' => 'credit_in', 'credits' => $credits,
+                'reference' => $transactionReference ?? (string) $referenceId,
+                'description' => ucfirst($source) . " credits added: {$credits} credits",
+                'meta' => json_encode(['source' => $source, 'credits' => $credits]),
+            ])) throw new \RuntimeException('Credit allocation could not be recorded.');
+            return true;
+        }, $this->db ?? db_connect());
     }
 
     /**
@@ -301,105 +314,61 @@ class CreditService
      */
     public function deductCredits(int $userId, int $amount, string $reference, string $description, string $action = 'post_job'): array
     {
-        // Check if user has unlimited access - no deduction needed
+        if ($amount <= 0 || trim($reference) === '') {
+            return ['success' => false, 'message' => 'A positive credit amount and reference are required.'];
+        }
         if ($this->hasUnlimitedAccess($userId)) {
-            return [
-                'success'   => true,
-                'remaining' => PHP_INT_MAX,
-                'message'   => 'Unlimited access - no credits deducted',
-                'unlimited' => true
-            ];
+            return ['success' => true, 'remaining' => PHP_INT_MAX, 'message' => 'Unlimited access - no credits deducted', 'unlimited' => true];
         }
-
-        // Strict check before deduction
         $check = $this->canPerformAction($userId, $action);
-        if (!$check['can']) {
-            return ['success' => false, 'message' => $check['reason']];
-        }
-
-        // If from subscription, ensure credits are available
-        if ($check['source'] === 'subscription' && $check['credits'] < $amount) {
-            return [
-                'success' => false,
-                'message' => 'Insufficient subscription credits. Please wait for your next monthly allocation or purchase a bundle.'
-            ];
-        }
-
-        $db = db_connect();
-        $db->transStart();
-
+        if (!$check['can']) return ['success' => false, 'message' => $check['reason']];
+        $db = $this->db ?? db_connect();
         try {
-            // Get wallets with FOR UPDATE lock to prevent race conditions
-            $sql = "SELECT * FROM job_credit_wallets
-                    WHERE user_id = ? AND credits > 0
-                    AND (expires_at IS NULL OR expires_at > NOW())
-                    ORDER BY expires_at ASC, created_at ASC
-                    FOR UPDATE";
-            $wallets = $db->query($sql, [$userId])->getResult();
-
-            if (empty($wallets)) {
-                throw new \Exception('No credits available to deduct');
-            }
-
-            $remaining = $amount;
-            $deductedFrom = [];
-
-            foreach ($wallets as $wallet) {
-                if ($remaining <= 0) break;
-
-                $deductNow = min($remaining, $wallet->credits);
-                $newBalance = $wallet->credits - $deductNow;
-
-                $this->walletModel->update($wallet->id, [
-                    'credits' => $newBalance
-                ]);
-
-                $deductedFrom[] = [
-                    'source' => $wallet->source,
-                    'amount' => $deductNow,
-                    'remaining_balance' => $newBalance,
-                    'wallet_id' => $wallet->id
-                ];
-
-                $remaining -= $deductNow;
-            }
-
-            if ($remaining > 0) {
-                throw new \Exception('Insufficient credits to complete deduction. Needed: ' . $amount);
-            }
-
-            // Record transaction
-            $this->transactionModel->insert([
-                'user_id'     => $userId,
-                'type'        => 'credit_out',
-                'credits'     => $amount,
-                'reference'   => $reference,
-                'description' => $description,
-                'meta'        => json_encode([
-                    'action' => $action,
-                    'deducted_from' => $deductedFrom,
-                    'timestamp' => date('Y-m-d H:i:s')
-                ])
-            ]);
-
-            $db->transComplete();
-
-            $remainingCredits = $this->getAvailableCredits($userId);
-
-            return [
-                'success'   => true,
-                'remaining' => $remainingCredits,
-                'message'   => "Successfully deducted {$amount} credit(s). Remaining: {$remainingCredits}",
-                'unlimited' => false,
-                'deducted_from' => $deductedFrom
-            ];
-        } catch (\Exception $e) {
-            $db->transRollback();
+            return PurchaseTransaction::run($userId, function () use ($db, $userId, $amount, $reference, $description, $action) {
+                $prior = $this->transactionModel->where('user_id', $userId)->where('type', 'credit_out')
+                    ->where('reference', $reference)->first();
+                if ($prior) {
+                    $meta = json_decode($prior['meta'] ?? '{}', true) ?: [];
+                    if ((int) $prior['credits'] !== $amount || ($meta['action'] ?? '') !== $action) {
+                        throw new \RuntimeException('Credit reference was already used for a different deduction.');
+                    }
+                    return ['success' => true, 'remaining' => $this->getAvailableCredits($userId),
+                        'message' => 'Credits already deducted for this action.', 'unlimited' => false,
+                        'deducted_from' => $meta['deducted_from'] ?? [], 'already_processed' => true];
+                }
+                $table = $db->protectIdentifiers($db->prefixTable('job_credit_wallets'));
+                $lock = $db->DBDriver === 'SQLite3' ? '' : ' FOR UPDATE';
+                $wallets = $db->query("SELECT * FROM {$table} WHERE user_id = ? AND credits > 0
+                    AND (expires_at IS NULL OR expires_at > ?)
+                    ORDER BY CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at ASC, created_at ASC, id ASC{$lock}",
+                    [$userId, date('Y-m-d H:i:s')])->getResult();
+                $remaining = $amount;
+                $deductedFrom = [];
+                foreach ($wallets as $wallet) {
+                    if ($remaining <= 0) break;
+                    $deduct = min($remaining, (int) $wallet->credits);
+                    $balance = (int) $wallet->credits - $deduct;
+                    if (!$this->walletModel->update($wallet->id, ['credits' => $balance])) {
+                        throw new \RuntimeException('Credit balance could not be updated.');
+                    }
+                    $deductedFrom[] = ['source' => $wallet->source, 'amount' => $deduct,
+                        'remaining_balance' => $balance, 'wallet_id' => $wallet->id];
+                    $remaining -= $deduct;
+                }
+                if ($remaining > 0) throw new \RuntimeException('Insufficient credits to complete deduction.');
+                if (!$this->transactionModel->insert([
+                    'user_id' => $userId, 'type' => 'credit_out', 'credits' => $amount,
+                    'reference' => $reference, 'description' => $description,
+                    'meta' => json_encode(['action' => $action, 'deducted_from' => $deductedFrom,
+                        'timestamp' => date('Y-m-d H:i:s')]),
+                ])) throw new \RuntimeException('Credit deduction could not be recorded.');
+                $balance = $this->getAvailableCredits($userId);
+                return ['success' => true, 'remaining' => $balance, 'message' => "Successfully deducted {$amount} credit(s). Remaining: {$balance}",
+                    'unlimited' => false, 'deducted_from' => $deductedFrom];
+            }, $db);
+        } catch (\Throwable $e) {
             log_message('error', 'Credit deduction failed for user ' . $userId . ': ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Failed to deduct credits: ' . $e->getMessage()
-            ];
+            return ['success' => false, 'message' => 'Failed to deduct credits: ' . $e->getMessage()];
         }
     }
 
@@ -423,7 +392,10 @@ class CreditService
         $wallets = $this->walletModel
             ->where('user_id', $userId)
             ->where('credits >', 0)
-            ->where('(expires_at IS NULL OR expires_at > NOW())')
+            ->groupStart()
+            ->where('expires_at', null)
+            ->orWhere('expires_at >', date('Y-m-d H:i:s'))
+            ->groupEnd()
             ->orderBy('expires_at', 'ASC')
             ->get()
             ->getResult();
@@ -460,11 +432,12 @@ class CreditService
     public function addMonthlySubscriptionCredits(int $userId, int $subscriptionId): bool
     {
         $subscription = $this->subscriptionModel->find($subscriptionId);
-        if (!$subscription) {
+        if (!$subscription || (int) $subscription['user_id'] !== $userId
+            || !(int) $subscription['is_active'] || $subscription['ends_at'] <= date('Y-m-d H:i:s')) {
             return false;
         }
 
-        $plan = $this->planModel->find($subscription->plan_id);
+        $plan = $this->planModel->find($subscription['plan_id']);
         if (!$plan || $plan->monthly_job_credits <= 0) {
             return false;
         }
@@ -474,7 +447,7 @@ class CreditService
             $plan->monthly_job_credits,
             'subscription_monthly',
             $subscriptionId,
-            $subscription->ends_at
+            $subscription['ends_at']
         );
     }
 }

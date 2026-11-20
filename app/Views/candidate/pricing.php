@@ -484,6 +484,7 @@
                         <?php elseif ($isFreeMode || $price <= 0): ?>
                             <form action="<?= base_url('candidate/subscription/checkout') ?>" method="POST">
                                 <?= csrf_field() ?>
+                                <input type="hidden" name="checkout_key" value="<?= bin2hex(random_bytes(16)) ?>">
                                 <input type="hidden" name="plan_id" value="<?= $plan->id ?>">
                                 <button type="submit" class="btn btn-primary">
                                     <?= $price <= 0 ? 'Activate Free Plan' : 'Get Started' ?>
@@ -497,7 +498,8 @@
                             <div style="display:flex; flex-direction:column; gap:8px;">
                                 <form action="<?= base_url('candidate/subscription/checkout') ?>" method="POST" class="checkout-form">
                                     <?= csrf_field() ?>
-                                    <input type="hidden" name="plan_id" value="<?= $plan->id ?>">
+                                    <input type="hidden" name="checkout_key" value="<?= bin2hex(random_bytes(16)) ?>">
+                                <input type="hidden" name="plan_id" value="<?= $plan->id ?>">
                                     <button type="submit" class="btn btn-primary submit-btn">
                                         Pay with Card
                                     </button>
@@ -533,7 +535,7 @@
         <div class="prem-faq-grid">
             <div class="faq-item">
                 <b>What happens when I subscribe?</b>
-                <p>You get instant access to the AI Resume Builder, AI Career Tools, and unlimited practice tests. Your subscription renews monthly until cancelled.</p>
+                <p>Your selected plan activates immediately. AI Resume Builder, AI Career Tools and practice test access depend on the features listed for that plan. Check your plan for its expiry and renewal options.</p>
             </div>
             <div class="faq-item">
                 <b>Do aptitude test certificates come with Premium?</b>
@@ -555,7 +557,8 @@
         <div style="background:#fff; border-radius:16px; width:100%; max-width:420px; overflow:hidden; box-shadow:0 20px 40px -15px rgba(10,47,87,0.15); animation:modal-in .22s ease;" role="dialog" aria-modal="true" aria-labelledby="wallet-confirm-title">
             <form action="<?= base_url('candidate/subscription/checkout') ?>" method="POST" id="wallet-checkout-form">
                 <?= csrf_field() ?>
-                <input type="hidden" name="plan_id" id="wallet-modal-plan-id" value="">
+                <input type="hidden" name="checkout_key" value="<?= bin2hex(random_bytes(16)) ?>">
+                                <input type="hidden" name="plan_id" id="wallet-modal-plan-id" value="">
                 <input type="hidden" name="payment_method" value="wallet">
 
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px; border-bottom:1px solid #e2e8f0;">

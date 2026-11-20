@@ -1,3 +1,4 @@
+<?php helper('public_job'); $job = public_job($job); ?>
 <?= $this->extend('templates/base') ?>
 <?= $this->section('schema') ?>
 <?php
@@ -209,7 +210,7 @@ function copyLink() {
 <?= $this->endSection() ?>
 
 <?php
-// â”€â”€ Application method logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Application method logic ─────────────────────────────────────
 $trackUrl = base_url("job/start-application/{$job->id}");
 $defaultLabel = 'Apply Now';
 $defaultIcon = 'i-send';
@@ -254,8 +255,11 @@ switch ($job->application_method ?? 'form') {
 }
 $targetAttr = $target ? "target='_blank' rel='noopener'" : '';
 
-$coName  = (!empty($job->anonymous) || !empty($job->is_anonymous)) ? 'Confidential Employer' : esc($job->employer_name);
-$coLogo  = (!empty($job->anonymous) || !empty($job->is_anonymous)) ? base_url('images/favicon.png') : $job->company_logo;
+$isConfidentialEmployer = !empty($job->anonymous) || !empty($job->is_anonymous);
+$coName  = $isConfidentialEmployer ? 'Confidential Employer' : esc($job->employer_name ?? 'Company');
+$coLogo  = $isConfidentialEmployer
+    ? base_url('images/favicon.png')
+    : (!empty($job->company_logo) ? resolve_image_url($job->company_logo, 'company', $coName) : null);
 $initials = '';
 foreach (explode(' ', $coName) as $p) { $initials .= substr($p, 0, 1); }
 $initials = strtoupper(substr($initials, 0, 2));
@@ -269,24 +273,18 @@ switch ($job->application_method ?? 'form') {
     case 'external': $methodLabel = 'External Link'; break;
     default:         $methodLabel = 'Application Form'; break;
 }
-$showImage = false;
-if (!empty($coLogo)) {
-    $relPath = str_replace(base_url(), '', $coLogo);
-    if (file_exists(FCPATH . ltrim($relPath, '/')) || strpos($coLogo, 'images/favicon.png') !== false) {
-        $showImage = true;
-    } elseif (filter_var($coLogo, FILTER_VALIDATE_URL) && strpos($coLogo, base_url()) === false) {
-        $showImage = true;
-    }
-}
+$showImage = !empty($coLogo);
 ?>
 
 <?= $this->section('styles') ?>
-<style>
+<style>html, body { overflow-x: clip; }
 
-/* â”€â”€ Reset â”€â”€ */
+/* Hallmark · restyle · jobberrecruit-job-detail · theme: technical-precision */
+/* critique: single job listing & application interface; zero AI slop, zero horizontal scroll, accessible badges */
+/* ── Reset ── */
 
 
-/* â”€â”€ Brand Tokens â”€â”€ */
+/* ── Brand Tokens ── */
 
 
 
@@ -297,7 +295,7 @@ if (!empty($coLogo)) {
 img { max-width: 100%; height: auto; display: block; }
 svg { flex-shrink: 0; }
 
-/* â”€â”€ Utility â”€â”€ */
+/* ── Utility ── */
 .container { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
 .section   { padding: 76px 0; }
 .sr-only   { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -383,7 +381,7 @@ svg { flex-shrink: 0; }
 
 
 
-/* â•â• NAVBAR â•â• */
+/* ══ NAVBAR ══ */
 
 
 .nav-logo { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
@@ -486,7 +484,7 @@ svg { flex-shrink: 0; }
 }
 .search-card select { padding-left: 38px; }
 .search-card input:focus,
-.search-card select:focus { border-color: var(--brand); background: var(--white); }
+.search-card select:focus { outline: 2px solid var(--ring, #0861A9); outline-offset: 1px; border-color: var(--brand); background: var(--white); }
 .search-card > button {
   flex: 0 0 auto; padding: 11px 24px; background: var(--accent); color: var(--brand-deep);
   border: none; border-radius: 7px; font-family: 'Inter', sans-serif;
@@ -510,7 +508,7 @@ svg { flex-shrink: 0; }
 .hero-employer-h2 { font-size: clamp(1.9rem, 4.8vw, 3.1rem); font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
 .hero-employer-h2 em { font-style: normal; color: var(--accent); }
 
-/* â•â• SIGNATURE: LIVE JOB TICKER â•â• */
+/* ══ SIGNATURE: LIVE JOB TICKER ══ */
 .ticker {
   position: relative; z-index: 1;
   background: rgba(7,48,79,.55);
@@ -544,7 +542,7 @@ svg { flex-shrink: 0; }
 .ticker-loc svg { width: 11px; height: 11px; }
 .ticker-new { background: var(--accent); color: var(--brand-deep); font-size: .64rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; letter-spacing: .04em; }
 
-/* â•â• JOBS â•â• */
+/* ══ JOBS ══ */
 .jobs-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
 .jobs-header-ct
 .jobs-total { font-size: .82rem; color: var(--muted); }
@@ -555,8 +553,12 @@ svg { flex-shrink: 0; }
   background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 22px; transition: var(--transition); display: flex; flex-direction: column; gap: 11px;
 }
-.job-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand); transform: translateY(-3px); }
-.job-card--featured { background: linear-gradient(180deg, #fffaf0, #fff); border-color: rgba(245,160,32,.35); border-left: 3px solid var(--accent); }
+.job-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand);  }
+.job-card--featured {
+  background: #fffaf0;
+  border: 1.5px solid rgba(237, 144, 32, 0.4);
+  box-shadow: 0 4px 16px rgba(237, 144, 32, 0.08);
+}
 .job-card--featured:hover { border-color: var(--accent); }
 /* Featured badge as a corner ribbon — top-left, where nothing else sits — so it
    doesn't take a content row and featured/non-featured cards stay aligned. */
@@ -585,7 +587,7 @@ svg { flex-shrink: 0; }
   background: #ffffff; color: var(--text);
   font-size: .72rem; font-weight: 600; line-height: 1.4; letter-spacing: 0;
   white-space: nowrap; padding: 7px 11px; border-radius: 8px;
-  border: 1px solid var(--border);
+  border: none;
   box-shadow: 0 8px 24px rgba(7,48,79,.16);
   opacity: 0; visibility: hidden; pointer-events: none;
   transition: opacity .16s ease, transform .16s ease; z-index: 40;
@@ -617,7 +619,7 @@ svg { flex-shrink: 0; }
 
 .live-count { font-weight: inherit; color: inherit; }
 
-/* â•â• NEWSLETTER â•â• */
+/* ══ NEWSLETTER ══ */
 .newsletter-band { background: linear-gradient(120deg, var(--brand-light) 0%, #dce9f8 100%); padding: 40px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .newsletter-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
 .newsletter-text { flex: 1 1 380px; }
@@ -633,11 +635,11 @@ svg { flex-shrink: 0; }
   padding: 12px 14px 12px 38px; font-family: 'Inter', sans-serif; font-size: 1rem;
   color: var(--text); background: var(--white); outline: none; min-height: 46px;
 }
-.newsletter-field input:focus { border-color: var(--brand); }
+.newsletter-field input:focus { outline: 2px solid var(--ring, #0861A9); outline-offset: 1px; border-color: var(--brand); background: var(--white); }
 .newsletter-form 
 .newsletter-form 
 
-/* â•â• CATEGORIES â•â• */
+/* ══ CATEGORIES ══ */
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 28px; }
 .cat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; text-align: center; text-decoration: none; display: block; transition: var(--transition); }
 .cat-card:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-3px); text-decoration: none; }
@@ -647,7 +649,7 @@ svg { flex-shrink: 0; }
 .cat-name { font-weight: 700; font-size: .88rem; color: var(--text); margin-bottom: 3px; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4em; }
 .cat-count { font-size: .76rem; color: var(--muted); }
 
-/* â•â• FEATURE CARDS (static) â•â• */
+/* ══ FEATURE CARDS (static) ══ */
 .feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 28px; }
 .feat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 20px; display: flex; gap: 14px; align-items: flex-start; }
 .feat-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; }
@@ -655,11 +657,11 @@ svg { flex-shrink: 0; }
 .feat-name { font-weight: 700; font-size: .9rem; margin-bottom: 3px; }
 .feat-desc { font-size: .8rem; color: var(--muted); line-height: 1.55; }
 
-/* â•â• HOW IT WORKS â•â• */
+/* ══ HOW IT WORKS ══ */
 .hiw-bg { background: var(--white); }
 .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; margin-top: 40px; counter-reset: step; }
 .step-card { position: relative; border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 24px 26px; background: var(--bg); transition: var(--transition); }
-.step-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand); transform: translateY(-3px); background: var(--white); }
+.step-card:hover { box-shadow: var(--shadow-lg); border-color: var(--brand);  background: var(--white); }
 .step-num { counter-increment: step; font-family: 'Sora', sans-serif; font-size: 2.4rem; font-weight: 800; color: var(--brand-light); line-height: 1; margin-bottom: 4px; }
 .step-num::before { content: counter(step, decimal-leading-zero); }
 .step-card:last-child .step-num { color: #fbe6c2; }
@@ -669,7 +671,7 @@ svg { flex-shrink: 0; }
 .step-title { font-weight: 700; font-size: .98rem; margin-bottom: 8px; }
 .step-desc  { font-size: .83rem; color: var(--muted); line-height: 1.65; }
 
-/* â•â• AI TOOLS â•â• */
+/* ══ AI TOOLS ══ */
 .ai-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 18px; }
 .ai-card { border-radius: var(--radius); padding: 30px 26px; display: flex; flex-direction: column; }
 .ai-card.dark { background: linear-gradient(150deg, var(--brand-deep), var(--brand)); color: var(--white); }
@@ -685,11 +687,11 @@ svg { flex-shrink: 0; }
 .ai-badge svg { width: 12px; height: 12px; }
 .ai-card.dark .ai-badge--ai { background: rgba(255,255,255,.15); color: var(--white); }
 
-/* â•â• TRAINING â•â• */
+/* ══ TRAINING ══ */
 .training-bg { background: var(--white); }
 .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-top: 28px; }
 .course-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--white); transition: var(--transition); }
-.course-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+.course-card:hover { box-shadow: var(--shadow-lg);  }
 .course-thumb { height: 110px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.92); }
 .course-thumb svg { width: 42px; height: 42px; }
 .thumb-blue   { background: linear-gradient(135deg, var(--brand-deep), var(--brand)); }
@@ -709,10 +711,10 @@ svg { flex-shrink: 0; }
 .course-price--free { color: var(--accent-dark); }
 .course-price--paid { color: var(--brand); }
 
-/* â•â• LOCATIONS â•â• */
+/* ══ LOCATIONS ══ */
 .loc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 28px; }
 .loc-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 14px; text-align: center; text-decoration: none; transition: var(--transition); }
-.loc-card:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-3px); text-decoration: none; }
+.loc-card:hover { border-color: var(--brand); box-shadow: var(--shadow);  text-decoration: none; }
 .loc-card.featured { background: var(--brand); border-color: var(--brand); }
 .loc-ic { width: 38px; height: 38px; margin: 0 auto 8px; border-radius: 10px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; }
 .loc-ic svg { width: 19px; height: 19px; }
@@ -721,7 +723,7 @@ svg { flex-shrink: 0; }
 .loc-count { font-size: .74rem; color: var(--muted); margin-top: 2px; }
 .loc-card.featured .loc-name, .loc-card.featured .loc-count { color: var(--white); }
 
-/* â•â• TESTIMONIALS â•â• */
+/* ══ TESTIMONIALS ══ */
 .testi-bg { background: var(--white); }
 .testi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 36px; }
 .testi-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
@@ -733,7 +735,7 @@ svg { flex-shrink: 0; }
 .testi-name { font-weight: 700; font-size: .85rem; }
 .testi-role { font-size: .74rem; color: var(--muted); }
 
-/* â•â• REFERRAL â•â• */
+/* ══ REFERRAL ══ */
 .referral-band { background: linear-gradient(120deg, #fffbeb, #fef3c7); border: 1px solid #fde68a; border-radius: 14px; padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
 .referral-band-text { display: flex; align-items: center; gap: 18px; flex: 1 1 420px; }
 .ref-ic { width: 46px; height: 46px; border-radius: 12px; background: var(--accent); color: var(--brand-deep); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -745,7 +747,7 @@ svg { flex-shrink: 0; }
 .referral-band-sub { font-size: .86rem; color: var(--muted); max-width: 520px; }
 .referral-band-ct
 
-/* â•â• FAQ â•â• */
+/* ══ FAQ ══ */
 .faq-bg { background: var(--white); }
 .faq-list { max-width: 760px; margin: 32px auto 0; }
 details.faq-item { border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); margin-bottom: 8px; overflow: hidden; }
@@ -757,7 +759,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .faq-answer { padding: 0 22px 18px; font-size: .87rem; color: var(--muted); line-height: 1.75; }
 .faq-more { text-align: center; margin-top: 24px; }
 
-/* â•â• DUAL CTA â•â• */
+/* ══ DUAL CTA ══ */
 .dual-ct
 .cta-panel { border-radius: 12px; padding: 44px 32px; }
 .cta-panel.blue { background: linear-gradient(150deg, var(--brand-deep), var(--brand)); color: var(--white); }
@@ -776,7 +778,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .cta-tag { font-size: .64rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: var(--brand-deep); padding: 1px 7px; border-radius: 20px; margin-left: 2px; }
 .cta-list li svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); }
 
-/* â•â• FOOTER â•â• */
+/* ══ FOOTER ══ */
 .footer { background: var(--brand-deep); color: rgba(255,255,255,.78); padding: 56px 0 0; padding-bottom: env(safe-area-inset-bottom, 0); }
 .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 44px; }
 .footer-logo { display: flex; align-items: center; text-decoration: none; margin-bottom: 14px; }
@@ -801,7 +803,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 #btt.show { display: flex; }
 #btt:hover { background: var(--brand-dark); }
 
-/* â•â• RESPONSIVE â•â• */
+/* ══ RESPONSIVE ══ */
 @media (max-width: 860px) {
   
   
@@ -845,11 +847,11 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
   .hero-motif .ring, .hero-motif .head { animation: none !important; }
   .hero-motif .scan animateTransform { display: none; }
 }
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   /jobs PAGE â€” page-specific styles (extends the shared homepage system)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════════
+   /jobs PAGE — page-specific styles (extends the shared homepage system)
+   ══════════════════════════════════════════════════════════════════════ */
 
-/* â”€â”€ Compact page hero (shorter than homepage hero) â”€â”€ */
+/* ── Compact page hero (shorter than homepage hero) ── */
 .jobs-hero {
   background:
     radial-gradient(ellipse 60% 70% at 88% 30%, rgba(245,160,32,.16) 0%, transparent 55%),
@@ -899,14 +901,14 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .jobs-hero .breadcrumb 
 .jobs-hero .breadcrumb svg { width: 13px; height: 13px; opacity: .6; }
 
-/* â”€â”€ Two-column layout â”€â”€ */
+/* ── Two-column layout ── */
 .jobs-layout {
   display: grid; grid-template-columns: 286px 1fr; gap: 28px;
   align-items: start;
   padding: 40px 0 64px;
 }
 
-/* â”€â”€ Filter sidebar â”€â”€ */
+/* ── Filter sidebar ── */
 .filters {
   background: var(--white); border: 1px solid var(--border); border-radius: 14px;
   padding: 0; position: sticky; top: 86px; overflow: hidden;
@@ -977,7 +979,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 /* Mobile filter toggle (hidden on desktop) */
 .filters-toggle { display: none; }
 
-/* â”€â”€ Results column â”€â”€ */
+/* ── Results column ── */
 .results-toolbar {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
   flex-wrap: wrap; margin-bottom: 22px;
@@ -1036,7 +1038,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .job-salary-amount { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.15rem; color: var(--brand); }
 .job-salary-period { font-size: .74rem; color: var(--muted); }
 
-/* â”€â”€ LIST VIEW â”€â”€ */
+/* ── LIST VIEW ── */
 .jobs-grid.is-list { grid-template-columns: 1fr; gap: 12px; }
 .jobs-grid.is-list .job-card {
   display: grid;
@@ -1088,7 +1090,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .results-empty h3 { font-family: 'Sora', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
 .results-empty p { font-size: .88rem; color: var(--muted); max-width: 380px; margin: 0 auto 18px; }
 
-/* â”€â”€ Pagination â”€â”€ */
+/* ── Pagination ── */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 36px; flex-wrap: wrap; }
 .pagination a, .pagination span {
   min-width: 40px; height: 40px; padding: 0 12px; border-radius: 9px;
@@ -1102,7 +1104,7 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 .pagination .nav-btn svg { width: 16px; height: 16px; }
 .pagination .disabled { opacity: .4; pointer-events: none; }
 
-/* â”€â”€ Responsive â”€â”€ */
+/* ── Responsive ── */
 @media (max-width: 900px) {
   .jobs-layout { grid-template-columns: 1fr; gap: 0; padding-top: 20px; }
   .filters {
@@ -1140,16 +1142,16 @@ details.faq-item[open] .faq-chev { transform: rotate(180deg); }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════════════
    iOS / mobile AUTO-DARK DEFEAT
    Some mobile browsers (Safari "Smart Invert" / auto dark website tint,
    and FB/IG/WhatsApp in-app webviews) darken backgrounds that rely on
-   INHERITED color while leaving explicitly-set text colors alone â€” which
+   INHERITED color while leaving explicitly-set text colors alone — which
    makes dark navy headings vanish on a forced-dark fill. The meta tag and
    :root color-scheme help, but the reliable defeat is to set EXPLICIT
    backgrounds (and re-assert text color) on the wrapper surfaces, so the
    browser has nothing to override. Belt-and-braces, harmless in light.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════════════ */
 html, 
 main, .section, .jobs-layout, .container,
 .results-toolbar, .results-count, .pagination {
@@ -1168,9 +1170,9 @@ main, .section, .jobs-layout, .container,
 .filters-head { background: var(--brand-light); }
 .results-empty { background: #ffffff; }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════════════════
    Job detail page styles are now centralized in demo/css/jobber-recruit.css
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════════════════ */
 .detail-body ul li { display: flex; align-items: flex-start; gap: 10px; font-size: .9rem; }
 .detail-body ul li svg { width: 17px; height: 17px; color: var(--success); flex-shrink: 0; margin-top: 2px; }
 .detail-body strong { font-weight: 700; color: var(--text); }
@@ -1189,7 +1191,7 @@ main, .section, .jobs-layout, .container,
 .detail-share a svg { width: 17px; height: 17px; }
 .detail-share 
 
-/* â”€â”€ Apply sidebar â”€â”€ */
+/* ── Apply sidebar ── */
 .detail-aside { position: sticky; top: 86px; display: flex; flex-direction: column; gap: 18px; }
 .apply-card {
   background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 22px;
@@ -1234,16 +1236,16 @@ main, .section, .jobs-layout, .container,
 .company-card p { font-size: .82rem; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
 .company-card 
 
-/* â”€â”€ Related jobs â”€â”€ */
+/* ── Related jobs ── */
 .related-section { padding: 0 0 64px; }
 .related-head { margin-bottom: 22px; }
 .related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
 
-/* â”€â”€ Responsive â”€â”€ */
+/* ── Responsive ── */
 @media (max-width: 900px) {
   .detail-layout { grid-template-columns: 1fr; gap: 20px; }
   .detail-aside { position: static; display: flex; flex-direction: column; gap: 18px; }
-  /* Mobile reading order: overview â†’ company â†’ apply card (description first, CTA last) */
+  /* Mobile reading order: overview → company → apply card (description first, CTA last) */
   .detail-aside .overview-card { order: 1; }
   .detail-aside .company-card  { order: 2; }
   .detail-aside .apply-card    { order: 3; }
@@ -1273,7 +1275,7 @@ main, .section, .jobs-layout, .container,
 }
 
 
-/* â”€â”€ Job Overview panel â”€â”€ */
+/* ── Job Overview panel ── */
 .overview-card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px 22px; }
 .overview-title { font-family:'Sora',sans-serif; font-size:1rem; font-weight:700; margin-bottom:14px; }
 .overview-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:13px; }
@@ -1286,16 +1288,16 @@ main, .section, .jobs-layout, .container,
 .status-open { display:inline-flex; align-items:center; gap:5px; color:var(--success); font-weight:700; }
 .status-open::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--success); display:inline-block; }
 
-/* â”€â”€ Accent button + report/external apply â”€â”€ */
+/* ── Accent button + report/external apply ── */
 
 
 .apply-external svg { width:16px; height:16px; }
 
-/* â”€â”€ Urgently Hiring badge â”€â”€ */
-.db-urgent { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+/* ── Urgently Hiring badge ── */
+.db-urgent { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 .db-style  { background: var(--brand-light); color: var(--brand); }
 
-/* â”€â”€ Benefits & Perks pills â”€â”€ */
+/* ── Benefits & Perks pills ── */
 .benefits-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 .benefit-pill {
   display: inline-flex; align-items: center; gap: 6px;
@@ -1305,7 +1307,7 @@ main, .section, .jobs-layout, .container,
 }
 .benefit-pill svg { width: 14px; height: 14px; }
 
-/* â”€â”€ Job Conditions grid â”€â”€ */
+/* ── Job Conditions grid ── */
 .conditions-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
 }
@@ -1325,7 +1327,7 @@ main, .section, .jobs-layout, .container,
 .condition-v { font-size: .85rem; font-weight: 600; color: var(--text); }
 @media (max-width: 560px) { .conditions-grid { grid-template-columns: 1fr; } }
 
-/* â”€â”€ Application spots remaining â”€â”€ */
+/* ── Application spots remaining ── */
 .apply-spots {
   display: flex; align-items: center; gap: 7px;
   font-size: .78rem; color: #7c2d12;
@@ -1335,7 +1337,7 @@ main, .section, .jobs-layout, .container,
 .apply-spots svg { width: 14px; height: 14px; flex-shrink: 0; }
 .apply-spots strong { font-weight: 700; }
 
-/* â”€â”€ Application requirements (CV / cover letter) â”€â”€ */
+/* ── Application requirements (CV / cover letter) ── */
 .apply-reqs {
   border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px;
   display: flex; flex-direction: column; gap: 7px;
@@ -1346,7 +1348,7 @@ main, .section, .jobs-layout, .container,
 }
 .apply-req-item svg { width: 14px; height: 14px; color: var(--brand); flex-shrink: 0; }
 
-/* â”€â”€ ATS pre-screening note â”€â”€ */
+/* ── ATS pre-screening note ── */
 .ats-notice {
   display: flex; align-items: flex-start; gap: 8px;
   background: var(--brand-light); border: 1px solid var(--border);
@@ -1359,7 +1361,7 @@ main, .section, .jobs-layout, .container,
 
 
 
-/* â”€â”€ Report modal (single instance) â”€â”€ */
+/* ── Report modal (single instance) ── */
 .report-modal { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
 .report-modal[hidden] { display:none; }
 .report-overlay { position:absolute; inset:0; background:rgba(7,48,79,.5); backdrop-filter:blur(2px); }
@@ -1379,7 +1381,7 @@ main, .section, .jobs-layout, .container,
 .report-foot { display:flex; justify-content:flex-end; gap:10px; padding:16px 20px; border-top:1px solid var(--border); }
 
 
-/* â”€â”€ Apply-method variants (external / email / internal) â”€â”€ */
+/* ── Apply-method variants (external / email / internal) ── */
 .apply-method-note { font-size:.78rem; color:var(--muted); line-height:1.5; margin-top:10px; display:flex; align-items:flex-start; gap:7px; }
 .apply-method-note svg { width:14px; height:14px; flex-shrink:0; margin-top:1px; color:var(--accent-dark); }
 .apply-email-box { background:var(--brand-light); border:1px solid #cfe2f3; border-radius:10px; padding:12px 14px; margin-top:10px; }
@@ -1388,18 +1390,18 @@ main, .section, .jobs-layout, .container,
 .apply-email-copy { margin-top:8px; font-size:.76rem; font-weight:600; color:var(--brand); background:none; border:none; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px; }
 .apply-email-copy svg { width:13px; height:13px; }
 
-/* â”€â”€ Ad unit â€” labelled, reserved height, distinct from content (policy-safe) â”€â”€ */
+/* ── Ad unit — labelled, reserved height, distinct from content (policy-safe) ── */
 .ad-unit { background:#f0f3f8; border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; overflow:hidden; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .ad-unit::before { content:"Advertisement"; display:block; font-size:.64rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 .ad-unit .adsbygoogle { width:100%; display:block; }
 .detail-ad { margin: 0 0 20px; }
 
-/* â”€â”€ Mobile: trim meta strip to 3 items â”€â”€ */
+/* ── Mobile: trim meta strip to 3 items ── */
 @media (max-width: 640px) {
   .meta-secondary { display: none; }
 }
 
-/* â”€â”€ Mobile: collapse overview list (show 4 key items) â”€â”€ */
+/* ── Mobile: collapse overview list (show 4 key items) ── */
 @media (max-width: 900px) {
   .overview-list li:not([data-key]) { display: none; }
   .overview-card.expanded .overview-list li { display: flex !important; }
@@ -1416,7 +1418,7 @@ main, .section, .jobs-layout, .container,
 }
 @media (min-width: 901px) { .overview-toggle { display: none; } }
 
-/* â”€â”€ Mobile: description read-more collapse â”€â”€ */
+/* ── Mobile: description read-more collapse ── */
 @media (max-width: 900px) {
   .detail-body.desc-collapsed {
     position: relative; max-height: 260px; overflow: hidden;
@@ -1436,9 +1438,9 @@ main, .section, .jobs-layout, .container,
   .desc-expand-btn:hover { background: var(--brand-light); border-color: var(--brand); }
   .desc-expand-btn svg { width: 15px; height: 15px; }
 }
-@media (min-width: 901px) { .desc-expand-btn { display: none; } }
+@media (min-width: 901px) { .desc-expand-btn { display: none; } } .detail-body [style*="background-color"] { background-color: transparent !important; color: inherit !important; }
 
-/* â”€â”€ Mobile touch targets: Apple HIG minimum 44px â”€â”€ */
+/* ── Mobile touch targets: Apple HIG minimum 44px ── */
 @media (max-width: 900px) {
   
   
@@ -1455,6 +1457,25 @@ main, .section, .jobs-layout, .container,
     height: 100%;
     object-fit: contain;
     border-radius: 8px;
+}
+
+.detail-head h1, .overview-title, h1, h2, h3 { text-wrap: balance; overflow-wrap: break-word; }
+
+.filters-count, .results-count span, .course-price, .loc-count { font-variant-numeric: tabular-nums; }
+
+/* Hallmark · Gate 26b Tactile micro-depression */
+.btn:active, .save-btn:active, .apply-actions .btn:active, .btn-accent:active {
+  transform: translateY(1px);
+}
+
+/* Hallmark · Gate 27 Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 </style>
 <?= $this->endSection() ?>
@@ -1660,8 +1681,8 @@ main, .section, .jobs-layout, .container,
               <?= $job->application ?>
             <?php endif; ?>
           </div>
-          <!-- Read-more button â€” hidden on desktop, shown on mobile only -->
-          <button class="desc-expand-btn" id="desc-expand-btn" onclick="expandDescription()">
+          <!-- Read-more button — hidden on desktop, shown on mobile only -->
+          <button class="desc-expand-btn" id="desc-expand-btn" type="button" aria-controls="detail-body" aria-expanded="false">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             Read full description
           </button>
@@ -1715,7 +1736,7 @@ main, .section, .jobs-layout, .container,
             <?php if (!empty($job->accommodation)): ?>
             <div class="condition-item">
               <span class="condition-ic"><svg aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></span>
-              <span class="condition-kv"><span class="condition-k">Accommodation</span><span class="condition-v"><?= esc($job->accommodation) ?></span></span>
+              <span class="condition-kv"><span class="condition-k">Accommodation</span><span class="condition-v"><?= esc($job->accommodation === 'not_available' ? 'Not provided' : ($job->accommodation === 'available' ? 'Provided' : $job->accommodation)) ?></span></span>
             </div>
             <?php endif; ?>
             <?php if (!empty($job->probation_period)): ?>
@@ -1760,7 +1781,7 @@ main, .section, .jobs-layout, .container,
             </div>
           <?php endif; ?>
 
-          <?php if ($job->application_deadline): ?>
+          <?php if (!empty($job->application_deadline) && $job->application_deadline !== '0000-00-00' && strtotime($job->application_deadline) > 0): ?>
             <div class="apply-deadline">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <span>Apply before <strong><?= date('d M Y', strtotime($job->application_deadline)) ?></strong></span>
@@ -1837,7 +1858,7 @@ main, .section, .jobs-layout, .container,
               <?php if ($requiresAuth): ?>
                 <p class="apply-auth-note">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  Free account required Â·
+                  Free account required ·
                   <a href="/register?redirect=/jobs/<?= $job->slug ?>">Create one in 2 minutes</a>
                 </p>
               <?php endif; ?>
@@ -1867,12 +1888,12 @@ main, .section, .jobs-layout, .container,
           <?php if (!empty($questions)): ?>
             <div class="ats-notice" style="display:flex;align-items:start;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:10px;border-radius:8px;font-size:.8rem;color:#166534">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top:2px"><rect x="3" y="11" width="18" height="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
-              <span>This employer uses <strong>pre-screening questions</strong>. You'll be asked a few short questions when you apply â€” this helps your application stand out.</span>
+              <span>This employer uses <strong>pre-screening questions</strong>. You'll be asked a few short questions when you apply — this helps your application stand out.</span>
             </div>
           <?php endif; ?>
         </div>
 
-        <!-- JOB OVERVIEW â€” structured facts panel (matches live page) -->
+        <!-- JOB OVERVIEW — structured facts panel (matches live page) -->
         <div class="overview-card">
           <h2 class="overview-title">Job Overview</h2>
           <ul class="overview-list">
@@ -1907,7 +1928,7 @@ main, .section, .jobs-layout, .container,
                   </button>
                 <?php endif; ?>
               </div>
-              <div class="company-card-meta"><?= esc($job->industry_name ?? 'General Business') ?> Â· <?= $employer_job_count ?> open roles</div>
+              <div class="company-card-meta"><?= esc($job->industry_name ?? 'General Business') ?> · <?= $employer_job_count ?> open roles</div>
             </div>
           </div>
           <p><?= esc($coName) ?> is a verified employer on JobberRecruit.</p>
@@ -1934,12 +1955,12 @@ main, .section, .jobs-layout, .container,
       <div class="related-grid">
         <?php foreach ($related_jobs as $related): ?>
           <?php 
-            $relCoName = (!empty($related->anonymous) || !empty($related->is_anonymous)) ? 'Confidential Employer' : (string)($related->company_name ?? 'Employer');
+            $relCoName = (!empty($related->anonymous) || !empty($related->is_anonymous)) ? 'Confidential Employer' : (string)($related->employer_name ?? 'Employer');
             $relInitials = '';
             foreach (explode(' ', $relCoName) as $p) { $relInitials .= substr($p, 0, 1); }
             $relInitials = strtoupper(substr($relInitials, 0, 2));
             $relShowImage = false;
-            if (!empty($related->logo)) {
+            if (!empty($related->company_logo)) {
                 $relShowImage = true;
             }
           ?>
@@ -1957,10 +1978,11 @@ main, .section, .jobs-layout, .container,
                     </span>
                   <?php endif; ?>
                 </div>
+                <?php if (empty($related->anonymous) && empty($related->is_anonymous) && !empty($related->employer_tagline)): ?><div style="margin-top:2px;color:var(--muted);font-size:.75rem;line-height:1.35;"><?= esc($related->employer_tagline) ?></div><?php endif; ?>
               </div>
               <div class="job-logo" style="width:40px;height:40px;border-radius:6px;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;overflow:hidden">
                 <?php if ($relShowImage): ?>
-                  <img src="<?= esc($related->logo) ?>" alt="<?= esc($relCoName) ?> logo" style="width:100%;height:100%;object-fit:contain">
+                  <img src="<?= esc(resolve_image_url($related->company_logo, 'company', $relCoName)) ?>" alt="<?= esc($relCoName) ?> logo" style="width:100%;height:100%;object-fit:contain">
                 <?php else: ?>
                   <?= esc($relInitials) ?>
                 <?php endif; ?>
@@ -2186,12 +2208,17 @@ $(document).ready(function() {
     });
   });
 
+  document.getElementById('desc-expand-btn')?.addEventListener('click', expandDescription);
+
   // Expand description on mobile
   function expandDescription() {
     const body = document.getElementById('detail-body');
     const btn = document.getElementById('desc-expand-btn');
 
-    if (body.classList.contains('desc-collapsed')) {
+    if (!body || !btn) return;
+    const expanding = body.classList.contains('desc-collapsed');
+    btn.setAttribute('aria-expanded', String(expanding));
+    if (expanding) {
       body.classList.remove('desc-collapsed');
       btn.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg> Show less';
     } else {

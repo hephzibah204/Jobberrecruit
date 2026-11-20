@@ -29,6 +29,7 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .how-n{width:32px;height:32px;border-radius:50%;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-weight:800;font-size:.82rem;flex-shrink:0}
 .how-step b{display:block;font-size:.82rem;color:var(--brand-deep);margin-bottom:2px}
 .how-step p{font-size:.74rem;color:var(--muted);line-height:1.5}
+.pill--shortlisted{background:#dcfce7;color:#166534}
 </style>
 <?= $this->endSection() ?>
 
@@ -64,7 +65,8 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
         foreach ($applications as $app) {
             $s = strtolower($app->status ?? '');
             if ($s === 'pending')              $pending++;
-            elseif (in_array($s, ['reviewed', 'shortlisted'])) $reviewed++;
+            elseif ($s === 'reviewed')         $reviewed++;
+            elseif ($s === 'shortlisted')      $shortlisted++;
             elseif ($s === 'hired' || $s === 'accepted')        $hired++;
         }
         ?>
@@ -84,7 +86,7 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
                     <svg aria-hidden="true"><use href="#i-search-user"/></svg>
                 </span>
             </div>
-            <div class="stat-num"><?= $reviewed ?></div>
+            <div class="stat-num"><?= $reviewed + $shortlisted ?></div>
             <div class="stat-lbl">Reviewed / Shortlisted</div>
         </div>
 
@@ -114,7 +116,7 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
                 </div>
                 <select class="select" id="app-status-filter" aria-label="Filter by status">
                     <option value="">All statuses</option>
-                    <option value="Pending">Pending</option>
+                    <option value="Pending Review">Pending Review</option>
                     <option value="Reviewed">Reviewed</option>
                     <option value="Shortlisted">Shortlisted</option>
                     <option value="Rejected">Rejected</option>
@@ -152,21 +154,24 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
                                 <?php
                                 $status      = $app->status ?? 'Pending';
                                 $statusLower = strtolower($status);
-                                $statusClass = 'pill--pending';
-                                $statusLabel = 'Pending';
-                                if (in_array($statusLower, ['hired', 'accepted'])) {
-                                    $statusClass = 'pill--hired';
-                                    $statusLabel = 'Hired';
-                                } elseif ($statusLower === 'rejected') {
-                                    $statusClass = 'pill--rejected';
-                                    $statusLabel = 'Rejected';
-                                } elseif (in_array($statusLower, ['reviewed', 'shortlisted'])) {
-                                    $statusClass = 'pill--reviewed';
-                                    $statusLabel = 'Shortlisted';
-                                } elseif ($statusLower === 'withdrawn') {
-                                    $statusClass = 'pill--closed';
-                                    $statusLabel = 'Withdrawn';
-                                }
+                                // Canonical status labels — one mapping for the
+                                // stored status, identical to the dashboard pill.
+                                // (Previously 'reviewed' was labelled 'Shortlisted'
+                                // here while the dashboard showed 'Reviewed'.)
+                                $statusMap = [
+                                    'pending'      => ['pill--pending', 'Pending Review'],
+                                    'reviewed'     => ['pill--reviewed', 'Reviewed'],
+                                    'viewed'       => ['pill--reviewed', 'Reviewed'],
+                                    'shortlisted'  => ['pill--shortlisted', 'Shortlisted'],
+                                    'interview'    => ['pill--info', 'Interview'],
+                                    'interviewing' => ['pill--info', 'Interview'],
+                                    'hired'        => ['pill--hired', 'Hired'],
+                                    'accepted'     => ['pill--hired', 'Hired'],
+                                    'rejected'     => ['pill--rejected', 'Rejected'],
+                                    'withdrawn'    => ['pill--closed', 'Withdrawn'],
+                                ];
+                                [$statusClass, $statusLabel] = $statusMap[$statusLower]
+                                    ?? ['pill--pending', ucfirst($statusLower)];
                                 ?>
                                 <tr>
                                     <td><b><?= esc($app->job_title ?? '—') ?></b></td>
@@ -177,12 +182,15 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
                                     <td><?= date('M d, Y', strtotime($app->created_at ?? 'now')) ?></td>
                                     <td>
                                         <div class="row-actions">
-                                            <a href="<?= base_url('job/view/' . ($app->job_id ?? 0)) ?>" class="btn btn-outline btn-sm">
+                                            <a href="<?= base_url('jobs/' . (!empty($app->slug) ? $app->slug : ($app->job_id ?? 0))) ?>" class="btn btn-outline btn-sm">
                                                 <svg aria-hidden="true" style="width:14px;height:14px;"><use href="#i-eye"/></svg> View
                                             </a>
                                             <a href="<?= base_url('candidate/applications/view/' . ($app->id ?? 0)) ?>" class="btn btn-primary btn-sm">
                                                 <svg aria-hidden="true" style="width:14px;height:14px;"><use href="#i-doc"/></svg> Details
                                             </a>
+                                            <?php if (!in_array($statusLower, ['withdrawn', 'rejected', 'hired'], true)): ?>
+                                                <button type="button" class="btn btn-outline btn-sm withdraw-app" data-app-id="<?= ($app->id ?? 0) ?>">Withdraw</button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -194,15 +202,8 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 
             <!-- ══ PAGINATION ══ -->
             <div class="pager">
-                <span>Showing <?= min(count($applications), 10) ?> of <?= count($applications) ?> applications</span>
-                <nav class="pager-nav" aria-label="Pagination">
-                    <a href="#" class="pager-btn on" aria-current="page">1</a>
-                    <a href="#" class="pager-btn">2</a>
-                    <a href="#" class="pager-btn">3</a>
-                    <a href="#" class="pager-btn" aria-label="Next page">
-                        <svg aria-hidden="true" style="width:14px;height:14px;"><use href="#i-arrow-r"/></svg>
-                    </a>
-                </nav>
+                <span>Showing <?= count($applications) ?> of <?= count($applications) ?> applications</span>
+
             </div>
         <?php endif; ?>
     </section>
@@ -297,6 +298,56 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
             });
         });
     }
+    // ── Withdraw application ──
+    // Two-step in-page confirmation, the same pattern as Saved Jobs:
+    // the native confirm() dialog cannot be relied on everywhere.
+    document.querySelectorAll('.withdraw-app').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!btn.dataset.armed) {
+                btn.dataset.armed = '1';
+                btn.dataset.originalHtml = btn.innerHTML;
+                btn.innerHTML = 'Click again to confirm';
+                setTimeout(function() {
+                    if (btn.dataset.armed) {
+                        delete btn.dataset.armed;
+                        btn.innerHTML = btn.dataset.originalHtml || 'Withdraw';
+                    }
+                }, 4000);
+                return;
+            }
+            delete btn.dataset.armed;
+            btn.disabled = true;
+            btn.innerHTML = 'Withdrawing...';
+
+            var body = new URLSearchParams();
+            body.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+            fetch('<?= base_url('candidate/applications/withdraw') ?>/' + btn.dataset.appId, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+                },
+                body: body
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.originalHtml || 'Withdraw';
+                    alert(data.message || 'Could not withdraw this application.');
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.originalHtml || 'Withdraw';
+                alert('Could not withdraw this application. Please try again.');
+            });
+        });
+    });
+
 requestAnimationFrame(function(){document.documentElement.classList.add('anim-ready')});
 })();
 </script>

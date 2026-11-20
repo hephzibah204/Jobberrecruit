@@ -193,7 +193,7 @@
     </span>
     <div class="pager-nav" id="pagination-controls">
       <a class="pager-btn" href="#" aria-disabled="true" aria-label="Previous page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-l"/></svg></a>
-      <a class="pager-btn on" href="#" aria-current="page">1</a>
+      <a class="pager-btn on" href="#" aria-current="page" style="color:#ffffff !important;">1</a>
       <a class="pager-btn" href="#" aria-disabled="true" aria-label="Next page"><svg style="width:14px;height:14px" aria-hidden="true"><use href="#i-arrow-r"/></svg></a>
     </div>
   </div>
@@ -234,15 +234,15 @@
 </div>
 
 <!-- Aptitude Test Invitation Modal -->
-<div class="modal" id="aptitude-invite-modal" role="dialog" aria-modal="true" aria-labelledby="apt-invite-title" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; border-radius:var(--radius-lg, 12px); width:92%; max-width:500px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+<div class="modal" id="aptitude-invite-modal" role="dialog" aria-modal="true" aria-labelledby="apt-invite-title" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+  <div style="background:#fff; border-radius:var(--radius-lg, 12px); width:100%; max-width:500px; max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.2); margin:auto;">
     <div style="padding:18px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa;">
       <h3 id="apt-invite-title" style="font-size:1.05rem; font-weight:700; color:#0d6efd; margin:0; display:flex; align-items:center; gap:8px;">
         <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Invite Candidate to Aptitude Test
       </h3>
       <button class="close-modal-btn" type="button" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:#6c757d;">&times;</button>
     </div>
-    <form id="aptitude-invite-form" style="padding:20px;">
+    <form id="aptitude-invite-form" style="padding:20px; overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch; box-sizing:border-box;">
       <input type="hidden" name="application_id" id="invite-app-id" value="">
       
       <div style="margin-bottom:15px;">
@@ -291,7 +291,7 @@
         <textarea class="textarea" name="message" id="invite-message" rows="3" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid #ccc;" placeholder="e.g. Please complete this assessment before your upcoming interview..."></textarea>
       </div>
 
-      <div style="padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+      <div style="padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
         <button type="button" class="emp-btn emp-btn-outline emp-btn-sm close-modal-btn" style="padding:8px 16px;">Cancel</button>
         <button type="submit" class="emp-btn emp-btn-primary emp-btn-sm" id="submit-invite-btn" style="background:#0d6efd; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:600; cursor:pointer;">Send Test Invitation</button>
       </div>
@@ -528,43 +528,43 @@ document.addEventListener('DOMContentLoaded', function() {
   const aptModal = document.getElementById('aptitude-invite-modal');
   const aptForm = document.getElementById('aptitude-invite-form');
   const openAptBtns = document.querySelectorAll('.open-apt-invite-btn');
+  const testSelect = document.getElementById('invite-test-id');
+  const aiOptions = document.getElementById('ai-custom-options');
+
+  if (testSelect) {
+    testSelect.addEventListener('change', function() {
+      if (aiOptions) {
+        aiOptions.style.display = (this.value === 'ai_custom') ? 'block' : 'none';
+      }
+    });
+  }
 
   function openAptModal(appId) {
     if (!aptModal) return;
     document.getElementById('invite-app-id').value = appId;
     
-    const testSelect = document.getElementById('invite-test-id');
-    testSelect.innerHTML = '<option value="">Loading tests...</option>';
+    if (testSelect) {
+      testSelect.innerHTML = '<option value="">Loading assessments...</option>';
 
-    fetch('<?= site_url("employer/aptitude-tests/list") ?>')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.tests.length) {
-          testSelect.innerHTML = '<option value="ai_custom" selected>✨ AI Custom Test (Generated by Gemini AI for this Job)</option>' +
-            '<optgroup label="Preset Standard Tests">' +
-            data.tests.map(t => `<option value="${t.id}">${t.title} (${t.num_questions} questions · ${t.duration_mins} mins)</option>`).join('') +
-            '</optgroup>';
-        } else {
-          testSelect.innerHTML = '<option value="ai_custom" selected>✨ AI Custom Test (Generated by Gemini AI for this Job)</option>';
-        }
-      })
-      .catch(() => {
-        testSelect.innerHTML = '<option value="">Error loading tests</option>';
-      });
-
-    // Toggle AI options visibility
-    testSelect.addEventListener('change', function() {
-      const aiOptions = document.getElementById('ai-custom-options');
-      if (this.value === 'ai_custom') {
-        aiOptions.style.display = 'block';
-      } else {
-        aiOptions.style.display = 'none';
-      }
-    });
-
-    setTimeout(() => {
-      testSelect.dispatchEvent(new Event('change'));
-    }, 500);
+      fetch('<?= site_url("employer/aptitude-tests/list") ?>')
+        .then(res => res.json())
+        .then(data => {
+          let html = '<option value="">-- Choose an Aptitude Assessment --</option>';
+          html += '<optgroup label="✨ AI Custom Assessment">';
+          html += '<option value="ai_custom">✨ AI Custom Test (Tailored by Gemini for this Job Role)</option>';
+          html += '</optgroup>';
+          if (data.success && data.tests && data.tests.length) {
+            html += '<optgroup label="Preset Standard Tests">';
+            html += data.tests.map(t => `<option value="${t.id}">${t.title} (${t.num_questions} questions · ${t.duration_mins} mins)</option>`).join('');
+            html += '</optgroup>';
+          }
+          testSelect.innerHTML = html;
+          if (aiOptions) aiOptions.style.display = 'none';
+        })
+        .catch(() => {
+          testSelect.innerHTML = '<option value="">Error loading tests</option>';
+        });
+    }
 
     aptModal.classList.add('show');
     aptModal.style.display = 'flex';
@@ -593,8 +593,19 @@ document.addEventListener('DOMContentLoaded', function() {
     aptForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-invite-btn');
+      const isAi = (testSelect && testSelect.value === 'ai_custom');
+      
+      if (testSelect && !testSelect.value) {
+        if (typeof toastr !== 'undefined') {
+          toastr.warning('Please select an aptitude assessment to send.');
+        } else {
+          alert('Please select an aptitude assessment to send.');
+        }
+        return;
+      }
+
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Sending Invitation...';
+      submitBtn.innerText = isAi ? '✨ Generating AI Assessment & Sending...' : 'Sending Invitation...';
 
       const formData = new FormData(this);
       formData.append('<?= csrf_token() ?>', getCsrfToken());
@@ -608,12 +619,10 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = false;
         submitBtn.innerText = 'Send Test Invitation';
         if (response.success) {
-          if (response.invitation_url) {
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(response.invitation_url);
-              if (typeof toastr !== 'undefined') {
-                toastr.info('Test Link copied to clipboard: ' + response.invitation_url, 'Link Copied', {timeOut: 6000});
-              }
+          if (response.invitation_url && navigator.clipboard) {
+            navigator.clipboard.writeText(response.invitation_url);
+            if (typeof toastr !== 'undefined') {
+              toastr.info('Test Link copied to clipboard: ' + response.invitation_url, 'Link Copied', {timeOut: 6000});
             }
           }
           if (typeof toastr !== 'undefined') {
@@ -622,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(response.message || 'Invitation sent successfully!');
           }
           closeAptModal();
-          setTimeout(() => location.reload(), 2000);
+          setTimeout(() => location.reload(), 1500);
         } else {
           if (typeof toastr !== 'undefined') {
             toastr.error(response.message || 'Failed to send invitation');
@@ -635,9 +644,9 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = false;
         submitBtn.innerText = 'Send Test Invitation';
         if (typeof toastr !== 'undefined') {
-          toastr.error('Connection error sending invitation');
+          toastr.error('Connection error sending invitation. Please try again.');
         } else {
-          alert('Connection error sending invitation');
+          alert('Connection error sending invitation. Please try again.');
         }
       });
     });

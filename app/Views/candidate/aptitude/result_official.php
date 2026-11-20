@@ -149,32 +149,63 @@ svg { flex-shrink: 0; }
 
 /* practice breakdown */
 .res-sec-title{font-size:1.2rem;font-weight:800;color:var(--brand-deep);margin:34px 0 16px}
-.res-q{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px}
+.res-q{
+  background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px;
+  max-width:100%;box-sizing:border-box;word-break:break-word;overflow-wrap:anywhere;
+}
 .res-q-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
-.res-q-badge{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.res-q-badge{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px}
 .res-q-badge svg{width:16px;height:16px;color:#fff}
 .res-q-badge.ok{background:var(--success)}
 .res-q-badge.no{background:#dc2626}
-.res-q-body{font-size:1rem;font-weight:600;color:var(--brand-deep);line-height:1.4}
-.res-q-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.res-q-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:.92rem;border:1.5px solid var(--border)}
-.res-q-opt .k{width:26px;height:26px;flex-shrink:0;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;font-family:'Sora',sans-serif;background:#fff;border:1.5px solid var(--border);color:var(--muted)}
+.res-q-body{
+  font-size:1rem;font-weight:600;color:var(--brand-deep);line-height:1.45;
+  min-width:0;flex:1;word-break:break-word;overflow-wrap:anywhere;hyphens:auto;
+}
+.res-q-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-width:100%;box-sizing:border-box}
+.res-q-opt{
+  display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;font-size:.92rem;
+  border:1.5px solid var(--border);max-width:100%;box-sizing:border-box;
+  word-break:break-word;overflow-wrap:anywhere;hyphens:auto;
+}
+.res-q-opt .k{
+  width:26px;height:26px;flex-shrink:0;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.82rem;font-family:'Sora',sans-serif;background:#fff;border:1.5px solid var(--border);
+  color:var(--muted);margin-top:1px;
+}
 .res-q-opt.correct{background:#f0fdf4;border-color:#86efac}
 .res-q-opt.correct .k{background:var(--success);color:#fff;border-color:var(--success)}
 .res-q-opt.chosen-wrong{background:#fef2f2;border-color:#fca5a5}
 .res-q-opt.chosen-wrong .k{background:#dc2626;color:#fff;border-color:#dc2626}
-.res-q-opt .tag{margin-left:auto;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.res-q-opt-body{min-width:0;flex:1;word-break:break-word;overflow-wrap:anywhere;hyphens:auto;line-height:1.4}
+.res-q-opt .tag{margin-left:auto;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0;align-self:flex-start;margin-top:2px}
 .res-q-opt.correct .tag{color:var(--success)}
 .res-q-opt.chosen-wrong .tag{color:#dc2626}
-.res-q-exp{display:flex;gap:9px;background:var(--brand-light);border-radius:10px;padding:13px 15px;font-size:.88rem;color:var(--text);line-height:1.5}
-.res-q-exp svg{width:17px;height:17px;color:var(--brand);flex-shrink:0;margin-top:1px}
+.res-q-exp{
+  display:flex;align-items:flex-start;gap:9px;background:var(--brand-light);border-radius:10px;padding:13px 15px;
+  font-size:.88rem;color:var(--text);line-height:1.5;max-width:100%;box-sizing:border-box;
+  word-break:break-word;overflow-wrap:anywhere;
+}
+.res-q-exp svg{width:17px;height:17px;color:var(--brand);flex-shrink:0;margin-top:2px}
+.res-q-exp > div{min-width:0;flex:1;word-break:break-word;overflow-wrap:anywhere;hyphens:auto}
 .res-q-exp b{color:var(--brand-deep)}
 
 @media(max-width:680px){
-  .res-hero h1{font-size:1.4rem}
+  .res-hero h1{font-size:1.35rem;word-break:break-word;overflow-wrap:anywhere}
+  .res-hero .sub{font-size:.88rem;word-break:break-word;overflow-wrap:anywhere}
   .res-stats{flex-wrap:wrap}
-  .res-verified{flex-direction:column;text-align:center}
-  .res-wrap{padding:8px 16px 60px}
+  .res-stat{min-width:33.33%;padding:14px 8px}
+  .res-verified{flex-direction:column;text-align:center;padding:18px 14px}
+  .res-wrap{padding:8px 12px 60px;max-width:100%;box-sizing:border-box;overflow-x:hidden}
+  .res-q{padding:16px 12px;border-radius:12px}
+  .res-q-body{font-size:.92rem}
+  .res-q-opt{padding:9px 10px;font-size:.84rem;gap:8px}
+  .res-q-opt .k{width:24px;height:24px;font-size:.78rem}
+  .res-q-exp{padding:10px 12px;font-size:.82rem}
+}
+@media(max-width:400px){
+  .res-q-opt{flex-wrap:wrap}
+  .res-q-opt .tag{margin-left:34px;width:100%}
 }
 
 </style>
@@ -276,7 +307,8 @@ svg { flex-shrink: 0; }
     <div class="res-q-opts">
       <?php foreach ($q['options'] as $i => $opt): ?>
         <div class="res-q-opt<?= $opt['correct'] ? ' correct' : ($opt['chosen'] ? ' chosen-wrong' : '') ?>">
-          <span class="k"><?= chr(65 + $i) ?></span><?= esc($opt['body']) ?>
+          <span class="k"><?= chr(65 + $i) ?></span>
+          <span class="res-q-opt-body"><?= esc($opt['body']) ?></span>
           <?php if ($opt['correct']): ?><span class="tag">Correct</span>
           <?php elseif ($opt['chosen']): ?><span class="tag">Your answer</span><?php endif; ?>
         </div>

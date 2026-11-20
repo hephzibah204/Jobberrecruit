@@ -161,8 +161,8 @@
                                 </td>
 
                                 <td>
-                                    <div class="fs-12"><?= date('M d, Y', strtotime($category->created_at)) ?></div>
-                                    <div class="fs-11 text-muted"><?= date('h:i A', strtotime($category->created_at)) ?></div>
+                                    <div class="fs-12"><?= (!empty($category->created_at) && strtotime($category->created_at) > 0) ? date('M d, Y', strtotime($category->created_at)) : '—' ?></div>
+                                    <div class="fs-11 text-muted"><?= (!empty($category->created_at) && strtotime($category->created_at) > 0) ? date('h:i A', strtotime($category->created_at)) : '' ?></div>
                                 </td>
 
                                 <td class="text-center">

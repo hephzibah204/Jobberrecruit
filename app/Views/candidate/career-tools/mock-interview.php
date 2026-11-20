@@ -398,14 +398,30 @@ label.lbl { display: block; font-size: .74rem; font-weight: 600; color: var(--mu
   flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.mic-bars { display: flex; align-items: flex-end; gap: 2.5px; height: 16px; flex-shrink: 0; }
-.mic-bars i { width: 3.5px; border-radius: 2px; background: var(--success); animation: micbar 1s ease-in-out infinite; }
-.mic-bars i:nth-child(1) { height: 35%; animation-delay: 0s; }
-.mic-bars i:nth-child(2) { height: 75%; animation-delay: .15s; }
-.mic-bars i:nth-child(3) { height: 100%; animation-delay: .3s; }
-.mic-bars i:nth-child(4) { height: 60%; animation-delay: .45s; }
-.mic-bars i:nth-child(5) { height: 40%; animation-delay: .6s; }
-@keyframes micbar { 0%,100% { transform: scaleY(.5); } 50% { transform: scaleY(1); } }
+.mic-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  background: rgba(15, 23, 42, 0.04);
+  border-radius: 4px;
+}
+.mic-bars i {
+  width: 4px;
+  min-height: 3px;
+  height: 15%;
+  border-radius: 2px;
+  background: #94a3b8;
+  transition: height 0.06s ease-out, background-color 0.2s ease;
+}
+.mic-bars.listening i {
+  background: var(--brand, #0284c7);
+}
+.mic-bars.passed i {
+  background: var(--success, #16a34a);
+}
 
 /* live session summary */
 .sess-sum { margin-top: 20px; border: 1px dashed #cfe2f2; background: linear-gradient(135deg, #f4f9fe, #fdf8f0); border-radius: 12px; padding: 15px 17px; }
@@ -731,6 +747,22 @@ if ($avgScore >= 8.0) {
 }
 ?>
 
+<!-- Session Details Review Modal -->
+<div class="modal-scrim" id="sess-modal" role="dialog" aria-modal="true" aria-hidden="true" style="position:fixed;inset:0;background:rgba(10,25,45,.65);backdrop-filter:blur(4px);z-index:1500;display:none;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:700px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 14px 40px rgba(0,0,0,.25);overflow:hidden;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);background:#fafcff;">
+      <div>
+        <h3 id="sm-title" style="font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:700;color:var(--brand-deep);margin:0 0 4px 0;">Interview Review</h3>
+        <p id="sm-meta" style="font-size:0.75rem;color:var(--muted);margin:0;"></p>
+      </div>
+      <button type="button" id="sm-close" style="background:none;border:none;cursor:pointer;padding:4px 8px;color:var(--muted);font-size:1.4rem;line-height:1;" aria-label="Close modal">&times;</button>
+    </div>
+    <div id="sm-body" style="padding:20px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;">
+      <!-- Populated dynamically via AJAX -->
+    </div>
+  </div>
+</div>
+
 <!-- SVG SPRITE SHEET FOR MOCKUP ICONS -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -820,9 +852,11 @@ if ($avgScore >= 8.0) {
           $xpVal = $xp ?? 0;
           $todayDoneVal = $todayDone ?? 0;
           
-          $level = floor($xpVal / 500) + 1;
-          $nextLevelXp = $level * 500;
-          $neededXp = $nextLevelXp - $xpVal;
+          $gamification = config('Gamification') ?? new \Config\Gamification();
+          $levelData = $gamification->getLevelData($xpVal);
+          $level = $levelData['level'];
+          $nextLevelXp = $levelData['next_level_threshold'];
+          $neededXp = $levelData['needed_xp'];
           
           $goalPercent = $todayDoneVal > 0 ? 100 : 0;
         ?>
@@ -878,7 +912,11 @@ if ($avgScore >= 8.0) {
     </div>
     <div class="stat" style="--st-bar:var(--brand-dark)">
       <div class="stat-top"><span class="stat-ic"><svg aria-hidden="true"><use href="#i-chart"/></svg></span>
-        <span class="trend trend--up"><svg aria-hidden="true"><use href="#i-trend-up"/></svg> +<?= $avgScore > 0 ? round($avgScore * 10 - 50).'%' : '0%' ?></span></div>
+        <?php
+          $trendVal = $avgScore > 0 ? (int) round($avgScore * 10 - 50) : 0;
+          $trendStr = ($trendVal > 0 ? '+' : '') . $trendVal . '%';
+        ?>
+        <span class="trend <?= $trendVal >= 0 ? 'trend--up' : 'trend--down' ?>"><svg aria-hidden="true"><use href="<?= $trendVal >= 0 ? '#i-trend-up' : '#i-x' ?>"/></svg> <?= $trendStr ?></span></div>
       <div class="stat-num"><?= $avgScore > 0 ? round($avgScore * 10) : '0' ?><span style="font-size:.6em">%</span></div><div class="stat-lbl">Average Interview Score</div>
       <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" role="img" aria-label="Average score trend">
         <path class="area" d="M2 24 L22 25 L42 19 L62 20 L82 13 L102 11 L118 7 L118 30 L2 30 Z"/>
@@ -896,7 +934,7 @@ if ($avgScore >= 8.0) {
     <div class="stat" style="--st-bar:var(--success)">
       <div class="stat-top"><span class="stat-ic" style="background:var(--success-light);color:var(--success)"><svg aria-hidden="true"><use href="#i-user"/></svg></span>
         <span class="trend trend--flat">Steady</span></div>
-      <div class="stat-num"><?= $avgScore > 0 ? round($avgScore * 9.2).'%' : '72%' ?></div><div class="stat-lbl">Confidence Level · speech &amp; pacing</div>
+      <div class="stat-num"><?= $avgScore > 0 ? round($avgScore * 9.2).'%' : '--' ?></div><div class="stat-lbl">Confidence Level · speech &amp; pacing</div>
       <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" role="img" aria-label="Confidence level trend">
         <path class="area" d="M2 16 L22 13 L42 17 L62 12 L82 15 L102 12 L118 13 L118 30 L2 30 Z"/>
         <path class="line" d="M2 16 L22 13 L42 17 L62 12 L82 15 L102 12 L118 13"/>
@@ -1154,7 +1192,7 @@ if ($avgScore >= 8.0) {
       <!-- Recent sessions: loaded directly via PHP -->
       <section class="card shadow-sm" aria-labelledby="sess-title">
         <div class="card-head"><span class="card-title" id="sess-title"><svg aria-hidden="true"><use href="#i-clock"/></svg> Recent Sessions</span>
-          <a href="#" class="card-link">View all <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
+          <a href="#config" class="card-link">Start new session <svg aria-hidden="true"><use href="#i-arrow-r"/></svg></a></div>
         <div class="card-body" id="sess-body">
           <?php if (empty($recentSessions)): ?>
             <div class="empty">
@@ -1168,7 +1206,7 @@ if ($avgScore >= 8.0) {
                 $formattedTime = date('M d, Y g:i A', strtotime($session['created_at']));
                 $scorePct = ($session['overall_score'] ?? 0) * 10;
               ?>
-              <div class="sess-item">
+              <div class="sess-item" data-session-id="<?= (int) $session['id'] ?>" style="cursor:pointer;" title="Click to view full session report & transcript">
                 <span class="sess-ic" aria-hidden="true">
                   <svg style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;">
                     <use href="#i-chat"/>
@@ -1189,8 +1227,8 @@ if ($avgScore >= 8.0) {
       <section class="card shadow-sm" aria-labelledby="qa-title">
         <div class="card-head"><span class="card-title" id="qa-title"><svg aria-hidden="true"><use href="#i-zap"/></svg> Quick Actions</span></div>
         <div class="card-body qa-list">
-          <a class="qa" href="#"><svg aria-hidden="true"><use href="#i-download"/></svg> Download Reports <span class="cnt"><?= count($recentSessions) ?> PDF</span></a>
-          <a class="qa" href="#"><svg aria-hidden="true"><use href="#i-bookmark"/></svg> Saved Interviews <span class="cnt">0</span></a>
+          <a class="qa" href="#sess-title"><svg aria-hidden="true"><use href="#i-clock"/></svg> Completed Sessions <span class="cnt"><?= count($recentSessions) ?></span></a>
+          <a class="qa" href="<?= base_url('candidate/career-tools') ?>"><svg aria-hidden="true"><use href="#i-bookmark"/></svg> Career Tools Hub <span class="cnt">Explore</span></a>
           <a class="qa" href="<?= base_url('candidate/resume') ?>"><svg aria-hidden="true"><use href="#i-doc"/></svg> Update your CV first</a>
         </div>
       </section>
@@ -1554,36 +1592,199 @@ $('f-personality').addEventListener('change', function(){
   }).join('');
 });
 
-/* ── device tests simulation ── */
-function runTest(kind, willPass){
-  var box = $(kind + '-test'), btn = $(kind + '-btn'), msg = $(kind + '-msg'), spin = $(kind + '-spin');
-  var bars = $(kind + '-bars');
-  
+/* ── Real device test (live audio analysis & voice detection) ── */
+var micAudioCtx = null;
+var micStream = null;
+var micRafId = null;
+
+function cleanupMicTest() {
+  if (micRafId) {
+    cancelAnimationFrame(micRafId);
+    micRafId = null;
+  }
+  if (micStream) {
+    try {
+      micStream.getTracks().forEach(function(t) { t.stop(); });
+    } catch(e) {}
+    micStream = null;
+  }
+  if (micAudioCtx) {
+    try {
+      if (micAudioCtx.state !== 'closed') {
+        micAudioCtx.close();
+      }
+    } catch(e) {}
+    micAudioCtx = null;
+  }
+}
+
+function runMicTest(){
+  var box = $('mic-test'), btn = $('mic-btn'), msg = $('mic-msg'), spin = $('mic-spin'), bars = $('mic-bars');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    box.dataset.state = 'fail';
+    msg.textContent = 'Your browser does not support audio recording. Use Text mode instead.';
+    return;
+  }
+
+  cleanupMicTest();
+
   box.dataset.state = 'testing';
   btn.disabled = true;
-  btn.textContent = 'Testing…';
+  btn.textContent = 'Listening…';
   spin.hidden = false;
-  if(bars) bars.hidden = true;
-  msg.textContent = 'Checking your device…';
-  
-  setTimeout(function(){
-    spin.hidden = true;
-    btn.disabled = false;
-    if(willPass){
-      box.dataset.state = 'pass';
-      btn.textContent = 'Re-test';
-      msg.textContent = kind === 'mic' ? 'Microphone working — clear input level.' : 'Camera working — good lighting detected.';
-      if(bars) bars.hidden = false;
-      showToast((kind === 'mic' ? 'Microphone' : 'Camera') + ' check passed');
-    } else {
-      box.dataset.state = 'fail';
-      btn.textContent = 'Try again';
-      msg.textContent = 'Hardware error. Please ensure permissions are granted in your browser.';
+  if(bars) {
+    bars.hidden = true;
+    bars.className = 'mic-bars listening';
+    if(bars.children) {
+      for(var b = 0; b < bars.children.length; b++) {
+        bars.children[b].style.height = '15%';
+      }
     }
-  }, 1600);
+  }
+  msg.textContent = 'Connecting microphone… please speak to test.';
+
+  navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    }
+  }).then(function(stream){
+    micStream = stream;
+    spin.hidden = true;
+    if(bars) bars.hidden = false;
+    msg.innerHTML = '<strong>Listening…</strong> Please speak into your microphone.';
+
+    try {
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        box.dataset.state = 'pass';
+        btn.disabled = false;
+        btn.textContent = 'Re-test';
+        msg.textContent = 'Microphone permission granted & input active.';
+        showToast('Microphone connected!');
+        return;
+      }
+
+      micAudioCtx = new AudioContextClass();
+      if (micAudioCtx.state === 'suspended') {
+        micAudioCtx.resume();
+      }
+
+      var source = micAudioCtx.createMediaStreamSource(stream);
+      var analyser = micAudioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      analyser.smoothingTimeConstant = 0.4;
+      source.connect(analyser);
+
+      var dataArray = new Uint8Array(analyser.frequencyBinCount);
+      var startTime = Date.now();
+      var maxWaitMs = 8000;
+      var consecutiveSpeechFrames = 0;
+      var voiceDetected = false;
+      var passHoldStart = null;
+
+      function monitorAudio() {
+        if (!micAudioCtx) return;
+
+        analyser.getByteFrequencyData(dataArray);
+
+        var sum = 0;
+        var peak = 0;
+        for (var i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+          if (dataArray[i] > peak) peak = dataArray[i];
+        }
+        var avg = sum / dataArray.length;
+
+        // Drive visualizer bars dynamically based on live frequencies
+        if (bars && bars.children) {
+          var barEls = bars.children;
+          var numBars = barEls.length;
+          for (var b = 0; b < numBars; b++) {
+            var binIdx = Math.min(dataArray.length - 1, Math.floor((b + 1) * (dataArray.length / (numBars + 2))));
+            var binVal = dataArray[binIdx] || 0;
+            var h = Math.max(12, Math.min(100, Math.round((binVal / 180) * 88 + 12)));
+            barEls[b].style.height = h + '%';
+          }
+        }
+
+        // Voice detection threshold: avg volume > 10 or peak > 35
+        if (avg > 10 || peak > 35) {
+          consecutiveSpeechFrames++;
+        } else {
+          consecutiveSpeechFrames = Math.max(0, consecutiveSpeechFrames - 1);
+        }
+
+        if (!voiceDetected && consecutiveSpeechFrames >= 4) {
+          voiceDetected = true;
+          passHoldStart = Date.now();
+          box.dataset.state = 'pass';
+          if (bars) bars.className = 'mic-bars passed';
+          msg.innerHTML = '<strong style="color:var(--success);">Voice detected!</strong> Microphone is working loud and clear.';
+          showToast('Microphone verified — voice detected!');
+        }
+
+        // If voice is detected, show live reactive equalizer for 2.2 seconds, then gracefully settle
+        if (voiceDetected) {
+          if (Date.now() - passHoldStart > 2200) {
+            cleanupMicTest();
+            if (bars && bars.children) {
+              for (var k = 0; k < bars.children.length; k++) {
+                bars.children[k].style.height = '30%';
+              }
+            }
+            btn.disabled = false;
+            btn.textContent = 'Re-test';
+            return;
+          }
+        } else if (Date.now() - startTime > maxWaitMs) {
+          // Timed out with no voice detected
+          cleanupMicTest();
+          box.dataset.state = 'fail';
+          if (bars) {
+            bars.className = 'mic-bars';
+            for (var j = 0; j < bars.children.length; j++) {
+              bars.children[j].style.height = '15%';
+            }
+          }
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+          msg.textContent = 'Microphone connected, but no sound was heard. Check that your mic is un-muted and volume is up.';
+          showToast('No speech detected. Check your mic.');
+          return;
+        }
+
+        micRafId = requestAnimationFrame(monitorAudio);
+      }
+
+      micRafId = requestAnimationFrame(monitorAudio);
+
+    } catch(e) {
+      box.dataset.state = 'pass';
+      btn.disabled = false;
+      btn.textContent = 'Re-test';
+      msg.textContent = 'Microphone connected & permission granted.';
+      showToast('Microphone check passed!');
+    }
+  }).catch(function(err){
+    cleanupMicTest();
+    spin.hidden = true;
+    if(bars) bars.hidden = true;
+    btn.disabled = false;
+    btn.textContent = 'Try again';
+    box.dataset.state = 'fail';
+    if(err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'){
+      msg.textContent = 'Microphone permission blocked. Please allow microphone access in your browser address bar.';
+    } else if(err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError'){
+      msg.textContent = 'No microphone device found on this system. Please connect an audio input.';
+    } else {
+      msg.textContent = 'Microphone unavailable (' + (err.message || err.name) + '). Please verify your audio device.';
+    }
+  });
 }
-$('mic-btn').addEventListener('click', function(){ runTest('mic', true); });
-if($('cam-btn')) $('cam-btn').addEventListener('click', function(){ runTest('cam', true); });
+$('mic-btn').addEventListener('click', runMicTest);
+window.addEventListener('beforeunload', cleanupMicTest);
 
 /* ── auto-suggest Field from Job Title ── */
 var ROLE_MATCH = {
@@ -1724,16 +1925,82 @@ function launch(){
   
   if(DEBUG) params.set('debug', '1');
   
-  toastr.success('Session prepared! Launching…');
+  if(typeof toastr !== 'undefined' && toastr.success){
+    toastr.success('Session prepared! Launching…');
+  } else {
+    showToast('Session prepared! Launching…');
+  }
   setTimeout(function(){
     window.location.href = '<?= base_url('candidate/career-tools/mock-interview/start') ?>?' + params.toString();
-  }, 1400);
+  }, 1200);
 }
 
 $('setup-form').addEventListener('submit', function(e){ e.preventDefault(); launch(); });
 $('m-launch').addEventListener('click', function(){
   document.querySelector('.glass-card').scrollIntoView({behavior:'smooth', block:'start'});
   setTimeout(launch, 450);
+});
+
+// Past Session Review Modal Handlers
+var sessModal = $('sess-modal');
+var smClose = $('sm-close');
+if(smClose) smClose.addEventListener('click', function(){ sessModal.style.display = 'none'; });
+if(sessModal) sessModal.addEventListener('click', function(e){ if(e.target === sessModal) sessModal.style.display = 'none'; });
+
+document.querySelectorAll('.sess-item[data-session-id]').forEach(function(item){
+  item.addEventListener('click', function(){
+    var sId = this.dataset.sessionId;
+    if(!sId) return;
+    $('sm-title').textContent = 'Loading Session Review…';
+    $('sm-meta').textContent = '';
+    $('sm-body').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);"><span class="dt-spin" style="margin:0 auto 10px auto;"></span><p>Fetching evaluation & transcript…</p></div>';
+    sessModal.style.display = 'flex';
+
+    fetch('<?= base_url('candidate/career-tools/mock-interview/session') ?>/' + sId)
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        var s = res.session;
+        if(!s) throw new Error('Session not found');
+        var ev = s.evaluation || {};
+        var tr = s.transcript || [];
+        var dur = s.duration_seconds ? Math.round(s.duration_seconds/60) + ' minutes' : '30 minutes';
+        var scorePct = Math.round((s.overall_score || 0) * 10);
+
+        $('sm-title').textContent = (s.job_title || 'Mock Interview') + ' (' + scorePct + '%)';
+        $('sm-meta').textContent = (s.difficulty ? s.difficulty.toUpperCase() : 'MEDIUM') + ' · ' + dur + ' · ' + (s.created_at || '');
+
+        var html = '';
+        if(ev.summary){
+          html += '<div style="background:var(--brand-light);border-left:4px solid var(--brand);padding:12px 14px;border-radius:8px;font-size:0.85rem;line-height:1.6;color:var(--brand-deep);">'
+               + '<b>Executive Summary:</b><p style="margin:4px 0 0 0;">' + ev.summary + '</p></div>';
+        }
+        if(Array.isArray(ev.strengths) && ev.strengths.length){
+          html += '<div><b style="font-size:0.85rem;color:var(--success);display:flex;align-items:center;gap:6px;"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-check-c"/></svg> Key Strengths:</b><ul style="margin:6px 0 0 20px;font-size:0.82rem;line-height:1.6;color:var(--text);">';
+          ev.strengths.forEach(function(st){ html += '<li>' + st + '</li>'; });
+          html += '</ul></div>';
+        }
+        if(Array.isArray(ev.improvements) && ev.improvements.length){
+          html += '<div><b style="font-size:0.85rem;color:var(--accent-dark);display:flex;align-items:center;gap:6px;"><svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-zap"/></svg> Recommended Improvements:</b><ul style="margin:6px 0 0 20px;font-size:0.82rem;line-height:1.6;color:var(--text);">';
+          ev.improvements.forEach(function(im){ html += '<li>' + im + '</li>'; });
+          html += '</ul></div>';
+        }
+        if(tr && tr.length){
+          html += '<div style="border-top:1px solid var(--border);padding-top:12px;"><b style="font-size:0.85rem;color:var(--brand-deep);">Full Interview Transcript:</b><div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;padding-right:4px;">';
+          tr.forEach(function(t){
+            var isUser = t.sender === 'user';
+            html += '<div style="padding:9px 12px;border-radius:10px;font-size:0.8rem;line-height:1.5;' + (isUser ? 'background:var(--brand);color:#fff;margin-left:24px;' : 'background:var(--bg);color:var(--text);margin-right:24px;border:1px solid var(--border);') + '">'
+                 + '<b style="font-size:0.7rem;display:block;opacity:0.8;margin-bottom:2px;">' + (isUser ? 'You' : 'Interviewer') + '</b>'
+                 + (t.message || '') + '</div>';
+          });
+          html += '</div></div>';
+        }
+
+        $('sm-body').innerHTML = html || '<p style="color:var(--muted);font-size:0.84rem;">No evaluation details recorded for this session.</p>';
+      })
+      .catch(function(err){
+        $('sm-body').innerHTML = '<p style="color:var(--danger);font-size:0.84rem;">Could not load session details. Please try again.</p>';
+      });
+  });
 });
 
 })();

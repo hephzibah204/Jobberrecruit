@@ -1,6 +1,7 @@
 <?= $this->extend('admin/layouts/app') ?>
 
 <?= $this->section('styles') ?>
+<style>.cke_notification_warning{display:none!important}</style>
 <style>
     .ck-editor__editable_inline {
         min-height: 400px;
@@ -270,12 +271,32 @@
                     { name: 'others', groups: [ 'others' ] },
                     { name: 'about', groups: [ 'about' ] }
                 ],
+                versionCheck: false,
                 removeButtons: 'Source,Save,NewPage,Preview,Print,Templates'
             });
         } else {
             console.error('CKEditor failed to load.');
         }
     });
+
+    var previewBtn = document.getElementById('previewToggleBtn');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', function() {
+            var titleEl = document.getElementById('blog_title');
+            var title = (titleEl && titleEl.value) ? titleEl.value : 'Untitled post';
+            var content = '';
+            if (window.CKEDITOR && CKEDITOR.instances.blog_content) {
+                content = CKEDITOR.instances.blog_content.getData();
+            }
+            var safeTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var docHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+                + 'body{font-family:Georgia,serif;max-width:760px;margin:40px auto;padding:0 20px;line-height:1.7;color:#1e293b}'
+                + 'h1{font-family:Arial,sans-serif;font-size:2rem;line-height:1.25;color:#0a2f57}img{max-width:100%;height:auto}'
+                + '</style></head><body><h1>' + safeTitle + '</h1>' + content + '</body></html>';
+            document.getElementById('livePreviewIframe').srcdoc = docHtml;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('previewModal')).show();
+        });
+    }
 
     function generateSlug(text) {
         const isEdit = document.getElementById('blog_id').value !== '';
@@ -336,10 +357,11 @@
                         'X-Requested-With': 'XMLHttpRequest',
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
-                    body: new URLSearchParams({ slug: slugInput.value, id })
+                    body: new URLSearchParams({ slug: slugInput.value, id, '<?= csrf_token() ?>': '<?= csrf_hash() ?>' })
                 })
                 .then(res => res.json())
                 .then(res => {
+                    if (typeof res.valid === 'undefined') return;
                     if (!res.valid && res.slug) {
                         slugInput.value = res.slug;
                         toastr.info('Slug already exists. Updated automatically.');
@@ -360,10 +382,11 @@
                     'X-Requested-With': 'XMLHttpRequest',
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: new URLSearchParams({ title: titleInput.value, id })
+                body: new URLSearchParams({ title: titleInput.value, id, '<?= csrf_token() ?>': '<?= csrf_hash() ?>' })
             })
             .then(res => res.json())
             .then(res => {
+                if (typeof res.valid === 'undefined') return;
                 if (!res.valid && res.title) {
                     titleInput.value = res.title;
                     generateSlug(res.title);

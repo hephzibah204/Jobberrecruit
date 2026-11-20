@@ -130,9 +130,12 @@
     <?= $this->renderSection('styles'); ?>
 
     <style>
-        html, body, a, button, select, input, [role="button"] {
-            cursor: url('<?= base_url("images/favicon_cursor.png"); ?>'), auto !important;
+        @media (hover: hover) and (pointer: fine) {
+            html, body { cursor: url('/images/favicon_cursor.png') 13 17, auto; }
         }
+        a[href], button, select, summary, [role="button"] { cursor: pointer !important; }
+        input, textarea, [contenteditable="true"] { cursor: text !important; }
+        input[type="checkbox"], input[type="radio"], input[type="submit"], input[type="button"] { cursor: pointer !important; }
     </style>
 </head>
 

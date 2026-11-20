@@ -299,7 +299,7 @@ body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;flex-direction
       <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Print
     </button>
-    <a href="<?= base_url('certificates/verify?id=' . rawurlencode($certificate['certificate_code'] ?? '')) ?>" target="_blank" class="btn-cert-action btn-outline-cert">
+    <a href="<?= base_url('verify/' . rawurlencode($certificate['certificate_code'] ?? '')) ?>" target="_blank" class="btn-cert-action btn-outline-cert">
       <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Verify Online
     </a>

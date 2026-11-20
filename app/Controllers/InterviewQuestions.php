@@ -19,9 +19,9 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class InterviewQuestions extends Controller
 {
-    private const TIMEOUT_SECONDS = 15;
+    private const TIMEOUT_SECONDS = 8;
 
-    private const MODEL = 'gemini-3.5-flash-lite';
+    private const MODEL = 'gemini-3.8-flash';
 
     /** Human-readable field labels — the slug alone is a poor prompt signal. */
     private const FIELD_LABELS = [
@@ -78,6 +78,9 @@ class InterviewQuestions extends Controller
         $arrangement = (string)($in['arrangement'] ?? 'onsite');
         $candidateCtx= (string)($in['candidateContext'] ?? '');
 
+        $clientHour   = isset($in['clientHour']) ? (int)$in['clientHour'] : (int)date('G');
+        $timeGreeting = (string)($in['clientTimeGreeting'] ?? ($clientHour < 12 ? 'Good morning' : ($clientHour < 17 ? 'Good afternoon' : 'Good evening')));
+
         $apiKey = env('GEMINI_API_KEY');
         if (empty($apiKey)) {
             log_message('error', 'GEMINI_API_KEY is not set in .env');
@@ -87,7 +90,8 @@ class InterviewQuestions extends Controller
         // ---- build the prompt ----------------------------------------------
         $prompt = $this->buildPrompt(
             $job, $field, $itype, $diff, $exp, $count,
-            $focus, $salaryBand, $company, $arrangement, $candidateCtx
+            $focus, $salaryBand, $company, $arrangement, $candidateCtx,
+            $timeGreeting, $clientHour
         );
 
         // ---- call Gemini ----------------------------------------------------
@@ -102,8 +106,9 @@ class InterviewQuestions extends Controller
             ],
         ];
 
+        $model = env('GEMINI_MODEL_FAST') ?: (env('GEMINI_MODEL') ?: self::MODEL);
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-             . self::MODEL . ':generateContent';
+             . $model . ':generateContent';
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -126,6 +131,29 @@ class InterviewQuestions extends Controller
         if ($raw === false) {
             log_message('error', 'Gemini cURL failure: ' . $curlErr);
             return $this->fail('upstream unreachable', 502);
+        }
+        if ($httpCode !== 200 && ($httpCode === 503 || $httpCode === 404) && $model !== 'gemini-flash-lite-latest') {
+            log_message('warning', "Gemini model {$model} returned HTTP {$httpCode}, attempting failover to gemini-flash-lite-latest");
+            $urlFallback = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent';
+            $chF = curl_init($urlFallback);
+            curl_setopt_array($chF, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode($body),
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'x-goog-api-key: ' . $apiKey,
+                ],
+                CURLOPT_TIMEOUT        => self::TIMEOUT_SECONDS,
+                CURLOPT_CONNECTTIMEOUT => 3,
+            ]);
+            $rawF      = curl_exec($chF);
+            $httpCodeF = curl_getinfo($chF, CURLINFO_HTTP_CODE);
+            curl_close($chF);
+            if ($rawF !== false && $httpCodeF === 200) {
+                $raw      = $rawF;
+                $httpCode = 200;
+            }
         }
         if ($httpCode !== 200) {
             // Log the actual upstream body — this is what tells you whether it's
@@ -153,6 +181,12 @@ class InterviewQuestions extends Controller
         // Trim to the exact count. Never pad — a short-but-real list is fine,
         // padding with filler would be worse than the curated fallback.
         $questions = array_slice($questions, 0, $count);
+
+        // Ensure greeting matches candidate time of day
+        foreach ($questions as &$q) {
+            $q = preg_replace('/^(Good morning|Good afternoon|Good evening|Good day)[,.]?\s*/i', $timeGreeting . ', ', $q);
+        }
+        unset($q);
 
         return $this->response->setJSON(['questions' => $questions]);
     }
@@ -200,7 +234,7 @@ class InterviewQuestions extends Controller
     private function buildPrompt(
         string $job, string $field, string $itype, string $diff, string $exp,
         int $count, string $focus, string $salaryBand, string $company,
-        string $arrangement, string $candidateCtx
+        string $arrangement, string $candidateCtx, string $timeGreeting = 'Good day', int $clientHour = 12
     ): string {
         $fieldLabel = self::FIELD_LABELS[$field] ?? 'General / Cross-functional';
 
@@ -250,7 +284,7 @@ class InterviewQuestions extends Controller
             ? "The role is {$arrangement}; one question may probe self-management or remote collaboration."
             : '';
 
-        return <<<PROMPT
+        $prompt = <<<PROMPT
 You are an experienced Nigerian recruiter, based in Nigeria, preparing an interview for a candidate practising for a real job interview with a Nigerian employer.
 
 Everything you write must be grounded in the Nigerian workplace. This is not a US or UK interview. See the NIGERIAN CONTEXT rules below — they override any default assumptions you might otherwise bring.
@@ -272,6 +306,12 @@ If they appear to disagree, that is deliberate — the candidate chose both. Hon
 {$salaryRule}
 {$companyRule}
 {$arrangementRule}
+
+TIME OF DAY AND GREETINGS — CRITICAL RULE:
+- Candidate's local time of day: {$timeGreeting} (Hour {$clientHour}:00).
+- If any question includes a conversational greeting, you MUST match their time of day: "{$timeGreeting}".
+- NEVER say "Good morning" if it is afternoon, evening, or night!
+- Prefer direct interview questions without conversational time greetings unless natural.
 
 NIGERIAN CONTEXT — HARD REQUIREMENT, NOT A PREFERENCE:
 - This candidate is interviewing for a job IN NIGERIA, with a Nigerian employer. Every question must make sense to someone working in Lagos, Abuja, Port Harcourt or Kano — not New York or London.

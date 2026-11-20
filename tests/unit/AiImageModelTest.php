@@ -10,7 +10,8 @@ final class AiImageModelTest extends CIUnitTestCase
 
     protected $migrate = true;
     protected $migrateOnce = false;
-    protected $namespace = 'App';
+    // App migrations depend on Shield's users table.
+    protected $namespace = null;
 
     private AiImageModel $model;
 

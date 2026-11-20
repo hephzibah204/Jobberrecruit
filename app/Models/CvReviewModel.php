@@ -22,6 +22,21 @@ class CvReviewModel extends Model
         return $this->where('status', 'pending');
     }
 
+    public function findForUpload(int $reviewId, int $userId): \App\Entities\CvReview
+    {
+        $review = $this->find($reviewId);
+        if (!$review || (int) $review->user_id !== $userId) {
+            throw new \InvalidArgumentException('Review not found for this account.');
+        }
+        if ($review->plan !== 'basic' && $review->payment_status !== 'paid') {
+            throw new \InvalidArgumentException('Payment is required for this review.');
+        }
+        if (!empty($review->file_path)) {
+            throw new \InvalidArgumentException('A CV has already been submitted for this review.');
+        }
+        return $review;
+    }
+
     public function inReview()
     {
         return $this->where('status', 'in_review');

@@ -162,6 +162,9 @@ if (isset($user)) {
           <button onclick="startMessage(<?= (int)$candidate->id ?>)" class="emp-btn emp-btn-outline emp-btn-block">
             <svg aria-hidden="true"><use href="#i-chat"/></svg> Send Message — Free
           </button>
+          <a href="<?= base_url('employer/aptitude-tests?create=1&candidate=' . (int)$candidate->id) ?>" class="emp-btn emp-btn-outline emp-btn-block">
+                <svg aria-hidden="true"><use href="#i-clipboard-list"/></svg> Create Custom Test
+        </a>
           <?php if ($unlocked): ?>
             <?php if (!empty($candidate->resume)): ?>
               <a href="<?= base_url('employer/download-cv/' . $candidate->id) ?>" class="emp-btn emp-btn-primary emp-btn-block">
@@ -382,7 +385,7 @@ if (isset($user)) {
         </div>
       <?php endif; ?>
       
-      <p style="font-size:.72rem;color:var(--muted);margin-top:12px">The fee is deducted from your wallet. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:12px">Pay from your wallet balance or by card via Paystack. Unlocks are one-time per candidate, permanent for your account, and non-refundable. Messaging this candidate remains free without unlocking.</p>
     </div>
     <div class="modal-foot modal-foot--stacked">
       <div class="modal-foot-row">

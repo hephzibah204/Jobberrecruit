@@ -36,77 +36,35 @@ class NewsletterController extends BaseController
         return view('webinars_public', [
             'title'            => 'Free Career Webinars & Live Masterclasses | JobberRecruit',
             'meta_description' => 'Join free live career webinars and masterclasses hosted by top Nigerian HR leaders. Learn interview skills, resume writing & industry insights.',
-            'webinars'         => $this->webinarModel->where('status !=', 'cancelled')
-                                            ->orderBy('scheduled_at', 'ASC')
-                                            ->findAll()
+            'webinars'         => $this->webinarModel->upcoming()->findAll()
         ]);
     }
 
     public function registered($webinarId = null)
     {
-        $user = auth()->loggedIn() ? auth()->user() : null;
-        $userEmail = $user ? $user->email : 'your email';
-        $userFirstName = 'there';
-        $userFullName = 'Candidate';
-
-        if ($user) {
-            $seeker = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
-            if ($seeker && !empty($seeker->full_name)) {
-                $userFullName = $seeker->full_name;
-                $userFirstName = explode(' ', trim($seeker->full_name))[0];
-            } elseif (!empty($user->username)) {
-                $userFullName = $user->username;
-                $userFirstName = $user->username;
-            }
+        if (!auth()->loggedIn()) return redirect()->to(base_url('login'))->with('error', 'Please sign in to view your webinar ticket.');
+        $user = auth()->user();
+        $targetId = (int) ($webinarId ?: $this->request->getGet('id'));
+        $query = $this->registrationModel->where('user_id', $user->id);
+        $registration = $targetId > 0 ? $query->where('webinar_id', $targetId)->first() : $query->orderBy('id','DESC')->first();
+        if (!$registration) return redirect()->to(base_url('training/webinars'))->with('error', 'Please register for this webinar to view its ticket.');
+        $webinar = $this->webinarModel->find($registration->webinar_id);
+        if (!$webinar || (!WebinarModel::registrationOpen($webinar) && !WebinarModel::inProgress($webinar))) {
+            return redirect()->to(base_url('training/webinars'))->with('error', 'This webinar has ended or is unavailable. Please choose an upcoming session.');
         }
-
-        $targetWebinarId = $webinarId ?: $this->request->getGet('id');
-        $webinar = null;
-
-        if ($targetWebinarId) {
-            $webinar = $this->webinarModel->find($targetWebinarId);
-        }
-
-        if (!$webinar && auth()->loggedIn()) {
-            $reg = $this->registrationModel->where('user_id', auth()->id())->orderBy('id', 'DESC')->first();
-            if ($reg) {
-                $webinar = $this->webinarModel->find($reg->webinar_id ?? $reg['webinar_id']);
-            }
-        }
-
-        if (!$webinar) {
-            $webinar = $this->webinarModel->where('status !=', 'cancelled')->orderBy('scheduled_at', 'ASC')->first();
-        }
-
-        $registration = null;
-        if ($webinar && auth()->loggedIn()) {
-            $registration = $this->registrationModel->where([
-                'webinar_id' => $webinar->id,
-                'user_id'    => auth()->id(),
-            ])->first();
-        }
-
-        $ticketNumber = 'JR-WBN-' . ($webinar ? str_pad($webinar->id, 4, '0', STR_PAD_LEFT) : '0001') . '-' . (auth()->loggedIn() ? str_pad(auth()->id(), 4, '0', STR_PAD_LEFT) : rand(1000, 9999));
-        $admissionType = ($webinar && ($webinar->access_type ?? 'free') === 'paid') ? ('Paid VIP Access (₦' . number_format((float)($webinar->price ?? 0)) . ')') : 'Standard Free Admission';
-        $joinUrl = !empty($webinar->meeting_link) ? $webinar->meeting_link : base_url('training/webinars');
-
-        $recommendedWebinars = $this->webinarModel
-            ->where('status !=', 'cancelled')
-            ->where('id !=', $webinar?->id ?? 0)
-            ->orderBy('scheduled_at', 'ASC')
-            ->findAll(3);
-
+        $seeker = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
+        $fullName = $seeker->full_name ?? $user->username ?? 'Candidate';
+        $firstName = explode(' ', trim($fullName))[0];
+        $paid = ($webinar->access_type ?? 'free') === 'paid';
         return view('webinar_registered', [
-            'title'               => 'Registration Confirmed - ' . ($webinar ? esc($webinar->title) : 'JobberRecruit'),
-            'webinar'             => $webinar,
-            'registration'        => $registration,
-            'user_first_name'     => $userFirstName,
-            'user_full_name'      => $userFullName,
-            'user_email'          => $userEmail,
-            'ticket_number'       => $ticketNumber,
-            'admission_type'      => $admissionType,
-            'join_url'            => $joinUrl,
-            'recommendedWebinars' => $recommendedWebinars,
+            'title'=>'Your Webinar Ticket - ' . $webinar->title,
+            'webinar'=>$webinar, 'registration'=>$registration,
+            'user_first_name'=>$firstName, 'user_full_name'=>$fullName, 'user_email'=>$user->email,
+            'ticket_number'=>'JR-WBN-' . str_pad($webinar->id,4,'0',STR_PAD_LEFT) . '-' . str_pad($user->id,4,'0',STR_PAD_LEFT),
+            'admission_type'=>$paid ? 'Paid VIP Access' : 'Standard Free Admission',
+            'join_url'=>$webinar->meeting_link ?: base_url('training/webinars'),
+            'recommendedWebinars'=>$this->webinarModel->upcoming()->where('id !=',$webinar->id)->findAll(3),
+            'webinarInProgress'=>WebinarModel::inProgress($webinar),
         ]);
     }
 
@@ -118,6 +76,10 @@ class NewsletterController extends BaseController
         $email = $this->request->getPost('email');
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $this->fail('Invalid email address');
+        }
+
+        if ((new \App\Services\EmailSuppressionService())->isSuppressed($email)) {
+            return $this->fail('Please use another email address or contact support.');
         }
 
         $existing = $this->subscriberModel->where('email', $email)->first();
@@ -139,235 +101,65 @@ class NewsletterController extends BaseController
         return $this->respondCreated(['message' => 'Successfully subscribed to newsletter']);
     }
 
-    /**
-     * Register for a webinar (Free or Paid with Paystack / Wallet)
-     */
     public function registerWebinar($webinarId)
     {
-        if (!auth()->loggedIn()) {
-            return $this->failUnauthorized('Please login to register for webinars');
-        }
-
-        $webinar = $this->webinarModel->find($webinarId);
-        if (!$webinar) {
-            return $this->failNotFound('Webinar not found');
-        }
-
+        if (!auth()->loggedIn()) return $this->failUnauthorized('Please login to register for webinars');
         $user = auth()->user();
-
-        $existing = $this->registrationModel->where([
-            'webinar_id' => $webinarId,
-            'user_id'    => $user->id
-        ])->first();
-
-        if ($existing) {
-            return $this->failResourceExists('You are already registered for this webinar');
-        }
-
-        $isPaid = ($webinar->access_type ?? 'free') === 'paid' && (float)($webinar->price ?? 0) > 0;
-
-        // Handling Paid Webinar
-        if ($isPaid) {
-            $reference = $this->request->getPost('reference') ?? $this->request->getVar('reference');
-            $paymentMethod = $this->request->getPost('payment_method') ?? $this->request->getVar('payment_method');
-
-            // 1. Paystack Verification Callback from Modal / Inline
-            if (!empty($reference)) {
-                $paystack = new \App\Services\PaystackService();
-                $verify = $paystack->verify($reference);
-
-                if (!($verify['status'] ?? false) || ($verify['data']['status'] ?? '') !== 'success') {
-                    return $this->fail('Payment verification failed. Please try again or contact support.');
-                }
-
-                // Record payment in PaymentModel
-                try {
-                    $paymentModel = model(\App\Models\PaymentModel::class);
-                    $paymentModel->insert([
-                        'user_id'        => $user->id,
-                        'reference'      => $reference,
-                        'amount'         => ($verify['data']['amount'] ?? ($webinar->price * 100)) / 100,
-                        'status'         => 'paid',
-                        'payment_method' => 'paystack',
-                        'paid_at'        => date('Y-m-d H:i:s'),
-                    ]);
-                } catch (\Throwable $e) {
-                    log_message('error', 'Payment recording error: ' . $e->getMessage());
-                }
-
-                $this->finalizeWebinarRegistration($user, $webinar);
-
-                return $this->respondCreated([
-                    'status'     => 201,
-                    'message'    => 'Payment successful! You are now registered.',
-                    'webinar_id' => $webinarId,
-                    'redirect'   => base_url('training/webinars/registered?id=' . $webinarId),
-                ]);
-            }
-
-            // 2. Wallet Payment Option
-            if ($paymentMethod === 'wallet') {
-                $walletService = new \App\Services\WalletService();
-                $wallet = $walletService->getOrCreateWallet($user->id);
-                $amount = (float)$webinar->price;
-
-                if ((float)$wallet->balance < $amount) {
-                    return $this->fail('Insufficient wallet balance (₦' . number_format($wallet->balance, 2) . '). Please top up your wallet or pay with Paystack.');
-                }
-
-                $wRef = 'wbn_w_' . uniqid();
-                $walletService->debit(
-                    userId: $user->id,
-                    amount: $amount,
-                    source: 'wallet_checkout',
-                    reference: $wRef,
-                    description: 'Paid with wallet for webinar: ' . $webinar->title
-                );
-
-                try {
-                    $paymentModel = model(\App\Models\PaymentModel::class);
-                    $paymentModel->insert([
-                        'user_id'        => $user->id,
-                        'reference'      => $wRef,
-                        'amount'         => $amount,
-                        'status'         => 'paid',
-                        'payment_method' => 'wallet',
-                        'paid_at'        => date('Y-m-d H:i:s'),
-                    ]);
-                } catch (\Throwable $e) {
-                    log_message('error', 'Wallet payment recording error: ' . $e->getMessage());
-                }
-
-                $this->finalizeWebinarRegistration($user, $webinar);
-
-                return $this->respondCreated([
-                    'status'     => 201,
-                    'message'    => 'Payment successful using wallet! You are registered.',
-                    'webinar_id' => $webinarId,
-                    'redirect'   => base_url('training/webinars/registered?id=' . $webinarId),
-                ]);
-            }
-
-            // 3. Initiate Paystack Payment Modal / Checkout
-            $paystack = new \App\Services\PaystackService();
-            $callbackUrl = base_url("training/webinars/verify/{$webinarId}");
-            $initResponse = $paystack->initialize($user->email, $webinar->price, $callbackUrl, [
-                'type'       => 'webinar',
-                'webinar_id' => $webinarId,
-                'user_id'    => $user->id,
-            ]);
-
-            if (!($initResponse['status'] ?? false)) {
-                return $this->fail('Could not initialize payment: ' . ($initResponse['message'] ?? 'Please try again later.'));
-            }
-
-            $publicKey = env('paystack_public_key', env('PAYSTACK_PUBLIC_KEY', ''));
-
-            return $this->respond([
-                'status'            => 200,
-                'requires_payment'  => true,
-                'authorization_url' => $initResponse['data']['authorization_url'],
-                'reference'         => $initResponse['data']['reference'] ?? '',
-                'access_code'       => $initResponse['data']['access_code'] ?? '',
-                'public_key'        => $publicKey,
-                'amount'            => (float)$webinar->price,
-                'user_email'        => $user->email,
-                'webinar_title'     => $webinar->title,
-                'webinar_id'        => $webinarId,
-            ]);
-        }
-
-        // Free Webinar Registration
-        $this->finalizeWebinarRegistration($user, $webinar);
-
-        return $this->respondCreated([
-            'status'     => 201,
-            'message'    => 'Successfully registered for the free webinar.',
-            'webinar_id' => $webinarId,
-            'redirect'   => base_url('training/webinars/registered?id=' . $webinarId),
-        ]);
-    }
-
-    private function finalizeWebinarRegistration($user, $webinar)
-    {
-        $existing = $this->registrationModel->where([
-            'webinar_id' => $webinar->id,
-            'user_id'    => $user->id
-        ])->first();
-
-        if (!$existing) {
-            $this->registrationModel->insert([
-                'webinar_id' => $webinar->id,
-                'user_id'    => $user->id
-            ]);
-            $this->webinarModel->where('id', $webinar->id)->increment('registrants_count', 1);
-        }
-
-        if (!empty($user->email)) {
-            $existingSub = $this->subscriberModel->where('email', $user->email)->first();
-            if (!$existingSub) {
-                $this->subscriberModel->insert([
-                    'email'     => $user->email,
-                    'user_id'   => $user->id,
-                    'is_active' => 1
-                ]);
-            }
-        }
-
+        $webinar = $this->webinarModel->find($webinarId);
+        if (!$webinar) return $this->failNotFound('Webinar not found');
+        $purchase = new \App\Services\WebinarPurchaseService();
+        $reference = (string) ($this->request->getPost('reference') ?? '');
         try {
-            $emailNotifService = new \App\Services\EmailNotificationService();
-            $emailNotifService->sendWebinarRegistrationNotification($user, $webinar);
+            // A paid checkout may complete after the start time. Verify its existing order first.
+            if ($reference !== '') {
+                $verified = (new \App\Services\PaystackService())->verify($reference);
+                if (!($verified['status'] ?? false)) throw new \RuntimeException('Payment could not be verified. Please retry with the same reference.');
+                $purchase->fulfill($verified['data'] ?? [], (int) $user->id, (int) $webinarId);
+            } elseif ($this->registrationModel->where('user_id',$user->id)->where('webinar_id',$webinarId)->first()) {
+                return $this->respond(['status'=>200,'success'=>true,'redirect'=>base_url('training/webinars/registered?id=' . $webinarId)]);
+            } else {
+                if (!WebinarModel::registrationOpen($webinar)) return $this->fail('Registration for this webinar is closed. Please choose an upcoming session.',409);
+                $wallet = $this->request->getPost('payment_method') === 'wallet';
+                if (($webinar->access_type ?? 'free') === 'paid' && (float) $webinar->price > 0 && !$wallet) {
+                    $order = $purchase->createOrder((int) $user->id, (int) $webinarId);
+                    $initialized = (new \App\Services\PaystackService())->initialize($user->email, $order['amount'],
+                        base_url('training/webinars/verify/' . $webinarId), $order['metadata']);
+                    if (!($initialized['status'] ?? false) || empty($initialized['data']['authorization_url'])) {
+                        throw new \RuntimeException('Could not start payment. Please try again.');
+                    }
+                    return $this->respond(['status'=>200,'requires_payment'=>true,'authorization_url'=>$initialized['data']['authorization_url']]);
+                }
+                $purchase->register((int) $user->id, (int) $webinarId, $wallet);
+            }
+            return $this->respondCreated(['status'=>201,'success'=>true,'message'=>'Registration confirmed.',
+                'redirect'=>base_url('training/webinars/registered?id=' . $webinarId)]);
         } catch (\Throwable $e) {
-            log_message('error', 'Webinar registration notification error: ' . $e->getMessage());
+            log_message('error','Webinar checkout: ' . $e->getMessage());
+            return $this->fail($e instanceof \InvalidArgumentException ? $e->getMessage() : 'Could not confirm registration. Please retry or contact support with your payment reference.',409);
         }
     }
 
-    /**
-     * Verify Paystack standard redirect payment
-     */
     public function verifyWebinarPayment($webinarId)
     {
-        if (!auth()->loggedIn()) {
-            return redirect()->to('login')->with('error', 'Please login to view registration.');
-        }
-
-        $reference = $this->request->getGet('reference');
-        if (!$reference) {
-            return redirect()->to('training/webinars')->with('error', 'Invalid payment reference');
-        }
-
-        $paystack = new \App\Services\PaystackService();
-        $result = $paystack->verify($reference);
-
-        if (!($result['status'] ?? false) || ($result['data']['status'] ?? '') !== 'success') {
-            return redirect()->to('training/webinars')->with('error', 'Webinar payment verification failed or was cancelled.');
-        }
-
-        $user = auth()->user();
-        $webinar = $this->webinarModel->find($webinarId);
-        if (!$webinar) {
-            return redirect()->to('training/webinars')->with('error', 'Webinar not found.');
-        }
-
-        // Record payment
+        $reference = (string) $this->request->getGet('reference');
         try {
-            $paymentModel = model(\App\Models\PaymentModel::class);
-            $paymentModel->insert([
-                'user_id'        => $user->id,
-                'reference'      => $reference,
-                'amount'         => ($result['data']['amount'] ?? ($webinar->price * 100)) / 100,
-                'status'         => 'paid',
-                'payment_method' => 'paystack',
-                'paid_at'        => date('Y-m-d H:i:s'),
-            ]);
+            if ($reference === '') throw new \InvalidArgumentException('Missing payment reference.');
+            $verified = (new \App\Services\PaystackService())->verify($reference);
+            if (!($verified['status'] ?? false)) throw new \RuntimeException('Payment verification is unavailable.');
+            // Order-anchored fulfillment: the session may not survive the
+            // Paystack round-trip (same fix as the course/plan callbacks).
+            (new \App\Services\WebinarPurchaseService())->fulfill($verified['data'] ?? [], null, (int) $webinarId);
+            if (!auth()->loggedIn()) {
+                return redirect()->to(base_url('login'))->with('success','Payment verified. Your seat is confirmed - sign in to view your webinar.');
+            }
+            return redirect()->to(base_url('training/webinars/registered?id=' . $webinarId))->with('success','Payment verified. Your seat is confirmed.');
         } catch (\Throwable $e) {
-            log_message('error', 'Payment recording error: ' . $e->getMessage());
+            log_message('error','Webinar payment verification: ' . $e->getMessage());
+            return redirect()->to(base_url('training/webinars'))->with('error','Payment could not be confirmed. Please contact support with your payment reference; do not pay again.');
         }
-
-        $this->finalizeWebinarRegistration($user, $webinar);
-
-        return redirect()->to('training/webinars/registered?id=' . $webinarId)->with('success', 'Payment successful! Seat confirmed.');
     }
+
+
 
     // --- Admin Methods ---
 
@@ -651,7 +443,7 @@ class NewsletterController extends BaseController
 
         $db = \Config\Database::connect();
         $attendees = $db->table('webinar_registrations')
-            ->select('webinar_registrations.id as reg_id, webinar_registrations.created_at as registered_at, users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, users.username, users.user_type, job_seekers.full_name as js_full_name, job_seekers.phone as js_phone, job_seekers.profile_picture as js_avatar, employers.company_name as emp_company, employers.phone as emp_phone, employers.logo as emp_logo')
+            ->select('webinar_registrations.id as reg_id, webinar_registrations.created_at as registered_at, users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, users.username, users.user_type, job_seekers.full_name as js_full_name, job_seekers.phone as js_phone, job_seekers.profile_picture as js_avatar, employers.company_name as emp_company, employers.contact_phone as emp_phone, employers.logo as emp_logo')
             ->join('users', 'users.id = webinar_registrations.user_id', 'left')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
             ->join('job_seekers', 'job_seekers.user_id = users.id', 'left')
@@ -697,7 +489,7 @@ class NewsletterController extends BaseController
 
         $db = \Config\Database::connect();
         $attendees = $db->table('webinar_registrations')
-            ->select('webinar_registrations.id as reg_id, webinar_registrations.created_at as registered_at, users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, users.username, job_seekers.full_name as js_full_name, job_seekers.phone as js_phone, employers.company_name as emp_company, employers.phone as emp_phone')
+            ->select('webinar_registrations.id as reg_id, webinar_registrations.created_at as registered_at, users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, users.username, job_seekers.full_name as js_full_name, job_seekers.phone as js_phone, employers.company_name as emp_company, employers.contact_phone as emp_phone')
             ->join('users', 'users.id = webinar_registrations.user_id', 'left')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
             ->join('job_seekers', 'job_seekers.user_id = users.id', 'left')

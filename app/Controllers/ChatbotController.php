@@ -50,7 +50,7 @@ class ChatbotController extends BaseController
 
         // Candidate Subscription Check for AI Chatbot
         $user = auth()->user();
-        if ($user && ($user->user_type === 'candidate' || $user->role === 'candidate')) {
+        if ($user && (in_array($user->user_type, ['job_seeker', 'jobseeker', 'candidate'], true) || ($user->role ?? null) === 'candidate')) {
             if (!is_site_free_mode() && is_ai_tools_paid_mode()) {
                 $subModel = model(\App\Models\UserSubscriptionModel::class);
                 $hasActiveSub = $subModel->where('user_id', $user->id)

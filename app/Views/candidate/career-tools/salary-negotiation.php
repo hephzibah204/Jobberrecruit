@@ -27,6 +27,28 @@
 }
 
 /* ═══ EXTRACTED MOCKUP CSS MISSING IN PHP VIEW ═══ */
+/* card */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{display:inline-flex;align-items:center;gap:9px;font-family:'Sora',sans-serif;font-weight:700;font-size:.94rem;color:var(--brand-deep)}
+.card-title svg{width:16px;height:16px;color:var(--brand);flex-shrink:0}
+.card-body{padding:18px 20px}
+.card-link{font-size:.76rem;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;padding:8px 10px;margin:-8px -10px;border-radius:8px}
+.card-link:hover{background:var(--brand-light);text-decoration:none}
+.card-link svg{width:13px;height:13px;flex-shrink:0}
+
+/* form controls */
+.input,.select{width:100%;min-height:44px;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Inter',sans-serif;font-size:15px;background:#fff;color:var(--text);transition:var(--transition);box-sizing:border-box}
+.input:focus,.select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(8,97,169,.12)}
+.select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b6577' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+label.lbl,.lbl{display:block;font-size:.76rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.lbl-opt{font-weight:500;color:#8fa0b8;font-size:.9em}
+.field-ic{position:relative;display:flex;align-items:center;width:100%}
+.field-ic>svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important;color:var(--muted);pointer-events:none;flex-shrink:0;z-index:2}
+.field-ic .input{padding-left:38px!important;width:100%}
+.hint{font-size:.72rem;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;line-height:1.4}
+.hint svg{width:13px!important;height:13px!important;max-width:13px!important;max-height:13px!important;color:var(--muted);flex-shrink:0}
+
 .content{flex:1;padding:clamp(18px,3vw,32px);padding-bottom:110px;display:flex;flex-direction:column;gap:clamp(16px,2.2vw,24px)}
 @media (min-width:1025px){.content{padding-bottom:clamp(18px,3vw,32px)}}
 .nego-hero{position:relative;overflow:hidden;border-radius:var(--radius-lg);color:#fff;padding:clamp(22px,3.2vw,34px);
@@ -379,6 +401,19 @@
 .toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);z-index:1400;display:flex;align-items:center;gap:10px;background:var(--brand-deep);color:#fff;font-size:.82rem;font-weight:600;padding:13px 20px;border-radius:12px;box-shadow:var(--shadow-lg);opacity:0;visibility:hidden;transition:opacity .25s ease,transform .25s ease,visibility .25s;max-width:min(420px,calc(100vw - 32px))}
 .toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .toast svg{width:17px;height:17px;color:var(--accent);flex-shrink:0}
+.voice-mode-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;background:rgba(8,97,169,.1);color:var(--brand);font-size:.72rem;font-weight:700;border:1px solid rgba(8,97,169,.22);cursor:pointer;transition:var(--transition)}
+.voice-mode-btn:hover{background:rgba(8,97,169,.18)}
+.voice-mode-btn.muted{background:#f1f5f9;color:var(--muted);border-color:var(--border)}
+.voice-mode-btn svg{width:13px;height:13px}
+.composer{display:flex;align-items:center;gap:8px}
+.nego-mic-btn{width:40px;height:40px;border-radius:10px;background:var(--brand-light);color:var(--brand);border:1px solid rgba(8,97,169,.22);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);flex-shrink:0}
+.nego-mic-btn:hover{background:rgba(8,97,169,.22)}
+.nego-mic-btn.recording{background:#dc2626;color:#fff;border-color:transparent;animation:recPulse 1.2s infinite}
+.nego-mic-btn svg{width:17px;height:17px}
+@keyframes recPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.voice-input-status{font-size:.74rem;color:var(--brand);margin-top:6px;display:flex;align-items:center;gap:6px;font-weight:600}
+.voice-input-status .pulse-dot{width:8px;height:8px;border-radius:50%;background:#dc2626;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
 <?= $this->endSection() ?>
 
@@ -417,6 +452,9 @@
         <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.4 0 7-2.8 7-6.7 0-3.3-2.2-5.6-3.8-7.3C13.9 6.6 13 5 13 2c-3 2-5 5-5 8-.9-.7-1.6-1.6-2-3-1.3 1.6-2 3.7-2 5.6C4 18.5 7.2 22 12 22Z"/></symbol>
         <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 15v3M13 11v7M18 7v11"/></symbol>
         <symbol id="i-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 4.5 3L12 4l5.5 7L22 8l-2 12H4L2 8Z"/></symbol>
+        <symbol id="i-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></symbol>
+        <symbol id="i-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
       </defs>
     </svg>
 
@@ -436,8 +474,10 @@
           <p class="hero-sub">Practice the deal before it's real. Negotiate against an AI recruiter that pushes back like the real thing — then get a full report on how you performed.</p>            <?php
               $negoStreak = $streak ?? 0;
               $negoXp = $xp ?? 0;
-              $negoXpLevel = floor($negoXp / 500) + 1;
-              $negoXpRemain = max(0, ($negoXpLevel * 500) - $negoXp);
+              $gamification = config('Gamification') ?? new \Config\Gamification();
+              $levelData = $gamification->getLevelData($negoXp);
+              $negoXpLevel = $levelData['level'];
+              $negoXpRemain = $levelData['needed_xp'];
               $negoWeeklyDone = $weeklyDone ?? 0;
               $negoWeeklyGoal = $weeklyGoalTarget ?? 2;
               $negoWeeklyPct = $weeklyPct ?? 0;
@@ -623,6 +663,17 @@
                 </div>
               </fieldset>
 
+              <fieldset class="cfg-set span2">
+                <legend class="lbl">Interview Mode</legend>
+                <div class="seg" role="radiogroup" aria-label="Interview mode">
+                  <input type="radio" name="nimode" id="nim-text" value="text" checked>
+                  <label for="nim-text"><svg aria-hidden="true"><use href="#i-chat"/></svg> Text Interview</label>
+                  <input type="radio" name="nimode" id="nim-voice" value="voice">
+                  <label for="nim-voice"><svg aria-hidden="true"><use href="#i-mic"/></svg> Voice Interview</label>
+                </div>
+                <p class="hint">In <b>Voice Interview</b>, the hiring manager speaks out loud using neural voice and you can reply with your microphone or typing.</p>
+              </fieldset>
+
               <div>
                 <label class="lbl" for="n-org">Organisation Type</label>
                 <select class="select" id="n-org">
@@ -665,6 +716,7 @@
               <span class="rec-ava"><svg aria-hidden="true"><use href="#i-user"/></svg><span class="live" aria-hidden="true"></span></span>
               <div class="convo-id"><b id="live-name">Chioma Nwachukwu</b><i id="live-role">HR Business Partner · Corporate</i></div>
               <div class="convo-meta">
+                <button type="button" class="voice-mode-btn" id="nego-voice-btn" aria-label="Toggle voice sound"><svg aria-hidden="true" id="nego-voice-ic"><use href="#i-vol"/></svg> <span id="nego-voice-txt">Voice On</span></button>
                 <span class="style-badge style--difficult" id="style-badge"><svg aria-hidden="true"><use href="#i-shield"/></svg> <span id="style-label">Corporate</span></span>
                 <span class="round-pill" id="round-pill">Round 1 of 5</span>
               </div>
@@ -676,10 +728,12 @@
                 <div class="chat" id="chat" role="log" aria-live="polite" aria-label="Negotiation conversation"></div>
                 <div class="sugs" id="sugs" aria-label="Suggested tactics"></div>
                 <div class="composer">
+                  <button type="button" class="nego-mic-btn" id="nego-mic-btn" aria-label="Voice input" title="Click to speak"><svg aria-hidden="true"><use href="#i-mic"/></svg></button>
                   <label for="composer-input" class="sr-only" style="position:absolute;left:-9999px">Your reply to the recruiter</label>
-                  <textarea id="composer-input" placeholder="Type your response — quote figures, justify with results…" rows="2"></textarea>
+                  <textarea id="composer-input" placeholder="Type or speak your counter-offer — quote figures, justify with results…" rows="2"></textarea>
                   <button type="button" class="send-btn" id="send-btn" aria-label="Send reply"><svg aria-hidden="true"><use href="#i-arrow-r"/></svg></button>
                 </div>
+                <div class="voice-input-status" id="nego-mic-status" hidden><span class="pulse-dot"></span> Listening... speak clearly into your mic</div>
                 <div class="convo-actions">
                   <button type="button" class="btn btn-outline btn-sm" id="end-btn"><svg aria-hidden="true"><use href="#i-check-c"/></svg> End &amp; Get Report</button>
                   <button type="button" class="btn btn-outline btn-sm" id="restart-btn"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Restart Scenario</button>
@@ -781,7 +835,7 @@
                 <div class="co-cell"><i>Realistic Ask</i><b id="co-ask">&#8358;—</b><small>Defensible against the market median</small></div>
                 <div class="co-cell"><i>Walk-Away Floor</i><b id="co-floor">&#8358;—</b><small>Below this, negotiate benefits instead</small></div>
               </div>
-              <p class="hint" style="margin-top:8px">Calculated from your offer, your target and the Lagos market median — a benchmark to negotiate from, not a guarantee.</p>
+              <p class="hint" style="margin-top:8px">Practice figures calculated from your offer and target; no live salary market data is used.</p>
             </div>
 
             <div class="rep-sec">
@@ -802,7 +856,7 @@
             <div class="rep-actions">
               <button type="button" class="btn btn-accent" id="again-btn"><svg aria-hidden="true"><use href="#i-play"/></svg> Practice Again</button>
               <button type="button" class="btn btn-outline" id="retry-btn"><svg aria-hidden="true"><use href="#i-refresh"/></svg> Retry Same Scenario</button>
-              <button type="button" class="btn btn-outline" id="pdf-btn"><svg aria-hidden="true"><use href="#i-doc"/></svg> Download PDF</button>
+              <button type="button" class="btn btn-outline" id="pdf-btn"><svg aria-hidden="true"><use href="#i-doc"/></svg> Print / Save PDF</button>
               <button type="button" class="btn btn-outline" id="share-btn"><svg aria-hidden="true"><use href="#i-share"/></svg> Share Report</button>
             </div>
           </div>
@@ -846,6 +900,7 @@ if(bar){var lastY=window.scrollY,ticking=false;
 /* ── toast helper ── */
 var toastT;
 function toast(msg){var t=$('toast');$('toast-txt').textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show')},3200)}
+function win(id,won){var el=$(id);if(!el)return;el.classList.toggle('ach--won',!!won);el.classList.toggle('ach--locked',!won)}
 
 /* ── phase switcher ── */
 var PHASES={setup:'phase-setup',live:'phase-live',report:'phase-report'};
@@ -1184,9 +1239,19 @@ function analyse(text){
     accepts:/(accept|agree|works for me|sounds fair|i can accept|i'll take|that works|deal\b|fine with)/.test(t)
   };
 }
+/* Current time as HH:MM for message timestamps. This helper was called
+   by addMsg()/logTactic() but never defined — every addMsg() threw a
+   ReferenceError, which killed the recruiter opener and, in sendTurn,
+   left the composer disabled with the user's message never rendered
+   and the turn never recorded (the negotiation deadlock). */
+function timeHHMM(){
+  var d=new Date();
+  return (d.getHours()<10?'0':'')+d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes();
+}
 function addMsg(who,text,opts){
   opts=opts||{};
   text=String(text||'');
+  if (S) S.conversation.push({sender:who==='ai'?'model':'user', message:text});
   var wrap=document.createElement('div');
   wrap.className='msg msg--'+who+(opts.interrupt?' msg--interrupt':'');
   var tag=opts.interrupt?'<span class="interrupt-tag"><svg aria-hidden="true" style="width:10px;height:10px"><use href="#i-alert"/></svg>Interruption</span>':'';
@@ -1303,6 +1368,191 @@ $('sugs').addEventListener('click',function(e){
   box.value=v;box.focus();box.setSelectionRange(v.length,v.length);
 });
 
+/* ── voice & speech synthesis/recognition ── */
+var VOICE_ON = false;
+var currentSpeechAudio = null;
+var speechRec = null;
+var isRecordingSpeech = false;
+
+function stopCurrentSpeech(){
+  if(currentSpeechAudio){
+    try { currentSpeechAudio.pause(); currentSpeechAudio.currentTime = 0; } catch(e){}
+    currentSpeechAudio = null;
+  }
+  if('speechSynthesis' in window){
+    try { window.speechSynthesis.cancel(); } catch(e){}
+  }
+}
+
+function speakRecruiter(text, onDone){
+  if(!VOICE_ON){
+    if(onDone) onDone();
+    return;
+  }
+  stopCurrentSpeech();
+  var cleanText = String(text||'').replace(/<[^>]*>/g,'').trim();
+  if(!cleanText){
+    if(onDone) onDone();
+    return;
+  }
+  
+  var persona = 'corporate-hr';
+  if(S && S.setupStyle === 'strict') persona = 'big4-partner';
+  
+  fetch('<?= site_url("api/interview/tts") ?>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+    },
+    body: JSON.stringify({
+      text: cleanText,
+      persona: persona,
+      '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+    })
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  })
+  .then(function(blob){
+    if(!VOICE_ON){
+      if(onDone) onDone();
+      return;
+    }
+    var url = URL.createObjectURL(blob);
+    var audio = new Audio(url);
+    currentSpeechAudio = audio;
+    audio.onended = function(){
+      URL.revokeObjectURL(url);
+      currentSpeechAudio = null;
+      if(onDone) onDone();
+    };
+    audio.onerror = function(){
+      URL.revokeObjectURL(url);
+      currentSpeechAudio = null;
+      fallbackBrowserTts(cleanText, onDone);
+    };
+    audio.play().catch(function(){
+      fallbackBrowserTts(cleanText, onDone);
+    });
+  })
+  .catch(function(err){
+    fallbackBrowserTts(cleanText, onDone);
+  });
+}
+
+function fallbackBrowserTts(cleanText, onDone){
+  if(!VOICE_ON || !('speechSynthesis' in window)){
+    if(onDone) onDone();
+    return;
+  }
+  try {
+    var u = new SpeechSynthesisUtterance(cleanText);
+    u.rate = 1.0;
+    u.onend = function(){ if(onDone) onDone(); };
+    u.onerror = function(){ if(onDone) onDone(); };
+    window.speechSynthesis.speak(u);
+  } catch(e){
+    if(onDone) onDone();
+  }
+}
+
+function updateVoiceBtnState(){
+  var btn = $('nego-voice-btn');
+  if(!btn) return;
+  var txt = $('nego-voice-txt');
+  var ic = btn.querySelector('use');
+  if(VOICE_ON){
+    btn.classList.remove('muted');
+    btn.setAttribute('aria-pressed', 'true');
+    if(txt) txt.textContent = 'Voice On';
+    if(ic) ic.setAttribute('href', '#i-vol');
+  } else {
+    btn.classList.add('muted');
+    btn.setAttribute('aria-pressed', 'false');
+    if(txt) txt.textContent = 'Voice Off';
+    if(ic) ic.setAttribute('href', '#i-vol-mute');
+    stopCurrentSpeech();
+  }
+}
+
+function initSpeechRecognition(){
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition) return null;
+  var rec = new SpeechRecognition();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = 'en-NG';
+  
+  rec.onstart = function(){
+    isRecordingSpeech = true;
+    var micBtn = $('nego-mic-btn');
+    var status = $('nego-mic-status');
+    if(micBtn) micBtn.classList.add('recording');
+    if(status) status.hidden = false;
+  };
+  
+  rec.onresult = function(event){
+    var final = '';
+    for(var i = event.resultIndex; i < event.results.length; ++i){
+      if(event.results[i].isFinal){
+        final += event.results[i][0].transcript;
+      }
+    }
+    var box = $('composer-input');
+    if(final && box){
+      box.value = (box.value ? box.value + ' ' : '') + final.trim();
+    }
+  };
+  
+  rec.onerror = function(e){
+    console.warn('SpeechRecognition error:', e.error);
+    stopRecording();
+    if(e.error === 'not-allowed'){
+      toast('Microphone permission blocked. Please allow microphone access in your browser.');
+    }
+  };
+  
+  rec.onend = function(){
+    stopRecording();
+  };
+  
+  return rec;
+}
+
+function stopRecording(){
+  isRecordingSpeech = false;
+  var micBtn = $('nego-mic-btn');
+  var status = $('nego-mic-status');
+  if(micBtn) micBtn.classList.remove('recording');
+  if(status) status.hidden = true;
+  if(speechRec){
+    try { speechRec.stop(); } catch(e){}
+  }
+}
+
+function toggleRecording(){
+  if(isRecordingSpeech){
+    stopRecording();
+    return;
+  }
+  if(!speechRec){
+    speechRec = initSpeechRecognition();
+  }
+  if(!speechRec){
+    toast('Voice recognition not supported in this browser. You can type your counter-offer directly.');
+    return;
+  }
+  try {
+    speechRec.start();
+  } catch(e){
+    try { speechRec.stop(); } catch(err){}
+    stopRecording();
+  }
+}
+
 /* ── start session ── */
 function startSession(){
   var offer=parseNaira($('n-offer').value),target=parseNaira($('n-target').value);
@@ -1310,51 +1560,69 @@ function startSession(){
   if(!job){$('n-job').focus();toast('Add the job title on the offer');return}
   if(!offer){$('n-offer').focus();toast('Add the base salary offered');return}
   if(!target){$('n-target').focus();toast('Add your target salary');return}
-  var btn=$('start-btn');btn.dataset.loading='1';$('start-txt').textContent='Preparing your recruiter\u2026';
+  var btn=$('start-btn');
+  btn.dataset.loading='';
+  $('start-txt').textContent='Start Negotiation';
+
   var setupStyle=(document.querySelector('input[name="nstyle"]:checked')||{}).value||'corporate';
+  var imode=(document.querySelector('input[name="nimode"]:checked')||{}).value||'text';
+  VOICE_ON = (imode === 'voice');
+  updateVoiceBtnState();
+
   S={
     job:job,offer:offer,target:target,
     benefits:$('n-benefits').value.trim(),
     setupStyle:setupStyle, style:SETUP_TO_STYLE[setupStyle]||'difficult',
+    imode:imode,
     org:$('n-org').value,diff:$('n-diff').value,
-    round:0,turns:[],conf:[],pers:[],
+    round:0,turns:[],conversation:[],completionKey: Array.from(crypto.getRandomValues(new Uint8Array(32)), b=>b.toString(16).padStart(2,'0')).join(''),conf:[],pers:[],
     tacticsCount:{ai:0,you:0,warn:0},concessions:[],
     aiConcededBase:false,aiConcededBenefits:false,userAccepted:false,lastAiNumber:0,
     followupCount:0,lastVariant:{},
     startTime:Date.now()
   };
-  setTimeout(function(){
-    btn.dataset.loading='';$('start-txt').textContent='Start Negotiation';
-    var id=STYLE_ID[setupStyle];
-    $('live-name').textContent=id.name;
-    $('live-role').textContent=id.role+' \u00B7 '+ORG_LBL[S.org];
-    $('chat').innerHTML='';$('composer-input').value='';$('composer-input').disabled=false;$('send-btn').disabled=false;
-    $('tactic-feed').innerHTML='<p class="cc-empty">Tactics will appear as the conversation unfolds.</p>';
-    $('cc-list').innerHTML='<p class="cc-empty">No concessions yet — hold your ground.</p>';
-    $('tone-grid').innerHTML='<p class="hint">Your delivery read will appear after your first reply.</p>';
-    updateLiveMeters(0,0);$('lm-conf-val').textContent='\u2014';$('lm-pers-val').textContent='\u2014';
-    setStyleBadge(S.style,false);
-    var pct=Math.round((S.target-S.offer)/S.offer*100);
-    $('st-offer').textContent=fmtNaira(S.offer);$('st-offer').classList.remove('stat-num--empty');
-    $('st-offer-lbl').textContent='Current Offer · monthly gross';
-    $('st-target').textContent=fmtNaira(S.target);$('st-target').classList.remove('stat-num--empty');
-    $('st-target-lbl').textContent='Your Target · '+(pct>=0?pct+'% above current':Math.abs(pct)+'% below current');
-    $('mr-role-line').textContent=S.job+' \u00B7 Lagos';
-    var liveR=matchRole(S.job);
-    $('mr-low').textContent=fmtK(liveR.low);$('mr-high').textContent=fmtK(liveR.high);
-    $('mr-confidence').textContent=liveR.matched?'High confidence \u00B7 120 data points':'Broad estimate \u00B7 limited matching listings';
-    updateJobRefs();
-    goPhase('live');
-    $('round-pill').textContent='Round 1 of '+MAX_ROUNDS;
-    if(clockTimer)clearInterval(clockTimer);
-    clockTimer=setInterval(function(){
-      var s=Math.floor((Date.now()-S.startTime)/1000),m=Math.floor(s/60);s=s%60;
-      $('clock-live').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
-    },1000);
-    var openerPool=OPENERS[S.style]||OPENERS.difficult;
-    var openerLine=openerPool[Math.floor(Math.random()*openerPool.length)]({job:S.job,offer:S.offer,target:S.target,benefits:S.benefits});
-    aiSay(openerLine,function(){renderSugs(['Thank them, then open the salary discussion','Anchor above your target','Ask how the figure was set'])});
-  },1200);
+
+  var id=STYLE_ID[setupStyle];
+  $('live-name').textContent=id.name;
+  $('live-role').textContent=id.role+' \u00B7 '+ORG_LBL[S.org];
+  $('chat').innerHTML='';$('composer-input').value='';$('composer-input').disabled=false;$('send-btn').disabled=false;
+  $('tactic-feed').innerHTML='<p class="cc-empty">Tactics will appear as the conversation unfolds.</p>';
+  $('cc-list').innerHTML='<p class="cc-empty">No concessions yet — hold your ground.</p>';
+  $('tone-grid').innerHTML='<p class="hint">Your delivery read will appear after your first reply.</p>';
+  updateLiveMeters(0,0);$('lm-conf-val').textContent='\u2014';$('lm-pers-val').textContent='\u2014';
+  setStyleBadge(S.style,false);
+  var pct=Math.round((S.target-S.offer)/S.offer*100);
+  $('st-offer').textContent=fmtNaira(S.offer);$('st-offer').classList.remove('stat-num--empty');
+  $('st-offer-lbl').textContent='Current Offer · monthly gross';
+  $('st-target').textContent=fmtNaira(S.target);$('st-target').classList.remove('stat-num--empty');
+  $('st-target-lbl').textContent='Your Target · '+(pct>=0?pct+'% above current':Math.abs(pct)+'% below current');
+  $('mr-role-line').textContent=S.job+' \u00B7 Lagos';
+  var liveR=matchRole(S.job);
+  $('mr-low').textContent=fmtK(liveR.low);$('mr-high').textContent=fmtK(liveR.high);
+  $('mr-confidence').textContent=liveR.matched?'High confidence \u00B7 120 data points':'Broad estimate \u00B7 limited matching listings';
+  updateJobRefs();
+  
+  // Transition immediately into boardroom — zero blank screen delay!
+  goPhase('live');
+  $('round-pill').textContent='Round 1 of '+MAX_ROUNDS;
+  if(clockTimer)clearInterval(clockTimer);
+  clockTimer=setInterval(function(){
+    var s=Math.floor((Date.now()-S.startTime)/1000),m=Math.floor(s/60);s=s%60;
+    $('clock-live').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  },1000);
+
+  var openerPool=OPENERS[S.style]||OPENERS.difficult;
+  var openerLine=openerPool[Math.floor(Math.random()*openerPool.length)]({job:S.job,offer:S.offer,target:S.target,benefits:S.benefits});
+  
+  // Display opening message immediately
+  addMsg('ai', openerLine);
+  renderSugs(['Thank them, then open the salary discussion','Anchor above your target','Ask how the figure was set']);
+  $('composer-input').focus();
+  
+  // Speak opening message if in voice mode
+  if(VOICE_ON){
+    speakRecruiter(openerLine);
+  }
 }
 $('phase-setup').addEventListener('submit',function(e){e.preventDefault();startSession()});
 
@@ -1364,12 +1632,22 @@ function sendTurn(){
   var box=$('composer-input'),text=box.value.trim();
   if(!text){box.focus();return}
   
+  stopCurrentSpeech();
+  stopRecording();
+
   box.value='';
   box.disabled=true;
   $('send-btn').disabled=true;
-  addMsg('me',text);
 
+  // Record the turn BEFORE rendering: if message rendering ever throws,
+  // the reply still counts (End & Get Report scores S.turns) and the
+  // fetch below still runs and re-enables the composer.
   var u=analyse(text);S.turns.push(u);
+  try{ addMsg('me',text); }catch(e){
+    if(!S.conversation.length||S.conversation[S.conversation.length-1].message!==text){
+      S.conversation.push({sender:'user', message:text});
+    }
+  }
   var lenB=Math.min(14,Math.round(u.len/18));
   var conf=Math.max(8,Math.min(96,40+(u.hasNumber?18:0)+(u.courteous?8:0)+lenB-(u.aggressive?25:0)));
   var pers=Math.max(8,Math.min(96,35+(u.justified?25:0)+(u.hasNumber?12:0)+(u.mentionsBenefits?10:0)+Math.round(lenB/2)-(u.aggressive?20:0)));
@@ -1410,7 +1688,18 @@ function sendTurn(){
   $('round-pill').textContent='Round '+(S.round+1)+' of '+MAX_ROUNDS;
   renderSugs([]);
 
+  // Show typing bubble while waiting for recruiter response
+  var typingBubble = document.createElement('div');
+  typingBubble.className = 'msg msg--ai typing';
+  typingBubble.id = 'nego-typing';
+  typingBubble.innerHTML = '<span class="msg-ava" aria-hidden="true"><svg style="width:17px;height:17px"><use href="#i-user"/></svg></span><div class="bubble"><i></i><i></i><i></i></div>';
+  $('chat').appendChild(typingBubble);
+  $('chat').scrollTop = $('chat').scrollHeight;
+
+  var opts=reaction==='interrupt'?{interrupt:true}:{};
+
   function handleLineReceived(line){
+    if(typingBubble && typingBubble.parentNode) typingBubble.remove();
     line=String(line||'').trim();
     if(!line){
       var lineFn, variantKey=reaction+'-'+S.style;
@@ -1424,34 +1713,32 @@ function sendTurn(){
       if(reaction==='challenge'||reaction==='followup'||reaction==='tradeBenefits'||reaction==='strongCase')line=pickAck(S.style)+line;
     }
     logTactic('ai', AI_TACTIC[reaction] || 'Negotiation Stance');
-    aiSay(line, function(){
-      if(reaction==='close' || S.round >= MAX_ROUNDS - 1){
-        renderSugs(['End & get my report']);
-        $('composer-input').disabled=true;
-        $('send-btn').disabled=true;
-      } else {
-        renderSugs(SUGS[reaction] || SUGS.followup);
-        $('composer-input').disabled=false;
-        $('send-btn').disabled=false;
-        $('composer-input').focus();
-      }
-    }, opts);
+    addMsg('ai', line, opts);
     if(prevStyle!==S.style)addStyleShiftNotice(S.style);
+    
+    if(reaction==='close' || S.round >= MAX_ROUNDS - 1){
+      renderSugs(['End & get my report']);
+      $('composer-input').disabled=true;
+      $('send-btn').disabled=true;
+    } else {
+      renderSugs(SUGS[reaction] || SUGS.followup);
+      $('composer-input').disabled=false;
+      $('send-btn').disabled=false;
+      $('composer-input').focus();
+    }
+    
+    if(VOICE_ON){
+      speakRecruiter(line);
+    }
   }
 
   // Fetch AI recruiter response from server endpoint
   const formData = new FormData();
   formData.append('type', 'negotiation');
   formData.append('message', text);
-  formData.append('history', JSON.stringify(S.turns.map(function(t, idx) {
-      return {
-          sender: idx % 2 === 0 ? 'user' : 'model',
-          message: t.len > 0 ? text : 'Hello'
-      };
-  })));
+  formData.append('history', JSON.stringify(S.conversation.slice(0,-1).slice(-12)));
   formData.append('extra', `Job: ${S.job}. Offer: \u20A6${S.offer}. Target: \u20A6${S.target}. Recruiter Stance: ${S.style}.`);
-
-  var opts=reaction==='interrupt'?{interrupt:true}:{};
+  formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
   fetch('<?= base_url('candidate/career-tools/send-message') ?>', {
       method: 'POST',
@@ -1475,6 +1762,20 @@ function sendTurn(){
 $('send-btn').addEventListener('click',sendTurn);
 $('composer-input').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTurn()}});
 
+var vBtn = $('nego-voice-btn');
+if(vBtn){
+  vBtn.addEventListener('click', function(){
+    VOICE_ON = !VOICE_ON;
+    updateVoiceBtnState();
+    toast(VOICE_ON ? 'Recruiter voice enabled' : 'Recruiter voice muted');
+  });
+}
+
+var mBtn = $('nego-mic-btn');
+if(mBtn){
+  mBtn.addEventListener('click', toggleRecording);
+}
+
 /* ── report rendering ── */
 function avg(a){return a.length?Math.round(a.reduce(function(x,y){return x+y},0)/a.length):0}
 function buildPlan(skills){
@@ -1482,7 +1783,7 @@ function buildPlan(skills){
     'Confidence':{t:'Build negotiation confidence',d:'Run two more Negotiation Room sessions this week at Medium difficulty \u2014 confidence compounds fastest through repetition.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Practice again'},
     'Persuasiveness':{t:'Sharpen your persuasion',d:'Before your next negotiation, write down three quantified results you can cite on demand.',link:'<?= base_url('candidate/resumes/build') ?>',cta:'Review your resume wins'},
     'Logic':{t:'Structure your justification',d:'Practice the result \u2192 evidence \u2192 ask sequence until it\u2019s automatic \u2014 it\u2019s what separated your strongest reply from your weakest.',link:'<?= base_url('candidate/career-tools/mock-interview') ?>',cta:'Practice in the Interview Studio'},
-    'Salary Justification':{t:'Anchor every figure in evidence',d:'Pull the Lagos market median into your opening ask next time.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Try another negotiation'},
+    'Salary Justification':{t:'Anchor every figure in evidence',d:'Research a reliable salary benchmark for your role before your next negotiation.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Try another negotiation'},
     'Communication':{t:'Tighten your delivery',d:'Your replies ran short on detail \u2014 practice expanding each answer with one concrete example.',link:'<?= base_url('candidate/career-tools/mock-interview') ?>',cta:'Practice in the Interview Studio'},
     'Professionalism':{t:'Protect your composure under pressure',d:'Hostile language cost you this session \u2014 rehearse firm-but-professional pushback lines before your next Hard or Expert round.',link:'<?= base_url('candidate/career-tools/salary-negotiation') ?>',cta:'Retry at Hard difficulty'},
     'Emotional Intelligence':{t:'Read the room, then respond',d:'Practice acknowledging the recruiter\u2019s position before countering \u2014 your best moments did exactly that.',link:'<?= base_url('candidate/career-tools/mock-interview') ?>',cta:'Practice in the Interview Studio'}
@@ -1494,6 +1795,8 @@ function buildPlan(skills){
 }
 function finish(){
   if(!S)return;
+  stopCurrentSpeech();
+  stopRecording();
   if(!S.turns.length){toast('Reply at least once before ending \u2014 the report scores your replies');return}
   if(clockTimer){clearInterval(clockTimer);clockTimer=null}
   $('composer-input').disabled=true;$('send-btn').disabled=true;
@@ -1570,7 +1873,7 @@ function renderReport(){
   var meBubbles=document.querySelectorAll('#chat .msg--me .bubble');
   var saidRaw=meBubbles[weakIdx]?meBubbles[weakIdx].childNodes[0].textContent:'(your reply)';
   var said=saidRaw.length>170?saidRaw.slice(0,167)+'\u2026':saidRaw;
-  var better='Thank you \u2014 I\u2019m genuinely excited about this role. Based on the results I\u2019ve delivered and the Lagos market median of \u20A6520,000 for this position, I believe '+fmtNaira(S.target)+' fairly reflects the value I\u2019ll bring. How much room do we have?';
+  var better='Thank you \u2014 I\u2019m genuinely excited about this role. Based on the results I\u2019ve delivered and the responsibilities of this position, I believe '+fmtNaira(S.target)+' fairly reflects the value I\u2019ll bring. How much room do we have?';
   $('ba-wrap').innerHTML='<div class="ba">'+
     '<div class="said"><b><svg aria-hidden="true" style="width: 12px; height: 12px; vertical-align:-1px; margin-right: 4px;"><use href="#i-alert"/></svg> What you said (Round '+(weakIdx+1)+')</b>'+said.replace(/</g,'&lt;')+'</div>'+
     '<div class="better"><b><svg aria-hidden="true" style="width: 12px; height: 12px; vertical-align:-1px; margin-right: 4px;"><use href="#i-check"/></svg> A stronger version</b>'+better+'</div></div>';
@@ -1609,20 +1912,47 @@ function saveSession(total,conf,pers,skills,outcome){
   body.append('persuasion_score',Math.round(pers));
   body.append('overall_score',total);
   body.append('outcome',outcome);
-  body.append('transcript_json',JSON.stringify(S.turns));
+  body.append('completion_key',S.completionKey);
+  body.append('transcript_json',JSON.stringify(S.conversation));
   body.append('evaluation_json',JSON.stringify(skills));
   body.append('<?= csrf_token() ?>','<?= csrf_hash() ?>');
   fetch('<?= base_url("candidate/career-tools/save-negotiation-session") ?>',{
     method:'POST',
     headers:{'X-Requested-With':'XMLHttpRequest'},
     body:body
-  }).catch(function(){/* history is a nice-to-have; don't block the report on a failed save */});
+  }).then(async function(response) {
+    const data=await response.json();
+    // Never echo a raw server/framework error message to the user.
+    if(!response.ok || !data.success) throw new Error('Session could not be saved.');
+    toast('Report saved to your history.');
+    if (data.xp_awarded) toast('+' + data.xp_awarded + ' Career XP!');
+  }).catch(function(error){
+    toast(error.message || 'Session could not be saved. Check your connection.');
+    var button=document.getElementById('retry-save-session');
+    if(!button){button=document.createElement('button');button.id='retry-save-session';button.type='button';button.textContent='Retry saving report';document.getElementById('score-num').parentElement.appendChild(button);}
+    button.onclick=function(){button.remove();saveSession(total,conf,pers,skills,outcome)};
+  });
 }
 $('end-btn').addEventListener('click',finish);
 $('restart-btn').addEventListener('click',function(){startSession()});
 $('again-btn').addEventListener('click',function(){goPhase('setup')});
 $('retry-btn').addEventListener('click',function(){startSession()});
-$('pdf-btn').addEventListener('click',function(){toast('Generating your PDF report\u2026')});
+function printSalaryReport(){
+  var report=document.getElementById('phase-report');
+  var printWindow=window.open('', '_blank');
+  if(!printWindow){toast('Allow pop-ups to print or save your report as PDF.');return;}
+  var doc=printWindow.document;
+  doc.title='Salary negotiation practice report';
+  var style=doc.createElement('style');
+  style.textContent='body{font:14px Arial,sans-serif;line-height:1.5;color:#172338;margin:30px}button,svg{display:none}h1,h2,h3{break-after:avoid}li{margin-bottom:8px}@page{margin:15mm}';
+  doc.head.appendChild(style);
+  var heading=doc.createElement('h1');heading.textContent=S.job+' — Salary negotiation practice report';doc.body.appendChild(heading);
+  var copy=report.cloneNode(true);copy.style.display='block';doc.body.appendChild(copy);
+  var title=doc.createElement('h2');title.textContent='Practice conversation';doc.body.appendChild(title);
+  S.conversation.forEach(function(turn){var p=doc.createElement('p');p.textContent=(turn.sender==='user'?'You: ':'Recruiter: ')+turn.message;doc.body.appendChild(p)});
+  printWindow.focus();printWindow.print();
+}
+$('pdf-btn').addEventListener('click',printSalaryReport);
 $('share-btn').addEventListener('click',function(){
   var url=location.href;
   function ok(){toast('Link copied to clipboard')}

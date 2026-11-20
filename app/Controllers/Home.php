@@ -134,16 +134,16 @@ class Home extends BaseController
 
         // Bind URLs dynamically at runtime
         foreach ($categories as &$category) {
-            $category->url = base_url(($category->slug ?? url_title($category->name, '-', true)) . '-jobs');
+            $category->url = base_url((!empty($category->slug) ? $category->slug : url_title($category->name, '-', true)) . '-jobs');
         }
 
         // Homepage preview: eight jobs, with featured postings first.
-        $jobsCacheKey = 'homepage_eight_jobs_with_employer_identity_v4';
+        $jobsCacheKey = 'homepage_eight_jobs_with_employer_identity_v6';
         $jobs = $cache->get($jobsCacheKey);
 
         if (!$jobs) {
             $jobs = $jobModel
-                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.is_verified as employer_is_verified, employers.verification_status as employer_verification_status')
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.is_verified as employer_is_verified, employers.verification_status as employer_verification_status')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
             ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
@@ -195,23 +195,30 @@ class Home extends BaseController
             $verificationStatus = strtolower(trim((string) ($job->employer_verification_status ?? '')));
             $employerVerified = $verificationStatus === 'verified'
                 || (in_array($verificationStatus, ['', 'unverified'], true) && (int) ($job->employer_is_verified ?? 0) === 1);
-            $job->show_trust_badge =
-                !empty($planFeatures['trust_badge']) && $employerVerified;
 
-            $job->anonymous = !empty($planFeatures['anonymous']) && ($job->is_anonymous);
+            $isConfidential = (!empty($planFeatures['anonymous']) && !empty($job->is_anonymous)) || !empty($job->anonymous) || !empty($job->is_anonymous);
 
-            // ANONYMOUS POSTING
-            if (!empty($planFeatures['anonymous']) && ($job->is_anonymous)) {
+            if ($isConfidential) {
+                $job->anonymous = 1;
+                $job->is_anonymous = 1;
+                $job->is_confidential = true;
                 $job->employer_name = 'Confidential Employer';
+                $job->employer_tagline = null;
                 $job->company_logo  = base_url('images/favicon.png');
+                $job->is_verified = 0;
+                $job->show_trust_badge = false;
+            } else {
+                $job->is_confidential = false;
+                $job->is_verified = $employerVerified ? 1 : 0;
+                $job->show_trust_badge = $employerVerified || !empty($planFeatures['trust_badge']);
             }
         }
 
-        $featuredJobsCacheKey = 'featured_jobs';
+        $featuredJobsCacheKey = 'homepage_featured_jobs_v2';
         $featured_jobs = $cache->get($featuredJobsCacheKey);
         if (!$featured_jobs) {
             $featured_jobs = $jobModel
-                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.logo as company_logo')
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -226,12 +233,12 @@ class Home extends BaseController
         }
 
         // Fetch Top Companies
-        $topCompaniesCacheKey = 'top_companies';
+        $topCompaniesCacheKey = 'top_companies_v2';
         $top_companies = $cache->get($topCompaniesCacheKey);
 
         if (!$top_companies) {
             $top_companies = $jobModel
-                ->select('employers.id, employers.company_name, employers.user_id as employer_user_id, employers.logo, employers.state_id, COUNT(jobs.id) as job_count, states.name as location, employers.is_verified')
+                ->select('employers.id, employers.company_name, employers.user_id as employer_user_id, employers.logo, employers.state_id, COUNT(jobs.id) as job_count, states.name as location, employers.is_verified, employers.verification_status')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 ->join('states', 'states.id = employers.state_id', 'left')
                 ->where('jobs.status', 'open')
@@ -280,8 +287,11 @@ class Home extends BaseController
                 $company->formatted_count = number_format($company->job_count) . ' Open Position' . ($company->job_count != 1 ? 's' : '');
                 
                 // TRUST BADGE
-                $company->show_trust_badge =
-                    !empty($planFeatures['trust_badge']) && ($company->is_verified == 1);
+                $companyVerificationStatus = strtolower(trim((string) ($company->verification_status ?? '')));
+                $companyVerified = $companyVerificationStatus === 'verified'
+                    || (in_array($companyVerificationStatus, ['', 'unverified'], true) && (int) ($company->is_verified ?? 0) === 1);
+                $company->is_verified = $companyVerified ? 1 : 0;
+                $company->show_trust_badge = $companyVerified || !empty($planFeatures['trust_badge']);
             }
 
             $cache->save($topCompaniesCacheKey, $top_companies, 60);
@@ -319,7 +329,13 @@ class Home extends BaseController
 
         // Bind URLs dynamically at runtime
         foreach ($top_locations as $loc) {
-            $loc->url = base_url('jobs-in-' . ($loc->slug ?? strtolower(str_replace(' ', '-', $loc->name)) . '-state'));
+            if (($loc->slug ?? '') === 'nigeria-nationwide') {
+                $loc->url = base_url('jobs/nigeria-nationwide');
+            } elseif (($loc->slug ?? '') === 'remote') {
+                $loc->url = base_url('jobs/remote');
+            } else {
+                $loc->url = base_url('jobs-in-' . ($loc->slug ?? strtolower(str_replace(' ', '-', $loc->name)) . '-state'));
+            }
         }
 
         $employerModel = new \App\Models\EmployerModel();
@@ -337,19 +353,20 @@ class Home extends BaseController
                 ->orWhere('jobs.application_deadline', '0000-00-00')
                 ->orWhere('jobs.application_deadline >=', date('Y-m-d'))
             ->groupEnd();
-        if ($this->db->fieldExists('work_arrangement', 'jobs')) {
-            $remoteJobsQuery->groupStart()
-                ->where('jobs.work_arrangement', 'remote')
-                ->orLike('jobs.title', 'remote')
-                ->orLike('jobs.skills', 'remote')
-            ->groupEnd();
-        } else {
-            $remoteJobsQuery->groupStart()
-                ->like('jobs.title', 'remote')
-                ->orLike('jobs.skills', 'remote')
-            ->groupEnd();
-        }
+        \App\Services\RemoteJobFilter::apply($remoteJobsQuery, db_connect());
         $remoteJobsCount = $remoteJobsQuery->countAllResults();
+
+        $nationwideJobsQuery = model(\App\Models\JobModel::class)
+            ->where('jobs.status', 'open')
+            ->where('jobs.admin_status', 'approved')
+            ->groupStart()
+                ->where('jobs.application_deadline', null)
+                ->orWhere('jobs.application_deadline', '')
+                ->orWhere('jobs.application_deadline', '0000-00-00')
+                ->orWhere('jobs.application_deadline >=', date('Y-m-d'))
+            ->groupEnd();
+        \App\Services\NationwideJobFilter::apply($nationwideJobsQuery);
+        $nationwideJobsCount = $nationwideJobsQuery->countAllResults();
 
         $verifiedEmployersCount = $employerModel->groupStart()
             ->where('verification_status', 'verified')
@@ -405,6 +422,7 @@ class Home extends BaseController
             'placementSuccess' => $placementSuccess,
             'testimonials' => model(\App\Models\TestimonialModel::class)->where('status', 'active')->orderBy('created_at', 'DESC')->findAll(),
             'remoteJobsCount' => $remoteJobsCount,
+            'nationwideJobsCount' => $nationwideJobsCount,
             'q' => $this->request->getGet('q') ?? ''
         ];
 
@@ -420,6 +438,7 @@ class Home extends BaseController
         $state = $stateModel->where('slug', $slug)->first();
 
         // Fallback: strip "-state" suffix and try by name
+
         if (!$state) {
             $stateName = ucwords(str_replace('-', ' ', preg_replace('/-state$/', '', $slug)));
             $state = $stateModel->where('name', $stateName)->first()
@@ -436,32 +455,79 @@ class Home extends BaseController
                 ->first();
         }
 
+        if (!$state && $slug === 'remote') {
+            $state = (object) [
+                'id'               => 99991,
+                'name'             => 'Remote',
+                'slug'             => 'remote',
+                'capital'          => null,
+                'region'           => 'Work From Home',
+                'is_active'        => 1,
+                'seo_h1'           => 'Remote Jobs in Nigeria — Work From Home Vacancies',
+                'meta_description' => 'Find verified remote jobs in Nigeria. Browse work-from-home roles in tech, customer support, writing, and sales. Filter by salary and experience.',
+                'description'      => "Find verified remote job opportunities for Nigerian professionals. Browse work-from-home vacancies in software development, customer support, digital marketing, writing, design, sales, and virtual assistance with local and international employers. Remote roles let you work from Lagos, Abuja, Port Harcourt, or anywhere else in Nigeria without relocating or commuting. Whether you are looking for entry-level positions, mid-career roles, or senior management opportunities, browse and apply to the latest remote jobs in Nigeria today.",
+            ];
+        }
+
+        if (!$state && in_array($slug, ['nigeria-nationwide', 'nationwide'], true)) {
+            $state = (object) [
+                'id'               => 99992,
+                'name'             => 'Nationwide',
+                'slug'             => 'nigeria-nationwide',
+                'capital'          => 'All States',
+                'region'           => 'Nigeria (All 36 States + FCT)',
+                'is_active'        => 1,
+                'seo_h1'           => 'Nationwide Jobs in Nigeria — Verified Vacancies in All States',
+                'meta_description' => 'Browse nationwide jobs in Nigeria open to applicants in any state. Find roles in sales, banking, logistics, and more. Filter by salary and experience.',
+                'description'      => "Find verified job opportunities across Nigeria, with no fixed location. These vacancies are open to candidates in any of the 36 states and the FCT, or involve work across several states. Browse nationwide roles in sales, banking, logistics, FMCG, telecoms, field operations, and customer service with top employers. Many employers hire for multiple cities at once, so you can apply even if the location is not listed. Whether you are looking for entry-level positions, mid-career roles, or senior management opportunities, browse and apply to the latest nationwide jobs in Nigeria today.",
+            ];
+        }
+
         if (!$state) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Location not found: $slug");
         }
 
+        $state = \App\Services\RemoteLandingPage::prepare($state);
+
         // --- 2. Fetch jobs for this state (latest 12) ---
         $db       = db_connect();
-        $jobs     = $db->table('jobs')
-            ->select('jobs.*, employers.company_name AS employer_name, employers.logo AS company_logo,
+        $jobsQuery = $db->table('jobs')
+            ->select('jobs.*, employers.company_name AS employer_name, employers.tagline AS employer_tagline, employers.logo AS company_logo,
                       industries.name AS industry_name, states.name AS state_name')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
             ->join('states', 'states.id = jobs.state_id', 'left')
-            ->where('jobs.state_id', $state->id)
             ->where('jobs.status', 'open')
             ->where('jobs.admin_status', 'approved')
-            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
+            ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd();
+
+        if ($state->slug === 'remote') {
+            \App\Services\RemoteJobFilter::apply($jobsQuery, $db);
+        } elseif ($state->slug === 'nigeria-nationwide') {
+            \App\Services\NationwideJobFilter::apply($jobsQuery);
+        } else {
+            $jobsQuery->where('jobs.state_id', $state->id);
+        }
+
+        $jobs = (clone $jobsQuery)
             ->orderBy('jobs.created_at', 'DESC')
             ->limit(12)
             ->get()
             ->getResultObject();
 
-        $totalJobs = $db->table('jobs')
-            ->where('state_id', $state->id)
+        $totalJobsQuery = $db->table('jobs')
             ->where('status', 'open')
-            ->where('admin_status', 'approved')
-            ->countAllResults();
+            ->where('admin_status', 'approved');
+
+        if ($state->slug === 'remote') {
+            \App\Services\RemoteJobFilter::apply($totalJobsQuery, $db);
+        } elseif ($state->slug === 'nigeria-nationwide') {
+            \App\Services\NationwideJobFilter::apply($totalJobsQuery);
+        } else {
+            $totalJobsQuery->where('state_id', $state->id);
+        }
+
+        $totalJobs = $totalJobsQuery->countAllResults();
 
         // --- 3. Fetch all active states for the sidebar/related links ---
         $allStates = $stateModel->where('is_active', 1)->orderBy('name', 'ASC')->findAll();
@@ -544,7 +610,7 @@ class Home extends BaseController
         // Fetch latest 12 open jobs for this industry or category
         $db      = db_connect();
         $builder = $db->table('jobs')
-            ->select('jobs.*, employers.company_name AS employer_name, employers.logo AS company_logo,
+            ->select('jobs.*, employers.company_name AS employer_name, employers.tagline AS employer_tagline, employers.logo AS company_logo,
                       states.name AS state_name')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->join('states',    'states.id    = jobs.state_id',    'left');
@@ -581,6 +647,14 @@ class Home extends BaseController
             ->orderBy('name', 'ASC')
             ->findAll();
 
+        // Use the approved category headings and copy for the landing page and metadata.
+        $categoryCopy = \App\Services\CategorySeoCopy::find($industry->slug ?? '', $industry->name);
+        if ($categoryCopy !== null) {
+            $industry->seo_h1 = $categoryCopy['title'];
+            $industry->description = $categoryCopy['body'];
+            $industry->meta_description = $categoryCopy['meta_description'];
+        }
+
         // Build SEO fields
         $seoH1   = !empty($industry->seo_h1)
             ? $industry->seo_h1
@@ -606,6 +680,15 @@ class Home extends BaseController
 
     public function jobs($overrideTitle = null, $overrideMeta = null)
     {
+        // Older homepage links used the search filter for the remote landing page.
+        $landingParams = array_filter(
+            $this->request->getGet() ?? [],
+            static fn ($value) => $value !== '' && $value !== null
+        );
+        if ($landingParams === ['work_arrangement' => 'remote'] && !$this->request->isAJAX()) {
+            return redirect()->to(base_url('jobs/remote'))->setStatusCode(301);
+        }
+
         // We need to use humanize() in frontend
         helper('text');
         $jobModel = model(JobModel::class);
@@ -616,11 +699,29 @@ class Home extends BaseController
         // Get query parameters with sanitization
         $industryId = $this->request->getGet('industry_id') ? (int)$this->request->getGet('industry_id') : null;
         $categoryId = $this->request->getGet('category_id') ? (int)$this->request->getGet('category_id') : null;
-        $stateId = $this->request->getGet('state_id') ? (int)$this->request->getGet('state_id') : null;
+        $stateIdRaw = $this->request->getGet('state_id');
+        $stateId = is_numeric($stateIdRaw) ? (int)$stateIdRaw : null;
+        if ($stateIdRaw === 'remote') {
+            $workArrangement = 'remote';
+            $selectedStateName = 'Remote';
+        } elseif ($stateIdRaw === 'nationwide') {
+            $selectedStateName = 'Nationwide';
+        }
         $experienceLevel = $this->request->getGet('experience_level') ? htmlspecialchars(trim($this->request->getGet('experience_level')), ENT_QUOTES, 'UTF-8') : null;
         $salaryMin = $this->request->getGet('salary_min') ? (float)$this->request->getGet('salary_min') : null;
         $salaryMax = $this->request->getGet('salary_max') ? (float)$this->request->getGet('salary_max') : null;
-        $keywords = $this->request->getGet('keywords') ? htmlspecialchars(trim($this->request->getGet('keywords')), ENT_QUOTES, 'UTF-8') : null;
+        // Keyword search param: the listing form uses "keywords", the homepage
+        // hero form and trending links use "q", and shared/external links
+        // commonly use "search". Accept all three so every entry point filters
+        // and the search box is repopulated from $keywords in the view.
+        $keywords = null;
+        foreach (['keywords', 'q', 'search'] as $keywordParam) {
+            $keywordRaw = $this->request->getGet($keywordParam);
+            if (is_string($keywordRaw) && trim($keywordRaw) !== '') {
+                $keywords = htmlspecialchars(trim($keywordRaw), ENT_QUOTES, 'UTF-8');
+                break;
+            }
+        }
         $position = $this->request->getGet('position') ? htmlspecialchars(trim($this->request->getGet('position')), ENT_QUOTES, 'UTF-8') : null;
         $workArrangement = $this->request->getGet('work_arrangement') ? htmlspecialchars(trim($this->request->getGet('work_arrangement')), ENT_QUOTES, 'UTF-8') : null;
         $locationParam = $this->request->getGet('location');
@@ -655,7 +756,7 @@ class Home extends BaseController
         // Build base query
         $query = $jobModel->select(
             'jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, 
-            employers.is_verified, employers.company_name as employer_name, employers.logo as company_logo, employers.user_id as employer_user_id')
+            employers.is_verified, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo, employers.user_id as employer_user_id')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -702,7 +803,9 @@ class Home extends BaseController
         if ($position) {
             $query->where('jobs.position', $position);
         }
-        if ($workArrangement && $this->db->fieldExists('work_arrangement', 'jobs')) {
+        if ($workArrangement === 'remote') {
+            \App\Services\RemoteJobFilter::apply($query, db_connect());
+        } elseif ($workArrangement && db_connect()->fieldExists('work_arrangement', 'jobs')) {
             $query->where('jobs.work_arrangement', $workArrangement);
         }
         if ($jobType) {
@@ -730,7 +833,9 @@ class Home extends BaseController
         }
 
         // Always prioritize promoted (featured) jobs
-        $query->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC');
+        if (!in_array($sortBy, ['salary_high', 'salary_low', 'oldest'], true)) {
+            $query->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC');
+        }
 
         // Apply sorting
         switch ($sortBy) {
@@ -738,10 +843,12 @@ class Home extends BaseController
                 $query->orderBy('jobs.created_at', 'ASC');
                 break;
             case 'salary_high':
+                $query->orderBy('CASE WHEN jobs.salary IS NULL OR jobs.salary <= 0 THEN 1 ELSE 0 END', 'ASC', false);
                 $query->orderBy('jobs.salary', 'DESC');
                 break;
 
             case 'salary_low':
+                $query->orderBy('CASE WHEN jobs.salary IS NULL OR jobs.salary <= 0 THEN 1 ELSE 0 END', 'ASC', false);
                 $query->orderBy('jobs.salary', 'ASC');
                 break;
 
@@ -753,11 +860,20 @@ class Home extends BaseController
                 $query->orderBy('jobs.created_at', 'DESC');
         }
 
-        // Get total count for pagination
-        $totalJobs = $query->countAllResults(false);
+        // De-duplicate by job id before counting and paging. The JOINs
+        // above can fan out (more than one joined row per job), which
+        // repeated whole jobs in the grid; counting the joined rows also
+        // inflated the headline total. Both are now derived from the same
+        // distinct set, keeping the SQL sort order (first occurrence wins).
+        $uniqueJobs = [];
+        foreach ($query->findAll() as $row) {
+            $uniqueJobs[(int) $row->id] ??= $row;
+        }
+        $uniqueJobs = array_values($uniqueJobs);
+        $totalJobs  = count($uniqueJobs);
 
         // Get paginated results
-        $jobs = $query->findAll($perPage, $offset);
+        $jobs = array_slice($uniqueJobs, $offset, $perPage);
 
         $planFeatures = [];
 
@@ -792,45 +908,68 @@ class Home extends BaseController
             // ANONYMOUS POSTING
             if ($job->anonymous) {
                 $job->employer_name = 'Confidential Employer';
+                $job->employer_tagline = null;
                 $job->company_logo  = base_url('images/favicon.png');
+            } else {
+                $job->company_logo = !empty($job->company_logo)
+                    ? resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company')
+                    : null;
             }
         }
 
-        // Dynamic counts for filters (computed without user filters for global availability)
-        $industryCounts = $jobModel->select('industries.id, industries.name, COUNT(jobs.id) as job_count')
-            ->join('industries', 'industries.id = jobs.industry_id', 'left')
-            ->groupBy('industries.id')
-            ->findAll();
+        // Dynamic counts for filters (computed without user filters for
+        // global availability). They must describe the SAME job set the
+        // listing can show (open, admin-approved, application window live).
+        // Previously they counted every row in the jobs table - including
+        // closed, draft and expired jobs - so the facet counts summed to
+        // more than the listing total.
+        $facetBase = static function ($q) {
+            return $q->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
+                ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd();
+        };
 
-        $jobTypeCountsRaw = $jobModel->select('job_type, COUNT(id) as count')
-            ->groupBy('job_type')
-            ->findAll();
+        $industryCounts = $facetBase(db_connect()->table('jobs'))
+            ->select('industries.id, industries.name, COUNT(jobs.id) as job_count')
+            ->join('industries', 'industries.id = jobs.industry_id', 'left')
+            ->groupBy('industries.id, industries.name')
+            ->get()
+            ->getResult();
+
+        $jobTypeCountsRaw = $facetBase(db_connect()->table('jobs'))
+            ->select('jobs.job_type, COUNT(jobs.id) as count')
+            ->groupBy('jobs.job_type')
+            ->get()
+            ->getResult();
         $job_type_counts = [];
         foreach ($jobTypeCountsRaw as $row) {
             $job_type_counts[$row->job_type] = $row->count;
         }
 
-        $experienceLevelCountsRaw = $jobModel->select('experience_level, COUNT(id) as count')
-            ->groupBy('experience_level')
-            ->findAll();
+        $experienceLevelCountsRaw = $facetBase(db_connect()->table('jobs'))
+            ->select('jobs.experience_level, COUNT(jobs.id) as count')
+            ->groupBy('jobs.experience_level')
+            ->get()
+            ->getResult();
         $experience_level_counts = [];
         foreach ($experienceLevelCountsRaw as $row) {
             $experience_level_counts[$row->experience_level] = $row->count;
         }
-        // For job posted counts (example dynamic computation)
+        // For job posted counts (same visible job set, by recency)
         $jobPostedCounts = [
-            '1_day' => $jobModel->where('created_at >=', date('Y-m-d H:i:s', strtotime('-1 day')))->countAllResults(),
-            '7_days' => $jobModel->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))->countAllResults(),
-            '30_days' => $jobModel->where('created_at >=', date('Y-m-d H:i:s', strtotime('-30 days')))->countAllResults(),
+            '1_day' => $facetBase(db_connect()->table('jobs'))->where('jobs.created_at >=', date('Y-m-d H:i:s', strtotime('-1 day')))->countAllResults(),
+            '7_days' => $facetBase(db_connect()->table('jobs'))->where('jobs.created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))->countAllResults(),
+            '30_days' => $facetBase(db_connect()->table('jobs'))->where('jobs.created_at >=', date('Y-m-d H:i:s', strtotime('-30 days')))->countAllResults(),
         ];
 
         // Optimized: Removed heavy skill parsing from all jobs. 
         // We can use a static or cached list of top keywords instead.
         $keywordCounts = [];
 
-        // Position counts (dynamic)
-        $positionCountsRaw = $jobModel->builder()->select('title, COUNT(id) as count')
-            ->groupBy('title')
+        // Position counts (dynamic, same visible job set as the listing)
+        $positionCountsRaw = $facetBase(db_connect()->table('jobs'))
+            ->select('jobs.title, COUNT(jobs.id) as count')
+            ->groupBy('jobs.title')
             ->get()
             ->getResult();
         $position_counts = [];
@@ -987,7 +1126,7 @@ class Home extends BaseController
         // if (!$job) {
         // Fetch the job with related data
         $query = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, 
-            states.name as location, employers.user_id as employer_user_id, employers.company_name as employer_name, employers.logo as company_logo, employers.company_address as company_address, employers.contact_phone as company_phone, employers.contact_email as company_email, employers.website as company_website, employers.is_verified')
+            states.name as location, employers.user_id as employer_user_id, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo, employers.company_address as company_address, employers.contact_phone as company_phone, employers.contact_email as company_email, employers.website as company_website, employers.is_verified')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1019,6 +1158,14 @@ class Home extends BaseController
             $jobModel->set('views', 'views+1', false)->where('id', $jobIdNum)->update();
             $job->views = (int) ($job->views ?? 0) + 1;
             $session->set($sessionKey, $now);
+
+            // Record the candidate's view for the dashboard "Jobs Viewed"
+            // stat. It is gated by the same per-job cooldown, so reloads
+            // cannot inflate it; previously detail views were never logged
+            // at all and the stat counted apply-endpoint hits instead.
+            if ($this->auth->loggedIn()) {
+                (new JobClickModel())->logClick($jobIdNum, 'view', (int) $this->auth->user()->id);
+            }
         }
 
         $job->formatted_created_at = date('d M, Y', strtotime($job->created_at));
@@ -1047,11 +1194,9 @@ class Home extends BaseController
             $job->employer_name = 'Confidential Employer';
             $job->company_logo  = base_url('images/favicon.png');
         } else {
-            if (!empty($job->company_logo)) {
-                $job->company_logo = base_url($job->company_logo);
-            } else {
-                $job->company_logo = null;
-            }
+            $job->company_logo = !empty($job->company_logo)
+                ? resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company')
+                : null;
         }
 
         // Normalize logo URL
@@ -1090,11 +1235,11 @@ class Home extends BaseController
         $questions = $questionModel->where('job_id', $job->id)->findAll();
 
         // Fetch related jobs (based on category or industry, excluding current job)
-        $relatedJobsCacheKey = "related_jobs_{$jobId}";
+        $relatedJobsCacheKey = "related_jobs_v2_{$jobId}";
         $related_jobs = $cache->get($relatedJobsCacheKey);
 
         if (!$related_jobs) {
-            $related_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.company_name as employer_name, employers.logo as company_logo')
+            $related_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1111,11 +1256,11 @@ class Home extends BaseController
         }
 
         // Fetch featured jobs
-        $featuredJobsCacheKey = 'featured_jobs';
+        $featuredJobsCacheKey = 'job_detail_featured_jobs_v2';
         $featured_jobs = $cache->get($featuredJobsCacheKey);
 
         if (!$featured_jobs) {
-            $featured_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.logo as company_logo')
+            $featured_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo')
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1176,7 +1321,7 @@ class Home extends BaseController
         $categoryId = $this->request->getGet('category');
 
         $query = $jobModel
-            ->select('jobs.*, employers.company_name, employers.logo as company_logo, 
+            ->select('jobs.*, employers.company_name, employers.tagline as employer_tagline, employers.logo as company_logo, 
                   states.name as state_name, industries.name as industry_name, 
                   job_categories.name as category_name')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
@@ -1213,42 +1358,7 @@ class Home extends BaseController
 
     public function index()
     {
-        $industryModel = new IndustryModel();
-        $stateModel  = new StateModel();
-        $categoryModel = new JobCategoryModel();
-        $jobModel = new JobModel();
-
-        // Get categories with job counts in a single query
-        $categories = $categoryModel
-            ->select('job_categories.*, COUNT(jobs.id) as job_count')
-            ->join('jobs', 'jobs.category_id = job_categories.id', 'left')
-            ->where('job_categories.parent_id', null)
-            ->groupBy('job_categories.id')
-            ->orderBy('job_categories.name', 'ASC')
-            ->findAll();
-
-        $jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.logo as company_logo')
-            ->join('states', 'states.id = jobs.state_id', 'left')
-            ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
-            ->join('industries', 'industries.id = jobs.industry_id', 'left')
-            ->join('employers', 'employers.id = jobs.employer_id', 'left')
-            ->findAll();
-
-        $data = [
-            'title' => 'Home',
-            'meta_description' => 'Find verified jobs across Nigeria on JobberRecruit. Browse top opportunities in Lagos, Abuja & more. Post jobs and hire top Nigerian talent today.',
-            'og_title' => 'JobberRecruit — Nigeria\'s Leading Job Portal',
-            'og_description' => 'Find verified jobs and hire top talent across Nigeria.',
-            'og_image' => base_url('images/default-og-image.jpg'),
-            'auth' => $this->auth,
-            'categories' => $categories,
-            'jobs' => $jobs,
-            'industries' => $industryModel->orderBy('name', 'ASC')->findAll(),
-            'states'  => $stateModel->orderBy('name', 'ASC')->findAll(),
-            'website_logo' => 'assets/imgs/page/homepage4/banner.png'
-        ];
-
-        return view('home', $data);
+        return $this->home();
     }
 
     public function moreJobs()
@@ -1258,7 +1368,7 @@ class Home extends BaseController
         $limit = (int)$this->request->getGet('limit', 6);
 
         $jobModel = model(JobModel::class);
-        $jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.logo as company_logo, employers.is_verified, employers.user_id as employer_user_id')
+        $jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo, employers.is_verified, employers.user_id as employer_user_id')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1291,9 +1401,13 @@ class Home extends BaseController
 
             if ($job->anonymous) {
                 $job->company_name = 'Confidential Employer';
+                $job->employer_name = 'Confidential Employer';
+                $job->employer_tagline = null;
                 $job->company_logo = base_url('images/favicon.png');
             } else {
-                $job->company_logo = $job->company_logo ? base_url($job->company_logo) : base_url('images/default-company.png');
+                $job->company_logo = !empty($job->company_logo)
+                    ? resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company')
+                    : base_url('images/default-company.png');
             }
         }
 
@@ -1335,7 +1449,7 @@ class Home extends BaseController
         $offset = ($page - 1) * $perPage;
 
         // Build query
-        $query = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.logo as company_logo')
+        $query = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1347,6 +1461,8 @@ class Home extends BaseController
         }
         if ($stateId) {
             $query->where('jobs.state_id', $stateId);
+        } elseif (($stateIdRaw ?? '') === 'nationwide') {
+            \App\Services\NationwideJobFilter::apply($query);
         }
         if ($experienceLevel) {
             $query->where('jobs.experience_level', $experienceLevel);
@@ -1496,7 +1612,7 @@ class Home extends BaseController
 
         // Fetch the job with related data
         $job = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, 
-            employers.user_id as employer_user_id, employers.company_name as employer_name, employers.logo as company_logo, employers.company_address as company_address, employers.contact_phone as company_phone, employers.contact_email as company_email')
+            employers.user_id as employer_user_id, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo, employers.company_address as company_address, employers.contact_phone as company_phone, employers.contact_email as company_email')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1509,7 +1625,7 @@ class Home extends BaseController
         }
 
         // Fetch similar jobs (based on category or industry)
-        $similar_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.logo as company_logo')
+        $similar_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1520,7 +1636,7 @@ class Home extends BaseController
             ->findAll(5);
 
         // Fetch featured jobs
-        $featured_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.logo as company_logo')
+        $featured_jobs = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1559,9 +1675,7 @@ class Home extends BaseController
 
         // Normalize logo URL
         if (!empty($job->company_logo)) {
-            $job->company_logo = !empty($job->company_logo)
-                ? base_url($job->company_logo)
-                : base_url('images/favicon.png');
+            $job->company_logo = resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company');
         }
 
         $data = [
@@ -1592,7 +1706,7 @@ class Home extends BaseController
                 ->with('error', 'This job is closed and is no longer accepting applications.');
         }
 
-        $method = $job->application_method ?? 'form';
+        $method = \App\Services\JobApplicationEligibility::method($job);
         $redirectUrl = null;
 
         switch ($method) {
@@ -1627,9 +1741,20 @@ class Home extends BaseController
                 ->with('error', 'The external application link for this position is currently unavailable.');
         }
 
-        $clickModel = new JobClickModel();
-        $clickUserId = $this->auth->loggedIn() ? $this->auth->user()->id : null;
-        $clickModel->logClick($jobId, $method, $clickUserId);
+        // Log the apply click at most once per job per session-hour,
+        // sharing the view cooldown key set in view_job(). This endpoint
+        // redirects onward, and the previous unconditional insert let
+        // redirect loops and refreshes flood job_clicks - the rows the
+        // candidate dashboard reports as "Jobs Viewed" (0 -> 174 -> 254).
+        $clickSession    = session();
+        $clickSessionKey = 'viewed_job_' . (int) $jobId;
+        $lastInteraction = (int) ($clickSession->get($clickSessionKey) ?? 0);
+        if (time() - $lastInteraction >= 3600) {
+            $clickModel  = new JobClickModel();
+            $clickUserId = $this->auth->loggedIn() ? $this->auth->user()->id : null;
+            $clickModel->logClick((int) $jobId, $method, $clickUserId);
+            $clickSession->set($clickSessionKey, time());
+        }
 
         return redirect()->to($redirectUrl);
     }
@@ -1658,7 +1783,7 @@ class Home extends BaseController
     //     }
 
     //     if ($job->application_access === 'guest' && auth()->user()) {
-    //         return redirect()->back()->with('info', 'This job is only open to guest applicants.');
+    //         return redirect()->to(base_url('jobs/' . ($job->slug ?? $job->id)))->with('info', 'This job is only open to guest applicants.');
     //     }
 
     //     $subscriptionModel = model(UserSubscriptionModel::class);
@@ -1961,7 +2086,7 @@ class Home extends BaseController
         $candidateModel    = model(\App\Models\JobSeekerModel::class);
 
         $job = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, 
-        employers.user_id as employer_user_id, employers.is_verified, employers.company_name as employer_name, employers.logo as company_logo, employers.company_address as company_address, employers.contact_phone as company_phone, employers.contact_email as company_email, employers.website as company_website')
+        employers.user_id as employer_user_id, employers.is_verified, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.logo as company_logo, employers.company_address as company_address, employers.contact_phone as company_phone, employers.contact_email as company_email, employers.website as company_website')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -1980,7 +2105,7 @@ class Home extends BaseController
         }
 
         // If application method is not internal form (external, whatsapp, email), redirect to tracking handler
-        if (($job->application_method ?? 'form') !== 'form') {
+        if (\App\Services\JobApplicationEligibility::method($job) !== 'form') {
             return $this->startApplication($jobId);
         }
 
@@ -2319,7 +2444,7 @@ class Home extends BaseController
         $jobModel = model(JobModel::class);
 
         $job = $jobModel
-            ->select('jobs.*, employers.company_name, employers.logo as company_logo')
+            ->select('jobs.*, employers.company_name, employers.tagline as employer_tagline, employers.logo as company_logo')
             ->join('employers', 'employers.id = jobs.employer_id', 'left')
             ->find($jobId);
 
@@ -2328,7 +2453,9 @@ class Home extends BaseController
         }
 
         $similarJobs = $jobModel
-            ->where('industry_id', $job->industry_id)
+            ->select('jobs.*, employers.company_name, employers.tagline as employer_tagline')
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->where('jobs.industry_id', $job->industry_id)
             ->where('jobs.id !=', $jobId)
             ->limit(4)
             ->findAll();
@@ -2349,7 +2476,7 @@ class Home extends BaseController
         $experienceLevel = $this->request->getGet('experience_level');
 
         $jobModel = model(JobModel::class);
-        $query = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.logo as company_logo')
+        $query = $jobModel->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.logo as company_logo')
             ->join('states', 'states.id = jobs.state_id', 'left')
             ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
             ->join('industries', 'industries.id = jobs.industry_id', 'left')
@@ -2360,12 +2487,19 @@ class Home extends BaseController
         }
         if ($stateId) {
             $query->where('jobs.state_id', $stateId);
+        } elseif (($stateIdRaw ?? '') === 'nationwide') {
+            \App\Services\NationwideJobFilter::apply($query);
         }
         if ($experienceLevel) {
             $query->where('jobs.experience_level', $experienceLevel);
         }
 
         $jobs = $query->findAll();
+        foreach ($jobs as $job) {
+            if (!empty($job->company_logo)) {
+                $job->company_logo = resolve_image_url($job->company_logo, 'company', $job->employer_name ?? 'Company');
+            }
+        }
 
         if ($this->request->isAJAX()) {
             return $this->response->setJSON([
@@ -3070,7 +3204,7 @@ class Home extends BaseController
         $blogModel     = model(\App\Models\BlogModel::class);
         $employerModel = model(\App\Models\EmployerModel::class);
 
-        $liveJobsCount = $jobModel->where('status', 'approved')->countAllResults();
+        $liveJobsCount = $jobModel->where('status', 'open')->where('admin_status', 'approved')->countAllResults();
         $employerCount = $employerModel->where('is_verified', 1)->countAllResults();
         $recentBlogs   = $blogModel->where('status', 'published')
             ->orderBy('created_at', 'DESC')
@@ -3265,12 +3399,12 @@ class Home extends BaseController
         $jobModel = new \App\Models\JobModel();
         $cache = \Config\Services::cache();
         
-        $jobsCacheKey = 'recent_jobs_home_v2';
+        $jobsCacheKey = 'recent_jobs_home_v3';
         $jobs = $cache->get($jobsCacheKey);
 
         if (!$jobs) {
             $jobs = $jobModel
-                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.company_name as employer_name')
+                ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.company_name as employer_name, employers.tagline as employer_tagline')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
             ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
@@ -3451,7 +3585,7 @@ class Home extends BaseController
 
         $jobModel = model(JobModel::class);
         $builder = $jobModel->builder('employers')
-            ->select('employers.id, employers.company_name, employers.user_id, employers.logo, employers.company_address, employers.website, employers.is_verified, states.name as location, COUNT(jobs.id) as job_count')
+            ->select('employers.id, employers.company_name, employers.tagline, employers.user_id, employers.logo, employers.company_address, employers.website, employers.is_verified, states.name as location, COUNT(jobs.id) as job_count')
             ->join('jobs', 'jobs.employer_id = employers.id AND jobs.status = "open"', 'left')
             ->join('states', 'states.id = employers.state_id', 'left')
             ->groupBy('employers.id');

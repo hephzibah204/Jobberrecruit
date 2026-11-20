@@ -202,10 +202,10 @@ function renderQuestionsList() {
     let html = '';
     questionsList.forEach((q, idx) => {
         const questionText = q.question || q.body || '';
-        html += `<div class="card p-3 bg-light border position-relative mb-2">`;
-        html += `<div class="d-flex justify-content-between align-items-start mb-2">`;
-        html += `<div class="fw-bold fs-14">${idx + 1}. ${escapeHtml(questionText)}</div>`;
-        html += `<div class="btn-group btn-group-sm">`;
+        html += `<div class="card p-3 bg-light border position-relative mb-2" style="max-width:100%; box-sizing:border-box; word-break:break-word; overflow-wrap:anywhere;">`;
+        html += `<div class="d-flex justify-content-between align-items-start gap-2 mb-2">`;
+        html += `<div class="fw-bold fs-14" style="min-width:0; flex:1; word-break:break-word; overflow-wrap:anywhere;">${idx + 1}. ${escapeHtml(questionText)}</div>`;
+        html += `<div class="btn-group btn-group-sm flex-shrink-0">`;
         html += `<button type="button" class="btn btn-outline-info" onclick="editQuestion(${idx})" title="Edit Question"><i class="ti ti-edit"></i></button>`;
         html += `<button type="button" class="btn btn-outline-danger" onclick="deleteQuestion(${idx})" title="Delete Question"><i class="ti ti-trash"></i></button>`;
         html += `</div></div>`;
@@ -215,14 +215,14 @@ function renderQuestionsList() {
             html += `<ul class="list-unstyled mb-1 ms-3">`;
             options.forEach(opt => {
                 const optText = opt.text || opt.body || '';
-                const isCorrect = opt.is_correct ? '<span class="badge bg-success ms-2">Correct</span>' : '';
-                html += `<li class="fs-13 text-muted mb-1">• ${escapeHtml(optText)} ${isCorrect}</li>`;
+                const isCorrect = Number(opt.is_correct) === 1 ? '<span class="badge bg-success ms-2">Correct</span>' : '';
+                html += `<li class="fs-13 text-muted mb-1" style="word-break:break-word; overflow-wrap:anywhere;">• ${escapeHtml(optText)} ${isCorrect}</li>`;
             });
             html += `</ul>`;
         }
 
         if (q.explanation) {
-            html += `<div class="fs-12 text-info mt-1 ms-3"><i>Explanation: ${escapeHtml(q.explanation)}</i></div>`;
+            html += `<div class="fs-12 text-info mt-1 ms-3" style="word-break:break-word; overflow-wrap:anywhere;"><i>Explanation: ${escapeHtml(q.explanation)}</i></div>`;
         }
 
         html += `</div>`;
@@ -263,7 +263,7 @@ function editQuestion(idx) {
 
     let correctIdx = 0;
     options.forEach((opt, oIdx) => {
-        if (opt.is_correct) correctIdx = oIdx;
+        if (Number(opt.is_correct) === 1) correctIdx = oIdx;
     });
 
     const radios = document.getElementsByName('modalOptCorrect');

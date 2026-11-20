@@ -4,6 +4,10 @@ namespace App\Services;
 
 class MailtrapService
 {
+    public static function isPermanentResponse(int $status): bool
+    {
+        return in_array($status, [400, 401, 403, 404, 413, 422], true);
+    }
     protected string $apiToken;
     protected string $apiUrl = 'https://send.api.mailtrap.io/api/send';
     protected string $fromEmail;
@@ -14,8 +18,7 @@ class MailtrapService
         $this->apiToken = env('MAILTRAP_API_TOKEN') 
             ?: (env('MAILTRAP_API_KEY') 
             ?: (env('MAILTRAP_TOKEN') 
-            ?: (env('mailtrap_api_key') 
-            ?: (config('Email')->SMTPPass ?: 'f61d16194a672c3c36fe382d5ebd2f76'))));
+            ?: env('mailtrap_api_key')));
 
         $emailConfig = config('Email');
         $this->fromEmail = env('email.fromEmail') 
@@ -33,6 +36,9 @@ class MailtrapService
      */
     public function send($to, string $subject, string $html, string $text = '', array $options = []): bool
     {
+        if (!is_string($this->apiToken) || trim($this->apiToken) === '') {
+            throw new PermanentEmailFailure('Mailtrap API token is not configured.');
+        }
         if (empty($to)) {
             log_message('error', 'MailtrapService: Recipient is empty.');
             return false;
@@ -67,6 +73,11 @@ class MailtrapService
             return false;
         }
 
+        $suppressions = new EmailSuppressionService();
+        $recipients = array_values(array_filter($recipients, static fn ($recipient) =>
+            filter_var($recipient['email'], FILTER_VALIDATE_EMAIL) && !$suppressions->isSuppressed($recipient['email'])));
+        if (!$recipients) throw new PermanentEmailFailure('All recipients are invalid or suppressed.');
+
         $fromEmail = !empty($options['from_email']) ? $options['from_email'] : $this->fromEmail;
         $fromName  = !empty($options['from_name']) ? $options['from_name'] : $this->fromName;
 
@@ -81,6 +92,11 @@ class MailtrapService
             'text'     => !empty($text) ? $text : strip_tags($html),
             'category' => $options['category'] ?? 'JobberRecruit Automations'
         ];
+
+        foreach (['cc', 'bcc'] as $field) {
+            $payload[$field] = $this->formatRecipients($options[$field] ?? []);
+            if (!$payload[$field]) unset($payload[$field]);
+        }
 
         if (!empty($options['reply_to'])) {
             $payload['reply_to'] = [
@@ -123,10 +139,29 @@ class MailtrapService
             }
 
             log_message('error', "MailtrapService Delivery Failed (HTTP {$httpCode}): " . $response);
+            if (self::isPermanentResponse($httpCode)) {
+                throw new PermanentEmailFailure('Mailtrap permanently rejected the request (HTTP ' . $httpCode . '). Check sender, recipient, and account configuration.');
+            }
             return false;
+        } catch (PermanentEmailFailure $e) {
+            throw $e;
         } catch (\Throwable $e) {
             log_message('error', 'MailtrapService Exception: ' . $e->getMessage());
             return false;
         }
+    }
+
+    private function formatRecipients($values): array
+    {
+        $recipients = [];
+        foreach ((array) $values as $value) {
+            $email = is_array($value) ? trim((string) ($value['email'] ?? '')) : trim((string) $value);
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $item = ['email' => $email];
+                if (is_array($value) && !empty($value['name'])) $item['name'] = (string) $value['name'];
+                $recipients[] = $item;
+            }
+        }
+        return $recipients;
     }
 }

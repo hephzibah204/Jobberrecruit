@@ -538,6 +538,9 @@ class EmployerController extends BaseController
 
         $creditService = new \App\Services\CreditService();
         $availableCredits = $creditService->getAvailableCredits($user->id);
+        if ($creditService->hasUnlimitedAccess((int) $user->id) || $availableCredits > 0) {
+            return redirect()->to('employer/post-job');
+        }
 
         $plan = null;
         $subscription = model(UserSubscriptionModel::class)
@@ -609,7 +612,7 @@ class EmployerController extends BaseController
     //             'experience_level'    => 'required',
     //             'application_method'  => 'required|in_list[form,whatsapp,email,external]',
     //             'application_access'  => 'required|in_list[guest,authenticated,general]',
-    //             'accommodation'       => 'required|in_list[available,not_available]',
+    //             'accommodation'       => 'permit_empty',
     //             'contact_email'       => 'required|valid_email',
     //         ];
 
@@ -643,7 +646,7 @@ class EmployerController extends BaseController
 
     //         /* ====================== PREPARE JOB DATA ====================== */
     //         $postData = $this->request->getPost();
-    //         $postData['employer_id'] = $employer->id;
+    //         $postData['show_salary'] = $this->request->getPost('show_salary') ? 1 : 0;
     //         $postData['status']      = 'pending_approval';
 
     //         // Salary details
@@ -869,8 +872,9 @@ class EmployerController extends BaseController
             $canUseNetworkBlast = $this->canUseNetworkBlast($currentPlan, $hasUnlimitedAccess);
 
             /* ====================== PREPARE JOB DATA ====================== */
-            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
             $postData = $this->request->getPost($allowed);
+            $postData['show_salary'] = $this->request->getPost('show_salary') ? 1 : 0;
             $postData['employer_id'] = $employer->id;
             $postData['status'] = $isDraft ? 'draft' : 'pending_approval';
             $postData['admin_status'] = $isDraft ? 'draft' : 'pending';
@@ -1433,9 +1437,9 @@ class EmployerController extends BaseController
                 ->countAllResults();
 
             $activeSub = [
-                'plan_name' => 'Unlimited Access',
-                'starts_at' => null,
-                'ends_at' => $employer->unlimited_until,
+                'plan_name' => $currentPlan->name ?? 'Unlimited Access',
+                'starts_at' => $subscription->starts_at ?? null,
+                'ends_at' => $subscription->ends_at ?? $employer->unlimited_until,
                 'features_array' => [
                     'featured' => true,
                     'anonymous' => true,
@@ -1981,6 +1985,14 @@ class EmployerController extends BaseController
             $kpiStats['avg_score'] = count($scores) > 0 ? round(array_sum($scores) / count($scores)) : 0;
         }
 
+        $focusCandidate = null;
+        $candidateParam = (int) ($this->request->getGet('candidate') ?? 0);
+        if ($candidateParam > 0) {
+            $focusCandidate = $db->table('job_seekers')
+                ->select('id, full_name')
+                ->where('id', $candidateParam)
+                ->get()->getRowObject();
+        }
         return view('employers/aptitude_tests', [
             'title'        => 'Screening & Aptitude Tests',
             'tests'        => $tests,
@@ -1992,6 +2004,8 @@ class EmployerController extends BaseController
             'filterStatus' => $filterStatus,
             'searchQuery'  => $searchQuery,
             'kpiStats'     => $kpiStats,
+            'autoCreate'     => $this->request->getGet('create') ? 1 : 0,
+            'focusCandidate' => $focusCandidate,
         ]);
     }
 
@@ -2928,7 +2942,7 @@ class EmployerController extends BaseController
 
         // Job editing restriction: only allowed within 1 hour of posting
         $createdAtTime = !empty($job->created_at) ? strtotime($job->created_at) : 0;
-        if ($createdAtTime > 0 && ($createdAtTime < (time() - 3600))) {
+        if ($job->status !== 'draft' && $createdAtTime > 0 && ($createdAtTime < (time() - 3600))) {
             return redirect()->to('employer/jobs')->with('error', 'Job editing is only permitted within 1 hour of posting. Please contact JobberRecruit Support via WhatsApp (+2349014808902) or email (support@jobberrecruit.com) to request changes to this listing.');
         }
 
@@ -3005,7 +3019,7 @@ class EmployerController extends BaseController
 
         // Job editing restriction: only allowed within 1 hour of posting
         $createdAtTime = !empty($job->created_at) ? strtotime($job->created_at) : 0;
-        if ($createdAtTime > 0 && ($createdAtTime < (time() - 3600))) {
+        if ($job->status !== 'draft' && $createdAtTime > 0 && ($createdAtTime < (time() - 3600))) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Job editing is only permitted within 1 hour of posting. Please contact JobberRecruit Support via WhatsApp (+2349014808902) to request changes.'
@@ -3050,7 +3064,9 @@ class EmployerController extends BaseController
         }
 
         // Prepare update data
-        $postData = $this->request->getPost();
+        $postData = $this->request->getPost(['title','description','job_type','state_id','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','whatsapp_link','application_email','external_url','application_deadline','start_date']);
+        $postData['show_salary'] = $this->request->getPost('show_salary_present') !== null
+            ? ($this->request->getPost('show_salary') ? 1 : 0) : ($job->show_salary ?? 1);
 
         // Handle salary details
         if ($postData['salary_type'] !== 'negotiable' && !empty($postData['salary'])) {
@@ -3466,6 +3482,13 @@ class EmployerController extends BaseController
             return redirect()->to('employer/jobs')->with('error', 'You do not have permission to delete this job.');
         }
         $jobModel->delete($id);
+        try {
+            $cache = \Config\Services::cache();
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('featured_jobs');
+            $cache->delete('recent_jobs');
+        } catch (\Throwable $e) {}
         
         return redirect()->to('employer/jobs')->with('success', 'Job permanently deleted successfully.');
     }
@@ -3489,6 +3512,13 @@ class EmployerController extends BaseController
             'status'     => 'closed',
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
+        try {
+            $cache = \Config\Services::cache();
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('featured_jobs');
+            $cache->delete('recent_jobs');
+        } catch (\Throwable $e) {}
 
         return redirect()->to('employer/jobs')->with('success', "Job \"{$job->title}\" has been closed. It will no longer accept new applications, but all existing applications remain accessible.");
     }
@@ -3522,6 +3552,23 @@ class EmployerController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Job not found or access denied']);
         }
 
+        // Save a separate draft through the normal posting flow; preserve the original job.
+        if ($this->request->getPost('submission_type') === 'draft') {
+            return $this->post_job();
+        }
+
+        $requestKey = (string) $this->request->getPost('repost_request_key');
+        if (!preg_match('/^[a-f0-9]{64}$/D', $requestKey)) {
+            return $this->response->setJSON(['success'=>false, 'message'=>'Please refresh the repost form and try again.']);
+        }
+        $existing = db_connect()->table('job_repost_requests')->where('request_key', $requestKey)->get()->getRow();
+        if ($existing) {
+            if ((int) $existing->employer_id !== (int) $employer->id || (int) $existing->source_job_id !== (int) $jobId) {
+                return $this->response->setJSON(['success'=>false, 'message'=>'Invalid repost request.']);
+            }
+            return $this->response->setJSON(['success'=>true, 'message'=>'This repost has already been submitted.', 'redirect'=>site_url('employer/jobs')]);
+        }
+
         // --- Repost Specific Logic: Check credits and charge ---
         $creditService = new \App\Services\CreditService();
         $hasUnlimitedAccess = $this->hasUnlimitedAccess($employer->id);
@@ -3532,9 +3579,13 @@ class EmployerController extends BaseController
         $db->transBegin();
 
         try {
+            // Unique reservation and payment share one transaction: concurrent retries cannot charge twice.
+            if (!$db->table('job_repost_requests')->insert(['request_key'=>$requestKey, 'employer_id'=>$employer->id, 'source_job_id'=>$jobId])) {
+                throw new \RuntimeException('This repost is already being processed. Please check My Jobs.');
+            }
             if (!$hasUnlimitedAccess) {
                 if ($creditBalance > 0) {
-                    $reference = 'repost_credit_' . $employer->id . '_' . $jobId . '_' . time();
+                    $reference = 'repost_credit_' . $employer->id . '_' . $requestKey;
                     $deduct = $creditService->deductCredits($user->id, 1, $reference, 'Job Repost: ' . $job->title, 'post_job');
                     if (!$deduct['success']) {
                         throw new \RuntimeException($deduct['message'] ?? 'Failed to deduct job credit.');
@@ -3561,7 +3612,7 @@ class EmployerController extends BaseController
                 'experience_level' => 'required',
                 'application_method' => 'required|in_list[form,whatsapp,email,external]',
                 'application_access' => 'required|in_list[guest,authenticated,general]',
-                'accommodation' => 'required|in_list[available,not_available]',
+                'accommodation' => 'permit_empty',
                 'contact_email' => 'required|valid_email',
             ];
 
@@ -3582,8 +3633,9 @@ class EmployerController extends BaseController
             }
 
             // Prepare Update Data
-            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','salary_max','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link'];
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link'];
             $updateData = $this->request->getPost($allowed);
+            $updateData['show_salary'] = $this->request->getPost('show_salary') ? 1 : 0;
 
             if ($updateData['salary_type'] !== 'negotiable' && !empty($updateData['salary'])) {
                 $updateData['salary_details'] = ucfirst($updateData['salary_type']) . ', ' . ucfirst($updateData['salary_period']) . ': ' . $updateData['salary'];
@@ -3598,7 +3650,9 @@ class EmployerController extends BaseController
             // Reset cycles for repost
             $now = date('Y-m-d H:i:s');
             $newDeadline = date('Y-m-d', strtotime('+30 days'));
-            $updateData['status'] = 'open';
+            $updateData['status'] = 'pending_approval';
+            $updateData['admin_status'] = 'pending';
+            $updateData['is_anonymous'] = $this->canUseAnonymousPosting($creditService->getCurrentPlan($user->id), $hasUnlimitedAccess) && $this->request->getPost('is_anonymous') ? 1 : 0;
             $updateData['created_at'] = $now;
             $updateData['closing_date'] = $newDeadline;
             $updateData['deadline'] = $newDeadline;
@@ -3614,24 +3668,41 @@ class EmployerController extends BaseController
                 $updateData['featured_until'] = date('Y-m-d H:i:s', strtotime('+30 days'));
             }
 
-            $jobModel->update($jobId, $updateData);
+            // Preserve historical question IDs and answers by creating a new repost listing.
+            $updateData['employer_id'] = $employer->id;
+            $jobId = $jobModel->insert($updateData);
+            if (!$jobId) throw new \RuntimeException('Unable to create the reposted listing.');
+            $questionModel = model(\App\Models\JobQuestionModel::class);
+            foreach ((array) ($this->request->getPost('questions') ?? []) as $q) {
+                if (empty(trim((string) ($q['text'] ?? '')))) continue;
+                $type = ['Short text'=>'text','Yes / No'=>'yes_no','Multiple choice'=>'multiple_choice'][$q['type'] ?? ''] ?? ($q['type'] ?? 'text');
+                if (!in_array($type, ['text','yes_no','multiple_choice','select','radio','checkbox'], true)) $type = 'text';
+                if (!$questionModel->insert([
+                    'job_id'=>$jobId, 'question_text'=>trim($q['text']), 'question_type'=>$type,
+                    'is_required'=>!empty($q['is_required']) ? 1 : 0,
+                    'options'=>empty($q['options']) ? null : implode(',', array_map('trim', (array) $q['options'])),
+                ])) throw new \RuntimeException('Unable to save screening questions.');
+            }
 
-            // Log activity
-            model(\App\Models\EmployerActivityModel::class)->insert([
-                'employer_id' => $employer->id,
-                'activity_type' => 'job_reposted',
-                'description' => "Reposted job: {$updateData['title']}",
-                'ip_address' => $this->request->getIPAddress()
+            if (!$jobModel->update($jobId, $updateData) || $db->transStatus() === false) {
+                throw new \RuntimeException('Unable to save the reposted job. Please try again.');
+            }
+
+            if (!$db->transCommit()) {
+                throw new \RuntimeException('Unable to complete the repost. Please try again.');
+            }
+
+            log_message('info', 'Job {jobId} reposted by employer {employerId}', [
+                'jobId' => $jobId,
+                'employerId' => $employer->id,
             ]);
-
-            $db->transCommit();
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Job reposted successfully.',
+                'message' => 'Job reposted successfully and submitted for review.',
                 'redirect' => site_url('employer/jobs')
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $db->transRollback();
             log_message('error', 'Job repost failed: ' . $e->getMessage());
             return $this->response->setJSON([
@@ -3900,13 +3971,16 @@ class EmployerController extends BaseController
             return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
         }
 
-        // First open marks the application as reviewed so the candidate sees it was looked at
-        if ($application->status === 'pending') {
+        // First open records that the employer viewed the application.
+        // It must not change the status itself: the status only moves when
+        // the employer picks a new one. (Previously, merely opening a
+        // pending application silently flipped it to 'reviewed', so the
+        // status control opened showing Reviewed for an application
+        // nobody had actually reviewed.)
+        if ($application->status === 'pending' && empty($application->reviewed_at)) {
             $applicationModel->update($application->id, [
-                'status'      => 'reviewed',
                 'reviewed_at' => date('Y-m-d H:i:s'),
             ]);
-            $application->status      = 'reviewed';
             $application->reviewed_at = date('Y-m-d H:i:s');
         }
 
@@ -4066,7 +4140,7 @@ class EmployerController extends BaseController
         $creditService = new \App\Services\CreditService();
         $creditBalance = $creditService->getAvailableCredits($user->id);
 
-        $canShowTrustBadge = ($features['trust_badge'] ?? false) && !empty($employer->is_verified);
+        $canShowTrustBadge = !empty($employer->is_verified);
 
         // Profile completion % — mirrors dashboard()'s calculation
         $totalJobs = model(JobModel::class)->where('employer_id', $employer->id)->countAllResults();
@@ -5155,6 +5229,9 @@ class EmployerController extends BaseController
         // FINAL PAYLOAD
         // =========================
 
+        $metadata['user_id'] = (int) $user->id;
+        if ($type === 'subscription') $email = $user->email;
+
         $reference = 'REF-' . strtoupper(uniqid());
 
         $paystackKey = env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key'));
@@ -5163,6 +5240,24 @@ class EmployerController extends BaseController
                 'success' => false,
                 'message' => 'Paystack API key is not configured. Please add paystack_public_key and paystack_secret_key to your .env file.'
             ]);
+        }
+
+        if ($type === 'bundle') {
+            $order = (new \App\Services\BundleService())->createPending((int) $user->id, (int) $bundleId);
+            $reference = $order['reference'];
+            $metadata = $order['metadata'];
+            $amount = $order['amount'];
+            $email = $user->email;
+        }
+
+        if ($type === 'subscription') {
+            if (!model(PaymentModel::class)->insert([
+                'user_id' => $user->id, 'plan_id' => $metadata['plan_id'],
+                'reference' => $reference, 'amount' => $amount, 'currency' => 'NGN',
+                'status' => 'pending', 'metadata' => json_encode($metadata),
+            ])) {
+                return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Unable to prepare subscription payment.']);
+            }
         }
 
         if ($type === 'unlock') {
@@ -5183,7 +5278,7 @@ class EmployerController extends BaseController
             'success'     => true,
             'paystack'    => $paystackKey,
             'email'       => $email,
-            'amount'      => (int)($amount * 100), // Kobo
+            'amount'      => (int) round($amount * 100), // Kobo
             'reference'   => $reference,
             'description' => $description,
             'invoice'     => $invoiceNo,
@@ -5380,10 +5475,25 @@ class EmployerController extends BaseController
             }
 
             $amount = $verification['data']['amount'] / 100;
-            $rawMeta = $verification['data']['metadata'] ?? [];
-            $metadata = $rawMeta['app_data'] ?? $rawMeta;
+            $metadata = \App\Services\PaymentFulfillmentService::metadata($verification['data']);
 
             $type = $metadata['type'] ?? null;
+            if ($type === 'bundle') {
+                (new \App\Services\BundleService())->fulfill($verification['data'], (int) $user->id);
+                return redirect()->to('employer/pricing')->with('success', 'Your bundle payment is complete and your job credits are available.');
+            }
+            if ($type === 'subscription') {
+                (new \App\Services\EmployerSubscriptionPaymentService())->fulfill($verification['data'], (int) $user->id);
+                return redirect()->to('employer/pricing')->with('success', 'Your subscription is active. Your plan benefits are available now.');
+            }
+            $unlockOrder = null;
+            if ($type === 'unlock') {
+                $unlockOrder = model(PaymentModel::class)->where('reference', $reference)
+                    ->where('user_id', $user->id)->where('employer_id', $employer->id)->first();
+                \App\Services\PaymentFulfillmentService::validateUnlock(
+                    $verification['data'], $unlockOrder ?: [], (string)$user->email, (int)($metadata['candidate_id'] ?? 0)
+                );
+            }
             $db = db_connect();
             $db->transStart();
 
@@ -5398,7 +5508,7 @@ class EmployerController extends BaseController
                     return redirect()->to('employer/pricing')->with('success', 'Payment already processed successfully.');
                 }
                 
-                $paymentId = $paymentModel->insert([
+                $paymentData = [
                     'user_id' => $user->id,
                     'employer_id' => $employer->id,
                     'plan_id' => $type === 'subscription' ? ($metadata['plan_id'] ?? null) : null,
@@ -5408,7 +5518,15 @@ class EmployerController extends BaseController
                     'payment_method' => $verification['data']['channel'] ?? 'card',
                     'metadata' => json_encode($metadata),
                     'paid_at' => date('Y-m-d H:i:s')
-                ]);
+                ];
+                if ($unlockOrder) {
+                    if (!$paymentModel->update($unlockOrder['id'], $paymentData)) {
+                        throw new \RuntimeException('Unable to record profile unlock payment.');
+                    }
+                    $paymentId = $unlockOrder['id'];
+                } else {
+                    $paymentId = $paymentModel->insert($paymentData);
+                }
 
                 $creditService = new \App\Services\CreditService();
                 $invoiceService = new \App\Services\InvoiceService();
@@ -5617,11 +5735,8 @@ class EmployerController extends BaseController
         /* -------------------------------------------------
      * ACTIVE SUBSCRIPTION (if any)
      * ------------------------------------------------- */
-        $userPlan = $subscriptionModel
-            ->where('user_id', $user->id)
-            ->where('is_active', 1)
-            ->orderBy('ends_at', 'DESC')
-            ->first();
+        $creditService = new \App\Services\CreditService();
+        $userPlan = $creditService->getCurrentSubscription((int) $user->id);
 
         /* -------------------------------------------------
      * PLANS (Free + Subscriptions only)
@@ -5648,13 +5763,8 @@ class EmployerController extends BaseController
         /* -------------------------------------------------
      * JOB CREDIT BALANCE (SOURCE OF TRUTH)
      * ------------------------------------------------- */
-        $creditBalance = $creditWalletModel
-            ->where('user_id', $user->id)
-            ->selectSum('credits')
-            ->get()
-            ->getRow()->credits ?? 0;
-
-        $hasUnlimitedAccess = (new \App\Services\CreditService())->hasUnlimitedAccess($user->id);
+        $creditBalance = $creditService->getAvailableCredits((int) $user->id);
+        $hasUnlimitedAccess = $creditService->hasUnlimitedAccess((int) $user->id);
 
         /* -------------------------------------------------
      * ENSURE STARTER ACCESS (ONE-TIME CREDIT)
@@ -5665,12 +5775,13 @@ class EmployerController extends BaseController
             ->where('billing_type', 'free')
             ->first();
 
-        if (!$hasUnlimitedAccess && $starterPlan && $creditBalance == 0 && !$userPlan) {
+        if (!$hasUnlimitedAccess && $starterPlan && $creditBalance == 0 && !$userPlan
+            && $creditWalletModel->where('user_id', $user->id)->countAllResults() === 0) {
             // Give ONE starter credit only once
             $creditWalletModel->insert([
                 'user_id' => $user->id,
                 'credits' => 1,
-                'source'  => 'free'
+                'source'  => 'starter'
             ]);
 
             $creditBalance = 1;
@@ -5686,7 +5797,7 @@ class EmployerController extends BaseController
 
         $bundleHistory = model(JobCreditTransactionModel::class)
             ->where('user_id', $user->id)
-            ->where('type', 'credit')
+            ->whereIn('type', ['credit', 'credit_in'])
             ->like('description', 'Bundle', 'both')
             ->orderBy('created_at', 'DESC')
             ->findAll();
@@ -5746,19 +5857,16 @@ class EmployerController extends BaseController
             ]);
         }
 
+        $order = (new \App\Services\BundleService())->createPending((int) $user->id, (int) $bundle->id);
+
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
             'public_key'  => env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key')),
             'email'       => $user->email,
-            'amount'      => (int) ($bundle->price * 100),
-            'reference'   => 'bundle_' . uniqid(),
-            'metadata'    => [
-                'type'      => 'bundle',
-                'bundle_id' => $bundle->id,
-                'user_id'   => $user->id,
-                'wallet_used' => 0
-            ]
+            'amount'      => (int) round($order['amount'] * 100),
+            'reference'   => $order['reference'],
+            'metadata'    => $order['metadata']
         ]);
     }
 
@@ -5794,21 +5902,19 @@ class EmployerController extends BaseController
 
             $reference = 'wallet_bundle_' . uniqid();
 
-            (new \App\Services\WalletService())->debit(
-                userId: $user->id,
-                amount: $bundlePrice,
-                source: 'bundle_purchase',
-                reference: $reference,
-                sourceId: $bundle->id,
-                description: 'Bundle purchase'
-            );
+            try {
+                \App\Services\PurchaseTransaction::run((int) $user->id, function () use ($user, $bundle, $bundlePrice, $reference) {
+                    (new \App\Services\WalletService())->debit($user->id, $bundlePrice,
+                        'bundle_purchase', $reference, $bundle->id, 'Bundle purchase');
+                    (new \App\Services\BundleService())->credit($user->id, $bundle->id, $reference, 'wallet');
+                });
+            } catch (\Throwable $e) {
+                return $this->response->setStatusCode(409)->setJSON(['success' => false, 'message' => 'Bundle purchase failed. Your wallet payment was not completed.']);
+            }
 
-            (new \App\Services\BundleService())->credit(
-                userId: $user->id,
-                bundleId: $bundle->id,
-                reference: $reference,
-                source: 'wallet'
-            );
+            (new \App\Services\EmailNotificationService())->notifyEmployerAccount((int) $user->id,
+                'Job credit bundle purchased', 'Your wallet payment was successful and your bundle credits have been added.',
+                ['Bundle' => $bundle->name, 'Amount (NGN)' => number_format($bundlePrice, 2), 'Reference' => $reference]);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -5817,21 +5923,16 @@ class EmployerController extends BaseController
         }
 
         // PARTIAL WALLET → PAYSTACK
-        $remaining = $bundlePrice - $walletBalance;
+        $order = (new \App\Services\BundleService())->createPending((int) $user->id, (int) $bundle->id, $walletBalance);
 
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
             'public_key'  => env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key')),
             'email'       => $user->email,
-            'amount'      => (int) ($remaining * 100),
-            'reference'   => 'bundle_hybrid_' . uniqid(),
-            'metadata'    => [
-                'type'        => 'bundle',
-                'bundle_id'   => $bundle->id,
-                'user_id'     => $user->id,
-                'wallet_used' => $walletBalance
-            ]
+            'amount'      => (int) round($order['amount'] * 100),
+            'reference'   => $order['reference'],
+            'metadata'    => $order['metadata']
         ]);
     }
 
@@ -5865,53 +5966,18 @@ class EmployerController extends BaseController
             ]);
         }
 
-        $data = $response['data'];
-        $meta = $data['metadata'];
-
-        // Idempotency guard
-        $exists = model(WalletTransactionModel::class)
-            ->where('reference', $reference)
-            ->countAllResults();
-
-        if ($exists > 0) {
-            return $this->response->setJSON([
-                'success' => true,
-                'verified' => true,
-                'message' => 'Payment already processed'
-            ]);
+        try {
+            $result = (new \App\Services\BundleService())->fulfill($response['data'], (int) auth()->id());
+            if (!$result['already_processed']) {
+                try { $this->triggerEmployerReferralReward((int) auth()->id()); }
+                catch (\Throwable $e) { log_message('error', 'Bundle referral notification failed: ' . $e->getMessage()); }
+            }
+            return $this->response->setJSON(['success' => true, 'verified' => true]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Bundle verification failed: ' . $e->getMessage());
+            return $this->response->setStatusCode(409)->setJSON(['success' => false,
+                'message' => 'Bundle activation failed. Please contact support with your payment reference.']);
         }
-
-        // 🔒 Apply wallet + bundle logic
-        (new \App\Services\BundleService())->credit(
-            userId: $meta['user_id'],
-            bundleId: $meta['bundle_id'],
-            reference: $reference,
-            source: 'paystack'
-        );
-
-        $this->triggerEmployerReferralReward((int) $meta['user_id']);
-
-        // If wallet was partially used
-        if (!empty($meta['wallet_used']) && $meta['wallet_used'] > 0) {
-
-            $wallet = model(WalletModel::class)
-                ->where('user_id', $meta['user_id'])
-                ->first();
-
-            (new \App\Services\WalletService())->debit(
-                userId: (int) $meta['user_id'],
-                amount: (float) $meta['wallet_used'],
-                source: 'bundle_purchase',
-                reference: 'wallet_part_' . $reference,
-                sourceId: (int) $meta['bundle_id'],
-                description: 'Partial bundle payment'
-            );
-        }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'verified' => true
-        ]);
     }
 
     private function triggerEmployerReferralReward(int $userId)
@@ -5930,7 +5996,8 @@ class EmployerController extends BaseController
 
         $plan = model(PlanModel::class)
             ->where('id', $planId)
-            ->where('billing_type', 'subscription')
+            ->whereIn('billing_type', ['subscription', 'recurring'])
+            ->where('plan_type !=', 'candidate')
             ->where('is_active', 1)
             ->first();
 
@@ -5941,18 +6008,25 @@ class EmployerController extends BaseController
             ]);
         }
 
+        $reference = 'sub_' . bin2hex(random_bytes(16));
+        $metadata = ['type' => 'subscription', 'user_id' => (int) $user->id,
+            'plan_id' => (int) $plan->id, 'months' => 1];
+        if (!model(PaymentModel::class)->insert([
+            'user_id' => $user->id, 'plan_id' => $plan->id, 'reference' => $reference,
+            'amount' => $plan->base_price, 'currency' => 'NGN', 'status' => 'pending',
+            'metadata' => json_encode($metadata),
+        ])) {
+            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Could not prepare subscription checkout.']);
+        }
+
         return $this->response->setJSON([
             'success'    => true,
             'paystack'   => true,
             'public_key' => env('paystack_public_key'),
             'email'      => $user->email,
-            'amount'     => (int) ($plan->price * 100),
-            'reference'  => 'sub_' . uniqid(),
-            'metadata'   => [
-                'type'      => 'subscription',
-                'user_id'   => $user->id,
-                'plan_id'   => $plan->id
-            ],
+            'amount'     => (int) ($plan->base_price * 100),
+            'reference'  => $reference,
+            'metadata'   => $metadata,
             'plan' => $plan->paystack_plan_code
         ]);
     }
@@ -5983,47 +6057,18 @@ class EmployerController extends BaseController
         }
 
         $data = $result['data'];
-        $meta = $data['metadata'];
+        $meta = \App\Services\PaymentFulfillmentService::metadata($data);
 
-        if ($meta['type'] !== 'subscription') {
+        if (($meta['type'] ?? '') !== 'subscription') {
             return $this->response->setJSON(['success' => false]);
         }
 
-        $subscriptionModel = model(UserSubscriptionModel::class);
-
-        $db = \Config\Database::connect();
-        $db->transStart();
-
-        // Deactivate existing subscriptions
-        $subscriptionModel
-            ->where('user_id', $meta['user_id'])
-            ->set(['is_active' => 0])
-            ->update();
-
-        (new \App\Services\SubscriptionService())->creditMonthly(
-            userId: (int) $meta['user_id'],
-            planId: (int) $meta['plan_id'],
-            reference: 'sub_init_' . $reference,
-            source: 'subscription'
-        );
-
-        // Activate new subscription
-        $subscriptionModel->insert([
-            'user_id'                     => $meta['user_id'],
-            'plan_id'                     => $meta['plan_id'],
-            'paystack_subscription_code'  => $data['subscription']['subscription_code'] ?? null,
-            'paystack_email_token'        => $data['subscription']['email_token'] ?? null,
-            'starts_at'                   => date('Y-m-d H:i:s'),
-            'ends_at'                     => date('Y-m-d H:i:s', strtotime('+30 days')),
-            'is_active'                   => 1,
-        ]);
-
-        $db->transComplete();
-
-        if ($db->transStatus() === false) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Transaction failed during subscription activation.'
+        try {
+            (new \App\Services\EmployerSubscriptionPaymentService())->fulfill($data, (int) auth()->id());
+        } catch (\Throwable $e) {
+            log_message('error', 'Subscription verification: ' . $e->getMessage());
+            return $this->response->setStatusCode(409)->setJSON([
+                'success' => false, 'message' => 'Subscription activation failed. Please contact support with your payment reference.'
             ]);
         }
 
@@ -6056,12 +6101,12 @@ class EmployerController extends BaseController
             $currentSub = (object) $currentSub;
         }
 
-        if (!$currentSub || empty($currentSub->paystack_subscription_id)) {
+        if (!$currentSub || empty($currentSub->subscription_code)) {
             return redirect()->back()->with('error', 'No active paid subscription to cancel.');
         }
 
         // Call Paystack to disable/cancel subscription
-        $cancelled = $this->deactivatePaystackSubscription($currentSub->paystack_subscription_id);
+        $cancelled = $this->deactivatePaystackSubscription($currentSub->subscription_code);
 
         if (!$cancelled) {
             return redirect()->back()->with('error', 'Failed to cancel subscription with Paystack. Please try again or contact support.');
@@ -6072,6 +6117,10 @@ class EmployerController extends BaseController
             'will_not_renew' => 1,
             'updated_at'     => date('Y-m-d H:i:s')
         ]);
+
+        (new \App\Services\EmailNotificationService())->notifyEmployerAccount((int) $user->id,
+            'Subscription cancellation scheduled', 'Your subscription will not renew. Your current access continues until the expiry date.',
+            ['Access ends' => $currentSub->ends_at]);
 
         return redirect()->to('employer/pricing')
             ->with('success', 'Your subscription has been cancelled. You will keep access until ' . date('F j, Y', strtotime($currentSub->ends_at)) . '.');
@@ -6105,7 +6154,7 @@ class EmployerController extends BaseController
             return redirect()->back()->with('info', 'Your subscription is already active and will renew automatically.');
         }
 
-        if (empty($currentSub->paystack_subscription_id)) {
+        if (empty($currentSub->subscription_code)) {
             // Safety fallback
             $subModel->update($currentSub->id, [
                 'will_not_renew' => 0,
@@ -6117,7 +6166,7 @@ class EmployerController extends BaseController
         }
 
         // Re-enable on Paystack
-        $reactivated = $this->enablePaystackSubscription($currentSub->paystack_subscription_id);
+        $reactivated = $this->enablePaystackSubscription($currentSub->subscription_code);
 
         if (!$reactivated) {
             return redirect()->back()->with('error', 'Failed to reactivate subscription with Paystack. Please contact support.');
@@ -6305,9 +6354,10 @@ class EmployerController extends BaseController
     private function sendSubscriptionInvoiceEmail(array $data)
     {
         $emailService = \Config\Services::email();
+        $emailService->clear();
 
         $emailService->setTo($data['email']);
-        $emailService->setFrom('billing@jobberrecruit.com', 'JobberRecruit');
+        $emailService->setFrom(config('Email')->fromEmail, config('Email')->fromName);
         $emailService->setSubject('Your JobberRecruit Subscription Invoice - ' . $data['reference']);
 
         $viewData = [
@@ -6327,12 +6377,15 @@ class EmployerController extends BaseController
         $emailService->setMessage($message);
         $emailService->setMailType('html');
 
-        $emailService->send();
-
         // Optional: log if email failed
         if (! $emailService->send()) {
-            log_message('error', 'Failed to send invoice email to ' . $data['user']->email . ': ' . print_r($emailService->printDebugger(['headers']), true));
+            log_message('error', 'Failed to send invoice email to ' . $data['email'] . ': ' . print_r($emailService->printDebugger(['headers']), true));
         }
+        (new \App\Services\EmailNotificationService())->sendAdministrativeEvent(
+            'Employer subscription payment received',
+            ($data['employer']->company_name ?? 'Employer') . ' paid for ' . $data['plan']->name . '.',
+            ['Amount (NGN)' => number_format($data['amountPaid'], 2), 'Reference' => $data['reference']]
+        );
     }
 
     /**
@@ -6427,7 +6480,7 @@ class EmployerController extends BaseController
 
         $meta = \App\Services\PaymentFulfillmentService::metadata($data);
         if (in_array($event, ['charge.success', 'transaction.success'], true)
-            && in_array($meta['type'] ?? '', ['wallet_funding', 'cv_review'], true)) {
+            && in_array($meta['type'] ?? '', ['wallet_funding', 'cv_review', 'candidate_plan', 'course'], true)) {
             try {
                 (new \App\Services\PaymentFulfillmentService())->fulfill($data);
                 return $this->response->setStatusCode(200)->setBody('OK');
@@ -6563,7 +6616,7 @@ class EmployerController extends BaseController
             if ($planDetail) {
                 $planDetail = (object) $planDetail;
                 if ($planDetail->slug !== 'free') {
-                    $this->deactivatePaystackSubscription($existingPlan->paystack_subscription_id);
+                    $this->deactivatePaystackSubscription($existingPlan->subscription_code);
                 }
             }
         }
@@ -6628,7 +6681,7 @@ class EmployerController extends BaseController
         }
 
         $secret = $this->paystackSecret;
-        $url = "https://api.paystack.co/subscription/{$paystackSubscriptionCode}/disable";
+        $url = "https://api.paystack.co/subscription/disable";
 
         $payload = [
             'code'  => $paystackSubscriptionCode,
@@ -6697,7 +6750,7 @@ class EmployerController extends BaseController
 
         $data = json_decode($resp, true);
 
-        return $data['data']['customer']['email'] ?? null;
+        return $data['data']['email_token'] ?? null;
     }
 
     /**
@@ -6760,7 +6813,7 @@ class EmployerController extends BaseController
         curl_close($ch);
 
         $data = json_decode($resp, true);
-        return $data['data']['customer']['email'] ?? null;
+        return $data['data']['email_token'] ?? null;
     }
 
     /**
@@ -6769,9 +6822,10 @@ class EmployerController extends BaseController
     private function sendSubscriptionReactivatedEmail(array $data)
     {
         $emailService = \Config\Services::email();
+        $emailService->clear();
 
         $emailService->setTo($data['user']->email);
-        $emailService->setFrom('support@jobberrecruit.com', 'JobberRecruit');
+        $emailService->setFrom(config('Email')->fromEmail, config('Email')->fromName);
         $emailService->setSubject('Your Subscription Has Been Reactivated!');
 
         $viewData = [
@@ -6793,6 +6847,9 @@ class EmployerController extends BaseController
         } else {
             log_message('info', 'Subscription reactivation email sent to ' . $data['user']->email);
         }
+        (new \App\Services\EmailNotificationService())->sendAdministrativeEvent('Employer subscription reactivated',
+            ($data['employer']->company_name ?? 'Employer') . ' reactivated their subscription.',
+            ['Plan' => $data['plan']->name ?? 'Subscription', 'Next billing date' => $data['endDate']]);
     }
 
     public function security()
@@ -7387,12 +7444,24 @@ class EmployerController extends BaseController
 
         $candidates = $jobSeekerModel->getCandidates($filters, 20);
 
+        // Fetch unlocked candidate IDs for this employer (only paid/unlocked candidates)
+        $unlockedIds = [];
+        if ($employerId) {
+            $unlockedRows = $db->table('candidate_unlocks')
+                ->select('job_seeker_id')
+                ->where('employer_id', $employerId)
+                ->get()
+                ->getResultArray();
+            $unlockedIds = array_unique(array_map('intval', array_column($unlockedRows, 'job_seeker_id')));
+        }
+
         $data = [
             'title'      => 'Find Candidates',
             'user'       => $this->auth->user(),
             'employer'   => $employer,
             'candidates' => $candidates,
             'savedIds'   => $savedIds,
+            'unlockedIds'=> $unlockedIds,
             'pager'      => $jobSeekerModel->pager,
             'total'      => $jobSeekerModel->pager ? $jobSeekerModel->pager->getTotal() : count($candidates),
             'hasUnlimitedAccess' => $employer ? $this->hasUnlimitedAccess($employer->id) : false,
@@ -7555,7 +7624,7 @@ class EmployerController extends BaseController
             'experience' => model(\App\Models\JobSeekerExperienceModel::class)->forSeeker((int) $id),
             'education'  => model(\App\Models\JobSeekerEducationModel::class)->forSeeker((int) $id),
             'industries' => $industries,
-            'isUnlocked' => $isUnlocked || $hasUnlimited,
+            'isUnlocked' => $isUnlocked,
             'hasUnlimited' => $hasUnlimited,
             'walletBalance' => $walletBalance
         ]);
@@ -7577,10 +7646,7 @@ class EmployerController extends BaseController
             ->where('job_seeker_id', $candidateId)
             ->countAllResults() > 0;
 
-        $creditService = new \App\Services\CreditService();
-        $hasUnlimited = $creditService->hasUnlimitedAccess($this->auth->user()->id);
-
-        if (!$isUnlocked && !$hasUnlimited) {
+        if (!$isUnlocked) {
             return redirect()->back()->with('error', 'You must unlock the candidate profile to download the CV.');
         }
 
@@ -7623,20 +7689,6 @@ class EmployerController extends BaseController
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Candidate profile already unlocked!'
-            ]);
-        }
-
-        // Unlimited plan bypass (PDF Requirement 4.7)
-        $hasUnlimitedAccess = $this->hasUnlimitedAccess($employer->id);
-        if ($hasUnlimitedAccess) {
-            $db->table('candidate_unlocks')->insert([
-                'employer_id'   => $employer->id,
-                'job_seeker_id' => $candidateId,
-                'created_at'    => date('Y-m-d H:i:s'),
-            ]);
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Candidate unlocked successfully (included with your Unlimited Plan).'
             ]);
         }
 
@@ -7755,11 +7807,7 @@ class EmployerController extends BaseController
 
         try {
             $data = $verify['data'];
-            $meta = \App\Services\PaymentFulfillmentService::metadata($data);
-            \App\Services\PaymentFulfillmentService::validate($data, $order, $meta, (string)$this->auth->user()->email);
-            if ((int)($meta['candidate_id'] ?? 0) !== $candidateId || (float)$order['amount'] !== 5000.0) {
-                throw new \InvalidArgumentException('Unlock details do not match.');
-            }
+            \App\Services\PaymentFulfillmentService::validateUnlock($data, $order, (string)$this->auth->user()->email, $candidateId);
         } catch (\InvalidArgumentException $e) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Payment verification did not match this profile unlock.']);
         }
