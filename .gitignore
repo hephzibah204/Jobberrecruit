@@ -136,3 +136,13 @@ _modules/*
 ftp_upload/*.zip
 scratch/*.zip
 /jobberrecruit-update-*.zip
+
+# Added 2026-11-20: AI tool folders and stray copies stay out of the repo
+.claude/
+.commandcode/
+.kimchi/
+.gemini-skills/
+.well-known/
+/ui-ux-skill-extracted/
+/muse-fix-backup-*/
+/MUSE-FIX-LOG-*.md
