@@ -19,12 +19,12 @@ $skillLevels = [
   --white: #ffffff; --border: #cbd5e1;
 }
 @page { size: A4; margin: 12mm 15mm; }
-body { font-family: Georgia, 'Times New Roman', serif; background: var(--bg); color: var(--text); font-size: 13.5px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+body { font-family: Georgia, 'Times New Roman', serif; background: #ffffff; color: #1f2937; font-size: 13.5px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
 h1,h2,h3 { font-family: Georgia, serif; }
-a { color: var(--brand); text-decoration: none; }
+a { color: #1e3a8a; text-decoration: none; }
 
 .cv-doc {
-  background: var(--white);
+  background: #ffffff;
   padding: 36px 42px;
   color: #1f2937;
   max-width: 800px;
@@ -34,20 +34,20 @@ a { color: var(--brand); text-decoration: none; }
 .cv-header {
   text-align: center;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #cbd5e1;
   margin-bottom: 22px;
 }
 .cv-name {
   font-size: 30px;
   font-weight: 700;
-  color: var(--brand);
+  color: #1e3a8a;
   letter-spacing: .02em;
   margin-bottom: 4px;
 }
 .cv-headline {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--muted);
+  color: #4b5563;
   letter-spacing: .2em;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -58,7 +58,7 @@ a { color: var(--brand); text-decoration: none; }
   flex-wrap: wrap;
   gap: 6px 14px;
   font-size: 12px;
-  color: var(--muted);
+  color: #4b5563;
 }
 .cv-contact-item { display: inline-flex; align-items: center; }
 
@@ -69,8 +69,8 @@ a { color: var(--brand); text-decoration: none; }
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--brand);
-  border-bottom: 1px solid var(--border);
+  color: #1e3a8a;
+  border-bottom: 1px solid #cbd5e1;
   padding-bottom: 5px;
   margin-bottom: 12px;
 }
@@ -79,8 +79,8 @@ a { color: var(--brand); text-decoration: none; }
 .cv-entry:last-child { margin-bottom: 0; }
 .cv-entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
 .cv-entry-title { font-size: 14px; font-weight: 700; color: #111; }
-.cv-entry-dates { font-size: 12px; color: var(--muted); font-style: italic; white-space: nowrap; }
-.cv-entry-sub { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.cv-entry-dates { font-size: 12px; color: #4b5563; font-style: italic; white-space: nowrap; }
+.cv-entry-sub { font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 4px; }
 .cv-entry-body { font-size: 13px; color: #374151; line-height: 1.6; }
 .cv-entry-body ul { margin-left: 20px; margin-top: 4px; }
 .cv-entry-body li { margin-bottom: 3px; }
@@ -99,11 +99,12 @@ a { color: var(--brand); text-decoration: none; }
   text-align: center;
   padding-top: 20px;
   margin-top: 24px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #cbd5e1;
   font-size: 11px;
-  color: var(--muted);
+  color: #4b5563;
   font-style: italic;
 }
+.jr-wm { position: fixed; right: 0; top: 83mm; width: 7mm; height: 124mm; opacity: .55; }
 </style>
 </head>
 <body>
@@ -268,5 +269,6 @@ a { color: var(--brand); text-decoration: none; }
       JobberRecruit &bull; Elegant Serif Resume &bull; jobberrecruit.com
     </div>
   </article>
+<img class="jr-wm" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PSczOTAnIHZpZXdCb3g9JzAgMCAyNCAzOTAnPjxjaXJjbGUgY3g9JzEyJyBjeT0nMTAnIHI9JzUuNScgZmlsbD0nI0YwOEYxQycvPjx0ZXh0IHg9JzE3JyB5PSczODYnIHRyYW5zZm9ybT0ncm90YXRlKC05MCAxNyAzODYpJyBmb250LWZhbWlseT0nQXJpYWwsIHNhbnMtc2VyaWYnIGZvbnQtc2l6ZT0nMTInIGZvbnQtd2VpZ2h0PSdib2xkJyBsZXR0ZXItc3BhY2luZz0nMi41JyBmaWxsPScjOWFhNGI1Jz53d3cuSm9iYmVyUmVjcnVpdC5jb208L3RleHQ+PC9zdmc+" alt="">
 </body>
 </html>

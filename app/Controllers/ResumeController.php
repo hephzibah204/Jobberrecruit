@@ -350,6 +350,16 @@ class ResumeController extends BaseController
                 if (!empty($meta['location']) && empty($resume->location)) $resume->location = $meta['location'];
             }
         }
+        // Top up header fields from the candidate profile when the resume
+        // itself carries none (resumes created before the meta fields, or
+        // before the profile was completed): the profile is the source of
+        // truth for the candidate's contact details.
+        if ($candidate && $resume) {
+            if (empty($resume->full_name)) $resume->full_name = $candidate->full_name ?? '';
+            if (empty($resume->phone)) $resume->phone = $candidate->phone ?? '';
+            if (empty($resume->location)) $resume->location = $candidate->location ?? '';
+            if (empty($resume->email)) $resume->email = $user->email ?? '';
+        }
         $resume->portfolio = $portfolio;
 
         return view('candidate/resume/builder', [

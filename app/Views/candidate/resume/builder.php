@@ -8,6 +8,7 @@
 <style>
 @media print {
     #print-root .wm { display: flex !important; }
+    #print-root, #print-root * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
 
 .cv-doc, .doc { position: relative !important; }
@@ -4240,7 +4241,7 @@
         if (typeof toastr !== 'undefined') {
             toastr.info(
                 'In the print dialog: set <b>Destination → Save as PDF</b>, ' +
-                'open <b>More settings</b> and untick <b>Headers and footers</b>.',
+                'open <b>More settings</b>, untick <b>Headers and footers</b> and tick <b>Background graphics</b> so the design and colours print.',
                 'Saving as PDF', { timeOut: 6000, extendedTimeOut: 2000 }
             );
         }

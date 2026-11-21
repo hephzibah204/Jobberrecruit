@@ -19,9 +19,9 @@ $skillLevels = [
   --sidebar-bg: #f4f7fb; --border: #e2e8f0;
 }
 @page { size: A4; margin: 0; }
-body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: var(--text); font-size: 13.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: #1a202c; font-size: 13.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 h1,h2,h3 { font-family: 'Sora', sans-serif; }
-a { color: var(--brand); text-decoration: none; }
+a { color: #0A2F57; text-decoration: none; }
 
 .cv-doc {
   display: grid;
@@ -35,19 +35,19 @@ a { color: var(--brand); text-decoration: none; }
   grid-column: 1 / -1;
   padding: 34px 38px 20px;
   background: #fff;
-  border-bottom: 3.5px solid var(--brand);
+  border-bottom: 3.5px solid #0A2F57;
 }
 .cv-name {
   font-size: 30px;
   font-weight: 800;
-  color: var(--brand-deep);
+  color: #05182d;
   letter-spacing: -.03em;
   margin-bottom: 4px;
 }
 .cv-headline {
   font-size: 14px;
   font-weight: 700;
-  color: var(--accent);
+  color: #ED9020;
   text-transform: uppercase;
   letter-spacing: .1em;
   margin-bottom: 10px;
@@ -57,14 +57,14 @@ a { color: var(--brand); text-decoration: none; }
   flex-wrap: wrap;
   gap: 6px 16px;
   font-size: 12.5px;
-  color: var(--muted);
+  color: #4a5568;
 }
 .cv-contact-item { display: inline-flex; align-items: center; }
 
 .exec-sidebar {
-  background: var(--sidebar-bg);
+  background: #f4f7fb;
   padding: 24px 20px;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid #e2e8f0;
 }
 .exec-main {
   padding: 24px 28px;
@@ -78,23 +78,23 @@ a { color: var(--brand); text-decoration: none; }
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: var(--brand);
-  border-left: 3px solid var(--brand);
+  color: #0A2F57;
+  border-left: 3px solid #0A2F57;
   padding-left: 8px;
   margin-bottom: 12px;
 }
 
 .exec-sidebar .cv-sec-title {
-  color: var(--brand-deep);
-  border-left-color: var(--accent);
+  color: #05182d;
+  border-left-color: #ED9020;
 }
 
 .cv-entry { margin-bottom: 14px; }
 .cv-entry:last-child { margin-bottom: 0; }
 .cv-entry-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2px; }
 .cv-entry-title { font-size: 13.5px; font-weight: 700; color: #111; }
-.cv-entry-dates { font-size: 11.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
-.cv-entry-sub { font-size: 12.5px; font-weight: 600; color: var(--brand); margin-bottom: 4px; }
+.cv-entry-dates { font-size: 11.5px; color: #4a5568; font-weight: 600; white-space: nowrap; }
+.cv-entry-sub { font-size: 12.5px; font-weight: 600; color: #0A2F57; margin-bottom: 4px; }
 .cv-entry-body { font-size: 12.8px; color: #2d3748; line-height: 1.6; }
 .cv-entry-body ul { margin-left: 17px; margin-top: 4px; }
 .cv-entry-body li { margin-bottom: 3px; }
@@ -104,27 +104,28 @@ a { color: var(--brand); text-decoration: none; }
 .exec-skills { display: flex; flex-direction: column; gap: 6px; }
 .exec-skill-item {
   background: #fff;
-  border: 1px solid var(--border);
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--brand-deep);
+  color: #05182d;
 }
 
 .side-item { margin-bottom: 10px; font-size: 12.5px; }
-.side-item strong { display: block; color: var(--text); }
-.side-item span { color: var(--muted); font-size: 11.5px; }
+.side-item strong { display: block; color: #1a202c; }
+.side-item span { color: #4a5568; font-size: 11.5px; }
 
 .cv-footer {
   grid-column: 1 / -1;
-  background: var(--brand-deep);
+  background: #05182d;
   color: rgba(255,255,255,0.85);
   padding: 10px 38px;
   font-size: 11px;
   display: flex;
   justify-content: space-between;
 }
+.jr-wm { position: fixed; right: 0; top: 83mm; width: 7mm; height: 124mm; opacity: .55; }
 </style>
 </head>
 <body>
@@ -174,7 +175,7 @@ a { color: var(--brand); text-decoration: none; }
       <?php if (!empty($resume->languages)): ?>
         <div class="cv-sec">
           <h2 class="cv-sec-title">Languages</h2>
-          <p style="font-size:12.5px;color:var(--text);line-height:1.6;">
+          <p style="font-size:12.5px;color:#1a202c;line-height:1.6;">
             <?= esc(is_array($resume->languages) ? implode(', ', $resume->languages) : $resume->languages) ?>
           </p>
         </div>
@@ -293,5 +294,6 @@ a { color: var(--brand); text-decoration: none; }
       <span>jobberrecruit.com</span>
     </footer>
   </article>
+<img class="jr-wm" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PSczOTAnIHZpZXdCb3g9JzAgMCAyNCAzOTAnPjxjaXJjbGUgY3g9JzEyJyBjeT0nMTAnIHI9JzUuNScgZmlsbD0nI0YwOEYxQycvPjx0ZXh0IHg9JzE3JyB5PSczODYnIHRyYW5zZm9ybT0ncm90YXRlKC05MCAxNyAzODYpJyBmb250LWZhbWlseT0nQXJpYWwsIHNhbnMtc2VyaWYnIGZvbnQtc2l6ZT0nMTInIGZvbnQtd2VpZ2h0PSdib2xkJyBsZXR0ZXItc3BhY2luZz0nMi41JyBmaWxsPScjOWFhNGI1Jz53d3cuSm9iYmVyUmVjcnVpdC5jb208L3RleHQ+PC9zdmc+" alt="">
 </body>
 </html>

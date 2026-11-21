@@ -19,12 +19,12 @@ $skillLevels = [
   --white: #ffffff; --border: #e2e8f0;
 }
 @page { size: A4; margin: 15mm 18mm; }
-body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: var(--text); font-size: 13.5px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: #1a202c; font-size: 13.5px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
 h1,h2,h3 { font-family: 'Inter', sans-serif; }
-a { color: var(--accent); text-decoration: none; }
+a { color: #0861A9; text-decoration: none; }
 
 .cv-doc {
-  background: var(--white);
+  background: #ffffff;
   padding: 36px 40px;
   color: #1a202c;
   max-width: 780px;
@@ -42,13 +42,13 @@ a { color: var(--accent); text-decoration: none; }
   letter-spacing: -.03em;
   margin-bottom: 4px;
   display: inline-block;
-  border-bottom: 2.5px solid var(--accent);
+  border-bottom: 2.5px solid #0861A9;
   padding-bottom: 4px;
 }
 .cv-headline {
   font-size: 13px;
   font-weight: 600;
-  color: var(--muted);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: .12em;
   margin-top: 8px;
@@ -59,7 +59,7 @@ a { color: var(--accent); text-decoration: none; }
   flex-wrap: wrap;
   gap: 6px 14px;
   font-size: 12px;
-  color: var(--muted);
+  color: #64748b;
 }
 .cv-contact-item { display: inline-flex; align-items: center; }
 
@@ -70,8 +70,8 @@ a { color: var(--accent); text-decoration: none; }
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
   padding-bottom: 6px;
   margin-bottom: 12px;
 }
@@ -80,8 +80,8 @@ a { color: var(--accent); text-decoration: none; }
 .cv-entry:last-child { margin-bottom: 0; }
 .cv-entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
 .cv-entry-title { font-size: 13.5px; font-weight: 700; color: #0f172a; }
-.cv-entry-dates { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
-.cv-entry-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
+.cv-entry-dates { font-size: 12px; color: #64748b; font-weight: 500; white-space: nowrap; }
+.cv-entry-sub { font-size: 12.5px; font-weight: 500; color: #64748b; margin-bottom: 4px; }
 .cv-entry-body { font-size: 13px; color: #334155; line-height: 1.6; }
 .cv-entry-body ul { margin-left: 17px; margin-top: 4px; }
 .cv-entry-body li { margin-bottom: 3px; }
@@ -104,10 +104,11 @@ a { color: var(--accent); text-decoration: none; }
   text-align: center;
   padding-top: 20px;
   margin-top: 24px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e2e8f0;
   font-size: 11px;
-  color: var(--muted);
+  color: #64748b;
 }
+.jr-wm { position: fixed; right: 0; top: 83mm; width: 7mm; height: 124mm; opacity: .55; }
 </style>
 </head>
 <body>
@@ -271,5 +272,6 @@ a { color: var(--accent); text-decoration: none; }
       JobberRecruit &bull; Minimalist Clean Resume &bull; jobberrecruit.com
     </div>
   </article>
+<img class="jr-wm" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PSczOTAnIHZpZXdCb3g9JzAgMCAyNCAzOTAnPjxjaXJjbGUgY3g9JzEyJyBjeT0nMTAnIHI9JzUuNScgZmlsbD0nI0YwOEYxQycvPjx0ZXh0IHg9JzE3JyB5PSczODYnIHRyYW5zZm9ybT0ncm90YXRlKC05MCAxNyAzODYpJyBmb250LWZhbWlseT0nQXJpYWwsIHNhbnMtc2VyaWYnIGZvbnQtc2l6ZT0nMTInIGZvbnQtd2VpZ2h0PSdib2xkJyBsZXR0ZXItc3BhY2luZz0nMi41JyBmaWxsPScjOWFhNGI1Jz53d3cuSm9iYmVyUmVjcnVpdC5jb208L3RleHQ+PC9zdmc+" alt="">
 </body>
 </html>

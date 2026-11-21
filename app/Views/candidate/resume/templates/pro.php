@@ -19,12 +19,12 @@ $skillLevels = [
   --white: #ffffff; --border: #e2e8f0;
 }
 @page { size: A4; margin: 12mm 15mm; }
-body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: var(--text); font-size: 13.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #fff; color: #1e293b; font-size: 13.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 h1,h2,h3 { font-family: 'Sora', sans-serif; }
-a { color: var(--brand); text-decoration: none; }
+a { color: #0861A9; text-decoration: none; }
 
 .cv-doc {
-  background: var(--white);
+  background: #ffffff;
   padding: 34px 40px;
   color: #1e293b;
   max-width: 800px;
@@ -33,20 +33,20 @@ a { color: var(--brand); text-decoration: none; }
 
 .cv-header {
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid #e2e8f0;
   margin-bottom: 20px;
 }
 .cv-name {
   font-size: 29px;
   font-weight: 800;
-  color: var(--brand-deep);
+  color: #0A2F57;
   letter-spacing: -.03em;
   margin-bottom: 4px;
 }
 .cv-headline {
   font-size: 14px;
   font-weight: 600;
-  color: var(--brand);
+  color: #0861A9;
   margin-bottom: 10px;
 }
 .cv-contact-row {
@@ -54,7 +54,7 @@ a { color: var(--brand); text-decoration: none; }
   flex-wrap: wrap;
   gap: 6px 16px;
   font-size: 12.5px;
-  color: var(--muted);
+  color: #64748b;
 }
 .cv-contact-item { display: inline-flex; align-items: center; }
 
@@ -65,8 +65,8 @@ a { color: var(--brand); text-decoration: none; }
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1.5px solid var(--border);
+  color: #64748b;
+  border-bottom: 1.5px solid #e2e8f0;
   padding-bottom: 5px;
   margin-bottom: 12px;
 }
@@ -75,12 +75,12 @@ a { color: var(--brand); text-decoration: none; }
 .cv-entry:last-child { margin-bottom: 0; }
 .cv-entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
 .cv-entry-title { font-size: 14px; font-weight: 700; color: #0f172a; }
-.cv-entry-dates { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
-.cv-entry-sub { font-size: 13px; font-weight: 600; color: var(--brand-deep); margin-bottom: 4px; }
+.cv-entry-dates { font-size: 12px; color: #64748b; font-weight: 500; white-space: nowrap; }
+.cv-entry-sub { font-size: 13px; font-weight: 600; color: #0A2F57; margin-bottom: 4px; }
 .cv-entry-body { font-size: 13px; color: #334155; line-height: 1.6; }
 .cv-entry-body ul { margin-left: 17px; margin-top: 4px; }
 .cv-entry-body li { margin-bottom: 3px; }
-.cv-entry-body ul li::marker { color: var(--brand); }
+.cv-entry-body ul li::marker { color: #0861A9; }
 
 .cv-summary { font-size: 13px; line-height: 1.7; color: #334155; }
 
@@ -91,7 +91,7 @@ a { color: var(--brand); text-decoration: none; }
   padding: 3px 10px;
   border-radius: 4px;
   background: #f1f5f9;
-  border: 1px solid var(--border);
+  border: 1px solid #e2e8f0;
   color: #1e293b;
 }
 
@@ -101,10 +101,11 @@ a { color: var(--brand); text-decoration: none; }
   text-align: center;
   padding-top: 20px;
   margin-top: 24px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e2e8f0;
   font-size: 11px;
-  color: var(--muted);
+  color: #64748b;
 }
+.jr-wm { position: fixed; right: 0; top: 83mm; width: 7mm; height: 124mm; opacity: .55; }
 </style>
 </head>
 <body>
@@ -268,5 +269,6 @@ a { color: var(--brand); text-decoration: none; }
       JobberRecruit &bull; Professional Resume &bull; jobberrecruit.com
     </div>
   </article>
+<img class="jr-wm" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PSczOTAnIHZpZXdCb3g9JzAgMCAyNCAzOTAnPjxjaXJjbGUgY3g9JzEyJyBjeT0nMTAnIHI9JzUuNScgZmlsbD0nI0YwOEYxQycvPjx0ZXh0IHg9JzE3JyB5PSczODYnIHRyYW5zZm9ybT0ncm90YXRlKC05MCAxNyAzODYpJyBmb250LWZhbWlseT0nQXJpYWwsIHNhbnMtc2VyaWYnIGZvbnQtc2l6ZT0nMTInIGZvbnQtd2VpZ2h0PSdib2xkJyBsZXR0ZXItc3BhY2luZz0nMi41JyBmaWxsPScjOWFhNGI1Jz53d3cuSm9iYmVyUmVjcnVpdC5jb208L3RleHQ+PC9zdmc+" alt="">
 </body>
 </html>
