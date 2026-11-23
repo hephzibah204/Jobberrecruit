@@ -1286,6 +1286,8 @@ main, .section, .jobs-layout, .container,
 .overview-k { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
 .overview-v { font-size:.88rem; font-weight:600; color:var(--text); }
 .status-open { display:inline-flex; align-items:center; gap:5px; color:var(--success); font-weight:700; }
+.status-closed { display:inline-flex; align-items:center; gap:5px; color:#dc2626; font-weight:700; }
+.status-closed::before { content:""; width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block; }
 .status-open::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--success); display:inline-block; }
 
 /* ── Accent button + report/external apply ── */
@@ -1625,8 +1627,9 @@ main, .section, .jobs-layout, .container,
                   <button type="button" class="verified-check" aria-label="Verified employer — tap for details"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><span class="verified-tip" role="tooltip"><svg aria-hidden="true"><use href="#i-verified-disc"/></svg><strong>Verified employer</strong></span></button>
                 <?php endif; ?>
               </div>
+              <?php $jobIsClosedView = in_array(strtolower($job->status ?? ''), ['closed', 'paused', 'expired', 'rejected'], true); ?>
               <div class="detail-badges">
-                <?php if ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time())): ?>
+                <?php if (!$jobIsClosedView && ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time()))): ?>
                   <span class="detail-badge db-urgent"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> Urgently Hiring</span>
                   <span class="detail-badge db-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
                 <?php endif; ?>
@@ -1758,7 +1761,7 @@ main, .section, .jobs-layout, .container,
           <div class="apply-salary-period">Salary</div>
           
           <!-- Urgently hiring strip (show if urgent/featured) -->
-          <?php if ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time())): ?>
+          <?php if (!$jobIsClosedView && ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time()))): ?>
             <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-bottom:12px">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> Urgently hiring &mdash; apply before deadline
             </div>
@@ -1771,7 +1774,7 @@ main, .section, .jobs-layout, .container,
             $appCount = isset($application_count) ? (int)$application_count : 0;
             $appLimit = !empty($job->application_limit) ? (int)$job->application_limit : 0;
           ?>
-          <?php if ($appLimit > 0): ?>
+          <?php if ($appLimit > 0 && !$jobIsClosedView): ?>
             <?php 
               $spotsRemaining = max(0, $appLimit - $appCount); 
             ?>
@@ -1790,7 +1793,7 @@ main, .section, .jobs-layout, .container,
 
           <div class="apply-actions">
             <?php 
-              $isJobClosed = in_array(strtolower($job->status ?? ''), ['closed', 'paused', 'expired', 'rejected']);
+              $isJobClosed = $jobIsClosedView;
               // check application access settings
               $requiresAuth = isset($job->application_access) && $job->application_access === 'authenticated';
             ?>
@@ -1898,7 +1901,7 @@ main, .section, .jobs-layout, .container,
           <h2 class="overview-title">Job Overview</h2>
           <ul class="overview-list">
             <li><span class="overview-ic"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="overview-kv"><span class="overview-k">Posted</span><span class="overview-v"><?= date('d M, Y', strtotime($job->created_at)) ?></span></span></li>
-            <li><span class="overview-ic"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="overview-kv"><span class="overview-k">Status</span><span class="overview-v"><span class="status-open"><?= esc(ucfirst($job->status)) ?></span></span></span></li>
+            <li><span class="overview-ic"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="overview-kv"><span class="overview-k">Status</span><span class="overview-v"><span class="<?= strtolower($job->status ?? '') === 'open' ? 'status-open' : 'status-closed' ?>"><?= esc(ucfirst($job->status)) ?></span></span></span></li>
             <li><span class="overview-ic"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span><span class="overview-kv"><span class="overview-k">Level</span><span class="overview-v"><?= esc(ucfirst($job->experience_level ?: 'Not specified')) ?></span></span></li>
             <li data-key="true"><span class="overview-ic"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="overview-kv"><span class="overview-k">Salary</span><span class="overview-v"><?= esc($salary) ?></span></span></li>
             <li><span class="overview-ic"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg></span><span class="overview-kv"><span class="overview-k">Education</span><span class="overview-v"><?= esc(ucfirst($job->education_level ?: 'Not specified')) ?></span></span></li>

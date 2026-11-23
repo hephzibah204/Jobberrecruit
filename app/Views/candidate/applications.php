@@ -30,6 +30,22 @@ html.anim-ready .content>*:nth-child(n+6){animation-delay:.24s}
 .how-step b{display:block;font-size:.82rem;color:var(--brand-deep);margin-bottom:2px}
 .how-step p{font-size:.74rem;color:var(--muted);line-height:1.5}
 .pill--shortlisted{background:#dcfce7;color:#166534}
+/* Mobile: applications table becomes stacked cards (rows no longer squeeze
+   into vertical letter stacks; actions sit in one horizontal row) */
+@media (max-width:768px){
+  .card-head{flex-direction:column;align-items:stretch;gap:10px}
+  .card-head .toolbar{flex-direction:column;align-items:stretch;width:100%;gap:8px}
+  .card-head .toolbar .search-wrap{width:100%}
+  .card-head .toolbar .select{width:100%}
+  .tbl-wrap{overflow-x:visible}
+  table#applications-table.tbl{display:block;min-width:0;width:100%}
+  #applications-table thead{display:none}
+  #applications-table tbody{display:block}
+  #applications-table tbody tr{display:block;padding:12px 14px;border-bottom:1px solid #e5e7eb}
+  #applications-table tbody td{display:block;border:none;padding:3px 0;white-space:normal}
+  #applications-table .row-actions{display:flex;gap:8px;margin-top:8px}
+  #applications-table .row-actions .btn{flex:1 1 0;justify-content:center;white-space:nowrap;min-height:40px}
+}
 </style>
 <?= $this->endSection() ?>
 

@@ -1261,6 +1261,8 @@ class Home extends BaseController
                 ->where('jobs.category_id', $job->category_id)
                 ->orWhere('jobs.industry_id', $job->industry_id)
                 ->groupEnd()
+                ->where('jobs.status', 'open')
+                ->where('jobs.admin_status', 'approved')
                 ->where('jobs.id !=', $job->id)
                 ->orderBy('jobs.created_at', 'DESC')
                 ->findAll(4);
@@ -1308,6 +1310,7 @@ class Home extends BaseController
             'noindex' => ($job->expiry_date && strtotime($job->expiry_date) < time()),
             'auth' => $this->auth,
             'job' => $job,
+            'application_count' => model(\App\Models\JobApplicationModel::class)->where('job_id', $job->id)->countAllResults(),
             'related_jobs' => $related_jobs,
             'featured_jobs' => $featured_jobs,
             'employer_job_count' => $employer_job_count,
@@ -2301,6 +2304,15 @@ class Home extends BaseController
                 'status'              => 'pending',
                 'created_at'          => date('Y-m-d H:i:s'),
             ]);
+
+            // Auto-close the job once this application reaches its limit
+            // ("Listing auto-closes once this number is reached").
+            if (!empty($job->application_limit) && (int) $job->application_limit > 0) {
+                $totalApplications = $applicationModel->where('job_id', $jobId)->countAllResults();
+                if ($totalApplications >= (int) $job->application_limit) {
+                    $jobModel->update($jobId, ['status' => 'closed', 'updated_at' => date('Y-m-d H:i:s')]);
+                }
+            }
 
             // ---- Save Pre-screening Answers ----
             $answers = $this->request->getPost('answers');

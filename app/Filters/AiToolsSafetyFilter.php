@@ -40,10 +40,16 @@ class AiToolsSafetyFilter implements FilterInterface
         if ((int) $request->getHeaderLine('Content-Length') > 22 * 1024 * 1024) {
             return service('response')->setStatusCode(413)->setJSON(['message'=>'The uploaded content is too large.']);
         }
-        // Explicit verification also covers the older broad api/* CSRF exemption.
-        try { service('security')->verify($request); }
-        catch (\CodeIgniter\Security\Exceptions\SecurityException $e) {
-            return service('response')->setStatusCode(403)->setJSON(['message'=>'Your security token has expired. Refresh this page and try again.']);
+        // Explicit verification covers ONLY the broad api/* CSRF exemption.
+        // All other protected routes are already verified by the global CSRF
+        // filter, and CodeIgniter's verify() removes the token from the
+        // request after a successful check — verifying twice makes the
+        // global filter find no token and reject every request.
+        if (strpos($path, 'api/') === 0) {
+            try { service('security')->verify($request); }
+            catch (\CodeIgniter\Security\Exceptions\SecurityException $e) {
+                return service('response')->setStatusCode(403)->setJSON(['message'=>'Your security token has expired. Refresh this page and try again.']);
+            }
         }
         if (!service('throttler')->check('ai_user_' . $user->id, 60, 60)
             || !service('throttler')->check('ai_user_hour_' . $user->id, 600, 3600)) {
