@@ -124,7 +124,10 @@ class JobAlertService
             }
 
             if ($match && !empty($alert->location_id)) {
-                if (($job->state_id ?? null) != $alert->location_id) {
+                $nationwideId = $this->nationwideStateId();
+                $jobIsNationwide   = $nationwideId !== null && (int) ($job->state_id ?? 0) === $nationwideId;
+                $alertIsNationwide = $nationwideId !== null && (int) $alert->location_id === $nationwideId;
+                if (!$jobIsNationwide && !$alertIsNationwide && ($job->state_id ?? null) != $alert->location_id) {
                     $match = false;
                 }
             }
@@ -245,6 +248,17 @@ class JobAlertService
         ];
     }
 
+    protected function nationwideStateId(): ?int
+    {
+        static $nationwideId = false;
+        if ($nationwideId === false) {
+            $row = model(\App\Models\StateModel::class)->where('slug', 'nigeria-nationwide')->first()
+                ?? model(\App\Models\StateModel::class)->like('name', 'nationwide')->first();
+            $nationwideId = $row ? (int) $row->id : null;
+        }
+        return $nationwideId;
+    }
+
     protected function findMatchingJobs($alert): array
     {
         $db = db_connect();
@@ -265,7 +279,19 @@ class JobAlertService
         }
 
         if (!empty($alert->location_id)) {
-            $builder->where('j.state_id', $alert->location_id);
+            $nationwideId = $this->nationwideStateId();
+            if ($nationwideId !== null && (int) $alert->location_id === $nationwideId) {
+                // Alert set to Nationwide: jobs from every state match, so no location constraint.
+            } elseif ($nationwideId !== null) {
+                // Nationwide jobs are open to candidates in every state: include
+                // them alongside the alert state's own jobs.
+                $builder->groupStart()
+                    ->where('j.state_id', $alert->location_id)
+                    ->orWhere('j.state_id', $nationwideId)
+                    ->groupEnd();
+            } else {
+                $builder->where('j.state_id', $alert->location_id);
+            }
         }
 
         if (!empty($alert->last_sent_at)) {

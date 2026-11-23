@@ -780,7 +780,20 @@ class Home extends BaseController
             if ($cat) $selectedIndustryName = $cat->name;
         }
         if ($stateId) {
-            $query->where('jobs.state_id', $stateId);
+            // Nationwide jobs are open to candidates in every state, so a state
+            // filter includes them alongside the state's own jobs (same
+            // nationwide definition as NationwideJobFilter).
+            $query->groupStart()
+                ->where('jobs.state_id', $stateId)
+                ->orWhereIn('jobs.state_id', static function (\CodeIgniter\Database\BaseBuilder $states) {
+                    return $states->select('id')->from('states')
+                        ->groupStart()
+                            ->where('slug', 'nigeria-nationwide')
+                            ->orLike('name', 'nationwide')
+                            ->orWhere('name', 'Nigeria')
+                        ->groupEnd();
+                })
+                ->groupEnd();
             $st = $stateModel->find($stateId);
             if ($st) $selectedStateName = $st->name;
         }

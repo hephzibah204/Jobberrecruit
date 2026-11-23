@@ -140,9 +140,20 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
             <label for="job-location">Location <span class="required-star">*</span></label>
             <select id="job-location" name="state_id" required>
               <option value="">Select state</option>
+              <?php // Nationwide is pinned first: it is the option for roles open to candidates in every state.
+              foreach ($states as $state):
+                $stateId = is_object($state) ? $state->id : ($state['id'] ?? '');
+                $stateName = is_object($state) ? $state->name : ($state['name'] ?? '');
+                $stateSlug = is_object($state) ? ($state->slug ?? '') : ($state['slug'] ?? '');
+                if ($stateSlug !== 'nigeria-nationwide' && strtolower(trim((string) $stateName)) !== 'nationwide') continue;
+              ?>
+                <option value="<?= $stateId ?>" <?= $val('state_id') == $stateId ? 'selected' : '' ?>><?= esc($stateName) ?></option>
+              <?php endforeach; ?>
               <?php foreach ($states as $state):
                 $stateId = is_object($state) ? $state->id : ($state['id'] ?? '');
                 $stateName = is_object($state) ? $state->name : ($state['name'] ?? '');
+                $stateSlug = is_object($state) ? ($state->slug ?? '') : ($state['slug'] ?? '');
+                if ($stateSlug === 'nigeria-nationwide' || strtolower(trim((string) $stateName)) === 'nationwide') continue;
               ?>
                 <option value="<?= $stateId ?>" <?= $val('state_id') == $stateId ? 'selected' : '' ?>><?= esc($stateName) ?></option>
               <?php endforeach; ?>
