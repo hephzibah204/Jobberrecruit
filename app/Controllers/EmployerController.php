@@ -816,6 +816,7 @@ class EmployerController extends BaseController
                 'description' => 'required|min_length[100]',
                 'job_type' => 'required|in_list[full-time,part-time,contract,freelance,internship]',
                 'state_id' => 'required|is_natural_no_zero',
+                'application_limit' => 'permit_empty|is_natural_no_zero',
                 'location_type' => 'required|in_list[hybrid,remote,on-site]',
                 'salary_type' => 'required|in_list[fixed,range,negotiable]',
                 'salary_period' => 'required|in_list[monthly,yearly,hourly]',
@@ -872,8 +873,9 @@ class EmployerController extends BaseController
             $canUseNetworkBlast = $this->canUseNetworkBlast($currentPlan, $hasUnlimitedAccess);
 
             /* ====================== PREPARE JOB DATA ====================== */
-            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast'];
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_deadline','start_date','urgency','show_salary','currency','is_anonymous','network_blast','application_limit'];
             $postData = $this->request->getPost($allowed);
+            $postData['application_limit'] = !empty($postData['application_limit']) ? (int) $postData['application_limit'] : null;
             $postData['show_salary'] = $this->request->getPost('show_salary') ? 1 : 0;
             $postData['employer_id'] = $employer->id;
             $postData['status'] = $isDraft ? 'draft' : 'pending_approval';
@@ -3032,6 +3034,7 @@ class EmployerController extends BaseController
             'description' => 'required|min_length[100]',
             'job_type' => 'required|in_list[full-time,part-time,contract,freelance,internship]',
             'state_id' => 'required|is_natural_no_zero',
+            'application_limit' => 'permit_empty|is_natural_no_zero',
             'location_type' => 'required|in_list[hybrid,remote,on-site]',
             'salary_type' => 'required|in_list[fixed,range,negotiable]',
             'salary_period' => 'required|in_list[monthly,yearly,hourly]',
@@ -3064,7 +3067,8 @@ class EmployerController extends BaseController
         }
 
         // Prepare update data
-        $postData = $this->request->getPost(['title','description','job_type','state_id','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','whatsapp_link','application_email','external_url','application_deadline','start_date']);
+        $postData = $this->request->getPost(['title','description','job_type','state_id','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','whatsapp_link','application_email','external_url','application_deadline','start_date','application_limit']);
+        $postData['application_limit'] = !empty($postData['application_limit']) ? (int) $postData['application_limit'] : null;
         $postData['show_salary'] = $this->request->getPost('show_salary_present') !== null
             ? ($this->request->getPost('show_salary') ? 1 : 0) : ($job->show_salary ?? 1);
 
@@ -3603,6 +3607,7 @@ class EmployerController extends BaseController
                 'description' => 'required|min_length[100]',
                 'job_type' => 'required|in_list[full-time,part-time,contract,freelance,internship]',
                 'state_id' => 'required|is_natural_no_zero',
+                'application_limit' => 'permit_empty|is_natural_no_zero',
                 'location_type' => 'required|in_list[hybrid,remote,on-site]',
                 'salary_type' => 'required|in_list[fixed,range,negotiable]',
                 'salary_period' => 'required|in_list[monthly,yearly,hourly]',
@@ -3633,8 +3638,9 @@ class EmployerController extends BaseController
             }
 
             // Prepare Update Data
-            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link'];
+            $allowed = ['title','description','job_type','state_id','city','location_type','salary_type','salary_period','salary','industry_id','category_id','education_level','experience_level','application_method','application_access','accommodation','contact_email','contact_phone','notification_email','whatsapp_link','application_email','external_url','external_link','application_limit'];
             $updateData = $this->request->getPost($allowed);
+            $updateData['application_limit'] = !empty($updateData['application_limit']) ? (int) $updateData['application_limit'] : null;
             $updateData['show_salary'] = $this->request->getPost('show_salary') ? 1 : 0;
 
             if ($updateData['salary_type'] !== 'negotiable' && !empty($updateData['salary'])) {

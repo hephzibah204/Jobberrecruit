@@ -16,6 +16,18 @@ class JobApplicationEligibility
         if (strtolower((string) $read('status')) !== 'open' || strtolower((string) $read('admin_status')) !== 'approved') {
             return false;
         }
+        $limit = (int) ($read('application_limit') ?? 0);
+        if ($limit > 0) {
+            $jobId = (int) ($read('id') ?? 0);
+            if ($jobId > 0) {
+                $count = \Config\Database::connect()->table('job_applications')
+                    ->where('job_id', $jobId)
+                    ->countAllResults();
+                if ($count >= $limit) {
+                    return false;
+                }
+            }
+        }
         $today = date('Y-m-d', $now ?? time());
         foreach (['application_deadline', 'expiry_date'] as $field) {
             $value = $read($field);

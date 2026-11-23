@@ -39,6 +39,7 @@ class JobModel extends Model
         'application_email',
         'external_url',
         'application_deadline',
+        'application_limit',
         'start_date',
         'contact_email',
         'contact_phone',
