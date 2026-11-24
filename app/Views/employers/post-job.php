@@ -8,6 +8,19 @@
 .ai-btn:hover { background: #ED9020; color: #ffffff; }
 .ai-btn svg { width: 16px; height: 16px; fill: #f59e0b; stroke: #d97706; stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; flex-shrink: 0; transition: all .15s ease; }
 .ai-btn:hover svg { fill: #ffffff; stroke: #ffffff; }
+/* ── Pre-screening multiple-choice options ── */
+.mc-options-wrap { display: none; margin-top: 12px; }
+.mc-options-wrap.visible { display: block; }
+.mc-options-label { font-size: .76rem; font-weight: 600; color: var(--text); margin: 0 0 8px; }
+.mc-option-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.mc-option-row { display: flex; align-items: center; gap: 8px; }
+.mc-option-row input { flex: 1; min-width: 0; }
+.mc-remove-opt { background: none; border: none; cursor: pointer; color: var(--muted); line-height: 0; padding: 6px; border-radius: 6px; flex-shrink: 0; }
+.mc-remove-opt:hover { color: var(--danger); background: #fef2f2; }
+.mc-remove-opt svg { width: 14px; height: 14px; }
+.mc-add-opt { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1.5px dashed var(--border); border-radius: 8px; color: var(--brand); font-family: 'Inter', sans-serif; font-size: .8rem; font-weight: 600; padding: 8px 14px; cursor: pointer; }
+.mc-add-opt:hover { border-color: var(--brand); }
+.mc-add-opt svg { width: 14px; height: 14px; }
 </style>
 <?= $this->endSection() ?>
 
@@ -761,18 +774,18 @@ $hasBenefit = function($value) use ($job, $isEdit, $isRepost) {
                 <div class="mc-option-row">
                   <input type="text" name="questions[1][options][]" placeholder="Option 1" aria-label="Option 1">
                   <button type="button" class="mc-remove-opt" onclick="removeMCOption(this)" aria-label="Remove option">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><use href="#i-x"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><use href="#i-x"/></svg>
                   </button>
                 </div>
                 <div class="mc-option-row">
                   <input type="text" name="questions[1][options][]" placeholder="Option 2" aria-label="Option 2">
                   <button type="button" class="mc-remove-opt" onclick="removeMCOption(this)" aria-label="Remove option">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><use href="#i-x"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><use href="#i-x"/></svg>
                   </button>
                 </div>
               </div>
               <button type="button" class="mc-add-opt" onclick="addMCOption(this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-plus"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-plus"/></svg>
                 Add option
               </button>
             </div>
