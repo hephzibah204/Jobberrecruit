@@ -52,7 +52,7 @@ class EmployerController extends BaseController
         $this->userModel = model(ModelsUserModel::class);
         $this->session = \Config\Services::session();
 
-        $this->paystackSecret = env('paystack_secret_key') ?: (env('PAYSTACK_SECRET_KEY') ?: env('paystack.secret_key'));
+        $this->paystackSecret = paystack_secret_key();
         $this->paystackCallback = env('paystack_callback_url') ?: (env('PAYSTACK_CALLBACK_URL') ?: base_url('pricing/verify'));
     }
 
@@ -2775,6 +2775,115 @@ class EmployerController extends BaseController
         ]);
     }
 
+
+    /**
+     * Aggregate analytics for one assessment, across the completed attempts
+     * of this employer's invited candidates: attempt count, average score,
+     * pass rate, and the per-question correct-answer rate. Attempts are
+     * resolved through the employer's invitations with the same
+     * invitation/attempt join the roster uses.
+     */
+    public function getAptitudeTestAnalytics($testId)
+    {
+        $user = $this->auth->user();
+        $employer = model(EmployerModel::class)->where('user_id', $user->id)->first();
+        if (!$employer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Employer profile not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $test = $db->table('tests')
+            ->where('id', (int) $testId)
+            ->groupStart()
+                ->where('employer_id IS NULL')
+                ->orWhere('employer_id', $employer->id)
+            ->groupEnd()
+            ->get()->getRowArray();
+
+        if (!$test) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Assessment not found']);
+        }
+
+        $rows = $db->table('aptitude_test_invitations ati')
+            ->select('ta.id as attempt_id, ta.score_pct, ta.passed')
+            ->join('job_seekers js', 'js.id = ati.candidate_id OR js.user_id = ati.candidate_id', 'left')
+            ->join('test_attempts ta', 'ta.id = ati.attempt_id OR (ati.attempt_id IS NULL AND ta.test_id = ati.test_id AND (ta.candidate_id = ati.candidate_id OR (js.user_id IS NOT NULL AND ta.candidate_id = js.user_id)))', 'left')
+            ->where('ati.employer_id', $employer->id)
+            ->where('ati.test_id', (int) $testId)
+            ->groupStart()
+                ->where('ta.status', 'submitted')
+                ->orWhere('ta.status', 'completed')
+            ->groupEnd()
+            ->get()->getResultArray();
+
+        // The invitation join can repeat an attempt; keep each attempt once.
+        $attempts = [];
+        foreach ($rows as $r) {
+            if (!empty($r['attempt_id'])) {
+                $attempts[(int) $r['attempt_id']] = $r;
+            }
+        }
+        $attempts = array_values($attempts);
+
+        $attemptCount = count($attempts);
+        $passCount    = 0;
+        $scoreSum     = 0.0;
+        foreach ($attempts as $a) {
+            if (!empty($a['passed'])) {
+                $passCount++;
+            }
+            $scoreSum += (float) ($a['score_pct'] ?? 0);
+        }
+
+        // Per-question correct rates across those attempts.
+        $questions = [];
+        if ($attemptCount > 0) {
+            $answerModel = new \App\Models\AttemptAnswerModel();
+            $answers = $answerModel
+                ->whereIn('attempt_id', array_column($attempts, 'attempt_id'))
+                ->findAll();
+
+            $byQuestion = [];
+            foreach ($answers as $ans) {
+                $qid = (int) $ans['question_id'];
+                $byQuestion[$qid]['answered'] = ($byQuestion[$qid]['answered'] ?? 0) + 1;
+                if (!empty($ans['is_correct'])) {
+                    $byQuestion[$qid]['correct'] = ($byQuestion[$qid]['correct'] ?? 0) + 1;
+                }
+            }
+
+            $questionModel = new \App\Models\QuestionModel();
+            foreach ($byQuestion as $qid => $stats) {
+                $correct = $stats['correct'] ?? 0;
+                $q = $questionModel->find($qid);
+                $questions[] = [
+                    'body'        => $q['body'] ?? ('Question #' . $qid),
+                    'answered'    => $stats['answered'],
+                    'correct'     => $correct,
+                    'correct_pct' => $stats['answered'] > 0 ? round($correct / $stats['answered'] * 100, 1) : 0,
+                ];
+            }
+
+            // Hardest questions first.
+            usort($questions, static fn($a, $b) => $a['correct_pct'] <=> $b['correct_pct']);
+        }
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'test'      => [
+                'title'          => $test['title'],
+                'pass_threshold' => (int) ($test['pass_threshold'] ?? 50),
+            ],
+            'summary'   => [
+                'attempts'  => $attemptCount,
+                'avg_score' => $attemptCount > 0 ? round($scoreSum / $attemptCount, 1) : 0,
+                'passed'    => $passCount,
+                'pass_rate' => $attemptCount > 0 ? round($passCount / $attemptCount * 100, 1) : 0,
+            ],
+            'questions' => $questions,
+        ]);
+    }
+
     /**
      * Humanize the elapsed time between an attempt's start and submission
      * ("45s", "12m 34s", "1h 5m 3s"). Returns '—' when either timestamp is
@@ -5313,11 +5422,11 @@ class EmployerController extends BaseController
 
         $reference = 'REF-' . strtoupper(uniqid());
 
-        $paystackKey = env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key'));
+        $paystackKey = paystack_public_key();
         if (empty($paystackKey)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Paystack API key is not configured. Please add paystack_public_key and paystack_secret_key to your .env file.'
+                'message' => 'Paystack API key is not configured. Please set the Paystack keys in Admin > Feature Management or in your .env file.'
             ]);
         }
 
@@ -5941,7 +6050,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
-            'public_key'  => env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key')),
+            'public_key'  => paystack_public_key(),
             'email'       => $user->email,
             'amount'      => (int) round($order['amount'] * 100),
             'reference'   => $order['reference'],
@@ -6007,7 +6116,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'     => true,
             'paystack'    => true,
-            'public_key'  => env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key')),
+            'public_key'  => paystack_public_key(),
             'email'       => $user->email,
             'amount'      => (int) round($order['amount'] * 100),
             'reference'   => $order['reference'],
@@ -6101,7 +6210,7 @@ class EmployerController extends BaseController
         return $this->response->setJSON([
             'success'    => true,
             'paystack'   => true,
-            'public_key' => env('paystack_public_key'),
+            'public_key' => paystack_public_key(),
             'email'      => $user->email,
             'amount'     => (int) ($plan->base_price * 100),
             'reference'  => $reference,
@@ -6333,7 +6442,7 @@ class EmployerController extends BaseController
             'plan'   => $plan->paystack_plan_code,
             'amount'    => (int) ($amount * 100), // kobo
             'email'     => $user->getEmail(),
-            'publicKey' => env('paystack_public_key'),
+            'publicKey' => paystack_public_key(),
         ]);
     }
 

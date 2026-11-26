@@ -19,6 +19,19 @@ class AdminEmailTemplateController extends BaseController
     }
 
     /**
+     * Record an admin action in the audit log (see admin/audit-logs).
+     * Failures are swallowed so audit logging can never break the action.
+     */
+    private function auditLog(string $action, ?string $resource = null, ?int $resourceId = null, $details = null): void
+    {
+        try {
+            model(\App\Models\AuditLogModel::class)->log($action, $resource, $resourceId, $details);
+        } catch (\Throwable $e) {
+            log_message('error', 'Audit log failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * List all email templates with category filtering & statistics
      */
     public function index()
@@ -242,6 +255,8 @@ class AdminEmailTemplateController extends BaseController
             'is_active'     => $isActive,
         ]);
 
+        $this->auditLog('email_template_updated', 'email_template', $id, ['template_key' => $template->template_key]);
+
         return redirect()->to(base_url('admin/email-templates'))
             ->with('success', "Email template '{$template->name}' updated successfully!");
     }
@@ -310,6 +325,8 @@ class AdminEmailTemplateController extends BaseController
         $success = $this->templateService->resetToDefault($template->template_key);
 
         if ($success) {
+            $this->auditLog('email_template_reset', 'email_template', $id, ['template_key' => $template->template_key]);
+
             return redirect()->back()->with('success', "Template '{$template->name}' has been restored to factory defaults.");
         }
 

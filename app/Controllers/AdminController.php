@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\AdminModel;
+use App\Models\AuditLogModel;
 use App\Models\BlogModel;
 use App\Models\CountryModel;
 use App\Models\EmployerIndustryModel;
@@ -75,6 +76,20 @@ class AdminController extends BaseController
 
         if ($this->auth->user()) {
             $this->admin = $this->adminModel->where('user_id', $this->auth->user()->id)->first();
+        }
+    }
+
+    /**
+     * Record an admin action in the audit log (see admin/audit-logs).
+     * AuditLogModel::log() does not swallow database errors, so failures
+     * are caught here: audit logging must never break the action itself.
+     */
+    private function auditLog(string $action, ?string $resource = null, ?int $resourceId = null, $details = null): void
+    {
+        try {
+            model(AuditLogModel::class)->log($action, $resource, $resourceId, $details);
+        } catch (\Throwable $e) {
+            log_message('error', 'Audit log failed: ' . $e->getMessage());
         }
     }
 
@@ -1363,6 +1378,8 @@ class AdminController extends BaseController
 
         $this->jobApplicationModel->update($id, $data);
 
+        $this->auditLog('application_status_changed', 'application', $id, ['status' => $status]);
+
         return redirect()->back()->with('success', 'Application status updated to ' . ucfirst($status) . '.');
     }
 
@@ -1416,6 +1433,8 @@ class AdminController extends BaseController
                 ->update();
         }
 
+        $this->auditLog('applications_bulk_status_changed', 'application', null, ['ids' => $validIds, 'status' => $status]);
+
         return redirect()->back()->with(
             'success',
             count($validIds) . ' application(s) updated to ' . ucfirst($status) . '.'
@@ -1459,10 +1478,260 @@ class AdminController extends BaseController
 
         $this->jobApplicationModel->whereIn('id', $validIds)->delete();
 
+        $this->auditLog('applications_bulk_deleted', 'application', null, ['ids' => $validIds]);
+
         return redirect()->back()->with(
             'success',
             count($validIds) . ' application(s) deleted.'
         );
+    }
+
+    /**
+     * Audit Log viewer (read-only). Lists the rows AuditLogModel::log()
+     * records for admin actions, newest first, with filters.
+     */
+    public function auditLogs()
+    {
+        $logModel = model(AuditLogModel::class);
+
+        $userId   = (int) $this->request->getGet('user_id');
+        $action   = trim((string) $this->request->getGet('action'));
+        $dateFrom = trim((string) $this->request->getGet('date_from'));
+        $dateTo   = trim((string) $this->request->getGet('date_to'));
+
+        $query = $logModel
+            ->select('audit_logs.*, auth_identities.secret AS admin_email')
+            ->join('auth_identities', 'auth_identities.user_id = audit_logs.user_id AND auth_identities.type = \'email_password\'', 'left')
+            ->orderBy('audit_logs.id', 'DESC');
+
+        if ($userId > 0) {
+            $query->where('audit_logs.user_id', $userId);
+        }
+        if ($action !== '') {
+            $query->where('audit_logs.action', $action);
+        }
+        if ($dateFrom !== '') {
+            $query->where('audit_logs.created_at >=', $dateFrom . ' 00:00:00');
+        }
+        if ($dateTo !== '') {
+            $query->where('audit_logs.created_at <=', $dateTo . ' 23:59:59');
+        }
+
+        $logs  = $query->paginate(20);
+        $pager = $logModel->pager;
+
+        $admins = model(UserModel::class)
+            ->select('users.id, auth_identities.secret AS email')
+            ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = \'email_password\'', 'left')
+            ->whereIn('users.user_type', ['admin', 'superadmin'])
+            ->orderBy('auth_identities.secret', 'ASC')
+            ->findAll();
+
+        $actions = $logModel->db->table('audit_logs')
+            ->distinct()
+            ->select('action')
+            ->orderBy('action', 'ASC')
+            ->get()
+            ->getResult();
+
+        $data = [
+            'title'   => 'Audit Logs',
+            'user'    => $this->auth->user(),
+            'admin'   => $this->admin,
+            'logs'    => $logs,
+            'pager'   => $pager,
+            'admins'  => $admins,
+            'actions' => $actions,
+            'filters' => [
+                'user_id'   => $userId,
+                'action'    => $action,
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
+            ],
+        ];
+
+        return view('admin/audit_logs', $data);
+    }
+
+    /**
+     * Build a CSV download response from header + data rows, following the
+     * same pattern as the employer exports (EmployerController::exportJobs).
+     */
+    private function csvDownload(array $rows, string $filename)
+    {
+        $fh = fopen('php://temp', 'r+');
+        foreach ($rows as $r) {
+            fputcsv($fh, $r);
+        }
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($csv);
+    }
+
+    /**
+     * Export all jobs as CSV.
+     */
+    public function exportJobs()
+    {
+        $jobs = model(JobModel::class)
+            ->select('jobs.*, employers.company_name, states.name AS state_name')
+            ->join('employers', 'employers.id = jobs.employer_id', 'left')
+            ->join('states', 'states.id = jobs.state_id', 'left')
+            ->orderBy('jobs.created_at', 'DESC')
+            ->findAll();
+
+        $rows   = [];
+        $rows[] = ['ID', 'Title', 'Employer', 'Type', 'Location', 'Status', 'Admin Status', 'Featured', 'Views', 'Deadline', 'Created'];
+        foreach ($jobs as $j) {
+            $rows[] = [
+                $j->id,
+                $j->title,
+                $j->company_name ?? '',
+                $j->job_type ?? '',
+                $j->state_name ?? '',
+                $j->status ?? '',
+                $j->admin_status ?? '',
+                ! empty($j->is_featured) ? 'Yes' : 'No',
+                (int) ($j->views ?? 0),
+                ! empty($j->application_deadline) ? date('Y-m-d', strtotime($j->application_deadline)) : '',
+                ! empty($j->created_at) ? date('Y-m-d H:i', strtotime($j->created_at)) : '',
+            ];
+        }
+
+        return $this->csvDownload($rows, 'jobs-export-' . date('Y-m-d') . '.csv');
+    }
+
+    /**
+     * Export all job applications as CSV.
+     */
+    public function exportApplications()
+    {
+        $applications = $this->jobApplicationModel
+            ->select('job_applications.*, jobs.title AS job_title, job_seekers.full_name AS seeker_name')
+            ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
+            ->join('job_seekers', 'job_seekers.id = job_applications.job_seeker_id', 'left')
+            ->orderBy('job_applications.created_at', 'DESC')
+            ->findAll();
+
+        $rows   = [];
+        $rows[] = ['ID', 'Job', 'Candidate', 'Email', 'Phone', 'Status', 'Guest', 'Applied'];
+        foreach ($applications as $a) {
+            $name = $a->seeker_name ?: trim(($a->first_name ?? '') . ' ' . ($a->last_name ?? ''));
+            $rows[] = [
+                $a->id,
+                $a->job_title ?? '',
+                $name,
+                $a->email ?? '',
+                $a->phone ?? '',
+                $a->status ?? '',
+                ! empty($a->is_guest) ? 'Yes' : 'No',
+                ! empty($a->created_at) ? date('Y-m-d H:i', strtotime($a->created_at)) : '',
+            ];
+        }
+
+        return $this->csvDownload($rows, 'applications-export-' . date('Y-m-d') . '.csv');
+    }
+
+    /**
+     * Export all candidates as CSV.
+     */
+    public function exportCandidates()
+    {
+        $candidates = model(JobSeekerModel::class)
+            ->select('job_seekers.*, auth_identities.secret AS account_email, states.name AS state_name')
+            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id AND auth_identities.type = \'email_password\'', 'left')
+            ->join('states', 'states.id = job_seekers.state_id', 'left')
+            ->orderBy('job_seekers.created_at', 'DESC')
+            ->findAll();
+
+        $rows   = [];
+        $rows[] = ['ID', 'Full Name', 'Email', 'Phone', 'Job Title', 'Location', 'Experience (Years)', 'Education', 'Profile Completion %', 'Visible', 'Verified', 'Joined'];
+        foreach ($candidates as $c) {
+            $rows[] = [
+                $c->id,
+                $c->full_name ?? '',
+                $c->account_email ?? '',
+                $c->phone ?? '',
+                $c->job_title ?? '',
+                ($c->location ?? '') ?: ($c->state_name ?? ''),
+                $c->experience_years ?? '',
+                $c->education_level ?? '',
+                (int) ($c->profile_completion ?? 0),
+                ! empty($c->is_visible) ? 'Yes' : 'No',
+                ! empty($c->is_verified) ? 'Yes' : 'No',
+                ! empty($c->created_at) ? date('Y-m-d H:i', strtotime($c->created_at)) : '',
+            ];
+        }
+
+        return $this->csvDownload($rows, 'candidates-export-' . date('Y-m-d') . '.csv');
+    }
+
+    /**
+     * Export all employers as CSV.
+     */
+    public function exportEmployers()
+    {
+        $employers = model(EmployerModel::class)
+            ->select('employers.*, states.name AS state_name')
+            ->join('states', 'states.id = employers.state_id', 'left')
+            ->orderBy('employers.created_at', 'DESC')
+            ->findAll();
+
+        $rows   = [];
+        $rows[] = ['ID', 'Company', 'Contact Name', 'Contact Email', 'Contact Phone', 'State', 'Company Size', 'Verification Status', 'Unlimited Access', 'Joined'];
+        foreach ($employers as $e) {
+            $rows[] = [
+                $e->id,
+                $e->company_name ?? '',
+                $e->contact_name ?? '',
+                $e->contact_email ?? '',
+                $e->contact_phone ?? '',
+                $e->state_name ?? '',
+                $e->company_size ?? '',
+                $e->verification_status ?? '',
+                ! empty($e->unlimited_access) ? 'Yes' : 'No',
+                ! empty($e->created_at) ? date('Y-m-d H:i', strtotime($e->created_at)) : '',
+            ];
+        }
+
+        return $this->csvDownload($rows, 'employers-export-' . date('Y-m-d') . '.csv');
+    }
+
+    /**
+     * Export all payments (revenue) as CSV. Gateway response payloads are
+     * deliberately excluded; only the recorded payment facts are exported.
+     */
+    public function exportPayments()
+    {
+        $payments = model(\App\Models\PaymentModel::class)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $rows   = [];
+        $rows[] = ['ID', 'Reference', 'User ID', 'Employer ID', 'Amount', 'Amount Paid', 'Currency', 'Status', 'Payment Method', 'Channel', 'Paid At', 'Created'];
+        foreach ($payments as $pay) {
+            $rows[] = [
+                $pay['id'],
+                $pay['reference'] ?? '',
+                $pay['user_id'] ?? '',
+                $pay['employer_id'] ?? '',
+                $pay['amount'] ?? '',
+                $pay['amount_paid'] ?? '',
+                $pay['currency'] ?? '',
+                $pay['status'] ?? '',
+                $pay['payment_method'] ?? '',
+                $pay['channel'] ?? '',
+                ! empty($pay['paid_at']) ? date('Y-m-d H:i', strtotime($pay['paid_at'])) : '',
+                ! empty($pay['created_at']) ? date('Y-m-d H:i', strtotime($pay['created_at'])) : '',
+            ];
+        }
+
+        return $this->csvDownload($rows, 'payments-export-' . date('Y-m-d') . '.csv');
     }
 
     public function locations()
@@ -2530,6 +2799,8 @@ class AdminController extends BaseController
             'status' => 'open'
         ]);
 
+        $this->auditLog('job_approved', 'job', (int) $jobId);
+
         // Send approval email + in-app notification to employer
         try {
             $emailService = new \App\Services\EmailNotificationService();
@@ -2878,6 +3149,8 @@ class AdminController extends BaseController
             'status' => 'closed'
         ]);
 
+        $this->auditLog('job_rejected', 'job', (int) $jobId, ['reason' => $reason]);
+
         // Create in-app notification for employer
         $notificationModel = model(JobNotificationModel::class);
         $notificationModel->createNotification(
@@ -3043,6 +3316,8 @@ class AdminController extends BaseController
             ->update($data['id'], [
                 'status' => $data['status'],
             ]);
+
+        $this->auditLog('application_status_changed', 'application', (int) $data['id'], ['status' => $data['status']]);
 
         return $this->response->setJSON(['success' => true]);
     }
@@ -3278,6 +3553,13 @@ class AdminController extends BaseController
 
     public function features()
     {
+        $paystackSecret = paystack_secret_key();
+        $paystackSecretMasked = $paystackSecret ? str_repeat('•', 8) . substr($paystackSecret, -4) : '';
+        $paystackSecretSource = '';
+        if ($paystackSecret) {
+            $paystackSecretSource = ! empty(setting('Site.paystack_secret_key')) ? 'settings' : 'env';
+        }
+
         $data = [
             'title'                     => 'Feature Management',
             'feature_webinars'          => get_site_setting('feature_webinars', true),
@@ -3292,6 +3574,9 @@ class AdminController extends BaseController
             'cv_review_pro_price'       => (int) get_site_setting('cv_review_pro_price', 15000),
             'cv_review_prem_price'      => (int) get_site_setting('cv_review_prem_price', 30000),
             'cv_review_mode'            => get_site_setting('cv_review_mode', 'semi'),
+            'paystack_public_key'       => paystack_public_key() ?? '',
+            'paystack_secret_key_masked' => $paystackSecretMasked,
+            'paystack_secret_key_source' => $paystackSecretSource,
         ];
 
         return view('admin/feature_settings', $data);
@@ -3324,6 +3609,20 @@ class AdminController extends BaseController
             }
             set_site_setting($key, (string)$val);
         }
+
+        // Payment gateway keys (Paystack). The public key is saved as
+        // entered (clearing it reverts to the .env value). The secret key
+        // is only replaced when a new value is submitted: the field is
+        // never rendered back in full, so an empty submission keeps the
+        // currently stored key.
+        set_site_setting('paystack_public_key', trim((string) $this->request->getPost('paystack_public_key')));
+
+        $paystackSecretKey = trim((string) $this->request->getPost('paystack_secret_key'));
+        if ($paystackSecretKey !== '') {
+            set_site_setting('paystack_secret_key', $paystackSecretKey);
+        }
+
+        $this->auditLog('feature_settings_updated', 'settings');
 
         return redirect()->back()->with('success', 'Feature settings updated and saved to Database Configuration.');
     }
@@ -4181,7 +4480,7 @@ class AdminController extends BaseController
 
     private function paystackPost($endpoint, $data)
     {
-        $key = env("paystack_secret_key");
+        $key = paystack_secret_key();
 
         $curl = curl_init();
 
@@ -4347,6 +4646,8 @@ class AdminController extends BaseController
         if (! empty($data['id'])) {
             $model->update($data['id'], $payload);
 
+            $this->auditLog('testimonial_updated', 'testimonial', (int) $data['id']);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Testimonial updated successfully',
@@ -4354,6 +4655,8 @@ class AdminController extends BaseController
         }
 
         $model->insert($payload);
+
+        $this->auditLog('testimonial_created', 'testimonial', (int) $model->getInsertID());
 
         return $this->response->setJSON([
             'success' => true,
@@ -4379,6 +4682,8 @@ class AdminController extends BaseController
         }
 
         $model->delete($id);
+
+        $this->auditLog('testimonial_deleted', 'testimonial', (int) $id);
 
         return $this->response->setJSON([
             'success' => true,
@@ -4462,6 +4767,8 @@ class AdminController extends BaseController
         if (! empty($data['id'])) {
             $model->update($data['id'], $payload);
 
+            $this->auditLog('faq_updated', 'faq', (int) $data['id']);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'FAQ updated successfully',
@@ -4469,6 +4776,8 @@ class AdminController extends BaseController
         }
 
         $model->insert($payload);
+
+        $this->auditLog('faq_created', 'faq', (int) $model->getInsertID());
 
         return $this->response->setJSON([
             'success' => true,
@@ -4494,6 +4803,8 @@ class AdminController extends BaseController
         }
 
         $model->delete($id);
+
+        $this->auditLog('faq_deleted', 'faq', (int) $id);
 
         return $this->response->setJSON([
             'success' => true,
@@ -4557,6 +4868,8 @@ class AdminController extends BaseController
                     ->where('user_id', $candidate->user_id)
                     ->delete();
             }
+
+            $this->auditLog('candidate_deleted', 'candidate', (int) $id);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -4629,6 +4942,8 @@ class AdminController extends BaseController
                 }
             }
 
+            $this->auditLog('candidates_bulk_deleted', 'candidate', null, ['ids' => array_map('intval', $ids)]);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => count($ids) . ' candidate(s) deleted successfully'
@@ -4697,6 +5012,8 @@ class AdminController extends BaseController
                     ->where('user_id', $employer->user_id)
                     ->delete();
             }
+
+            $this->auditLog('employer_deleted', 'employer', (int) $id);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -4772,6 +5089,8 @@ class AdminController extends BaseController
                     }
                 }
             }
+
+            $this->auditLog('employers_bulk_deleted', 'employer', null, ['ids' => array_map('intval', $ids)]);
 
             return $this->response->setJSON([
                 'success' => true,

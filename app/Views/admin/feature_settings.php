@@ -219,6 +219,35 @@
                     </div>
                 </div>
 
+                <!-- Payment Gateway Settings -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white py-3 px-4 border-bottom">
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center">
+                            <i class="ti ti-credit-card text-primary me-2"></i> Payment Gateway (Paystack)
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Public Key</label>
+                            <input type="text" name="paystack_public_key" class="form-control" value="<?= esc($paystack_public_key ?? '') ?>" placeholder="pk_test_... or pk_live_..." autocomplete="off">
+                            <div class="form-text text-muted">
+                                Used for checkout popups. Saving a value here overrides the .env file; clearing the field reverts to .env.
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold">Secret Key</label>
+                            <input type="password" name="paystack_secret_key" class="form-control" value="" placeholder="<?= esc($paystack_secret_key_masked ?? '') ?>" autocomplete="new-password">
+                            <div class="form-text text-muted">
+                                <?php if (!empty($paystack_secret_key_masked)): ?>
+                                    A secret key is configured (<?= esc($paystack_secret_key_masked) ?>, from <?= ($paystack_secret_key_source ?? '') === 'settings' ? 'these settings' : 'the .env file' ?>). Leave this field blank to keep it; enter a new key only to replace it.
+                                <?php else: ?>
+                                    No secret key is configured yet. Enter one to store it here, or set paystack_secret_key in the .env file.
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Info Help Card -->
                 <div class="card bg-gradient-info text-white border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);">
                     <div class="card-body p-4">

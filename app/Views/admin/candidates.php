@@ -35,6 +35,9 @@
                 </ol>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <a href="<?= base_url('admin/candidates/export') ?>" class="btn btn-sm btn-outline-primary">
+                    <i class="ti ti-download me-1"></i> Export CSV
+                </a>
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">
                     <i class="ti ti-refresh me-1"></i> Reset Filters
                 </button>

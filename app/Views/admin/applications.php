@@ -11,6 +11,9 @@
                 <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Dashboard</a></li>
                 <li class="breadcrumb-item active">Applications</li>
             </ol>
+            <a href="<?= base_url('admin/applications/export') ?>" class="btn btn-sm btn-outline-primary">
+                <i class="ti ti-download me-1"></i>Export CSV
+            </a>
         </div>
     </div>
 

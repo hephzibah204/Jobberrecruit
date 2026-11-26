@@ -22,6 +22,9 @@
                 <div class="card custom-card">
                     <div class="card-header justify-content-between">
                         <div class="card-title">All Reports</div>
+                        <a href="<?= base_url('admin/payments/export') ?>" class="btn btn-sm btn-outline-primary">
+                            <i class="ti ti-download me-1"></i>Export Payments (Revenue) CSV
+                        </a>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">

@@ -18,6 +18,9 @@ $employerStatusUrl = static fn ($status) => base_url('admin/employers') . '?' . 
                 <li class="breadcrumb-item"><a href="javascript:void(0);">Dashboard</a></li>
                 <li class="breadcrumb-item active">Employers</li>
             </ol>
+            <a href="<?= base_url('admin/employers/export') ?>" class="btn btn-sm btn-outline-primary">
+                <i class="ti ti-download me-1"></i>Export CSV
+            </a>
         </div>
     </div>
 

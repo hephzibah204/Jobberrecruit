@@ -266,6 +266,7 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('aptitude-tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests/list', 'EmployerController::getAvailableAptitudeTests');
     $routes->get('aptitude-tests/result/(:num)', 'EmployerController::getAptitudeAttemptResult/$1');
+    $routes->get('aptitude-tests/analytics/(:num)', 'EmployerController::getAptitudeTestAnalytics/$1');
     $routes->post('aptitude-tests/advance-stage', 'EmployerController::advanceCandidateStage');
     $routes->post('aptitude-tests/resend-invite', 'EmployerController::resendAptitudeInvite');
     $routes->post('applications/invite-test', 'EmployerController::inviteToAptitudeTest');
@@ -512,6 +513,7 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('settings', 'AdminController::features');
     $routes->get('features', 'AdminController::features');
     $routes->post('features/save', 'AdminController::saveFeatures');
+    $routes->get('audit-logs', 'AdminController::auditLogs');
 
     // Chatbot Management
     $routes->get('chatbot', 'AdminController::chatbotSettings');
@@ -561,6 +563,12 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->post('applications/update-status/(:num)', 'AdminController::saveApplicationStatus/$1');
     $routes->post('applications/bulk-update-status', 'AdminController::bulkUpdateApplicationStatus');
     $routes->post('applications/bulk-delete', 'AdminController::bulkDeleteApplications');
+    // CSV Exports
+    $routes->get('jobs/export', 'AdminController::exportJobs');
+    $routes->get('applications/export', 'AdminController::exportApplications');
+    $routes->get('candidates/export', 'AdminController::exportCandidates');
+    $routes->get('employers/export', 'AdminController::exportEmployers');
+    $routes->get('payments/export', 'AdminController::exportPayments');
     // Candidates
     $routes->get('candidates', 'AdminController::candidates');
     $routes->get('candidates/filter', 'AdminController::filterCandidates');

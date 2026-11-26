@@ -363,7 +363,7 @@ class AuthController extends BaseController
 
     private function paystackPost($endpoint, $data)
     {
-        $key = env('paystack_secret_key');
+        $key = paystack_secret_key();
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -693,7 +693,7 @@ class AuthController extends BaseController
 
     private function createPaystackCustomer(string $email, int $userId)
     {
-        $secret = env('paystack_secret_key');
+        $secret = paystack_secret_key();
 
         $curl = curl_init();
         curl_setopt_array($curl, [

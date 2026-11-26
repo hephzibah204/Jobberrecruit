@@ -133,6 +133,50 @@ if (!function_exists('set_site_setting')) {
     }
 }
 
+if (!function_exists('paystack_public_key')) {
+    /**
+     * Effective Paystack public key: the value saved by an admin in the
+     * gateway settings (Feature Management page) wins; when no setting is
+     * stored, the .env values are used exactly as before.
+     *
+     * @return string|null
+     */
+    function paystack_public_key(): ?string
+    {
+        $val = null;
+        if (function_exists('setting')) {
+            $val = setting('Site.paystack_public_key');
+        }
+        if (empty($val)) {
+            $val = env('paystack_public_key') ?: (env('PAYSTACK_PUBLIC_KEY') ?: env('paystack.public_key'));
+        }
+
+        return ! empty($val) ? (string) $val : null;
+    }
+}
+
+if (!function_exists('paystack_secret_key')) {
+    /**
+     * Effective Paystack secret key: the value saved by an admin in the
+     * gateway settings (Feature Management page) wins; when no setting is
+     * stored, the .env values are used exactly as before.
+     *
+     * @return string|null
+     */
+    function paystack_secret_key(): ?string
+    {
+        $val = null;
+        if (function_exists('setting')) {
+            $val = setting('Site.paystack_secret_key');
+        }
+        if (empty($val)) {
+            $val = env('paystack_secret_key') ?: (env('PAYSTACK_SECRET_KEY') ?: env('paystack.secret_key'));
+        }
+
+        return ! empty($val) ? (string) $val : null;
+    }
+}
+
 if (!function_exists('is_site_free_mode')) {
     /**
      * Check whether the site is in Free Access Mode (reads from Database Configuration).

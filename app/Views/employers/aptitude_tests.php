@@ -226,6 +226,16 @@
 
                 </button>
 
+                <button type="button" class="ic-btn"
+
+                        onclick="viewTestAnalytics(<?= (int)$t['id'] ?>)"
+
+                        title="View candidate analytics for this test">
+
+                  <svg aria-hidden="true" width="15" height="15"><use href="#i-chart-bar"/></svg>
+
+                </button>
+
                 <?php if ($isCustom): ?>
 
                   <button type="button" class="ic-btn" onclick="openEditCustomTestModal(<?= (int)$t['id'] ?>)" title="Edit custom test">
@@ -2178,6 +2188,58 @@ h1, h2, h3, .modal-title { text-wrap: balance; overflow-wrap: break-word; }
 
 
 
+<!-- ══ TEST ANALYTICS MODAL ══ -->
+
+<div class="modal fade" id="testAnalyticsModal" tabindex="-1" aria-labelledby="testAnalyticsModalTitle" aria-hidden="true" style="position:fixed; inset:0; z-index:99999; background:rgba(10,25,45,0.75); display:none; align-items:center; justify-content:center; padding:16px; overflow-y:auto;">
+
+  <div class="modal-dialog modal-lg modal-dialog-centered" style="width:100%; max-width:820px; margin:auto; position:relative;">
+
+    <div class="modal-content" style="background:#fff; border-radius:14px; box-shadow:0 25px 70px rgba(0,0,0,0.4); overflow:hidden; border:1px solid var(--border); display:flex; flex-direction:column; max-height:calc(100vh - 3.5rem);">
+
+      <div class="modal-header" style="padding:16px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--bg-alt); flex-shrink:0;">
+
+        <div>
+
+          <h5 class="modal-title fw-bold" id="testAnalyticsModalTitle" style="margin:0; font-size:1.05rem; color:var(--brand-deep); display:flex; align-items:center; gap:8px;">
+
+            <svg aria-hidden="true" width="18" height="18" style="color:var(--brand);"><use href="#i-chart-bar"/></svg>
+
+            Test Analytics
+
+          </h5>
+
+          <span style="font-size:0.78rem; color:var(--muted);" id="testAnalyticsSubTitle">Performance across your candidates' completed attempts</span>
+
+        </div>
+
+        <button type="button" class="btn-close" onclick="closeTestAnalyticsModal()" aria-label="Close" style="background:none; border:none; font-size:1.5rem; color:var(--muted); cursor:pointer; line-height:1;">&times;</button>
+
+      </div>
+
+
+
+      <div class="modal-body" id="testAnalyticsBody" style="padding:22px; overflow-y:auto; flex:1;">
+
+        <div style="text-align:center; padding:30px; color:var(--muted);">Loading test analytics...</div>
+
+      </div>
+
+
+
+      <div class="modal-footer" style="padding:12px 22px; border-top:1px solid var(--border); background:var(--bg); display:flex; justify-content:flex-end; align-items:center; flex-shrink:0;">
+
+        <button type="button" class="emp-btn emp-btn-secondary emp-btn-sm" onclick="closeTestAnalyticsModal()">Close</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
 <!-- ══ ADVANCE STAGE MODAL ══ -->
 
 <div class="modal fade" id="advanceStageModal" tabindex="-1" aria-labelledby="advanceStageModalTitle" aria-hidden="true" style="position:fixed; inset:0; z-index:99999; background:rgba(10,25,45,0.72); display:none; align-items:center; justify-content:center; padding:16px;">
@@ -3671,6 +3733,172 @@ function viewAttemptResult(invId) {
 function closeAttemptResultModal() {
 
   var modalEl = document.getElementById('attemptResultModal');
+
+  if (!modalEl) return;
+
+  modalEl.style.display = 'none';
+
+  modalEl.classList.remove('show');
+
+  document.body.classList.remove('modal-open');
+
+}
+
+
+
+function viewTestAnalytics(testId) {
+
+  var modalEl = document.getElementById('testAnalyticsModal');
+
+  var bodyEl  = document.getElementById('testAnalyticsBody');
+
+  var subEl   = document.getElementById('testAnalyticsSubTitle');
+
+
+
+  if (!modalEl || !bodyEl) return;
+
+
+
+  bodyEl.innerHTML = '<div style="text-align:center; padding:40px; color:var(--muted);"><svg aria-hidden="true" width="28" height="28" style="animation:spin 1s linear infinite;"><use href="#i-loader"/></svg><p style="margin-top:10px;">Loading test analytics...</p></div>';
+
+  modalEl.style.display = 'flex';
+
+  modalEl.classList.add('show');
+
+  document.body.classList.add('modal-open');
+
+
+
+  fetch('<?= base_url("employer/aptitude-tests/analytics/") ?>' + testId)
+
+    .then(r => r.json())
+
+    .then(res => {
+
+      if (!res.success) {
+
+        bodyEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--danger);">' + (res.message || 'Unable to load analytics.') + '</div>';
+
+        return;
+
+      }
+
+
+
+      subEl.textContent = res.test.title + ' \u2022 Pass mark: ' + res.test.pass_threshold + '%';
+
+
+
+      var s = res.summary;
+
+      var questions = res.questions || [];
+
+
+
+      var html = `
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:20px;">
+
+          <div style="background:var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center;">
+
+            <div style="font-size:1.3rem; font-weight:800; color:var(--brand-deep);">${s.attempts}</div>
+
+            <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Completed Attempts</div>
+
+          </div>
+
+          <div style="background:var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center;">
+
+            <div style="font-size:1.3rem; font-weight:800; color:var(--brand-deep);">${s.avg_score}%</div>
+
+            <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Average Score</div>
+
+          </div>
+
+          <div style="background:var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center;">
+
+            <div style="font-size:1.3rem; font-weight:800; color:var(--brand-deep);">${s.passed}</div>
+
+            <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Candidates Passed</div>
+
+          </div>
+
+          <div style="background:var(--bg-alt); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center;">
+
+            <div style="font-size:1.3rem; font-weight:800; color:var(--brand-deep);">${s.pass_rate}%</div>
+
+            <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Pass Rate</div>
+
+          </div>
+
+        </div>
+
+      `;
+
+
+
+      if (questions.length) {
+
+        html += '<h6 style="font-weight:700; color:var(--brand-deep); margin-bottom:12px;">Question Performance (hardest first)</h6>';
+
+        questions.forEach(function (q, idx) {
+
+          var pct = q.correct_pct;
+
+          var barColor = pct >= 70 ? '#16a34a' : (pct >= 40 ? '#d97706' : '#dc2626');
+
+          html += `
+
+            <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+
+              <div style="display:flex; justify-content:space-between; gap:12px; font-size:0.85rem;">
+
+                <span style="color:var(--text);"><strong>Q${idx + 1}.</strong> ${escapeHtml(q.body)}</span>
+
+                <span style="white-space:nowrap; font-weight:700; color:${barColor};">${pct}%</span>
+
+              </div>
+
+              <div style="background:var(--bg-alt); border-radius:6px; height:8px; margin-top:6px; overflow:hidden;">
+
+                <div style="background:${barColor}; height:100%; width:${pct}%;"></div>
+
+              </div>
+
+              <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">${q.correct} of ${q.answered} candidates answered correctly</div>
+
+            </div>
+
+          `;
+
+        });
+
+      } else {
+
+        html += '<div style="text-align:center; padding:20px; color:var(--muted);">No completed attempts yet \u2014 question statistics will appear once candidates finish this test.</div>';
+
+      }
+
+
+
+      bodyEl.innerHTML = html;
+
+    })
+
+    .catch(() => {
+
+      bodyEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--danger);">Unable to load analytics.</div>';
+
+    });
+
+}
+
+
+
+function closeTestAnalyticsModal() {
+
+  var modalEl = document.getElementById('testAnalyticsModal');
 
   if (!modalEl) return;
 

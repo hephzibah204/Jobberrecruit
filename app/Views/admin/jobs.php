@@ -164,6 +164,9 @@
                     <i class="ti ti-x me-1"></i>Reject Selected
                 </button>
             </div>
+            <a href="<?= base_url('admin/jobs/export') ?>" class="btn btn-sm btn-outline-primary">
+                <i class="ti ti-download me-1"></i>Export CSV
+            </a>
         </div>
         <div class="card-body p-0" id="jobs-table-wrapper">
             <?= view('admin/partials/jobs_results', [

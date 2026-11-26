@@ -12,6 +12,19 @@ use CodeIgniter\Shield\Entities\User;
 
 class AdminUserController extends BaseController
 {
+    /**
+     * Record an admin action in the audit log (see admin/audit-logs).
+     * Failures are swallowed so audit logging can never break the action.
+     */
+    private function auditLog(string $action, ?string $resource = null, ?int $resourceId = null, $details = null): void
+    {
+        try {
+            model(\App\Models\AuditLogModel::class)->log($action, $resource, $resourceId, $details);
+        } catch (\Throwable $e) {
+            log_message('error', 'Audit log failed: ' . $e->getMessage());
+        }
+    }
+
     public function index()
     {
         $userModel = model(UserModel::class);
@@ -183,7 +196,9 @@ class AdminUserController extends BaseController
 
         // We will perform a hard delete by deleting from Shield provider
         $users = auth()->getProvider();
-        $users->delete($userId, true); 
+        $users->delete($userId, true);
+
+        $this->auditLog('user_deleted', 'user', (int) $userId);
 
         return redirect()->back()->with('success', 'User completely deleted.');
     }
@@ -265,6 +280,8 @@ class AdminUserController extends BaseController
                 'message' => 'Failed to delete selected users due to a database error.'
             ]);
         }
+
+        $this->auditLog('users_bulk_deleted', 'user', null, ['count' => $deletedCount]);
 
         return $this->response->setJSON([
             'success' => true,

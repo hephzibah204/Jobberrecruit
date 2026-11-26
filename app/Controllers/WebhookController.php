@@ -20,10 +20,10 @@ class WebhookController extends Controller
         // 1. HMAC-SHA512 SIGNATURE VERIFICATION
         // --------------------------------------------------
         $signature = $this->request->getHeaderLine('x-paystack-signature') ?: $this->request->getServer('HTTP_X_PAYSTACK_SIGNATURE');
-        $secretKey = env('PAYSTACK_SECRET_KEY') ?: (env('paystack_secret_key') ?: env('paystack.secret_key'));
+        $secretKey = paystack_secret_key();
         
         if (empty($secretKey)) {
-            log_message('critical', 'Paystack webhook: PAYSTACK_SECRET_KEY is not configured in .env.');
+            log_message('critical', 'Paystack webhook: the Paystack secret key is not configured.');
             return $this->response->setStatusCode(401)->setBody('Unauthorized');
         }
         
