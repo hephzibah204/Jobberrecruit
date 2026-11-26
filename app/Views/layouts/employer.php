@@ -232,6 +232,10 @@ if ($dashboardPath !== 'employer' && $dashboardPath !== 'employer/dashboard') {
            <?= empIsActiveStart('employer/offers') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-send"/></svg> Offer Letters
         </a>
+        <a class="sb-link" href="<?= base_url('employer/interviews') ?>"
+           <?= empIsActiveStart('employer/interviews') ? 'aria-current="page"' : '' ?>>
+          <svg aria-hidden="true"><use href="#i-calendar"/></svg> Interviews
+        </a>
         <a class="sb-link" href="<?= base_url('employer/candidates') ?>"
            <?= empIsActive('employer/candidates') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-search-user"/></svg> Candidates Search

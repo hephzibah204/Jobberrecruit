@@ -523,6 +523,14 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
               <a href="<?= base_url('employer/offers/create/' . $application->id) ?>" class="emp-btn emp-btn-primary emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-send"/></svg> <?= !empty($offerLetter) ? 'Edit Offer Draft' : 'Send Offer Letter' ?></a>
             <?php endif; ?>
           <?php endif; ?>
+          <?php if (!in_array($application->status ?? '', ['rejected', 'withdrawn'], true)): ?>
+            <?php if (!empty($latestInterview)): ?>
+              <a href="<?= base_url('employer/interviews') ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Interview: <?= esc(ucfirst($latestInterview->status)) ?> — <?= esc(date('d M, g:i A', strtotime((string) $latestInterview->scheduled_at))) ?></a>
+              <a href="<?= base_url('employer/interviews/create/' . $application->id) ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Schedule Another Interview</a>
+            <?php else: ?>
+              <a href="<?= base_url('employer/interviews/create/' . $application->id) ?>" class="emp-btn emp-btn-primary emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-calendar"/></svg> Schedule Interview</a>
+            <?php endif; ?>
+          <?php endif; ?>
         </div>
       </div>
     </section>

@@ -4178,6 +4178,13 @@ class EmployerController extends BaseController
             ->orderBy('created_at', 'DESC')
             ->first();
 
+        // Latest interview for this application (drives the Schedule Interview action)
+        $latestInterview = model(\App\Models\InterviewModel::class)
+            ->where('application_id', $application->id)
+            ->where('employer_id', $employer->id)
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
         // Get pre-screening answers
         $answerModel = model(\App\Models\ApplicationAnswerModel::class);
         $answers = $answerModel->select('application_answers.*, job_questions.question_text as question, job_questions.question_type as type, job_questions.options')
@@ -4230,6 +4237,7 @@ class EmployerController extends BaseController
             'creditBalance' => $creditBalance,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
             'offerLetter' => $offerLetter,
+            'latestInterview' => $latestInterview,
         ]);
     }
 
@@ -4571,6 +4579,269 @@ class EmployerController extends BaseController
         $cleanName = url_title($offer->candidate_name ?: 'Candidate') ?: 'Candidate';
         return $this->response->download($pdfPath, null)
             ->setFileName('Offer-Letter-' . $cleanName . '.pdf');
+    }
+
+    /**
+     * Interview Scheduling — create form for one application.
+     * Multiple interviews per application are allowed (a reschedule is a
+     * new row), so there is no existing-interview guard here.
+     */
+    public function createInterview($applicationId)
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $applicationModel = model(JobApplicationModel::class);
+        $application = $applicationModel
+            ->select('job_applications.*, jobs.title as job_title')
+            ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
+            ->where('job_applications.id', $applicationId)
+            ->first();
+
+        if (!$application) {
+            return redirect()->to('employer/applications')->with('error', 'Application not found');
+        }
+
+        $jobModel = model(JobModel::class);
+        $job = $jobModel->find($application->job_id);
+
+        if (!$job || $job->employer_id != $employer->id) {
+            return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
+        }
+
+        // Candidate name/email: the application row carries them for both
+        // registered and guest applicants; fall back to the seeker profile.
+        $candidateName = trim(($application->first_name ?? '') . ' ' . ($application->last_name ?? ''));
+        $candidateEmail = $application->email ?? null;
+        if (!empty($application->job_seeker_id)) {
+            $jobSeeker = model(JobSeekerModel::class)->find($application->job_seeker_id);
+            if ($jobSeeker) {
+                if (empty($candidateName) && !empty($jobSeeker->full_name)) {
+                    $candidateName = $jobSeeker->full_name;
+                }
+                if (empty($candidateEmail) && !empty($jobSeeker->email)) {
+                    $candidateEmail = $jobSeeker->email;
+                }
+            }
+        }
+
+        $prefill = [
+            'candidate_name'   => $candidateName,
+            'candidate_email'  => $candidateEmail,
+            'job_title'        => $job->title,
+            'scheduled_at'     => '',
+            'duration_minutes' => 60,
+            'mode'             => 'in_person',
+            'location'         => '',
+            'notes'            => '',
+        ];
+
+        return view('employers/interview_form', [
+            'title'       => 'Schedule Interview',
+            'user'        => $user,
+            'employer'    => $employer,
+            'application' => $application,
+            'job'         => $job,
+            'prefill'     => $prefill,
+        ]);
+    }
+
+    /**
+     * Interview Scheduling — create the interview and email the candidate
+     * the invitation (template key interview_invitation). There is no
+     * draft state: scheduling sends immediately. Scheduling also advances
+     * the application to the 'interview' pipeline stage — the same stage
+     * the aptitude dashboard's Schedule Interview button sets through
+     * advanceCandidateStage() — but only from an early stage, and without
+     * the generic status email (the invitation email supersedes it).
+     */
+    public function saveInterview()
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $applicationId = (int) $this->request->getPost('application_id');
+
+        $applicationModel = model(JobApplicationModel::class);
+        $application = $applicationModel->find($applicationId);
+        if (!$application) {
+            return redirect()->to('employer/applications')->with('error', 'Application not found');
+        }
+
+        $job = model(JobModel::class)->find($application->job_id);
+        if (!$job || $job->employer_id != $employer->id) {
+            return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
+        }
+
+        $scheduledRaw = trim((string) $this->request->getPost('scheduled_at'));
+        $scheduledTs = $scheduledRaw !== '' ? strtotime(str_replace('T', ' ', $scheduledRaw)) : false;
+
+        $duration = (int) $this->request->getPost('duration_minutes');
+        if ($duration < 5 || $duration > 480) {
+            $duration = 60;
+        }
+
+        $mode = trim((string) $this->request->getPost('mode'));
+        if (!in_array($mode, ['in_person', 'phone', 'video'], true)) {
+            $mode = 'in_person';
+        }
+
+        $data = [
+            'employer_id'      => $employer->id,
+            'job_id'           => $job->id,
+            'application_id'   => $application->id,
+            'candidate_name'   => trim((string) $this->request->getPost('candidate_name')),
+            'candidate_email'  => trim((string) $this->request->getPost('candidate_email')),
+            'job_title'        => trim((string) $this->request->getPost('job_title')),
+            'scheduled_at'     => $scheduledTs ? date('Y-m-d H:i:s', $scheduledTs) : null,
+            'duration_minutes' => $duration,
+            'mode'             => $mode,
+            'location'         => trim((string) $this->request->getPost('location')) ?: null,
+            'notes'            => trim((string) $this->request->getPost('notes')) ?: null,
+            'status'           => 'scheduled',
+        ];
+
+        if ($data['candidate_name'] === '' || $data['job_title'] === '' || $data['scheduled_at'] === null
+            || !filter_var($data['candidate_email'], FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->withInput()->with('error', 'Please provide the candidate name, a valid candidate email, the job title and the interview date and time.');
+        }
+
+        $interviewModel = model(\App\Models\InterviewModel::class);
+
+        do {
+            $token = bin2hex(random_bytes(32));
+        } while ($interviewModel->where('view_token', $token)->first() !== null);
+        $data['view_token'] = $token;
+
+        $interviewModel->insert($data);
+        $interview = $interviewModel->find($interviewModel->getInsertID());
+
+        // Advance the pipeline stage exactly as advanceCandidateStage()
+        // does for its 'interview' stage (status + reviewed_at + a
+        // feedback note), but only from an early stage — an application
+        // already at interview/hired keeps its stage. The generic status
+        // email is deliberately NOT sent: the invitation below carries
+        // the full details.
+        if (in_array($application->status, ['pending', 'reviewed', 'shortlisted'], true)) {
+            $applicationModel->update($application->id, [
+                'status'      => 'interview',
+                'reviewed_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $noteText = 'Recruiter updated stage to: Advanced to Interview Stage - Note: Interview scheduled for '
+                . date('l, d F Y', $scheduledTs) . ' at ' . date('g:i A', $scheduledTs);
+            model(\App\Models\ApplicationNoteModel::class)->addNote((int) $application->id, (int) $employer->id, $noteText, (int) $user->id, 'feedback');
+        }
+
+        $modeLabels = ['in_person' => 'In Person', 'phone' => 'Phone Call', 'video' => 'Video Call'];
+        $durationText = $duration >= 60 && $duration % 60 === 0
+            ? ($duration / 60) . ' hour' . ($duration === 60 ? '' : 's')
+            : $duration . ' minutes';
+
+        $firstName = explode(' ', $interview->candidate_name)[0] ?? $interview->candidate_name;
+        (new \App\Services\EmailTemplateService())->send(
+            'interview_invitation',
+            $interview->candidate_email,
+            [
+                'user_name'          => $interview->candidate_name,
+                'name'               => $interview->candidate_name,
+                'first_name'         => $firstName,
+                'full_name'          => $interview->candidate_name,
+                'candidate_name'     => $interview->candidate_name,
+                'job_title'          => $interview->job_title,
+                'company_name'       => $employer->company_name,
+                'companyName'        => $employer->company_name,
+                'interview_date'     => date('l, d F Y', $scheduledTs),
+                'interview_time'     => date('g:i A', $scheduledTs),
+                'interview_duration' => $durationText,
+                'interview_mode'     => $modeLabels[$mode] ?? 'In Person',
+                'interviewUrl'       => base_url('interview/view/' . $token),
+            ]
+        );
+
+        return redirect()->to('employer/interviews')->with('success', 'Interview scheduled and invitation sent to ' . $interview->candidate_email . '.');
+    }
+
+    /**
+     * Interview Scheduling — the employer's interviews, upcoming first,
+     * with each candidate's response.
+     */
+    public function interviews()
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $interviewModel = model(\App\Models\InterviewModel::class);
+        $now = date('Y-m-d H:i:s');
+
+        $upcoming = $interviewModel
+            ->where('employer_id', $employer->id)
+            ->where('scheduled_at >=', $now)
+            ->orderBy('scheduled_at', 'ASC')
+            ->findAll();
+
+        $past = $interviewModel
+            ->where('employer_id', $employer->id)
+            ->where('scheduled_at <', $now)
+            ->orderBy('scheduled_at', 'DESC')
+            ->findAll();
+
+        return view('employers/interviews', [
+            'title'    => 'Interviews',
+            'user'     => $user,
+            'employer' => $employer,
+            'upcoming' => $upcoming,
+            'past'     => $past,
+        ]);
+    }
+
+    /**
+     * Interview Scheduling — cancel an interview from the dashboard.
+     * Dashboard-only in this version: no cancellation email is sent; the
+     * candidate's invitation page shows the interview as cancelled.
+     */
+    public function cancelInterview($id)
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $interviewModel = model(\App\Models\InterviewModel::class);
+        $interview = $interviewModel
+            ->where('id', $id)
+            ->where('employer_id', $employer->id)
+            ->first();
+
+        if (!$interview) {
+            return redirect()->to('employer/interviews')->with('error', 'Interview not found.');
+        }
+
+        if (!in_array($interview->status, ['scheduled', 'confirmed'], true)) {
+            return redirect()->to('employer/interviews')->with('error', 'Only a scheduled or confirmed interview can be cancelled.');
+        }
+
+        $interviewModel->update($interview->id, ['status' => 'cancelled']);
+
+        return redirect()->to('employer/interviews')->with('success', 'Interview with ' . $interview->candidate_name . ' cancelled.');
     }
 
 

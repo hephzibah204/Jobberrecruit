@@ -1187,6 +1187,37 @@ class EmailTemplateService
                     '{site_name}'      => 'Website name (JobberRecruit)',
                 ],
             ],
+            'interview_invitation' => [
+                'name'     => 'Interview Invitation',
+                'category' => 'Recruitment',
+                'subject'  => 'Interview Invitation: {job_title} at {company_name}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Interview Invitation',
+                    'You Are Invited to an Interview',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p><strong>{company_name}</strong> would like to invite you to an interview for the position of <strong>{job_title}</strong>.</p>
+                    <p><strong>Date:</strong> {interview_date}<br><strong>Time:</strong> {interview_time}<br><strong>Duration:</strong> {interview_duration}<br><strong>Mode:</strong> {interview_mode}</p>
+                    <p>Please open your invitation page to see the venue or meeting link and any note from the employer, and to confirm your attendance or decline.</p>
+                    <p style="color: #64748B; font-size: 13px; margin-top: 25px;">If the button does not work, copy and paste this link into your browser:<br><a href="{interviewUrl}" style="color: #0D609E; word-break: break-all;">{interviewUrl}</a></p>',
+                    'View & Respond to Invitation',
+                    '{interviewUrl}'
+                ),
+                'body_text' => "{greeting}\n\n{company_name} would like to invite you to an interview for the position of {job_title}.\n\nDate: {interview_date}\nTime: {interview_time}\nDuration: {interview_duration}\nMode: {interview_mode}\n\nPlease see the venue or meeting link and confirm your attendance here: {interviewUrl}\n\nBest regards,\n{company_name}",
+                'available_variables' => [
+                    '{first_name}'         => 'Candidate\'s first name',
+                    '{full_name}'          => 'Candidate\'s full name',
+                    '{candidate_name}'     => 'Candidate\'s full name',
+                    '{job_title}'          => 'Interview job title',
+                    '{company_name}'       => 'Employer company name',
+                    '{interview_date}'     => 'Interview date (e.g. Monday, 05 January 2027)',
+                    '{interview_time}'     => 'Interview time (e.g. 10:00 AM)',
+                    '{interview_duration}' => 'Interview duration (e.g. 1 hour)',
+                    '{interview_mode}'     => 'Interview mode (In Person, Phone Call or Video Call)',
+                    '{interviewUrl}'       => 'Secure interview view & response URL',
+                    '{site_name}'          => 'Website name (JobberRecruit)',
+                ],
+            ],
 
             // ==========================================
             // 4. LEARNING & WEBINARS

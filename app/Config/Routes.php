@@ -93,6 +93,9 @@ $routes->get('certificates/verify', 'ElearningController::verifyCertificateForm'
 // Public offer-letter page (token is the credential; candidates may be guests)
 $routes->get('offer/view/(:segment)', 'OfferController::view/$1');
 $routes->post('offer/respond/(:segment)', 'OfferController::respond/$1');
+// Public interview page (token is the credential; candidates may be guests)
+$routes->get('interview/view/(:segment)', 'InterviewController::view/$1');
+$routes->post('interview/respond/(:segment)', 'InterviewController::respond/$1');
 $routes->get('aptitude', 'AptitudeController::index', ['filter' => 'auth']);
 $routes->get('aptitude/daily', 'AptitudeController::daily', ['filter' => 'auth']);
 $routes->get('aptitude/test/(:num)', 'AptitudeController::testEngine/$1', ['filter' => 'auth']);
@@ -271,6 +274,12 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->get('offers/create/(:num)', 'EmployerController::createOffer/$1');
     $routes->post('offers/save', 'EmployerController::saveOffer');
     $routes->get('offers/pdf/(:num)', 'EmployerController::offerPdf/$1');
+
+    // Interview Scheduling
+    $routes->get('interviews', 'EmployerController::interviews');
+    $routes->get('interviews/create/(:num)', 'EmployerController::createInterview/$1');
+    $routes->post('interviews/save', 'EmployerController::saveInterview');
+    $routes->post('interviews/cancel/(:num)', 'EmployerController::cancelInterview/$1');
     $routes->get('tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests/list', 'EmployerController::getAvailableAptitudeTests');
