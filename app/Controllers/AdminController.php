@@ -2798,9 +2798,6 @@ class AdminController extends BaseController
             log_message('error', 'Error sending job rejection email: ' . $ex->getMessage());
         }
 
-            ]
-        );
-
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Job rejected successfully',

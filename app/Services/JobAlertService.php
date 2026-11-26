@@ -213,21 +213,27 @@ class JobAlertService
         foreach ($candidates as $candidate) {
             if (empty($candidate->email)) continue;
 
-            $mailData = [
+            // Rendered from the admin email template system (template key:
+            // weekly_premium_digest); the job cards are passed in as a
+            // pre-built {jobs_html} fragment (the template parser has no loops).
+            $rendered = (new EmailTemplateService())->render('weekly_premium_digest', [
                 'candidate_name' => $candidate->full_name ?? 'Candidate',
-                'jobs'           => $jobs,
                 'week_label'     => $weekLabel,
-                'logoUrl'        => base_url('assets/imgs/template/logo-white.png'),
-            ];
+                'job_count'      => count($jobs),
+                'jobs_html'      => $this->buildDigestJobsHtml($jobs),
+            ]);
 
             try {
                 $email = \Config\Services::email();
                 $email->clear();
                 $email->setTo($candidate->email);
-                $email->setSubject("⭐ Weekly Premium Job Digest — " . count($jobs) . " New Handpicked Opportunities ({$weekLabel})");
-                $email->setMessage(view('emails/weekly_premium_digest', $mailData));
+                $email->setSubject($rendered['subject']);
+                $email->setMessage($rendered['html']);
+                if (!empty($rendered['text'])) {
+                    $email->setAltMessage($rendered['text']);
+                }
                 $email->setMailType('html');
-                
+
                 if ($email->send()) {
                     $sent++;
                 } else {
@@ -348,17 +354,145 @@ class JobAlertService
             return;
         }
 
+        $rendered = $this->renderJobAlertEmail($candidate, $alert, $jobs);
+
         $email = \Config\Services::email();
         $email->clear();
         $email->setTo($candidate->email);
-        $alertTerm = !empty($alert->keyword) ? "\"{$alert->keyword}\"" : 'Your Saved Criteria';
-        $email->setSubject("🔔 New Job Match: {$alertTerm} — JobberRecruit");
-        $email->setMessage(view('emails/job_alert', [
-            'candidate' => $candidate,
-            'jobs'      => $jobs,
-            'alert'     => $alert,
-        ]));
+        $email->setSubject($rendered['subject']);
+        $email->setMessage($rendered['html']);
+        if (!empty($rendered['text'])) {
+            $email->setAltMessage($rendered['text']);
+        }
         $email->setMailType('html');
         $email->send();
+    }
+
+    /**
+     * Render the job-alert email from the admin email template system
+     * (template key: job_alert). Public so the legacy alerts:send console
+     * command renders through exactly the same path.
+     *
+     * @return array{subject: string, html: string, text: string}
+     */
+    public function renderJobAlertEmail($candidate, $alert, array $jobs): array
+    {
+        return (new EmailTemplateService())->render('job_alert', [
+            'candidate_name'      => $candidate->full_name ?? 'Candidate',
+            'alert_term'          => !empty($alert->keyword) ? '"' . $alert->keyword . '"' : 'Your Saved Criteria',
+            'alert_criteria_html' => !empty($alert->keyword) ? ' criteria (<strong>' . esc($alert->keyword) . '</strong>)' : '',
+            'jobs_html'           => $this->buildJobAlertJobsHtml($jobs, $alert),
+            'tracking_pixel_html' => !empty($alert->id)
+                ? '<img src="' . base_url('track/open/' . $alert->id) . '" width="1" height="1" style="display: none;" alt="">'
+                : '',
+        ]);
+    }
+
+    /**
+     * Build the per-job card list for the job_alert template ({jobs_html}).
+     * Mirrors the markup the retired emails/job_alert view produced,
+     * including the tracked click URLs and the urgent/featured pills.
+     */
+    private function buildJobAlertJobsHtml(array $jobs, $alert): string
+    {
+        $html = '';
+
+        foreach ($jobs as $job) {
+            $isFeatured = !empty($job->is_featured);
+            $isUrgent   = !empty($job->is_urgent);
+            $jobUrl     = !empty($alert->id)
+                ? base_url('track/click/' . $alert->id . '/' . $job->id)
+                : base_url('jobs/' . ($job->slug ?? $job->id));
+
+            $pill = '';
+            if ($isUrgent) {
+                $pill = '<span style="float: right; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; background: #FEE2E2; color: #DC2626;">⚡ Urgent</span>';
+            } elseif ($isFeatured) {
+                $pill = '<span style="float: right; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; background: #FDF1E0; color: #C8770E;">★ Featured</span>';
+            }
+
+            $company = !empty($job->is_anonymous)
+                ? 'Confidential Employer'
+                : esc($job->company_name ?? 'Verified Employer');
+
+            $meta = '';
+            if (!empty($job->state_name) || !empty($job->location)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 4px 9px; border-radius: 5px; display: inline-block; margin: 0 8px 8px 0;">📍 ' . esc($job->state_name ?? $job->location) . '</span>';
+            }
+            if (!empty($job->job_type)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 4px 9px; border-radius: 5px; display: inline-block; margin: 0 8px 8px 0;">💼 ' . esc(ucwords(str_replace('_', ' ', $job->job_type))) . '</span>';
+            }
+            if (!empty($job->salary_details) && $job->salary_details !== 'Negotiable') {
+                $meta .= '<span style="background: #F1F5F9; padding: 4px 9px; border-radius: 5px; display: inline-block; margin: 0 8px 8px 0;">₦ ' . esc($job->salary_details) . '</span>';
+            } elseif (!empty($job->salary_min) || !empty($job->salary_max)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 4px 9px; border-radius: 5px; display: inline-block; margin: 0 8px 8px 0;">₦ ' . number_format($job->salary_min ?? 0) . ' - ' . number_format($job->salary_max ?? 0) . '</span>';
+            } elseif (!empty($job->salary)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 4px 9px; border-radius: 5px; display: inline-block; margin: 0 8px 8px 0;">₦ ' . esc($job->salary) . '</span>';
+            }
+
+            $cardStyle = 'background: ' . ($isFeatured ? '#FFFCF8' : '#FFFFFF')
+                . '; border: 1px solid #E2E8F0; border-left: 4px solid ' . ($isFeatured ? '#ED9020' : '#0861A9')
+                . '; border-radius: 10px; padding: 20px; margin-bottom: 18px;';
+
+            $html .= '
+                <div style="' . $cardStyle . '">
+                    ' . $pill . '
+                    <h3 style="margin: 0 0 6px 0; font-size: 17px; font-weight: 700; color: #0A2F57;">' . esc($job->title) . '</h3>
+                    <div style="font-size: 14px; font-weight: 600; color: #0861A9; margin-bottom: 10px;">' . $company . '</div>
+                    <div style="font-size: 12px; color: #64748B; margin-bottom: 16px;">' . $meta . '</div>
+                    <a href="' . esc($jobUrl) . '" style="display: inline-block; background: #0861A9; color: #FFFFFF; padding: 10px 20px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px;">View Vacancy &amp; Apply →</a>
+                </div>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * Build the per-job card list for the weekly_premium_digest template
+     * ({jobs_html}). Mirrors the markup the retired
+     * emails/weekly_premium_digest view produced (direct job links, no
+     * click tracking; gold left border on every card).
+     */
+    private function buildDigestJobsHtml(array $jobs): string
+    {
+        $html = '';
+
+        foreach ($jobs as $job) {
+            $pill = '';
+            if (!empty($job->is_featured) || !empty($job->is_urgent)) {
+                $pill = '<span style="float: right; background: #FDF1E0; color: #C8770E; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">'
+                    . (!empty($job->is_urgent) ? '⚡ Urgent' : '★ Featured') . '</span>';
+            }
+
+            $company = !empty($job->is_anonymous)
+                ? 'Confidential Employer'
+                : esc($job->company_name ?? ($job->employer_name ?? 'Verified Employer'));
+
+            $meta = '';
+            if (!empty($job->location) || !empty($job->state_name)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 3px 8px; border-radius: 4px; display: inline-block; margin: 0 12px 8px 0;">📍 ' . esc($job->state_name ?? $job->location) . '</span>';
+            }
+            if (!empty($job->job_type) || !empty($job->employment_type)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 3px 8px; border-radius: 4px; display: inline-block; margin: 0 12px 8px 0;">💼 ' . esc(ucwords(str_replace('_', ' ', $job->job_type ?? $job->employment_type))) . '</span>';
+            }
+            if (!empty($job->salary_details) && $job->salary_details !== 'Negotiable') {
+                $meta .= '<span style="background: #F1F5F9; padding: 3px 8px; border-radius: 4px; display: inline-block; margin: 0 12px 8px 0;">₦ ' . esc($job->salary_details) . '</span>';
+            } elseif (!empty($job->salary_min) || !empty($job->salary_max)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 3px 8px; border-radius: 4px; display: inline-block; margin: 0 12px 8px 0;">₦ ' . number_format($job->salary_min ?? 0) . ' - ' . number_format($job->salary_max ?? 0) . '</span>';
+            } elseif (!empty($job->salary)) {
+                $meta .= '<span style="background: #F1F5F9; padding: 3px 8px; border-radius: 4px; display: inline-block; margin: 0 12px 8px 0;">₦ ' . esc($job->salary) . '</span>';
+            }
+
+            $html .= '
+                <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-left: 4px solid #ED9020; border-radius: 10px; padding: 20px; margin-bottom: 18px;">
+                    ' . $pill . '
+                    <h3 style="margin: 0 0 6px 0; font-size: 17px; font-weight: 700; color: #0A2F57;">' . esc($job->title) . '</h3>
+                    <div style="font-size: 14px; font-weight: 600; color: #0861A9; margin-bottom: 8px;">' . $company . '</div>
+                    <div style="font-size: 12px; color: #64748B; margin-bottom: 14px;">' . $meta . '</div>
+                    <a href="' . esc(base_url('jobs/' . ($job->slug ?? $job->id))) . '" style="display: inline-block; background: #0861A9; color: #FFFFFF; padding: 9px 18px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px;">View Vacancy &amp; Apply →</a>
+                </div>';
+        }
+
+        return $html;
     }
 }

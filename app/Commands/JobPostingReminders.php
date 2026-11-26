@@ -8,7 +8,7 @@ use App\Models\JobModel;
 use App\Models\EmployerModel;
 use App\Models\UserModel;
 use App\Models\JobNotificationModel;
-use App\Services\Mailer;
+use App\Services\EmailTemplateService;
 
 class JobPostingReminders extends BaseCommand
 {
@@ -24,7 +24,6 @@ class JobPostingReminders extends BaseCommand
         $employerModel = new EmployerModel();
         $userModel     = new UserModel();
         $jobNotifModel = new JobNotificationModel();
-        $mailer        = new Mailer();
 
         $now           = time();
         $threeDaysTime = date('Y-m-d H:i:s', $now + (3 * 86400));
@@ -69,18 +68,17 @@ class JobPostingReminders extends BaseCommand
             );
 
             // 2. Email Notification
+            // Rendered from the admin email template system (template key:
+            // job_expiring_soon) — this previously mis-reused the candidate
+            // job_alert view, which ignored the employer data entirely.
             try {
-                $mailer->sendTemplate(
-                    $user->email,
-                    $title,
-                    'emails/job_alert',
-                    [
-                        'userName'    => $employer->company_name ?? $user->username,
-                        'jobTitle'    => $jobObj->title,
-                        'message'     => $message,
-                        'companyName' => 'Jobber Recruit'
-                    ]
-                );
+                (new EmailTemplateService())->send('job_expiring_soon', $user->email, [
+                    'name'            => $employer->company_name ?? $user->username,
+                    'company_name'    => $employer->company_name ?? $user->username,
+                    'job_title'       => $jobObj->title,
+                    'days_remaining'  => $daysLeft,
+                    'expiration_date' => date('M j, Y', strtotime($jobObj->deadline)),
+                ]);
             } catch (\Throwable $e) {
                 log_message('error', 'Job expiring email error: ' . $e->getMessage());
             }

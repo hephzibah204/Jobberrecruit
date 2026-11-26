@@ -6394,23 +6394,47 @@ class EmployerController extends BaseController
 
         $emailService->setTo($data['email']);
         $emailService->setFrom(config('Email')->fromEmail, config('Email')->fromName);
-        $emailService->setSubject('Your JobberRecruit Subscription Invoice - ' . $data['reference']);
 
-        $viewData = [
-            'fullname'    => $data['employer']->company_name ?? $data['user']->username ?? 'Employer',
-            'planName'    => $data['plan']->name,
-            'amount'      => number_format($data['amountPaid'], 2),
-            'reference'   => $data['reference'],
-            'paidAt'      => date('F j, Y \a\t g:i A', strtotime($data['paidAt'])),
-            'channel'     => ucfirst($data['channel']),
-            'companyAddress' => '6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria',
-            'supportEmail'   => 'support@jobberrecruit.com',
-            'logoUrl'        => base_url('images/logo-white.png'),
-        ];
+        // Rendered from the admin email template system (template key:
+        // subscription_invoice) — the same template InvoiceService and the
+        // Paystack webhook use, so this email has a single source of truth.
+        $employer = $data['employer'] ?? null;
+        $amount   = number_format($data['amountPaid'], 2);
+        $escape   = static fn ($value) => htmlspecialchars((string) $value);
 
-        $message = view('emails/subscription_invoice', $viewData);
+        $rendered = (new \App\Services\EmailTemplateService())->render('subscription_invoice', [
+            'invoice_number'    => $data['reference'],
+            'date'              => date('F d, Y', strtotime($data['paidAt'])),
+            'due_date'          => date('F d, Y', strtotime($data['paidAt'] . ' +7 days')),
+            'company_name'      => $escape($employer->company_name ?? $data['user']->username ?? 'Employer'),
+            'company_email'     => $escape($data['email']),
+            'company_phone'     => $escape($employer->contact_phone ?? ''),
+            'company_address'   => $escape($employer->company_address ?? ''),
+            'item_name'         => $escape($data['plan']->name . ' Subscription'),
+            'item_description'  => 'Monthly subscription',
+            'quantity'          => 1,
+            'unit_price'        => $amount,
+            'subtotal'          => $amount,
+            'tax'               => '0.00',
+            'total'             => $amount,
+            'payment_method'    => ucfirst($data['channel']),
+            'payment_reference' => $data['reference'],
+            'payment_date'      => date('F d, Y H:i', strtotime($data['paidAt'])),
+            'proration_row_html'   => '',
+            'proration_total_html' => '',
+            'extra_section_html'   => '
+                    <div style="background: #D4EDDA; color: #155724; padding: 12px 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28A745;">
+                        <strong>✓ Payment Successful</strong><br>
+                        Your payment has been successfully processed and your subscription is now active.
+                    </div>
+                    <p>Your subscription will automatically renew monthly. You can manage or cancel it anytime from your employer dashboard.</p>',
+        ]);
 
-        $emailService->setMessage($message);
+        $emailService->setSubject($rendered['subject']);
+        $emailService->setMessage($rendered['html']);
+        if (!empty($rendered['text'])) {
+            $emailService->setAltMessage($rendered['text']);
+        }
         $emailService->setMailType('html');
 
         // Optional: log if email failed
@@ -6862,20 +6886,20 @@ class EmployerController extends BaseController
 
         $emailService->setTo($data['user']->email);
         $emailService->setFrom(config('Email')->fromEmail, config('Email')->fromName);
-        $emailService->setSubject('Your Subscription Has Been Reactivated!');
 
-        $viewData = [
-            'fullname'       => $data['employer']->company_name ?? $data['user']->username ?? 'Employer',
-            'planName'       => $data['plan']->name ?? 'Your Plan',
+        // Rendered from the admin email template system (template key:
+        // subscription_reactivated) instead of the hardcoded view.
+        $rendered = (new \App\Services\EmailTemplateService())->render('subscription_reactivated', [
+            'fullname'        => $data['employer']->company_name ?? $data['user']->username ?? 'Employer',
+            'planName'        => $data['plan']->name ?? 'Your Plan',
             'nextBillingDate' => date('F j, Y', strtotime($data['endDate'])),
-            'companyAddress' => '6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria',
-            'supportEmail'   => 'support@jobberrecruit.com',
-            'logoUrl'        => base_url('images/logo-white.png'),
-        ];
+        ]);
 
-        $message = view('emails/subscription_reactivated', $viewData);
-
-        $emailService->setMessage($message);
+        $emailService->setSubject($rendered['subject']);
+        $emailService->setMessage($rendered['html']);
+        if (!empty($rendered['text'])) {
+            $emailService->setAltMessage($rendered['text']);
+        }
         $emailService->setMailType('html');
 
         if (! $emailService->send()) {

@@ -71,10 +71,9 @@ class InvoiceService
             'valid_until' => date('F d, Y', strtotime($subscription->ends_at))
         ];
 
-        $subject = "Invoice for {$plan->name} Subscription - " . $invoiceData['invoice_number'];
-        $htmlContent = $this->generateInvoiceHTML($invoiceData, 'subscription');
+        $rendered = $this->renderInvoice($invoiceData, 'subscription');
 
-        $sent = $this->sendEmail($recipient, $subject, $htmlContent);
+        $sent = $this->sendEmail($recipient, $rendered['subject'], $rendered['html'], $rendered['text']);
         (new EmailNotificationService())->sendAdministrativeEvent(
             'Employer subscription payment received',
             $employer->company_name . ' paid for ' . $plan->name . '.',
@@ -116,10 +115,9 @@ class InvoiceService
             'credits' => $credits
         ];
 
-        $subject = "Invoice for {$bundle->name} - " . $invoiceData['invoice_number'];
-        $htmlContent = $this->generateInvoiceHTML($invoiceData, 'bundle');
+        $rendered = $this->renderInvoice($invoiceData, 'bundle');
 
-        $sent = $this->sendEmail($recipient, $subject, $htmlContent);
+        $sent = $this->sendEmail($recipient, $rendered['subject'], $rendered['html'], $rendered['text']);
         (new EmailNotificationService())->sendAdministrativeEvent(
             'Employer bundle payment received',
             $employer->company_name . ' purchased ' . $bundle->name . '.',
@@ -129,246 +127,66 @@ class InvoiceService
     }
 
     /**
-     * Generate beautiful invoice HTML
+     * Render the invoice email from the admin email template system
+     * (template key: subscription_invoice).
+     *
+     * The flat {variable} template parser has no conditionals or loops, so the
+     * few branching fragments of the old inline builder (proration row, totals
+     * discount line, plan-features block / bundle credits banner) are built
+     * here and passed in as fragment variables. The senders always receive the
+     * rendered subject, HTML and text bodies from the template.
      */
-    private function generateInvoiceHTML($data, $type)
+    private function renderInvoice($data, $type): array
     {
-        $logoPath = base_url('images/logo.png');
-
-        $html = '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Invoice ' . $data['invoice_number'] . '</title>
-            <style>
-                body {
-                    font-family: "Segoe UI", Arial, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    background: #f5f5f5;
-                    margin: 0;
-                    padding: 20px;
-                }
-                .invoice-container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-                }
-                .invoice-header {
-                    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-                    color: white;
-                    padding: 30px;
-                    text-align: center;
-                }
-                .invoice-header h1 {
-                    margin: 0;
-                    font-size: 32px;
-                }
-                .invoice-header p {
-                    margin: 5px 0 0;
-                    opacity: 0.9;
-                }
-                .invoice-body {
-                    padding: 30px;
-                }
-                .company-details {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 30px;
-                    padding-bottom: 20px;
-                    border-bottom: 2px solid #e9ecef;
-                }
-                .bill-to {
-                    margin-bottom: 30px;
-                }
-                .bill-to strong {
-                    color: #555;
-                    font-size: 13px;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                }
-                .bill-to p {
-                    margin: 5px 0;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 20px 0;
-                }
-                th {
-                    background: #f8f9fa;
-                    padding: 12px;
-                    text-align: left;
-                    border-bottom: 2px solid #dee2e6;
-                }
-                td {
-                    padding: 12px;
-                    border-bottom: 1px solid #eee;
-                }
-                .total-section {
-                    text-align: right;
-                    padding: 20px;
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                    margin-top: 20px;
-                }
-                .total-amount {
-                    font-size: 28px;
-                    font-weight: bold;
-                    color: #0d6efd;
-                }
-                .features-list {
-                    margin: 20px 0;
-                    padding: 0;
-                    list-style: none;
-                }
-                .features-list li {
-                    padding: 5px 0;
-                }
-                .features-list li:before {
-                    content: "✓";
-                    color: #28a745;
-                    font-weight: bold;
-                    margin-right: 10px;
-                }
-                .footer {
-                    background: #f8f9fa;
-                    padding: 20px;
-                    text-align: center;
-                    font-size: 12px;
-                    color: #666;
-                    border-top: 1px solid #e9ecef;
-                }
-                .badge {
-                    display: inline-block;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    font-weight: 600;
-                }
-                .badge-success {
-                    background: #d4edda;
-                    color: #155724;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="invoice-container">
-                <div class="invoice-header">
-                    <img src="' . $logoPath . '" alt="Logo" style="height: 50px; margin-bottom: 10px;">
-                    <h1>INVOICE</h1>
-                    <p>' . $data['invoice_number'] . '</p>
-                </div>
-                
-                <div class="invoice-body">
-                    <div class="company-details">
-                        <div>
-                            <strong style="color: #555;">FROM</strong>
-                            <h3 style="margin: 5px 0;">Jobber Recruit</h3>
-                            <p>Lagos, Nigeria</p>
-                            <p>support@jobberrecruit.com</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <strong style="color: #555;">INVOICE DATE</strong>
-                            <p>' . $data['date'] . '</p>
-                            <strong style="color: #555;">DUE DATE</strong>
-                            <p>' . $data['due_date'] . '</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bill-to">
-                        <strong>BILL TO</strong>
-                        <p><strong>' . htmlspecialchars($data['company_name']) . '</strong></p>
-                        <p>' . htmlspecialchars($data['company_email']) . '</p>
-                        <p>' . htmlspecialchars($data['company_phone']) . '</p>
-                        <p>' . htmlspecialchars($data['company_address']) . '</p>
-                    </div>
-                                        <table>
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Description</th>
-                                <th>Qty</th>
-                                <th>Unit Price</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>' . htmlspecialchars($data['item_name']) . '</strong></td>
-                                <td>' . htmlspecialchars($data['item_description']) . '</td>
-                                <td>' . $data['quantity'] . '</td>
-                                <td>₦' . $data['unit_price'] . '</td>
-                                <td>₦' . $data['subtotal'] . '</td>
-                            </tr>';
-
+        $data['proration_row_html']   = '';
+        $data['proration_total_html'] = '';
         if (!empty($data['has_proration'])) {
-            $html .= '
-                            <tr style="background: #e8f4fd;">
-                                <td><strong style="color: #0861A9;">Upgrade Proration Credit</strong></td>
-                                <td style="color: #0861A9;">Credit from remaining ' . ($data['days_remaining_credited'] ?? 0) . ' days on active subscription</td>
-                                <td>1</td>
-                                <td style="color: #0861A9;">-₦' . $data['proration_discount'] . '</td>
-                                <td style="color: #0861A9; font-weight: bold;">-₦' . $data['proration_discount'] . '</td>
-                            </tr>';
+            $data['proration_row_html'] = '
+                    <tr style="background: #E8F4FD;">
+                        <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;"><strong style="color: #0861A9;">Upgrade Proration Credit</strong></td>
+                        <td style="padding: 12px; border-bottom: 1px solid #EEEEEE; color: #0861A9;">Credit from remaining ' . ($data['days_remaining_credited'] ?? 0) . ' days on active subscription</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;">1</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #EEEEEE; color: #0861A9;">-₦' . $data['proration_discount'] . '</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #EEEEEE; color: #0861A9; font-weight: bold;">-₦' . $data['proration_discount'] . '</td>
+                    </tr>';
+            $data['proration_total_html'] = '<div style="color: #0861A9;">Proration Discount: -₦' . $data['proration_discount'] . '</div>';
         }
 
-        $html .= '
-                        </tbody>
-                    </table>';
-
+        $data['extra_section_html'] = '';
         if ($type === 'subscription' && isset($data['plan_features'])) {
-            $html .= '
+            $featuresList = str_replace(
+                '<li>',
+                '<li style="padding: 5px 0;"><span style="color: #28A745; font-weight: bold; margin-right: 10px;">✓</span>',
+                $data['plan_features']
+            );
+            $data['extra_section_html'] = '
                     <div style="margin-top: 20px;">
                         <strong>Plan Features Included:</strong>
-                        <ul class="features-list">
-                            ' . $data['plan_features'] . '
+                        <ul style="margin: 20px 0; padding: 0; list-style: none;">
+                            ' . $featuresList . '
                         </ul>
                         <p><strong>Valid Until:</strong> ' . $data['valid_until'] . '</p>
                     </div>';
         } elseif ($type === 'bundle') {
-            $html .= '
-                    <div style="margin-top: 20px; background: #e7f3ff; padding: 15px; border-radius: 8px;">
+            $data['extra_section_html'] = '
+                    <div style="margin-top: 20px; background: #E7F3FF; padding: 15px; border-radius: 8px;">
                         <strong>🎉 ' . number_format($data['credits']) . ' Job Credits Added!</strong>
                         <p style="margin: 5px 0 0;">Use these credits to post jobs. 1 credit = 1 job posting.</p>
                     </div>';
         }
 
-        $html .= '
-                    <div class="total-section">
-                        <div>Subtotal: ₦' . $data['subtotal'] . '</div>';
-        if (!empty($data['has_proration'])) {
-            $html .= '
-                        <div style="color: #0861A9;">Proration Discount: -₦' . $data['proration_discount'] . '</div>';
+        // Escape the same free-text fields the previous inline builder escaped
+        // with htmlspecialchars(); EmailTemplateModel::parseVariables()
+        // substitutes data values verbatim (the rendered subject is
+        // html_entity_decode()d by EmailTemplateService::render(), so the
+        // subject line is unaffected).
+        foreach (['company_name', 'company_email', 'company_phone', 'company_address', 'item_name', 'item_description'] as $field) {
+            if (isset($data[$field])) {
+                $data[$field] = htmlspecialchars((string) $data[$field]);
+            }
         }
-        $html .= '
-                        <div>Tax (0%): ₦' . $data['tax'] . '</div>
-                        <div class="total-amount">Total Paid: ₦' . $data['total'] . '</div>
-                    </div>';
 
-        $html .= '
-                    <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
-                        <strong>Payment Details</strong><br>
-                        Method: ' . $data['payment_method'] . '<br>
-                        Reference: ' . $data['payment_reference'] . '<br>
-                        Date: ' . $data['payment_date'] . '
-                    </div>
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p>Thank you for choosing Jobber Recruit!</p>
-                    <p>For support, contact us at support@jobberrecruit.com</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-
-        return $html;
+        return (new EmailTemplateService())->render('subscription_invoice', $data);
     }
 
     /**
@@ -400,12 +218,15 @@ class InvoiceService
     /**
      * Send email
      */
-    private function sendEmail($to, $subject, $htmlContent)
+    private function sendEmail($to, $subject, $htmlContent, $textContent = null)
     {
         $this->email->clear();
         $this->email->setTo($to);
         $this->email->setSubject($subject);
         $this->email->setMessage($htmlContent);
+        if (!empty($textContent)) {
+            $this->email->setAltMessage($textContent);
+        }
         $this->email->setMailType('html');
 
         // Set from address

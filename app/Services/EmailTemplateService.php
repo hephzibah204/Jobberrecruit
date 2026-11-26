@@ -705,6 +705,237 @@ class EmailTemplateService
                 ],
             ],
 
+            'subscription_invoice' => [
+                'name'     => 'Subscription / Bundle Invoice',
+                'category' => 'Subscriptions & Invoices',
+                'subject'  => 'Invoice for {item_name} - {invoice_number}',
+                'greeting_type' => 'custom',
+                'body_html' => self::wrapHtml(
+                    'Payment Invoice',
+                    'Invoice {invoice_number}',
+                    '<table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <tr>
+                            <td style="vertical-align: top; padding-bottom: 20px; border-bottom: 2px solid #E9ECEF;">
+                                <strong style="color: #555555; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">From</strong>
+                                <h3 style="margin: 5px 0;">Jobber Recruit</h3>
+                                <p style="margin: 5px 0;">Lagos, Nigeria</p>
+                                <p style="margin: 5px 0;">support@jobberrecruit.com</p>
+                            </td>
+                            <td style="vertical-align: top; text-align: right; padding-bottom: 20px; border-bottom: 2px solid #E9ECEF;">
+                                <strong style="color: #555555; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Invoice Date</strong>
+                                <p style="margin: 5px 0;">{date}</p>
+                                <strong style="color: #555555; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Due Date</strong>
+                                <p style="margin: 5px 0;">{due_date}</p>
+                            </td>
+                        </tr>
+                    </table>
+                    <div style="margin-bottom: 30px;">
+                        <strong style="color: #555555; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Bill To</strong>
+                        <p style="margin: 5px 0;"><strong>{company_name}</strong></p>
+                        <p style="margin: 5px 0;">{company_email}</p>
+                        <p style="margin: 5px 0;">{company_phone}</p>
+                        <p style="margin: 5px 0;">{company_address}</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr>
+                                <th style="background: #F8F9FA; padding: 12px; text-align: left; border-bottom: 2px solid #DEE2E6;">Item</th>
+                                <th style="background: #F8F9FA; padding: 12px; text-align: left; border-bottom: 2px solid #DEE2E6;">Description</th>
+                                <th style="background: #F8F9FA; padding: 12px; text-align: left; border-bottom: 2px solid #DEE2E6;">Qty</th>
+                                <th style="background: #F8F9FA; padding: 12px; text-align: left; border-bottom: 2px solid #DEE2E6;">Unit Price</th>
+                                <th style="background: #F8F9FA; padding: 12px; text-align: left; border-bottom: 2px solid #DEE2E6;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;"><strong>{item_name}</strong></td>
+                                <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;">{item_description}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;">{quantity}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;">₦{unit_price}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #EEEEEE;">₦{subtotal}</td>
+                            </tr>{proration_row_html}
+                        </tbody>
+                    </table>
+                    {extra_section_html}
+                    <div style="text-align: right; padding: 20px; background: #F8F9FA; border-radius: 8px; margin-top: 20px;">
+                        <div>Subtotal: ₦{subtotal}</div>
+                        {proration_total_html}
+                        <div>Tax (0%): ₦{tax}</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #0D6EFD;">Total Paid: ₦{total}</div>
+                    </div>
+                    <div style="margin-top: 20px; padding: 15px; background: #E7F3FF; border-radius: 8px;">
+                        <strong>Payment Details</strong><br>
+                        Method: {payment_method}<br>
+                        Reference: {payment_reference}<br>
+                        Date: {payment_date}
+                    </div>
+                    <p style="margin-top: 20px;">Thank you for choosing Jobber Recruit!</p>',
+                    null,
+                    null
+                ),
+                'body_text' => "Invoice {invoice_number}\n\nFrom: Jobber Recruit, Lagos, Nigeria (support@jobberrecruit.com)\nInvoice Date: {date}\nDue Date: {due_date}\n\nBill To: {company_name} ({company_email})\n\nItem: {item_name}\nDescription: {item_description}\nQty: {quantity}\nUnit Price: ₦{unit_price}\nSubtotal: ₦{subtotal}\nTax (0%): ₦{tax}\nTotal Paid: ₦{total}\n\nPayment Details\nMethod: {payment_method}\nReference: {payment_reference}\nDate: {payment_date}\n\nThank you for choosing Jobber Recruit!",
+                'available_variables' => [
+                    '{invoice_number}'       => 'Invoice number (INV-YYYYMMDD-#####)',
+                    '{date}'                 => 'Invoice date',
+                    '{due_date}'             => 'Payment due date',
+                    '{company_name}'         => 'Billed company name',
+                    '{company_email}'        => 'Billed company email',
+                    '{company_phone}'        => 'Billed company phone',
+                    '{company_address}'      => 'Billed company address',
+                    '{item_name}'            => 'Purchased plan or bundle name',
+                    '{item_description}'     => 'Item description (duration / credits)',
+                    '{quantity}'             => 'Quantity (months for subscriptions, 1 for bundles)',
+                    '{unit_price}'           => 'Unit price (NGN, formatted)',
+                    '{subtotal}'             => 'Subtotal (NGN, formatted)',
+                    '{proration_discount}'   => 'Proration credit amount (NGN, formatted)',
+                    '{days_remaining_credited}' => 'Days credited from the previous subscription (proration)',
+                    '{tax}'                  => 'Tax amount (NGN, formatted)',
+                    '{total}'                => 'Total paid (NGN, formatted)',
+                    '{payment_method}'       => 'Payment method (e.g. Card, Bank Transfer)',
+                    '{payment_reference}'    => 'Payment gateway reference',
+                    '{payment_date}'         => 'Date & time payment was made',
+                    '{valid_until}'          => 'Subscription validity end date (used inside {extra_section_html})',
+                    '{credits}'              => 'Job credits purchased (bundles, used inside {extra_section_html})',
+                    '{proration_row_html}'   => 'Pre-built proration item row HTML (empty when no proration)',
+                    '{proration_total_html}' => 'Pre-built proration discount line for the totals box (empty when no proration)',
+                    '{extra_section_html}'   => 'Pre-built plan-features block (subscriptions) or credits banner (bundles)',
+                ],
+            ],
+
+            'subscription_cancellation_scheduled' => [
+                'name'     => 'Subscription Cancellation Scheduled',
+                'category' => 'Subscriptions & Invoices',
+                'subject'  => 'Subscription Cancellation Confirmed',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Subscription Cancellation Confirmed',
+                    'Cancellation Confirmed',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>We have received your request to cancel your {site_name} subscription.</p>
+                    <p><strong>Your access will remain active until the end of your current billing period on {endDate}.</strong><br>
+                    After this date, your subscription will not renew, and access to premium features will end.</p>
+                    <p>You can reactivate or change your plan anytime before {endDate} by visiting your billing dashboard.</p>
+                    <p>If this cancellation was made in error or you\'d like to discuss other options, please reply to this email or contact support.</p>
+                    <p>Thank you for using {site_name}.</p>',
+                    'Manage Billing',
+                    '{site_url}/employer/pricing'
+                ),
+                'body_text' => "{greeting}\n\nWe have received your request to cancel your {site_name} subscription.\n\nYour access will remain active until the end of your current billing period on {endDate}. After this date, your subscription will not renew, and access to premium features will end.\n\nYou can reactivate or change your plan anytime before {endDate} by visiting your billing dashboard: {site_url}/employer/pricing\n\nIf this cancellation was made in error or you'd like to discuss other options, please reply to this email or contact support.\n\nThank you for using {site_name}.",
+                'available_variables' => [
+                    '{first_name}' => 'Employer / contact first name',
+                    '{full_name}'  => 'Employer company name',
+                    '{endDate}'    => 'Date access ends (end of current billing period)',
+                ],
+            ],
+
+            'job_alert' => [
+                'name'     => 'Job Alert Matches',
+                'category' => 'Job Alerts',
+                'subject'  => '🔔 New Job Match: {alert_term} — {site_name}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'New Job Match',
+                    '🔔 Instant Job Alert',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>A new vacancy matching your saved alert{alert_criteria_html} was just posted on {site_name}.</p>
+                    {jobs_html}
+                    {tracking_pixel_html}
+                    <div style="text-align: center; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; padding: 20px; margin-top: 26px;">
+                        <p style="margin: 0; font-size: 13px; color: #64748B;">Looking for more career matches? Browse hundreds of active listings across Nigeria.</p>
+                    </div>
+                    <p style="font-size: 12px; color: #64748B; margin-top: 20px;">You are receiving this email because you created an active job alert on {site_name}.<br>
+                    You can pause, snooze, or customize your alerts anytime from your <a href="{site_url}/candidate/notifications">Job Alerts</a> or <a href="{site_url}/candidate/settings">Notification Preferences</a>.</p>',
+                    'Explore All Active Jobs →',
+                    '{site_url}/jobs'
+                ),
+                'body_text' => "{greeting}\n\nA new vacancy matching your saved alert was just posted on {site_name}.\n\nBrowse all active jobs: {site_url}/jobs\n\nYou are receiving this email because you created an active job alert on {site_name}. Manage your alerts: {site_url}/candidate/notifications",
+                'available_variables' => [
+                    '{first_name}'          => 'Candidate first name',
+                    '{candidate_name}'      => 'Candidate full name',
+                    '{alert_term}'          => 'Alert term used in the subject (quoted keyword or "Your Saved Criteria")',
+                    '{alert_criteria_html}' => 'Pre-built " criteria (<strong>keyword</strong>)" fragment (empty when the alert has no keyword)',
+                    '{jobs_html}'           => 'Pre-built job card list HTML (one card per matching job)',
+                    '{tracking_pixel_html}' => 'Pre-built 1x1 open-tracking pixel (empty when the alert has no ID)',
+                ],
+            ],
+
+            'weekly_premium_digest' => [
+                'name'     => 'Weekly Premium Job Digest',
+                'category' => 'Job Alerts',
+                'subject'  => '⭐ Weekly Premium Job Digest — {job_count} New Handpicked Opportunities ({week_label})',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Premium Jobs of the Week',
+                    '★ Curated Weekly Digest',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Here is your curated weekly digest of the latest premium and verified job openings on {site_name} for the week of <strong>{week_label}</strong>.</p>
+                    {jobs_html}
+                    <div style="text-align: center; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; padding: 24px 20px; margin-top: 28px;">
+                        <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #0A2F57;">Looking for more job matches?</h3>
+                        <p style="margin: 0; font-size: 13px; color: #64748B;">Explore hundreds of active job listings tailored to your skills and preferences.</p>
+                    </div>
+                    <p style="font-size: 12px; color: #64748B; margin-top: 20px;">You are receiving this email because you are a registered candidate on {site_name}.<br>
+                    To adjust your email preferences, visit your <a href="{site_url}/candidate/settings">Notification Settings</a> or <a href="{site_url}/candidate/job-alerts">Job Alerts</a>.</p>',
+                    'Explore All Available Jobs →',
+                    '{site_url}/jobs'
+                ),
+                'body_text' => "{greeting}\n\nHere is your curated weekly digest of the latest premium and verified job openings on {site_name} for the week of {week_label}.\n\nBrowse all active jobs: {site_url}/jobs\n\nAdjust your email preferences: {site_url}/candidate/settings",
+                'available_variables' => [
+                    '{first_name}'     => 'Candidate first name',
+                    '{candidate_name}' => 'Candidate full name',
+                    '{week_label}'     => 'Digest week label (e.g. "Nov 24 – Nov 28, 2026")',
+                    '{job_count}'      => 'Number of jobs included in the digest (used in the subject)',
+                    '{jobs_html}'      => 'Pre-built job card list HTML (one card per digest job)',
+                ],
+            ],
+
+            'job_expiring_soon' => [
+                'name'     => 'Job Expiring Soon Reminder',
+                'category' => 'Job Postings',
+                'subject'  => 'Job Expiring Soon: {job_title}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Job Expiring Soon',
+                    'Expiry Reminder',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Your job listing <strong>{job_title}</strong> will expire in <strong>{daysRemaining} day(s)</strong> on <strong>{expirationDate}</strong>.</p>
+                    <p>Renew or edit your listing to keep receiving applications.</p>',
+                    'Renew or Edit Listing',
+                    '{site_url}/employer/jobs'
+                ),
+                'body_text' => "{greeting}\n\nYour job listing {job_title} will expire in {daysRemaining} day(s) on {expirationDate}.\n\nRenew or edit your listing to keep receiving applications: {site_url}/employer/jobs",
+                'available_variables' => [
+                    '{first_name}'     => 'Employer / contact first name',
+                    '{company_name}'   => 'Employer company name',
+                    '{job_title}'      => 'Expiring job title',
+                    '{daysRemaining}'  => 'Whole days left before the listing expires',
+                    '{expirationDate}' => 'Listing expiry date',
+                ],
+            ],
+            'subscription_reactivated' => [
+                'name'     => 'Subscription Reactivated',
+                'category' => 'Billing & Subscriptions',
+                'subject'  => 'Your Subscription Has Been Reactivated!',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Subscription Reactivated',
+                    'Subscription Active',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Great news! Your <strong>{planName}</strong> subscription has been successfully reactivated.</p>
+                    <p>You will continue to enjoy full access to all premium features, and your next billing will occur on <strong>{nextBillingDate}</strong>.</p>
+                    <p>You can manage your subscription or cancel anytime from your billing dashboard.</p>
+                    <p>Thank you for choosing {site_name} — we\'re excited to help you grow your team!</p>',
+                    'Manage Billing',
+                    '{site_url}/employer/pricing'
+                ),
+                'body_text' => "{greeting}\n\nGreat news! Your {planName} subscription has been successfully reactivated. Your next billing will occur on {nextBillingDate}.\n\nManage billing: {site_url}/employer/pricing",
+                'available_variables' => [
+                    '{first_name}'       => 'Company / contact first name',
+                    '{planName}'         => 'Plan name',
+                    '{nextBillingDate}'  => 'Next billing date',
+                ],
+            ],
+
             'job_rejected' => [
                 'name'     => 'Job Posting Not Approved',
                 'category' => 'Employer Verification',

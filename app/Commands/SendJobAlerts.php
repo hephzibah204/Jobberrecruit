@@ -123,18 +123,21 @@ class SendJobAlerts extends BaseCommand
             /**
              * -------------------------------------------------
              * BUILD EMAIL
+             * Rendered from the admin email template system (template key:
+             * job_alert) through the exact same path JobAlertService uses,
+             * so this command no longer renders the hardcoded view or sets
+             * its own divergent subject.
              * -------------------------------------------------
              */
-            $html = view('emails/job_alert', [
-                'candidate' => $candidate,
-                'jobs'      => $jobs,
-                'alert'     => $alert,
-            ]);
+            $rendered = (new \App\Services\JobAlertService())->renderJobAlertEmail($candidate, $alert, $jobs);
 
             $email->clear();
             $email->setTo($candidate->email);
-            $email->setSubject('New Jobs Matching Your Alert');
-            $email->setMessage($html);
+            $email->setSubject($rendered['subject']);
+            $email->setMessage($rendered['html']);
+            if (!empty($rendered['text'])) {
+                $email->setAltMessage($rendered['text']);
+            }
             $email->setMailType('html');
 
             /**

@@ -465,23 +465,50 @@ class WebhookController extends Controller
 
         $emailService->setTo($data['email']);
         $emailService->setFrom(config('Email')->fromEmail, config('Email')->fromName);
-        $emailService->setSubject('Your JobberRecruit Subscription Invoice - ' . $data['reference']);
 
-        $viewData = [
-            'fullname'       => ($data['employer']->company_name ?? $data['user']->username) ?? 'Employer',
-            'planName'       => $data['plan']->name,
-            'amount'         => number_format($data['amountPaid'], 2),
-            'reference'      => $data['reference'],
-            'paidAt'         => date('F j, Y \a\t g:i A', strtotime($data['paidAt'])),
-            'channel'        => ucfirst($data['channel']),
-            'companyAddress' => '6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria',
-            'supportEmail'   => 'support@jobberrecruit.com',
-            'logoUrl'        => base_url('images/logo-white.png'),
-        ];
+        // Rendered from the admin email template system (template key:
+        // subscription_invoice) — the same template InvoiceService uses, so
+        // this email no longer has a separate hardcoded view body.
+        $employer = $data['employer'] ?? null;
+        $amount   = number_format($data['amountPaid'], 2);
 
-        $message = view('emails/subscription_invoice', $viewData);
+        $escape = static fn ($value) => htmlspecialchars((string) $value);
 
-        $emailService->setMessage($message);
+        $rendered = (new \App\Services\EmailTemplateService())->render('subscription_invoice', [
+            'invoice_number'    => $data['reference'],
+            'date'              => date('F d, Y', strtotime($data['paidAt'])),
+            'due_date'          => date('F d, Y', strtotime($data['paidAt'] . ' +7 days')),
+            'company_name'      => $escape($employer->company_name ?? $data['user']->username ?? 'Employer'),
+            'company_email'     => $escape($data['email']),
+            'company_phone'     => $escape($employer->contact_phone ?? ''),
+            'company_address'   => $escape($employer->company_address ?? ''),
+            'item_name'         => $escape($data['plan']->name . ' Subscription'),
+            'item_description'  => 'Monthly subscription',
+            'quantity'          => 1,
+            'unit_price'        => $amount,
+            'subtotal'          => $amount,
+            'tax'               => '0.00',
+            'total'             => $amount,
+            'payment_method'    => ucfirst($data['channel']),
+            'payment_reference' => $data['reference'],
+            'payment_date'      => date('F d, Y H:i', strtotime($data['paidAt'])),
+            'proration_row_html'   => '',
+            'proration_total_html' => '',
+            // Preserve the two content blocks this email has always carried:
+            // the payment-success badge and the auto-renewal note.
+            'extra_section_html'   => '
+                    <div style="background: #D4EDDA; color: #155724; padding: 12px 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28A745;">
+                        <strong>✓ Payment Successful</strong><br>
+                        Your payment has been successfully processed and your subscription is now active.
+                    </div>
+                    <p>Your subscription will automatically renew monthly. You can manage or cancel it anytime from your employer dashboard.</p>',
+        ]);
+
+        $emailService->setSubject($rendered['subject']);
+        $emailService->setMessage($rendered['html']);
+        if (!empty($rendered['text'])) {
+            $emailService->setAltMessage($rendered['text']);
+        }
         $emailService->setMailType('html');
 
         if (! $emailService->send()) {
@@ -506,7 +533,6 @@ class WebhookController extends Controller
 
         $emailService->setTo($user->email);
         $emailService->setFrom('support@jobberrecruit.com', 'JobberRecruit');
-        $emailService->setSubject('Subscription Cancellation Confirmed');
 
         // Fetch current active subscription to get end date
         $subModel = model(UserSubscriptionModel::class);
@@ -520,17 +546,18 @@ class WebhookController extends Controller
         $employerModel = model(EmployerModel::class);
         $employer = $employerModel->where('user_id', $user->id)->first();
 
-        $viewData = [
-            'fullname'       => $employer->company_name ?? $user->username ?? 'Employer',
-            'endDate'        => $endDate,
-            'companyAddress' => '6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria',
-            'supportEmail'   => 'support@jobberrecruit.com',
-            'logoUrl'        => base_url('images/logo-white.png'),
-        ];
+        // Rendered from the admin email template system (template key:
+        // subscription_cancellation_scheduled) instead of the hardcoded view.
+        $rendered = (new \App\Services\EmailTemplateService())->render('subscription_cancellation_scheduled', [
+            'fullname' => $employer->company_name ?? $user->username ?? 'Employer',
+            'endDate'  => $endDate,
+        ]);
 
-        $message = view('emails/subscription_cancellation_scheduled', $viewData);
-
-        $emailService->setMessage($message);
+        $emailService->setSubject($rendered['subject']);
+        $emailService->setMessage($rendered['html']);
+        if (!empty($rendered['text'])) {
+            $emailService->setAltMessage($rendered['text']);
+        }
         $emailService->setMailType('html');
 
         if (! $emailService->send()) {
