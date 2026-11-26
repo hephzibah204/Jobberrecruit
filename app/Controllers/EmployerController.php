@@ -4171,6 +4171,13 @@ class EmployerController extends BaseController
         $creditBalance = $creditService->getAvailableCredits($user->id);
         $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($user->id);
 
+        // Latest offer letter for this application (drives the Send Offer action)
+        $offerLetter = model(\App\Models\OfferLetterModel::class)
+            ->where('application_id', $application->id)
+            ->where('employer_id', $employer->id)
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
         // Get pre-screening answers
         $answerModel = model(\App\Models\ApplicationAnswerModel::class);
         $answers = $answerModel->select('application_answers.*, job_questions.question_text as question, job_questions.question_type as type, job_questions.options')
@@ -4222,7 +4229,348 @@ class EmployerController extends BaseController
             'references' => $references,
             'creditBalance' => $creditBalance,
             'hasUnlimitedAccess' => $hasUnlimitedAccess,
+            'offerLetter' => $offerLetter,
         ]);
+    }
+
+    /**
+     * Offer Letters — create/edit form for one application.
+     * An existing draft for the application is loaded for editing. If an
+     * offer has already been sent for the application, no second offer can
+     * be created (one offer per application in this version).
+     */
+    public function createOffer($applicationId)
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $applicationModel = model(JobApplicationModel::class);
+        $application = $applicationModel
+            ->select('job_applications.*, jobs.title as job_title')
+            ->join('jobs', 'jobs.id = job_applications.job_id', 'left')
+            ->where('job_applications.id', $applicationId)
+            ->first();
+
+        if (!$application) {
+            return redirect()->to('employer/applications')->with('error', 'Application not found');
+        }
+
+        $jobModel = model(JobModel::class);
+        $job = $jobModel->find($application->job_id);
+
+        if (!$job || $job->employer_id != $employer->id) {
+            return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
+        }
+
+        $offerModel = model(\App\Models\OfferLetterModel::class);
+        $existing = $offerModel
+            ->where('application_id', $application->id)
+            ->where('employer_id', $employer->id)
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
+        if ($existing && $existing->status !== 'draft') {
+            return redirect()->to('employer/offers')->with('error', 'An offer has already been sent for this application.');
+        }
+
+        // Candidate name/email: the application row carries them for both
+        // registered and guest applicants; fall back to the seeker profile.
+        $candidateName = trim(($application->first_name ?? '') . ' ' . ($application->last_name ?? ''));
+        $candidateEmail = $application->email ?? null;
+        if (!empty($application->job_seeker_id)) {
+            $jobSeeker = model(JobSeekerModel::class)->find($application->job_seeker_id);
+            if ($jobSeeker) {
+                if (empty($candidateName) && !empty($jobSeeker->full_name)) {
+                    $candidateName = $jobSeeker->full_name;
+                }
+                if (empty($candidateEmail) && !empty($jobSeeker->email)) {
+                    $candidateEmail = $jobSeeker->email;
+                }
+            }
+        }
+
+        $prefill = [
+            'candidate_name'   => $existing->candidate_name ?? $candidateName,
+            'candidate_email'  => $existing->candidate_email ?? $candidateEmail,
+            'job_title'        => $existing->job_title ?? $job->title,
+            'salary'           => $existing->salary ?? $job->salary,
+            'currency'         => $existing->currency ?? 'NGN',
+            'employment_type'  => $existing->employment_type ?? $job->job_type,
+            'start_date'       => $existing->start_date ?? '',
+            'probation_months' => $existing->probation_months ?? '',
+            'letter_body'      => $existing->letter_body ?? $this->defaultOfferLetterBody($employer, $candidateName, $job),
+        ];
+
+        return view('employers/offer_form', [
+            'title'       => 'Offer Letter',
+            'user'        => $user,
+            'employer'    => $employer,
+            'application' => $application,
+            'job'         => $job,
+            'offer'       => $existing,
+            'prefill'     => $prefill,
+        ]);
+    }
+
+    /**
+     * Default offer-letter text with the job/employer values already
+     * substituted. The employer edits the final text in the form; there is
+     * no placeholder engine at send time.
+     */
+    private function defaultOfferLetterBody($employer, string $candidateName, $job): string
+    {
+        $company = $employer->company_name ?: 'Our Company';
+        $title   = $job->title ?: 'the advertised role';
+        $type    = !empty($job->job_type) ? ucwords(str_replace('-', ' ', $job->job_type)) : 'Full-time';
+
+        $salaryText = 'a salary that will be confirmed with you in writing before your start date';
+        if (!empty($job->salary)) {
+            $raw     = trim((string) $job->salary);
+            $numeric = str_replace([',', ' '], '', $raw);
+            if (is_numeric($numeric)) {
+                $salaryText = 'a gross salary of ₦' . number_format((float) $numeric);
+                if (!empty($job->salary_period)) {
+                    $salaryText .= ' per ' . strtolower(trim((string) $job->salary_period));
+                }
+            } else {
+                $salaryText = 'a gross salary of ' . $raw;
+            }
+        }
+
+        $lines = [
+            'Dear ' . ($candidateName ?: 'Candidate') . ',',
+            '',
+            'We are pleased to offer you the position of ' . $title . ' at ' . $company . '. We were impressed by your qualifications and experience, and we believe you will be a valuable addition to our team.',
+            '',
+            'This is a ' . $type . ' position. You will receive ' . $salaryText . '.',
+            '',
+            'Your employment is scheduled to commence on a start date to be confirmed with you. The first three (3) months of your employment will be a probationary period, during which your performance and suitability for the role will be reviewed.',
+            '',
+            'This offer is subject to the terms and conditions of employment of ' . $company . ', which will be made available to you on or before your start date.',
+            '',
+            'To accept this offer, please click the Accept button on the offer page where you received this letter.',
+            '',
+            'We look forward to welcoming you to ' . $company . '.',
+            '',
+            'Yours faithfully,',
+            $company,
+        ];
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Offer Letters — save a draft, or save and send to the candidate.
+     * Sending emails the candidate a token link (template key offer_letter);
+     * the application status is deliberately NOT changed here.
+     */
+    public function saveOffer()
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $applicationId = (int) $this->request->getPost('application_id');
+        $offerId       = (int) $this->request->getPost('offer_id');
+        $action        = $this->request->getPost('action') === 'send' ? 'send' : 'draft';
+
+        $applicationModel = model(JobApplicationModel::class);
+        $application = $applicationModel->find($applicationId);
+        if (!$application) {
+            return redirect()->to('employer/applications')->with('error', 'Application not found');
+        }
+
+        $job = model(JobModel::class)->find($application->job_id);
+        if (!$job || $job->employer_id != $employer->id) {
+            return redirect()->to('employer/applications')->with('error', 'Unauthorized access');
+        }
+
+        $probation = trim((string) $this->request->getPost('probation_months'));
+
+        $data = [
+            'employer_id'      => $employer->id,
+            'job_id'           => $job->id,
+            'application_id'   => $application->id,
+            'candidate_name'   => trim((string) $this->request->getPost('candidate_name')),
+            'candidate_email'  => trim((string) $this->request->getPost('candidate_email')),
+            'job_title'        => trim((string) $this->request->getPost('job_title')),
+            'salary'           => trim((string) $this->request->getPost('salary')) ?: null,
+            'currency'         => trim((string) $this->request->getPost('currency')) ?: 'NGN',
+            'employment_type'  => trim((string) $this->request->getPost('employment_type')) ?: null,
+            'start_date'       => trim((string) $this->request->getPost('start_date')) ?: null,
+            'probation_months' => $probation !== '' ? (int) $probation : null,
+            'letter_body'      => trim((string) $this->request->getPost('letter_body')),
+        ];
+
+        if ($data['candidate_name'] === '' || $data['job_title'] === '' || $data['letter_body'] === ''
+            || !filter_var($data['candidate_email'], FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->withInput()->with('error', 'Please provide the candidate name, a valid candidate email, the job title and the letter content.');
+        }
+
+        $offerModel = model(\App\Models\OfferLetterModel::class);
+        $offer = null;
+
+        if ($offerId > 0) {
+            $offer = $offerModel->where('id', $offerId)->where('employer_id', $employer->id)->first();
+            if (!$offer || $offer->status !== 'draft') {
+                return redirect()->to('employer/offers')->with('error', 'Only a draft offer can be edited.');
+            }
+            $offerModel->update($offer->id, $data);
+            $offer = $offerModel->find($offer->id);
+        } else {
+            $existing = $offerModel
+                ->where('application_id', $application->id)
+                ->where('employer_id', $employer->id)
+                ->orderBy('created_at', 'DESC')
+                ->first();
+            if ($existing && $existing->status !== 'draft') {
+                return redirect()->to('employer/offers')->with('error', 'An offer has already been sent for this application.');
+            }
+            if ($existing) {
+                $offerModel->update($existing->id, $data);
+                $offer = $offerModel->find($existing->id);
+            } else {
+                $data['status'] = 'draft';
+                $offerModel->insert($data);
+                $offer = $offerModel->find($offerModel->getInsertID());
+            }
+        }
+
+        if ($action === 'send') {
+            $token = $offer->view_token;
+            if (empty($token)) {
+                do {
+                    $token = bin2hex(random_bytes(32));
+                } while ($offerModel->where('view_token', $token)->first() !== null);
+            }
+
+            $offerModel->update($offer->id, [
+                'view_token' => $token,
+                'status'     => 'sent',
+                'sent_at'    => date('Y-m-d H:i:s'),
+            ]);
+
+            $firstName = explode(' ', $offer->candidate_name)[0] ?? $offer->candidate_name;
+            (new \App\Services\EmailTemplateService())->send(
+                'offer_letter',
+                $offer->candidate_email,
+                [
+                    'user_name'      => $offer->candidate_name,
+                    'name'           => $offer->candidate_name,
+                    'first_name'     => $firstName,
+                    'full_name'      => $offer->candidate_name,
+                    'candidate_name' => $offer->candidate_name,
+                    'job_title'      => $offer->job_title,
+                    'company_name'   => $employer->company_name,
+                    'companyName'    => $employer->company_name,
+                    'offerUrl'       => base_url('offer/view/' . $token),
+                ]
+            );
+
+            return redirect()->to('employer/offers')->with('success', 'Offer letter sent to ' . $offer->candidate_email . '.');
+        }
+
+        return redirect()->to('employer/offers')->with('success', 'Offer draft saved.');
+    }
+
+    /**
+     * Offer Letters — the employer's list of drafts and sent offers,
+     * including each candidate's response.
+     */
+    public function offers()
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $offers = model(\App\Models\OfferLetterModel::class)
+            ->where('employer_id', $employer->id)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        return view('employers/offers', [
+            'title'    => 'Offer Letters',
+            'user'     => $user,
+            'employer' => $employer,
+            'offers'   => $offers,
+        ]);
+    }
+
+    /**
+     * Offer Letters — download one offer as a PDF (Dompdf fallback pattern,
+     * same as ResumeController::download()).
+     */
+    public function offerPdf($id)
+    {
+        $user = $this->auth->user();
+        $employerModel = model(EmployerModel::class);
+        $employer = $employerModel->where('user_id', $user->id)->first();
+
+        if (!$employer) {
+            return redirect()->to('employer/profile/edit')->with('error', 'Please complete your company profile first.');
+        }
+
+        $offer = model(\App\Models\OfferLetterModel::class)
+            ->where('id', $id)
+            ->where('employer_id', $employer->id)
+            ->first();
+
+        if (!$offer) {
+            return redirect()->to('employer/offers')->with('error', 'Offer letter not found.');
+        }
+
+        $html = view('employers/offer_pdf', [
+            'offer'    => $offer,
+            'employer' => $employer,
+        ]);
+
+        $tempPath = WRITEPATH . 'temp/';
+        if (!is_dir($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+        $pdfPath = $tempPath . 'offer-' . $offer->id . '-' . time() . '.pdf';
+
+        try {
+            // Use Enterprise PDF generator (Gotenberg) via PdfService
+            \App\Services\PdfService::generateFromHtml($html, $pdfPath, 'portrait');
+        } catch (\Throwable $e) {
+            log_message('error', 'Offer letter PDF generation failed: ' . $e->getMessage());
+
+            // Fall back to Dompdf when it is installed (same as resumes).
+            $dompdfOk = false;
+            if (class_exists(\Dompdf\Dompdf::class)) {
+                try {
+                    $dompdf = new \Dompdf\Dompdf();
+                    $dompdf->loadHtml($html);
+                    $dompdf->setPaper('A4', 'portrait');
+                    $dompdf->render();
+                    $dompdfOk = file_put_contents($pdfPath, $dompdf->output()) !== false;
+                } catch (\Throwable $dompdfError) {
+                    log_message('error', 'Dompdf fallback also failed for offer letter: ' . $dompdfError->getMessage());
+                }
+            }
+
+            if (!$dompdfOk) {
+                return redirect()->back()->with('error', 'Unable to generate the PDF at this moment. Please try again shortly.');
+            }
+        }
+
+        $cleanName = url_title($offer->candidate_name ?: 'Candidate') ?: 'Candidate';
+        return $this->response->download($pdfPath, null)
+            ->setFileName('Offer-Letter-' . $cleanName . '.pdf');
     }
 
 

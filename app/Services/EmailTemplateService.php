@@ -1161,6 +1161,33 @@ class EmailTemplateService
                 ],
             ],
 
+            'offer_letter' => [
+                'name'     => 'Offer of Employment',
+                'category' => 'Recruitment',
+                'subject'  => 'Offer of Employment: {job_title} at {company_name}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Offer of Employment',
+                    'Job Offer',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Congratulations! <strong>{company_name}</strong> is pleased to offer you the position of <strong>{job_title}</strong>.</p>
+                    <p>Please review your offer letter and respond by clicking the button below. You can accept or decline the offer on that page, and the employer will see your response on their dashboard.</p>
+                    <p style="color: #64748B; font-size: 13px; margin-top: 25px;">If the button does not work, copy and paste this link into your browser:<br><a href="{offerUrl}" style="color: #0D609E; word-break: break-all;">{offerUrl}</a></p>',
+                    'View & Respond to Offer',
+                    '{offerUrl}'
+                ),
+                'body_text' => "{greeting}\n\nCongratulations! {company_name} is pleased to offer you the position of {job_title}.\n\nPlease review your offer letter and respond here: {offerUrl}\n\nBest regards,\n{company_name}",
+                'available_variables' => [
+                    '{first_name}'     => 'Candidate\'s first name',
+                    '{full_name}'      => 'Candidate\'s full name',
+                    '{candidate_name}' => 'Candidate\'s full name',
+                    '{job_title}'      => 'Offered job title',
+                    '{company_name}'   => 'Employer company name',
+                    '{offerUrl}'       => 'Secure offer view & response URL',
+                    '{site_name}'      => 'Website name (JobberRecruit)',
+                ],
+            ],
+
             // ==========================================
             // 4. LEARNING & WEBINARS
             // ==========================================

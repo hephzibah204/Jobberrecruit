@@ -516,6 +516,13 @@ $candEligibility = !empty($application->work_eligibility) ? (strtolower($applica
           <?php if (!empty($application->job_seeker_id)): ?>
             <a href="<?= base_url('employer/messages') ?>?candidate=<?= esc($application->job_seeker_id) ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-chat"/></svg> Message Candidate</a>
           <?php endif; ?>
+          <?php if (!in_array($application->status ?? '', ['rejected', 'withdrawn'], true)): ?>
+            <?php if (!empty($offerLetter) && ($offerLetter->status ?? '') !== 'draft'): ?>
+              <a href="<?= base_url('employer/offers') ?>" class="emp-btn emp-btn-outline emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-send"/></svg> View Offer Letter (<?= esc(ucfirst($offerLetter->status)) ?>)</a>
+            <?php else: ?>
+              <a href="<?= base_url('employer/offers/create/' . $application->id) ?>" class="emp-btn emp-btn-primary emp-btn-block emp-btn-sm"><svg aria-hidden="true"><use href="#i-send"/></svg> <?= !empty($offerLetter) ? 'Edit Offer Draft' : 'Send Offer Letter' ?></a>
+            <?php endif; ?>
+          <?php endif; ?>
         </div>
       </div>
     </section>

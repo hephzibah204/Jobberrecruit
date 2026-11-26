@@ -90,6 +90,9 @@ $routes->get('cv-review/verify', 'ElearningController::verifyCvPayment');
 $routes->get('certificate', 'ElearningController::publicViewCertificate');
 $routes->get('verify/(:segment)', 'ElearningController::verifyCertificateByCode/$1');
 $routes->get('certificates/verify', 'ElearningController::verifyCertificateForm');
+// Public offer-letter page (token is the credential; candidates may be guests)
+$routes->get('offer/view/(:segment)', 'OfferController::view/$1');
+$routes->post('offer/respond/(:segment)', 'OfferController::respond/$1');
 $routes->get('aptitude', 'AptitudeController::index', ['filter' => 'auth']);
 $routes->get('aptitude/daily', 'AptitudeController::daily', ['filter' => 'auth']);
 $routes->get('aptitude/test/(:num)', 'AptitudeController::testEngine/$1', ['filter' => 'auth']);
@@ -262,6 +265,12 @@ $routes->group('employer', ['filter' => 'auth'], function ($routes) {
     $routes->post('applications/delete-note/(:num)', 'EmployerController::deleteApplicationNote/$1');
 
     $routes->post('applications/update-status', 'EmployerController::updateApplicationStatus');
+
+    // Offer Letters
+    $routes->get('offers', 'EmployerController::offers');
+    $routes->get('offers/create/(:num)', 'EmployerController::createOffer/$1');
+    $routes->post('offers/save', 'EmployerController::saveOffer');
+    $routes->get('offers/pdf/(:num)', 'EmployerController::offerPdf/$1');
     $routes->get('tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests', 'EmployerController::aptitudeTests');
     $routes->get('aptitude-tests/list', 'EmployerController::getAvailableAptitudeTests');

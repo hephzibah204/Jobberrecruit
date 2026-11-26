@@ -228,6 +228,10 @@ if ($dashboardPath !== 'employer' && $dashboardPath !== 'employer/dashboard') {
             <span class="sb-count"><?= $pendingCount ?></span>
           <?php endif; ?>
         </a>
+        <a class="sb-link" href="<?= base_url('employer/offers') ?>"
+           <?= empIsActiveStart('employer/offers') ? 'aria-current="page"' : '' ?>>
+          <svg aria-hidden="true"><use href="#i-send"/></svg> Offer Letters
+        </a>
         <a class="sb-link" href="<?= base_url('employer/candidates') ?>"
            <?= empIsActive('employer/candidates') ? 'aria-current="page"' : '' ?>>
           <svg aria-hidden="true"><use href="#i-search-user"/></svg> Candidates Search
