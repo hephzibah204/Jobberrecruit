@@ -581,7 +581,7 @@ class NewsletterController extends BaseController
 
         // 2. Registered Employers
         $employers = $db->table('users')
-            ->select('users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, users.username, users.active, users.created_at, employers.id as employer_id, employers.company_name, employers.phone, employers.verification_status, employers.logo')
+            ->select('users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, users.username, users.active, users.created_at, employers.id as employer_id, employers.company_name, employers.contact_phone as phone, employers.verification_status, employers.logo')
             ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
             ->join('employers', 'employers.user_id = users.id', 'left')
             ->where('users.user_type', 'employer')

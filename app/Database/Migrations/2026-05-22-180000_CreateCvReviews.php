@@ -30,7 +30,7 @@ class CreateCvReviews extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addKey('user_id');
         $this->forge->addKey('payment_reference');
-        $this->forge->createTable('cv_reviews');
+        $this->forge->createTable('cv_reviews', true);
     }
 
     public function down()
