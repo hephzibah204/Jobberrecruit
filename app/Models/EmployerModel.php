@@ -246,6 +246,10 @@ class EmployerModel extends Model
             $cache = \Config\Services::cache();
             $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
             $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v7');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v6');
+            $cache->delete('recent_jobs_home_v4');
+            $cache->delete('recent_jobs_home_v3');
             $cache->delete('top_companies_v2');
             $cache->delete('top_companies_home_v3');
             $cache->delete('featured_jobs');
@@ -280,6 +284,10 @@ class EmployerModel extends Model
             $cache = \Config\Services::cache();
             $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
             $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v7');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v6');
+            $cache->delete('recent_jobs_home_v4');
+            $cache->delete('recent_jobs_home_v3');
             $cache->delete('top_companies_v2');
             $cache->delete('top_companies_home_v3');
             $cache->delete('featured_jobs');

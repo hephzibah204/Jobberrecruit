@@ -2451,6 +2451,10 @@ class AdminController extends BaseController
             $cache = \Config\Services::cache();
             $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
             $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v7');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v6');
+            $cache->delete('recent_jobs_home_v4');
+            $cache->delete('recent_jobs_home_v3');
             $cache->delete('featured_jobs');
             $cache->delete('recent_jobs');
         } catch (\Throwable $e) {}
@@ -2511,6 +2515,10 @@ class AdminController extends BaseController
             $cache = \Config\Services::cache();
             $cache->delete('homepage_eight_jobs_with_employer_identity_v5');
             $cache->delete('homepage_eight_jobs_with_employer_identity_v4');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v7');
+            $cache->delete('homepage_eight_jobs_with_employer_identity_v6');
+            $cache->delete('recent_jobs_home_v4');
+            $cache->delete('recent_jobs_home_v3');
             $cache->delete('featured_jobs');
             $cache->delete('recent_jobs');
         } catch (\Throwable $e) {}

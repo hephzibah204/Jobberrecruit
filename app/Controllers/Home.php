@@ -138,7 +138,7 @@ class Home extends BaseController
         }
 
         // Homepage preview: eight jobs, with featured postings first.
-        $jobsCacheKey = 'homepage_eight_jobs_with_employer_identity_v6';
+        $jobsCacheKey = 'homepage_eight_jobs_with_employer_identity_v7';
         $jobs = $cache->get($jobsCacheKey);
 
         if (!$jobs) {
@@ -146,13 +146,15 @@ class Home extends BaseController
                 ->select('jobs.*, job_categories.name as category_name, industries.name as industry_name, states.name as location, employers.company_name as employer_name, employers.tagline as employer_tagline, employers.user_id as employer_user_id, employers.logo as company_logo, employers.is_verified, employers.is_verified as employer_is_verified, employers.verification_status as employer_verification_status')
                 ->where('jobs.status', 'open')
                 ->where('jobs.admin_status', 'approved')
+                ->where('jobs.is_featured', 1)
+                ->groupStart()->where('jobs.featured_until', null)->orWhere('jobs.featured_until >=', date('Y-m-d H:i:s'))->groupEnd()
             ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
                 ->join('states', 'states.id = jobs.state_id', 'left')
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
                 // ->orderBy('jobs.created_at', 'DESC')
-                ->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC')
+                ->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.created_at', 'DESC')
                 ->findAll(8);
 
             $cache->save($jobsCacheKey, $jobs, 3600);
@@ -847,7 +849,7 @@ class Home extends BaseController
 
         // Always prioritize promoted (featured) jobs
         if (!in_array($sortBy, ['salary_high', 'salary_low', 'oldest'], true)) {
-            $query->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC');
+            $query->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.created_at', 'DESC');
         }
 
         // Apply sorting
@@ -1394,7 +1396,7 @@ class Home extends BaseController
             ->where('jobs.admin_status', 'approved')
             ->groupStart()->where('jobs.application_deadline', null)->orWhere('jobs.application_deadline', '')->orWhere('jobs.application_deadline', '0000-00-00')->orWhere('jobs.application_deadline >=', date('Y-m-d'))->groupEnd()
             ->orderBy('jobs.is_featured', 'DESC')
-            ->orderBy('jobs.featured_until', 'DESC')
+            ->orderBy('jobs.created_at', 'DESC')
             ->findAll($limit, $offset);
 
         $subscriptionModel = model(UserSubscriptionModel::class);
@@ -3424,7 +3426,7 @@ class Home extends BaseController
         $jobModel = new \App\Models\JobModel();
         $cache = \Config\Services::cache();
         
-        $jobsCacheKey = 'recent_jobs_home_v3';
+        $jobsCacheKey = 'recent_jobs_home_v4';
         $jobs = $cache->get($jobsCacheKey);
 
         if (!$jobs) {
@@ -3437,7 +3439,7 @@ class Home extends BaseController
                 ->join('job_categories', 'job_categories.id = jobs.category_id', 'left')
                 ->join('industries', 'industries.id = jobs.industry_id', 'left')
                 ->join('employers', 'employers.id = jobs.employer_id', 'left')
-                ->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.featured_until', 'DESC')
+                ->orderBy('jobs.is_featured', 'DESC')->orderBy('jobs.created_at', 'DESC')
                 ->findAll(6);
 
             $cache->save($jobsCacheKey, $jobs, 3600);
