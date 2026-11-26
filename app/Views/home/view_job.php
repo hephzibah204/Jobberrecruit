@@ -1,4 +1,4 @@
-<?php helper('public_job'); $job = public_job($job); ?>
+<?php helper(['public_job', 'job_description']); $job = public_job($job); ?>
 <?= $this->extend('templates/base') ?>
 <?= $this->section('schema') ?>
 <?php
@@ -1674,16 +1674,16 @@ main, .section, .jobs-layout, .container,
         <div class="detail-card">
           <h2 class="detail-section-title"><svg aria-hidden="true"><use href="#i-doc"/></svg> Job description</h2>
           <div class="detail-body desc-collapsed" id="detail-body">
-            <?= $job->description ?>
+            <?= job_description_html($job->description) ?>
             
             <?php if (!empty($job->requirements)): ?>
               <h3>Requirements</h3>
-              <?= $job->requirements ?>
+              <?= job_description_html($job->requirements) ?>
             <?php endif; ?>
             
             <?php if (!empty($job->application)): ?>
               <h3>Application Guidelines</h3>
-              <?= $job->application ?>
+              <?= job_description_html($job->application) ?>
             <?php endif; ?>
           </div>
           <!-- Read-more button — hidden on desktop, shown on mobile only -->

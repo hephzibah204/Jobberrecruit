@@ -82,17 +82,18 @@ $isProfileBlocked = ($user && ($user->user_type ?? '') !== 'employer') && ($cand
             <svg class="apply-desc-chev" aria-hidden="true"><use href="#i-chev-down"/></svg>
             <span class="apply-desc-hint" style="display:none">Tap to view qualifications, responsibilities &amp; pay</span>
           </summary>
+          <?php helper('job_description'); ?>
           <div class="apply-desc-body text-wrap">
             <div class="text-muted">
-              <?= $job->description ? $job->description : '<p>No job description provided.</p>' ?>
+              <?= $job->description ? job_description_html($job->description) : '<p>No job description provided.</p>' ?>
             </div>
             <?php if (!empty($job->requirements)): ?>
               <h3>Requirements</h3>
-              <div class="text-muted"><?= $job->requirements ?></div>
+              <div class="text-muted"><?= job_description_html($job->requirements) ?></div>
             <?php endif; ?>
             <?php if (!empty($job->application)): ?>
               <h3>Application Guidelines</h3>
-              <div class="text-muted"><?= $job->application ?></div>
+              <div class="text-muted"><?= job_description_html($job->application) ?></div>
             <?php endif; ?>
           </div>
         </details>
