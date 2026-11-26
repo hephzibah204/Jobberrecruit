@@ -764,22 +764,19 @@ class AptitudeController extends BaseController
                                 'result_url'       => base_url('employer/applications'),
                             ];
 
-                            $mailer = service('mailer');
-                            if ($mailer && method_exists($mailer, 'sendTemplate')) {
-                                $mailer->sendTemplate(
-                                    $employerEmail,
-                                    "Candidate Completed Assessment: {$candidateName} ({$scorePctDisplay}%)",
-                                    'emails/aptitude_test_completed_employer',
-                                    $mailData
-                                );
-                            } else {
-                                $email = \Config\Services::email();
-                                $email->setTo($employerEmail);
-                                $email->setSubject("Candidate Completed Assessment: {$candidateName} ({$scorePctDisplay}%)");
-                                $email->setMessage(view('emails/aptitude_test_completed_employer', $mailData));
-                                $email->setMailType('html');
-                                $email->send();
-                            }
+                            // Employer alert via the canonical templated notification
+                            // (admin template: aptitude_test_completed_employer).
+                            $emailService = new \App\Services\EmailNotificationService();
+                            $emailService->sendAptitudeTestCompletedEmployerAlert(
+                                $employerEmail,
+                                $employer->company_name,
+                                $candidateName,
+                                $test['title'] ?? 'Aptitude Assessment',
+                                $job->title ?? 'Your Job Opening',
+                                (float) $scorePctDisplay,
+                                (bool) $passed,
+                                base_url('employer/applications')
+                            );
                         }
                     }
                 }

@@ -1588,13 +1588,12 @@ class ElearningController extends BaseController
 
         $email = auth()->user()->email;
         $name = $this->request->getPost('full_name') ?: (auth()->user()->username ?? 'Candidate');
-        $emailService = service('mailer');
-        $emailService->sendTemplate(
+        (new \App\Services\EmailTemplateService())->send(
+            'cv_review_received',
             $email,
-            'CV Review Request Received',
-            'emails/cv_review_received',
             [
                 'user_name' => $name,
+                'name'      => $name,
             ]
         );
 

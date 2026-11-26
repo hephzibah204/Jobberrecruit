@@ -2365,18 +2365,19 @@ class Home extends BaseController
             $sendInAppNotification = $notificationPreferences['in_app'] ?? true;
             $notificationEmail = $notificationPreferences['notification_email_address'] ?? $employer->contact_email ?? $job->company_email;
 
-            // Send Confirmation Email to Candidate (Always sent)
-            $emailService = service('mailer');
+            // Send Confirmation Email to Candidate (Always sent) — rendered from
+            // the 'job_application_confirmation' admin email template.
             $candidateEmail = $email;
             $candidateName  = trim($first_name . ' ' . $last_name) ?: 'Applicant';
 
-            $emailService->sendTemplate(
+            (new \App\Services\EmailTemplateService())->send(
+                'job_application_confirmation',
                 $candidateEmail,
-                'Application Received – ' . $job->title,
-                'emails/job_application_confirmation',
                 [
                     'candidate_name' => $candidateName,
+                    'name'           => $candidateName,
                     'job_title'      => $job->title,
+                    'company_name'   => $job->employer_name,
                     'employer_name'  => $job->employer_name,
                     'job_location'   => $job->location,
                     'platform_name'  => config('App')->appName ?? 'JobberRecruit',
@@ -2384,19 +2385,15 @@ class Home extends BaseController
                 $job->company_email
             );
 
-            $emailService->clear();
-
             // =============================================
             // SEND NOTIFICATION TO EMPLOYER (Based on preferences)
             // =============================================
 
             // Send Email Notification if enabled
             if ($sendEmailNotification && $notificationEmail) {
-                $emailService2 = service('mailer');
-                $emailService2->sendTemplate(
+                (new \App\Services\EmailTemplateService())->send(
+                    'employer_new_application',
                     $notificationEmail,
-                    'New Application for ' . $job->title,
-                    'emails/employer_new_application',
                     [
                         'employer_name'      => $job->employer_name,
                         'job_title'          => $job->title,
@@ -2407,6 +2404,7 @@ class Home extends BaseController
                         'salary_expectation' => $this->request->getPost('salary_expectation'),
                         'applied_at'         => date('d M Y, H:i'),
                         'dashboard_url'      => base_url('employer/applications/view/' . $applicationId),
+                        'company_name'       => $job->employer_name,
                         'platform_name'      => config('App')->appName ?? 'JobberRecruit',
                     ],
                     $candidateEmail
@@ -2638,30 +2636,22 @@ class Home extends BaseController
             $subject = $this->request->getPost('subject');
             $message = $this->request->getPost('message');
 
-            $mailer = service('mailer');
+            $templateService = new \App\Services\EmailTemplateService();
 
             // -----------------------------
-            // 1. Send message to support
+            // 1. Send message to support (admin template: contact_admin)
             // -----------------------------
-            $adminMessage = view('emails/contact_admin', [
-                'name'    => $name,
-                'email'   => $email,
-                'phone'   => $phone,
-                'subject' => $subject,
-                'message' => $message,
-            ]);
-
             $supportEmail = env('email.support_email') ?: (env('SUPPORT_EMAIL') ?: (config('Email')->fromEmail ?? 'support@jobberrecruit.com'));
 
-            $mailer->clear();
-            $mailer->setTo($supportEmail);
-            $mailer->setReplyTo($email, $name);
-            $mailer->setSubject('[Contact] ' . $subject);
-            $mailer->setMessage($adminMessage);
-            $mailer->setMailType('html');
-
-            if (! $mailer->send()) {
-                log_message('error', 'Contact form email failed: ' . print_r($mailer->printDebugger(), true));
+            if (! $templateService->send('contact_admin', $supportEmail, [
+                'name'         => $name,
+                'email'        => $email,
+                'phone'        => $phone,
+                'subject'      => $subject,
+                'message'      => $message,
+                'message_html' => nl2br(esc($message)),
+            ], $email)) {
+                log_message('error', 'Contact form email failed via template service');
 
                 return $this->response->setJSON([
                     'success' => false,
@@ -2670,18 +2660,12 @@ class Home extends BaseController
             }
 
             // -----------------------------
-            // 2. Auto-reply to user
+            // 2. Auto-reply to user (admin template: contact_autoreply)
             // -----------------------------
-            $userMessage = view('emails/contact_autoreply', [
-                'name' => $name,
-            ]);
-
-            $mailer->clear();
-            $mailer->setTo($email);
-            $mailer->setSubject('We received your message — ' . (env('site_name') ?: 'JobberRecruit'));
-            $mailer->setMessage($userMessage);
-            $mailer->setMailType('html');
-            $mailer->send(); // silent fail is OK
+            $templateService->send('contact_autoreply', $email, [
+                'name'            => $name,
+                'message_subject' => $subject,
+            ]); // silent fail is OK
 
             return $this->response->setJSON([
                 'success' => true,
@@ -3347,34 +3331,25 @@ class Home extends BaseController
         $location    = $this->request->getPost('location')   ?? 'Not specified';
         $message     = $this->request->getPost('message');
 
-        // ── Send admin notification ─────────────────────────────────────
-        $mailer = service('mailer');
+        // ── Send admin notification (admin template: recruitment_admin) ──
+        $templateService = new \App\Services\EmailTemplateService();
 
-        $adminBody = "
-            <h2 style='font-family:sans-serif;color:#062E52'>New Recruitment Inquiry</h2>
-            <table style='font-family:sans-serif;font-size:14px;border-collapse:collapse;width:100%'>
-                <tr><td style='padding:6px 0;color:#666;width:160px'><b>Name</b></td><td>" . esc($fullName) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Company</b></td><td>" . esc($companyName) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Email</b></td><td><a href='mailto:" . esc($email) . "'>" . esc($email) . "</a></td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Phone</b></td><td>" . esc($phone) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Role to Hire</b></td><td>" . esc($role) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Experience Level</b></td><td>" . esc($experience) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Budget / Salary</b></td><td>" . esc($budget) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Schedule</b></td><td>" . esc($schedule) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666'><b>Location</b></td><td>" . esc($location) . "</td></tr>
-                <tr><td style='padding:6px 0;color:#666;vertical-align:top'><b>Message</b></td><td>" . nl2br(esc($message)) . "</td></tr>
-            </table>
-        ";
+        $adminSent = $templateService->send('recruitment_admin', 'support@jobberrecruit.com', [
+            'full_name'    => $fullName,
+            'company_name' => $companyName,
+            'email'        => $email,
+            'phone'        => $phone,
+            'role'         => $role,
+            'experience'   => $experience,
+            'budget'       => $budget,
+            'schedule'     => $schedule,
+            'location'     => $location,
+            'message'      => $message,
+            'message_html' => nl2br(esc($message)),
+        ], $email);
 
-        $mailer->clear();
-        $mailer->setTo('support@jobberrecruit.com');
-        $mailer->setReplyTo($email, $fullName);
-        $mailer->setSubject('[Recruitment Inquiry] ' . $role . ' — ' . $companyName);
-        $mailer->setMessage($adminBody);
-        $mailer->setMailType('html');
-
-        if (! $mailer->send()) {
-            log_message('error', 'Recruitment inquiry email failed: ' . print_r($mailer->printDebugger(), true));
+        if (! $adminSent) {
+            log_message('error', 'Recruitment inquiry email failed via template service');
 
             if ($this->request->isAJAX()) {
                 return $this->response->setJSON([
@@ -3385,20 +3360,11 @@ class Home extends BaseController
             return redirect()->back()->withInput()->with('error', 'Unable to submit your inquiry. Please try again later.');
         }
 
-        // ── Auto-reply to the client ────────────────────────────────────
-        $autoReply = "
-            <p style='font-family:sans-serif;font-size:15px'>Hi " . esc($fullName) . ",</p>
-            <p style='font-family:sans-serif;font-size:15px'>Thank you for reaching out to <strong>JobberRecruit</strong>. We have received your inquiry for the <strong>" . esc($role) . "</strong> role and our recruitment team will get back to you within <strong>one business day</strong>.</p>
-            <p style='font-family:sans-serif;font-size:15px'>In the meantime, feel free to browse available candidates on our platform.</p>
-            <p style='font-family:sans-serif;font-size:15px'>Warm regards,<br><strong>The JobberRecruit Team</strong></p>
-        ";
-
-        $mailer->clear();
-        $mailer->setTo($email);
-        $mailer->setSubject('We received your recruitment inquiry — JobberRecruit');
-        $mailer->setMessage($autoReply);
-        $mailer->setMailType('html');
-        $mailer->send(); // silent fail — auto-reply is best-effort
+        // ── Auto-reply to the client (admin template: recruitment_autoreply) ──
+        $templateService->send('recruitment_autoreply', $email, [
+            'full_name' => $fullName,
+            'role'      => $role,
+        ]); // silent fail — auto-reply is best-effort
 
         if ($this->request->isAJAX()) {
             return $this->response->setJSON([

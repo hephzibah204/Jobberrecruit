@@ -23,7 +23,7 @@ class EmailTemplateService
     {
         $template = null;
         try {
-            $template = $this->templateModel->where('template_key', $templateKey)->first();
+            $template = $this->templateModel->where('template_key', $templateKey)->where('is_active', 1)->first();
         } catch (\Throwable $e) {
             log_message('notice', "EmailTemplate DB lookup note: " . $e->getMessage());
         }
@@ -456,7 +456,7 @@ class EmailTemplateService
                     <div class="info-box">
                         <strong>Position:</strong> {job_title}<br>
                         <strong>Company:</strong> {company_name}<br>
-                        <strong>Date Submitted:</strong> ' . date('F j, Y') . '
+                        <strong>Date Submitted:</strong> {submitted_at}
                     </div>
                     <p>The recruitment team at {company_name} will review your credentials. You will receive updates directly at this email address.</p>
                     <p>To unlock automated job match alerts, build professional resumes, and take skill assessments, create a free candidate account.</p>',
@@ -485,8 +485,10 @@ class EmailTemplateService
                     <div class="info-box">
                         <strong>Assessment:</strong> {test_title}<br>
                         <strong>Position:</strong> {job_title}<br>
-                        <strong>Company:</strong> {company_name}
+                        <strong>Company:</strong> {company_name}<br>
+                        <strong>Deadline:</strong> {due_date}
                     </div>
+                    {instructions_html}
                     <p>Please ensure you are in a quiet environment with a stable internet connection before launching the assessment.</p>',
                     'Start Aptitude Assessment',
                     '{invitationUrl}'
@@ -563,13 +565,17 @@ class EmailTemplateService
                     <div class="info-box">
                         <strong>Applicant Name:</strong> {candidate_name}<br>
                         <strong>Position:</strong> {job_title}<br>
-                        <strong>Submitted:</strong> ' . date('F j, Y, g:i A') . '
+                        <strong>Submitted:</strong> {applied_at}<br>
+                        <strong>Candidate Email:</strong> {candidate_email}<br>
+                        <strong>Candidate Phone:</strong> {candidate_phone}<br>
+                        <strong>Availability:</strong> {availability}<br>
+                        <strong>Salary Expectation:</strong> {salary_expectation}
                     </div>
                     <p>Log in to your employer dashboard to view their profile, download their CV, and manage their recruitment stage.</p>',
                     'Review Candidate Application',
-                    '{site_url}/employer/applications'
+                    '{dashboard_url}'
                 ),
-                'body_text' => "{greeting}\n\nA new candidate ({candidate_name}) applied for {job_title}.\n\nReview application: {site_url}/employer/applications",
+                'body_text' => "{greeting}\n\nA new candidate ({candidate_name}) applied for {job_title}.\n\nReview application: {dashboard_url}",
                 'available_variables' => [
                     '{first_name}'     => 'Employer contact first name',
                     '{full_name}'      => 'Employer contact full name',
@@ -614,7 +620,7 @@ class EmailTemplateService
                     <div class="info-box">
                         <strong>Status:</strong> Verified Employer<br>
                         <strong>Company:</strong> {company_name}<br>
-                        <strong>Verified On:</strong> ' . date('F j, Y') . '
+                        <strong>Verified On:</strong> {verification_date}
                     </div>
                     <p>Your company profile and all posted jobs now proudly display the official <strong>Verified Employer Badge</strong>.</p>',
                     'Go to Employer Dashboard',
@@ -699,6 +705,199 @@ class EmailTemplateService
                 ],
             ],
 
+            'job_rejected' => [
+                'name'     => 'Job Posting Not Approved',
+                'category' => 'Employer Verification',
+                'subject'  => 'Job Update: {job_title}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Job Not Approved',
+                    'Listing Review',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>We have reviewed your job posting for <strong>{job_title}</strong>.</p>
+                    <div class="info-box">
+                        <strong>Reason for not being approved:</strong><br>
+                        {reason}
+                    </div>
+                    <p>Please review the feedback above and make the necessary changes to your job posting. You can edit and resubmit your job for approval.</p>
+                    <p>If you need assistance or believe this was a mistake, please contact our support team.</p>',
+                    'Edit Your Job',
+                    '{site_url}/employer/jobs'
+                ),
+                'body_text' => "{greeting}\n\nWe have reviewed your job posting for {job_title}. It was not approved.\n\nReason: {reason}\n\nEdit and resubmit: {site_url}/employer/jobs",
+                'available_variables' => [
+                    '{first_name}'   => 'Contact person first name',
+                    '{company_name}' => 'Company name',
+                    '{job_title}'    => 'Job title',
+                    '{reason}'       => 'Reason the job was not approved',
+                ],
+            ],
+
+            'assessment_link_completed' => [
+                'name'     => 'Assessment Link Completed (Employer Alert)',
+                'category' => 'Employer Verification',
+                'subject'  => 'Assessment Completed: {candidate_name} scored {score_percentage}%',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Assessment Completed',
+                    'Candidate Test Result',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Great news! <strong>{candidate_name}</strong> has just completed the assessment test you shared via your standalone tracking link.</p>
+                    <div class="info-box">
+                        <strong>Assessment Title:</strong> {test_title}<br>
+                        <strong>Completion Date:</strong> {completed_at}<br>
+                        <strong>Score:</strong> <span style="color: {score_color}; font-weight: 700; font-size: 22px;">{score_percentage}%</span> ({result_label})
+                    </div>
+                    <p>You can view the candidate\'s full profile, contact details, and test history on your dashboard by clicking the button below.</p>
+                    <p><strong>Tip:</strong> You can continue to share your standalone assessment links anywhere (LinkedIn, WhatsApp, Job Boards). As long as candidates use your specific link, their results will be tracked and sent directly to you!</p>',
+                    'View Candidate Profile',
+                    '{candidate_profile_url}'
+                ),
+                'body_text' => "{greeting}\n\n{candidate_name} completed {test_title} with score {score_percentage}% ({result_label}) on {completed_at}.\n\nView profile: {candidate_profile_url}",
+                'available_variables' => [
+                    '{first_name}'       => 'Employer contact first name',
+                    '{candidate_name}'   => 'Candidate name',
+                    '{test_title}'       => 'Assessment title',
+                    '{score_percentage}' => 'Score percentage (1 decimal)',
+                    '{result_label}'     => 'Passed / Not passed',
+                    '{completed_at}'     => 'Completion date and time',
+                ],
+            ],
+
+            'account_event' => [
+                'name'     => 'Account Event Notification',
+                'category' => 'Account',
+                'subject'  => '{event_title}',
+                'greeting_type' => 'custom',
+                'body_html' => self::wrapHtml(
+                    'Account Update',
+                    'Account Notification',
+                    '<p>{event_message}</p>
+                    {event_details_html}',
+                    'View Account',
+                    '{action_url}'
+                ),
+                'body_text' => "{event_title}\n\n{event_message}",
+                'available_variables' => [
+                    '{event_title}'       => 'Event title (also the email subject)',
+                    '{event_message}'     => 'Event message',
+                    '{event_details_html}' => 'Label/value detail rows, built by the sender',
+                    '{action_url}'        => 'Dashboard / admin link',
+                ],
+            ],
+
+            'job_application_confirmation' => [
+                'name'     => 'Job Application Confirmation (Candidate)',
+                'category' => 'Applications',
+                'subject'  => 'Application Received – {job_title}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Application Received',
+                    'Application Confirmation',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Thank you for applying for the position of <strong>{job_title}</strong> at <strong>{employer_name}</strong>.</p>
+                    <p>We have successfully received your application and our recruitment team will review it shortly.</p>
+                    <div class="info-box">
+                        <strong>Job Title:</strong> {job_title}<br>
+                        <strong>Company:</strong> {employer_name}<br>
+                        <strong>Location:</strong> {job_location}<br>
+                        <strong>Status:</strong> Pending Review
+                    </div>
+                    <p>If your profile matches our requirements, you will be contacted via email or phone.</p>',
+                    'View My Applications',
+                    '{site_url}/candidate/applications'
+                ),
+                'body_text' => "{greeting}\n\nThank you for applying for {job_title} at {employer_name}. We have received your application and it is now pending review.\n\nTrack it here: {site_url}/candidate/applications",
+                'available_variables' => [
+                    '{candidate_name}' => 'Candidate name',
+                    '{job_title}'      => 'Job title',
+                    '{employer_name}'  => 'Company name',
+                    '{job_location}'   => 'Job location',
+                ],
+            ],
+
+            'contact_admin' => [
+                'name'     => 'Contact Form — Admin Notification',
+                'category' => 'Support & Inquiries',
+                'subject'  => '[Contact] {subject}',
+                'greeting_type' => 'custom',
+                'body_html' => self::wrapHtml(
+                    'New Contact Message',
+                    'Contact Form',
+                    '<div class="info-box">
+                        <strong>Name:</strong> {name}<br>
+                        <strong>Email:</strong> {email}<br>
+                        <strong>Phone:</strong> {phone}<br>
+                        <strong>Subject:</strong> {subject}
+                    </div>
+                    <p>{message_html}</p>'
+                ),
+                'body_text' => "New contact message from {name} ({email})\n\nSubject: {subject}\n\n{message}",
+                'available_variables' => [
+                    '{name}'    => 'Sender name',
+                    '{email}'   => 'Sender email',
+                    '{phone}'   => 'Sender phone',
+                    '{subject}' => 'Message subject',
+                    '{message}' => 'Message text',
+                ],
+            ],
+
+            'recruitment_admin' => [
+                'name'     => 'Recruitment Inquiry — Admin Notification',
+                'category' => 'Support & Inquiries',
+                'subject'  => '[Recruitment Inquiry] {role} — {company_name}',
+                'greeting_type' => 'custom',
+                'body_html' => self::wrapHtml(
+                    'New Recruitment Inquiry',
+                    'Recruitment Inquiry',
+                    '<div class="info-box">
+                        <strong>Name:</strong> {full_name}<br>
+                        <strong>Company:</strong> {company_name}<br>
+                        <strong>Email:</strong> {email}<br>
+                        <strong>Phone:</strong> {phone}<br>
+                        <strong>Role to Hire:</strong> {role}<br>
+                        <strong>Experience Level:</strong> {experience}<br>
+                        <strong>Budget / Salary:</strong> {budget}<br>
+                        <strong>Schedule:</strong> {schedule}<br>
+                        <strong>Location:</strong> {location}
+                    </div>
+                    <p><strong>Message:</strong><br>{message_html}</p>'
+                ),
+                'body_text' => "New recruitment inquiry from {full_name} ({company_name})\n\nRole: {role}\nExperience: {experience}\nBudget: {budget}\nSchedule: {schedule}\nLocation: {location}\n\n{message}",
+                'available_variables' => [
+                    '{full_name}'   => 'Inquirer name',
+                    '{company_name}' => 'Company name',
+                    '{email}'       => 'Inquirer email',
+                    '{phone}'       => 'Inquirer phone',
+                    '{role}'        => 'Role to hire',
+                    '{experience}'  => 'Experience level',
+                    '{budget}'      => 'Budget / salary',
+                    '{schedule}'    => 'Schedule',
+                    '{location}'    => 'Location',
+                    '{message}'     => 'Message text',
+                ],
+            ],
+
+            'recruitment_autoreply' => [
+                'name'     => 'Recruitment Inquiry — Auto-Reply',
+                'category' => 'Support & Inquiries',
+                'subject'  => 'We received your recruitment inquiry — {site_name}',
+                'greeting_type' => 'custom',
+                'body_html' => self::wrapHtml(
+                    'Inquiry Received',
+                    'Recruitment Services',
+                    '<p>Hi {full_name},</p>
+                    <p>Thank you for reaching out to <strong>{site_name}</strong>. We have received your inquiry for the <strong>{role}</strong> role and our recruitment team will get back to you within <strong>one business day</strong>.</p>
+                    <p>In the meantime, feel free to browse available candidates on our platform.</p>
+                    <p>Warm regards,<br><strong>The {site_name} Team</strong></p>'
+                ),
+                'body_text' => "Hi {full_name},\n\nThank you for reaching out to {site_name}. We have received your inquiry for the {role} role and our recruitment team will get back to you within one business day.\n\nWarm regards,\nThe {site_name} Team",
+                'available_variables' => [
+                    '{full_name}' => 'Inquirer name',
+                    '{role}'      => 'Role to hire',
+                ],
+            ],
+
             'aptitude_test_completed_employer' => [
                 'name'     => 'Candidate Assessment Results Alert',
                 'category' => 'Employer Verification',
@@ -713,7 +912,7 @@ class EmailTemplateService
                         <strong>Candidate:</strong> {candidate_name}<br>
                         <strong>Assessment:</strong> {test_title}<br>
                         <strong>Score:</strong> <span style="font-size: 18px; font-weight: 700; color: #0D609E;">{score_percentage}%</span><br>
-                        <strong>Completed On:</strong> ' . date('F j, Y, g:i A') . '
+                        <strong>Completed On:</strong> {completed_at}
                     </div>
                     <p>Log in to view their full answer sheet, time spent, and comparative ranking.</p>',
                     'View Assessment Full Report',
@@ -946,8 +1145,7 @@ class EmailTemplateService
                     <p>Thank you for getting in touch with <strong>{site_name}</strong>!</p>
                     <p>Our support team has received your message and is reviewing your inquiry. We typically respond within 2 to 6 business hours.</p>
                     <div class="info-box">
-                        <strong>Subject:</strong> {message_subject}<br>
-                        <strong>Reference ID:</strong> #{reference}
+                        <strong>Subject:</strong> {message_subject}
                     </div>',
                     'Visit Help Center',
                     '{site_url}'

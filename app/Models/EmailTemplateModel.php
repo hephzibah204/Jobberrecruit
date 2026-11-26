@@ -120,6 +120,12 @@ class EmailTemplateModel extends Model
             $rawName = $data['first_name'];
         } elseif (isset($data['user']) && is_object($data['user'])) {
             $rawName = $data['user']->username ?? ($data['user']->first_name ?? '');
+        } elseif (!empty($data['company_name'])) {
+            $rawName = $data['company_name'];
+        } elseif (!empty($data['companyName'])) {
+            $rawName = $data['companyName'];
+        } elseif (!empty($data['employer_name'])) {
+            $rawName = $data['employer_name'];
         }
 
         $names = self::parseNameParts($rawName);

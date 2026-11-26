@@ -531,29 +531,14 @@ class EmailNotificationService
         $jobTitle    = !empty($jobTitle) ? trim($jobTitle) : 'Position';
         $formattedDueDate = $dueDate ? date('F j, Y', strtotime($dueDate)) : 'No strict deadline';
 
-        $htmlMessage = "
-        <p>Dear " . htmlspecialchars($candidateName) . ",</p>
-        <p><strong>" . htmlspecialchars($companyName) . "</strong> has invited you to complete an official Aptitude Assessment for your application for <strong>" . htmlspecialchars($jobTitle) . "</strong>.</p>
-        <div style='background-color:#f8f9fa; border-left:4px solid #0d6efd; padding:15px; margin:15px 0;'>
-            <p style='margin:0 0 5px 0;'><strong>Assessment Title:</strong> " . htmlspecialchars($testTitle) . "</p>
-            <p style='margin:0 0 5px 0;'><strong>Completion Deadline:</strong> {$formattedDueDate}</p>
-            " . ($customMessage ? "<p style='margin:10px 0 0 0;'><strong>Instructions:</strong> " . nl2br(htmlspecialchars($customMessage)) . "</p>" : "") . "
-        </div>
-        <p style='text-align:center; margin:25px 0;'>
-            <a href='{$invitationUrl}' style='background-color:#0d6efd; color:#ffffff; padding:12px 25px; text-decoration:none; border-radius:5px; font-weight:bold; display:inline-block;'>Start Aptitude Assessment</a>
-        </p>
-        <p>If the button above does not work, copy and paste this link into your browser:<br><a href='{$invitationUrl}'>{$invitationUrl}</a></p>
-        <p>Best regards,<br>The Recruitment Team at " . htmlspecialchars($companyName) . "</p>";
+        $instructionsHtml = $customMessage
+            ? "<p style='margin:10px 0 0 0;'><strong>Instructions:</strong> " . nl2br(htmlspecialchars($customMessage)) . "</p>"
+            : '';
 
         $data = [
             'name'          => htmlspecialchars($candidateName),
             'first_name'    => htmlspecialchars($candidateName),
             'full_name'     => htmlspecialchars($candidateName),
-            'statusLabel'   => 'Aptitude Test Invitation',
-            'status_label'  => 'Aptitude Test Invitation',
-            'statusColor'   => '#0d6efd',
-            'status_color'  => '#0d6efd',
-            'message'       => $htmlMessage,
             'companyName'   => htmlspecialchars($companyName),
             'company_name'  => htmlspecialchars($companyName),
             'company'       => htmlspecialchars($companyName),
@@ -564,12 +549,14 @@ class EmailNotificationService
             'test_title'    => htmlspecialchars($testTitle),
             'invitationUrl' => $invitationUrl,
             'invitation_url'=> $invitationUrl,
+            'due_date'      => $formattedDueDate,
+            'instructions_html' => $instructionsHtml,
         ];
 
         return $this->sendEmail(
             $candidateEmail,
             "Aptitude Test Invitation: {$testTitle} - {$companyName}",
-            'emails/application_status',
+            'emails/aptitude_test_invitation',
             $data
         );
     }
@@ -601,12 +588,15 @@ class EmailNotificationService
      */
     public function sendAssessmentLinkCompletedEmail(string $employerEmail, string $employerName, string $candidateName, string $testTitle, float $scorePct, string $candidateProfileUrl): bool
     {
+        $passed = ($scorePct >= 50); // Simplified display
         $data = [
             'employer_name'         => $employerName,
             'candidate_name'        => $candidateName,
             'test_title'            => $testTitle,
-            'score_percentage'      => $scorePct,
-            'passed'                => ($scorePct >= 50), // Simplified display
+            'score_percentage'      => number_format($scorePct, 1),
+            'passed'                => $passed,
+            'score_color'           => $passed ? '#198754' : '#dc3545',
+            'result_label'          => $passed ? 'Passed' : 'Not passed',
             'completed_at'          => date('F j, Y, g:i A'),
             'candidate_profile_url' => $candidateProfileUrl,
         ];
@@ -650,6 +640,19 @@ class EmailNotificationService
         return $adminEmail;
     }
 
+    /** Build the label/value detail rows the account_event template prints. */
+    protected static function eventDetailsHtml(array $details): string
+    {
+        if (empty($details)) {
+            return '';
+        }
+        $rows = '';
+        foreach ($details as $label => $value) {
+            $rows .= '<strong>' . esc((string) $label) . ':</strong> ' . esc((string) $value) . '<br>';
+        }
+        return '<div class="info-box">' . $rows . '</div>';
+    }
+
     public function sendAdministrativeEvent(string $title, string $message, array $details = []): bool
     {
         $recipients = [];
@@ -665,6 +668,7 @@ class EmailNotificationService
         foreach (array_unique($recipients) as $recipient) {
             $result = $this->sendEmail($recipient, $title, 'emails/account_event', [
                 'event_title' => $title, 'event_message' => $message, 'event_details' => $details,
+                'event_details_html' => self::eventDetailsHtml($details),
                 'action_url' => base_url('admin/employers'),
             ]);
             $sent = $result || $sent;
@@ -678,6 +682,7 @@ class EmailNotificationService
         if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) $recipient = $employer->contact_email ?? '';
         $sent = $this->sendEmail($recipient, $title, 'emails/account_event', [
             'event_title' => $title, 'event_message' => $message, 'event_details' => $details,
+            'event_details_html' => self::eventDetailsHtml($details),
             'action_url' => base_url('employer/dashboard'),
         ]);
         $this->sendAdministrativeEvent($title . ' — ' . ($employer->company_name ?? 'Employer'), $message, $details);
@@ -814,6 +819,8 @@ class EmailNotificationService
         $data = [
             'job_title'     => $jobTitle,
             'employer_name' => $companyName,
+            'company_name'  => $companyName,
+            'contact_name'  => is_object($employer) ? ($employer->contact_name ?? '') : ($employer['contact_name'] ?? ''),
             'created_at'    => date('F j, Y')
         ];
 
@@ -956,6 +963,8 @@ class EmailNotificationService
 
             $data = [
                 'employer_name'        => is_object($employer) ? $employer->company_name : ($employer['company_name'] ?? 'Employer'),
+                'company_name'         => is_object($employer) ? $employer->company_name : ($employer['company_name'] ?? 'Employer'),
+                'contact_name'         => is_object($employer) ? ($employer->contact_name ?? '') : ($employer['contact_name'] ?? ''),
                 'job_title'            => $jobTitle,
                 'job_url'              => base_url('jobs/' . $jobSlug),
                 'action_url'           => base_url('jobs/' . $jobSlug),
@@ -1025,6 +1034,8 @@ class EmailNotificationService
 
             $data = [
                 'employer_name' => is_object($employer) ? $employer->company_name : ($employer['company_name'] ?? 'Employer'),
+                'company_name'  => is_object($employer) ? $employer->company_name : ($employer['company_name'] ?? 'Employer'),
+                'contact_name'  => is_object($employer) ? ($employer->contact_name ?? '') : ($employer['contact_name'] ?? ''),
                 'job_title'     => $jobTitle,
                 'reason'        => $rejectionReason,
                 'platform_name' => config('App')->appName ?? 'JobberRecruit',

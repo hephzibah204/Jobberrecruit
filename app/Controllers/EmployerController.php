@@ -1007,9 +1007,14 @@ class EmployerController extends BaseController
                         log_message('error', 'Failed sending job posting admin alert: ' . $e->getMessage());
                     }
 
-                    // 2. Notify Employer if preference enabled
-                    if (!empty($notificationPreferences['email'])) {
+                    // 2. Submission receipt to the employer. This is a transactional
+                    // confirmation that the job was received and is under review, so it
+                    // always sends for a non-draft post; the per-job notification
+                    // preference governs application alerts, not this receipt.
+                    try {
                         $this->sendJobPostingEmail($employer, $postData['title'], $jobId, $shouldBeFeatured);
+                    } catch (\Throwable $e) {
+                        log_message('error', 'Failed sending job submission receipt: ' . $e->getMessage());
                     }
                 }
 
@@ -3710,6 +3715,23 @@ class EmployerController extends BaseController
                 'jobId' => $jobId,
                 'employerId' => $employer->id,
             ]);
+
+            // Submission receipt + admin alert: a repost enters the same pending
+            // review state as a new post, so the employer gets the same confirmation.
+            try {
+                $repostJob = $jobModel->find($jobId);
+                if ($repostJob) {
+                    $emailService = new \App\Services\EmailNotificationService();
+                    try {
+                        $emailService->sendJobPostingAdminAlertEmail($repostJob, $employer);
+                    } catch (\Throwable $e) {
+                        log_message('error', 'Failed sending repost admin alert: ' . $e->getMessage());
+                    }
+                    $this->sendJobPostingEmail($employer, $repostJob->title, $jobId);
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Failed sending repost submission receipt: ' . $e->getMessage());
+            }
 
             return $this->response->setJSON([
                 'success' => true,

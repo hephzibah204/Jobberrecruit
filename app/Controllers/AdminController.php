@@ -2789,46 +2789,15 @@ class AdminController extends BaseController
             $jobId
         );
 
-        // Send email notification to employer
-        $emailService = service('mailer');
+        // Rejection email goes through the canonical templated notification
+        // (single source of truth: the 'job_rejected' admin email template).
+        try {
+            $emailService = new \App\Services\EmailNotificationService();
+            $emailService->sendJobRejectedNotification($job, $employer, (string) $reason);
+        } catch (\Throwable $ex) {
+            log_message('error', 'Error sending job rejection email: ' . $ex->getMessage());
+        }
 
-        // Determine notification email address (preference or fallback)
-        $jobPreferences = is_string($job->notification_preferences)
-            ? json_decode($job->notification_preferences, true)
-            : ($job->notification_preferences ?? []);
-
-        $notificationEmail = $jobPreferences['notification_email_address'] ?? $employer->contact_email;
-
-        $emailService->sendTemplate(
-            $notificationEmail,
-            'Job Update - ' . $job->title,
-            'emails/job_rejected',
-            [
-                'employer_name' => $employer->company_name,
-                'employer_logo' => $employer->logo,
-                'job_title' => $job->title,
-                'job_id' => $jobId,
-                'job_created_at' => date('M d, Y', strtotime($job->created_at)),
-                'rejection_reason' => $reason,
-                'platform_name' => config('App')->appName ?? 'JobberRecruit',
-                'edit_job_url' => base_url('employer/jobs/edit/' . $jobId),
-                'dashboard_url' => base_url('employer/dashboard'),
-                'jobs_url' => base_url('employer/jobs'),
-                'pricing_url' => base_url('employer/pricing'),
-                'support_url' => base_url('contact-us'),
-
-                // Account information
-                'credit_balance' => $creditBalance,
-                'has_unlimited_access' => $hasUnlimitedAccess,
-                'current_plan' => $planName ?? ($hasUnlimitedAccess ? 'Unlimited Access' : 'No Active Plan'),
-                'subscription_ends_at' => $subscriptionEndsAt,
-
-                // Job statistics
-                'total_jobs_posted' => $totalJobsPosted,
-                'pending_jobs' => $pendingJobs,
-                'approved_jobs' => $approvedJobs,
-                'rejected_jobs' => $rejectedJobs,
-                'current_job_status' => 'rejected'
             ]
         );
 
@@ -2945,31 +2914,11 @@ class AdminController extends BaseController
                         $id
                     );
 
-                    $creditService = new \App\Services\CreditService();
-                    $creditBalance = $creditService->getAvailableCredits($employer->user_id);
-                    $hasUnlimitedAccess = $creditService->hasUnlimitedAccess($employer->user_id);
-
-                    $jobPreferences = is_string($job->notification_preferences)
-                        ? json_decode($job->notification_preferences, true)
-                        : ($job->notification_preferences ?? []);
-                    $notificationEmail = $jobPreferences['notification_email_address'] ?? $employer->contact_email;
-
-                    if ($notificationEmail) {
-                        $emailService = service('mailer');
-                        $emailService->sendTemplate(
-                            $notificationEmail,
-                            'Job Approved - ' . ($postData['title'] ?? $job->title),
-                            'emails/job_approved',
-                            [
-                                'employer_name' => $employer->company_name,
-                                'job_title'     => $postData['title'] ?? $job->title,
-                                'job_url'       => base_url('jobs/' . ($job->slug ?? $job->id)),
-                                'credits_balance' => $creditBalance,
-                                'has_unlimited' => $hasUnlimitedAccess,
-                                'platform_name' => config('App')->appName ?? 'JobberRecruit'
-                            ]
-                        );
-                    }
+                    // Approval email goes through the same templated notification
+                    // as the Approve button (single source of truth: the
+                    // 'job_approved' admin email template).
+                    $emailService = new \App\Services\EmailNotificationService();
+                    $emailService->sendJobApprovedNotification($job);
                 }
             } catch (\Throwable $ex) {
                 log_message('error', 'Error sending job approval email during edit: ' . $ex->getMessage());
@@ -4701,13 +4650,12 @@ class AdminController extends BaseController
 
         $review = $reviewModel->find($id);
         if ($review && !empty($review['email'])) {
-            $emailService = service('mailer');
-            $emailService->sendTemplate(
+            (new \App\Services\EmailTemplateService())->send(
+                'cv_review_completed',
                 $review['email'],
-                'Your CV Review is Ready!',
-                'emails/cv_review_completed',
                 [
                     'user_name' => $review['full_name'] ?? 'Candidate',
+                    'name'      => $review['full_name'] ?? 'Candidate',
                 ]
             );
         }
