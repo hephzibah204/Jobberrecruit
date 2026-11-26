@@ -1629,8 +1629,10 @@ main, .section, .jobs-layout, .container,
               </div>
               <?php $jobIsClosedView = in_array(strtolower($job->status ?? ''), ['closed', 'paused', 'expired', 'rejected'], true); ?>
               <div class="detail-badges">
-                <?php if (!$jobIsClosedView && ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time()))): ?>
+                <?php if (!$jobIsClosedView && !empty($job->is_urgent)): ?>
                   <span class="detail-badge db-urgent"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> Urgently Hiring</span>
+                <?php endif; ?>
+                <?php if (!$jobIsClosedView && ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time()))): ?>
                   <span class="detail-badge db-featured"><svg aria-hidden="true"><use href="#i-star"/></svg> Featured</span>
                 <?php endif; ?>
                 <span class="detail-badge db-type"><svg aria-hidden="true"><use href="#i-bag"/></svg> <?= esc(ucfirst($job->job_type)) ?></span>
@@ -1760,8 +1762,8 @@ main, .section, .jobs-layout, .container,
           <div class="apply-salary"><?= esc($salary) ?></div>
           <div class="apply-salary-period">Salary</div>
           
-          <!-- Urgently hiring strip (show if urgent/featured) -->
-          <?php if (!$jobIsClosedView && ($job->is_featured || ($job->featured_until && strtotime($job->featured_until) > time()))): ?>
+          <!-- Urgently hiring strip (show only if the employer selected Urgently Hiring) -->
+          <?php if (!$jobIsClosedView && !empty($job->is_urgent)): ?>
             <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin-bottom:12px">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.1 13H11l-2 9 10.9-11H13l2-9z"/></svg> Urgently hiring &mdash; apply before deadline
             </div>
