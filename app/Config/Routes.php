@@ -514,6 +514,11 @@ $routes->post('employer/wallet/pay-with-wallet', 'WalletController::payWithWalle
 // Admin
 $routes->get('admin/login', 'AdminController::login');
 $routes->post('admin/login', 'AdminController::login');
+// Admin 2FA challenge: outside the adminAuth group (the gate lives in
+// AdminFilter), but the controller still requires the password-
+// authenticated admin session.
+$routes->get('admin/2fa', 'AdminController::twoFactorChallenge');
+$routes->post('admin/2fa', 'AdminController::twoFactorChallenge');
 $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('', 'AdminController::index');
     // Logout
@@ -532,6 +537,10 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('features', 'AdminController::features');
     $routes->post('features/save', 'AdminController::saveFeatures');
     $routes->get('audit-logs', 'AdminController::auditLogs');
+    $routes->get('two-factor', 'AdminController::twoFactor');
+    $routes->post('two-factor/start', 'AdminController::twoFactorStart');
+    $routes->post('two-factor/confirm', 'AdminController::twoFactorConfirm');
+    $routes->post('two-factor/disable', 'AdminController::twoFactorDisable');
 
     // Chatbot Management
     $routes->get('chatbot', 'AdminController::chatbotSettings');

@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
+use App\Libraries\Totp;
+use App\Models\Admin2faModel;
 use App\Models\AdminModel;
 use App\Models\AuditLogModel;
 use App\Models\BlogModel;
@@ -1551,6 +1553,228 @@ class AdminController extends BaseController
         ];
 
         return view('admin/audit_logs', $data);
+    }
+
+    /**
+     * Look up an admin's own 2FA enrolment row. Fails soft (null) when
+     * the admin_2fa table is unavailable, so the 2FA screens can never
+     * break the admin area during a deploy.
+     */
+    private function twoFactorRow(int $userId)
+    {
+        try {
+            return model(Admin2faModel::class)->find($userId);
+        } catch (\Throwable $e) {
+            log_message('error', 'Admin 2FA lookup failed: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Two-factor challenge, shown after password login when the admin
+     * has an enabled admin_2fa row but this session has not passed yet.
+     * The admin/2fa routes sit outside the adminAuth filter group (the
+     * gate in AdminFilter redirects here), so this method performs its
+     * own session checks. Five failed attempts end the session.
+     */
+    public function twoFactorChallenge()
+    {
+        $user = $this->auth->user();
+
+        if (! $this->auth->loggedIn() || ! $user || $user->user_type !== 'admin') {
+            return redirect()->to('/admin/login');
+        }
+
+        $row = $this->twoFactorRow((int) $user->id);
+
+        // Not enrolled (or the table is unavailable): nothing to prove.
+        if (! $row || ! $row->enabled) {
+            return redirect()->to('admin/dashboard');
+        }
+
+        if (session()->get('admin_2fa_passed')) {
+            $redirect = session()->get('admin_redirect') ?? base_url('admin/dashboard');
+            session()->remove('admin_redirect');
+
+            return redirect()->to($redirect);
+        }
+
+        if ($this->request->getMethod() === 'POST') {
+            $code = (string) $this->request->getPost('code');
+
+            if (Totp::verifyCode((string) $row->secret, $code)) {
+                session()->set('admin_2fa_passed', true);
+                session()->remove('admin_2fa_attempts');
+
+                $redirect = session()->get('admin_redirect') ?? base_url('admin/dashboard');
+                session()->remove('admin_redirect');
+
+                return redirect()->to($redirect);
+            }
+
+            $attempts = (int) (session()->get('admin_2fa_attempts') ?? 0) + 1;
+
+            if ($attempts >= 5) {
+                session()->remove('admin_2fa_attempts');
+                $this->auth->logout();
+
+                return redirect()->to('/admin/login')
+                    ->with('error', 'Too many incorrect two-factor codes. Please sign in again.');
+            }
+
+            session()->set('admin_2fa_attempts', $attempts);
+
+            return redirect()->to('/admin/2fa')
+                ->with('error', 'Incorrect code. Please check your authenticator app and try again.');
+        }
+
+        return view('admin/two_factor_challenge', [
+            'title' => 'Two-Factor Authentication',
+        ]);
+    }
+
+    /**
+     * Two-factor authentication settings for the signed-in admin.
+     * Enrolment is strictly per-admin: every action in this section
+     * uses only the session user's own id.
+     */
+    public function twoFactor()
+    {
+        $user = $this->auth->user();
+        $row  = $this->twoFactorRow((int) $user->id);
+
+        $data = [
+            'title'           => 'Two-Factor Authentication',
+            'user'            => $user,
+            'admin'           => $this->admin,
+            'twoFactor'       => $row,
+            'setupKey'        => null,
+            'provisioningUri' => null,
+        ];
+
+        if ($row && ! $row->enabled) {
+            $data['setupKey']        = (string) $row->secret;
+            $data['provisioningUri'] = Totp::getProvisioningUri(
+                (string) $row->secret,
+                (string) ($user->email ?? 'admin'),
+                'JobberRecruit Admin'
+            );
+        }
+
+        return view('admin/two_factor', $data);
+    }
+
+    /**
+     * Begin (or restart) 2FA setup: stores a fresh pending secret for
+     * the signed-in admin. Nothing is enforced until twoFactorConfirm()
+     * proves the admin can generate codes from it.
+     */
+    public function twoFactorStart()
+    {
+        $userId = (int) $this->auth->user()->id;
+        $model  = model(Admin2faModel::class);
+
+        try {
+            $existing = $model->find($userId);
+
+            if ($existing && $existing->enabled) {
+                return redirect()->to('admin/two-factor')
+                    ->with('error', 'Two-factor authentication is already enabled. Disable it first if you need to set it up again.');
+            }
+
+            $secret = Totp::generateSecret();
+
+            if ($existing) {
+                $model->update($userId, [
+                    'secret'       => $secret,
+                    'enabled'      => 0,
+                    'confirmed_at' => null,
+                ]);
+            } else {
+                $model->insert([
+                    'user_id'      => $userId,
+                    'secret'       => $secret,
+                    'enabled'      => 0,
+                    'confirmed_at' => null,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Admin 2FA setup failed: ' . $e->getMessage());
+
+            return redirect()->to('admin/two-factor')
+                ->with('error', 'Two-factor setup is unavailable right now. Please try again later.');
+        }
+
+        return redirect()->to('admin/two-factor')
+            ->with('success', 'Setup key generated. Add it to your authenticator app, then confirm with a code below.');
+    }
+
+    /**
+     * Confirm 2FA setup: a valid code against the pending secret turns
+     * enforcement on for this admin.
+     */
+    public function twoFactorConfirm()
+    {
+        $userId = (int) $this->auth->user()->id;
+        $row    = $this->twoFactorRow($userId);
+
+        if (! $row || $row->enabled) {
+            return redirect()->to('admin/two-factor')
+                ->with('error', 'There is no pending two-factor setup to confirm.');
+        }
+
+        $code = (string) $this->request->getPost('code');
+
+        if (! Totp::verifyCode((string) $row->secret, $code)) {
+            return redirect()->to('admin/two-factor')
+                ->with('error', 'Incorrect code. Setup was not enabled — check the key in your authenticator app and try again.');
+        }
+
+        model(Admin2faModel::class)->update($userId, [
+            'enabled'      => 1,
+            'confirmed_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // The admin just proved possession of the authenticator, so
+        // this session counts as having passed the challenge.
+        session()->set('admin_2fa_passed', true);
+
+        $this->auditLog('two_factor_enabled', 'admin_2fa', $userId);
+
+        return redirect()->to('admin/two-factor')
+            ->with('success', 'Two-factor authentication is now enabled for your account.');
+    }
+
+    /**
+     * Disable 2FA for the signed-in admin. Requires a current valid
+     * code; deletes the enrolment row entirely (the same end state as
+     * the database recovery path).
+     */
+    public function twoFactorDisable()
+    {
+        $userId = (int) $this->auth->user()->id;
+        $row    = $this->twoFactorRow($userId);
+
+        if (! $row || ! $row->enabled) {
+            return redirect()->to('admin/two-factor')
+                ->with('error', 'Two-factor authentication is not enabled for your account.');
+        }
+
+        $code = (string) $this->request->getPost('code');
+
+        if (! Totp::verifyCode((string) $row->secret, $code)) {
+            return redirect()->to('admin/two-factor')
+                ->with('error', 'Incorrect code. Two-factor authentication is still enabled.');
+        }
+
+        model(Admin2faModel::class)->delete($userId);
+        session()->remove('admin_2fa_passed');
+
+        $this->auditLog('two_factor_disabled', 'admin_2fa', $userId);
+
+        return redirect()->to('admin/two-factor')
+            ->with('success', 'Two-factor authentication has been disabled for your account.');
     }
 
     /**
