@@ -23,9 +23,14 @@ class TestEmail extends BaseCommand
         CLI::write("Initializing email service...", "cyan");
         $email = Services::email(false);
 
+        $rendered = (new \App\Services\EmailTemplateService())->render('test_email', []);
+
         $email->setTo($to);
-        $email->setSubject("JobberRecruit SMTP Test");
-        $email->setMessage("<p>This is a test email sent from the JobberRecruit CLI tool to verify SMTP settings.</p>");
+        $email->setSubject($rendered['subject']);
+        $email->setMessage($rendered['html']);
+        if (!empty($rendered['text'])) {
+            $email->setAltMessage($rendered['text']);
+        }
 
         CLI::write("Sending test email to: " . $to, "cyan");
 

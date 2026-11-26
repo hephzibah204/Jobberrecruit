@@ -1446,6 +1446,753 @@ class EmailTemplateService
                     '{submitted_at}'  => 'Submission timestamp',
                 ],
             ],
+
+    // ==========================================
+    // 8. SYSTEM & NEWSLETTERS (Round 32c)
+    // ==========================================
+    'test_email' => [
+        'name'     => 'SMTP Test Email',
+        'category' => 'System',
+        'subject'  => 'JobberRecruit SMTP Test',
+        'greeting_type' => 'custom',
+        'body_html' => self::wrapHtml(
+            'SMTP Test',
+            'System Test',
+            '<p>This is a test email sent from the JobberRecruit CLI tool to verify SMTP settings.</p>',
+            null,
+            null
+        ),
+        'body_text' => "This is a test email sent from the JobberRecruit CLI tool to verify SMTP settings.",
+        'available_variables' => [
+            '{site_name}' => 'Website name (JobberRecruit)',
+        ],
+    ],
+
+    'newsletter_general' => [
+        'name'     => 'Newsletter - General Announcement Layout',
+        'category' => 'Newsletters',
+        'subject'  => '{title}',
+        'greeting_type' => 'custom',
+        'body_html' => '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - JobberRecruit</title>
+    <style>
+        body {
+            font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background-color: #0D609E; /* Brand Secondary */
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header img {
+            max-width: 180px;
+            height: auto;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+        }
+        .content h1 {
+            color: #0D609E;
+            font-size: 22px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-left: 4px solid #F3921D;
+            padding-left: 10px;
+        }
+        .body-text {
+            font-size: 15px;
+            color: #334155;
+            margin-bottom: 25px;
+        }
+        .button-wrapper {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #F3921D; /* Brand Primary */
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(245, 166, 35, 0.2);
+            transition: all 0.2s ease-in-out;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 35px 0;
+        }
+        .footer {
+            background-color: #0D609E;
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .footer a {
+            color: #ffffff;
+            text-decoration: underline;
+            margin: 0 4px;
+        }
+        .social-icons {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .social-icons a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 8px;
+            font-weight: bold;
+        }
+        .unsubscribe-text {
+            margin-top: 20px;
+            font-size: 11px;
+            opacity: 0.9;
+        }
+        .unsubscribe-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 20px;
+            background-color: rgba(255, 255, 255, 0.12);
+            color: #ffffff !important;
+            text-decoration: none !important;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+        .unsubscribe-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <table class="container" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td class="header">
+                <img src="{site_url}/assets/imgs/template/logo-white.png" alt="JobberRecruit Logo" width="180" style="max-width: 180px; height: auto; display: block; margin: 0 auto; border: 0;">
+            </td>
+        </tr>
+        <tr>
+            <td class="content">
+                <h1>{title}</h1>
+                
+                <div class="body-text">
+                    {content}
+                </div>
+                
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+    <p class="fw-bold" style="margin: 0; color: #0D609E; font-size: 16px">JobberRecruit Team</p>
+    <p style="margin: 4px 0; font-size: 13px; color: #64748b;">Empowering Careers & Connections</p>
+    <p style="margin: 4px 0; font-size: 13px; color: #64748b;">6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria</p>
+    <p style="margin: 4px 0; font-size: 13px;">
+        <a href="https://jobberrecruit.com" class="fw-bold" style="color: #F3921D; text-decoration: none">www.jobberrecruit.com</a> | 
+        <a href="mailto:support@jobberrecruit.com" style="color: #64748b; text-decoration: none;">support@jobberrecruit.com</a> | 
+        <span style="color: #64748b;">+234 901 480 8902</span>
+    </p>
+    <img src="{site_url}/assets/imgs/template/logo.png" alt="JobberRecruit" style="width: 130px; height: auto; margin-top: 15px; border: 0;">
+</div>
+
+                <hr>
+
+                <p class="body-text" style="font-size: 13px; color: #64748b;">
+                    You received this email because you opted into our newsletter announcements. If you have any inquiries, feel free to drop us a line at <a href="mailto:support@jobberrecruit.com" style="color: #0D609E; text-decoration: none; font-weight: 500;">support@jobberrecruit.com</a>.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="footer">
+                <p class="fw-bold" style="font-size: 13px; margin-bottom: 8px">JobberRecruit Ltd</p>
+                <p>6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria</p>
+                <p>Phone: +234 901 480 8902 | Support: support@jobberrecruit.com</p>
+                
+                <div class="social-icons">
+                    <a href="https://www.linkedin.com/company/jobber-recruit/">LinkedIn</a> |
+                    <a href="https://www.instagram.com/jobberrecruit_ltd?igsh=YWFheGE0eDJ6NXh2">Instagram</a> |
+                    <a href="https://x.com/jobberrecruit?s=21&t=-feIW_cwkJ1KudODM2mONQ">X (Twitter)</a> |
+                    <a href="https://wa.me/message/GZ266BV42CQUK1">WhatsApp</a>
+                </div>
+                
+                <p>&copy; {current_year} JobberRecruit. All rights reserved.</p>
+                
+                <div class="unsubscribe-text">
+                    Want to change how you receive these emails? <br>
+                    <a href="{site_url}/newsletter/unsubscribe?email={email}" class="unsubscribe-btn">Unsubscribe From List</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+',
+        'body_text' => "{title}\n\n{content}\n\n---\nThis is the plain-text fallback for the HTML newsletter layout above. The HTML version contains the styled content, the JobberRecruit signature and an unsubscribe link for {email}.",
+        'available_variables' => [
+            '{title}'       => 'Newsletter title (headline and document title)',
+            '{content}'     => 'Newsletter body HTML (inserted unescaped, as in the original layouts)',
+            '{email}'       => 'Recipient email (used in the unsubscribe link)',
+            '{site_url}'    => 'Website base URL (logo, links and unsubscribe URL are built from it)',
+            '{current_year}' => 'Current year (footer copyright line)',
+        ],
+    ],
+
+    'newsletter_candidate' => [
+        'name'     => 'Newsletter - Candidate Careers Layout',
+        'category' => 'Newsletters',
+        'subject'  => '{title}',
+        'greeting_type' => 'custom',
+        'body_html' => '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - JobberRecruit Candidates</title>
+    <style>
+        body {
+            font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f5f9;
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background: linear-gradient(135deg, #0D609E 0%, #003a6a 100%); /* Brand Secondary gradient */
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 5px solid #F3921D; /* Brand Primary */
+        }
+        .header img {
+            max-width: 190px;
+            height: auto;
+        }
+        .candidate-tag {
+            display: inline-block;
+            background-color: #F3921D;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin-top: 15px;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 40px 35px;
+            line-height: 1.7;
+        }
+        .content h1 {
+            color: #0D609E;
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+        .body-text {
+            font-size: 15px;
+            color: #334155;
+            margin-bottom: 25px;
+        }
+        .tip-box {
+            background-color: #fdf8f2;
+            border-left: 4px solid #F3921D;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 30px 0;
+        }
+        .tip-title {
+            font-weight: bold;
+            color: #b26a00;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tip-text {
+            font-size: 13.5px;
+            color: #5c442c;
+            margin: 0;
+        }
+        .features-grid {
+            margin: 30px 0;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px dashed #cbd5e1;
+        }
+        .feature-item {
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 10px;
+        }
+        .feature-item strong {
+            color: #0D609E;
+        }
+        .button-wrapper {
+            text-align: center;
+            margin: 35px 0 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 35px;
+            background-color: #F3921D; /* Brand Primary */
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            box-shadow: 0 5px 15px rgba(245, 166, 35, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 35px 0;
+        }
+        .footer {
+            background-color: #0D609E;
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .footer p {
+            margin: 6px 0;
+        }
+        .footer a {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        .social-icons {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .social-icons a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .unsubscribe-text {
+            margin-top: 25px;
+            font-size: 11px;
+            opacity: 0.9;
+        }
+        .unsubscribe-btn {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 8px 22px;
+            background-color: rgba(255, 255, 255, 0.12);
+            color: #ffffff !important;
+            text-decoration: none !important;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+        .unsubscribe-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <table class="container" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td class="header">
+                <img src="{site_url}/assets/imgs/template/logo-white.png" alt="JobberRecruit Logo" width="180" style="max-width: 180px; height: auto; display: block; margin: 0 auto; border: 0;">
+                <br>
+                <span class="candidate-tag">Candidate Career Insights</span>
+            </td>
+        </tr>
+        <tr>
+            <td class="content">
+                <h1>{title}</h1>
+                
+                <div class="body-text">
+                    {content}
+                </div>
+
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+    <p class="fw-bold" style="margin: 0; color: #0D609E; font-size: 16px">JobberRecruit Team</p>
+    <p style="margin: 4px 0; font-size: 13px; color: #64748b;">Empowering Careers & Connections</p>
+    <p style="margin: 4px 0; font-size: 13px; color: #64748b;">6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria</p>
+    <p style="margin: 4px 0; font-size: 13px;">
+        <a href="https://jobberrecruit.com" class="fw-bold" style="color: #F3921D; text-decoration: none">www.jobberrecruit.com</a> | 
+        <a href="mailto:support@jobberrecruit.com" style="color: #64748b; text-decoration: none;">support@jobberrecruit.com</a> | 
+        <span style="color: #64748b;">+234 901 480 8902</span>
+    </p>
+    <img src="{site_url}/assets/imgs/template/logo.png" alt="JobberRecruit" style="width: 130px; height: auto; margin-top: 15px; border: 0;">
+</div>
+
+                <div class="tip-box">
+                    <p class="tip-title">💡 Pro Career Tip</p>
+                    <p class="tip-text">Keep your professional profile and resume fully updated. JobberRecruit recruiters search our database daily using advanced AI tools to match candidate profiles with top tier employers!</p>
+                </div>
+
+                <div class="features-grid">
+                    <p class="mt-0 fw-bold" style="color: #0D609E; font-size: 15px">Explore JobberRecruit Tools:</p>
+                    <div class="feature-item">🚀 <strong>AI Resume Builder:</strong> Craft a professional, ATS-optimized CV in minutes.</div>
+                    <div class="feature-item">📅 <strong>Exclusive Webinars:</strong> Learn interview techniques directly from global HR experts.</div>
+                    <div class="feature-item">⚡ <strong>Smart Job Alerts:</strong> Get the latest high-paying job matches right to your inbox.</div>
+                </div>
+
+                <div class="button-wrapper">
+                    <a href="{site_url}/candidate/resume/builder" class="button">Build Your ATS Resume Now</a>
+                </div>
+                
+                <hr>
+
+                <p class="body-text" style="font-size: 13px; color: #64748b; line-height: 1.5;">
+                    This is an exclusive career growth publication sent to registered candidates at JobberRecruit. Need guidance or support? Reach our candidate success desk at <a href="mailto:support@jobberrecruit.com" class="fw-bold" style="color: #0D609E; text-decoration: none">support@jobberrecruit.com</a>.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="footer">
+                <p class="fw-bold" style="font-size: 14px; margin-bottom: 8px">JobberRecruit Ltd</p>
+                <p>6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria</p>
+                <p>Phone: +234 901 480 8902 | Support: support@jobberrecruit.com</p>
+                
+                <div class="social-icons">
+                    <a href="https://www.linkedin.com/company/jobber-recruit/">LinkedIn</a> |
+                    <a href="https://www.instagram.com/jobberrecruit_ltd?igsh=YWFheGE0eDJ6NXh2">Instagram</a> |
+                    <a href="https://x.com/jobberrecruit?s=21&t=-feIW_cwkJ1KudODM2mONQ">X (Twitter)</a> |
+                    <a href="https://wa.me/message/GZ266BV42CQUK1">WhatsApp</a>
+                </div>
+                
+                <p>&copy; {current_year} JobberRecruit. All rights reserved.</p>
+                
+                <div class="unsubscribe-text">
+                    Want to stop receiving candidate updates? <br>
+                    <a href="{site_url}/newsletter/unsubscribe?email={email}" class="unsubscribe-btn">Unsubscribe From List</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+',
+        'body_text' => "{title}\n\n{content}\n\n---\nThis is the plain-text fallback for the HTML newsletter layout above. The HTML version contains the styled content, the JobberRecruit signature and an unsubscribe link for {email}.",
+        'available_variables' => [
+            '{title}'       => 'Newsletter title (headline and document title)',
+            '{content}'     => 'Newsletter body HTML (inserted unescaped, as in the original layouts)',
+            '{email}'       => 'Recipient email (used in the unsubscribe link)',
+            '{site_url}'    => 'Website base URL (logo, links and unsubscribe URL are built from it)',
+            '{current_year}' => 'Current year (footer copyright line)',
+        ],
+    ],
+
+    'newsletter_employer' => [
+        'name'     => 'Newsletter - Employer Talent Update Layout',
+        'category' => 'Newsletters',
+        'subject'  => '{title}',
+        'greeting_type' => 'custom',
+        'body_html' => '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} - JobberRecruit Employers</title>
+    <style>
+        body {
+            font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a; /* Sophisticated deep slate for premium business background */
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background: linear-gradient(135deg, #0D609E 0%, #002340 100%); /* Premium B2B gradient */
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 5px solid #F3921D; /* Brand Primary */
+        }
+        .header img {
+            max-width: 190px;
+            height: auto;
+        }
+        .employer-tag {
+            display: inline-block;
+            background-color: #F3921D;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 4px 14px;
+            border-radius: 12px;
+            margin-top: 15px;
+            letter-spacing: 1.5px;
+        }
+        .content {
+            padding: 45px 35px;
+            line-height: 1.7;
+        }
+        .content h1 {
+            color: #0D609E;
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+        .body-text {
+            font-size: 15px;
+            color: #334155;
+            margin-bottom: 25px;
+        }
+        .highlight-box {
+            background-color: #f0f7ff;
+            border-left: 4px solid #0D609E;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 30px 0;
+        }
+        .highlight-title {
+            font-weight: bold;
+            color: #0D609E;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .highlight-text {
+            font-size: 13.5px;
+            color: #1e293b;
+            margin: 0;
+        }
+        .pricing-callout {
+            background: linear-gradient(135deg, #fef8f0 0%, #fffcf8 100%);
+            border: 1px solid #fed7aa;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .pricing-tag {
+            color: #ea580c;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .pricing-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 5px 0 15px 0;
+        }
+        .button-wrapper {
+            text-align: center;
+            margin: 35px 0 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 35px;
+            background-color: #F3921D; /* Brand Primary */
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            box-shadow: 0 5px 15px rgba(245, 166, 35, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 35px 0;
+        }
+        .footer {
+            background-color: #0D609E;
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .footer p {
+            margin: 6px 0;
+        }
+        .footer a {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        .social-icons {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .social-icons a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .unsubscribe-text {
+            margin-top: 25px;
+            font-size: 11px;
+            opacity: 0.9;
+        }
+        .unsubscribe-btn {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 8px 22px;
+            background-color: rgba(255, 255, 255, 0.12);
+            color: #ffffff !important;
+            text-decoration: none !important;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+        .unsubscribe-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <table class="container" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td class="header">
+                <img src="{site_url}/assets/imgs/template/logo-white.png" alt="JobberRecruit Logo" width="180" style="max-width: 180px; height: auto; display: block; margin: 0 auto; border: 0;">
+                <br>
+                <span class="employer-tag">Employer & Hiring Partner Desk</span>
+            </td>
+        </tr>
+        <tr>
+            <td class="content">
+                <h1>{title}</h1>
+                
+                <div class="body-text">
+                    {content}
+                </div>
+
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+    <p class="fw-bold" style="margin: 0; color: #0D609E; font-size: 16px">JobberRecruit Team</p>
+    <p style="margin: 4px 0; font-size: 13px; color: #64748b;">Empowering Careers & Connections</p>
+    <p style="margin: 4px 0; font-size: 13px; color: #64748b;">6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria</p>
+    <p style="margin: 4px 0; font-size: 13px;">
+        <a href="https://jobberrecruit.com" class="fw-bold" style="color: #F3921D; text-decoration: none">www.jobberrecruit.com</a> | 
+        <a href="mailto:support@jobberrecruit.com" style="color: #64748b; text-decoration: none;">support@jobberrecruit.com</a> | 
+        <span style="color: #64748b;">+234 901 480 8902</span>
+    </p>
+    <img src="{site_url}/assets/imgs/template/logo.png" alt="JobberRecruit" style="width: 130px; height: auto; margin-top: 15px; border: 0;">
+</div>
+
+                <div class="highlight-box">
+                    <p class="highlight-title">🎯 Premium Talent Acquisition</p>
+                    <p class="highlight-text">Unlock access to our pool of verified candidates with verified ATS-standard CVs. Reduce your time-to-hire by over 50% by leveraging JobberRecruit\'s smart matching and candidate shortlisting engine!</p>
+                </div>
+
+                <div class="pricing-callout">
+                    <span class="pricing-tag">Featured Offer</span>
+                    <p class="pricing-title">Scale Your Hiring Team Effortlessly</p>
+                    <p style="font-size: 14px; color: #475569; margin: 0 0 20px 0; line-height: 1.5;">Post unlimited job openings, unlock advanced candidate CV database search, and access pre-screened applications tailored for your open positions.</p>
+                    <a href="{site_url}/employers/bundles" style="display: inline-block; padding: 10px 25px; background-color: #0D609E; color: #ffffff !important; font-weight: bold; font-size: 13px; text-decoration: none; border-radius: 6px;">View Bundles & Pricing</a>
+                </div>
+
+                <div class="button-wrapper">
+                    <a href="{site_url}/employers/dashboard" class="button">Access Recruitment Dashboard</a>
+                </div>
+                
+                <hr>
+
+                <p class="body-text" style="font-size: 13px; color: #64748b; line-height: 1.5;">
+                    This is an exclusive publication sent to registered employer partners at JobberRecruit. For corporate support or customized enterprise hiring packages, contact our partner success team at <a href="mailto:support@jobberrecruit.com" class="fw-bold" style="color: #0D609E; text-decoration: none">support@jobberrecruit.com</a>.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="footer">
+                <p class="fw-bold" style="font-size: 14px; margin-bottom: 8px">JobberRecruit Ltd</p>
+                <p>6 Ojulari Rd, Lekki Penninsula II, 106104, Lagos, Nigeria</p>
+                <p>Phone: +234 901 480 8902 | Support: support@jobberrecruit.com</p>
+                
+                <div class="social-icons">
+                    <a href="https://www.linkedin.com/company/jobber-recruit/">LinkedIn</a> |
+                    <a href="https://www.instagram.com/jobberrecruit_ltd?igsh=YWFheGE0eDJ6NXh2">Instagram</a> |
+                    <a href="https://x.com/jobberrecruit?s=21&t=-feIW_cwkJ1KudODM2mONQ">X (Twitter)</a> |
+                    <a href="https://wa.me/message/GZ266BV42CQUK1">WhatsApp</a>
+                </div>
+                
+                <p>&copy; {current_year} JobberRecruit. All rights reserved.</p>
+                
+                <div class="unsubscribe-text">
+                    Want to stop receiving employer newsletters? <br>
+                    <a href="{site_url}/newsletter/unsubscribe?email={email}" class="unsubscribe-btn">Unsubscribe From List</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+',
+        'body_text' => "{title}\n\n{content}\n\n---\nThis is the plain-text fallback for the HTML newsletter layout above. The HTML version contains the styled content, the JobberRecruit signature and an unsubscribe link for {email}.",
+        'available_variables' => [
+            '{title}'       => 'Newsletter title (headline and document title)',
+            '{content}'     => 'Newsletter body HTML (inserted unescaped, as in the original layouts)',
+            '{email}'       => 'Recipient email (used in the unsubscribe link)',
+            '{site_url}'    => 'Website base URL (logo, links and unsubscribe URL are built from it)',
+            '{current_year}' => 'Current year (footer copyright line)',
+        ],
+    ],
         ];
     }
 }

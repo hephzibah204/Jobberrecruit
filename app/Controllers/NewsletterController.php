@@ -698,10 +698,32 @@ class NewsletterController extends BaseController
         $templateModel = new NewsletterTemplateModel();
         
         if ($templateModel->countAllResults() === 0) {
+            // Starter layouts now live in the Admin Email Templates system
+            // (EmailTemplateService defaults: newsletter_general,
+            // newsletter_candidate, newsletter_employer) - the single source
+            // of truth for every email the platform sends. getDefaultTemplate()
+            // is the service's public accessor for a factory default. The
+            // defaults hold the full HTML document with {title} / {content} /
+            // {email} / {site_url} / {current_year} placeholders; substitute
+            // the same seed values this seeder has always used and store the
+            // finished document in newsletter_templates, as before.
+            $emailTemplateService = new \App\Services\EmailTemplateService();
+            $renderLayout = static function (string $templateKey, array $seed) use ($emailTemplateService): string {
+                $default = $emailTemplateService->getDefaultTemplate($templateKey);
+                $html = $default['body_html'] ?? '';
+                return strtr($html, [
+                    '{title}'        => $seed['title'],
+                    '{content}'      => $seed['content'],
+                    '{email}'        => $seed['email'],
+                    '{site_url}'     => rtrim(base_url(), '/'),
+                    '{current_year}' => date('Y'),
+                ]);
+            };
+
             $defaults = [
                 [
                     'name' => 'General Announcement Template',
-                    'html_content' => view('emails/newsletter_general', [
+                    'html_content' => $renderLayout('newsletter_general', [
                         'title'   => 'Important Platform Updates & Announcements',
                         'content' => '<h4>Welcome to the JobberRecruit Announcement!</h4><p>We are thrilled to bring you the latest developments, platform updates, and feature upgrades designed to make recruiting and career-building simpler for everyone.</p><p>Use this space to tell your subscribers about your news, product additions, or announcements.</p>',
                         'email'   => 'subscriber@example.com'
@@ -709,7 +731,7 @@ class NewsletterController extends BaseController
                 ],
                 [
                     'name' => 'Candidate Careers Template',
-                    'html_content' => view('emails/newsletter_candidate', [
+                    'html_content' => $renderLayout('newsletter_candidate', [
                         'title'   => 'Top Career Tips & Job Search Success Strategies',
                         'content' => '<h4>Maximize Your Opportunities Today!</h4><p>Explore custom career hacks, mock interview guidance, and the best ways to match with employers looking for your exact skillset.</p><p>Stay ahead of the curve with our expert resources curated specially for candidates like you.</p>',
                         'email'   => 'candidate@example.com'
@@ -717,7 +739,7 @@ class NewsletterController extends BaseController
                 ],
                 [
                     'name' => 'Employer Talent Update Template',
-                    'html_content' => view('emails/newsletter_employer', [
+                    'html_content' => $renderLayout('newsletter_employer', [
                         'title'   => 'Attract, Screen & Retain Top Talent Efficiently',
                         'content' => '<h4>Build the Ultimate Team with JobberRecruit</h4><p>Learn how to utilize our smart screening workflows, aptitude testing tools, and direct talent sourcing filters to find matching candidates in record time.</p>',
                         'email'   => 'employer@example.com'
