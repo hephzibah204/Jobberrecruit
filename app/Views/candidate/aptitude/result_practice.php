@@ -279,6 +279,7 @@ svg { flex-shrink: 0; }
       <div class="res-stat"><div class="n ok"><?= $numCorrect ?></div><div class="l">Correct</div></div>
       <div class="res-stat"><div class="n no"><?= $numWrong ?></div><div class="l">Incorrect</div></div>
       <div class="res-stat"><div class="n"><?= $numTotal ?></div><div class="l">Total</div></div>
+      <div class="res-stat"><div class="n"><?= esc($timeTaken ?? '—') ?></div><div class="l">Time taken</div></div>
     </div>
     <div class="res-actions">
       <a href="<?= base_url('aptitude/' . $testSlug . '/practice') ?>" class="btn btn-outline">Practice again</a>

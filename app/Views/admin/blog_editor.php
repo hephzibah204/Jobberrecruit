@@ -108,11 +108,28 @@
                 <!-- Categories & Tags Card -->
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white border-bottom pt-3 pb-2 px-3">
-                        <h6 class="fw-bold mb-0">Tags</h6>
+                        <h6 class="fw-bold mb-0">Categories & Tags</h6>
                     </div>
                     <div class="card-body p-3">
-                        <input type="text" class="form-control" name="tags" id="blog_tags" placeholder="e.g., job search, career" value="<?= $blog ? esc($blog->tags ?? '', 'attr') : '' ?>">
-                        <div class="form-text mt-2 small">Separate tags with commas</div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold" for="blog_category">Category</label>
+                            <input type="text" class="form-control" name="category" id="blog_category" placeholder="e.g., Career Tips" list="blogCategoryList" value="<?= $blog ? esc($blog->category ?? '', 'attr') : '' ?>">
+                            <datalist id="blogCategoryList">
+                                <?php foreach ($blogCategories ?? [] as $categoryOption): ?>
+                                    <option value="<?= esc($categoryOption, 'attr') ?>"></option>
+                                <?php endforeach ?>
+                            </datalist>
+                            <div class="form-text mt-2 small">Shown on the blog listing and article page</div>
+                        </div>
+                        <div>
+                            <label class="form-label text-muted small fw-bold" for="blog_tags">Tags</label>
+                            <input type="text" class="form-control" name="tags" id="blog_tags" placeholder="e.g., job search, career" value="<?= $blog ? esc($blog->tags ?? '', 'attr') : '' ?>">
+                            <div class="form-text mt-2 small">Separate tags with commas</div>
+                        </div>
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" name="is_featured" id="blog_featured" value="1" <?= ($blog && ! empty($blog->is_featured)) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="blog_featured">Featured post</label>
+                        </div>
                     </div>
                 </div>
 

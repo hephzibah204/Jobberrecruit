@@ -69,6 +69,7 @@ function openIf(array $paths)
                 'Content' => [
                     ['Blog',                'admin/blogs',                  'ti-news',              'prefix'],
                     ['Testimonials',        'admin/testimonials',           'ti-message-star',      'exact'],
+                    ['FAQs',                'admin/faqs',                   'ti-help-circle',       'exact'],
                     ['Newsletters',         'admin/newsletters',            'ti-mail',              'prefix'],
                     ['Email Templates',     'admin/email-templates',        'ti-mail-cog',          'prefix'],
                     ['Chatbot',             'admin/chatbot',                'ti-message-chatbot',   'exact'],

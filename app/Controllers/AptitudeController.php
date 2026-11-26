@@ -448,6 +448,7 @@ class AptitudeController extends BaseController
             'passed'     => $passed,
             'breakdown'  => $breakdown,
             'percentile' => $percentile,
+            'timeTaken'  => $this->formatAttemptDuration($attempt['started_at'] ?? null, $attempt['submitted_at'] ?? null),
         ];
 
         if ($attempt['mode'] === 'practice') {
@@ -455,6 +456,39 @@ class AptitudeController extends BaseController
         } else {
             return view('candidate/aptitude/result_official', $viewData);
         }
+    }
+
+    /**
+     * Humanize the elapsed time between an attempt's start and submission
+     * ("45s", "12m 34s", "1h 5m 3s"). Returns '—' when either timestamp is
+     * missing or the interval is not positive.
+     */
+    private function formatAttemptDuration($startedAt, $submittedAt): string
+    {
+        if (empty($startedAt) || empty($submittedAt)) {
+            return '—';
+        }
+
+        $start = strtotime((string) $startedAt);
+        $end   = strtotime((string) $submittedAt);
+
+        if ($start === false || $end === false || $end < $start) {
+            return '—';
+        }
+
+        $seconds = $end - $start;
+
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
+
+        if ($seconds < 3600) {
+            return intdiv($seconds, 60) . 'm ' . ($seconds % 60) . 's';
+        }
+
+        return intdiv($seconds, 3600) . 'h '
+            . intdiv($seconds % 3600, 60) . 'm '
+            . ($seconds % 60) . 's';
     }
 
     // --- API Endpoints ---

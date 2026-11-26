@@ -559,6 +559,8 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('applications', 'AdminController::applications');
     $routes->get('applications/view/(:num)', 'AdminController::viewApplication/$1');
     $routes->post('applications/update-status/(:num)', 'AdminController::saveApplicationStatus/$1');
+    $routes->post('applications/bulk-update-status', 'AdminController::bulkUpdateApplicationStatus');
+    $routes->post('applications/bulk-delete', 'AdminController::bulkDeleteApplications');
     // Candidates
     $routes->get('candidates', 'AdminController::candidates');
     $routes->get('candidates/filter', 'AdminController::filterCandidates');
@@ -617,6 +619,11 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('testimonials', 'AdminController::testimonials');
     $routes->post('testimonials/save', 'AdminController::saveTestimonial');
     $routes->post('testimonials/delete/(:num)', 'AdminController::deleteTestimonial/$1');
+
+    // FAQs
+    $routes->get('faqs', 'AdminController::faqs');
+    $routes->post('faqs/save', 'AdminController::saveFaq');
+    $routes->post('faqs/delete/(:num)', 'AdminController::deleteFaq/$1');
 
     // Affiliate Program
     $routes->get('affiliate/settings', 'ReferralController::adminSettings');

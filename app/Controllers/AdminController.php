@@ -1366,6 +1366,105 @@ class AdminController extends BaseController
         return redirect()->back()->with('success', 'Application status updated to ' . ucfirst($status) . '.');
     }
 
+    /**
+     * Bulk-update the status of the applications selected on the admin
+     * applications list. Mirrors saveApplicationStatus() per application:
+     * same canonical status set, and reviewed_at is stamped the first time
+     * an application leaves 'pending'. (The single-record admin path sends
+     * no notification emails, so neither does this.)
+     */
+    public function bulkUpdateApplicationStatus()
+    {
+        $status  = (string) $this->request->getPost('status');
+        $allowed = ['pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn'];
+
+        if (! in_array($status, $allowed, true)) {
+            return redirect()->back()->with('error', 'Invalid application status.');
+        }
+
+        $ids = array_filter(array_map('intval', (array) $this->request->getPost('ids')));
+
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'No applications selected.');
+        }
+
+        $applications = $this->jobApplicationModel
+            ->select('id, reviewed_at')
+            ->whereIn('id', $ids)
+            ->findAll();
+
+        if (empty($applications)) {
+            return redirect()->back()->with('error', 'No valid applications found.');
+        }
+
+        $validIds   = [];
+        $unstamped  = [];
+        foreach ($applications as $application) {
+            $validIds[] = (int) $application->id;
+            if (empty($application->reviewed_at)) {
+                $unstamped[] = (int) $application->id;
+            }
+        }
+
+        $this->jobApplicationModel->whereIn('id', $validIds)
+            ->set(['status' => $status])
+            ->update();
+
+        if ($status !== 'pending' && ! empty($unstamped)) {
+            $this->jobApplicationModel->whereIn('id', $unstamped)
+                ->set(['reviewed_at' => date('Y-m-d H:i:s')])
+                ->update();
+        }
+
+        return redirect()->back()->with(
+            'success',
+            count($validIds) . ' application(s) updated to ' . ucfirst($status) . '.'
+        );
+    }
+
+    /**
+     * Bulk-delete the applications selected on the admin applications list,
+     * cleaning up the same child rows as the employer bulk delete
+     * (EmployerController::bulkDeleteApplications), plus the pre-screening
+     * answers stored in application_answers.
+     */
+    public function bulkDeleteApplications()
+    {
+        $ids = array_filter(array_map('intval', (array) $this->request->getPost('ids')));
+
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'No applications selected.');
+        }
+
+        $applications = $this->jobApplicationModel
+            ->select('id')
+            ->whereIn('id', $ids)
+            ->findAll();
+
+        if (empty($applications)) {
+            return redirect()->back()->with('error', 'No valid applications found.');
+        }
+
+        $validIds = [];
+        foreach ($applications as $application) {
+            $validIds[] = (int) $application->id;
+        }
+
+        $db = \Config\Database::connect();
+        $db->table('application_notes')->whereIn('application_id', $validIds)->delete();
+        $db->table('application_status_history')->whereIn('application_id', $validIds)->delete();
+        $db->table('application_answers')->whereIn('application_id', $validIds)->delete();
+        $db->table('job_application_answers')->whereIn('application_id', $validIds)->delete();
+        $db->table('aptitude_test_invitations')->whereIn('application_id', $validIds)->delete();
+
+        $this->jobApplicationModel->whereIn('id', $validIds)->delete();
+
+        return redirect()->back()->with(
+            'success',
+            count($validIds) . ' application(s) deleted.'
+        );
+    }
+
     public function locations()
     {
 
@@ -3402,13 +3501,45 @@ class AdminController extends BaseController
         return view('admin/blogs', $data);
     }
 
+    /**
+     * Category suggestions for the blog editor's datalist: sensible defaults
+     * merged with the distinct category names already used by posts. Falls
+     * back to the defaults alone if the lookup fails for any reason.
+     */
+    private function blogCategorySuggestions(): array
+    {
+        $defaults = ['Career Tips', 'Job Search', 'Career Advice', 'Workplace', 'Interviews'];
+
+        try {
+            $rows = (new BlogModel())
+                ->select('category')
+                ->distinct()
+                ->where('category IS NOT NULL')
+                ->where('category !=', '')
+                ->orderBy('category', 'ASC')
+                ->findAll();
+
+            foreach ($rows as $row) {
+                $category = trim((string) ($row->category ?? ''));
+                if ($category !== '' && ! in_array($category, $defaults, true)) {
+                    $defaults[] = $category;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Blog category lookup failed: ' . $e->getMessage());
+        }
+
+        return $defaults;
+    }
+
     public function createBlog()
     {
         $data = [
             'title' => 'Create Blog',
             'user' => $this->auth->user(),
             'admin' => $this->admin,
-            'blog' => null
+            'blog' => null,
+            'blogCategories' => $this->blogCategorySuggestions()
         ];
         return view('admin/blog_editor', $data);
     }
@@ -3424,7 +3555,8 @@ class AdminController extends BaseController
             'title' => 'Edit Blog',
             'user' => $this->auth->user(),
             'admin' => $this->admin,
-            'blog' => $blog
+            'blog' => $blog,
+            'blogCategories' => $this->blogCategorySuggestions()
         ];
         return view('admin/blog_editor', $data);
     }
@@ -3453,9 +3585,20 @@ class AdminController extends BaseController
         }
 
         $model = new BlogModel();
-        $allowed = ['id', 'title', 'slug', 'content', 'excerpt', 'meta_title', 'meta_description', 'meta_keywords', 'status', 'category_id', 'tags', 'is_featured', 'existing_thumbnail'];
+        $allowed = ['id', 'title', 'slug', 'content', 'excerpt', 'meta_title', 'meta_description', 'meta_keywords', 'status', 'category', 'tags', 'is_featured', 'existing_thumbnail'];
         $data  = $this->request->getPost($allowed);
         $data['admin_id'] = $this->admin->id;
+
+        // Category / tags / featured: these were previously whitelisted as
+        // category_id/tags/is_featured here but silently discarded because
+        // BlogModel::$allowedFields did not list them. The public views read
+        // a category NAME string ($blog->category), so persist 'category',
+        // and normalize the three fields for the model.
+        $data['category']    = trim((string) ($data['category'] ?? ''));
+        $data['category']    = $data['category'] !== '' ? $data['category'] : null;
+        $data['tags']        = trim((string) ($data['tags'] ?? ''));
+        $data['tags']        = $data['tags'] !== '' ? $data['tags'] : null;
+        $data['is_featured'] = ! empty($data['is_featured']) ? 1 : 0;
 
         // -------------------------------------------------
         // 2. SLUG UNIQUENESS (AUTO-APPEND)
@@ -4240,6 +4383,121 @@ class AdminController extends BaseController
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Testimonial deleted successfully',
+        ]);
+    }
+
+    /**
+     * The section labels the public FAQ page renders. FAQs saved with one of
+     * these categories appear in that section; any other category is grouped
+     * under 'General Inquiries & Support' by Home::faq().
+     */
+    private function faqCategories(): array
+    {
+        return [
+            'Job Posting & Advert Management',
+            'Employer Account & Profile Management',
+            'Application Management',
+            'Posting Timelines & Approval',
+            'Payments & Pricing',
+            'Supported Job Types & Posting Guidelines',
+            'Troubleshooting & Technical Issues',
+            'Recruitment Services',
+            'General Inquiries & Support',
+        ];
+    }
+
+    public function faqs()
+    {
+        $perPage = 20; // adjust as needed
+
+        $faqModel = model('FaqModel');
+
+        $data = [
+            'title'         => 'FAQs',
+            'user'          => $this->auth->user(),
+            'admin'         => $this->admin,
+            'faqs'          => $faqModel
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->paginate($perPage),
+            'pager'         => $faqModel->pager,
+            'faqCategories' => $this->faqCategories(),
+        ];
+        return view('admin/faqs', $data);
+    }
+
+    public function saveFaq()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
+        }
+
+        $rules = [
+            'question'   => 'required|min_length[5]|max_length[500]',
+            'answer'     => 'required|min_length[5]',
+            'category'   => 'permit_empty|max_length[100]',
+            'sort_order' => 'permit_empty|integer',
+            'is_active'  => 'permit_empty|in_list[0,1]',
+        ];
+
+        if (! $this->validate($rules)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => implode(', ', $this->validator->getErrors()),
+            ]);
+        }
+
+        $model = new \App\Models\FaqModel();
+        $data  = $this->request->getPost();
+
+        $payload = [
+            'question'   => trim($data['question']),
+            'answer'     => trim($data['answer']),
+            'category'   => trim($data['category'] ?? '') ?: null,
+            'sort_order' => (int) ($data['sort_order'] ?? 0),
+            'is_active'  => (int) ($data['is_active'] ?? 1),
+        ];
+
+        if (! empty($data['id'])) {
+            $model->update($data['id'], $payload);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'FAQ updated successfully',
+            ]);
+        }
+
+        $model->insert($payload);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'FAQ created successfully',
+        ]);
+    }
+
+    public function deleteFaq($id)
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
+        }
+
+        $model = new \App\Models\FaqModel();
+        $faq = $model->find($id);
+
+        if (! $faq) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'FAQ not found',
+            ]);
+        }
+
+        $model->delete($id);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'FAQ deleted successfully',
         ]);
     }
 

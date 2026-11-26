@@ -279,6 +279,7 @@ svg { flex-shrink: 0; }
       <div class="res-stat"><div class="n <?= $passed ? 'ok' : 'no' ?>"><?= $scorePct ?>%</div><div class="l">Your score</div></div>
       <div class="res-stat"><div class="n"><?= $passThreshold ?>%</div><div class="l">Pass mark</div></div>
       <div class="res-stat"><div class="n"><?= $percentile !== null ? 'Top ' . max(1, 100 - $percentile) . '%' : '—' ?></div><div class="l">Percentile</div></div>
+      <div class="res-stat"><div class="n"><?= esc($timeTaken ?? '—') ?></div><div class="l">Time taken</div></div>
     </div>
     <?php if ($passed): ?>
     <div class="res-verified">

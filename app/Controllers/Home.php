@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\BlogModel;
 use App\Models\EmployerIndustryModel;
 use App\Models\EmployerModel;
+use App\Models\FaqModel;
 use App\Models\IndustryModel;
 use App\Models\JobAlertModel;
 use App\Models\JobCategoryModel;
@@ -3064,6 +3065,49 @@ class Home extends BaseController
             'og_description' => 'Find answers to common questions about job posting and recruitment in Nigeria on JobberRecruit.',
             'og_image' => base_url('images/default-og-image.jpg'),
         ];
+
+        // Overlay admin-managed FAQs (Admin > FAQs) when the faqs table has
+        // active rows. Each DB section replaces the built-in section above
+        // only when it contains at least one active FAQ, so the page never
+        // loses a section; any failure (e.g. table not created yet) leaves
+        // the built-in FAQs untouched. Categories are the section labels the
+        // FAQ view renders; an unrecognised category is grouped under
+        // General Inquiries & Support (faq10).
+        try {
+            $faqRows = (new FaqModel())
+                ->where('is_active', 1)
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+
+            if (! empty($faqRows)) {
+                $categoryMap = [
+                    'Job Posting & Advert Management'          => 'faq1',
+                    'Employer Account & Profile Management'    => 'faq2',
+                    'Application Management'                   => 'faq3',
+                    'Posting Timelines & Approval'             => 'faq4',
+                    'Payments & Pricing'                       => 'faq5',
+                    'Supported Job Types & Posting Guidelines' => 'faq7',
+                    'Troubleshooting & Technical Issues'       => 'faq8',
+                    'Recruitment Services'                     => 'faq9',
+                    'General Inquiries & Support'              => 'faq10',
+                ];
+
+                $grouped = [];
+                foreach ($faqRows as $faqRow) {
+                    $key = $categoryMap[trim((string) $faqRow->category)] ?? 'faq10';
+                    $grouped[$key][(string) $faqRow->question] = (string) $faqRow->answer;
+                }
+
+                foreach ($grouped as $key => $items) {
+                    if (! empty($items)) {
+                        $data[$key] = $items;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'FAQ database load failed, using built-in FAQs: ' . $e->getMessage());
+        }
 
         return view('faq', $data);
     }

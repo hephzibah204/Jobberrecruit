@@ -3516,6 +3516,10 @@ function viewAttemptResult(invId) {
 
             <div style="font-size:0.85rem; font-weight:600; color:var(--brand-deep);">${a.submitted_at || 'In Progress'}</div>
 
+            <div style="font-size:0.75rem; color:var(--muted); margin-top:8px;">Time Taken</div>
+
+            <div style="font-size:0.85rem; font-weight:600; color:var(--brand-deep);">${a.time_taken || '—'}</div>
+
           </div>
 
         </div>

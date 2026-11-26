@@ -2769,9 +2769,43 @@ class EmployerController extends BaseController
                 'num_correct'     => (int) ($inv['num_correct'] ?? 0),
                 'started_at'      => $inv['started_at'] ? date('M j, Y g:ia', strtotime($inv['started_at'])) : null,
                 'submitted_at'    => $inv['submitted_at'] ? date('M j, Y g:ia', strtotime($inv['submitted_at'])) : null,
+                'time_taken'      => $this->formatAttemptDuration($inv['started_at'] ?? null, $inv['submitted_at'] ?? null),
             ],
             'breakdown' => $breakdown
         ]);
+    }
+
+    /**
+     * Humanize the elapsed time between an attempt's start and submission
+     * ("45s", "12m 34s", "1h 5m 3s"). Returns '—' when either timestamp is
+     * missing or the interval is not positive.
+     */
+    private function formatAttemptDuration($startedAt, $submittedAt): string
+    {
+        if (empty($startedAt) || empty($submittedAt)) {
+            return '—';
+        }
+
+        $start = strtotime((string) $startedAt);
+        $end   = strtotime((string) $submittedAt);
+
+        if ($start === false || $end === false || $end < $start) {
+            return '—';
+        }
+
+        $seconds = $end - $start;
+
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
+
+        if ($seconds < 3600) {
+            return intdiv($seconds, 60) . 'm ' . ($seconds % 60) . 's';
+        }
+
+        return intdiv($seconds, 3600) . 'h '
+            . intdiv($seconds % 3600, 60) . 'm '
+            . ($seconds % 60) . 's';
     }
 
     /**
