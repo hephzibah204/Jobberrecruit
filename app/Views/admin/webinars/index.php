@@ -252,6 +252,22 @@
                     <small class="text-muted mt-1 d-block fs-11">This link is sent to registered candidates upon confirmation and reminder emails.</small>
                 </div>
 
+                <!-- Recording Link Box -->
+                <div class="card border border-success bg-success-transparent p-3 mb-3" id="prev_recording_box" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold fs-13 text-success"><i class="ti ti-player-play me-1"></i> Recording / Replay Link</span>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="prev_recording_link" class="form-control bg-white" readonly>
+                        <button type="button" class="btn btn-outline-success" onclick="copyMeetingLinkFromInput('prev_recording_link')">
+                            <i class="ti ti-copy me-1"></i> Copy Link
+                        </button>
+                        <a href="#" id="prev_recording_btn" target="_blank" class="btn btn-success">
+                            <i class="ti ti-player-play me-1"></i> Watch Recording
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Description -->
                 <div class="mb-3">
                     <h6 class="fw-bold fs-13 text-secondary mb-1">Webinar Overview / Topics</h6>
@@ -424,6 +440,12 @@
                         </div>
 
                         <div class="col-md-12">
+                            <label class="form-label fw-semibold">Recording URL (Replay)</label>
+                            <input type="url" name="recording_link" id="w_recording_link" class="form-control" placeholder="https://youtube.com/watch?v=... or a Vimeo / Google Drive replay link">
+                            <small class="text-muted d-block mt-1">Optional. Add the replay link after the session ends; a Watch Recording button then appears for this webinar.</small>
+                        </div>
+
+                        <div class="col-md-12">
                             <label class="form-label fw-semibold">Short Description / Agenda</label>
                             <textarea name="description" id="w_desc" class="form-control" rows="3" placeholder="Brief outline of the webinar topics and learning outcomes..."></textarea>
                         </div>
@@ -484,6 +506,18 @@ function previewWebinar(webinar, regCount) {
     } else {
         joinBtn.href = '#';
         joinBtn.classList.add('disabled');
+    }
+
+    var recLink = webinar.recording_link || '';
+    document.getElementById('prev_recording_link').value = recLink;
+    var recBox = document.getElementById('prev_recording_box');
+    var recBtn = document.getElementById('prev_recording_btn');
+    if (recLink) {
+        recBox.style.display = '';
+        recBtn.href = recLink;
+    } else {
+        recBox.style.display = 'none';
+        recBtn.href = '#';
     }
 
     var provider = 'External Link';
@@ -611,6 +645,7 @@ function resetWebinarModal() {
     document.getElementById('w_speaker').value = '';
     document.getElementById('w_date').value = '';
     document.getElementById('w_link').value = '';
+    document.getElementById('w_recording_link').value = '';
     document.getElementById('w_desc').value = '';
     document.getElementById('w_status').value = 'upcoming';
     document.getElementById('w_access_type').value = 'free';
@@ -633,6 +668,7 @@ function editWebinar(webinar) {
     document.getElementById('w_speaker').value = webinar.speaker_name || '';
     document.getElementById('w_date').value = (webinar.scheduled_at || '').replace(' ', 'T').substring(0, 16);
     document.getElementById('w_link').value = webinar.meeting_link || '';
+    document.getElementById('w_recording_link').value = webinar.recording_link || '';
     document.getElementById('w_desc').value = webinar.description || '';
     document.getElementById('w_status').value = webinar.status || 'upcoming';
     

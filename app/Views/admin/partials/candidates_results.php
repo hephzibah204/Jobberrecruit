@@ -10,6 +10,7 @@
                         <th>Candidate Profile</th>
                         <th>Role & Location</th>
                         <th>Education & Salary</th>
+                        <th>Profile</th>
                         <th>Skills</th>
                         <th>Resume / CV</th>
                         <th class="text-center">Activity</th>
@@ -87,6 +88,15 @@
                                         </div>
                                     <?php endif; ?>
                                 </td>
+                                <td style="min-width: 130px;">
+                                    <?php $profilePct = max(0, min(100, (int)($c->profile_completion ?? 0))); ?>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; min-width: 70px;">
+                                            <div class="progress-bar <?= $profilePct >= 80 ? 'bg-success' : ($profilePct >= 50 ? 'bg-warning' : 'bg-danger') ?>" role="progressbar" style="width: <?= $profilePct ?>%;" aria-valuenow="<?= $profilePct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <span class="fs-12 fw-semibold"><?= $profilePct ?>%</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <?php if (!empty($skillsArr)): ?>
                                         <div class="d-flex flex-wrap gap-1" style="max-width: 220px;">
@@ -159,7 +169,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="9" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <div class="text-muted">
                                     <i class="ti ti-user-x fs-40 text-secondary mb-2 d-block"></i>
                                     <h6 class="fw-semibold">No candidates found</h6>

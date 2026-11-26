@@ -117,6 +117,102 @@ class AdminEmailTemplateController extends BaseController
     }
 
     /**
+     * Global variables available on all templates
+     */
+    private function globalVariables(): array
+    {
+        return [
+            '{first_name}'   => 'Recipient\'s first name (e.g. John)',
+            '{last_name}'    => 'Recipient\'s last name (e.g. Doe)',
+            '{full_name}'    => 'Recipient\'s full name (e.g. John Doe)',
+            '{greeting}'     => 'Automatic greeting based on preference (e.g. Hello John,)',
+            '{site_name}'    => 'Platform name (JobberRecruit)',
+            '{site_url}'     => 'Platform website home URL',
+            '{login_url}'    => 'Candidate / Employer login URL',
+            '{current_year}' => 'Current year (e.g. ' . date('Y') . ')',
+            '{support_email}'=> 'Support email address',
+        ];
+    }
+
+    /**
+     * Create Email Template form
+     */
+    public function create()
+    {
+        $categories = [];
+        foreach ($this->templateService->getAllDefaultTemplates() as $default) {
+            if (!empty($default['category'])) {
+                $categories[] = $default['category'];
+            }
+        }
+        try {
+            foreach ($this->templateModel->findAll() as $tpl) {
+                if (!empty($tpl->category)) {
+                    $categories[] = $tpl->category;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'AdminEmailTemplateController create category lookup error: ' . $e->getMessage());
+        }
+        $categories = array_values(array_unique($categories));
+        sort($categories);
+
+        return view('admin/email_templates/create', [
+            'title'              => 'Create Email Template',
+            'availableVariables' => $this->globalVariables(),
+            'categories'         => $categories,
+        ]);
+    }
+
+    /**
+     * Store a new Email Template
+     */
+    public function store()
+    {
+        $templateKey  = trim((string)$this->request->getPost('template_key'));
+        $name         = trim((string)$this->request->getPost('name'));
+        $category     = trim((string)$this->request->getPost('category'));
+        $subject      = trim((string)$this->request->getPost('subject'));
+        $greetingType = $this->request->getPost('greeting_type') ?? 'first_name';
+        $bodyHtml     = $this->request->getPost('body_html');
+        $bodyText     = $this->request->getPost('body_text');
+        $isActive     = $this->request->getPost('is_active') ? 1 : 0;
+
+        if (empty($templateKey) || !preg_match('/^[a-z0-9_]+$/', $templateKey)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Template key is required and may only contain lowercase letters, numbers and underscores (e.g. webinar_reminder).');
+        }
+
+        if ($this->templateModel->where('template_key', $templateKey)->first()) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'A template with this key already exists.');
+        }
+
+        if (empty($name) || empty($category) || empty($subject) || empty($bodyHtml)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Name, category, subject and HTML Email Body cannot be empty.');
+        }
+
+        $this->templateModel->insert([
+            'template_key'        => $templateKey,
+            'name'                => $name,
+            'category'            => $category,
+            'subject'             => $subject,
+            'greeting_type'       => in_array($greetingType, ['first_name', 'full_name', 'custom']) ? $greetingType : 'first_name',
+            'body_html'           => $bodyHtml,
+            'body_text'           => !empty($bodyText) ? $bodyText : strip_tags($bodyHtml),
+            'available_variables' => json_encode($this->globalVariables()),
+            'is_active'           => $isActive,
+        ]);
+
+        return redirect()->to(base_url('admin/email-templates'))
+            ->with('success', "Email template '{$name}' created successfully!");
+    }
+
+    /**
      * Update Email Template
      */
     public function update(int $id)

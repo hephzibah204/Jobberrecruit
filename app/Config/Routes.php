@@ -624,6 +624,8 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
 
     // Email Templates Management
     $routes->get('email-templates', 'AdminEmailTemplateController::index');
+    $routes->get('email-templates/create', 'AdminEmailTemplateController::create');
+    $routes->post('email-templates/store', 'AdminEmailTemplateController::store');
     $routes->get('email-templates/edit/(:num)', 'AdminEmailTemplateController::edit/$1');
     $routes->post('email-templates/update/(:num)', 'AdminEmailTemplateController::update/$1');
     $routes->get('email-templates/preview/(:num)', 'AdminEmailTemplateController::preview/$1');

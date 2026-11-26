@@ -72,6 +72,11 @@
                     <a href="<?= base_url('admin/cv-reviews/download/' . $review->id) ?>" class="btn btn-primary" target="_blank">
                         <i class="ti ti-download me-1"></i>Download CV
                     </a>
+                    <?php if (strtolower(pathinfo((string) $review->file_path, PATHINFO_EXTENSION)) === 'pdf'): ?>
+                    <div class="mt-3 text-start">
+                        <iframe src="<?= base_url('admin/cv-reviews/download/' . $review->id) ?>?inline=1" style="width:100%;height:640px;border:1px solid #e2e8f0;border-radius:8px;" title="CV Preview"></iframe>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endif; ?>

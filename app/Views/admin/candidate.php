@@ -124,6 +124,17 @@
                             <span class="fw-semibold text-dark"><?= !empty($candidate->created_at) ? date('M d, Y', strtotime($candidate->created_at)) : 'N/A' ?></span>
                         </div>
                     </div>
+
+                    <div class="mt-3">
+                        <?php $profilePct = max(0, min(100, (int)($candidate->profile_completion ?? 0))); ?>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted fs-13"><i class="ti ti-user-check me-1 text-primary"></i> Profile Completion</span>
+                            <span class="fw-semibold fs-13"><?= $profilePct ?>%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar <?= $profilePct >= 80 ? 'bg-success' : ($profilePct >= 50 ? 'bg-warning' : 'bg-danger') ?>" role="progressbar" style="width: <?= $profilePct ?>%;" aria-valuenow="<?= $profilePct ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

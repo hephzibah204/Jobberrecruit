@@ -94,7 +94,10 @@
                     <li class="breadcrumb-item active">Email Templates</li>
                 </ol>
             </div>
-            <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="<?= base_url('admin/email-templates/create') ?>" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> New Template
+                </a>
                 <span class="badge bg-primary-transparent fs-13 py-2 px-3">
                     <i class="ti ti-mail me-1"></i> <?= $totalCount ?> Total Templates (<?= $activeCount ?> Active)
                 </span>

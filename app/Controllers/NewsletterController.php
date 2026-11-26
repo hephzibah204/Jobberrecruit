@@ -49,7 +49,8 @@ class NewsletterController extends BaseController
         $registration = $targetId > 0 ? $query->where('webinar_id', $targetId)->first() : $query->orderBy('id','DESC')->first();
         if (!$registration) return redirect()->to(base_url('training/webinars'))->with('error', 'Please register for this webinar to view its ticket.');
         $webinar = $this->webinarModel->find($registration->webinar_id);
-        if (!$webinar || (!WebinarModel::registrationOpen($webinar) && !WebinarModel::inProgress($webinar))) {
+        $webinarEnded = $webinar && !WebinarModel::registrationOpen($webinar) && !WebinarModel::inProgress($webinar);
+        if (!$webinar || ($webinarEnded && empty($webinar->recording_link))) {
             return redirect()->to(base_url('training/webinars'))->with('error', 'This webinar has ended or is unavailable. Please choose an upcoming session.');
         }
         $seeker = model(\App\Models\JobSeekerModel::class)->where('user_id', $user->id)->first();
@@ -65,6 +66,7 @@ class NewsletterController extends BaseController
             'join_url'=>$webinar->meeting_link ?: base_url('training/webinars'),
             'recommendedWebinars'=>$this->webinarModel->upcoming()->where('id !=',$webinar->id)->findAll(3),
             'webinarInProgress'=>WebinarModel::inProgress($webinar),
+            'webinarEnded'=>$webinarEnded,
         ]);
     }
 
@@ -395,6 +397,14 @@ class NewsletterController extends BaseController
             'price'        => $price,
             'status'       => $this->request->getPost('status') ?? 'upcoming'
         ];
+
+        // Only touch the recording link when the submitting form actually
+        // carries the field (the newsletters-page webinar modal does not),
+        // so editing a webinar from there never wipes a stored recording.
+        $recordingLink = $this->request->getPost('recording_link');
+        if ($recordingLink !== null) {
+            $data['recording_link'] = trim((string) $recordingLink) ?: null;
+        }
 
         $flyer = $this->request->getFile('flyer_image');
         if ($flyer && $flyer->isValid() && !$flyer->hasMoved()) {

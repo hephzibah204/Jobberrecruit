@@ -4390,6 +4390,15 @@ class EmployerController extends BaseController
             helper(['filesystem', 'form']);
             $logoFile = $this->request->getFile('logo');
             if ($logoFile && $logoFile->isValid() && !$logoFile->hasMoved()) {
+                $logoCheck = $this->validateUploadedFile($logoFile, ['jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'], 'gif' => ['image/gif'], 'webp' => ['image/webp']], 2048);
+                if (!$logoCheck['valid']) {
+                    return $this->response->setJSON([
+                        'status'     => 'error',
+                        'message'    => 'Logo upload failed: ' . ($logoCheck['error'] ?? 'Invalid file.'),
+                        'csrf_token' => csrf_token(),
+                        'csrf_hash'  => csrf_hash(),
+                    ])->setStatusCode(422);
+                }
                 $uploadPath = FCPATH . 'uploads/employers/' . $employer->id . '/';
                 if (!is_dir($uploadPath)) {
                     mkdir($uploadPath, 0775, true);

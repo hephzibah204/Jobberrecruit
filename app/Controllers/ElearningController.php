@@ -1528,15 +1528,16 @@ class ElearningController extends BaseController
             return $this->fail('Please upload a valid CV file');
         }
 
-        $allowedTypes = ['pdf', 'doc', 'docx'];
         $ext = strtolower($cvFile->getExtension());
 
-        if (!in_array($ext, $allowedTypes)) {
-            return $this->fail('Only PDF, DOC, and DOCX files are allowed');
-        }
+        $check = $this->validateUploadedFile($cvFile, [
+            'pdf'  => ['application/pdf'],
+            'doc'  => ['application/msword'],
+            'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        ], 5120);
 
-        if ($cvFile->getSize() > 5 * 1024 * 1024) {
-            return $this->fail('File size must be less than 5MB');
+        if (!$check['valid']) {
+            return $this->fail($check['error']);
         }
 
         $uploadPath = FCPATH . 'uploads/cv_reviews';

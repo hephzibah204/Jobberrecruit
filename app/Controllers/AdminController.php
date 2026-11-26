@@ -4571,6 +4571,14 @@ class AdminController extends BaseController
             return redirect()->to('admin/cv-reviews')->with('error', 'File does not exist on disk.');
         }
 
+        if ($this->request->getGet('inline') === '1'
+            && strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf') {
+            return $this->response
+                ->setHeader('Content-Type', 'application/pdf')
+                ->setHeader('Content-Disposition', 'inline; filename="' . basename($filePath) . '"')
+                ->setBody((string) file_get_contents($filePath));
+        }
+
         return $this->response->download($filePath, null);
     }
 
