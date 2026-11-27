@@ -950,6 +950,35 @@ class AdminController extends BaseController
         $documentModel = model(EmployerDocumentModel::class);
         $documents = $documentModel->where('employer_id', $employerId)->findAll();
 
+        // Legacy uploads: older flows stored the CAC file only in
+        // employers.verification_doc, with no employer_documents row. The
+        // employers list counts that file as submitted, so the modal must
+        // show it too - otherwise it claims "No documents uploaded yet"
+        // for an employer whose document is on the server.
+        $hasCacRow = false;
+        foreach ($documents as $doc) {
+            if (($doc['document_type'] ?? '') === 'cac_certificate') {
+                $hasCacRow = true;
+                break;
+            }
+        }
+        if (!$hasCacRow) {
+            $employer = model(EmployerModel::class)->find($employerId);
+            $legacyPath = $employer->verification_doc ?? null;
+            if (!empty($legacyPath)) {
+                $fullPath = FCPATH . $legacyPath;
+                $documents[] = [
+                    'id'            => null,
+                    'document_type' => 'cac_certificate',
+                    'file_path'     => $legacyPath,
+                    'file_name'     => basename($legacyPath),
+                    'file_size'     => is_file($fullPath) ? filesize($fullPath) : 0,
+                    'uploaded_at'   => is_file($fullPath) ? date('Y-m-d H:i:s', filemtime($fullPath)) : ($employer->updated_at ?? date('Y-m-d H:i:s')),
+                    'status'        => 'pending',
+                ];
+            }
+        }
+
         return view('admin/partials/employer_documents', ['documents' => $documents]);
     }
 

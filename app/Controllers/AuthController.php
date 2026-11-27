@@ -299,10 +299,14 @@ class AuthController extends BaseController
                 ]);
             } else { // employer
                 $this->employerModel->save([
-                    'user_id'       => $userId,
-                    'contact_name'  => $this->request->getPost('full_name'),
-                    'contact_phone' => $this->request->getPost('phone'),
-                    'company_name'  => $this->request->getPost('company_name'),
+                    'user_id'             => $userId,
+                    'contact_name'        => $this->request->getPost('full_name'),
+                    'contact_phone'       => $this->request->getPost('phone'),
+                    'company_name'        => $this->request->getPost('company_name'),
+                    // Employers start unverified; 'pending' is earned only by
+                    // uploading a verification document (the column default
+                    // used to make every signup look like a pending request).
+                    'verification_status' => 'unverified',
                 ]);
 
                 // Assign free plan & create paystack customer
@@ -656,10 +660,11 @@ class AuthController extends BaseController
             ]);
         } else {
             $this->employerModel->insert([
-                'user_id'       => $userId,
-                'company_name'  => $company,
-                'contact_name'  => $tmp['full_name'] ?? null,
-                'contact_email' => $tmp['email'],
+                'user_id'             => $userId,
+                'company_name'        => $company,
+                'contact_name'        => $tmp['full_name'] ?? null,
+                'contact_email'       => $tmp['email'],
+                'verification_status' => 'unverified',
             ]);
 
             // Assign free plan + create paystack customer

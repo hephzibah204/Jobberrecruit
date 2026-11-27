@@ -55,7 +55,7 @@
                                     <i class="ti ti-download"></i>
                                 </a>
 
-                                <?php if ($doc['status'] === 'pending'): ?>
+                                <?php if ($doc['status'] === 'pending' && !empty($doc['id'])): ?>
                                     <button type="button"
                                         class="btn btn-sm btn-success"
                                         onclick="verifyDocument(<?= $doc['id'] ?>)"
