@@ -128,7 +128,6 @@ $referenceHomepage = trim($this->renderSection('homepage_design')) === 'referenc
     <link href="<?= base_url('css/plugins/select2.min.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('css/variables.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('css/style.css'); ?>" rel="stylesheet">
-    <!-- Midnight Aura Theme -->
     <link href="<?= base_url('css/bootstrap-icons.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css'); ?>" rel="stylesheet">
     <?php endif; ?>
@@ -332,6 +331,16 @@ button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disab
 
         })(jQuery);
     </script>
+    <style>
+        /* PWA install banner: self-contained styles. The reference homepage
+           intentionally does not load mobile-app.css, which left this banner
+           unstyled there (icon rendered at natural size). */
+        .pwa-install-banner { position: fixed; bottom: -150px; left: 15px; right: 15px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 16px; padding: 15px; z-index: 1050; transition: transform 0.35s ease; transform: translateY(200%); color: #1e293b; }
+        .pwa-install-banner.active { bottom: 85px; transform: translateY(0); }
+        @media (min-width: 768px) { .pwa-install-banner { display: none !important; } }
+        .pwa-logo { width: 48px; height: 48px; flex: 0 0 auto; object-fit: contain; border-radius: 12px; margin-right: 15px; }
+        .pwa-close { position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; background: #f1f5f9; border: 1px solid #e5e7eb; border-radius: 50%; color: #475569; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 0; padding-bottom: 2px; }
+    </style>
     <!-- PWA Installation Banner -->
     <div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
         <button class="pwa-close" onclick="closePWABanner()">&times;</button>
