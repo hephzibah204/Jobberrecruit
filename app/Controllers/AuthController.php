@@ -179,6 +179,23 @@ class AuthController extends BaseController
             if (trim((string) $this->request->getPost('website_url')) !== '') {
                 return $this->response->setStatusCode(400)->setJSON(['status' => 'error', 'message' => 'Registration could not be completed.']);
             }
+
+            // The registration form posts the account choice as 'role'
+            // ('seeker' or 'employer'); normalise it to the 'user_type'
+            // value this method validates and saves.
+            if (empty($this->request->getPost('user_type'))) {
+                $roleMap = ['seeker' => 'job_seeker', 'employer' => 'employer'];
+                $role    = (string) $this->request->getPost('role');
+                if (isset($roleMap[$role])) {
+                    $post = (array) $this->request->getPost();
+                    $post['user_type'] = $roleMap[$role];
+                    $this->request->setGlobal('post', $post);
+                    // Validation reads the merged 'request' global, not 'post'.
+                    $req = (array) $this->request->getVar();
+                    $req['user_type'] = $roleMap[$role];
+                    $this->request->setGlobal('request', $req);
+                }
+            }
             if (!(new \App\Services\AuthAbuseGuard())->allow('register', $this->request->getIPAddress(), $email)) {
                 return $this->response->setStatusCode(429)->setJSON(['status' => 'error', 'message' => 'Too many registration attempts. Please try again later.']);
             }
@@ -293,8 +310,13 @@ class AuthController extends BaseController
                 $this->createPaystackCustomerIfNeededById($userId, $email);
             }
 
-            // Trigger automation event
-            \App\Libraries\AutomationEngine::triggerEvent('user_registered', $userId);
+            // Trigger automation event (best-effort: an automation failure
+            // must never abort a registration)
+            try {
+                (new \App\Libraries\AutomationEngine())->triggerEvent('user_registered', $userId);
+            } catch (\Throwable $e) {
+                log_message('error', 'Automation trigger failed for user_registered: ' . $e->getMessage());
+            }
 
             $db->transComplete();
 
@@ -797,6 +819,20 @@ class AuthController extends BaseController
         }
         $db->transCommit();
 
+        // Reward referrer if candidate. This runs BEFORE the auto-login
+        // below: the login attempt returns early when it hits a problem
+        // (e.g. a session that is already logged in), which previously
+        // skipped the payout entirely.
+        $verifiedUser = $this->users->findById($userId);
+        if ($verifiedUser && $verifiedUser->user_type === 'job_seeker') {
+            try {
+                $referralService = new \App\Services\ReferralService();
+                $referralService->rewardReferrer($userId, 'candidate');
+            } catch (\Throwable $e) {
+                log_message('error', 'Referral reward failed for user ' . $userId . ': ' . $e->getMessage());
+            }
+        }
+
         // Auto-login user (Option B)
         $user = $this->users->findById($userId);
         $this->session->remove('pending_email_verification');
@@ -816,12 +852,6 @@ class AuthController extends BaseController
                 // proceed to redirect to login page
                 return redirect()->to('/login')->with('success', 'Email verified successfully. Please sign in.');
             }
-        }
-
-        // Reward referrer if candidate
-        if ($user->user_type === 'job_seeker') {
-            $referralService = new \App\Services\ReferralService();
-            $referralService->rewardReferrer($userId, 'candidate');
         }
 
         // Redirect user to proper dashboard based on user_type
