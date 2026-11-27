@@ -5036,6 +5036,150 @@ class AdminController extends BaseController
         ]);
     }
 
+    public function pages()
+    {
+        $perPage = 20; // adjust as needed
+
+        $pageModel = model('PageModel');
+
+        $data = [
+            'title' => 'Pages',
+            'user'  => $this->auth->user(),
+            'admin' => $this->admin,
+            'pages' => $pageModel
+                ->orderBy('title', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->paginate($perPage),
+            'pager' => $pageModel->pager,
+        ];
+        return view('admin/pages', $data);
+    }
+
+    public function createPage()
+    {
+        $data = [
+            'title' => 'New Page',
+            'user'  => $this->auth->user(),
+            'admin' => $this->admin,
+            'page'  => null,
+        ];
+        return view('admin/page_editor', $data);
+    }
+
+    public function editPage($id)
+    {
+        $page = model('PageModel')->find($id);
+
+        if (! $page) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Page not found');
+        }
+
+        $data = [
+            'title' => 'Edit Page',
+            'user'  => $this->auth->user(),
+            'admin' => $this->admin,
+            'page'  => $page,
+        ];
+        return view('admin/page_editor', $data);
+    }
+
+    public function savePage()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
+        }
+
+        $id = (int) $this->request->getPost('id');
+
+        $rules = [
+            'title'     => 'required|min_length[3]|max_length[255]',
+            'content'   => 'required|min_length[10]',
+            'is_active' => 'permit_empty|in_list[0,1]',
+        ];
+
+        // The slug is chosen when the page is created and never changes:
+        // the built-in pages are looked up by it, and public URLs use it.
+        if (empty($id)) {
+            $rules['slug'] = 'required|alpha_dash|max_length[100]|is_unique[pages.slug]';
+        }
+
+        if (! $this->validate($rules)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => implode(', ', $this->validator->getErrors()),
+            ]);
+        }
+
+        $model = new \App\Models\PageModel();
+        $data  = $this->request->getPost();
+
+        if (! empty($id)) {
+            $page = $model->find($id);
+
+            if (! $page) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Page not found',
+                ]);
+            }
+
+            $model->update($id, [
+                'title'     => trim($data['title']),
+                'content'   => $data['content'],
+                'is_active' => (int) ($data['is_active'] ?? 1),
+            ]);
+
+            $this->auditLog('page_updated', 'page', $id);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Page updated successfully',
+            ]);
+        }
+
+        $model->insert([
+            'slug'      => trim($data['slug']),
+            'title'     => trim($data['title']),
+            'content'   => $data['content'],
+            'is_active' => (int) ($data['is_active'] ?? 1),
+        ]);
+
+        $this->auditLog('page_created', 'page', (int) $model->getInsertID());
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Page created successfully',
+        ]);
+    }
+
+    public function deletePage($id)
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
+        }
+
+        $model = new \App\Models\PageModel();
+        $page = $model->find($id);
+
+        if (! $page) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Page not found',
+            ]);
+        }
+
+        $model->delete($id);
+
+        $this->auditLog('page_deleted', 'page', (int) $id);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Page deleted successfully',
+        ]);
+    }
+
     /**
      * Delete a single candidate
      */

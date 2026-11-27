@@ -6,6 +6,7 @@ use App\Models\BlogModel;
 use App\Models\EmployerIndustryModel;
 use App\Models\EmployerModel;
 use App\Models\FaqModel;
+use App\Models\PageModel;
 use App\Models\IndustryModel;
 use App\Models\JobAlertModel;
 use App\Models\JobCategoryModel;
@@ -2557,6 +2558,26 @@ class Home extends BaseController
             'auth' => $this->auth,
             'testimonials' => model(TestimonialModel::class)->where('status', 'active')->orderBy('created_at', 'DESC')->findAll(),
         ];
+
+        // Overlay admin-managed page content (Admin > Pages) when an active
+        // pages row exists for this slug; any failure (e.g. the pages table
+        // has not been created yet) leaves the built-in static page untouched.
+        try {
+            $page = (new PageModel())
+                ->where('slug', 'about')
+                ->where('is_active', 1)
+                ->first();
+
+            if ($page) {
+                $data['title'] = $page->title;
+                $data['page']  = $page;
+
+                return view('page', $data);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Page database load failed, using built-in page: ' . $e->getMessage());
+        }
+
         return view('about-us', $data);
     }
 
@@ -3122,6 +3143,26 @@ class Home extends BaseController
             'og_image' => base_url('images/default-og-image.jpg'),
             'auth' => $this->auth,
         ];
+
+        // Overlay admin-managed page content (Admin > Pages) when an active
+        // pages row exists for this slug; any failure (e.g. the pages table
+        // has not been created yet) leaves the built-in static page untouched.
+        try {
+            $page = (new PageModel())
+                ->where('slug', 'privacy')
+                ->where('is_active', 1)
+                ->first();
+
+            if ($page) {
+                $data['title'] = $page->title;
+                $data['page']  = $page;
+
+                return view('page', $data);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Page database load failed, using built-in page: ' . $e->getMessage());
+        }
+
         return view('privacy-policy', $data);
     }
 
@@ -3135,7 +3176,57 @@ class Home extends BaseController
             'og_image' => base_url('images/default-og-image.jpg'),
             'auth' => $this->auth,
         ];
+
+        // Overlay admin-managed page content (Admin > Pages) when an active
+        // pages row exists for this slug; any failure (e.g. the pages table
+        // has not been created yet) leaves the built-in static page untouched.
+        try {
+            $page = (new PageModel())
+                ->where('slug', 'terms')
+                ->where('is_active', 1)
+                ->first();
+
+            if ($page) {
+                $data['title'] = $page->title;
+                $data['page']  = $page;
+
+                return view('page', $data);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Page database load failed, using built-in page: ' . $e->getMessage());
+        }
+
         return view('terms-of-service', $data);
+    }
+
+    // Generic CMS page (Admin > Pages): serves admin-created pages at
+    // /page/<slug>. The built-in About, Terms and Privacy pages keep their
+    // own routes and only borrow the 'page' view when a pages row exists.
+    public function page($slug)
+    {
+        try {
+            $page = (new PageModel())
+                ->where('slug', $slug)
+                ->where('is_active', 1)
+                ->first();
+        } catch (\Throwable $e) {
+            log_message('error', 'Page database load failed: ' . $e->getMessage());
+            $page = null;
+        }
+
+        if (! $page) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Page not found: $slug");
+        }
+
+        $data = [
+            'title'    => $page->title,
+            'og_title' => $page->title,
+            'og_image' => base_url('images/default-og-image.jpg'),
+            'auth'     => $this->auth,
+            'page'     => $page,
+        ];
+
+        return view('page', $data);
     }
 
     public function viewCompany($identifier)

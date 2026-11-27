@@ -160,6 +160,7 @@ $routes->get('privacy-policy', 'Home::privacyPolicy');
 $routes->addRedirect('terms-of-service', 'terms-and-conditions', 301);
 $routes->get('terms-and-conditions', 'Home::termsOfService');
 $routes->get('faq', 'Home::faq');
+$routes->get('page/(:segment)', 'Home::page/$1');
 $routes->get('recruitment', 'Home::recruitment');
 $routes->post('submit-recruitment-inquiry', 'Home::submitRecruitmentInquiry');
 $routes->get('employers', 'Home::employers');
@@ -659,6 +660,13 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('faqs', 'AdminController::faqs');
     $routes->post('faqs/save', 'AdminController::saveFaq');
     $routes->post('faqs/delete/(:num)', 'AdminController::deleteFaq/$1');
+
+    // Pages
+    $routes->get('pages', 'AdminController::pages');
+    $routes->get('pages/create', 'AdminController::createPage');
+    $routes->get('pages/edit/(:num)', 'AdminController::editPage/$1');
+    $routes->post('pages/save', 'AdminController::savePage');
+    $routes->post('pages/delete/(:num)', 'AdminController::deletePage/$1');
 
     // Affiliate Program
     $routes->get('affiliate/settings', 'ReferralController::adminSettings');
