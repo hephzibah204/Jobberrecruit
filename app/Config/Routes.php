@@ -728,6 +728,12 @@ $routes->group('api/aptitude', ['filter' => 'auth'], function ($routes) {
         $routes->get('newsletters/preview-content/(:num)', 'NewsletterController::previewContent/$1');
         $routes->get('newsletters/templates/list', 'NewsletterController::listTemplates');
         $routes->post('newsletters/templates/store', 'NewsletterController::storeTemplate');
+        // Audience Segments
+        $routes->get('newsletters/segments', 'NewsletterSegmentController::index');
+        $routes->get('newsletters/segments/create', 'NewsletterSegmentController::create');
+        $routes->post('newsletters/segments/store', 'NewsletterSegmentController::store');
+        $routes->post('newsletters/segments/test', 'NewsletterSegmentController::testSegment');
+        $routes->post('newsletters/segments/refresh/(:num)', 'NewsletterSegmentController::refresh/$1');
         $routes->post('webinars/save', 'NewsletterController::saveWebinar');
         $routes->post('webinars/delete/(:num)', 'NewsletterController::deleteWebinar/$1');
         $routes->get('webinars', 'NewsletterController::adminWebinarsIndex');

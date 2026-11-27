@@ -107,6 +107,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="<?= base_url('admin/newsletters/segments') ?>">
+                    <i class="ti ti-users-group me-1"></i> Audience Segments
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#webinars-tab" role="tab">
                     <i class="ti ti-video me-1"></i> Webinars
                 </a>

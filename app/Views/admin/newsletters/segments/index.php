@@ -14,6 +14,19 @@
         </div>
     </div>
 
+    <?php if (session()->getFlashdata('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= esc(session()->getFlashdata('success')) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?= esc(session()->getFlashdata('error')) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
             <?php if (empty($segments)): ?>
@@ -48,6 +61,10 @@
                                 <td><span class="fw-bold text-dark"><?= number_format($segment->user_count) ?></span></td>
                                 <td class="text-muted fs-13"><?= $segment->last_synced_at ? date('M d, Y', strtotime($segment->last_synced_at)) : 'Never' ?></td>
                                 <td class="text-end">
+                                    <form action="<?= base_url('admin/newsletters/segments/refresh/' . $segment->id) ?>" method="POST" class="d-inline">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="btn btn-sm btn-light border" title="Refresh audience count"><i class="ti ti-refresh"></i></button>
+                                    </form>
                                     <button class="btn btn-sm btn-light border" onclick="alert('Edit query coming soon');"><i class="ti ti-pencil"></i></button>
                                 </td>
                             </tr>

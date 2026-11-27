@@ -105,6 +105,14 @@
                                 <div class="fw-bold fs-13">📚 Training Registrants</div>
                             </label>
                         </div>
+                        <?php foreach (($segments ?? []) as $segment): ?>
+                        <div class="col-lg-3 col-md-6 col-6">
+                            <input type="radio" class="btn-check" name="target_group" id="tg_segment_<?= $segment->id ?>" value="segment:<?= $segment->id ?>" <?= $tg == 'segment:' . $segment->id ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-danger w-100 py-2 text-center transition-all rounded-md" for="tg_segment_<?= $segment->id ?>" style="border: 1px solid #dee2e6">
+                                <div class="fw-bold fs-13">🎯 <?= esc($segment->name) ?></div>
+                            </label>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
 

@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\NewsletterModel;
 use App\Models\NewsletterSubscriberModel;
 use App\Models\NewsletterTemplateModel;
+use App\Models\AudienceSegmentModel;
 use App\Models\WebinarModel;
 use App\Models\WebinarRegistrationModel;
 use CodeIgniter\API\ResponseTrait;
@@ -183,7 +184,8 @@ class NewsletterController extends BaseController
         return view('admin/newsletters/editor', [
             'title' => 'Create Newsletter',
             'newsletter' => null,
-            'industries' => $this->industryModel->orderBy('name', 'ASC')->findAll()
+            'industries' => $this->industryModel->orderBy('name', 'ASC')->findAll(),
+            'segments' => (new AudienceSegmentModel())->orderBy('name', 'ASC')->findAll()
         ]);
     }
 
@@ -197,7 +199,8 @@ class NewsletterController extends BaseController
         return view('admin/newsletters/editor', [
             'title' => 'Edit Newsletter',
             'newsletter' => $newsletter,
-            'industries' => $this->industryModel->orderBy('name', 'ASC')->findAll()
+            'industries' => $this->industryModel->orderBy('name', 'ASC')->findAll(),
+            'segments' => (new AudienceSegmentModel())->orderBy('name', 'ASC')->findAll()
         ]);
     }
 
@@ -256,7 +259,31 @@ class NewsletterController extends BaseController
         $recipientEmails = [];
         $db = \Config\Database::connect();
 
-        if ($targetGroup === 'webinar_registered') {
+        // A saved audience segment is stored as target_group "segment:{id}"
+        // and its recipients come from the segment rule evaluator.
+        $segmentName = null;
+        $segmentRecipients = null;
+        if (is_string($targetGroup) && str_starts_with($targetGroup, 'segment:')) {
+            $segmentModel = new AudienceSegmentModel();
+            $segment = $segmentModel->find((int) substr($targetGroup, 8));
+            if (!$segment) {
+                return redirect()->back()->with('error', 'The selected audience segment no longer exists. Please edit the newsletter and choose another audience.');
+            }
+            try {
+                $segmentRecipients = (new \App\Services\SegmentAudienceService())->recipients($segment->criteria_json);
+            } catch (\InvalidArgumentException $e) {
+                return redirect()->back()->with('error', 'The selected audience segment has invalid rules and cannot be sent to. Please rebuild the segment.');
+            }
+            $segmentName = $segment->name;
+            $segmentModel->update($segment->id, [
+                'user_count'     => count($segmentRecipients),
+                'last_synced_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        if ($segmentRecipients !== null) {
+            $recipientEmails = array_column($segmentRecipients, 'email');
+        } elseif ($targetGroup === 'webinar_registered') {
             $webinarEmails = $db->table('webinar_registrations')
                 ->join('users', 'users.id = webinar_registrations.user_id')
                 ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
@@ -376,7 +403,7 @@ class NewsletterController extends BaseController
             'training_registered'    => 'Training / Course Registrants'
         ];
 
-        $targetLabel = $groupLabels[$targetGroup] ?? ucfirst($targetGroup);
+        $targetLabel = $segmentName !== null ? 'Segment: ' . $segmentName : ($groupLabels[$targetGroup] ?? ucfirst($targetGroup));
 
         return redirect()->back()->with('success', "Newsletter queued for {$queuedCount} recipients in segment '{$targetLabel}'. Emails will be delivered in background.");
     }

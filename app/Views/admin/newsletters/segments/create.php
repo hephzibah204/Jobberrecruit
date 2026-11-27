@@ -66,6 +66,11 @@
                     
                     <div class="display-4 fw-bold text-primary mb-3" id="estimate_count">--</div>
                     <p class="text-muted fs-13">Subscribers match these criteria right now.</p>
+
+                    <div id="estimate_sample" class="text-start mt-3" style="display:none;">
+                        <h6 class="fw-bold fs-12 text-uppercase text-muted mb-2">Sample Recipients</h6>
+                        <ul class="list-unstyled fs-13 mb-0" id="estimate_sample_list"></ul>
+                    </div>
                     
                     <hr>
                     <div class="text-start mt-3">
@@ -76,6 +81,8 @@
                             <li class="mb-1"><i class="ti ti-check text-success me-2"></i> Last Opened Date</li>
                             <li class="mb-1"><i class="ti ti-check text-success me-2"></i> Custom Tags</li>
                             <li class="mb-1"><i class="ti ti-check text-success me-2"></i> GDPR Consent</li>
+                            <li class="mb-1"><i class="ti ti-check text-success me-2"></i> Subscribed Date</li>
+                            <li class="mb-1"><i class="ti ti-check text-success me-2"></i> Subscriber Status</li>
                         </ul>
                     </div>
                 </div>
@@ -86,11 +93,27 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- QueryBuilder Dependencies -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.5.2/dist/css/query-builder.default.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jquery-extendext@1.0.0/jQuery.extendext.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/doT@1.1.3/doT.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.5.2/dist/js/query-builder.min.js"></script>
+<!-- QueryBuilder Dependencies (self-hosted: external CDN scripts are blocked on this site) -->
+<link rel="stylesheet" href="<?= base_url('admin/libs/querybuilder/query-builder.default.min.css') ?>">
+<style>
+/* QueryBuilder's default templates use Bootstrap 3 glyphicons, which do
+   not exist in this layout's Bootstrap 5 - substitute plain characters so
+   the add/remove/sort buttons are never blank. */
+#builder .glyphicon { font-style: normal; font-weight: 700; }
+#builder .glyphicon-plus::before { content: "+"; }
+#builder .glyphicon-minus::before { content: "\2212"; }
+#builder .glyphicon-sort::before { content: "\2195"; }
+#builder .glyphicon-warning-sign::before { content: "!"; }
+#builder .glyphicon-remove::before { content: "\00D7"; }
+#builder .glyphicon-plus-sign::before { content: "+"; }
+#builder .glyphicon-check::before { content: "\2713"; }
+#builder .glyphicon-unchecked::before { content: "\2610"; }
+#builder .glyphicon-info-sign::before { content: "i"; }
+#builder .glyphicon-random::before { content: "\21C4"; }
+#builder .btn-xs { padding: 1px 5px; font-size: 12px; line-height: 1.5; border-radius: 3px; }
+</style>
+<script src="<?= base_url('admin/libs/querybuilder/moment.min.js') ?>"></script>
+<script src="<?= base_url('admin/libs/querybuilder/query-builder.standalone.min.js') ?>"></script>
 
 <script>
 $(document).ready(function() {
@@ -104,7 +127,6 @@ $(document).ready(function() {
     };
 
     $('#builder').queryBuilder({
-        plugins: ['bt-tooltip-errors'],
         filters: [
             {
                 id: 'type',
@@ -135,13 +157,7 @@ $(document).ready(function() {
                 id: 'last_opened_at',
                 label: 'Last Opened Date',
                 type: 'date',
-                plugin: 'datepicker',
-                plugin_config: {
-                    format: 'yyyy-mm-dd',
-                    todayBtn: 'linked',
-                    todayHighlight: true,
-                    autoclose: true
-                },
+                validation: { format: 'YYYY-MM-DD' },
                 operators: ['equal', 'less', 'greater', 'between']
             },
             {
@@ -154,10 +170,46 @@ $(document).ready(function() {
                     0: 'No'
                 },
                 operators: ['equal']
+            },
+            {
+                id: 'created_at',
+                label: 'Subscribed Date',
+                type: 'date',
+                validation: { format: 'YYYY-MM-DD' },
+                operators: ['equal', 'less', 'greater', 'between']
+            },
+            {
+                id: 'status',
+                label: 'Subscriber Status',
+                type: 'string',
+                input: 'select',
+                values: {
+                    'active': 'Active',
+                    'unsubscribed': 'Unsubscribed',
+                    'bounced': 'Bounced',
+                    'complained': 'Complained',
+                    'inactive': 'Inactive'
+                },
+                operators: ['equal', 'not_equal']
             }
         ],
         rules: rules_basic
     });
+
+    function renderSample(sample) {
+        var $wrap = $('#estimate_sample');
+        var $list = $('#estimate_sample_list');
+        $list.empty();
+        if (!sample || !sample.length) {
+            $wrap.hide();
+            return;
+        }
+        $.each(sample, function(i, recipient) {
+            var label = recipient.name ? recipient.name + ' <' + recipient.email + '>' : recipient.email;
+            $('<li class="mb-1 text-break"></li>').text(label).appendTo($list);
+        });
+        $wrap.show();
+    }
 
     $('#btn-test').on('click', function() {
         var result = $('#builder').queryBuilder('getRules');
@@ -170,6 +222,7 @@ $(document).ready(function() {
             }, function(response) {
                 if(response.status === 'success') {
                     $('#estimate_count').text(response.count);
+                    renderSample(response.sample);
                 } else {
                     alert('Error estimating audience');
                     $('#estimate_count').text('--');
@@ -190,6 +243,6 @@ $(document).ready(function() {
             alert("Please build at least one valid rule.");
         }
     });
-}));
+});
 </script>
 <?= $this->endSection() ?>
