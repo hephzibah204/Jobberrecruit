@@ -19,6 +19,41 @@ class JobAlertService
     }
 
     /**
+     * Fetch a job seeker together with their account email.
+     *
+     * job_seekers has no email column: the address lives in
+     * auth_identities (type email_password) — the same join
+     * JobSeekerModel::getCandidates() uses. A bare find() on
+     * JobSeekerModel therefore always yields an empty ->email,
+     * which silently suppressed every alert and digest email.
+     */
+    private function candidateWithEmail(int $jobSeekerId)
+    {
+        return model(JobSeekerModel::class)
+            ->select('job_seekers.*, auth_identities.secret AS email')
+            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id AND auth_identities.type = "email_password"', 'left')
+            ->where('job_seekers.id', $jobSeekerId)
+            ->first();
+    }
+
+    /**
+     * Recipient query for the weekly digest: opted-in candidates
+     * with their account email resolved (see candidateWithEmail).
+     */
+    private function digestRecipients(int $limit = 250): array
+    {
+        $candidateModel = model(JobSeekerModel::class);
+        $builder = $candidateModel
+            ->select('job_seekers.*, auth_identities.secret AS email')
+            ->join('auth_identities', 'auth_identities.user_id = job_seekers.user_id AND auth_identities.type = "email_password"', 'left')
+            ->where('job_seekers.notify_job_alerts', 1);
+        if ($candidateModel->db->fieldExists('notify_weekly_digest', 'job_seekers')) {
+            $builder->where('job_seekers.notify_weekly_digest', 1);
+        }
+        return $builder->findAll($limit);
+    }
+
+    /**
      * Process scheduled alerts for a given frequency (daily, weekly, monthly)
      */
     public function processAlerts(string $frequency = 'daily'): int
@@ -133,7 +168,7 @@ class JobAlertService
             }
 
             if ($match) {
-                $candidate = $candidateModel->find($alert->job_seeker_id);
+                $candidate = $this->candidateWithEmail((int) $alert->job_seeker_id);
                 if ($candidate && !empty($candidate->email) && ($candidate->notify_job_alerts ?? 1)) {
                     $this->deliverAlert($alert, [$job]);
                     $this->alertModel->update($alert->id, [
@@ -199,12 +234,7 @@ class JobAlertService
         }
 
         // Get candidates who have not opted out of job alerts or weekly digest
-        $candidateModel = model(JobSeekerModel::class);
-        $builder = $candidateModel->where('notify_job_alerts', 1);
-        if ($candidateModel->db->fieldExists('notify_weekly_digest', 'job_seekers')) {
-            $builder->where('notify_weekly_digest', 1);
-        }
-        $candidates = $builder->findAll(250);
+        $candidates = $this->digestRecipients(250);
 
         $sent = 0;
         $failed = 0;
@@ -347,8 +377,7 @@ class JobAlertService
 
     protected function sendEmailAlert($alert, array $jobs)
     {
-        $candidateModel = model(JobSeekerModel::class);
-        $candidate = $candidateModel->find($alert->job_seeker_id);
+        $candidate = $this->candidateWithEmail((int) $alert->job_seeker_id);
 
         if (!$candidate || empty($candidate->email)) {
             return;
