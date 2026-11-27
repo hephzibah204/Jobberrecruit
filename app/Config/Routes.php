@@ -750,6 +750,8 @@ $routes->group('api/aptitude', ['filter' => 'auth'], function ($routes) {
         $routes->get('webinars', 'NewsletterController::adminWebinarsIndex');
         $routes->get('webinars/attendees/(:num)', 'NewsletterController::getWebinarAttendees/$1');
         $routes->get('webinars/export-attendees/(:num)', 'NewsletterController::exportWebinarAttendees/$1');
+        $routes->get('webinars/email-info/(:num)', 'NewsletterController::webinarEmailInfo/$1');
+        $routes->post('webinars/email-attendees/(:num)', 'NewsletterController::emailWebinarAttendees/$1');
 
     // Automations
         $routes->get('newsletters/automations', 'NewsletterAutomationController::index');

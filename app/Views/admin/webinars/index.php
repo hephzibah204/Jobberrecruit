@@ -321,6 +321,9 @@
                     <a href="#" id="att_export_btn" class="btn btn-sm btn-success">
                         <i class="ti ti-download me-1"></i> Export Attendees (CSV)
                     </a>
+                    <button type="button" id="att_email_btn" class="btn btn-sm btn-warning" onclick="openWebinarEmailModal()">
+                        <i class="ti ti-mail me-1"></i> Email Attendees
+                    </button>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
             </div>
@@ -367,6 +370,30 @@
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Email Attendees (per-webinar) -->
+<div class="modal fade" id="webinarEmailModal" tabindex="-1" aria-labelledby="webinarEmailModalLabel" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light border-bottom">
+                <h6 class="modal-title fw-bold" id="webinarEmailModalLabel"><i class="ti ti-mail text-warning me-2"></i>Email Attendees</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="fw-semibold mb-1" id="we_webinar_title">Loading...</p>
+                <p class="text-muted fs-13" id="we_count">Counting registered attendees...</p>
+                <label class="form-label fw-semibold" for="we_template">Email Template</label>
+                <select id="we_template" class="form-select"></select>
+                <p class="fs-12 text-muted mt-2 mb-0">The email is rendered from the chosen Admin Email Template. To change the subject or wording, edit the template under Admin &rarr; Email Templates before sending. Variables you can use in the template: {first_name}, {webinar_title}, {webinar_date}, {webinar_time}, {speaker_name}, {meeting_link}.</p>
+                <div id="we_status" class="mt-3"></div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="we_send_btn" onclick="sendWebinarEmail()">Email Attendees</button>
             </div>
         </div>
     </div>
@@ -557,7 +584,10 @@ function previewWebinar(webinar, regCount) {
 
 var currentAttendeesList = [];
 
+var currentAttendeesWebinarId = null;
+
 function viewAttendees(webinarId, title, scheduledAt) {
+    currentAttendeesWebinarId = webinarId;
     document.getElementById('att_modal_subtitle').innerText = title + ' (' + scheduledAt + ')';
     document.getElementById('att_export_btn').href = '<?= base_url("admin/webinars/export-attendees") ?>/' + webinarId;
     
@@ -590,6 +620,88 @@ function viewAttendees(webinarId, title, scheduledAt) {
         document.getElementById('att_loading').classList.add('d-none');
         document.getElementById('att_empty').classList.remove('d-none');
         document.getElementById('att_empty').querySelector('p').innerText = 'Error loading attendees.';
+    });
+}
+
+var webinarEmailArmed = false;
+
+function openWebinarEmailModal() {
+    if (!currentAttendeesWebinarId) { return; }
+    webinarEmailArmed = false;
+    var sendBtn = document.getElementById('we_send_btn');
+    sendBtn.disabled = true;
+    sendBtn.innerText = 'Email Attendees';
+    document.getElementById('we_status').innerHTML = '';
+    document.getElementById('we_webinar_title').innerText = 'Loading...';
+    document.getElementById('we_count').innerText = 'Counting registered attendees...';
+    document.getElementById('we_template').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('webinarEmailModal')).show();
+
+    fetch('<?= base_url("admin/webinars/email-info") ?>/' + currentAttendeesWebinarId, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            document.getElementById('we_count').innerText = 'Could not load the recipient count.';
+            return;
+        }
+        document.getElementById('we_webinar_title').innerText = data.webinar.title;
+        document.getElementById('we_count').innerText = 'This will email ' + data.recipient_count + ' registered attendee(s) of this webinar only.';
+        var sel = document.getElementById('we_template');
+        (data.templates || []).forEach(function (t) {
+            var opt = document.createElement('option');
+            opt.value = t.key;
+            opt.text = t.name + ' \u2014 ' + t.subject;
+            if (t.key === 'webinar_announcement') { opt.selected = true; }
+            sel.appendChild(opt);
+        });
+        sendBtn.disabled = data.recipient_count === 0;
+    })
+    .catch(err => {
+        document.getElementById('we_count').innerText = 'Could not load the recipient count.';
+    });
+}
+
+function sendWebinarEmail() {
+    var sendBtn = document.getElementById('we_send_btn');
+    if (!webinarEmailArmed) {
+        webinarEmailArmed = true;
+        sendBtn.innerText = 'Click again to confirm send';
+        return;
+    }
+    var templateKey = document.getElementById('we_template').value;
+    if (!templateKey) {
+        document.getElementById('we_status').innerHTML = '<div class="alert alert-danger py-2 mb-0">Please choose an email template.</div>';
+        return;
+    }
+    sendBtn.disabled = true;
+    sendBtn.innerText = 'Queueing...';
+    var form = new FormData();
+    form.append('template_key', templateKey);
+    form.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    fetch('<?= base_url("admin/webinars/email-attendees") ?>/' + currentAttendeesWebinarId, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: form
+    })
+    .then(res => res.json())
+    .then(data => {
+        sendBtn.disabled = false;
+        sendBtn.innerText = 'Email Attendees';
+        webinarEmailArmed = false;
+        if (data.success) {
+            document.getElementById('we_status').innerHTML = '<div class="alert alert-success py-2 mb-0">' + data.message + ' They will be delivered by the mail queue within a few minutes.</div>';
+            if (typeof toastr !== 'undefined') { toastr.success(data.message); }
+        } else {
+            document.getElementById('we_status').innerHTML = '<div class="alert alert-danger py-2 mb-0">' + (data.message || 'Send failed.') + '</div>';
+        }
+    })
+    .catch(err => {
+        sendBtn.disabled = false;
+        sendBtn.innerText = 'Email Attendees';
+        webinarEmailArmed = false;
+        document.getElementById('we_status').innerHTML = '<div class="alert alert-danger py-2 mb-0">Network error. Please try again.</div>';
     });
 }
 

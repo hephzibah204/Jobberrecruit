@@ -1505,6 +1505,35 @@ class EmailTemplateService
                 ],
             ],
 
+            'webinar_announcement' => [
+                'name'     => 'Webinar Announcement (to Attendees)',
+                'category' => 'Webinars',
+                'subject'  => 'Update on {webinar_title}',
+                'greeting_type' => 'first_name',
+                'body_html' => self::wrapHtml(
+                    'Webinar Update',
+                    'A Message About Your Webinar',
+                    '<p style="font-size: 16px; margin-top: 0;">{greeting}</p>
+                    <p>Thank you for registering for <strong>{webinar_title}</strong>.</p>
+                    <p>[Write your announcement here. Edit this template under Admin - Email Templates before sending, for example to tell attendees about upcoming events they may be interested in.]</p>
+                    <p><strong>Webinar:</strong> {webinar_title}<br><strong>Date:</strong> {webinar_date}<br><strong>Time:</strong> {webinar_time}<br><strong>Speaker:</strong> {speaker_name}</p>
+                    <p style="color: #64748B; font-size: 13px; margin-top: 25px;">If the button does not work, copy and paste this link into your browser:<br><a href="{meeting_link}" style="color: #0D609E; word-break: break-all;">{meeting_link}</a></p>',
+                    'Join / View Webinar',
+                    '{meeting_link}'
+                ),
+                'body_text' => "{greeting}\n\nThank you for registering for {webinar_title}.\n\n[Write your announcement here - edit this template under Admin - Email Templates before sending.]\n\nWebinar: {webinar_title}\nDate: {webinar_date}\nTime: {webinar_time}\nSpeaker: {speaker_name}\nJoin / view: {meeting_link}\n\nBest regards,\nJobberRecruit",
+                'available_variables' => [
+                    '{first_name}'    => 'Attendee first name',
+                    '{full_name}'     => 'Attendee full name',
+                    '{webinar_title}' => 'Webinar title',
+                    '{webinar_date}'  => 'Webinar date',
+                    '{webinar_time}'  => 'Webinar time',
+                    '{speaker_name}'  => 'Speaker / host name',
+                    '{meeting_link}'  => 'Webinar meeting or recording link',
+                    '{site_name}'     => 'Website name (JobberRecruit)',
+                ],
+            ],
+
     // ==========================================
     // 8. SYSTEM & NEWSLETTERS (Round 32c)
     // ==========================================

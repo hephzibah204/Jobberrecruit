@@ -565,6 +565,153 @@ class NewsletterController extends BaseController
         exit;
     }
 
+    /**
+     * Attendees of ONE webinar who can actually be emailed: registered
+     * users of this webinar only, deduplicated, with a valid address.
+     */
+    private function webinarAttendeeRecipients(int $webinarId): array
+    {
+        $db = \Config\Database::connect();
+        $rows = $db->table('webinar_registrations')
+            ->select('users.id as user_id, COALESCE(auth_identities.secret, employers.contact_email) as email, job_seekers.full_name as js_full_name, employers.company_name as emp_company, users.username')
+            ->join('users', 'users.id = webinar_registrations.user_id', 'left')
+            ->join('auth_identities', 'auth_identities.user_id = users.id AND auth_identities.type = "email_password"', 'left')
+            ->join('job_seekers', 'job_seekers.user_id = users.id', 'left')
+            ->join('employers', 'employers.user_id = users.id', 'left')
+            ->where('webinar_registrations.webinar_id', $webinarId)
+            ->get()
+            ->getResultArray();
+
+        $recipients = [];
+        $seen = [];
+        foreach ($rows as $row) {
+            $email = strtolower(trim((string) ($row['email'] ?? '')));
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || isset($seen[$email])) {
+                continue;
+            }
+            $seen[$email] = true;
+            $recipients[] = [
+                'email' => $email,
+                'name'  => $row['js_full_name'] ?: ($row['emp_company'] ?: ($row['username'] ?: '')),
+            ];
+        }
+        return $recipients;
+    }
+
+    /**
+     * Data for the roster's Email Attendees panel: this webinar's
+     * emailable recipient count plus the active email templates.
+     */
+    public function webinarEmailInfo($id)
+    {
+        $webinar = $this->webinarModel->find($id);
+        if (!$webinar) {
+            return $this->failNotFound('Webinar not found');
+        }
+
+        $db = \Config\Database::connect();
+        $templates = $db->table('email_templates')
+            ->select('template_key, name, subject, category')
+            ->where('is_active', 1)
+            ->orderBy('category', 'ASC')
+            ->orderBy('name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $list = [];
+        foreach ($templates as $t) {
+            $list[] = [
+                'key'     => $t['template_key'],
+                'name'    => $t['name'],
+                'subject' => $t['subject'],
+            ];
+        }
+
+        return $this->respond([
+            'success'         => true,
+            'webinar'         => ['id' => (int) $webinar->id, 'title' => $webinar->title],
+            'recipient_count' => count($this->webinarAttendeeRecipients((int) $id)),
+            'templates'       => $list,
+        ]);
+    }
+
+    /**
+     * Email every registered attendee of ONE webinar using an Admin
+     * Email Template. Sends go through the normal mail queue; the send
+     * is recorded in the admin audit log.
+     */
+    public function emailWebinarAttendees($id)
+    {
+        $webinar = $this->webinarModel->find($id);
+        if (!$webinar) {
+            return $this->failNotFound('Webinar not found');
+        }
+
+        $templateKey = trim((string) $this->request->getPost('template_key'));
+        if ($templateKey === '' || !preg_match('/^[a-z0-9_]+$/', $templateKey)) {
+            return $this->respond(['success' => false, 'message' => 'Please choose an email template.'], 422);
+        }
+
+        $db = \Config\Database::connect();
+        $template = $db->table('email_templates')
+            ->where('template_key', $templateKey)
+            ->where('is_active', 1)
+            ->get()
+            ->getRowArray();
+        if (!$template) {
+            // A code default that has not been seeded into the panel yet
+            // still renders through the template service.
+            $defaults = (new \App\Services\EmailTemplateService())->getAllDefaultTemplates();
+            if (!isset($defaults[$templateKey])) {
+                return $this->respond(['success' => false, 'message' => 'That email template is not available.'], 422);
+            }
+        }
+
+        $recipients = $this->webinarAttendeeRecipients((int) $id);
+        if (empty($recipients)) {
+            return $this->respond(['success' => false, 'message' => 'No registered attendees with a valid email address for this webinar.'], 422);
+        }
+
+        $scheduled = strtotime((string) $webinar->scheduled_at);
+        $baseData = [
+            'webinar_title' => $webinar->title,
+            'webinar_date'  => $scheduled ? date('l, d F Y', $scheduled) : '',
+            'webinar_time'  => $scheduled ? date('h:i A', $scheduled) : '',
+            'speaker_name'  => $webinar->speaker_name ?? '',
+            'meeting_link'  => !empty($webinar->meeting_link) ? $webinar->meeting_link : (!empty($webinar->recording_link) ? $webinar->recording_link : base_url('webinars')),
+        ];
+
+        $service = new \App\Services\EmailTemplateService();
+        $queued = 0;
+        foreach ($recipients as $recipient) {
+            $parts = preg_split('/\s+/', trim((string) $recipient['name']));
+            $data = $baseData + [
+                'full_name'  => $recipient['name'],
+                'first_name' => $parts[0] ?? '',
+                'name'       => $recipient['name'],
+            ];
+            if ($service->send($templateKey, $recipient['email'], $data)) {
+                $queued++;
+            }
+        }
+
+        try {
+            model(\App\Models\AuditLogModel::class)->log('webinar_attendees_emailed', 'webinar', (int) $id, [
+                'webinar_title' => $webinar->title,
+                'template_key'  => $templateKey,
+                'recipients'    => $queued,
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Webinar attendee email audit log failed: ' . $e->getMessage());
+        }
+
+        return $this->respond([
+            'success' => true,
+            'queued'  => $queued,
+            'message' => $queued . ' attendee email(s) queued for delivery.',
+        ]);
+    }
+
     public function deleteWebinar($id)
     {
         $this->webinarModel->delete($id);
