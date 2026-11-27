@@ -538,6 +538,10 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('features', 'AdminController::features');
     $routes->post('features/save', 'AdminController::saveFeatures');
     $routes->get('audit-logs', 'AdminController::auditLogs');
+    $routes->get('backups', 'AdminController::backups');
+    $routes->post('backups/create', 'AdminController::createBackup');
+    $routes->get('backups/download/(:segment)', 'AdminController::downloadBackup/$1');
+    $routes->post('backups/delete', 'AdminController::deleteBackup');
     $routes->get('two-factor', 'AdminController::twoFactor');
     $routes->post('two-factor/start', 'AdminController::twoFactorStart');
     $routes->post('two-factor/confirm', 'AdminController::twoFactorConfirm');

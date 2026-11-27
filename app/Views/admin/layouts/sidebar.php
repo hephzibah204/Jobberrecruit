@@ -84,6 +84,7 @@ function openIf(array $paths)
                     ['CV Reviews',          'admin/cv-reviews',             'ti-file-text',         'prefix'],
                     ['Reports',             'admin/reports',                'ti-flag',              'prefix'],
                     ['Audit Logs',          'admin/audit-logs',             'ti-history',           'exact'],
+                    ['Backups',             'admin/backups',                'ti-database-export',   'exact'],
                     ['Two-Factor Auth',     'admin/two-factor',             'ti-shield-lock',       'exact'],
                 ],
             ];

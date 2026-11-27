@@ -26,6 +26,7 @@ use App\Models\PlanModel;
 use App\Models\EmployerDocumentModel;
 use App\Models\UserSubscriptionModel;
 use App\Models\JobNotificationModel;
+use App\Services\DatabaseBackupService;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Shield\Exceptions\ValidationException;
@@ -1553,6 +1554,68 @@ class AdminController extends BaseController
         ];
 
         return view('admin/audit_logs', $data);
+    }
+
+    public function backups()
+    {
+        $data = [
+            'title'   => 'Database Backups',
+            'user'    => $this->auth->user(),
+            'admin'   => $this->admin,
+            'backups' => (new DatabaseBackupService())->listBackups(),
+        ];
+
+        return view('admin/backups', $data);
+    }
+
+    public function createBackup()
+    {
+        try {
+            // A full dump can outlast the default script timeout on
+            // shared hosting; give it room rather than fail halfway.
+            set_time_limit(300);
+
+            $result = (new DatabaseBackupService())->createBackup();
+        } catch (\Throwable $e) {
+            log_message('error', 'Database backup failed: ' . $e->getMessage());
+
+            return redirect()->to('admin/backups')->with('error', 'The backup could not be created. Check the error log for details.');
+        }
+
+        $this->auditLog('backup_created', 'database_backup', null, [
+            'file'   => $result['filename'],
+            'size'   => $result['size'],
+            'tables' => $result['tables'],
+            'rows'   => $result['rows'],
+        ]);
+
+        return redirect()->to('admin/backups')->with('success', 'Backup created: ' . $result['filename']);
+    }
+
+    public function downloadBackup($filename)
+    {
+        $path = (new DatabaseBackupService())->backupPath((string) $filename);
+
+        if ($path === null) {
+            return redirect()->to('admin/backups')->with('error', 'Backup file not found.');
+        }
+
+        $this->auditLog('backup_downloaded', 'database_backup', null, ['file' => basename($path)]);
+
+        return $this->response->download($path, null);
+    }
+
+    public function deleteBackup()
+    {
+        $filename = (string) $this->request->getPost('filename');
+
+        if (! (new DatabaseBackupService())->deleteBackup($filename)) {
+            return redirect()->to('admin/backups')->with('error', 'Backup file not found.');
+        }
+
+        $this->auditLog('backup_deleted', 'database_backup', null, ['file' => $filename]);
+
+        return redirect()->to('admin/backups')->with('success', 'Backup deleted: ' . $filename);
     }
 
     /**
