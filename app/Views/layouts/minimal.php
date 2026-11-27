@@ -42,10 +42,6 @@
 
     <?= $this->renderSection('styles') ?>
 
-    <!-- Midnight Aura loads last so its rules win the cascade when active -->
-    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet">
-    <?php endif; ?>
 </head>
 
 <body class="<?= $bodyClass ?? '' ?>">

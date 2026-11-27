@@ -70,18 +70,9 @@ abstract class BaseController extends Controller
             service('request')->setLocale(session('lang'));
         }
 
-        // Apply global theme
-        $themePath = WRITEPATH . 'theme_setting.json';
-        $activeTheme = 'default';
-        if (file_exists($themePath)) {
-            $data = json_decode(file_get_contents($themePath), true);
-            $activeTheme = $data['theme'] ?? 'default';
-        }
-
         $renderer = \Config\Services::renderer();
 
         // Make shared layout data available to all views.
-        $renderer->setVar('activeTheme', $activeTheme);
 
         $user = auth()->loggedIn() ? auth()->user() : null;
         $employer = null;

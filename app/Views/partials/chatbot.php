@@ -231,31 +231,6 @@ if (!$isCandidateDashboard) {
         }
     }
     
-    /* Dark mode adjustments */
-    [data-theme-mode="dark"] .chatbot-window {
-        background: #1e1e2d;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    [data-theme-mode="dark"] .chat-messages {
-        background: #1a1a27;
-    }
-    
-    [data-theme-mode="dark"] .bot-message .message-content {
-        background: #2d2d44;
-        color: #e2e2e2;
-    }
-    
-    [data-theme-mode="dark"] .chat-footer {
-        background: #1e1e2d;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    [data-theme-mode="dark"] .chat-form .form-control {
-        background: #2d2d44;
-        border-color: rgba(255, 255, 255, 0.1);
-        color: #fff;
-    }
 </style>
 
 <script>

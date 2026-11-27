@@ -69,15 +69,6 @@
             </li>
             <!-- End::header-element -->
 
-            <!-- Start::Midnight Aura Theme Switch -->
-            <li class="header-element d-flex align-items-center">
-                <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" role="switch" id="switcher-midnight-aura" <?= (isset($activeTheme) && $activeTheme === 'midnight-aura') ? 'checked' : '' ?>>
-                    <label class="form-check-label fs-13" for="switcher-midnight-aura">Midnight Aura</label>
-                </div>
-            </li>
-            <!-- End::Midnight Aura Theme Switch -->
-
             <!-- Start::Admin Notifications Dropdown -->
             <li class="header-element dropdown">
                 <a href="javascript:void(0);" class="header-link dropdown-toggle" id="mainHeaderNotification" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Notifications">

@@ -457,30 +457,6 @@ class AdminController extends BaseController
         return $this->response->setJSON(['results' => $results]);
     }
 
-    /**
-     * Toggle global theme setting
-     */
-    public function toggleTheme()
-    {
-        $themePath = WRITEPATH . 'theme_setting.json';
-        $currentTheme = 'default';
-        
-        if (file_exists($themePath)) {
-            $data = json_decode(file_get_contents($themePath), true);
-            $currentTheme = $data['theme'] ?? 'default';
-        }
-        
-        $newTheme = ($currentTheme === 'midnight-aura') ? 'default' : 'midnight-aura';
-        
-        file_put_contents($themePath, json_encode(['theme' => $newTheme]));
-        
-        return $this->response->setJSON([
-            'success' => true,
-            'theme' => $newTheme,
-            'message' => 'Site theme updated to ' . $newTheme
-        ]);
-    }
-
     public function profile()
     {
         return view('admin/profile', [

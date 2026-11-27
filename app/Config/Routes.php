@@ -526,7 +526,6 @@ $routes->group('admin', ['filter' => 'adminAuth'], function ($routes) {
     $routes->get('logout', 'AdminController::logout');
     $routes->get('dashboard', 'AdminController::index');
     $routes->get('search', 'AdminController::globalSearch');
-    $routes->post('theme/toggle', 'AdminController::toggleTheme');
     $routes->get('users', 'AdminUserController::index');
     $routes->post('users/fund', 'AdminUserController::fundWallet');
     $routes->post('users/reset-password', 'AdminUserController::resetPassword');

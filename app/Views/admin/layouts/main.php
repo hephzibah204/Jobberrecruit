@@ -1,16 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-theme="<?= (isset($activeTheme) && $activeTheme === 'midnight-aura') ? 'dark' : 'light' ?>" data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat">
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat">
 
 <head>
     <script>
         (function() {
             localStorage.removeItem('jr-theme');
             localStorage.removeItem('valynadarktheme');
-            <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
-            document.documentElement.setAttribute('data-theme', 'dark');
-            <?php else: ?>
             document.documentElement.setAttribute('data-theme', 'light');
-            <?php endif; ?>
             document.documentElement.setAttribute('data-theme-mode', 'light');
         })();
     </script>
@@ -73,12 +69,6 @@
     <?= $this->renderSection('styles') ?>
 
 
-    <!-- Midnight Aura loads last so its rules win the cascade when active -->
-    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet">
-    <?php else: ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet" disabled>
-    <?php endif; ?>
 </head>
 
 <body>
@@ -180,48 +170,8 @@
     <!-- Custom-Switcher JS -->
     <script src="<?= base_url('admin/js/custom-switcher.min.js'); ?>"></script>
 
-    <!-- Global Midnight Aura Theme Switcher Logic -->
-    <script>
-    (function () {
-        const toggle = document.getElementById('switcher-midnight-aura');
-        if (!toggle) { return; }
-
-        toggle.addEventListener('change', function () {
-            // Disable toggle temporarily to prevent double clicks
-            toggle.disabled = true;
-            
-            fetch('<?= base_url('admin/theme/toggle') ?>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>' // Might need CSRF if enabled, but fetch API works best here. In CI4, maybe we need it in body or header.
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Reload the page to apply the global theme to all components and avoid partial state
-                    window.location.reload();
-                } else {
-                    toastr.error('Failed to toggle theme');
-                    toggle.checked = !toggle.checked; // Revert
-                    toggle.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                toastr.error('Network error while toggling theme');
-                toggle.checked = !toggle.checked; // Revert
-                toggle.disabled = false;
-            });
-        });
-    })();
-    </script>
-
     <?= $this->renderSection('scripts') ?>
 
-    <script src="<?= base_url('js/theme-toggle.js'); ?>" type="text/javascript"></script>
 </body>
 
 </html>
