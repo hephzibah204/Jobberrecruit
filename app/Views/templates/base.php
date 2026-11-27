@@ -129,9 +129,6 @@ $referenceHomepage = trim($this->renderSection('homepage_design')) === 'referenc
     <link href="<?= base_url('css/variables.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('css/style.css'); ?>" rel="stylesheet">
     <!-- Midnight Aura Theme -->
-    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet">
-    <?php endif; ?>
     <link href="<?= base_url('css/bootstrap-icons.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('auth/plugins/tabler-icons/tabler-icons.min.css'); ?>" rel="stylesheet">
     <?php endif; ?>
@@ -165,6 +162,10 @@ a[href], button, select, summary, label[for], [role="button"], input[type="butto
 input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"] { cursor: text !important; }
 button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"] { cursor: not-allowed !important; }
     </style>
+    <!-- Midnight Aura loads last so its rules win the cascade when active -->
+    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
+        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet">
+    <?php endif; ?>
 </head>
 
 

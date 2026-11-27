@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat">
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-theme="<?= (isset($activeTheme) && $activeTheme === 'midnight-aura') ? 'dark' : 'light' ?>" data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat">
 
 <head>
     <script>
         (function() {
             localStorage.removeItem('jr-theme');
             localStorage.removeItem('valynadarktheme');
+            <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
+            document.documentElement.setAttribute('data-theme', 'dark');
+            <?php else: ?>
             document.documentElement.setAttribute('data-theme', 'light');
+            <?php endif; ?>
             document.documentElement.setAttribute('data-theme-mode', 'light');
         })();
     </script>
@@ -62,17 +66,18 @@
 
     <!-- Midnight Aura Theme (toggled via JS) -->
     <!-- Midnight Aura Theme -->
-    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet">
-    <?php else: ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet" disabled>
-    <?php endif; ?>
     <!-- Brand Styles Overlay -->
     <link href="<?= base_url('admin/css/admin-brand.css'); ?>" rel="stylesheet">
     <link href="<?= base_url('css/modal-scroll.css'); ?>?v=<?= time() ?>" rel="stylesheet">
     <?= $this->renderSection('styles') ?>
 
 
+    <!-- Midnight Aura loads last so its rules win the cascade when active -->
+    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
+        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet">
+    <?php else: ?>
+        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet" disabled>
+    <?php endif; ?>
 </head>
 
 <body>
@@ -178,7 +183,8 @@
     <script>
     (function () {
         const toggle = document.getElementById('switcher-midnight-aura');
-        
+        if (!toggle) { return; }
+
         toggle.addEventListener('change', function () {
             // Disable toggle temporarily to prevent double clicks
             toggle.disabled = true;

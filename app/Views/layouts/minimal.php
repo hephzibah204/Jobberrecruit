@@ -38,13 +38,14 @@
 
     <!-- Main Theme -->
     <link rel="stylesheet" href="<?= base_url('auth/css/style.css'); ?>">
-    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
-        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>" rel="stylesheet">
-    <?php endif; ?>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <?= $this->renderSection('styles') ?>
 
+    <!-- Midnight Aura loads last so its rules win the cascade when active -->
+    <?php if (isset($activeTheme) && $activeTheme === 'midnight-aura'): ?>
+        <link id="midnight-aura-css" href="<?= base_url('css/midnight-aura.css'); ?>?v=<?= filemtime(FCPATH . 'css/midnight-aura.css') ?: 1 ?>" rel="stylesheet">
+    <?php endif; ?>
 </head>
 
 <body class="<?= $bodyClass ?? '' ?>">

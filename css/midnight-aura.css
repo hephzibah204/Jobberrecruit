@@ -1,5 +1,3 @@
-/* Hallmark · restyle · jobberrecruit-midnight-aura · theme: technical-precision */
-/* critique: dark mode aura theme; zero AI slop, solid surfaces, accessible contrast */
 :root {
     /* Core Midnight Aura Palette */
     --primary: #0ea5e9; /* Vibrant Blue */
@@ -24,7 +22,6 @@
 }
 
 /* Base Styles Overhaul */
-html, body { overflow-x: clip; }
 body {
     background-color: var(--midnight-bg);
     color: var(--text-main);
@@ -34,21 +31,23 @@ body {
 
 /* Glassmorphism Utilities */
 .glass-card {
-    background: var(--surface);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 1rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
     border-color: rgba(14, 165, 233, 0.4);
     box-shadow: var(--shadow-indigo);
-    
+    transform: translateY(-4px);
 }
 
 /* Premium Navigation */
 .main-header {
-    background: #091322 !important;
+    background: rgba(2, 6, 23, 0.8) !important;
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border) !important;
 }
 
@@ -71,9 +70,13 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.02em;
     font-weight: 700;
     color: var(--text-main) !important;
- text-wrap: balance; overflow-wrap: break-word; }
+}
 
-.text-gradient { color: var(--text-main); font-weight: 700; background: none; -webkit-text-fill-color: initial; }
+.text-gradient {
+    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
 /* Buttons */
 .btn-primary {
@@ -82,11 +85,11 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.75rem 1.5rem !important;
     font-weight: 600 !important;
     box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
-    transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    transition: all 0.2s ease !important;
 }
 
 .btn-primary:hover {
-    
+    transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(14, 165, 233, 0.23) !important;
 }
 
@@ -105,8 +108,7 @@ section, .bg-light, .bg-white, .popular-category, .featured-job, .top-companies-
     color: var(--text-main) !important;
 }
 
-.card, .card-html, body { overflow-x: clip; }
-body {
+.card, .card-body {
     background-color: transparent !important;
 }
 
@@ -162,7 +164,7 @@ footer, .footer {
 
 .footer-link {
     color: var(--text-muted) !important;
-    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease;
     text-decoration: none;
 }
 
@@ -186,7 +188,7 @@ footer, .footer {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .footer-socials .btn-social:hover {
@@ -213,12 +215,12 @@ section    { background-color: var(--midnight-bg); }
     border: 1px solid var(--border) !important;
     color: var(--text-main) !important;
     border-radius: 0.75rem !important;
-    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease;
 }
 .card:hover {
     border-color: rgba(14, 165, 233, 0.35) !important;
     box-shadow: 0 8px 25px rgba(14, 165, 233, 0.12) !important;
-    
+    transform: translateY(-2px);
 }
 .card-header {
     background: var(--surface) !important;
@@ -271,7 +273,7 @@ section    { background-color: var(--midnight-bg); }
 .card-grid-2:hover, .card-grid-3:hover {
     border-color: rgba(14,165,233,.4) !important;
     box-shadow: var(--shadow-indigo) !important;
-    
+    transform: translateY(-4px);
 }
 .card-location, .card-time,
 .color-text-paragraph, .color-text-paragraph-2 { color: var(--text-muted) !important; }
@@ -351,7 +353,7 @@ a:hover      { color: #38bdf8; }
     color: rgba(255, 255, 255, 0.7) !important;
     border-radius: 12px !important;
     margin: 4px 15px !important;
-    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease !important;
 }
 
 .sidebar-menu ul li a:hover {
@@ -417,11 +419,13 @@ a:hover      { color: #38bdf8; }
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: 15px 20px;
     z-index: 9999;
-    transform: translateY(100%); transition: transform 0.35s ease;
+    transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     color: white;
 }
 
-.pwa-install-banner.active { transform: translateY(0); }
+.pwa-install-banner.active {
+    bottom: 0;
+}
 
 @media (min-width: 768px) {
     .pwa-install-banner {
@@ -515,7 +519,11 @@ a:hover      { color: #38bdf8; }
     color: var(--text-main) !important;
 }
 
-.hero-section .text-gradient { color: var(--text-main); font-weight: 700; background: none; -webkit-text-fill-color: initial; }
+.hero-section .text-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, #38bdf8 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
 
 /* Ad Page Hero & Cards */
 .job-posting-hero {
@@ -619,17 +627,11 @@ body::before, body::after {
     scrollbar-color: var(--surface-light) var(--surface);
 }
 
-/* Hallmark · Gate 26b Tactile micro-depression */
-.btn-primary:active, .btn-secondary:active, .glass-card:active {
-  transform: translateY(1px);
-}
 
-/* Hallmark · Gate 27 Prefers Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* Round 43c: job cards on the public site keep their own component
+   classes (.job-card), which this sheet did not cover; the admin shell
+   is darkened via admin-brand.css's [data-theme="dark"] block, which
+   the layouts now activate while Midnight Aura is on. */
+.job-card { background: var(--surface) !important; border-color: var(--border) !important; }
+.job-card--featured { background: var(--surface) !important; }
+.job-card .job-title, .job-card .job-title a { color: var(--text-main) !important; }
