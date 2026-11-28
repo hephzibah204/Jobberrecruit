@@ -135,7 +135,7 @@
                             <option value="<?= esc($categoryOption, 'attr') ?>"></option>
                         <?php endforeach ?>
                     </datalist>
-                    <div class="form-text">Pick one of the public page's section names. Any other category is shown under "General Inquiries &amp; Support".</div>
+                    <div class="form-text">Pick one of the FAQ page's section names to group it there, or a page name (CV Review, Employers, Recruitment, Webinars, Candidate Hub) to manage that page's FAQ list. Any other category is shown under "General Inquiries &amp; Support".</div>
                 </div>
 
                 <div class="col-md-3">

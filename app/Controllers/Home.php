@@ -2926,6 +2926,25 @@ class Home extends BaseController
     }
 
     // FAQ Page
+    /**
+     * FAQs for a standalone page, managed under Admin -> FAQs by category
+     * (Round 51). Returns [] when none exist so views fall back to their
+     * built-in copies.
+     */
+    private function pageFaqs(string $category): array
+    {
+        try {
+            return (new FaqModel())
+                ->where('category', $category)
+                ->where('is_active', 1)
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function faq()
     {
         $data = [
@@ -3116,6 +3135,10 @@ class Home extends BaseController
 
                 $grouped = [];
                 foreach ($faqRows as $faqRow) {
+                    // Page-managed FAQs (Round 51) render on their own pages only.
+                    if (in_array(trim((string) $faqRow->category), ['CV Review', 'Employers', 'Recruitment', 'Webinars', 'Candidate Hub'], true)) {
+                        continue;
+                    }
                     $key = $categoryMap[trim((string) $faqRow->category)] ?? 'faq10';
                     $grouped[$key][(string) $faqRow->question] = (string) $faqRow->answer;
                 }
@@ -3362,6 +3385,7 @@ class Home extends BaseController
             'employerCount'  => $employerCount,
             'recentBlogs'    => $recentBlogs,
             'auth'           => $this->auth,
+            'pageFaqs'       => $this->pageFaqs('Candidate Hub'),
         ]);
     }
 
@@ -3412,6 +3436,7 @@ class Home extends BaseController
             'og_description' => 'Hire top talent in Nigeria with JobberRecruit. We provide professional recruitment services and job advertising solutions.',
             'og_image' => base_url('images/default-og-image.jpg'),
             'auth' => $this->auth,
+            'pageFaqs' => $this->pageFaqs('Recruitment'),
         ];
         return view('recruitment', $data);
     }
@@ -3518,6 +3543,7 @@ class Home extends BaseController
             'title' => 'Job Posting Service | Post a Job in Nigeria — JobberRecruit',
             'meta_description' => 'Post your job vacancy on JobberRecruit and reach thousands of qualified candidates in Nigeria. Fast, effective, and affordable job advertising.',
             'auth' => $this->auth,
+            'pageFaqs' => $this->pageFaqs('Employers'),
         ];
         return view('ad', $data);
     }
@@ -3694,6 +3720,7 @@ class Home extends BaseController
             'isLoggedIn'      => $this->auth->loggedIn(),
             'preselectedPlan' => in_array($paidPlan, ['professional', 'premium'], true) ? $paidPlan : 'basic',
             'reviewId'        => $reviewId ? (int) $reviewId : null,
+            'pageFaqs'        => $this->pageFaqs('CV Review'),
             'planPrices'      => [
                 'basic'        => 0,
                 'professional' => (int) env('cv_review_pro_price', 15000),

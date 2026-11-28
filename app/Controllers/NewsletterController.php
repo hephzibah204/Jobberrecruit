@@ -32,12 +32,28 @@ class NewsletterController extends BaseController
     /**
      * Public webinars listing
      */
+    /** Page FAQs managed under Admin -> FAQs by category (Round 51). */
+    private function pageFaqs(string $category): array
+    {
+        try {
+            return (new \App\Models\FaqModel())
+                ->where('category', $category)
+                ->where('is_active', 1)
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function webinars()
     {
         return view('webinars_public', [
             'title'            => 'Free Career Webinars & Live Masterclasses | JobberRecruit',
             'meta_description' => 'Join free live career webinars and masterclasses hosted by top Nigerian HR leaders. Learn interview skills, resume writing & industry insights.',
-            'webinars'         => $this->webinarModel->upcoming()->findAll()
+            'webinars'         => $this->webinarModel->upcoming()->findAll(),
+            'pageFaqs'         => $this->pageFaqs('Webinars')
         ]);
     }
 

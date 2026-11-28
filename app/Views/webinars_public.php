@@ -559,7 +559,15 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       <h2 class="section-title" id="faq-h">Everything you need to <span>know</span></h2>
     </div>
     <div class="faq-wrap">
+      <?php if (!empty($pageFaqs)): ?>
+      <?php foreach ($pageFaqs as $faq): ?>
       <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)"><?= $faq->question ?> <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <div class="faq-a"><div class="faq-a-inner"><?= $faq->answer ?></div></div>
+      </div>
+      <?php endforeach; ?>
+      <?php else: ?>
+<div class="faq-item">
         <button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Are JobberRecruit webinars really free? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         <div class="faq-a"><div class="faq-a-inner">Most of our webinars are completely free to attend. A small number of in-depth premium workshops carry a low fee, always clearly marked with the price on the webinar card before you register.</div></div>
       </div>
@@ -583,6 +591,7 @@ $featured = !empty($webinars) ? $webinars[0] : null;
         <button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Can I ask questions during the webinar? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         <div class="faq-a"><div class="faq-a-inner">Absolutely. Every webinar includes a live Q&amp;A segment where you can ask the speaker your questions directly &mdash; no pre-recorded videos.</div></div>
       </div>
+      <?php endif; ?>
     </div>
   </div>
 </section>

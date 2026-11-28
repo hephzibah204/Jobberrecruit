@@ -716,9 +716,9 @@ svg { flex-shrink: 0; }
 .faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);text-align:left;line-height:1.4}
 .faq-q svg{width:19px;height:19px;color:var(--brand);flex-shrink:0;transition:transform .2s}
 .faq-item.open .faq-q svg{transform:rotate(45deg)}
-.faq-
+.faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease}
 .faq-a-in{padding:0 22px 18px;font-size:.88rem;color:var(--muted);line-height:1.7}
-.faq-item.open .faq-
+.faq-item.open .faq-a{max-height:600px}
 /* final CTA */
 .final-ct
 .final-cta h2{font-family:'Sora',sans-serif;font-size:clamp(1.6rem,3vw,2.3rem);font-weight:800;margin-bottom:12px}
@@ -870,7 +870,7 @@ svg { flex-shrink: 0; }
 .faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px;background:none;border:none;font-family:'Inter',sans-serif;font-size:.95rem;font-weight:600;color:var(--text);cursor:pointer;text-align:left}
 .faq-q svg{width:20px;height:20px;color:var(--brand);flex-shrink:0;transition:var(--transition)}
 .faq-q[aria-expanded="true"] svg{transform:rotate(45deg)}
-.faq-
+.faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease}
 .faq-a-in{padding:0 22px 20px;font-size:.88rem;color:var(--muted);line-height:1.6}
 /* final cta */
 .cvr-final{background:radial-gradient(900px 500px at 50% -20%,rgba(237,144,32,.16),transparent 60%),linear-gradient(155deg,#0A2F57,#064A85);color:#fff;padding:60px 0;text-align:center}
@@ -1112,12 +1112,18 @@ svg { flex-shrink: 0; }
       <p>Everything you need to know about our CV review service.</p>
     </div>
     <div class="cvr-faq">
-      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">How long does a CV review take? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Turnaround depends on the selected review package and current workload. The expected delivery time is shown when you submit your CV.</div></div></div>
+      <?php if (!empty($pageFaqs)): ?>
+      <?php foreach ($pageFaqs as $faq): ?>
+      <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)"><?= $faq->question ?> <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in"><?= $faq->answer ?></div></div></div>
+      <?php endforeach; ?>
+      <?php else: ?>
+<div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">How long does a CV review take? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Turnaround depends on the selected review package and current workload. The expected delivery time is shown when you submit your CV.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What file formats do you accept? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">We accept PDF, DOC, and DOCX files up to 5MB. For best results we recommend uploading a PDF version of your CV.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What's the difference between the review tiers? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Basic is an AI-powered analysis covering ATS compatibility, structure, and keywords. Professional adds a full human expert review with line-by-line feedback and rewritten sections. Premium adds a 1-on-1 consultation call and a tailored cover letter.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Will my CV be kept confidential? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Uploaded documents are handled according to the JobberRecruit privacy policy. Contact support if you want to request deletion of your documents.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">What if I have a problem with my review? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Contact support with your review reference and details of the issue so the team can assess it.</div></div></div>
       <div class="faq-item"><button class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">Do you review CVs for specific industries? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="faq-a"><div class="faq-a-in">Yes. Our team covers technology, finance, healthcare, education, marketing, sales, government, and consulting. When you upload your CV, select your target industry so we match you with the most relevant reviewer.</div></div></div>
+      <?php endif; ?>
     </div>
   </div>
 </section>
@@ -1132,5 +1138,26 @@ svg { flex-shrink: 0; }
 </section>
 
 </main>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+function toggleFaq(btn) {
+  var wrap = btn.closest('.cvr-faq');
+  var wasOpen = btn.getAttribute('aria-expanded') === 'true';
+  if (wrap) {
+    wrap.querySelectorAll('.faq-q').forEach(function(b) {
+      b.setAttribute('aria-expanded', 'false');
+      var a = b.nextElementSibling;
+      if (a) { a.style.maxHeight = '0px'; }
+    });
+  }
+  if (!wasOpen) {
+    btn.setAttribute('aria-expanded', 'true');
+    var ans = btn.nextElementSibling;
+    if (ans) { ans.style.maxHeight = ans.scrollHeight + 'px'; }
+  }
+}
+</script>
 <?= $this->endSection() ?>
 

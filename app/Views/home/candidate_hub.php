@@ -523,9 +523,15 @@
       <h2 id="ch-faq-h">Job seeker <span>FAQ</span></h2>
     </div>
     <div class="ch-faq-wrap">
-      <div class="ch-faq-item"><button class="ch-faq-q" aria-expanded="false" onclick="chToggleFaq(this)">Is JobberRecruit free for job seekers? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="ch-faq-a"><div class="ch-faq-a-in">Yes. Creating a candidate account, searching and applying for jobs, building your CV, practising interviews and tracking applications are all free for job seekers.</div></div></div>
+      <?php if (!empty($pageFaqs)): ?>
+      <?php foreach ($pageFaqs as $faq): ?>
+      <div class="ch-faq-item"><button class="ch-faq-q" aria-expanded="false" onclick="chToggleFaq(this)"><?= $faq->question ?> <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="ch-faq-a"><div class="ch-faq-a-in"><?= $faq->answer ?></div></div></div>
+      <?php endforeach; ?>
+      <?php else: ?>
+<div class="ch-faq-item"><button class="ch-faq-q" aria-expanded="false" onclick="chToggleFaq(this)">Is JobberRecruit free for job seekers? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="ch-faq-a"><div class="ch-faq-a-in">Yes. Creating a candidate account, searching and applying for jobs, building your CV, practising interviews and tracking applications are all free for job seekers.</div></div></div>
       <div class="ch-faq-item"><button class="ch-faq-q" aria-expanded="false" onclick="chToggleFaq(this)">Do I need an account to apply for jobs? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="ch-faq-a"><div class="ch-faq-a-in">You can browse jobs without an account, but you&rsquo;ll need a free candidate account to apply, save jobs, track applications and set up job alerts.</div></div></div>
       <div class="ch-faq-item"><button class="ch-faq-q" aria-expanded="false" onclick="chToggleFaq(this)">What career tools are available? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><div class="ch-faq-a"><div class="ch-faq-a-in">An AI resume builder, AI mock interview practice, professional CV revamp, a salary calculator, career webinars and a career path quiz &mdash; all designed to help you land your next role.</div></div></div>
+      <?php endif; ?>
     </div>
   </div>
 </section>
