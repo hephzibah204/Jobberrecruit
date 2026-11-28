@@ -17,8 +17,8 @@
 .footer-bottom a { color: rgba(255,255,255,.55); }
 .footer-bottom a:hover { color: var(--white, #fff); }
 .footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
-@media (max-width: 860px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 580px) { .footer-grid { grid-template-columns: 1fr; gap: 24px; } .footer-bottom { flex-direction: column; text-align: center; } .footer-links { justify-content: center; } }
+@media (max-width: 860px) { .footer-grid { grid-template-columns: 1fr 1fr 1fr; gap: 28px; } .footer-brand { grid-column: 1 / -1; } .footer-col ul { gap: 8px; } .footer-col ul a { min-height: 24px; } }
+@media (max-width: 580px) { .footer-grid { grid-template-columns: 1fr 1fr 1fr; gap: 22px 14px; } .footer-col h3 { font-size: .68rem; letter-spacing: .04em; margin-bottom: 11px; } .footer-col ul { gap: 7px; } .footer-col ul a { min-height: 0; font-size: .8rem; } .footer { padding-top: 40px; } .footer-bottom { flex-direction: column; text-align: center; } .footer-links { justify-content: center; } }
 </style>
 <footer class="footer" role="contentinfo">
       <div class="container">
