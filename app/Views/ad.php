@@ -354,7 +354,7 @@
           <div class="ptag">For steady, everyday hiring needs.</div>
           <div class="pamt"><span class="cur">&#8358;</span><span class="num">5,000</span><span class="per">/ job</span></div>
           <div class="psub">Billed per job post</div>
-          <a href="<?= base_url('post-a-job?plan=standard') ?>" class="btn btn-outline">Choose Standard</a>
+          <a href="<?= base_url('employer/pricing') ?>" class="btn btn-outline">Choose Standard</a>
           <ul class="pfeats">
             <li class="pfeats-h">Everything in Free, plus</li>
             <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>Priority same-day approval</li>
@@ -370,7 +370,7 @@
           <div class="ptag">Maximum reach and faster hires.</div>
           <div class="pamt"><span class="cur">&#8358;</span><span class="num">15,000</span><span class="per">/ job</span></div>
           <div class="psub">Billed per job post</div>
-          <a href="<?= base_url('post-a-job?plan=premium') ?>" class="btn btn-primary">Choose Premium</a>
+          <a href="<?= base_url('employer/pricing') ?>" class="btn btn-primary">Choose Premium</a>
           <ul class="pfeats">
             <li class="pfeats-h">Everything in Standard, plus</li>
             <li><span class="yes"><svg aria-hidden="true"><use href="#i-check-circle"/></svg></span>Job review</li>
@@ -433,7 +433,7 @@
           <div class="subprice"><span class="cur">&#8358;</span><span class="num">40,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;40,000</b> per month</div>
           <span class="sub-save none">Save</span>
-          <a href="<?= base_url('post-a-job?plan=sub-monthly') ?>" class="btn btn-outline">Choose monthly</a>
+          <a href="<?= base_url('employer/pricing') ?>" class="btn btn-outline">Choose monthly</a>
           <div class="sub-billed">Billed &#8358;40,000 each month</div>
         </div>
 
@@ -443,7 +443,7 @@
           <div class="subprice"><span class="cur">&#8358;</span><span class="num">34,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;102,000</b> billed quarterly</div>
           <span class="sub-save">Save 15%</span>
-          <a href="<?= base_url('post-a-job?plan=sub-quarterly') ?>" class="btn btn-outline">Choose quarterly</a>
+          <a href="<?= base_url('employer/pricing') ?>" class="btn btn-outline">Choose quarterly</a>
           <div class="sub-billed">Billed &#8358;102,000 every 3 months</div>
         </div>
 
@@ -453,7 +453,7 @@
           <div class="subprice"><span class="cur">&#8358;</span><span class="num">30,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;180,000</b> billed half-yearly</div>
           <span class="sub-save">Save 25%</span>
-          <a href="<?= base_url('post-a-job?plan=sub-biannual') ?>" class="btn btn-outline">Choose 6 months</a>
+          <a href="<?= base_url('employer/pricing') ?>" class="btn btn-outline">Choose 6 months</a>
           <div class="sub-billed">Billed &#8358;180,000 every 6 months</div>
         </div>
 
@@ -464,7 +464,7 @@
           <div class="subprice"><span class="cur">&#8358;</span><span class="num">26,000</span><span class="per">/ month</span></div>
           <div class="sub-permo"><b>&#8358;312,000</b> billed yearly</div>
           <span class="sub-save">Save 35%</span>
-          <a href="<?= base_url('post-a-job?plan=sub-annual') ?>" class="btn btn-primary">Choose annual</a>
+          <a href="<?= base_url('employer/pricing') ?>" class="btn btn-primary">Choose annual</a>
           <div class="sub-billed">Billed &#8358;312,000 once a year</div>
         </div>
       </div>
@@ -629,7 +629,7 @@
         <h2>Your next great hire is one post away</h2>
         <p>Hire through JobberRecruit. Create your employer account and post a job.</p>
         <div class="final-cta-actions">
-          <a href="<?= base_url('post-a-job') ?>" class="btn btn-accent btn-lg"><svg aria-hidden="true"><use href="#i-rocket"/></svg>Post your first job</a>
+          <a href="<?= base_url('employer/post-job') ?>" class="btn btn-accent btn-lg"><svg aria-hidden="true"><use href="#i-rocket"/></svg>Post your first job</a>
           <a href="#pricing" class="btn btn-white btn-lg">Compare plans</a>
         </div>
       </div>
@@ -640,7 +640,7 @@
 
 <!-- sticky mobile CTA -->
 <div class="sticky-cta" aria-label="Quick actions">
-  <a href="<?= base_url('post-a-job') ?>" class="btn btn-accent"><svg aria-hidden="true" style="width:16px;height:16px"><use href="#i-rocket"/></svg>Post a job</a>
+  <a href="<?= base_url('employer/post-job') ?>" class="btn btn-accent"><svg aria-hidden="true" style="width:16px;height:16px"><use href="#i-rocket"/></svg>Post a job</a>
   <a href="#demo" class="btn btn-outline">Talk to sales</a>
 </div>
 

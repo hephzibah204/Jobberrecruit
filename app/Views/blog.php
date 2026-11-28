@@ -634,7 +634,7 @@ foreach ($blogs as $index => $blog) {
             <li><svg aria-hidden="true"><use href="#i-check"/></svg> Application management tools</li>
             <li><svg aria-hidden="true"><use href="#i-check"/></svg> Referral rewards</li>
           </ul>
-          <a href="<?= base_url('post-a-job') ?>" class="btn btn-primary">Post a job free →</a>
+          <a href="<?= base_url('employer/post-job') ?>" class="btn btn-primary">Post a job free →</a>
         </div>
       </div>
     </div>

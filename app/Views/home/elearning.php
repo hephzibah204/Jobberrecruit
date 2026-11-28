@@ -92,7 +92,7 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
         <p class="tr-hero-sub">Explore job-ready training, interview prep, hiring playbooks, and AI-driven career development resources built for JobberRecruit users.</p>
         <div class="tr-hero-actions">
           <a href="#catalog" class="btn btn-accent"><svg aria-hidden="true"><use href="#i-search"/></svg> Browse courses</a>
-          <a href="<?= base_url('services/cv-review') ?>" class="btn btn-white">Get CV reviewed</a>
+          <a href="<?= base_url('cv-review') ?>" class="btn btn-white">Get CV reviewed</a>
         </div>
       </div>
 

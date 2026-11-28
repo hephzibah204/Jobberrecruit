@@ -5,7 +5,7 @@
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
 {"@type":"ListItem","position":1,"name":"Home","item":"https://jobberrecruit.com/"},
 {"@type":"ListItem","position":2,"name":"Training","item":"https://jobberrecruit.com/training"},
-{"@type":"ListItem","position":3,"name":"Webinars","item":"https://jobberrecruit.com/training/webinars"}]}
+{"@type":"ListItem","position":3,"name":"Webinars","item":"https://jobberrecruit.com/webinars"}]}
 </script>
 
 <script type="application/ld+json">
@@ -362,10 +362,10 @@ $featured = !empty($webinars) ? $webinars[0] : null;
       <h1>Free Career <em>Webinars</em> in Nigeria</h1>
       <p class="hero-sub">Level up with free and premium live training on interviews, CV writing, salary negotiation, and in-demand tech skills &mdash; taught by Nigeria&rsquo;s top career experts.</p>
       <div class="hero-chips">
-        <a href="<?= base_url('training/webinars?topic=interview') ?>"/ class="hero-chip"><svg aria-hidden="true"><use href="#ic-mic"/></svg>Interview Prep</a>
-        <a href="<?= base_url('training/webinars?topic=cv') ?>"/ class="hero-chip"><svg aria-hidden="true"><use href="#ic-doc"/></svg>CV &amp; Resume</a>
-        <a href="<?= base_url('training/webinars?topic=salary') ?>"/ class="hero-chip"><svg aria-hidden="true"><use href="#ic-coin"/></svg>Salary Negotiation</a>
-        <a href="<?= base_url('training/webinars?topic=tech') ?>"/ class="hero-chip"><svg aria-hidden="true"><use href="#ic-chip"/></svg>Tech Skills</a>
+        <a href="<?= base_url('webinars') ?>" class="hero-chip"><svg aria-hidden="true"><use href="#ic-mic"/></svg>Interview Prep</a>
+        <a href="<?= base_url('webinars') ?>" class="hero-chip"><svg aria-hidden="true"><use href="#ic-doc"/></svg>CV &amp; Resume</a>
+        <a href="<?= base_url('webinars') ?>" class="hero-chip"><svg aria-hidden="true"><use href="#ic-coin"/></svg>Salary Negotiation</a>
+        <a href="<?= base_url('webinars') ?>" class="hero-chip"><svg aria-hidden="true"><use href="#ic-chip"/></svg>Tech Skills</a>
       </div>
       
     </div>
@@ -597,8 +597,8 @@ $featured = !empty($webinars) ? $webinars[0] : null;
 </section>
 
 <section class="cta-section"><div class="container"><div class="dual-cta">
-  <div class="cta-panel blue"><div class="cta-ic"><svg aria-hidden="true"><use href="#ic-bag"/></svg></div><h2>Ready to find your next job?</h2><p>Join the growing community of Nigerians using JobberRecruit to land great roles faster.</p><ul class="cta-list"><li><svg aria-hidden="true"><use href="#ic-check"/></svg>AI resume builder</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>AI mock interviews</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Personalised career advice</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Smart job alerts</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Training &amp; certificates</li></ul><a href="<?= base_url('register') ?>"/ class="btn btn-accent">Create free account &#x2192;</a></div>
-  <div class="cta-panel light"><div class="cta-ic"><svg aria-hidden="true"><use href="#ic-rkt"/></svg></div><h2>Looking to hire? Post a job free</h2><p>Post your vacancy free and reach verified candidates across Nigeria.</p><ul class="cta-list"><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Post your first job free</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Recruitment dashboard</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Smart application management</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Verified candidate database</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Referral rewards</li></ul><a href="<?= base_url('post-a-job') ?>"/ class="btn btn-primary">Post a job free &#x2192;</a></div>
+  <div class="cta-panel blue"><div class="cta-ic"><svg aria-hidden="true"><use href="#ic-bag"/></svg></div><h2>Ready to find your next job?</h2><p>Join the growing community of Nigerians using JobberRecruit to land great roles faster.</p><ul class="cta-list"><li><svg aria-hidden="true"><use href="#ic-check"/></svg>AI resume builder</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>AI mock interviews</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Personalised career advice</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Smart job alerts</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Training &amp; certificates</li></ul><a href="<?= base_url('register') ?>" class="btn btn-accent">Create free account &#x2192;</a></div>
+  <div class="cta-panel light"><div class="cta-ic"><svg aria-hidden="true"><use href="#ic-rkt"/></svg></div><h2>Looking to hire? Post a job free</h2><p>Post your vacancy free and reach verified candidates across Nigeria.</p><ul class="cta-list"><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Post your first job free</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Recruitment dashboard</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Smart application management</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Verified candidate database</li><li><svg aria-hidden="true"><use href="#ic-check"/></svg>Referral rewards</li></ul><a href="<?= base_url('employer/post-job') ?>" class="btn btn-primary">Post a job free &#x2192;</a></div>
 </div></div></section>
 </main>
 <?= $this->endSection() ?>

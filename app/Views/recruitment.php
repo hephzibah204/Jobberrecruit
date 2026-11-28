@@ -262,7 +262,7 @@
                             </select>
                         </div>
                         <div class="inq-field full"><label for="message">How can we help? <span class="req">*</span></label><textarea id="message" name="message" rows="4" placeholder="Tell us about your hiring needs…" required></textarea></div>
-                        <label class="inq-consent"><input type="checkbox" id="terms" name="terms" required> I agree to receive recruitment updates and accept JobberRecruit's <a href="<?= base_url('terms') ?>">Terms of Service</a> and <a href="<?= base_url('privacy-policy') ?>">Privacy Policy</a>.</label>
+                        <label class="inq-consent"><input type="checkbox" id="terms" name="terms" required> I agree to receive recruitment updates and accept JobberRecruit's <a href="<?= base_url('terms-and-conditions') ?>">Terms of Service</a> and <a href="<?= base_url('privacy-policy') ?>">Privacy Policy</a>.</label>
                         <div class="inq-submit"><button type="submit" class="btn btn-primary btn-lg w-100"><svg aria-hidden="true" width="16" height="16"><use href="#i-mail"/></svg>Submit inquiry</button></div>
                     </div>
                 </form>
@@ -280,8 +280,8 @@
             <p>Turn interest into qualified applications with flexible hiring tools, employer branding and faster screening workflows.</p>
         </div>
         <div class="dual">
-            <div class="dual-card accent card border-0"><h3>Post your next role</h3><p>Publish openings, manage applicants and keep your hiring pipeline moving from one dashboard.</p><a href="<?= base_url('post-a-job') ?>" class="btn" style="background:var(--brand-deep);color:#fff;border-color:var(--brand-deep)">Post a job &rarr;</a></div>
-            <div class="dual-card blue card border-0"><h3>Compare hiring plans</h3><p>Choose the pricing option that matches your team size, hiring urgency and visibility needs.</p><a href="<?= base_url('employers#pricing') ?>" class="btn btn-warning">See pricing &rarr;</a></div>
+            <div class="dual-card accent card border-0"><h3>Post your next role</h3><p>Publish openings, manage applicants and keep your hiring pipeline moving from one dashboard.</p><a href="<?= base_url('employer/post-job') ?>" class="btn" style="background:var(--brand-deep);color:#fff;border-color:var(--brand-deep)">Post a job &rarr;</a></div>
+            <div class="dual-card blue card border-0"><h3>Compare hiring plans</h3><p>Choose the pricing option that matches your team size, hiring urgency and visibility needs.</p><a href="<?= base_url('job-ads#pricing') ?>" class="btn btn-warning">See pricing &rarr;</a></div>
         </div>
     </div>
 </section>
