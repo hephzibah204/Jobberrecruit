@@ -782,7 +782,8 @@ svg { flex-shrink: 0; }
 .btn-ghost-light:hover{background:rgba(255,255,255,.18);color:#fff}
 
 /* hero stat card */
-.cvr-stats{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:30px;display:grid;grid-template-columns:1fr 1fr;gap:24px;backdrop-filter:blur(6px)}
+.cvr-stats{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:30px;display:grid;grid-template-columns:1fr 1fr;gap:24px;backdrop-filter:blur(6px);color:#fff}
+.cvr-stats p{color:rgba(255,255,255,.88);line-height:1.65;margin:0}
 .cvr-stat .n{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:#fff;line-height:1}
 .cvr-stat .n span{color:var(--accent)}
 .cvr-stat .l{font-size:.82rem;color:rgba(255,255,255,.7);margin-top:5px}

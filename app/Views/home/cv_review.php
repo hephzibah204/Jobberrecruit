@@ -113,6 +113,13 @@
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   backdrop-filter: blur(6px);
+  color: #fff;
+}
+
+.cvr-stats p {
+  color: rgba(255,255,255,.88);
+  line-height: 1.65;
+  margin: 0;
 }
 
 .cvr-stat .n {
