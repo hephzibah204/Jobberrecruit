@@ -7,7 +7,7 @@
                 <div class="social-links mt-3">
                     <a href="https://facebook.com/jobberrecruit" target="_blank" rel="noopener" class="me-2 text-primary"><i class="ti ti-brand-facebook fs-20"></i></a>
                     <a href="https://twitter.com/jobberrecruit" target="_blank" rel="noopener" class="me-2 text-primary"><i class="ti ti-brand-twitter fs-20"></i></a>
-                    <a href="https://linkedin.com/company/jobberrecruit" target="_blank" rel="noopener" class="me-2 text-primary"><i class="ti ti-brand-linkedin fs-20"></i></a>
+                    <a href="https://www.linkedin.com/company/jobber-recruit/" target="_blank" rel="noopener" class="me-2 text-primary"><i class="ti ti-brand-linkedin fs-20"></i></a>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 mb-4 mb-md-0">

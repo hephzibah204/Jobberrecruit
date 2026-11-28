@@ -430,7 +430,7 @@
         ],
         'sameAs' => [
             'https://twitter.com/JobberRecruit',
-            'https://linkedin.com/company/jobberrecruit',
+            'https://www.linkedin.com/company/jobber-recruit/',
             'https://facebook.com/JobberRecruit',
         ],
     ],

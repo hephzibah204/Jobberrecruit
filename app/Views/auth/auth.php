@@ -60,7 +60,7 @@
         <?= $this->renderSection('content'); ?>
     </main>
 
-    <?= $this->include('templates/footer'); ?>
+    <?= $this->include('templates/partials/footer'); ?>
 
     <script src="<?= base_url('assets/js/vendor/modernizr-3.6.0.min.js'); ?>"></script>
     <script src="<?= base_url('assets/js/vendor/jquery-3.6.0.min.js'); ?>"></script>

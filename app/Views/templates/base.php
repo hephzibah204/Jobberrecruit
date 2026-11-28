@@ -108,7 +108,7 @@ $referenceHomepage = trim($this->renderSection('homepage_design')) === 'referenc
         'sameAs'   => [
             'https://www.facebook.com/jobberrecruit',
             'https://www.twitter.com/jobberrecruit',
-            'https://www.linkedin.com/company/jobberrecruit',
+            'https://www.linkedin.com/company/jobber-recruit/',
         ],
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
     </script>
@@ -194,7 +194,7 @@ button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disab
     </div>
 
     <!-- Footer (reference design) -->
-    <?= $this->include((str_starts_with(uri_string(), 'jobs-in-') || str_ends_with(uri_string(), '-jobs')) ? 'templates/partials/location_footer' : 'templates/partials/footer') ?>
+    <?= $this->include('templates/partials/footer') ?>
     
     <!-- Mobile Bottom App Navigation -->
     <?php if (!$referenceHomepage): ?>

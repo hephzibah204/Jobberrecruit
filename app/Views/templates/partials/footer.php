@@ -1,3 +1,25 @@
+<?php /* Single shared site footer (Round 52): one markup + one style source, used by every layout. */ ?>
+<style>
+.footer { background: #0A2F57; color: rgba(255,255,255,.78); padding: 56px 0 0; padding-bottom: env(safe-area-inset-bottom, 0); }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 44px; }
+.footer-logo { display: flex; align-items: center; text-decoration: none; margin-bottom: 14px; }
+.footer-logo-img { height: 52px; width: auto; }
+.footer-brand p { font-size: .83rem; line-height: 1.75; opacity: .78; margin-bottom: 18px; }
+.footer-socials { display: flex; gap: 8px; flex-wrap: wrap; }
+.footer-socials a { width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,.09); color: var(--white, #fff); display: flex; align-items: center; justify-content: center; transition: var(--transition, all .2s ease); text-decoration: none; }
+.footer-socials a svg { width: 17px; height: 17px; }
+.footer-socials a:hover { background: var(--brand, #0861A9); }
+.footer-col h3 { font-family: 'Sora', sans-serif; font-size: .78rem; font-weight: 700; color: var(--white, #fff); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 15px; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; }
+.footer-col ul a { font-size: .82rem; color: rgba(255,255,255,.68); transition: var(--transition, all .2s ease); min-height: 26px; display: inline-flex; align-items: center; }
+.footer-col ul a:hover { color: var(--white, #fff); text-decoration: none; }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,.1); padding: 18px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; font-size: .78rem; color: rgba(255,255,255,.45); }
+.footer-bottom a { color: rgba(255,255,255,.55); }
+.footer-bottom a:hover { color: var(--white, #fff); }
+.footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
+@media (max-width: 860px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 580px) { .footer-grid { grid-template-columns: 1fr; gap: 24px; } .footer-bottom { flex-direction: column; text-align: center; } .footer-links { justify-content: center; } }
+</style>
 <footer class="footer" role="contentinfo">
       <div class="container">
         <div class="footer-grid">
@@ -10,13 +32,13 @@
               <a href="https://twitter.com/jobberrecruit" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on X (Twitter)">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932L18.901 1.153Zm-1.61 19.56h2.039L6.486 3.24H4.298Z"/></svg>
               </a>
-              <a href="https://linkedin.com/company/jobberrecruit" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on LinkedIn">
+              <a href="https://www.linkedin.com/company/jobber-recruit/" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on LinkedIn">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.137 1.445-2.137 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.555V9h3.564v11.452z"/></svg>
               </a>
               <a href="https://facebook.com/jobberrecruit" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on Facebook">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54v-2.89h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562v1.875h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.991 22 12z"/></svg>
               </a>
-              <a href="https://instagram.com/jobberrecruit" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on Instagram">
+              <a href="https://www.instagram.com/jobberrecruit_ltd" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on Instagram">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.332.014 7.052.072 2.695.272.273 2.69.073 7.052.014 8.332 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.332 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.668-.072-4.948-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
               </a>
               <a href="https://wa.me/2349014808902" target="_blank" rel="noopener noreferrer" aria-label="JobberRecruit on WhatsApp">
