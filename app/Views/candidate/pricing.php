@@ -533,7 +533,15 @@
     <section class="prem-faq">
         <h3>Common questions</h3>
         <div class="prem-faq-grid">
+            <?php if (!empty($pageFaqs)): ?>
+            <?php foreach ($pageFaqs as $faqIdx => $faq): ?>
             <div class="faq-item">
+                <b><?= $faq->question ?></b>
+                <p><?= $faq->answer ?></p>
+            </div>
+            <?php endforeach; ?>
+            <?php else: ?>
+<div class="faq-item">
                 <b>What happens when I subscribe?</b>
                 <p>Your selected plan activates immediately. AI Resume Builder, AI Career Tools and practice test access depend on the features listed for that plan. Check your plan for its expiry and renewal options.</p>
             </div>
@@ -549,6 +557,7 @@
                 <b>Are employer-invited tests free?</b>
                 <p>Always. When an employer invites you to take an aptitude test as part of hiring, it's completely free — that never counts against your practice-test limit.</p>
             </div>
+            <?php endif; ?>
         </div>
     </section>
 

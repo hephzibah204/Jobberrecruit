@@ -427,7 +427,8 @@ class Home extends BaseController
             'testimonials' => model(\App\Models\TestimonialModel::class)->where('status', 'active')->orderBy('created_at', 'DESC')->findAll(),
             'remoteJobsCount' => $remoteJobsCount,
             'nationwideJobsCount' => $nationwideJobsCount,
-            'q' => $this->request->getGet('q') ?? ''
+            'q' => $this->request->getGet('q') ?? '',
+            'pageFaqs' => $this->pageFaqs('Homepage')
         ];
 
         return view('home/index', $data);
@@ -3136,7 +3137,7 @@ class Home extends BaseController
                 $grouped = [];
                 foreach ($faqRows as $faqRow) {
                     // Page-managed FAQs (Round 51) render on their own pages only.
-                    if (in_array(trim((string) $faqRow->category), ['CV Review', 'Employers', 'Recruitment', 'Webinars', 'Candidate Hub'], true)) {
+                    if (in_array(trim((string) $faqRow->category), ['CV Review', 'Employers', 'Recruitment', 'Webinars', 'Candidate Hub', 'Homepage', 'Training', 'Candidate Pricing'], true)) {
                         continue;
                     }
                     $key = $categoryMap[trim((string) $faqRow->category)] ?? 'faq10';
@@ -3703,6 +3704,7 @@ class Home extends BaseController
             'type'              => $type,
             'price'             => $price,
             'auth'              => $this->auth,
+            'pageFaqs'          => $this->pageFaqs('Training'),
         ]);
     }
 

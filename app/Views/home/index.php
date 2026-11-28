@@ -28,9 +28,9 @@
       "logo": { "@type": "ImageObject", "url": "<?= base_url('images/logo.png') ?>", "width": 232, "height": 60 },
       "sameAs": [
         "https://twitter.com/jobberrecruit",
-        "https://www.linkedin.com/company/jobberrecruit",
+        "https://www.linkedin.com/company/jobber-recruit/",
         "https://www.facebook.com/jobberrecruit",
-        "https://www.instagram.com/jobberrecruit"
+        "https://www.instagram.com/jobberrecruit_ltd"
       ],
       "contactPoint": { "@type": "ContactPoint", "contactType": "customer support", "url": "<?= base_url('contact-us') ?>", "areaServed": "NG", "availableLanguage": "English" }
     },
@@ -930,11 +930,17 @@ main, .section, .container, .jobs-header, .jobs-grid { background-color: transpa
       <p class="section-label text-center" style="margin-left:auto;margin-right:auto"><svg aria-hidden="true"><use href="#i-bulb"/></svg> Got questions?</p>
       <h2 class="section-title text-center" id="faq-h">Frequently asked <span>questions</span></h2>
       <div class="faq-list" itemscope itemtype="https://schema.org/FAQPage">
-        <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">Is JobberRecruit free to use for job seekers?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Yes. Creating an account, searching for jobs, setting up job alerts, and applying to listings are all completely free for job seekers on JobberRecruit.</p></div></details>
+        <?php if (!empty($pageFaqs)): ?>
+        <?php foreach ($pageFaqs as $faqIdx => $faq): ?>
+        <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name"><?= $faq->question ?><svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text"><?= $faq->answer ?></p></div></details>
+        <?php endforeach; ?>
+        <?php else: ?>
+<details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">Is JobberRecruit free to use for job seekers?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Yes. Creating an account, searching for jobs, setting up job alerts, and applying to listings are all completely free for job seekers on JobberRecruit.</p></div></details>
         <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">How do I search for jobs in Lagos, Abuja, or Port Harcourt?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Use the search bar on the homepage. Select your preferred city from the Location dropdown, enter a job title or keyword, and click Search jobs. You can also browse by location directly from the Locations section.</p></div></details>
         <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">What is the AI Resume Builder?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">The AI Resume Builder is a smart tool that helps you create a professional, ATS-optimised resume in minutes. It tailors your resume to specific job roles and industries in Nigeria, helping you pass automated screening and stand out to employers.</p></div></details>
         <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">Can employers post jobs for free on JobberRecruit?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Yes. Employers can post their first job listing for free. Premium plans offer additional visibility and featured placements. Access to the verified candidate database is a separate paid product and is not included in premium plans. Visit our Pricing page for full details.</p></div></details>
         <details class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><summary itemprop="name">How does the JobberRecruit referral programme work?<svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary><div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Share your unique referral link with friends, candidates, or employers. When someone you referred makes their first qualifying payment, you instantly receive 10% commission added to your JobberRecruit wallet. There is no limit on referrals. Please note: all wallet funds — whether earned through referrals or added by you — are non-withdrawable and non-refundable. Wallet balance cannot be cashed out, but can be used to pay for JobberRecruit services such as job postings, premium plans, and certificates.</p></div></details>
+        <?php endif; ?>
       </div>
       <div class="faq-more"><a href="<?= base_url('faq') ?>" class="btn btn-outline">See all FAQs →</a></div>
     </div>

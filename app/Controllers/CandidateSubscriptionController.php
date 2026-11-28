@@ -60,12 +60,28 @@ class CandidateSubscriptionController extends BaseController
             'currentPlan' => $currentPlan,
             'isFreeMode' => $isFreeMode,
             'walletBalance' => $walletBalance,
+            'pageFaqs' => $this->pageFaqs('Candidate Pricing'),
         ]);
     }
 
     /**
      * Initiate payment for candidate plan
      */
+    /** Page FAQs managed under Admin -> FAQs by category (Round 51b). */
+    private function pageFaqs(string $category): array
+    {
+        try {
+            return (new \App\Models\FaqModel())
+                ->where('category', $category)
+                ->where('is_active', 1)
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function checkout()
     {
         if (!auth()->loggedIn()) {
