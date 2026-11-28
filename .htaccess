@@ -26,6 +26,10 @@ Options -Indexes
 	# Block dotfiles and dot-directories (.env, .git, .claude, ...)
 	RewriteRule (^|/)\.(?!well-known) - [F,L]
 
+	# Bare /admin entry point: the physical admin/ directory would 403, so send it to the dashboard
+	RewriteCond %{THE_REQUEST} \s/+admin/?[\s?] [NC]
+	RewriteRule .* https://jobberrecruit.com/admin/dashboard [R=302,L]
+
 	# Allow the front controller
 	RewriteRule ^index\.php$ - [L]
 

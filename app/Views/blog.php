@@ -508,14 +508,14 @@ foreach ($blogs as $index => $blog) {
             </div>
             <div class="sidebar-card-body">
               <div class="sidebar-tools-list">
-                <a href="<?= base_url('ai-tools/resume-builder') ?>" class="sidebar-tool">
+                <a href="<?= base_url('candidate/resume-builder') ?>" class="sidebar-tool">
                   <div class="sidebar-tool-ic"><svg aria-hidden="true"><use href="#i-bot"/></svg></div>
                   <div>
                     <div class="sidebar-tool-name">AI Resume Builder</div>
                     <div class="sidebar-tool-desc">ATS-optimised in minutes</div>
                   </div>
                 </a>
-                <a href="<?= base_url('ai-tools/mock-interview') ?>" class="sidebar-tool">
+                <a href="<?= base_url('candidate/career-tools/mock-interview') ?>" class="sidebar-tool">
                   <div class="sidebar-tool-ic accent"><svg aria-hidden="true"><use href="#i-mic"/></svg></div>
                   <div>
                     <div class="sidebar-tool-name">AI Mock Interview</div>

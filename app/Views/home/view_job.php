@@ -10,9 +10,11 @@ $jobSchema['identifier'] = [
     'value' => 'JR-' . $job->id,
 ];
 ?>
+<?php if (strtolower((string) ($job->status ?? 'open')) === 'open') : ?>
 <script type="application/ld+json">
 <?= json_encode($jobSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
 </script>
+<?php endif; ?>
 <script type="application/ld+json">
 <?= json_encode([
     '@context' => 'https://schema.org',

@@ -30,9 +30,10 @@ if (! function_exists('jobPostingSchema')) {
         // --- Dates (ISO 8601) ---
         $datePosted = $job->created_at ? date('c', strtotime($job->created_at)) : date('c');
         $deadline   = $job->expiry_date ?? $job->application_deadline ?? null;
-        $validThrough = ! empty($deadline)
-            ? date('Y-m-d\T23:59:59', strtotime($deadline))
-            : date('Y-m-d\T23:59:59', strtotime('+30 days'));
+        $deadlineTs   = ! empty($deadline) ? strtotime((string) $deadline) : false;
+        $validThrough = ($deadlineTs !== false && $deadlineTs > 0)
+            ? date('Y-m-d\T23:59:59', $deadlineTs)
+            : date('Y-m-d\T23:59:59', strtotime('+30 days', $job->created_at ? strtotime($job->created_at) : time()));
 
         // --- Description (mandatory) ---
         $description = '';
