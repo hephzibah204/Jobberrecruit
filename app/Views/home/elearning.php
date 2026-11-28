@@ -422,21 +422,21 @@ foreach (array_slice($courses, 0, 10) as $index => $course) {
       <div class="faq-list">
         <?php if (!empty($pageFaqs)): ?>
         <?php foreach ($pageFaqs as $faqIdx => $faq): ?>
-        <details class="faq-item"<?= $faqIdx === 0 ? ' open' : '' ?>>
+        <details name="training-faq" class="faq-item"<?= $faqIdx === 0 ? ' open' : '' ?>>
           <summary><?= $faq->question ?><svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary>
           <div class="faq-answer"><p><?= $faq->answer ?></p></div>
         </details>
         <?php endforeach; ?>
         <?php else: ?>
-<details class="faq-item" open>
+<details name="training-faq" class="faq-item" open>
           <summary>Are the certificates really free? <svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary>
           <div class="faq-answer"><p>Free courses do not issue certificates. Digital certificates are earned upon passing modules/assessments exclusively on paid courses.</p></div>
         </details>
-        <details class="faq-item">
+        <details name="training-faq" class="faq-item">
           <summary>How do I download my certificates? <svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary>
           <div class="faq-answer"><p>Once you complete all lessons in a paid course and pass the assessment, a download link will activate in your candidate dashboard under "My Certificates".</p></div>
         </details>
-        <details class="faq-item">
+        <details name="training-faq" class="faq-item">
           <summary>Can I access courses on my phone? <svg class="faq-chev" aria-hidden="true"><use href="#i-chev-down"/></svg></summary>
           <div class="faq-answer"><p>Yes. All courses, including YouTube-hosted lessons and uploaded files, are fully accessible on mobile browsers — no separate app required.</p></div>
         </details>
